@@ -99,9 +99,4 @@ public interface IgniteSandbox {
      * @return Wrapped StreamReceiver.
      */
     public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r);
-
-    /**
-     * @return True if sandbox is enabled.
-     */
-    public boolean enabled();
 }

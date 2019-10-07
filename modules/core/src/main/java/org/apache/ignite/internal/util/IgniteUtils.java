@@ -6980,7 +6980,7 @@ public abstract class IgniteUtils {
 
     /** */
     private static boolean checkClassLoader(ClassLoader ldr) {
-        if (SecurityUtils.isSandboxEnabled()) {
+        if (SecurityUtils.hasSecurityManager()) {
             ProtectionDomain pd = SecurityUtils.doPrivileged(
                 () -> ldr.getClass().getProtectionDomain());
 
@@ -6992,7 +6992,7 @@ public abstract class IgniteUtils {
 
     /** */
     private static void setCtxLdr(Thread thread, ClassLoader ldr) {
-        if (SecurityUtils.isSandboxEnabled())
+        if (SecurityUtils.hasSecurityManager())
             SecurityUtils.doPrivileged(() -> thread.setContextClassLoader(ldr));
         else
             thread.setContextClassLoader(ldr);

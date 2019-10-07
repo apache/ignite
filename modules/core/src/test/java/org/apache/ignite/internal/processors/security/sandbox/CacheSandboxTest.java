@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.security.AccessControlException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.cache.Cache;
@@ -29,10 +28,9 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
@@ -100,7 +98,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /**
      * @return ScanQuery operations to test.
      */
-    private Stream<IgniteRunnable> scanQueryOperations(Ignite node) {
+    private Stream<GridTestUtils.RunnableX> scanQueryOperations(Ignite node) {
         return Stream.of(
             () -> node.cache(TEST_CACHE).query(
                 new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
@@ -127,7 +125,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /**
      * @return LoadCache operation to test.
      */
-    private Runnable loadCacheOperation(Ignite node) {
+    private GridTestUtils.RunnableX loadCacheOperation(Ignite node) {
         return () -> node.<String, String>cache(TEST_CACHE).loadCache(
             (a, b) -> {
                 START_THREAD_RUNNABLE.run();
@@ -135,42 +133,6 @@ public class CacheSandboxTest extends AbstractSandboxTest {
                 return true;
             }
         );
-    }
-
-    /** */
-    private void runOperation(Supplier<Object> s) {
-        runOperation((Runnable)s::get);
-    }
-
-    /** */
-    private void runForbiddenOperation(Supplier<Object> s) {
-        try {
-            Object res = s.get();
-
-            if (res instanceof Throwable)
-                throw (Throwable)res;
-        }
-        catch (Throwable e) {
-            Class<AccessControlException> cls = AccessControlException.class;
-
-            if (!X.hasCause(e, cls)) {
-                throw new AssertionError("Exception is neither of a specified class, " +
-                    "nor has a cause of the specified class: " + cls, e);
-            }
-
-            return;
-        }
-
-        throw new AssertionError("Exception has not been thrown.");
-    }
-
-    /** */
-    private void runForbiddenOperation(Runnable r) {
-        runForbiddenOperation(() -> {
-            r.run();
-
-            return null;
-        });
     }
 
     /** */

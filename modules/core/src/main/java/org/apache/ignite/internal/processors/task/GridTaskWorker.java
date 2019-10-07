@@ -512,7 +512,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            if (SecurityUtils.isSandboxEnabled())
+            if (SecurityUtils.hasSecurityManager())
                 SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
             else
                 ctx.resource().inject(dep, task, ses, balancer, mapper);
@@ -1391,7 +1391,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = SecurityUtils.isSandboxEnabled() ? SecurityUtils.doPrivileged(
+                        req = SecurityUtils.hasSecurityManager() ? SecurityUtils.doPrivileged(
                             () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout))
                             : gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout);
                     }

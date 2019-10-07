@@ -246,7 +246,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Unwrap Proxy object.
         final Object target = unwrapTarget(obj);
 
-        if (SecurityUtils.isSandboxEnabled())
+        if (SecurityUtils.hasSecurityManager())
             SecurityUtils.doPrivileged(() -> inject(target, annSet, null, null, params));
         else
             inject(target, annSet, null, null, params);

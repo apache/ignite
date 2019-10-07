@@ -27,12 +27,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxCallable;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -180,20 +177,9 @@ public class SecurityUtils {
     }
 
     /**
-     * @return True if sandbox is enabled.
+     * @return True if SecurityManager is installed.
      */
-    public static boolean isSandboxEnabled() {
-        boolean res;
-
-        try {
-            IgniteEx ignite = IgnitionEx.localIgnite();
-
-            res = ignite.context().security().sandbox().enabled();
-        }
-        catch (IgniteIllegalStateException e) {
-            res = System.getSecurityManager() != null;
-        }
-
-        return res;
+    public static boolean hasSecurityManager() {
+        return System.getSecurityManager() != null;
     }
 }

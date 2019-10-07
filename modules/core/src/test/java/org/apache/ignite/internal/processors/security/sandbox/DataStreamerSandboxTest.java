@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -29,8 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class DataStreamerSandboxTest extends AbstractSandboxTest {
@@ -46,7 +43,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
         prepareCluster();
 
         runOperation(operation(grid(CLNT_ALLOWED)));
-        assertThrowsWithCause(operation(grid(CLNT_FORBIDDEN)), AccessControlException.class);
+        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN)));
     }
 
     /**
@@ -58,7 +55,6 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
                 strm.receiver(new StreamReceiver<Integer, Integer>() {
                     @Override public void receive(IgniteCache<Integer, Integer> cache,
                         Collection<Map.Entry<Integer, Integer>> entries) throws IgniteException {
-                        new Exception("MY_DEBUG").printStackTrace();
 
                         START_THREAD_RUNNABLE.run();
                     }

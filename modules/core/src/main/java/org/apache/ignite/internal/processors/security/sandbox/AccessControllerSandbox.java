@@ -107,9 +107,4 @@ public class AccessControllerSandbox implements IgniteSandbox {
     @Override public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r) {
         return r != null ? new SandboxAwareStreamReceiver<>(this, r) : r;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return true;
-    }
 }

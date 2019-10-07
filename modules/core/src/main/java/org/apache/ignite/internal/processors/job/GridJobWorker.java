@@ -450,7 +450,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            if (SecurityUtils.isSandboxEnabled())
+            if (SecurityUtils.hasSecurityManager())
                 SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
             else
                 ctx.resource().inject(dep, taskCls, job, ses, jobCtx);

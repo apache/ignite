@@ -31,12 +31,7 @@ import org.apache.ignite.stream.StreamReceiver;
 public class NoOpSandbox implements IgniteSandbox {
     /** {@inheritDoc} */
     @Override public <T> T execute(Callable<T> call) throws IgniteException {
-        try {
-            return call.call();
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -62,10 +57,5 @@ public class NoOpSandbox implements IgniteSandbox {
     /** {@inheritDoc} */
     @Override public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r) {
         return r;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return false;
     }
 }

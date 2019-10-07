@@ -190,7 +190,7 @@ public class GridResourceIoc {
         assert target != null;
         assert annCls != null;
 
-        ClassDescriptor desc = SecurityUtils.isSandboxEnabled()
+        ClassDescriptor desc = SecurityUtils.hasSecurityManager()
             ? SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()))
             : descriptor(dep, target.getClass());
 
@@ -209,7 +209,7 @@ public class GridResourceIoc {
         assert target != null;
         assert annSet != null;
 
-        return SecurityUtils.isSandboxEnabled()
+        return SecurityUtils.hasSecurityManager()
             ? SecurityUtils.doPrivileged(() -> descriptor(dep, target.getClass()).isAnnotated(annSet) != 0)
             : descriptor(dep, target.getClass()).isAnnotated(annSet) != 0;
     }

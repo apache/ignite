@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
+import java.security.AccessControlException;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.Permission;
@@ -26,14 +27,17 @@ import java.security.Policy;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityManager;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static sun.security.util.SecurityConstants.MODIFY_THREADGROUP_PERMISSION;
 import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
 
@@ -133,6 +137,32 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         waitStarted();
 
         assertTrue(IS_STARTED.get());
+    }
+
+    /** */
+    protected void runOperation(Supplier<Object> s) {
+        runOperation((Runnable)s::get);
+    }
+
+    /** */
+    protected void runForbiddenOperation(GridTestUtils.RunnableX runnable) {
+        IS_STARTED.set(false);
+
+        assertThrowsWithCause(runnable, AccessControlException.class);
+
+        assertFalse(IS_STARTED.get());
+    }
+
+    /** */
+    protected void runForbiddenOperation(Supplier<Object> s) {
+        runForbiddenOperation(
+            () -> {
+                Object res = s.get();
+
+                if (res instanceof Exception)
+                    throw (Exception)res;
+            }
+        );
     }
 
     /** */
