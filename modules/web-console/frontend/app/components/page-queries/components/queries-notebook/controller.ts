@@ -2260,12 +2260,12 @@ export class NotebookCtrl {
             (paragraph) => paragraph.loading || paragraph.scanningInProgress || paragraph.csvIsPreparing);
     }
 
-    async closeOpenedQueries() {
+    closeOpenedQueries = async() => {
         const paragraphs = _.get(this, '$scope.notebook.paragraphs');
 
         if (this._hasRunningQueries(paragraphs)) {
             try {
-                await this.Confirm.confirm($translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
+                await this.Confirm.confirm(this.$translate.instant('queries.notebook.leaveWithRunningQueriesConfirmationMessage'));
                 this._closeOpenedQueries(paragraphs);
 
                 return true;
