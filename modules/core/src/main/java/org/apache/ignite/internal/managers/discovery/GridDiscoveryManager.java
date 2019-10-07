@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -1796,6 +1797,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     @Nullable public List<? extends BaselineNode> baselineNodes(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).baselineNodes();
+    }
+
+    /**
+     * Compares baselines at different topologies.
+     *
+     * @param topVer1 Topology version 1.
+     * @param topVer2 Topology version 2.
+     */
+    public boolean baselineChanged(AffinityTopologyVersion topVer1, AffinityTopologyVersion topVer2) {
+        assert !topVer1.equals(topVer2);
+
+        DiscoCache disco1 = discoCache(topVer1);
+        DiscoCache disco2 = discoCache(topVer2);
+
+        BaselineTopology baseline1 = disco1 != null ? disco1.state().baselineTopology() : null;
+        BaselineTopology baseline2 = disco2 != null ? disco2.state().baselineTopology() : null;
+
+        return Objects.equals(baseline1, baseline2);
     }
 
     /**

@@ -879,7 +879,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             switch (exchange) {
                 case ALL: {
-                    distributedExchange();
+                    if (exchCtx.baselineNodeLeft())
+                        recovery();
+                    else
+                        distributedExchange();
 
                     break;
                 }
@@ -1019,6 +1022,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
 
         return topology != null && topology.consistentIds().contains(cctx.localNode().consistentId());
+    }
+
+    /**
+     * @return {@code true} if Event node is in baseline and {@code false} otherwise.
+     */
+    public boolean isEventNodeInBaseline() {
+        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
+
+        return top != null && top.consistentIds().contains(firstDiscoEvt.eventNode().consistentId());
     }
 
     /**
@@ -1357,7 +1369,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             exchCtx.events().warnNoAffinityNodes(cctx);
 
-            centralizedAff = cctx.affinity().onCentralizedAffinityChange(this, crd);
+            centralizedAff = exchCtx.baselineNodeLeft() ?
+                cctx.affinity().onBaselineNodeLeft(this, crd) :
+                cctx.affinity().onCentralizedAffinityChange(this, crd);
         }
         else
             cctx.affinity().onServerJoin(this, crd);
@@ -1378,7 +1392,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!centralizedAff)
                     sendLocalPartitions(crd);
 
-                initDone();
+                if (context().baselineNodeLeft())
+                    onDone(initialVersion());
+                else
+                    initDone();
             }
             finally {
                 cctx.exchange().exchangerBlockingSectionEnd();
@@ -1406,6 +1423,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionEnd();
             }
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void recovery() throws IgniteCheckedException {
+        initTopologies();
+
+        if (exchCtx.localRecovery()) {
+            waitRecovery();
+
+            finalizePartitionCounters(exchangeId().eventNode().id());
+        }
+
+        onDone(initialVersion());
     }
 
     /**
@@ -1543,7 +1575,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         changeWalModeIfNeeded();
 
         if (events().hasServerLeft())
-            finalizePartitionCounters();
+            finalizePartitionCounters(null);
 
         cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -1626,6 +1658,96 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return null;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void waitRecovery() throws IgniteCheckedException {
+        Latch recoveryLatch;
+
+        IgniteInternalFuture<?> partRecoveryFut;
+
+        cctx.exchange().exchangerBlockingSectionBegin();
+
+        try {
+            recoveryLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
+
+            partRecoveryFut = cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode());
+        }
+        finally {
+            cctx.exchange().exchangerBlockingSectionEnd();
+        }
+
+        int dumpCnt = 0;
+
+        long nextDumpTime = 0;
+
+        IgniteConfiguration cfg = cctx.gridConfig();
+
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
+
+        while (true) {
+            long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+
+            cctx.exchange().exchangerBlockingSectionBegin();
+
+            try {
+                partRecoveryFut.get(waitTimeout, TimeUnit.MILLISECONDS);
+
+                break;
+            }
+            catch (IgniteFutureTimeoutCheckedException ignored) {
+                if (nextDumpTime <= U.currentTimeMillis()) {
+                    dumpPendingObjects(partReleaseFut, curTimeout <= 0);
+
+                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Unable to await partitions recovery future", e);
+
+                throw e;
+            }
+            finally {
+                cctx.exchange().exchangerBlockingSectionEnd();
+            }
+        }
+
+        timeBag.finishGlobalStage("Wait partitions recover");
+
+        recoveryLatch.countDown();
+
+        try {
+            while (true) {
+                try {
+                    cctx.exchange().exchangerBlockingSectionBegin();
+
+                    try {
+                        recoveryLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+                    }
+                    finally {
+                        cctx.exchange().exchangerBlockingSectionEnd();
+                    }
+
+                    if (log.isInfoEnabled())
+                        log.info("Finished waiting for partitions recovery latch: " + recoveryLatch);
+
+                    break;
+                }
+                catch (IgniteFutureTimeoutCheckedException ignored) {
+                    U.warn(log, "Unable to await partitions recovery latch within timeout: " + recoveryLatch);
+
+                    // Try to resend ack.
+                    recoveryLatch.countDown();
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(log, "Stop waiting for partitions recovery latch: " + e.getMessage());
+        }
+
+        timeBag.finishGlobalStage("Wait partitions recovery latch");
     }
 
     /**
@@ -3826,10 +3948,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Removes gaps in the local update counters. Gaps in update counters are possible on backup node when primary
-     * failed to send update counter deltas to backup.
+     * Removes gaps in the local update counters. Affects specified node's primary partitions in case node specified and
+     * all local partitins otherwise.
+     *
+     * Gaps in update counters are possible on backup node when primary failed to send update counter deltas to backup.
+     *
+     * @param nodeId Failed node id, {@code null} in case of merged failures.
      */
-    private void finalizePartitionCounters() {
+    private void finalizePartitionCounters(UUID nodeId) {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
@@ -3839,7 +3965,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),
                 grp -> {
-                    grp.topology().finalizeUpdateCounters();
+                    AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
+
+                    // Failed node's primary partitions or just all local backups in case of possible exchange merge.
+                    Set<Integer> parts = nodeId != null ?
+                        grp.affinity().primaryPartitions(nodeId, topVer) :
+                        grp.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+                    grp.topology().finalizeUpdateCounters(parts);
 
                     return null;
                 }

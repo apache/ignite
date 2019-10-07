@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -193,6 +194,17 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * Reinitializes affinity without offline nodes.
+     *
+     * @param topVer Topology version.
+     */
+    public void reinitializeWithoutOfflineNodes(AffinityTopologyVersion topVer) {
+        idealAssignment(topVer, baselineAssignmentWithoutOfflineNodes(topVer));
+
+        initialize(topVer, initializedAssignmentWithoutOfflineNodes(topVer));
+    }
+
+    /**
      * Initializes affinity with given topology version and assignment.
      *
      * @param topVer Topology version.
@@ -319,18 +331,10 @@ public class GridAffinityAssignmentCache {
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
 
-        boolean hasBaseline = false;
-        boolean changedBaseline = false;
+        BaselineTopology blt = discoCache != null ? discoCache.state().baselineTopology() : null;
 
-        BaselineTopology blt = null;
-
-        if (discoCache != null) {
-            blt = discoCache.state().baselineTopology();
-
-            hasBaseline = blt != null;
-
-            changedBaseline = !hasBaseline ? baselineTopology != null : !blt.equals(baselineTopology);
-        }
+        boolean hasBaseline = blt != null;
+        boolean changedBaseline = !Objects.equals(blt, baselineTopology);
 
         IdealAffinityAssignment assignment;
 
@@ -456,17 +460,17 @@ public class GridAffinityAssignmentCache {
 
     /**
      * @param topVer Topology version.
+     * @param assignment Assignment.
      * @return Baseline assignment with filtered out offline nodes.
      */
-    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
+    private List<List<ClusterNode>> assignmentWithoutOfflineNodes(List<List<ClusterNode>> assignment,
+        AffinityTopologyVersion topVer) {
         Map<Object, ClusterNode> alives = new HashMap<>();
 
         for (ClusterNode node : ctx.discovery().nodes(topVer)) {
             if (!node.isClient() && !node.isDaemon())
                 alives.put(node.consistentId(), node);
         }
-
-        List<List<ClusterNode>> assignment = baselineAssignment.assignment();
 
         List<List<ClusterNode>> result = new ArrayList<>(assignment.size());
 
@@ -489,6 +493,22 @@ public class GridAffinityAssignmentCache {
         }
 
         return result;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Baseline assignment with filtered out offline nodes.
+     */
+    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
+        return assignmentWithoutOfflineNodes(baselineAssignment.assignment(), topVer);
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Current assignment with filtered out offline nodes.
+     */
+    private List<List<ClusterNode>> initializedAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
+        return assignmentWithoutOfflineNodes(head.get().assignment(), topVer);
     }
 
     /**

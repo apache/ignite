@@ -943,6 +943,22 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * Captures all prepared operations that we need to wait before we can proceed to the next topology version.
+     * This method must be called only after
+     * {@link GridDhtPartitionTopology#updateTopologyVersion}
+     * method is called so that all new updates will wait to switch to the new version.
+     *
+     * Captured updates are wrapped in a future that will be completed once pending objects are released.
+     *
+     * @param topVer Topology version.
+     * @param node Failed node.
+     * @return {@code true} if waiting was successful.
+     */
+    public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node) {
+        return tm().recoverLocalTxsByNode(topVer, node);
+    }
+
+    /**
      * Gets ready future for the next affinity topology version (used in cases when a node leaves grid).
      *
      * @param curVer Current topology version (before a node left grid).

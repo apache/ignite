@@ -1982,7 +1982,37 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         synchronized (mux) {
-            this.waitInfo = null;
+            waitInfo = null;
+        }
+
+        return true;
+    }
+
+    /**
+     * Called on exchange initiated by baseline server node leave.
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @return {@code True} if affinity should be assigned by coordinator.
+     */
+    public boolean onBaselineNodeLeft(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
+        assert (fut.events().hasServerLeft() && !fut.firstEvent().eventNode().isClient()) : fut.firstEvent();
+
+        forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
+            @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                CacheGroupHolder cache = getOrCreateGroupHolder(fut.initialVersion(), desc);
+
+                cache.aff.reinitializeWithoutOfflineNodes(fut.initialVersion());
+
+                cctx.exchange().exchangerUpdateHeartbeat();
+
+                fut.timeBag().finishLocalStage("Affinity initialization (recovery) " +
+                    "[grp=" + desc.cacheOrGroupName() + ", crd=" + crd + "]");
+            }
+        });
+
+        synchronized (mux) {
+            waitInfo = null;
         }
 
         return true;
