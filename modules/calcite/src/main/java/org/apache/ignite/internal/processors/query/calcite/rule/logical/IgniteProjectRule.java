@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalProject;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -35,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RelOp;
 public class IgniteProjectRule extends RelOptRule {
     public static final RelOptRule INSTANCE = new IgniteProjectRule();
 
-    private  <R extends RelNode> IgniteProjectRule() {
+    private <R extends RelNode> IgniteProjectRule() {
         super(Commons.any(LogicalProject.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteProjectRule");
     }
 
@@ -47,17 +46,9 @@ public class IgniteProjectRule extends RelOptRule {
 
         RelNode converted = convert(input, traitSet);
 
-        RelOp<LogicalProject, Boolean> transformOp = Commons.transformSubset(call, converted, this::newProject);
+        RelOp<LogicalProject, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteLogicalProject::create);
 
         if (!transformOp.go(project))
-            call.transformTo(newProject(project, converted));
-    }
-
-    public IgniteLogicalProject newProject(LogicalProject project, RelNode input) {
-        RelTraitSet traits = project.getTraitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replace(IgniteMdDistribution.project(project.getCluster().getMetadataQuery(), input, project.getProjects()));
-
-        return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
+            call.transformTo(IgniteLogicalProject.create(project, converted));
     }
 }

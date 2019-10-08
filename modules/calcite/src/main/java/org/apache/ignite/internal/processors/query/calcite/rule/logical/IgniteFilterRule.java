@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalFilter;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -47,17 +46,9 @@ public class IgniteFilterRule extends RelOptRule {
 
         RelNode converted = convert(input, traitSet);
 
-        RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, this::newFilter);
+        RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteLogicalFilter::create);
 
         if (!transformOp.go(filter))
-            call.transformTo(newFilter(filter, converted));
-    }
-
-    public IgniteLogicalFilter newFilter(LogicalFilter filter, RelNode input) {
-        RelTraitSet traits = filter.getTraitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replace(IgniteMdDistribution.filter(filter.getCluster().getMetadataQuery(), input, filter.getCondition()));
-
-        return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
+            call.transformTo(IgniteLogicalFilter.create(filter, converted));
     }
 }

@@ -24,7 +24,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 public final class IgniteLogicalFilter extends Filter implements IgniteRel {
@@ -48,5 +50,13 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
   @Override public RelWriter explainTerms(RelWriter pw) {
     return super.explainTerms(pw)
         .itemIf("variablesSet", variablesSet, !variablesSet.isEmpty());
+  }
+
+  public static IgniteLogicalFilter create(LogicalFilter filter, RelNode input) {
+    RelTraitSet traits = filter.getTraitSet()
+        .replace(IgniteRel.LOGICAL_CONVENTION)
+        .replace(IgniteMdDistribution.filter(filter.getCluster().getMetadataQuery(), input, filter.getCondition()));
+
+    return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
   }
 }
