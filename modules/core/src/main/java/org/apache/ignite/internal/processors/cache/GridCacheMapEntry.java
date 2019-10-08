@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.U
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
@@ -3332,10 +3331,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
-            CacheObject val0 = val;
-
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
 
             final boolean unswapped = ((flags & IS_UNSWAPPED_MASK) != 0);
 
@@ -3353,14 +3349,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         if (!isStartVer) {
                             if (cctx.atomic())
                                 update0 = ATOMIC_VER_COMPARATOR.compare(currentVer, ver) < 0;
-                            else {
+                            else
                                 update0 = currentVer.compareTo(ver) < 0;
-
-                                if (!update0 && val0 == null)
-                                    log.info("TRACE REMOVE " + key + " inputVer=" + ver + ", cached=" + currentVer);
-
-
-                            }
                         }
                         else
                             update0 = true;
@@ -3368,7 +3358,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     else
                         update0 = isStartVer;
 
-//                    update0 |= (!preload && deletedUnlocked());
+                    update0 |= (!preload && deletedUnlocked());
 
                     return update0;
                 }
@@ -4349,9 +4339,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             else
                 op = this.val == null ? GridCacheOperation.CREATE : UPDATE;
 
-//            if (cctx.localNodeId().toString().endsWith("0"))
-//                log.info(">>> wal tx update [p=" + key.partition() + ", key=" + key.value(cctx.cacheObjectContext(), false) + ", cntr=" + updCntr);
-
             return cctx.shared().wal().log(new DataRecord(new DataEntry(
                 cctx.cacheId(),
                 key,
@@ -5036,11 +5023,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void lockEntry() {
         lock.lock();
-    }
-
-    /** {@inheritDoc} */
-    public boolean isLockedEntry() {
-        return lock.isLocked();
     }
 
     /** {@inheritDoc} */

@@ -123,11 +123,7 @@ public class GridNioSessionImpl implements GridNioSession {
     @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteCheckedException {
         try {
-//            System.out.println(">xxx> before session write");
-
             chain().onSessionWrite(this, msg, false, ackC);
-
-//            System.out.println(">xxx> send no future");
         }
         catch (IgniteCheckedException e) {
             close();

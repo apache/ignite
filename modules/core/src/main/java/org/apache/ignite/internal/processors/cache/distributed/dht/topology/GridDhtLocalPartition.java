@@ -64,8 +64,6 @@ import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -441,7 +439,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Set {@link CacheDataStoreEx.StorageMode} to the corresponding local partition storage.
+     * Change read-only mode for the corresponding local partition storage.
      */
     public void readOnly(boolean readOnly) {
         if (state() != MOVING)
@@ -456,25 +454,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public boolean readOnly() {
         return store.readOnly();
     }
-
-//    /**
-//     * @param mode The mode to associate with data storage instance.
-//     * @param storage The cache data storage instance to set to.
-//     */
-//    public void dataStore(CacheDataStoreEx.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
-//        if (state() != MOVING)
-//            return;
-//
-//        store.store(mode, storage);
-//    }
-
-//    /**
-//     * @param mode The storage mode.
-//     * @return The storage intance for the given mode.
-//     */
-//    public IgniteCacheOffheapManager.CacheDataStore dataStore(CacheDataStoreEx.StorageMode mode) {
-//        return store.store(mode);
-//    }
 
     /**
      * Reserves a partition so it won't be cleared or evicted.

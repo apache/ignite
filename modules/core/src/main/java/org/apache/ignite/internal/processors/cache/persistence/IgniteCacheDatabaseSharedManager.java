@@ -900,17 +900,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Perform a snapshot operation on checkponter.
-     *
-     * @param op Snapshot operation.
-     * @param reason The text message reason.
-     * @return Checkpoint progress future.
-     */
-    public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
-        return null;
-    }
-
-    /**
      * Waits until current state is checkpointed.
      *
      * @throws IgniteCheckedException If failed.
@@ -968,6 +957,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * todo
+     *
      * @param cacheCtx Cache context to rebuild index at.
      * @param partPred The partition filter predicate.
      * @param restore <tt>true</tt> to rebuild indexes from the original store.

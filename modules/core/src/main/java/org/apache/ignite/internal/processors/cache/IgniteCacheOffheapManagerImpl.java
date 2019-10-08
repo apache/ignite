@@ -48,6 +48,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdat
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateNewTxStateHintRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxStateHintRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.OffheapInvokeClosure;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
@@ -928,9 +930,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 while (true) {
                     if (cur == null) {
-                        boolean hasnext = dataIt.hasNext();
-
-                        if (hasnext) {
+                        if (dataIt.hasNext()) {
                             CacheDataStore ds = dataIt.next();
 
                             curPart = ds.partId();
@@ -1256,7 +1256,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public final CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException {
-//        System.out.println(">xxx> create " + p);
         CacheDataStoreEx dataStore;
 
         partStoreLock.lock(p);
@@ -1298,10 +1297,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             true,
             lsnr
         );
-
-        //return new CacheDataStoreImpl(p, rowStore, dataTree);
-        String treeName = treeName(p);
-        //grp,
 
         return new CacheDataStoreExImpl(grp.shared(),
             new CacheDataStoreImpl(
@@ -1352,6 +1347,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     protected IgniteInternalFuture<Boolean> destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
         store.destroy();
 
+        // For in-memory partition, we always destroy the partition storage synchronously.
         return alwaysDoneFut;
     }
 
@@ -1359,7 +1355,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param p Partition.
      * @return Tree name for given partition.
      */
-    protected static final String treeName(int p) {
+    protected final String treeName(int p) {
         return BPlusTree.treeName("p-" + p, "CacheData");
     }
 

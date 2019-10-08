@@ -20,56 +20,26 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 
 /**
- *
+ * todo this can be managed through volatile state in GridCacheDataStore.
  */
 public interface CacheDataStoreEx extends CacheDataStore {
+    /**
+     * Get cache data store.
+     *
+     * @param readOnly Read-only mode flag.
+     * @return Cache data store.
+     */
     public CacheDataStore store(boolean readOnly);
 
+    /**
+     * Change current cache data store mode.
+     *
+     * @param readOnly Read-only mode flag.
+     */
     public void readOnly(boolean readOnly);
 
+    /**
+     * @return {@code True} if current mode is read-only.
+     */
     public boolean readOnly();
-
-//    /**
-//     * @param mode The storage mode.
-//     * @return The storage intance for the given mode.
-//     */
-//    public CacheDataStore store(StorageMode mode);
-//
-//    /**
-//     * @param mode The mode to switch to.
-//     */
-//    public void storeMode(StorageMode mode);
-//
-//    /**
-//     * @return The currently used storage mode. Some of the long-running threads will remain to use
-//     * the old mode until they finish.
-//     */
-//    public StorageMode storeMode();
-
-//    /**
-//     * @return The storage is used to expose temporary cache data rows when the <tt>LOG_ONLY</tt> mode is active.
-//     */
-//    public IgnitePartitionCatchUpLog catchLog();
-    //
-//    /**
-//     * @param mode The mode to switch to.
-//     */
-//    public IgniteInternalFuture<Void> storeModeAsync(StorageMode mode);
-
-//    /**
-//     * @param mode The mode to associate with data storage instance.
-//     * @param storage The cache data storage instance to set to.
-//     */
-//    public void store(StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage);
-
-//    /**
-//     *
-//     */
-//    public enum StorageMode {
-//        /** Proxy will normally route all operations to the PageMemrory. */
-//        FULL,
-//
-//        /** Proxy will redirect the write operations to the temp-WAL storage. */
-//        READ_ONLY;
-//    }
 }

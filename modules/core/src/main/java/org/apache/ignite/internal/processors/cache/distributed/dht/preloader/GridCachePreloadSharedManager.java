@@ -395,23 +395,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param fut Exchange future.
-     */
-    public void onExchangeDone(GridDhtPartitionsExchangeFuture fut) {
-        // todo switch to read-only mode after first exchange
-        //System.out.println(cctx.localNodeId() + " >xxx> process onExchangeDone");
-
-//        if (!mainFut.isDone() && fut.topologyVersion().equals(mainFut.topVer)) {
-//            mainFut.switchAllPartitions();
-//        }
-//        else {
-//            U.dumpStack(cctx.localNodeId() + " skip onExchange done=" + mainFut.isDone() + ", topVer="+fut.topologyVersion() +", rebVer="+mainFut.topVer +", equals="+fut.topologyVersion().equals(mainFut.topVer));
-//        }
-
-        // switch partitions without exchange
-    }
-
-    /**
      * Get partition restore future.
      *
      * @param msg Message.

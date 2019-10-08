@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -107,7 +108,6 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1374,8 +1374,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 if (++rebalancedCntrs[idx] == to ||
                                     entry.partitionCounter() == to && grp.hasAtomicCaches())
                                     donePart = entry.partitionId();
-//                                    System.out.println("p=" + entry.partitionId() + ", cntr=" + entry.partitionCounter() + " DONE e=" + entry.key());
-//                                System.out.println("p=" + entry.partitionId() + ", cntr=" + entry.partitionCounter() + " e=" + entry.key() + " rebCntr=" + rebalancedCntrs[idx]);
 
                                 next = entry;
 
@@ -1421,24 +1419,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 doneParts.add(rbRec.partitionId()); // Add to done set immediately.
                             }
-//                            else
-//                                System.out.println("p=" + rbRec.partitionId() + ", overlap=" + rbRec.overlap(from, to));
                         }
                     }
                 }
 
-                if (doneParts.size() != partMap.size()) {
-                    for (Map.Entry<Integer, T2<Long, Long>> e : CachePartitionPartialCountersMap.toCountersMap(partMap).entrySet()) {
-                        int p = e.getKey();
-                        long from = e.getValue().get1();
-                        long to = e.getValue().get2();
-
-                        if (!doneParts.contains(p))
-                            log.error("WAL iterator failed to restore history: [p=" + p + ", from=" + from + ", to=" + to + ", rebCtr=" + rebalancedCntrs[partMap.partitionIndex(p)]);
-                    }
-                }
-
-                //rebalancedCntrs[idx]
                 assert entryIt != null || doneParts.size() == partMap.size() :
                     "Reached end of WAL but not all partitions are done ; done=" + doneParts + ", parts=" + partMap;
             }
@@ -1602,7 +1586,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      */
     public class GridCacheDataStore implements CacheDataStore {
         /** */
-        protected final int partId;
+        private final int partId;
 
         /** */
         private volatile AbstractFreeList<CacheDataRow> freeList;
@@ -1800,7 +1784,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
-                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();;
+                    PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     delegate0 = new CacheDataStoreImpl(partId, rowStore, dataTree) {
                         /** {@inheritDoc} */
