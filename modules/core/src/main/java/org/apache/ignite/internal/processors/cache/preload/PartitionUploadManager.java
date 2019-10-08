@@ -222,7 +222,8 @@ public class PartitionUploadManager {
 
         String backupDir = "preload-" + fut.rebalanceId;
 
-        cctx.backup().createLocalBackup(backupDir, fut.getAssigns(), tmpDir).get();
+        //todo
+//        cctx.snapshot().createLocalBackup(backupDir, fut.getAssigns(), tmpDir).get();
 
 //        cctx.preloader().offerCheckpointTask(() -> {
 //            try {

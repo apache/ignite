@@ -171,8 +171,6 @@ public class FilePageStore implements PageStore {
                 if (fileExists == null) {
                     File file = pathProvider.apply().toFile();
 
-//                    System.out.println("file (exists="+file.exists()+"): " + file);
-
                     fileExists = file.exists() && file.length() > headerSize();
                 }
             }
@@ -305,8 +303,11 @@ public class FilePageStore implements PageStore {
         return fileSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean delete) throws StorageException {
+    /**
+     * @param delete {@code True} to delete file.
+     * @throws IOException If fails.
+     */
+    private void stop0(boolean delete) throws IOException {
         lock.writeLock().lock();
 
         try {
@@ -332,10 +333,6 @@ public class FilePageStore implements PageStore {
                 fileExists = false;
             }
         }
-        catch (IOException e) {
-            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
-                + ", delete=" + delete + "]", e);
-        }
         finally {
             allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
@@ -346,12 +343,26 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
+        try {
+            stop0(delete);
+        }
+        catch (IOException e) {
+            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
+                + ", delete=" + delete + "]", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        stop0(false);
+    }
+
+    /** {@inheritDoc} */
     @Override public void truncate(int tag) throws StorageException {
         init();
 
         Path filePath = pathProvider.apply();
-
-        U.dumpStack(">xxx> truncate " + filePath);
 
         lock.writeLock().lock();
 
@@ -431,37 +442,6 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new StorageException("Failed to update partition file allocated pages " +
                 "[file=" + getFileAbsolutePath() + "]", e);
-        }
-    }
-
-    /**
-     * @param serialStrg Serial page storage to reover current storage with.
-     * @throws IgniteCheckedException If fails.
-     */
-    public void doRecover(FileSerialPageStore serialStrg) throws IgniteCheckedException {
-        lock.writeLock().lock();
-
-        try {
-            recover = true;
-
-            ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
-                .order(ByteOrder.nativeOrder());
-            long pages = serialStrg.pages();
-
-            for (int seq = 0; seq < pages; seq++) {
-                serialStrg.readPage(pageBuf, seq);
-
-                write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
-
-                pageBuf.clear();
-            }
-
-            updateAllocatedPages();
-
-            recover = false;
-        }
-        finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -556,7 +536,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws StorageException {
+    public void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 

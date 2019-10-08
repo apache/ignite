@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -24,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 /**
  * Persistent store of pages.
  */
-public interface PageStore {
+public interface PageStore extends Closeable {
     /**
      * @param lsnr Page store listener to set.
      */

@@ -145,6 +145,9 @@ public enum GridTopic {
     TOPIC_DEADLOCK_DETECTION,
 
     /** */
+    TOPIC_RMT_SNAPSHOT,
+
+    /** */
     TOPIC_REBALANCE;
 
     /** Enum values. */

@@ -4306,6 +4306,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     cpHistory.addCheckpoint(cp);
                 }
+
+                for (DbCheckpointListener lsnr : lsnrs)
+                    lsnr.onMarkCheckpointEnd(ctx0);
             }
             finally {
                 checkpointLock.writeLock().unlock();
@@ -4551,7 +4554,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
+                @Override public void gatherPartStats(List<GroupPartitionId> parts) {
                     delegate.gatherPartStats(parts);
                 }
 
@@ -4726,10 +4729,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /** {@inheritDoc} */
-            @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
-                for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
-                    gatherParts.computeIfAbsent(e.getKey(), g -> new HashSet<>())
-                        .addAll(e.getValue());
+            @Override public void gatherPartStats(List<GroupPartitionId> parts) {
+                for (GroupPartitionId part : parts) {
+                    gatherParts.computeIfAbsent(part.getGroupId(), g -> new HashSet<>())
+                        .add(part.getPartitionId());
                 }
             }
 

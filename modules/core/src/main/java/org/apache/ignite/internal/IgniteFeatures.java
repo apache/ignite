@@ -76,7 +76,10 @@ public enum IgniteFeatures {
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** */
-    CACHE_PARTITION_FILE_REBALANCE(19);
+    CACHE_PARTITION_FILE_REBALANCE(19),
+
+    /** Persistence caches can be snapshotted.  */
+    PERSISTENCE_CACHE_SNAPSHOT(20);
 
     /**
      * Unique feature identifier.

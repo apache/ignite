@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -67,10 +66,9 @@ import org.apache.ignite.internal.processors.cache.persistence.ReadOnlyGridCache
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.preload.GridPartitionBatchDemandMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cache.preload.PartitionUploadManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -83,8 +81,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
 /** */
@@ -290,17 +286,76 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         if (log.isDebugEnabled())
                             log.debug("Prepare demand batch message [rebalanceId=" + rebFut.rebalanceId + "]");
 
-                        GridPartitionBatchDemandMessage msg0 =
-                            new GridPartitionBatchDemandMessage(rebFut.rebalanceId,
-                                rebFut.topVer,
-                                assigns.entrySet()
-                                    .stream()
-                                    .collect(Collectors.toMap(Map.Entry::getKey,
-                                        e -> GridIntList.valueOf(e.getValue()))));
+//                        GridPartitionBatchDemandMessage msg0 =
+//                            new GridPartitionBatchDemandMessage(rebFut.rebalanceId,
+//                                rebFut.topVer,
+//                                assigns.entrySet()
+//                                    .stream()
+//                                    .collect(Collectors.toMap(Map.Entry::getKey,
+//                                        e -> GridIntList.valueOf(e.getValue()))));
+
+                        cctx.snapshotMgr().addSnapshotListener(new SnapshotListener() {
+                            final UUID nodeId = node.id();
+
+                            @Override public void onPartition(String snpName, File file, int grpId, int partId) {
+                                FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
+
+                                if (staleFuture(fut)) { //  || mainFut.isCancelled()
+                                    if (log.isInfoEnabled())
+                                        log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
+
+                                    file.delete();
+
+                                    return;
+                                }
+
+                                IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
+
+                                try {
+                                    // todo should lock only on checkpoint
+                                    mainFut.lockMessaging(nodeId, grpId, partId);
+
+                                    IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
+
+                                    switchFut.listen( f -> {
+                                        try {
+                                            T2<Long, Long> cntrs = f.get();
+
+                                            assert cntrs != null;
+
+                                            cctx.kernalContext().closure().runLocalSafe(() -> {
+                                                fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
+                                            });
+                                        } catch (IgniteCheckedException e) {
+                                            fut.onDone(e);
+                                        }
+                                    });
+                                } catch (IgniteCheckedException e) {
+                                    fut.onDone(e);
+                                }
+                            }
+
+                            @Override public void onEnd(String snpName) {
+
+                            }
+
+                            @Override public void onException(String snpName, Throwable t) {
+                                log.error("Unable to create remote snapshot " + snpName, t);
+
+                                mainFut.onDone(t);
+                            }
+                        });
+
+                        cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
+
+                        rebFut.listen(c -> {
+                            // todo remove snapshot listener
+                            ///cctx.snapshotMgr().
+                        });
 
 //                        futMap.put(node.id(), rebFut);
 
-                        cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
+//                        cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
 
                         if (log.isDebugEnabled())
                             log.debug("Demand message is sent to partition supplier [node=" + node.id() + "]");
@@ -430,31 +485,31 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         // switch partitions without exchange
     }
 
-    public void handleDemandMessage(UUID nodeId, GridPartitionBatchDemandMessage msg) {
-        if (log.isDebugEnabled())
-            log.debug("Handling demand request " + msg.rebalanceId());
-
-        if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
-            return;
-
-        ClusterNode demanderNode = cctx.discovery().node(nodeId);
-
-        if (demanderNode == null) {
-            log.error("The demand message rejected (demander node left the cluster) ["
-                + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
-
-            return;
-        }
-
-        if (msg.assignments() == null || msg.assignments().isEmpty()) {
-            log.error("The Demand message rejected. Node assignments cannot be empty ["
-                + "nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
-
-            return;
-        }
-
-        uploadMgr.onDemandMessage(nodeId, msg, PUBLIC_POOL);
-    }
+//    public void handleDemandMessage(UUID nodeId, GridPartitionBatchDemandMessage msg) {
+//        if (log.isDebugEnabled())
+//            log.debug("Handling demand request " + msg.rebalanceId());
+//
+//        if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
+//            return;
+//
+//        ClusterNode demanderNode = cctx.discovery().node(nodeId);
+//
+//        if (demanderNode == null) {
+//            log.error("The demand message rejected (demander node left the cluster) ["
+//                + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
+//
+//            return;
+//        }
+//
+//        if (msg.assignments() == null || msg.assignments().isEmpty()) {
+//            log.error("The Demand message rejected. Node assignments cannot be empty ["
+//                + "nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
+//
+//            return;
+//        }
+//
+//        uploadMgr.onDemandMessage(nodeId, msg, PUBLIC_POOL);
+//    }
 
     /**
      * Get partition restore future.

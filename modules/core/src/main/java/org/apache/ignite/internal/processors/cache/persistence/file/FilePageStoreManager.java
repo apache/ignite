@@ -72,11 +72,11 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
@@ -96,6 +96,8 @@ import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 
 /**
  * File page store manager.
@@ -161,9 +163,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * May be overriden by block read/write.
      */
     private FileIOFactory pageStoreFileIoFactory;
-
-    /** File page store factory. */
-    private FileVersionCheckingFactory pageStoreFactory;
 
     /**
      * File IO factory for page store V1 and for fast checking page store (non block read).
@@ -499,7 +498,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
-        assert partId <= PageIdAllocator.MAX_PARTITION_ID;
+        assert partId <= MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
 
@@ -658,6 +657,38 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * @param grpId Cache group id.
+     * @param encrypted {@code true} if cache group encryption enabled.
+     * @return Factory to create page stores.
+     */
+    public FilePageStoreFactory getPageStoreFactory(int grpId, boolean encrypted) {
+        FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
+        FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
+
+        if (encrypted) {
+            pageStoreFileIoFactory = new EncryptedFileIOFactory(
+                this.pageStoreFileIoFactory,
+                grpId,
+                pageSize(),
+                cctx.kernalContext().encryption(),
+                cctx.gridConfig().getEncryptionSpi());
+
+            pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
+                this.pageStoreV1FileIoFactory,
+                grpId,
+                pageSize(),
+                cctx.kernalContext().encryption(),
+                cctx.gridConfig().getEncryptionSpi());
+        }
+
+        return new FileVersionCheckingFactory(
+            pageStoreFileIoFactory,
+            pageStoreV1FileIoFactory,
+            igniteCfg.getDataStorageConfiguration()
+        );
+    }
+
+    /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
@@ -679,30 +710,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
-            FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
-
-            if (encrypted) {
-                pageStoreFileIoFactory = new EncryptedFileIOFactory(
-                    this.pageStoreFileIoFactory,
-                    grpId,
-                    pageSize(),
-                    cctx.kernalContext().encryption(),
-                    cctx.gridConfig().getEncryptionSpi());
-
-                pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
-                    this.pageStoreV1FileIoFactory,
-                    grpId,
-                    pageSize(),
-                    cctx.kernalContext().encryption(),
-                    cctx.gridConfig().getEncryptionSpi());
-            }
-
-            pageStoreFactory = new FileVersionCheckingFactory(
-                pageStoreFileIoFactory,
-                pageStoreV1FileIoFactory,
-                igniteCfg.getDataStorageConfiguration()
-            );
+            FileVersionCheckingFactory pageStoreFactory = (FileVersionCheckingFactory)getPageStoreFactory(grpId, encrypted);
 
             if (encrypted) {
                 int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
@@ -717,8 +725,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     idxFile,
                     allocatedTracker);
 
-            if (cctx.backup() != null)
-                idxStore.setListener(new BackupPageStoreListener(grpId, partitions, cctx.backup(), idxStore));
+            if (cctx.snapshotMgr() != null)
+                idxStore.setListener(new SnapshotPageStoreListener(grpId, INDEX_PARTITION, cctx.snapshotMgr(), idxStore));
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -731,8 +739,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 
-                if (cctx.backup() != null)
-                    partStore.setListener(new BackupPageStoreListener(grpId, partId, cctx.backup(), partStore));
+                if (cctx.snapshotMgr() != null)
+                    partStore.setListener(new SnapshotPageStoreListener(grpId, partId, cctx.snapshotMgr(), partStore));
 
                 partStores[partId] = partStore;
             }
@@ -756,11 +764,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheWorkDir Cache work directory.
+     * @param workDir Cache work directory.
+     * @param cacheDirName Cache directory name.
      * @param partId Partition id.
+     * @return Partition file.
      */
-    @NotNull public static File getPartitionFile(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+    @NotNull public static File getPartitionFileEx(File workDir, String cacheDirName, int partId) {
+        return new File (cacheWorkDir(workDir, cacheDirName), getPartitionNameEx(partId));
+    }
+
+    /**
+     * @param partId Partition id.
+     * @return File name.
+     */
+    public static String getPartitionNameEx(int partId) {
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
+
+        return  partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
     }
 
     /** {@inheritDoc} */
@@ -877,7 +897,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
-        assert partId <= PageIdAllocator.MAX_PARTITION_ID || partId == PageIdAllocator.INDEX_PARTITION;
+        assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         PageStore store = getStore(grpId, partId);
 
@@ -1019,33 +1039,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
-        return cacheWorkDir(storeWorkDir, ccfg);
+        return cacheWorkDir(storeWorkDir, cacheDirName(ccfg));
     }
 
     /**
-     *
-     */
-    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheWorkDir(storeWorkDir, isSharedGroup, cacheOrGroupName);
-    }
-
-    /**
-     * @param storeWorkDir Configured file page store base directory.
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
      * @param cacheOrGroupName Cache name.
-     * @return Cache directory.
+     * @return Store directory for given cache.
      */
-    public static File cacheWorkDir(File storeWorkDir, boolean isSharedGroup, String cacheOrGroupName) {
-        return new File(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
+    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
+        return cacheWorkDir(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**
-     * @param ccfg Cache configuration.
+     * @param cacheDirName Cache directory name.
      * @return Store directory for given cache.
      */
-    public static File cacheWorkDir(File storeWorkDir, CacheConfiguration ccfg) {
-        return new File(storeWorkDir, cacheDirName(ccfg));
+    public static File cacheWorkDir(File storeWorkDir, String cacheDirName) {
+        return new File(storeWorkDir, cacheDirName);
     }
+
 
     /**
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
@@ -1217,10 +1230,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             throw new IgniteCheckedException("Failed to get page store for the given cache ID " +
                 "(cache has not been started): " + grpId);
 
-        if (partId == PageIdAllocator.INDEX_PARTITION)
+        if (partId == INDEX_PARTITION)
             return holder.idxStore;
 
-        if (partId > PageIdAllocator.MAX_PARTITION_ID)
+        if (partId > MAX_PARTITION_ID)
             throw new IgniteCheckedException("Partition ID is reserved: " + partId);
 
         PageStore store = holder.partStores[partId];
@@ -1269,13 +1282,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
-    }
-
-    /**
-     * @return File page store factory currently used.
-     */
-    public FilePageStoreFactory getFilePageStoreFactory() {
-        return pageStoreFactory;
     }
 
     /**
@@ -1488,12 +1494,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** */
-    private static class BackupPageStoreListener implements PageStoreListener {
+    private static class SnapshotPageStoreListener implements PageStoreListener {
         /** Pair of group id and its partiton id. */
         private final GroupPartitionId key;
 
         /** Backup manager. */
-        private final IgniteBackupManager backup;
+        private final IgniteSnapshotManager snapshotMgr;
 
         /** Page store the listener associated with. */
         private final PageStore store;
@@ -1501,25 +1507,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          * @param grpId Cache group id.
          * @param partId Partition id.
-         * @param backup Backup manager.
+         * @param snapshotMgr Backup manager.
          * @param store Page store the listener associated with.
          */
-        public BackupPageStoreListener(
+        public SnapshotPageStoreListener(
             int grpId,
             int partId,
-            IgniteBackupManager backup,
+            IgniteSnapshotManager snapshotMgr,
             PageStore store
         ) {
-            assert backup != null;
+            assert snapshotMgr != null;
 
             key = new GroupPartitionId(grpId, partId);
-            this.backup = backup;
+            this.snapshotMgr = snapshotMgr;
             this.store = store;
         }
 
         /** {@inheritDoc} */
         @Override public void onPageWrite(long pageId, ByteBuffer buf) {
-            backup.beforeStoreWrite(key, pageId, buf, store);
+            snapshotMgr.beforeStoreWrite(key, pageId, buf, store);
         }
     }
 }
