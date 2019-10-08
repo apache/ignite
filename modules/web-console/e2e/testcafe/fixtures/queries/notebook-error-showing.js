@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import {WebSocketHook} from '../../mocks/WebSocketHook';
 import {
     cacheNamesCollectorTask, agentStat, simeplFakeSQLQuery,
@@ -35,7 +36,7 @@ fixture('Notebook')
                 .use(
                     agentStat(FAKE_CLUSTERS),
                     cacheNamesCollectorTask(FAKE_CACHES),
-                    simeplFakeSQLQuery(FAKE_CLUSTERS.clusters[0].nids[0], SIMPLE_FAILED_QUERY_RESPONSE)
+                    simeplFakeSQLQuery(_.first(_.keys(FAKE_CLUSTERS.clusters[0].nodes)), SIMPLE_FAILED_QUERY_RESPONSE)
                 )
         );
     })

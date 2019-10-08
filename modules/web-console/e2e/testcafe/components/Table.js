@@ -38,7 +38,7 @@ const findCell = Selector((table, rowIndex, columnLabel) => {
     if (!row)
         row = _findRowElement(table, '.ui-grid-render-container:not(.left)');
 
-    if (row)
+    if (row && row.element)
         return row.element.querySelectorAll(`.ui-grid-cell`)[row.columnIndex];
 
     return null;
