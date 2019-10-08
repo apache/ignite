@@ -408,7 +408,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         }
 
                         if (snpLsnr != null)
-                            snpLsnr.onException(entry.getKey().get2(), err);
+                            snpLsnr.onException(nodeId, entry.getKey().get2(), err);
                     }
                 }
             }
@@ -430,14 +430,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              * @param grpId Cache group id.
              * @param partId Partition id.
              */
-            private void stopRecover(FilePageStore pageStore, String snpName, File part, Integer grpId, Integer partId) {
+            private void stopRecover(FilePageStore pageStore, UUID rmtNodeId, String snpName, File part, Integer grpId, Integer partId) {
                 try {
                     pageStore.finishRecover();
 
                     U.closeQuiet(pageStore);
 
                     if (snpLsnr != null) {
-                        snpLsnr.onPartition(snpName,
+                        snpLsnr.onPartition(rmtNodeId,
+                            snpName,
                             part,
                             grpId,
                             partId);
@@ -466,6 +467,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 if (initMeta.count() == 0) {
                     stopRecover(pageStore,
+                        nodeId,
                         snpName,
                         new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
                         grpId,
@@ -485,6 +487,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                             if (transferred.longValue() == initMeta.count()) {
                                 stopRecover(pageStore,
+                                    nodeId,
                                     snpName,
                                     new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
                                     grpId,

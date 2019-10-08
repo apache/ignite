@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -442,18 +443,18 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         final CountDownLatch awaitLatch = new CountDownLatch(ints.size());
 
         mgr.addSnapshotListener(new SnapshotListener() {
-            @Override public void onPartition(String snpName, File part, int grpId, int partId) {
+            @Override public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId) {
                 log.info("Snapshot partition received successfully [snpName=" + snpName +
                     ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
 
                 awaitLatch.countDown();
             }
 
-            @Override public void onEnd(String snpName) {
+            @Override public void onEnd(UUID rmtNodeId, String snpName) {
                 log.info("Snapshot created successfully [snpName=" + snpName + ']');
             }
 
-            @Override public void onException(String snpName, Throwable t) {
+            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
                 log.error("Error creating snapshot [snpName=" + snpName + ']', t);
             }
         });
