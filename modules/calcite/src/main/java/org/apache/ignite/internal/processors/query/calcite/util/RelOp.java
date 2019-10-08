@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.plan.volcano;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
 import org.apache.calcite.rel.RelNode;
 
 /**
  *
  */
-public class VolcanoUtil {
-    public static void fireRules(VolcanoPlanner planner, RelNode rel, boolean deferred) {
-        planner.fireRules(rel, deferred);
-    }
+public interface RelOp<T extends RelNode, R> {
+    R go(T rel);
 }

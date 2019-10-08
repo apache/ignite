@@ -45,9 +45,7 @@ public final class IgniteLogicalJoin extends Join implements IgniteRel {
 
   @Override public IgniteLogicalJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-    return new IgniteLogicalJoin(getCluster(),
-        getCluster().traitSetOf(IgniteRel.LOGICAL_CONVENTION), left, right, conditionExpr,
-        variablesSet, joinType, semiJoinDone);
+    return new IgniteLogicalJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
   }
 
   @Override public RelWriter explainTerms(RelWriter pw) {

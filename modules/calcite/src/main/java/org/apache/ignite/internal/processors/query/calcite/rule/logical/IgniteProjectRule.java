@@ -17,24 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalProject;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RelOp;
 
 /**
  *
@@ -43,49 +36,28 @@ public class IgniteProjectRule extends RelOptRule {
     public static final RelOptRule INSTANCE = new IgniteProjectRule();
 
     private  <R extends RelNode> IgniteProjectRule() {
-        super(operand(LogicalProject.class, Convention.NONE, any()), RelFactories.LOGICAL_BUILDER, "IgniteProjectRule");
+        super(Commons.any(LogicalProject.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteProjectRule");
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalProject project = call.rel(0);
-        final RelNode input = project.getInput();
-        final RelOptCluster cluster = input.getCluster();
-        final List<RexNode> projects = project.getProjects();
-        final RelMetadataQuery mq = cluster.getMetadataQuery();
+        RelNode input = project.getInput();
 
-        boolean done = false;
+        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.LOGICAL_CONVENTION);
 
-        Set<RelNode> transformed = new HashSet<>();
+        RelNode converted = convert(input, traitSet);
 
-        for (RelNode relNode : ((RelSubset) input).getRelList()) {
-            if (!(relNode instanceof IgniteRel))
-                continue;
+        RelOp<LogicalProject, Boolean> transformOp = Commons.transformSubset(call, converted, this::newProject);
 
-            final RelTraitSet traitSet =
-                cluster.traitSet()
-                    .replace(IgniteRel.LOGICAL_CONVENTION)
-                    .replaceIf(IgniteDistributionTraitDef.INSTANCE,
-                        () -> IgniteMdDistribution.project(mq, relNode, projects));
+        if (!transformOp.go(project))
+            call.transformTo(newProject(project, converted));
+    }
 
-            RelNode converted = convert(relNode, traitSet);
+    public IgniteLogicalProject newProject(LogicalProject project, RelNode input) {
+        RelTraitSet traits = project.getTraitSet()
+            .replace(IgniteRel.LOGICAL_CONVENTION)
+            .replace(IgniteMdDistribution.project(project.getCluster().getMetadataQuery(), input, project.getProjects()));
 
-            if (transformed.add(converted)) {
-                call.transformTo(new IgniteLogicalProject(cluster, traitSet, converted, projects, project.getRowType()));
-
-                done = true;
-            }
-        }
-
-        if (!done) {
-            final RelTraitSet traitSet =
-                cluster.traitSet()
-                    .replace(IgniteRel.LOGICAL_CONVENTION)
-                    .replaceIf(IgniteDistributionTraitDef.INSTANCE,
-                        () -> IgniteMdDistribution.project(mq, input, projects));
-
-            RelNode converted = convert(input, traitSet);
-
-            call.transformTo(new IgniteLogicalProject(cluster, converted.getTraitSet(), converted, projects, project.getRowType()));
-        }
+        return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
     }
 }

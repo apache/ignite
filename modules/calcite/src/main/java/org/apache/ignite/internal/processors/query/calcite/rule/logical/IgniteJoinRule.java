@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
@@ -32,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -40,37 +39,33 @@ public class IgniteJoinRule extends RelOptRule {
     public static final RelOptRule INSTANCE = new IgniteJoinRule();
 
     public IgniteJoinRule() {
-        super(operand(LogicalJoin.class, Convention.NONE, any()), RelFactories.LOGICAL_BUILDER, "IgniteJoinRule");
+        super(Commons.any(LogicalJoin.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteJoinRule");
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalJoin join = call.rel(0);
-        RelOptCluster cluster = join.getCluster();
 
         IgniteDistribution leftDist = join.getLeft().getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
         IgniteDistribution rightDist = join.getRight().getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
 
         RelTraitSet leftTraits = join.getLeft().getTraitSet()
             .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replaceIf(IgniteDistributionTraitDef.INSTANCE,
-                () -> IgniteDistributions.hash(join.analyzeCondition().leftKeys, leftDist.sources()));
+            .replace(IgniteDistributions.hash(join.analyzeCondition().leftKeys, leftDist.sources()));
 
-        RelTraitSet rightTraits = cluster.traitSet()
+        RelTraitSet rightTraits = join.getRight().getTraitSet()
             .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replaceIf(IgniteDistributionTraitDef.INSTANCE,
-                () -> IgniteDistributions.hash(join.analyzeCondition().rightKeys, rightDist.sources()));
+            .replace(IgniteDistributions.hash(join.analyzeCondition().rightKeys, rightDist.sources()));
 
         RelNode left = convert(join.getLeft(), leftTraits);
         RelNode right = convert(join.getRight(), rightTraits);
 
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        RelMetadataQuery mq = call.getMetadataQuery();
 
-        RelTraitSet traitSet = cluster.traitSet()
+        RelTraitSet traitSet = join.getTraitSet()
             .replace(IgniteRel.LOGICAL_CONVENTION)
-            .replaceIf(IgniteDistributionTraitDef.INSTANCE,
-                () -> IgniteMdDistribution.join(mq, left, right, join.getCondition()));
+            .replace(IgniteMdDistribution.join(mq, left, right, join.getCondition()));
 
-        call.transformTo(new IgniteLogicalJoin(cluster, traitSet, left, right,
+        call.transformTo(new IgniteLogicalJoin(join.getCluster(), traitSet, left, right,
             join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone()));
     }
 }

@@ -42,8 +42,7 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
 
   @Override public IgniteLogicalFilter copy(RelTraitSet traitSet, RelNode input,
       RexNode condition) {
-    return new IgniteLogicalFilter(getCluster(), traitSet, input, condition,
-        variablesSet);
+    return new IgniteLogicalFilter(getCluster(), traitSet, input, condition, variablesSet);
   }
 
   @Override public RelWriter explainTerms(RelWriter pw) {

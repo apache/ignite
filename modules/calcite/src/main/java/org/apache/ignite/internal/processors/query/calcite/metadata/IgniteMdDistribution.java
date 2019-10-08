@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
@@ -39,6 +40,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution.DistributionType.HASH;
 
@@ -46,27 +48,31 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDi
  *
  */
 public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Distribution> {
-    public static final RelMetadataProvider PROVIDER =
-        ReflectiveRelMetadataProvider.reflectiveSource(IgniteMetadata.Distribution.METHOD, new IgniteMdDistribution());
+    public static final RelMetadataProvider SOURCE =
+        ReflectiveRelMetadataProvider.reflectiveSource(IgniteMethod.DISTRIBUTION.method(), new IgniteMdDistribution());
 
     @Override public MetadataDef<IgniteMetadata.Distribution> getDef() {
         return IgniteMetadata.Distribution.DEF;
     }
 
-    public IgniteDistribution getDistribution(RelNode rel, RelMetadataQuery mq) {
-        return rel.getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
+    public IgniteDistribution distribution(RelNode rel, RelMetadataQuery mq) {
+        return IgniteDistributionTraitDef.INSTANCE.getDefault();
     }
 
-    public IgniteDistribution getDistribution(Filter filter, RelMetadataQuery mq) {
+    public IgniteDistribution distribution(Filter filter, RelMetadataQuery mq) {
         return filter(mq, filter.getInput(), filter.getCondition());
     }
 
-    public IgniteDistribution getDistribution(Project project, RelMetadataQuery mq) {
+    public IgniteDistribution distribution(Project project, RelMetadataQuery mq) {
         return project(mq, project.getInput(), project.getProjects());
     }
 
-    public IgniteDistribution getDistribution(Join join, RelMetadataQuery mq) {
+    public IgniteDistribution distribution(Join join, RelMetadataQuery mq) {
         return join(mq, join.getLeft(), join.getRight(), join.getCondition());
+    }
+
+    public IgniteDistribution distribution(RelSubset rel, RelMetadataQuery mq) {
+        return rel.getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
     }
 
     public static IgniteDistribution project(RelMetadataQuery mq, RelNode input, List<RexNode> projects) {
@@ -116,7 +122,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
         return distribution_(left, mq);
     }
 
-    private static IgniteDistribution distribution_(RelNode rel, RelMetadataQuery mq) {
-        return rel.metadata(IgniteMetadata.Distribution.class, mq).getDistribution();
+    public static IgniteDistribution distribution_(RelNode rel, RelMetadataQuery mq) {
+        return rel.metadata(IgniteMetadata.Distribution.class, mq).distribution();
     }
 }

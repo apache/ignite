@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Method;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
@@ -28,26 +26,27 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
  *
  */
 public class IgniteMetadata {
-    public static final RelMetadataProvider METADATA_PROVIDER = ChainedRelMetadataProvider.of(ImmutableList.of(
-        DefaultRelMetadataProvider.INSTANCE,
-        IgniteMdDistribution.PROVIDER
-    ));
+    public static final RelMetadataProvider METADATA_PROVIDER =
+        ChainedRelMetadataProvider.of(
+            ImmutableList.of(
+                DefaultRelMetadataProvider.INSTANCE,
+                IgniteMdDistribution.SOURCE));
 
     public interface Distribution extends Metadata {
-        Method METHOD = Types.lookupMethod(Distribution.class, "getDistribution");
-        MetadataDef<Distribution> DEF = MetadataDef.of(Distribution.class, Distribution.Handler.class, METHOD);
+        MetadataDef<Distribution> DEF = MetadataDef.of(Distribution.class, Distribution.Handler.class, IgniteMethod.DISTRIBUTION.method());
 
         /** Determines how the rows are distributed. */
-        IgniteDistribution getDistribution();
+        IgniteDistribution distribution();
 
         /** Handler API. */
         interface Handler extends MetadataHandler<Distribution> {
-            IgniteDistribution getDistribution(RelNode r, RelMetadataQuery mq);
+            IgniteDistribution distribution(RelNode r, RelMetadataQuery mq);
         }
     }
 }

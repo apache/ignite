@@ -17,18 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptNode;
+import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptRuleOperand;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 /**
  *
@@ -38,10 +49,6 @@ public final class Commons {
 
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
-    }
-
-    public static <T> Predicate<T> any() {
-        return obj -> true;
     }
 
     /** */
@@ -59,8 +66,60 @@ public final class Commons {
         };
     }
 
-    public static boolean transformSubset(RelOptRuleCall call, RelTraitSet traits) {
+    public static RelOptRuleOperand any(Class<? extends RelNode> first, RelTrait trait){
+        return RelOptRule.operand(first, trait, RelOptRule.any());
+    }
 
-        return false;
+    public static RelOptRuleOperand any(Class<? extends RelNode> first){
+        return RelOptRule.operand(first, RelOptRule.any());
+    }
+
+    public static RelOptRuleOperand any(Class<? extends RelNode> first, Class<? extends RelNode> second) {
+        return RelOptRule.operand(first, RelOptRule.operand(second, RelOptRule.any()));
+    }
+
+    public static RelOptRuleOperand some(Class<? extends RelNode> rel, RelOptRuleOperand first, RelOptRuleOperand... rest){
+        return RelOptRule.operand(rel, RelOptRule.some(first, rest));
+    }
+
+    public static RelOptRuleOperand some(Class<? extends RelNode> rel, RelTrait trait, RelOptRuleOperand first, RelOptRuleOperand... rest){
+        return RelOptRule.operand(rel, trait, RelOptRule.some(first, rest));
+    }
+
+    public static <T extends RelNode> RelOp<T, Boolean> transformSubset(RelOptRuleCall call, RelNode input, BiFunction<T, RelNode, RelNode> transformFun) {
+        return rel -> {
+            if (!(input instanceof RelSubset))
+                return Boolean.FALSE;
+
+            RelSubset subset = (RelSubset) input;
+
+            Set<RelTraitSet> traits = subset.getRelList().stream()
+                .filter(r -> r instanceof IgniteRel)
+                .map(RelOptNode::getTraitSet)
+                .collect(Collectors.toSet());
+
+            if (traits.isEmpty())
+                return Boolean.FALSE;
+
+            Set<RelNode> transformed = Collections.newSetFromMap(new IdentityHashMap<>());
+
+            boolean transform = Boolean.FALSE;
+
+            for (RelTraitSet traitSet: traits) {
+                RelNode newRel = RelOptRule.convert(subset, traitSet.simplify());
+
+                if (transformed.add(newRel)) {
+                    RelNode out = transformFun.apply(rel, newRel);
+
+                    if (out != null) {
+                        call.transformTo(out);
+
+                        transform = Boolean.TRUE;
+                    }
+                }
+            }
+
+            return transform;
+        };
     }
 }

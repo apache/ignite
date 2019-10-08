@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.Distribution;
 
 /**
  *
  */
 public enum IgniteMethod {
-    IGNITE_TABLE_ENUMERABLE(IgniteTable.class, "enumerable");
+    DISTRIBUTION(Distribution.class, "distribution");
 
     private final Method method;
 
