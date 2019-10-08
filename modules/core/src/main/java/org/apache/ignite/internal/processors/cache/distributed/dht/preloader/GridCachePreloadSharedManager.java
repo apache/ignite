@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,9 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -48,8 +45,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.TransmissionHandler;
-import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -133,55 +128,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     @Override protected void start0() throws IgniteCheckedException {
         ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(cpLsnr);
 
-        cctx.snapshotMgr().addSnapshotListener(new SnapshotListener() {
-            @Override public void onPartition(UUID nodeId, String snpName, File file, int grpId, int partId) {
-                FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
-
-                if (staleFuture(fut)) { //  || mainFut.isCancelled()
-                    if (log.isInfoEnabled())
-                        log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
-
-                    file.delete();
-
-                    return;
-                }
-
-                IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
-
-                try {
-                    // todo should lock only on checkpoint
-                    mainFut.lockMessaging(nodeId, grpId, partId);
-
-                    IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
-
-                    switchFut.listen( f -> {
-                        try {
-                            T2<Long, Long> cntrs = f.get();
-
-                            assert cntrs != null;
-
-                            cctx.kernalContext().closure().runLocalSafe(() -> {
-                                fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
-                            });
-                        } catch (IgniteCheckedException e) {
-                            fut.onDone(e);
-                        }
-                    });
-                } catch (IgniteCheckedException e) {
-                    fut.onDone(e);
-                }
-            }
-
-            @Override public void onEnd(UUID rmtNodeId, String snpName) {
-
-            }
-
-            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
-                log.error("Unable to create remote snapshot " + snpName, t);
-
-                mainFut.onDone(t);
-            }
-        });
+        cctx.snapshotMgr().addSnapshotListener(new RebalanceSnapshotListener());
     }
 
     /** {@inheritDoc} */
@@ -277,24 +224,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 }
             }
 
-            // create listener
-            TransmissionHandler hndr = new RebalanceDownloadHandler();
-
-            cctx.kernalContext().io().addTransmissionHandler(rebalanceThreadTopic(), hndr);
-
             // todo should be invoked in separated thread
             mainFut.enableReadOnlyMode();
 
             mainFut0.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
-                    cctx.kernalContext().io().removeTransmissionHandler(rebalanceThreadTopic());
-
                     if (log.isInfoEnabled())
                         log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
                 }
             });
-
-//            mainFut = mainFut0;
 
             return rq;
         }
@@ -333,8 +271,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 //                                    .stream()
 //                                    .collect(Collectors.toMap(Map.Entry::getKey,
 //                                        e -> GridIntList.valueOf(e.getValue()))));
-
-
 
                         cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
 
@@ -474,32 +410,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         // switch partitions without exchange
     }
-
-//    public void handleDemandMessage(UUID nodeId, GridPartitionBatchDemandMessage msg) {
-//        if (log.isDebugEnabled())
-//            log.debug("Handling demand request " + msg.rebalanceId());
-//
-//        if (msg.rebalanceId() < 0) // Demand node requested context cleanup.
-//            return;
-//
-//        ClusterNode demanderNode = cctx.discovery().node(nodeId);
-//
-//        if (demanderNode == null) {
-//            log.error("The demand message rejected (demander node left the cluster) ["
-//                + ", nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
-//
-//            return;
-//        }
-//
-//        if (msg.assignments() == null || msg.assignments().isEmpty()) {
-//            log.error("The Demand message rejected. Node assignments cannot be empty ["
-//                + "nodeId=" + nodeId + ", topVer=" + msg.topologyVersion() + ']');
-//
-//            return;
-//        }
-//
-//        uploadMgr.onDemandMessage(nodeId, msg, PUBLIC_POOL);
-//    }
 
     /**
      * Get partition restore future.
@@ -711,90 +621,56 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** */
-    private class RebalanceDownloadHandler implements TransmissionHandler {
-        /** {@inheritDoc} */
-        @Override public void onException(UUID nodeId, Throwable err) {
-            mainFut.onDone(err);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
-            Integer grpId = (Integer)fileMeta.params().get("group");
-            Integer partId = (Integer)fileMeta.params().get("part");
-
+    private class RebalanceSnapshotListener implements SnapshotListener {
+        @Override public void onPartition(UUID nodeId, String snpName, File file, int grpId, int partId) {
             FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
 
+            // todo should track rebalanceId by snpName
+            if (staleFuture(fut)) { //  || mainFut.isCancelled()
+                if (log.isInfoEnabled())
+                    log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
+
+                file.delete();
+
+                return;
+            }
+
+            IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
+
             try {
-                // todo how to abort receive?
-                if (staleFuture(fut)) {
-                    log.warning("Rebalance routine for node \"" + nodeId + "\" was not found");
+                // todo should lock only on checkpoint
+                mainFut.lockMessaging(nodeId, grpId, partId);
 
-                    File file = File.createTempFile("ignite-stale-partition", ".$$$");
+                IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
 
-                    return file.toString();
-                }
+                switchFut.listen(f -> {
+                    try {
+                        T2<Long, Long> cntrs = f.get();
 
-                assert grpId != null;
-                assert partId != null;
+                        assert cntrs != null;
 
-                return getStorePath(grpId, partId) + ".$$$";
-            } catch (IgniteCheckedException | IOException e) {
+                        cctx.kernalContext().closure().runLocalSafe(() -> {
+                            fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut.onDone(e);
+                    }
+                });
+            }
+            catch (IgniteCheckedException e) {
                 fut.onDone(e);
-
-                throw new IgniteException("File transfer exception.", e);
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
-            assert false;
+        @Override public void onEnd(UUID rmtNodeId, String snpName) {
 
-            return null;
         }
 
-        /** {@inheritDoc} */
-        @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
-            return file -> {
-                Integer grpId = (Integer)initMeta.params().get("group");
-                Integer partId = (Integer)initMeta.params().get("part");
+        @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
+            log.error("Unable to create remote snapshot " + snpName, t);
 
-                FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
-
-                if (staleFuture(fut)) {
-                    if (log.isInfoEnabled())
-                        log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
-
-                    file.delete();
-
-                    return;
-                }
-
-                IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
-
-                try {
-                    // todo should lock only on checkpoint
-                    mainFut.lockMessaging(nodeId, grpId, partId);
-
-                    IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
-
-                    switchFut.listen( f -> {
-                        try {
-                            T2<Long, Long> cntrs = f.get();
-
-                            assert cntrs != null;
-
-                            cctx.kernalContext().closure().runLocalSafe(() -> {
-                                fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
-                            });
-                        } catch (IgniteCheckedException e) {
-                            fut.onDone(e);
-                        }
-                    });
-                } catch (IgniteCheckedException e) {
-                    fut.onDone(e);
-                }
-            };
+            mainFut.onDone(t);
         }
     }
 

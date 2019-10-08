@@ -492,28 +492,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-//        // todo
-//        if (cctx.filePreloader() != null && cctx.filePreloader().persistenceRebalanceApplicable()) {
-//            if (log.isDebugEnabled())
-//                log.debug("Starting file rebalancing messages handler.");
-//
-//            cctx.gridIO().addMessageListener(rebalanceThreadTopic(), new GridMessageListener() {
-//                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-//                    if (msg instanceof GridPartitionBatchDemandMessage) {
-//                        if (!enterBusy())
-//                            return;
-//
-//                        try {
-//                            cctx.filePreloader().handleDemandMessage(nodeId, (GridPartitionBatchDemandMessage)msg);
-//                        }
-//                        finally {
-//                            leaveBusy();
-//                        }
-//                    }
-//                }
-//            });
-//        }
-
         MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
         mreg.register(PME_DURATION,
@@ -1267,8 +1245,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
-
-            System.out.println("sending partitions");
 
             sendLocalPartitions(oldest, null, grps);
         }
