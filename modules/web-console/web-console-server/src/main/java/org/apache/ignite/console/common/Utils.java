@@ -41,6 +41,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.springframework.boot.Banner.Mode.OFF;
 import static org.springframework.security.web.authentication.switchuser.SwitchUserFilter.ROLE_PREVIOUS_ADMINISTRATOR;
@@ -176,6 +177,7 @@ public class Utils {
         app.setLogStartupInfo(false);
 
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_WAL_MMAP, "false");
         System.setProperty(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true)");
 
         StopWatch stopWatch = new StopWatch();
