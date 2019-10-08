@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.UUID;
 
 /**
  *
@@ -29,16 +30,16 @@ public interface SnapshotListener {
      * @param grpId Cache group id.
      * @param partId Partition id.
      */
-    public void onPartition(String snpName, File part, int grpId, int partId);
+    public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId);
 
     /**
      * @param snpName Snapshot name.
      */
-    public void onEnd(String snpName);
+    public void onEnd(UUID rmtNodeId, String snpName);
 
     /**
      * @param snpName Snapshot name.
      * @param t Exception which has been occurred.
      */
-    public void onException(String snpName, Throwable t);
+    public void onException(UUID rmtNodeId, String snpName, Throwable t);
 }

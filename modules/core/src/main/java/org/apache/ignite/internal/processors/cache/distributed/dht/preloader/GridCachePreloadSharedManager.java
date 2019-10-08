@@ -297,7 +297,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         cctx.snapshotMgr().addSnapshotListener(new SnapshotListener() {
                             final UUID nodeId = node.id();
 
-                            @Override public void onPartition(String snpName, File file, int grpId, int partId) {
+                            @Override public void onPartition(UUID rmtNodeId, String snpName, File file, int grpId, int partId) {
                                 FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
 
                                 if (staleFuture(fut)) { //  || mainFut.isCancelled()
@@ -335,11 +335,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                                 }
                             }
 
-                            @Override public void onEnd(String snpName) {
+                            @Override public void onEnd(UUID rmtNodeId, String snpName) {
 
                             }
 
-                            @Override public void onException(String snpName, Throwable t) {
+                            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
                                 log.error("Unable to create remote snapshot " + snpName, t);
 
                                 mainFut.onDone(t);
