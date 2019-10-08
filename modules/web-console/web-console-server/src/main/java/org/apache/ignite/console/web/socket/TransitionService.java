@@ -48,13 +48,10 @@ public class TransitionService {
     private static final String SEND_TO_AGENT = "SEND_TO_AGENT";
 
     /** */
-    private static final String SEND_RESPONSE = "SEND_RESPONSE";
+    private static final String SEND_TO_BROWSER = "SEND_TO_BROWSER";
 
     /** */
-    private static final String SEND_TO_USER_BROWSER = "SEND_TO_USER_BROWSER";
-
-    /** */
-    private static final String SEND_ANNOUNCEMENT = "SEND_ANNOUNCEMENT";
+    public static final String SEND_RESPONSE = "SEND_RESPONSE";
 
     /** Messages accessor. */
     private WebConsoleMessageSourceAccessor messages = WebConsoleMessageSource.getAccessor();
@@ -103,6 +100,60 @@ public class TransitionService {
     }
 
     /**
+     * @param ann Announcement.
+     */
+    public void broadcastToBrowsers(Announcement ann) {
+        sendToBrowser(null, new WebSocketResponse(ADMIN_ANNOUNCEMENT, ann));
+    }
+
+    /**
+     * @param userKey User key.
+     * @param evt Event to send.
+     */
+    public void sendToBrowser(UserKey userKey, WebSocketResponse evt) {
+        ignite.message().send(SEND_TO_BROWSER, new UserEvent(userKey, evt));
+    }
+
+    /**
+     * @param key Key.
+     * @param evt Event.
+     */
+    public void sendToAgent(AgentKey key, WebSocketRequest evt) {
+        sendToAgent(new AgentRequest(ignite.cluster().localNode().id(), key, evt));
+    }
+
+    /**
+     * @param nid Node ID.
+     * @param evt Event to send.
+     */
+    public void sendResponse(UUID nid, WebSocketRequest evt) {
+        ignite.message(ignite.cluster().forNodeId(nid)).send(SEND_RESPONSE, evt);
+    }
+
+    /**
+     * Listen events on transition.
+     */
+    protected void registerListeners() {
+        ignite.message().localListen(SEND_TO_AGENT, new MessagingListenActor<AgentRequest>() {
+            @Override protected void receive(UUID nodeId, AgentRequest req) {
+                sendToAgent(req);
+            }
+        });
+
+        ignite.message().localListen(SEND_RESPONSE, new MessagingListenActor<WebSocketEvent>() {
+            @Override protected void receive(UUID nodeId, WebSocketEvent evt) {
+                browsersSrvc.processResponse(evt);
+            }
+        });
+
+        ignite.message().localListen(SEND_TO_BROWSER, new MessagingListenActor<UserEvent>() {
+            @Override protected void receive(UUID nodeId, UserEvent res) {
+                browsersSrvc.sendToBrowsers(res.getKey(), res.getEvt());
+            }
+        });
+    }
+
+    /**
      * @param req Request.
      * @param prefix Prefix.
      * @param e Exception.
@@ -118,14 +169,29 @@ public class TransitionService {
     }
 
     /**
-     * @param req Request.
+     * @param req Agent request.
      */
-    private void resendToRemote(AgentRequest req) {
+    private void sendToAgent(AgentRequest req) {
+        try {
+            agentsSrvc.sendLocally(req);
+        }
+        catch (IllegalStateException ignored) {
+            resendToOtherBackend(req);
+        }
+        catch (Exception e) {
+            responseWithError(req, messages.getMessage("err.failed-to-send-to-agent"), e);
+        }
+    }
+
+    /**
+     * @param req Request to agent.
+     */
+    private void resendToOtherBackend(AgentRequest req) {
         Set<UUID> nids = agentsRepo.get(req.getKey());
 
         if (nids.isEmpty()) {
             responseWithError(req, messages.getMessage("err.agent-not-found"), null);
-            
+
             return;
         }
 
@@ -137,85 +203,10 @@ public class TransitionService {
         catch (ClusterGroupEmptyException ignored) {
             agentsRepo.remove(req.getKey(), targetNid);
 
-            resendToRemote(req);
+            resendToOtherBackend(req);
         }
         catch (Exception e) {
             responseWithError(req, messages.getMessage("err.failed-to-send-to-agent"), e);
         }
-    }
-
-    /**
-     * Listen events on transition.
-     */
-    private void registerListeners() {
-        ignite.message().localListen(SEND_TO_AGENT, new MessagingListenActor<AgentRequest>() {
-            @Override protected void receive(UUID nodeId, AgentRequest req) {
-                try {
-                    agentsSrvc.sendLocally(req);
-                }
-                catch (IllegalStateException ignored) {
-                    resendToRemote(req);
-                }
-                catch (Exception e) {
-                    responseWithError(req, messages.getMessage("err.failed-to-send-to-agent"), e);
-                }
-            }
-        });
-
-        ignite.message().localListen(SEND_RESPONSE, new MessagingListenActor<WebSocketEvent>() {
-            @Override protected void receive(UUID nodeId, WebSocketEvent evt) {
-                boolean processed = browsersSrvc.processResponse(evt);
-
-                if (!processed)
-                    processed = agentsSrvc.processResponse(evt);
-
-                if (!processed)
-                    log.warn("Event was not processed: " + evt);
-            }
-        });
-
-        ignite.message().localListen(SEND_TO_USER_BROWSER, new MessagingListenActor<UserEvent>() {
-            @Override protected void receive(UUID nodeId, UserEvent res) {
-                browsersSrvc.sendToBrowsers(res.getKey(), res.getEvt());
-            }
-        });
-
-        ignite.message().localListen(SEND_ANNOUNCEMENT, new MessagingListenActor<WebSocketEvent<Announcement>>() {
-            @Override protected void receive(UUID nodeId, WebSocketEvent<Announcement> ann) {
-                browsersSrvc.sendAnnouncement(ann);
-            }
-        });
-    }
-
-    /**
-     * @param ann Announcement.
-     */
-    public void broadcastAnnouncement(Announcement ann) {
-        ignite.message().send(SEND_ANNOUNCEMENT, new WebSocketResponse(ADMIN_ANNOUNCEMENT, ann));
-    }
-
-    /**
-     * @param key Key.
-     * @param evt Event.
-     */
-    public void sendToAgent(AgentKey key, WebSocketRequest evt) {
-        ignite.message(ignite.cluster().forLocal())
-            .send(SEND_TO_AGENT, new AgentRequest(ignite.cluster().localNode().id(), key, evt));
-    }
-
-    /**
-     * @param userKey User key.
-     * @param evt Event to send.
-     */
-    public void sendToBrowser(UserKey userKey, WebSocketResponse evt) {
-        ignite.message().send(SEND_TO_USER_BROWSER, new UserEvent(userKey, evt));
-    }
-
-    /**
-     * @param nid Node ID.
-     * @param evt Event to send.
-     */
-    public void sendResponse(UUID nid, WebSocketRequest evt) {
-        ignite.message(ignite.cluster().forNodeId(nid)).send(SEND_RESPONSE, evt);
     }
 }

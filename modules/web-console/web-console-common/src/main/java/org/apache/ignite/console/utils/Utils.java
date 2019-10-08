@@ -20,12 +20,16 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Utilities.
@@ -196,5 +200,13 @@ public class Utils {
      */
     public static <K, U> Collector<Map.Entry<K, U>, ?, Map<K, U>> entriesToMap() {
         return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    /**
+     * @param evts1 Events.
+     * @param evts2 Events.
+     */
+    public static <T> Set<T> concat(Set<T> evts1, Set<T> evts2) {
+        return Stream.concat(evts1.stream(), evts2.stream()).collect(toSet());
     }
 }

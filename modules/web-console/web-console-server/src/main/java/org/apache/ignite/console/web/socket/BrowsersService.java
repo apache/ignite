@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.ignite.console.dto.Account;
-import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.json.JsonArray;
 import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.web.AbstractSocketHandler;
@@ -49,6 +48,7 @@ import org.springframework.web.socket.WebSocketSession;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.console.utils.Utils.fromJson;
 import static org.apache.ignite.console.utils.Utils.toJson;
+import static org.apache.ignite.console.websocket.WebSocketEvents.ADMIN_ANNOUNCEMENT;
 import static org.apache.ignite.console.websocket.WebSocketEvents.NODE_REST;
 import static org.apache.ignite.console.websocket.WebSocketEvents.NODE_VISOR;
 import static org.apache.ignite.console.websocket.WebSocketEvents.SCHEMA_IMPORT_DRIVERS;
@@ -80,7 +80,7 @@ public class BrowsersService extends AbstractSocketHandler {
     private final Map<String, WebSocketSession> locRequests;
 
     /** */
-    private volatile WebSocketEvent<Announcement> lastAnn;
+    private volatile WebSocketEvent lastAnn;
 
     /** */
     private final AgentsService agentsSrvc;
@@ -362,48 +362,33 @@ public class BrowsersService extends AbstractSocketHandler {
 
     /**
      * @param evt Event.
-     * @return {@code true} if response was processed.
      */
-    public boolean processResponse(WebSocketEvent evt) {
+    void processResponse(WebSocketEvent evt) {
         WebSocketSession ses = locRequests.remove(evt.getRequestId());
 
-        if (ses != null) {
-            try {
-                sendMessage(ses, evt);
-            }
-            catch (Throwable e) {
-                log.error("Failed to send event [session=" + ses + ", event=" + evt + "]", e);
-
-                return false;
-            }
-
-            return true;
-        }
-
-        return false;
+        if (ses != null)
+            sendMessageQuiet(ses, evt);
     }
 
     /**
-     * @param evt Announcement.
+     * @param id Browsers identifier.
+     * @param evt Event.
      */
     void sendToBrowsers(UserKey id, WebSocketEvent evt) {
-        Collection<WebSocketSession> sessions = locBrowsers.get(id);
+        if (id == null) {
+            if (evt.getEventType().equals(ADMIN_ANNOUNCEMENT))
+                lastAnn = evt;
 
-        if (!F.isEmpty(sessions)) {
+            for (Collection<WebSocketSession> sessions : locBrowsers.values()) {
+                for (WebSocketSession ses : sessions)
+                    sendMessageQuiet(ses, evt);
+            }
+        }
+        else {
+            Collection<WebSocketSession> sessions = locBrowsers.getOrDefault(id, Collections.emptyList());
+
             for (WebSocketSession ses : sessions)
                 sendMessageQuiet(ses, evt);
-        }
-    }
-
-    /**
-     * @param ann Announcement.
-     */
-    void sendAnnouncement(WebSocketEvent<Announcement> ann) {
-        lastAnn = ann;
-
-        for (Collection<WebSocketSession> sessions : locBrowsers.values()) {
-            for (WebSocketSession ses : sessions)
-                sendMessageQuiet(ses, lastAnn);
         }
     }
 }

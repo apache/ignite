@@ -175,6 +175,6 @@ public class AdminService {
     public void updateAnnouncement(Announcement ann) {
         annRepo.save(ann);
 
-        transitionSrvc.broadcastAnnouncement(ann);
+        transitionSrvc.broadcastToBrowsers(ann);
     }
 }

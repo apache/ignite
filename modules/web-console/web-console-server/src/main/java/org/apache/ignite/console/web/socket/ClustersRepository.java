@@ -38,7 +38,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 
-
 /**
  * Clusters index repository.
  */
@@ -106,14 +105,6 @@ public class ClustersRepository {
                 .stream()
                 .map(ClusterSession::getClusterId)
                 .collect(toSet()));
-    }
-
-    /**
-     * @param users Users.
-     * @return Collection of topologies.
-     */
-    public Collection<TopologySnapshot> topologies(Set<UserKey> users) {
-        return txMgr.doInTransaction(() -> clusters.cache().getAll(clusters(users)).values());
     }
 
     /**

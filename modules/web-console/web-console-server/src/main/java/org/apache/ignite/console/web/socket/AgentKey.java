@@ -46,13 +46,6 @@ public class AgentKey {
     }
 
     /**
-     * @param clusterId Cluster ID.
-     */
-    public AgentKey(String clusterId) {
-        this(null, clusterId);
-    }
-
-    /**
      * @return value of account ID.
      */
     public UUID getAccId() {
@@ -70,7 +63,7 @@ public class AgentKey {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
-        
+
         if (o == null || getClass() != o.getClass())
             return false;
 

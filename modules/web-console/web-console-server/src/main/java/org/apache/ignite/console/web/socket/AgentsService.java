@@ -70,7 +70,7 @@ public class AgentsService extends AbstractSocketHandler {
     protected final ClustersRepository clustersRepo;
     
     /** */
-    private final AgentsRepository agentsRepo;
+    protected final AgentsRepository agentsRepo;
 
     /** */
     protected final TransitionService transitionSrvc;
@@ -210,14 +210,6 @@ public class AgentsService extends AbstractSocketHandler {
 
         if (!oldTops.equals(tops))
             sendAgentStats(desc.getAccIds());
-    }
-
-    /**
-     * @param evt Response to process.
-     * @return {@code true} If response processed.
-     */
-    protected boolean processResponse(WebSocketEvent evt) {
-        return false;
     }
 
     /**

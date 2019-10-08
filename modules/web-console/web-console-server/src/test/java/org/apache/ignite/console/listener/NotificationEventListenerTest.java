@@ -48,9 +48,9 @@ public class NotificationEventListenerTest {
     @Autowired
     private EventPublisher publisher;
 
-    /** Notification Server. */
+    /** Notification service. */
     @MockBean
-    private NotificationService notificationSrv;
+    private NotificationService notificationSrvc;
 
     /**
      * Test welcome letter sending.
@@ -61,7 +61,7 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(ACCOUNT_CREATE, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.WELCOME_LETTER, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.WELCOME_LETTER, acc);
     }
 
     /**
@@ -73,7 +73,7 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(ACCOUNT_CREATE_BY_ADMIN, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.ADMIN_WELCOME_LETTER, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.ADMIN_WELCOME_LETTER, acc);
     }
 
     /**
@@ -85,7 +85,7 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(ACCOUNT_DELETE, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.ACCOUNT_DELETED, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.ACCOUNT_DELETED, acc);
     }
 
     /**
@@ -97,7 +97,7 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(PASSWORD_RESET, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.PASSWORD_RESET, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.PASSWORD_RESET, acc);
     }
 
     /**
@@ -109,7 +109,7 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(PASSWORD_CHANGED, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.PASSWORD_CHANGED, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.PASSWORD_CHANGED, acc);
     }
 
     /**
@@ -121,6 +121,6 @@ public class NotificationEventListenerTest {
 
         publisher.publish(new Event<>(RESET_ACTIVATION_TOKEN, acc));
 
-        verify(notificationSrv, times(1)).sendEmail(NotificationDescriptor.ACTIVATION_LINK, acc);
+        verify(notificationSrvc, times(1)).sendEmail(NotificationDescriptor.ACTIVATION_LINK, acc);
     }
 }

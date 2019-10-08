@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,6 +64,19 @@ public class AgentsRepository {
      */
     public Set<UUID> get(AgentKey key) {
         return txMgr.doInTransaction(() -> backendByAgent.get(key));
+    }
+
+    /**
+     * Get backend oldest node with agents.
+     *
+     * @param key Agent key
+     */
+    public ClusterNode oldest(AgentKey key) {
+        return txMgr.doInTransaction(() -> {
+            Set<UUID> nids = backendByAgent.get(key);
+
+            return ignite.cluster().forNodeIds(nids).forOldest().node();
+        });
     }
 
     /**

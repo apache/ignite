@@ -28,6 +28,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import static org.apache.ignite.console.websocket.WebSocketEvents.ADMIN_ANNOUNCEMENT;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -54,8 +58,14 @@ public class TransitionServiceSelfTest {
     public void testSendAnnouncement() {
         Announcement ann = new Announcement(UUID.randomUUID(), "test", true);
 
-        transitionSrvc.broadcastAnnouncement(ann);
+        transitionSrvc.broadcastToBrowsers(ann);
 
-        verify(browsersSrvc, times(1)).sendAnnouncement(annCaptor.capture());
+        verify(browsersSrvc, times(1)).sendToBrowsers(isNull(UserKey.class), annCaptor.capture());
+
+        WebSocketEvent<Announcement> evt = annCaptor.getValue();
+
+        assertNotNull(evt.getRequestId());
+        assertEquals(ADMIN_ANNOUNCEMENT, evt.getEventType());
+        assertEquals(ann, evt.getPayload());
     }
 }
