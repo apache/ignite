@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)output\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
+        </None>
+    </ItemGroup>
+</Project>
