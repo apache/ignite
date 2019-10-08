@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +38,16 @@ public interface DbCheckpointListener {
          *
          */
         public boolean nextSnapshot();
+
+        /**
+         * @return Collection partition which require meta to be collected.
+         */
+        public Map<Integer, Set<Integer>> gatherPartStats();
+
+        /**
+         * @param parts Collection of partitions for which statistics should be gathered.
+         */
+        public void gatherPartStats(List<GroupPartitionId> parts);
 
         /**
          * @return Partition allocation statistic map
@@ -60,6 +74,13 @@ public interface DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException;
+
+    /**
+     * Mark checkpoint end phase executed under the checkpoint write lock.
+     */
+    public default void onMarkCheckpointEnd(Context ctx) {
+        // No-op.
+    }
 
     /**
      * @throws IgniteCheckedException If failed.

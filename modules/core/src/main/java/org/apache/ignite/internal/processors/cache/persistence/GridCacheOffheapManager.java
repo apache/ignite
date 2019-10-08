@@ -228,13 +228,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
-        if (needSnapshot) {
+        if (needSnapshot ||
+            ctx.gatherPartStats().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
             if (execSvc == null)
-                addPartitions(ctx);
+                addIndexPartition(ctx);
             else {
                 execSvc.execute(() -> {
                     try {
-                        addPartitions(ctx);
+                        addIndexPartition(ctx);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -253,11 +254,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
+        final Set<Integer> parts = ctx.gatherPartStats()
+            .getOrDefault(grp.groupId(), new HashSet<>());
+
         if (execSvc == null) {
             reuseList.saveMetadata();
 
             for (CacheDataStore store : partDataStores.values())
-                saveStoreMetadata(store, ctx, false, needSnapshot);
+                saveStoreMetadata(store, ctx, false, needSnapshot || parts.contains(store.partId()));
         }
         else {
             execSvc.execute(() -> {
@@ -272,7 +276,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot);
+                        saveStoreMetadata(store, ctx, false, needSnapshot || parts.contains(store.partId()));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -289,7 +293,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDataStore store,
         Context ctx,
         boolean beforeDestroy,
-        boolean needSnapshot
+        boolean gatherStats
     ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
@@ -422,7 +426,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         int pageCnt;
 
-                        if (needSnapshot) {
+                        if (gatherStats) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
 
                             io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0 : pageCnt);
@@ -478,10 +482,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else if (needSnapshot)
+            else if (gatherStats)
                 tryAddEmptyPartitionToSnapshot(store, ctx);
         }
-        else if (needSnapshot)
+        else if (gatherStats)
             tryAddEmptyPartitionToSnapshot(store, ctx);
     }
 
@@ -756,7 +760,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param ctx Context.
      */
-    private void addPartitions(Context ctx) throws IgniteCheckedException {
+    private void addIndexPartition(Context ctx) throws IgniteCheckedException {
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 

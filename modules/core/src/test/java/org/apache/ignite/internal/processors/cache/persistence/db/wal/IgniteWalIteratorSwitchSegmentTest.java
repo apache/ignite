@@ -150,6 +150,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
+                null,
                 null)
         ).createSerializer(serVer);
 
@@ -466,6 +467,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             walMgr,
             new WalStateManager(kctx),
             new GridCacheDatabaseSharedManager(kctx),
+            null,
             null,
             null,
             null,

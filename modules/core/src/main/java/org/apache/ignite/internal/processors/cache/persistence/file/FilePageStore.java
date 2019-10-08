@@ -26,7 +26,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,6 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -87,6 +87,9 @@ public class FilePageStore implements PageStore {
     /** Region metrics updater. */
     private final LongAdderMetric allocatedTracker;
 
+    /** Page storage listener. */
+    private volatile PageStoreListener lsnr = PageStoreListener.NO_OP;
+
     /** */
     protected final int pageSize;
 
@@ -103,7 +106,7 @@ public class FilePageStore implements PageStore {
     private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /** */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
     public FilePageStore(
@@ -120,6 +123,11 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setListener(PageStoreListener lsnr) {
+        this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
@@ -174,10 +182,8 @@ public class FilePageStore implements PageStore {
         return fileExists;
     }
 
-    /**
-     * Size of page store header.
-     */
-    public int headerSize() {
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         return HEADER_SIZE;
     }
 
@@ -297,8 +303,11 @@ public class FilePageStore implements PageStore {
         return fileSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean delete) throws StorageException {
+    /**
+     * @param delete {@code True} to delete file.
+     * @throws IOException If fails.
+     */
+    private void stop0(boolean delete) throws IOException {
         lock.writeLock().lock();
 
         try {
@@ -324,10 +333,6 @@ public class FilePageStore implements PageStore {
                 fileExists = false;
             }
         }
-        catch (IOException e) {
-            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
-                + ", delete=" + delete + "]", e);
-        }
         finally {
             allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
 
@@ -335,6 +340,22 @@ public class FilePageStore implements PageStore {
 
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean delete) throws StorageException {
+        try {
+            stop0(delete);
+        }
+        catch (IOException e) {
+            throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
+                + ", delete=" + delete + "]", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        stop0(false);
     }
 
     /** {@inheritDoc} */
@@ -387,6 +408,22 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
+            updateAllocatedPages();
+
+            recover = false;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * @throws StorageException If fails.
+     */
+    private void updateAllocatedPages() throws StorageException {
+        assert lock.isWriteLockedByCurrentThread();
+
+        try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than page.
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
@@ -401,14 +438,10 @@ public class FilePageStore implements PageStore {
 
                 allocatedTracker.add(delta / pageSize);
             }
-
-            recover = false;
         }
         catch (IOException e) {
-            throw new StorageException("Failed to finish recover partition file [file=" + getFileAbsolutePath() + "]", e);
-        }
-        finally {
-            lock.writeLock().unlock();
+            throw new StorageException("Failed to update partition file allocated pages " +
+                "[file=" + getFileAbsolutePath() + "]", e);
         }
     }
 
@@ -433,7 +466,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+    @Override public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -453,7 +486,7 @@ public class FilePageStore implements PageStore {
             if (n < 0) {
                 pageBuf.put(new byte[pageBuf.remaining()]);
 
-                return;
+                return n;
             }
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
@@ -478,6 +511,8 @@ public class FilePageStore implements PageStore {
 
             if (keepCrc)
                 PageIO.setCrc(pageBuf, savedCrc32);
+
+            return n;
         }
         catch (IOException e) {
             throw new StorageException("Failed to read page [file=" + getFileAbsolutePath() + ", pageId=" + pageId + "]", e);
@@ -501,7 +536,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws StorageException If failed to initialize store file.
      */
-    private void init() throws StorageException {
+    public void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -672,6 +707,10 @@ public class FilePageStore implements PageStore {
                     // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
                     assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
                         "CRC hasn't been calculated, crc=0";
+
+                    assert pageBuf.position() == 0 : pageBuf.position();
+
+                    lsnr.onPageWrite(pageId, pageBuf);
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
