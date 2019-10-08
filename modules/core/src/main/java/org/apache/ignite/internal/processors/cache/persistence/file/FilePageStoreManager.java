@@ -764,12 +764,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param cacheWorkDir Cache work directory.
+     * @param workDir Cache work directory.
+     * @param cacheDirName Cache directory name.
      * @param partId Partition id.
      * @return Partition file.
      */
-    @NotNull public static File getPartitionFileEx(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, getPartitionNameEx(partId));
+    @NotNull public static File getPartitionFileEx(File workDir, String cacheDirName, int partId) {
+        return new File (cacheWorkDir(workDir, cacheDirName), getPartitionNameEx(partId));
     }
 
     /**
@@ -780,16 +781,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return  partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
-    }
-
-    /**
-     * @param workDir Cache work directory.
-     * @param cacheDirName Cache directory name.
-     * @param partId Partition id.
-     * @return Partition file.
-     */
-    @NotNull public static File getPartitionFileEx(File workDir, String cacheDirName, int partId) {
-        return getPartitionFileEx(cacheWorkDir(workDir, cacheDirName), partId);
     }
 
     /** {@inheritDoc} */
@@ -1048,32 +1039,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
-        return cacheWorkDir(storeWorkDir, ccfg);
+        return cacheWorkDir(storeWorkDir, cacheDirName(ccfg));
     }
 
     /**
-     *
-     */
-    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        return cacheWorkDir(storeWorkDir, isSharedGroup, cacheOrGroupName);
-    }
-
-    /**
-     * @param storeWorkDir Configured file page store base directory.
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
      * @param cacheOrGroupName Cache name.
-     * @return Cache directory.
-     */
-    public static File cacheWorkDir(File storeWorkDir, boolean isSharedGroup, String cacheOrGroupName) {
-        return new File(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
-    }
-
-    /**
-     * @param ccfg Cache configuration.
      * @return Store directory for given cache.
      */
-    public static File cacheWorkDir(File storeWorkDir, CacheConfiguration ccfg) {
-        return cacheWorkDir(storeWorkDir, cacheDirName(ccfg));
+    public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
+        return cacheWorkDir(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
     }
 
     /**

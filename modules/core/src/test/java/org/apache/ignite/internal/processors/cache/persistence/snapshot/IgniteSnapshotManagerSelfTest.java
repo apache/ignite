@@ -248,7 +248,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(mgr.snapshotDir(SNAPSHOT_NAME), defaultCacheCfg);
+        File cacheBackup = cacheWorkDir(mgr.snapshotDir(SNAPSHOT_NAME), cacheDirName(defaultCacheCfg));
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
