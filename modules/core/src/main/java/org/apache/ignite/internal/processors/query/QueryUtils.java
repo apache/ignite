@@ -835,7 +835,7 @@ public class QueryUtils {
 
             fullName.append(prop);
 
-            String alias = aliases.get(fullName.toString());
+            String alias = aliases.get(fullName.toString()) == null ? fullName.toString() : aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
