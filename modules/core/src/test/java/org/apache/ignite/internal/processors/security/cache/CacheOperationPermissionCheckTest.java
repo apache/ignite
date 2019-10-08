@@ -192,6 +192,6 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
-        return new CacheConfiguration[]{};
+        return new CacheConfiguration[] {};
     }
 }
