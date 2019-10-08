@@ -18,59 +18,48 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Generate encryption key response.
+ * Master key id response.
+ *
+ * @see MasterKeyIdRequest
  */
-public class GenerateEncryptionKeyResponse implements Message {
+public class MasterKeyIdResponse implements Message {
+    /** Initial channel message type (value is {@code 177}). */
+    public static final short TYPE_CODE = 177;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Request message ID. */
-    private IgniteUuid id;
+    private UUID id;
 
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> encKeys;
-
-    /** Master key id that encrypted group encryption keys. */
+    /** Master key id. */
     private String masterKeyId;
 
     /** */
-    public GenerateEncryptionKeyResponse() {
+    public MasterKeyIdResponse() {
     }
 
     /**
      * @param id Request id.
-     * @param encKeys Encryption keys.
-     * @param masterKeyId Master key id that encrypted group encryption keys.
+     * @param masterKeyId Master key id.
      */
-    public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys,  String masterKeyId) {
+    public MasterKeyIdResponse(UUID id, String masterKeyId) {
         this.id = id;
-        this.encKeys = encKeys;
         this.masterKeyId = masterKeyId;
     }
 
     /**
      * @return Request id.
      */
-    public IgniteUuid requestId() {
+    public UUID requestId() {
         return id;
-    }
-
-    /**
-     * @return Encryption keys.
-     */
-    public Collection<byte[]> encryptionKeys() {
-        return encKeys;
     }
 
     /**
@@ -93,18 +82,12 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("encKeys", encKeys, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeUuid("id", id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
                 if (!writer.writeString("masterKeyId", masterKeyId))
                     return false;
 
@@ -123,7 +106,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                encKeys = reader.readCollection("encKeys", MessageCollectionItemType.BYTE_ARR);
+                id = reader.readUuid("id");
 
                 if (!reader.isLastRead())
                     return false;
@@ -131,14 +114,6 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                id = reader.readIgniteUuid("id");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
                 masterKeyId = reader.readString("masterKeyId");
 
                 if (!reader.isLastRead())
@@ -147,17 +122,17 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GenerateEncryptionKeyResponse.class);
+        return reader.afterMessageRead(MasterKeyIdResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 163;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -167,6 +142,6 @@ public class GenerateEncryptionKeyResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GenerateEncryptionKeyResponse.class, this);
+        return S.toString(MasterKeyIdResponse.class, this);
     }
 }

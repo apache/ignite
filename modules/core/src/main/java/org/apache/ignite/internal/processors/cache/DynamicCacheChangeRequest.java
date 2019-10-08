@@ -101,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Master key id that encrypted the group encryption key. */
+    @Nullable private String masterKeyId;
+
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
@@ -465,6 +468,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
+    }
+
+    /**
+     * @param masterKeyId Master key id that encrypted the group encryption key.
+     */
+    public void masterKeyId(@Nullable String masterKeyId) {
+        this.masterKeyId = masterKeyId;
+    }
+
+    /**
+     * @return Master key id that encrypted the group encryption key.
+     */
+    @Nullable public String masterKeyId() {
+        return masterKeyId;
     }
 
     /**

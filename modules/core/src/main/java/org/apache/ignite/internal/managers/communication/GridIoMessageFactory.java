@@ -36,6 +36,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
+import org.apache.ignite.internal.managers.encryption.MasterKeyIdRequest;
+import org.apache.ignite.internal.managers.encryption.MasterKeyIdResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -1163,6 +1165,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case SessionChannelMessage.TYPE_CODE:
                 msg = new SessionChannelMessage();
+
+                break;
+
+            case MasterKeyIdRequest.TYPE_CODE:
+                msg = new MasterKeyIdRequest();
+
+                break;
+
+            case MasterKeyIdResponse.TYPE_CODE:
+                msg = new MasterKeyIdResponse();
 
                 break;
 

@@ -191,6 +191,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
     /** Encryption master key digest. */
+    @Deprecated
     public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
 
     /** Rebalance thread pool size. */

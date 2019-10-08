@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.EncryptionMasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
@@ -532,6 +533,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
 
+            case MASTER_KEY_CHANGE_RECORD:
+                EncryptionMasterKeyChangeRecord rec = (EncryptionMasterKeyChangeRecord)record;
+
+                return rec.plainSize();
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -1147,6 +1152,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case MASTER_KEY_CHANGE_RECORD:
+                int keyIdLen = in.readInt();
+
+                byte[] keyIdBytes = new byte[keyIdLen];
+
+                in.readFully(keyIdBytes);
+
+                String masterKeyId = new String(keyIdBytes);
+
+                int keysCnt = in.readInt();
+
+                HashMap<Integer, byte[]> keys = new HashMap<>(keysCnt);
+
+                for (int i = 0; i < keysCnt; i++) {
+                    int grpId = in.readInt();
+
+                    int grpKeySize = in.readInt();
+
+                    byte[] grpKey = new byte[grpKeySize];
+
+                    in.readFully(grpKey);
+
+                    keys.put(grpId, grpKey);
+                }
+
+                res = new EncryptionMasterKeyChangeRecord(masterKeyId, keys);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1709,6 +1743,27 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+                break;
+
+            case MASTER_KEY_CHANGE_RECORD:
+                EncryptionMasterKeyChangeRecord rotationRecord = (EncryptionMasterKeyChangeRecord) rec;
+
+                byte[] keyIdBytes = rotationRecord.getMasterKeyId().getBytes();
+
+                buf.putInt(keyIdBytes.length);
+                buf.put(keyIdBytes);
+
+                Map<Integer, byte[]> keys = rotationRecord.getGrpKeys();
+
+                buf.putInt(keys.size());
+
+                for (Map.Entry<Integer, byte[]> entry : rotationRecord.getGrpKeys().entrySet()) {
+                    buf.putInt(entry.getKey());
+
+                    buf.putInt(entry.getValue().length);
+                    buf.put(entry.getValue());
+                }
+
                 break;
 
             default:

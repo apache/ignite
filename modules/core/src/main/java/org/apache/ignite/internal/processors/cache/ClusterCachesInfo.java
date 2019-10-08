@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -930,7 +931,9 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
-        String conflictErr = checkCacheConflict(req.startCacheConfiguration());
+        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
+
+        String conflictErr = checkCacheConflict(ccfg);
 
         if (conflictErr != null) {
             U.warn(log, "Ignore cache start request. " + conflictErr);
@@ -946,8 +949,7 @@ public class ClusterCachesInfo {
             return false;
         }
 
-        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
-            req.startCacheConfiguration(), registeredCaches.values());
+        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(ccfg, registeredCaches.values());
 
         if (err != null) {
             if (persistedCfgs)
@@ -958,7 +960,22 @@ public class ClusterCachesInfo {
             return false;
         }
 
-        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
+        GridEncryptionManager encMgr = ctx.encryption();
+
+        if (ccfg.isEncryptionEnabled() && encMgr.checkMasterKeyChangeSupported() &&
+            (encMgr.isMasterKeyChangeInProgress() || !F.eq(encMgr.getMasterKeyId(), req.masterKeyId()))) {
+            U.warn(log, "Ignore cache start request during the master key change process.");
+
+            IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +
+                "process is not supported.");
+
+            if (persistedCfgs)
+                res.errs.add(error);
+            else
+                ctx.cache().completeCacheStartFuture(req, false, error);
+
+            return false;
+        }
 
         assert req.cacheType() != null : req;
         assert F.eq(ccfg.getName(), cacheName) : req;

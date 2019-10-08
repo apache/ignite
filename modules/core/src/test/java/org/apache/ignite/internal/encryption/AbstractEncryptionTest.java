@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
@@ -68,6 +70,12 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** */
     public static final String KEYSTORE_PASSWORD = "love_sex_god";
 
+    /** */
+    public static final String MASTER_KEY_ID = DEFAULT_MASTER_KEY_NAME;
+
+    /** */
+    public static final String MASTER_KEY_ID_2 = "ignite.master.key2";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -93,7 +101,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private char[] keystorePassword() {
+    protected char[] keystorePassword() {
         return KEYSTORE_PASSWORD.toCharArray();
     }
 
@@ -241,5 +249,14 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         }
 
         return keyStoreFile;
+    }
+
+    /** @return {@code True} if all nodes have the provided master key id. */
+    protected boolean checkMasterKeyId(String masterKeyId) {
+        for (Ignite grid : G.allGrids())
+            if (!masterKeyId.equals(grid.encryption().getMasterKeyId()))
+                return false;
+
+        return true;
     }
 }

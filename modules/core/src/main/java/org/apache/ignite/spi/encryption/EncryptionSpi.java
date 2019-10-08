@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * SPI provides encryption features for an Ignite.
@@ -110,4 +111,19 @@ public interface EncryptionSpi extends IgniteSpi {
      * @return Encrypted data block size.
      */
     int blockSize();
+
+    /**
+     * Gets current master key id.
+     *
+     * @return Master key id.
+     */
+    public String getMasterKeyId();
+
+    /**
+     * Sets current master key id.
+     *
+     * @param masterKeyId Master key id.
+     * @throws IgniteSpiException In case of error.
+     */
+    public void setMasterKeyId(String masterKeyId) throws IgniteSpiException;
 }

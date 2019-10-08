@@ -73,7 +73,11 @@ public enum IgniteFeatures {
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** Master key change.  */
+    MASTER_KEY_CHANGE(19);
+
 
     /**
      * Unique feature identifier.
