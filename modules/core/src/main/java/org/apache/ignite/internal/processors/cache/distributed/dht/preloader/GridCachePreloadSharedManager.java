@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
-import org.apache.ignite.internal.processors.cache.preload.PartitionUploadManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -109,17 +108,12 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
     private volatile FileRebalanceFuture mainFut = new FileRebalanceFuture();
 
-    /** */
-    private PartitionUploadManager uploadMgr;
-
     /**
      * @param ktx Kernal context.
      */
     public GridCachePreloadSharedManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config()) :
             "Persistence must be enabled to preload any of cache partition files";
-
-        uploadMgr = new PartitionUploadManager(ktx);
     }
 
     /**
@@ -137,9 +131,57 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        uploadMgr.start0(cctx);
-
         ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(cpLsnr);
+
+        cctx.snapshotMgr().addSnapshotListener(new SnapshotListener() {
+            @Override public void onPartition(UUID nodeId, String snpName, File file, int grpId, int partId) {
+                FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
+
+                if (staleFuture(fut)) { //  || mainFut.isCancelled()
+                    if (log.isInfoEnabled())
+                        log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
+
+                    file.delete();
+
+                    return;
+                }
+
+                IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
+
+                try {
+                    // todo should lock only on checkpoint
+                    mainFut.lockMessaging(nodeId, grpId, partId);
+
+                    IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
+
+                    switchFut.listen( f -> {
+                        try {
+                            T2<Long, Long> cntrs = f.get();
+
+                            assert cntrs != null;
+
+                            cctx.kernalContext().closure().runLocalSafe(() -> {
+                                fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
+                            });
+                        } catch (IgniteCheckedException e) {
+                            fut.onDone(e);
+                        }
+                    });
+                } catch (IgniteCheckedException e) {
+                    fut.onDone(e);
+                }
+            }
+
+            @Override public void onEnd(UUID rmtNodeId, String snpName) {
+
+            }
+
+            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
+                log.error("Unable to create remote snapshot " + snpName, t);
+
+                mainFut.onDone(t);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -147,8 +189,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         lock.writeLock().lock();
 
         try {
-            uploadMgr.stop0(cancel);
-
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
 
             mainFut.cancel();
@@ -294,57 +334,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 //                                    .collect(Collectors.toMap(Map.Entry::getKey,
 //                                        e -> GridIntList.valueOf(e.getValue()))));
 
-                        cctx.snapshotMgr().addSnapshotListener(new SnapshotListener() {
-                            final UUID nodeId = node.id();
 
-                            @Override public void onPartition(UUID rmtNodeId, String snpName, File file, int grpId, int partId) {
-                                FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
-
-                                if (staleFuture(fut)) { //  || mainFut.isCancelled()
-                                    if (log.isInfoEnabled())
-                                        log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
-
-                                    file.delete();
-
-                                    return;
-                                }
-
-                                IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
-
-                                try {
-                                    // todo should lock only on checkpoint
-                                    mainFut.lockMessaging(nodeId, grpId, partId);
-
-                                    IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
-
-                                    switchFut.listen( f -> {
-                                        try {
-                                            T2<Long, Long> cntrs = f.get();
-
-                                            assert cntrs != null;
-
-                                            cctx.kernalContext().closure().runLocalSafe(() -> {
-                                                fut.onPartitionRestored(grpId, partId, cntrs.get1(), cntrs.get2());
-                                            });
-                                        } catch (IgniteCheckedException e) {
-                                            fut.onDone(e);
-                                        }
-                                    });
-                                } catch (IgniteCheckedException e) {
-                                    fut.onDone(e);
-                                }
-                            }
-
-                            @Override public void onEnd(UUID rmtNodeId, String snpName) {
-
-                            }
-
-                            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
-                                log.error("Unable to create remote snapshot " + snpName, t);
-
-                                mainFut.onDone(t);
-                            }
-                        });
 
                         cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
 
