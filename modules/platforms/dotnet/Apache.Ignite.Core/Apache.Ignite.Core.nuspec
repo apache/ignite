@@ -65,7 +65,7 @@ More info: https://apacheignite-net.readme.io/
         <!-- Jar files and targets file to copy them to build output -->
         <file src="..\bin\libs\*.jar" target="build\output\libs" />
         <file src="..\..\..\..\config\java.util.logging.properties" target="build\output\config" />
-        <file src="GridGain.Ignite.targets" target="build" />
+        <file src="Apache.Ignite.targets" target="build" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
