@@ -219,7 +219,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         });
                     }
 
-                    rq = requestNodePartitions(assignEntry.getKey(), rebFut);
+                    rq = requestNodePartitionsSnapshot(assignEntry.getKey(), rebFut);
                     rqFut = rebFut;
                 }
             }
@@ -229,8 +229,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             mainFut0.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
-                    if (log.isInfoEnabled())
-                        log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
+                if (log.isInfoEnabled())
+                    log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
                 }
             });
 
@@ -245,7 +245,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param node Clustre node to send inital demand message to.
      * @param rebFut The future to handle demand request.
      */
-    private Runnable requestNodePartitions(
+    private Runnable requestNodePartitionsSnapshot(
         ClusterNode node,
         FileRebalanceSingleNodeFuture rebFut
     ) {
@@ -264,27 +264,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         if (log.isDebugEnabled())
                             log.debug("Prepare demand batch message [rebalanceId=" + rebFut.rebalanceId + "]");
 
-//                        GridPartitionBatchDemandMessage msg0 =
-//                            new GridPartitionBatchDemandMessage(rebFut.rebalanceId,
-//                                rebFut.topVer,
-//                                assigns.entrySet()
-//                                    .stream()
-//                                    .collect(Collectors.toMap(Map.Entry::getKey,
-//                                        e -> GridIntList.valueOf(e.getValue()))));
+                        String snapName = cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
 
-                        cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
-
-                        rebFut.listen(c -> {
-                            // todo remove snapshot listener
-                            ///cctx.snapshotMgr().
-                        });
-
-//                        futMap.put(node.id(), rebFut);
-
-//                        cctx.gridIO().sendToCustomTopic(node, rebalanceThreadTopic(), msg0, SYSTEM_POOL);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Demand message is sent to partition supplier [node=" + node.id() + "]");
+                        rebFut.snapshotName(snapName);
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -604,12 +586,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /**
+     * Partition snapshot listener.
+     */
     private class RebalanceSnapshotListener implements SnapshotListener {
+        /** {@inheritDoc} */
         @Override public void onPartition(UUID nodeId, String snpName, File file, int grpId, int partId) {
             FileRebalanceSingleNodeFuture fut = mainFut.nodeRoutine(grpId, nodeId);
 
-            // todo should track rebalanceId by snpName
-            if (staleFuture(fut)) { //  || mainFut.isCancelled()
+            if (staleFuture(fut) || !snpName.equals(fut.snapName)) {
                 if (log.isInfoEnabled())
                     log.info("Removing staled file [nodeId=" + nodeId + ", file=" + file + "]");
 
@@ -981,8 +966,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         /** */
         private final FileRebalanceFuture mainFut;
 
-        /** */
+        /** Cache group rebalance order. */
         private final int rebalanceOrder;
+
+        /** Node snapshot name. */
+        private volatile String snapName;
 
         /**
          * Default constructor for the dummy future.
@@ -1156,7 +1144,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
             boolean r = super.onDone(res, err, cancel);
 
             mainFut.onNodeDone(this, res, err, cancel);
@@ -1175,6 +1163,20 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(FileRebalanceSingleNodeFuture.class, this);
+        }
+
+        /**
+         * @param snapName Node snapshot name.
+         */
+        public void snapshotName(String snapName) {
+            this.snapName = snapName;
+        }
+
+        /**
+         * @return Node snapshot name.
+         */
+        public String snapshotName() {
+            return snapName;
         }
 
         private static class HistoryDesc implements Comparable {
