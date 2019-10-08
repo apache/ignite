@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _tempDir = TestUtils.GetTempDirectoryName();
+            _tempDir = PathUtils.GetTempDirectoryName();
 
             TestUtils.KillProcesses();
 

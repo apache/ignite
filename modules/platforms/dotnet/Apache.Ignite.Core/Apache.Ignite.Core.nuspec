@@ -48,24 +48,22 @@ More info: https://docs.gridgain.com/
         <tags>GridGain Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
     </metadata>
     <files>
-        <!-- Install script should be in tools -->
-        <file src="NuGet\Install.ps1" target="tools" />
-        <file src="NuGet\Uninstall.ps1" target="tools" />
-        <file src="NuGet\PostBuild.ps1" target="tools" />
-
-		<!-- Binaries -->
+        <!-- Binaries -->
         <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\net40" />
-		<file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\net40" />
-		
+        <file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\net40" />
+
+        <!-- Binaries for .NET Core & .NET Standard -->
+        <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\netstandard2.0" />
+        <file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\netstandard2.0" />
+
         <!-- Include Apache.Ignite.exe -->
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
-        
-        <!-- 
-            Library files (jars) should not be included in project, so that NuGet package restore works properly.
-            We keep jars in NuGet dir and copy them over in PostBuild event.
-        -->
-        <file src="..\bin\libs\*.jar" target="libs" />
+
+        <!-- Jar files and targets file to copy them to build output -->
+        <file src="..\bin\libs\*.jar" target="build\output\libs" />
+        <file src="..\..\..\..\config\java.util.logging.properties" target="build\output\config" />
+        <file src="GridGain.Ignite.targets" target="build" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />

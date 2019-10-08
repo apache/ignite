@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class DataStorageMetricsTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Tests the data storage metrics.

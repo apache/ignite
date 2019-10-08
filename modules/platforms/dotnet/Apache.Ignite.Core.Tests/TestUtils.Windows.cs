@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Failure;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -37,15 +37,8 @@ namespace Apache.Ignite.Core.Tests
         /// <returns></returns>
         public static string CreateTestClasspath()
         {
-            return Classpath.CreateClasspath(forceTestClasspath: true);
-        }
-
-        /// <summary>
-        /// Gets the name of the temporary directory.
-        /// </summary>
-        public static string GetTempDirectoryName()
-        {
-            return IgniteUtils.GetTempDirectoryName();
+            var home = IgniteHome.Resolve();
+            return Classpath.CreateClasspath(null, home, forceTestClasspath: true);
         }
 
         /// <summary>

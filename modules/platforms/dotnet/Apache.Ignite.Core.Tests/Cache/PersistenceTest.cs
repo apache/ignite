@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.

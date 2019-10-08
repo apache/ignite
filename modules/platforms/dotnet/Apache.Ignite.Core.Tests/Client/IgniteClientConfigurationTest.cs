@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var ex = Assert.Throws<ConfigurationErrorsException>(() => Ignition.StartClient("foo", "bar"));
                 Assert.AreEqual("Specified config file does not exist: bar", ex.Message);
 
-#if !NETCOREAPP2_0  // Test runners do not pick up default config.
+#if !NETCOREAPP2_0 && !NETCOREAPP3_0  // Test runners do not pick up default config.
                 // Default section.
                 using (var client = Ignition.StartClient())
                 {
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Tests.Client
             }
         }
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
         /// <summary>
         /// Tests the schema validation.
         /// </summary>
