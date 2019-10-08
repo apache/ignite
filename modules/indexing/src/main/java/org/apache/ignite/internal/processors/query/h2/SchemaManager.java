@@ -58,16 +58,14 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNode
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewSchemas;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
