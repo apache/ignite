@@ -86,7 +86,7 @@
             <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
                 <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                 <property name="keyStorePassword" value="123456"/>
-                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
+                <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust-one.jks"/>
                 <property name="trustStorePassword" value="123456"/>
             </bean>
         </property>

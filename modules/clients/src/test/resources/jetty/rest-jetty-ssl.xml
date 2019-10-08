@@ -42,7 +42,7 @@
         <Set name="keyStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/server.jks</Set>
         <Set name="keyStorePassword">123456</Set>
         <Set name="keyManagerPassword">123456</Set>
-        <Set name="trustStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/trust.jks</Set>
+        <Set name="trustStorePath"><SystemProperty name="CLIENTS_MODULE_PATH"/>/src/test/keystore/trust-one.jks</Set>
         <Set name="trustStorePassword">123456</Set>
     </New>
 
