@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.ssl.MultipleSSLContextsTest;
 
 import static org.apache.ignite.internal.IgniteFeatures.IGNITE_SECURITY_PROCESSOR;
 
@@ -63,6 +64,7 @@ public class SecurityTestSuite extends TestSuite {
         suite.addTestSuite(CacheLoadRemoteSecurityContextCheckTest.class);
         suite.addTestSuite(ThinClientPermissionCheckTest.class);
         suite.addTestSuite(IgniteSecurityProcessorTest.class);
+        suite.addTestSuite(MultipleSSLContextsTest.class);
 
         return suite;
     }

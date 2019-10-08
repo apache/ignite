@@ -15,17 +15,17 @@
 #  limitations under the License.
 
 [ ca ]
-default_ca = oneca
+default_ca = threeca
 
-[ oneca ]
+[ threeca ]
 dir=ca
-certificate = $dir/oneca.pem
-database = $dir/oneca-index.txt
-private_key = $dir/oneca.key
+certificate = $dir/threeca.pem
+database = $dir/threeca-index.txt
+private_key = $dir/threeca.key
 new_certs_dir = $dir/certs
 default_md = sha1
 policy = policy_match
-serial = $dir/oneca-serial
+serial = $dir/threeca-serial
 default_days = 365
 
 [policy_match]
