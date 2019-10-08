@@ -19,15 +19,10 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.stream.StreamReceiver;
 
 /**
  * IgniteSandbox executes a user-defined code with restrictions.
@@ -61,42 +56,7 @@ public interface IgniteSandbox {
     }
 
     /**
-     * Wraps ComputeJob to execute with restriction.
-     *
-     * @param job ComputeJob to wrap.
-     * @return Wrapped ComputeJob.
+     * @return True if the sandbox is enabled.
      */
-    public ComputeJob wrap(ComputeJob job);
-
-    /**
-     * Wraps EntryProcessor to execute with restriction.
-     *
-     * @param prc EntryProcessor to wrap.
-     * @return Wrapped EntryProcessor.
-     */
-    public <K, V, T> EntryProcessor<K, V, T> wrap(EntryProcessor<K, V, T> prc);
-
-    /**
-     * Wraps IgniteBiPredicate to execute with restriction.
-     *
-     * @param p IgniteBiPredicate to wrap.
-     * @return Wrapped IgniteBiPredicate.
-     */
-    public <K, V> IgniteBiPredicate<K, V> wrap(IgniteBiPredicate<K, V> p);
-
-    /**
-     * Wraps IgniteClosure to execute with restriction.
-     *
-     * @param c IgniteClosure to wrap.
-     * @return Wrapped IgniteClosure.
-     */
-    public <E, R> IgniteClosure<E, R> wrap(IgniteClosure<E, R> c);
-
-    /**
-     * Wraps StreamReceiver to execute with restriction.
-     *
-     * @param r StreamReceiver to wrap.
-     * @return Wrapped StreamReceiver.
-     */
-    public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r);
+    public boolean enabled();
 }

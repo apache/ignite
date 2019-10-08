@@ -18,12 +18,7 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.util.concurrent.Callable;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.stream.StreamReceiver;
 
 /**
  * No operation Sandbox.
@@ -35,27 +30,7 @@ public class NoOpSandbox implements IgniteSandbox {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJob wrap(ComputeJob job) {
-        return job;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V, T> EntryProcessor<K, V, T> wrap(EntryProcessor<K, V, T> prc) {
-        return prc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteBiPredicate<K, V> wrap(IgniteBiPredicate<K, V> p) {
-        return p;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <E, R> IgniteClosure<E, R> wrap(IgniteClosure<E, R> c) {
-        return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> StreamReceiver<K, V> wrap(StreamReceiver<K, V> r) {
-        return r;
+    @Override public boolean enabled() {
+        return false;
     }
 }

@@ -37,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class ComputeSandboxTest extends AbstractSandboxTest {
@@ -68,10 +67,10 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
         Ignite clntFrobidden = grid(CLNT_FORBIDDEN);
 
         computeOperations(clntAllowed).forEach(this::runOperation);
-        computeOperations(clntFrobidden).forEach(op -> assertThrowsWithCause(op, AccessControlException.class));
+        computeOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, AccessControlException.class));
 
         executorServiceOperations(clntAllowed).forEach(this::runOperation);
-        executorServiceOperations(clntFrobidden).forEach(this::runFailedOperation);
+        executorServiceOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, IgniteException.class));
     }
 
     /**
@@ -98,24 +97,11 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
      */
     private Stream<GridTestUtils.RunnableX> executorServiceOperations(Ignite node) {
         return Stream.of(
-            () -> node.executorService().invokeAll(singletonList(CALLABLE)),
+            () -> node.executorService().invokeAll(singletonList(CALLABLE))
+                .stream().findFirst().orElseThrow(IgniteException::new).get(),
             () -> node.executorService().invokeAny(singletonList(CALLABLE)),
             () -> node.executorService().submit(CALLABLE).get()
         );
-    }
-
-    /** */
-    private void runFailedOperation(Runnable r) {
-        IS_STARTED.set(false);
-
-        try {
-            r.run();
-        }
-        catch (Exception e) {
-            //ignore.
-        }
-
-        assertFalse(IS_STARTED.get());
     }
 
     /** */

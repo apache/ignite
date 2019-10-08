@@ -88,7 +88,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -840,10 +840,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
-            IgniteSecurity sec = cctx.kernalContext().security();
-
-            return new ScanQueryIterator(it, qry, topVer, locPart, sec.sandbox().wrap(keyValFilter),
-                sec.sandbox().wrap(transformer), locNode, cctx, log);
+            return new ScanQueryIterator(it, qry, topVer, locPart, wrap(keyValFilter),
+                wrap(transformer), locNode, cctx, log);
         }
         catch (IgniteCheckedException | RuntimeException e) {
             if (intFilter != null)
@@ -851,6 +849,36 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             throw e;
         }
+    }
+
+    /** */
+    private <T, R> IgniteBiPredicate<T, R> wrap(final IgniteBiPredicate<T, R> p) {
+        final IgniteSandbox sandbox = cctx.kernalContext().security().sandbox();
+
+        if (p != null && sandbox.enabled()) {
+            return new IgniteBiPredicate<T, R>() {
+                @Override public boolean apply(T t, R r) {
+                    return sandbox.execute(() -> p.apply(t, r));
+                }
+            };
+        }
+
+        return p;
+    }
+
+    /** */
+    private <T, R> IgniteClosure<T, R> wrap(final IgniteClosure<T, R> c) {
+        final IgniteSandbox sandbox = cctx.kernalContext().security().sandbox();
+
+        if (c != null && sandbox.enabled()) {
+            return new IgniteClosure<T, R>() {
+                @Override public R apply(T t) {
+                    return sandbox.execute(() -> c.apply(t));
+                }
+            };
+        }
+
+        return c;
     }
 
     /**

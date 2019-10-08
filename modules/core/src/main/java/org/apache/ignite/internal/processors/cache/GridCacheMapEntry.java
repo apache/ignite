@@ -30,7 +30,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -81,7 +83,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -6690,10 +6692,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          * @return Entry processor return value.
          */
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
-            IgniteSecurity sec = entry.context().kernalContext().security();
-
-            EntryProcessor<Object, Object, ?> entryProcessor =
-                sec.sandbox().wrap((EntryProcessor<Object, Object, ?>)writeObj);
+            EntryProcessor<Object, Object, ?> entryProcessor = wrap((EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
 
@@ -6724,6 +6723,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             finally {
                 IgniteThread.onEntryProcessorLeft();
             }
+        }
+
+        /** */
+        private <K, V, T> EntryProcessor<K, V, T> wrap(final EntryProcessor<K, V, T> prc) {
+            final IgniteSandbox sandbox = entry.context().kernalContext().security().sandbox();
+
+            if (prc != null && sandbox.enabled()) {
+                return new EntryProcessor<K, V, T>() {
+                    @Override
+                    public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
+                        return sandbox.execute(() -> prc.process(entry, arguments));
+                    }
+                };
+            }
+
+            return prc;
         }
 
         /** {@inheritDoc} */

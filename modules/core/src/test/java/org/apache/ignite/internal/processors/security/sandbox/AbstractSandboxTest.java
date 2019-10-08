@@ -145,10 +145,10 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     }
 
     /** */
-    protected void runForbiddenOperation(GridTestUtils.RunnableX runnable) {
+    protected void runForbiddenOperation(GridTestUtils.RunnableX runnable, Class<? extends Throwable> cls) {
         IS_STARTED.set(false);
 
-        assertThrowsWithCause(runnable, AccessControlException.class);
+        assertThrowsWithCause(runnable, cls);
 
         assertFalse(IS_STARTED.get());
     }
@@ -161,7 +161,8 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
                 if (res instanceof Exception)
                     throw (Exception)res;
-            }
+            },
+            AccessControlException.class
         );
     }
 

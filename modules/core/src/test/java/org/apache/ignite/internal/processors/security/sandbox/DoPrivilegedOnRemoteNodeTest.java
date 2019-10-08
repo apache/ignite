@@ -97,21 +97,21 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
     public void test() throws Exception {
         Ignite srv = startGrid("srv", ALLOW_ALL,  false);
 
-        Ignite clnt = startGrid("clnt", ALLOW_ALL,  true);
+        Ignite clnt = startGrid("clnt", ALLOW_ALL, true);
 
         srv.cluster().active(true);
 
         IgniteCompute compute = clnt.compute(clnt.cluster().forRemotes());
 
-        assertNotNull(System.getProperty("user.home"));
+        checkCallable(compute, callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
+        checkCallable(compute, callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
+    }
 
-        assertThrowsWithCause(
-            () -> compute.broadcast(callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC)),
-            AccessControlException.class);
+    /** */
+    private void checkCallable(IgniteCompute compute, IgniteCallable<String> c) throws Exception {
+        assertEquals(c.call(), System.getProperty("user.home"));
 
-        assertThrowsWithCause(
-            () -> compute.broadcast(callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC)),
-            AccessControlException.class);
+        assertThrowsWithCause(() -> compute.broadcast(c), AccessControlException.class);
     }
 
     /** */

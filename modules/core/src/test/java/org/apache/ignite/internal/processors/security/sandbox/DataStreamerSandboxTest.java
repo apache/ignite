@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
+import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -43,7 +44,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
         prepareCluster();
 
         runOperation(operation(grid(CLNT_ALLOWED)));
-        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN)));
+        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN)), AccessControlException.class);
     }
 
     /**

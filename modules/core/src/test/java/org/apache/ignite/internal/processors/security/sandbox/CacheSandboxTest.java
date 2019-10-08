@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
+import java.security.AccessControlException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.cache.Cache;
@@ -60,10 +61,10 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         entryProcessorOperations(clntFrobidden).forEach(this::runForbiddenOperation);
 
         scanQueryOperations(clntAllowed).forEach(this::runOperation);
-        scanQueryOperations(clntFrobidden).forEach(this::runForbiddenOperation);
+        scanQueryOperations(clntFrobidden).forEach(r -> runForbiddenOperation(r, AccessControlException.class));
 
         runOperation(loadCacheOperation(clntAllowed));
-        runForbiddenOperation(loadCacheOperation(clntFrobidden));
+        runForbiddenOperation(loadCacheOperation(clntFrobidden), AccessControlException.class);
     }
 
     /**

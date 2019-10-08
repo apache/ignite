@@ -19,11 +19,14 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -127,7 +130,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
             }
 
-            StreamReceiver receiver = ctx.security().sandbox().wrap(rcvr);
+            StreamReceiver receiver = wrap(rcvr);
 
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
@@ -150,6 +153,22 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             if (log.isDebugEnabled())
                 log.debug("Update job finished on node: " + ctx.localNodeId());
         }
+    }
+
+    /** */
+    private <K, V> StreamReceiver<K, V> wrap(final StreamReceiver<K, V> r) {
+        final IgniteSandbox sandbox = ctx.security().sandbox();
+
+        if (r != null && sandbox.enabled()) {
+            return new StreamReceiver<K, V>() {
+                @Override public void receive(IgniteCache<K, V> cache,
+                    Collection<Map.Entry<K, V>> entries) throws IgniteException {
+                    sandbox.execute(() -> r.receive(cache, entries));
+                }
+            };
+        }
+
+        return r;
     }
 
     /**

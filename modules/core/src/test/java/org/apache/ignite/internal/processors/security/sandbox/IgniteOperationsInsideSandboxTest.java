@@ -48,9 +48,9 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * The sandbox allows using public Ignite API.
+ * A user-defined code inside the sandbox can use the public API of Ignite.
  */
-public class IgniteOperationsInSandboxTest extends AbstractSandboxTest {
+public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** Test compute task. */
     private static final ComputeTask<Object, Object> TEST_COMPUTE_TASK = new ComputeTask<Object, Object>() {
         /** {@inheritDoc} */
