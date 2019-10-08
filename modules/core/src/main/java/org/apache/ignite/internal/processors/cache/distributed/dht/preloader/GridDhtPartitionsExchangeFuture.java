@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -1431,11 +1432,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void recovery() throws IgniteCheckedException {
         initTopologies();
 
-        if (exchCtx.localRecovery()) {
-            waitRecovery();
+        waitRecovery();
 
+        if (exchCtx.localRecovery())
             finalizePartitionCounters(exchangeId().eventNode().id());
-        }
 
         onDone(initialVersion());
     }
@@ -1673,7 +1673,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             recoveryLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
 
-            partRecoveryFut = cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode());
+            partRecoveryFut = context().localRecovery() ?
+                cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
+                new GridFinishedFuture<>();
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1718,36 +1720,38 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         recoveryLatch.countDown();
 
-        try {
-            while (true) {
-                try {
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
+        if (context().localRecovery()) {
+            try {
+                while (true) {
                     try {
-                        recoveryLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+                        cctx.exchange().exchangerBlockingSectionBegin();
+
+                        try {
+                            recoveryLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
+                        }
+                        finally {
+                            cctx.exchange().exchangerBlockingSectionEnd();
+                        }
+
+                        if (log.isInfoEnabled())
+                            log.info("Finished waiting for partitions recovery latch: " + recoveryLatch);
+
+                        break;
                     }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
+                    catch (IgniteFutureTimeoutCheckedException ignored) {
+                        U.warn(log, "Unable to await partitions recovery latch within timeout: " + recoveryLatch);
+
+                        // Try to resend ack.
+                        recoveryLatch.countDown();
                     }
-
-                    if (log.isInfoEnabled())
-                        log.info("Finished waiting for partitions recovery latch: " + recoveryLatch);
-
-                    break;
-                }
-                catch (IgniteFutureTimeoutCheckedException ignored) {
-                    U.warn(log, "Unable to await partitions recovery latch within timeout: " + recoveryLatch);
-
-                    // Try to resend ack.
-                    recoveryLatch.countDown();
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Stop waiting for partitions recovery latch: " + e.getMessage());
-        }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Stop waiting for partitions recovery latch: " + e.getMessage());
+            }
 
-        timeBag.finishGlobalStage("Wait partitions recovery latch");
+            timeBag.finishGlobalStage("Wait partitions recovery latch");
+        }
     }
 
     /**

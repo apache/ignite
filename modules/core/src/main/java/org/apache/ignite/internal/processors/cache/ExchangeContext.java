@@ -152,7 +152,11 @@ public class ExchangeContext {
     /**
      * @return {@code True} if local recovery required.
      */
-    public boolean localRecovery() {return locRecovery;}
+    public boolean localRecovery() {
+        assert !locRecovery || !merge;
+
+        return locRecovery;
+    }
 
     /**
      * @param grpId Cache group ID.
