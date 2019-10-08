@@ -141,7 +141,7 @@ public class SafeLogTxFinishErrorTest extends GridCommonAbstractTest {
 
             String errPrefix = "Failed completing the transaction: [commit=" + commit;
 
-            String xidVer = ' ' + (rmvTxState ? "xidVersion" : "xidVer") + '=' + activeTx.xidVersion();
+            String xidVer = (rmvTxState ? "xidVersion" : "xidVer") + '=' + activeTx.xidVersion();
 
             log.registerListener(logStr -> {
                 if (logStr.startsWith(errPrefix) && logStr.contains(xidVer))
