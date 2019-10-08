@@ -458,7 +458,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        String snpName = mgr.createRemoteSnapshot(parts, grid(1).localNode().id());
+        String snpName = mgr.createRemoteSnapshot(grid(1).localNode().id(), parts);
 
         awaitLatch.await();
     }

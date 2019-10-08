@@ -112,7 +112,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
@@ -124,9 +123,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.partstate.
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
-
-    /** Empty file suffix. */
-    public static final String DUMMY_SUFFIX = ".dummy";
 
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -172,9 +168,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
-
-    /** Partition file used as temporary file to send if there is no partition exist. */
-    private File dummyPartFile;
 
     /** Main snapshot directory to store files. */
     private File snpWorkDir;
@@ -269,16 +262,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
-
-        // Create temporary partition file for use.
-        dummyPartFile = new File(snpWorkDir, PART_FILE_PREFIX + DUMMY_SUFFIX);
-
-        try {
-            dummyPartFile.createNewFile();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
@@ -634,7 +617,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot name.
      * @throws IgniteCheckedException If initialiation fails.
      */
-    public String createRemoteSnapshot(Map<Integer, Set<Integer>> parts, UUID rmtNodeId) throws IgniteCheckedException {
+    public String createRemoteSnapshot(UUID rmtNodeId, Map<Integer, Set<Integer>> parts) throws IgniteCheckedException {
         String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
 
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
