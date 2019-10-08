@@ -88,7 +88,6 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     private void testCrudWithCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             SecurityPermissionSetBuilder.create()
-                // defaultAllowAll is true.
                 .appendCachePermissions(ALL_PERM_TEST_CACHE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_PERM_TEST_CACHE, CACHE_CREATE)
                 .appendCachePermissions(EMPTY_PERM_TEST_CACHE, EMPTY_PERMS)
@@ -117,7 +116,6 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
     private void testCrudWithSystemPermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
             SecurityPermissionSetBuilder.create()
-                // defaultAllowAll is true.
                 .appendCachePermissions(ALL_PERM_TEST_CACHE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_CREATE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_PERM_TEST_CACHE, CACHE_CREATE)
                 .appendCachePermissions(EMPTY_PERM_TEST_CACHE, EMPTY_PERMS)
