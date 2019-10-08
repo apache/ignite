@@ -205,14 +205,6 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         loadData(ignite0, CACHE1, TEST_SIZE);
         loadData(ignite0, CACHE2, TEST_SIZE);
 
-//        AtomicLong cntr = new AtomicLong(TEST_SIZE);
-//
-//        ConstantLoader ldr = new ConstantLoader(ignite0.cache(DEFAULT_CACHE_NAME), cntr);
-//
-//        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, 8, "thread");
-//
-//        U.sleep(1_000);
-
         forceCheckpoint(ignite0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -221,16 +213,46 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         awaitPartitionMapExchange();
 
-        U.sleep(1_000);
+        U.sleep(2_000);
 
-//        ldr.stop();
-//
-//        ldrFut.get();
+        verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
+        verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
+    public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+        ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+        loadData(ignite0, CACHE1, TEST_SIZE);
+        loadData(ignite0, CACHE2, TEST_SIZE);
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        U.sleep(2_000);
+
+        IgniteEx ignite2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        U.sleep(1_000);
 
         U.sleep(1_000);
 
         verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
         verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
+
+        verifyLocalCache(ignite0.cachex(CACHE1), ignite2.cachex(CACHE1));
+        verifyLocalCache(ignite0.cachex(CACHE2), ignite2.cachex(CACHE2));
     }
 
 

@@ -225,12 +225,18 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             }
 
             // todo should be invoked in separated thread
-            mainFut.enableReadOnlyMode();
+            mainFut0.enableReadOnlyMode();
 
             mainFut0.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
-                if (log.isInfoEnabled())
-                    log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
+                    if (fut0.isCancelled()) {
+                        log.info("Persistence rebalance canceled");
+
+                        return;
+                    }
+
+                    if (log.isInfoEnabled())
+                        log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
                 }
             });
 
