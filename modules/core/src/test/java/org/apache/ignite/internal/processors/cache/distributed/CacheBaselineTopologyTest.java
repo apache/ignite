@@ -59,7 +59,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -86,20 +85,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DATA_NODE = "dataNodeUserAttr";
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -177,6 +162,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
             IgniteEx ignite = startGrid(2);
 
+            ignite.cluster().baselineAutoAdjustEnabled(false);
             ignite.cluster().active(true);
 
             awaitPartitionMapExchange();
@@ -251,6 +237,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = grid(0);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -403,6 +390,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ig = grid(0);
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         assertTrue(ig.cluster().active());
@@ -449,6 +437,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         else
             ignite = grid(0);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -1050,6 +1039,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
         Ignite ignite = startGrids(2);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         ignite.cluster().active(true);
 

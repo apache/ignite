@@ -16,12 +16,11 @@
 
 package org.apache.ignite.util;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.of;
@@ -47,6 +46,9 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
         super.beforeTestsStarted();
 
         crd = startGrids(SERVER_NODE_CNT);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
+
         client = startGrid(CLIENT_NODE_NAME_PREFIX);
 
         crd.cluster().active(true);

@@ -41,7 +41,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
 /**
@@ -49,10 +48,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE
  */
 public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     /**
-     * Used in tests for updatesCount counter of metastorage and corresponds to keys CLUSTER_ID and CLUSTER_TAG
-     * that were added but should not be counted along with keys defined in tests.
+     * Used in tests for updatesCount counter of metastorage and corresponds to keys CLUSTER_ID, CLUSTER_TAG and other
+     * initial objects that were added but should not be counted along with keys defined in tests.
      */
-    private static final int INITIAL_UPDATES_COUNT = 1;
+    private static final int INITIAL_UPDATES_COUNT = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -326,9 +325,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testOptimizedWriteTwice() throws Exception {
-        startGrid(0).cluster().active(true);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().active(true);
 
         metastorage(0).write("key1", "value1");
 
@@ -345,9 +345,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testClient() throws Exception {
-        startGrid(0).cluster().active(true);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().active(true);
 
         metastorage(0).write("key0", "value0");
 
@@ -372,9 +373,10 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testClientReconnect() throws Exception {
-        startGrid(0).cluster().active(true);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().active(true);
 
         startClient(1);
 

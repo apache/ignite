@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -61,8 +61,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
@@ -127,16 +125,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -323,6 +317,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
+        crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
 
         IgniteEx node = grid(2);
