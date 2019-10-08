@@ -889,7 +889,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 case CLIENT: {
-                    if (!exchCtx.mergeExchanges() && exchCtx.fetchAffinityOnJoin())
+                    if (!exchCtx.mergeExchanges() && (exchCtx.fetchAffinityOnJoin() || exchCtx.baselineNodeLeft()))
                         initTopologies();
 
                     clientOnlyExchange();
@@ -2351,7 +2351,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 boolean locNodeNotCrd = crd == null || !crd.isLocal();
 
-                if (locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange()))
+                if ((locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange())) || exchCtx.baselineNodeLeft())
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
