@@ -38,10 +38,10 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(Directory.Exists(home));
 
                 // Invalid home.
-                var cfg = new IgniteConfiguration {IgniteHome = @"c:\foo\bar"};
-                var ex = Assert.Throws<IgniteException>(() => IgniteHome.Resolve(new IgniteConfiguration(cfg)));
+                const string invalidHome = @"c:\foo\bar";
+                var ex = Assert.Throws<IgniteException>(() => IgniteHome.Resolve(invalidHome));
                 Assert.AreEqual(string.Format(
-                    "IgniteConfiguration.IgniteHome is not valid: '{0}'", cfg.IgniteHome), ex.Message);
+                    "IgniteConfiguration.IgniteHome is not valid: '{0}'", invalidHome), ex.Message);
             }
         }
     }

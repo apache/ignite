@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Client
     public class ClientConnectionTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.

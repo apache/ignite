@@ -18,10 +18,8 @@ namespace Apache.Ignite.Core.Tests.Deployment
 {
     extern alias ExamplesDll;
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Deployment;
@@ -179,7 +177,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             // Copy Apache.Ignite.exe and Apache.Ignite.Core.dll 
             // to a separate folder so that it does not locate our assembly automatically.
-            var folder = IgniteUtils.GetTempDirectoryName();
+            var folder = PathUtils.GetTempDirectoryName();
             foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly})
             {
                 Assert.IsNotNull(asm.Location);

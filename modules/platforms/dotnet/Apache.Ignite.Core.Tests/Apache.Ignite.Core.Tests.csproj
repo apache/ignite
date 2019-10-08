@@ -210,6 +210,7 @@
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
+    <Compile Include="PathUtils.cs" />
     <Compile Include="Process\ListDataReader.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
