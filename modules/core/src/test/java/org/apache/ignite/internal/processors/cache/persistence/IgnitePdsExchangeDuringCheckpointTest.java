@@ -100,7 +100,6 @@ public class IgnitePdsExchangeDuringCheckpointTest extends GridCommonAbstractTes
 
         CacheConfiguration ccfgNp = new CacheConfiguration("nonPersistentCache");
         ccfgNp.setDataRegionName(NO_PERSISTENCE_REGION);
-        ccfgNp.setDiskPageCompression(null);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 4096));
 

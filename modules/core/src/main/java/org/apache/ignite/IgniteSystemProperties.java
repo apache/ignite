@@ -1091,7 +1091,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /**
-     * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.
+     * Sets default isk page compression.
      */
     public static final String IGNITE_DEFAULT_DISK_PAGE_COMPRESSION = "IGNITE_DEFAULT_DISK_PAGE_COMPRESSION";
 

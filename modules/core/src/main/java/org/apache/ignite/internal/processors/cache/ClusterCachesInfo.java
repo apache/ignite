@@ -2307,14 +2307,6 @@ class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "encryptionEnabled", "Encrypted",
             cfg.isEncryptionEnabled(), startCfg.isEncryptionEnabled(), true);
-
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
-            "diskPageCompression", "Disk page compression",
-            cfg.getDiskPageCompression(), startCfg.getDiskPageCompression(), true);
-
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
-            "diskPageCompressionLevel", "Disk page compression level",
-            cfg.getDiskPageCompressionLevel(), startCfg.getDiskPageCompressionLevel(), true);
     }
 
     /**

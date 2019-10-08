@@ -68,9 +68,6 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        if (!set16kPageSize)
-            ccfg1.setDiskPageCompression(null);
-
         cfg.setCacheConfiguration(ccfg1);
 
         cfg.setConsistentId(gridName);

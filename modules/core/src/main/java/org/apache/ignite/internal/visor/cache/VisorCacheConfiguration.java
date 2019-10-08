@@ -36,7 +36,6 @@ import org.apache.ignite.internal.visor.query.VisorQueryEntity;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -233,9 +232,6 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         readFromBackup = ccfg.isReadFromBackup();
         tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         topValidator = compactClass(ccfg.getTopologyValidator());
-
-        diskPageCompression = ccfg.getDiskPageCompression();
-        diskPageCompressionLevel = ccfg.getDiskPageCompressionLevel();
     }
 
     /**

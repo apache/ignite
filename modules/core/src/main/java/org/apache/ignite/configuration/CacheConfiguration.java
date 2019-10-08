@@ -16,11 +16,6 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -30,9 +25,13 @@ import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -60,8 +59,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  * This class defines grid cache configuration. This configuration is passed to
@@ -414,13 +411,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean encryptionEnabled;
 
-    /** */
-    private DiskPageCompression diskPageCompression = IgniteSystemProperties.getEnum(
-        DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
-
-    /** */
-    private Integer diskPageCompressionLevel;
-
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -481,8 +471,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
-        diskPageCompression = cc.getDiskPageCompression();
-        diskPageCompressionLevel = cc.getDiskPageCompressionLevel();
         partLossPlc = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
@@ -2352,54 +2340,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
         this.encryptionEnabled = encryptionEnabled;
         
-        return this;
-    }
-
-    /**
-     * Gets disk page compression algorithm.
-     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
-     *
-     * @return Disk page compression algorithm.
-     * @see #getDiskPageCompressionLevel
-     */
-    public DiskPageCompression getDiskPageCompression() {
-        return diskPageCompression == null ? DFLT_DISK_PAGE_COMPRESSION : diskPageCompression;
-    }
-
-    /**
-     * Sets disk page compression algorithm.
-     * Makes sense only with enabled {@link DataRegionConfiguration#setPersistenceEnabled persistence}.
-     *
-     * @param diskPageCompression Disk page compression algorithm.
-     * @return {@code this} for chaining.
-     * @see #setDiskPageCompressionLevel
-     */
-    public CacheConfiguration<K,V> setDiskPageCompression(DiskPageCompression diskPageCompression) {
-        this.diskPageCompression = diskPageCompression;
-
-        return this;
-    }
-
-    /**
-     * Gets {@link #getDiskPageCompression algorithm} specific disk page compression level.
-     *
-     * @return Disk page compression level or {@code null} for default.
-     */
-    public Integer getDiskPageCompressionLevel() {
-        return diskPageCompressionLevel;
-    }
-
-    /**
-     * Sets {@link #setDiskPageCompression algorithm} specific disk page compression level.
-     *
-     * @param diskPageCompressionLevel Disk page compression level or {@code null} to use default.
-     *                             {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
-     *                             {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K,V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
-        this.diskPageCompressionLevel = diskPageCompressionLevel;
-
         return this;
     }
 

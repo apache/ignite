@@ -17,7 +17,6 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.DiskPageCompressionIntegrationDirectIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
@@ -36,9 +35,6 @@ public class IgnitePdsNativeIoTestSuite2 {
         List<Class<?>> suite = new ArrayList<>();
 
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
-
-        // Direct IO + Page compression.
-        suite.add(DiskPageCompressionIntegrationDirectIOTest.class);
 
         //Integrity test with reduced count of pages.
         suite.add(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);

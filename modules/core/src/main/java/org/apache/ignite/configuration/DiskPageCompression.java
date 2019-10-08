@@ -21,8 +21,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Disk page compression options.
  *
- * @see CacheConfiguration#setDiskPageCompression
- * @see CacheConfiguration#setDiskPageCompressionLevel
  * @see DataStorageConfiguration#setWalPageCompression
  * @see DataStorageConfiguration#setWalPageCompressionLevel
  */

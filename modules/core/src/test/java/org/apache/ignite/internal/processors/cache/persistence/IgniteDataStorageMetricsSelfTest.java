@@ -134,9 +134,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         ccfg.setDataRegionName(dataRegName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        if (NO_PERSISTENCE.equals(dataRegName))
-            ccfg.setDiskPageCompression(null);
-
         return ccfg;
     }
 
