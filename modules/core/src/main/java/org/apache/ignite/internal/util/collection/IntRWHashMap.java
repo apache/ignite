@@ -106,6 +106,16 @@ public class IntRWHashMap<V> implements IntMap<V> {
         return size() == 0;
     }
 
+    @Override public void clear() {
+        lock.readLock().lock();
+        try {
+            delegate.clear();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
         lock.readLock().lock();

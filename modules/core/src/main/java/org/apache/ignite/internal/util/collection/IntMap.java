@@ -21,6 +21,8 @@ package org.apache.ignite.internal.util.collection;
  * The map for integer keys.
  */
 public interface IntMap<V> {
+    void clear();
+
     /***
      * The bridge for consuming all entries of the map.
      */

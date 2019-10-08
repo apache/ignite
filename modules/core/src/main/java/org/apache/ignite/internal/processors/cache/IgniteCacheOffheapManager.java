@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -142,7 +143,7 @@ public interface IgniteCacheOffheapManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
+    public CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
      * @return Iterable over all existing cache data stores.
@@ -159,7 +160,7 @@ public interface IgniteCacheOffheapManager {
      * @param store Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public void destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
+    public IgniteInternalFuture<Boolean> destroyCacheDataStore(CacheDataStore store) throws IgniteCheckedException;
 
     /**
      * TODO: GG-10884, used on only from initialValue.

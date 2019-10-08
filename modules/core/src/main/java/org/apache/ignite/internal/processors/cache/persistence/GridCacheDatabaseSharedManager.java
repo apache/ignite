@@ -124,6 +124,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -213,6 +215,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_FILE_MATCHER;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
 import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 
@@ -1744,6 +1748,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public synchronized Map<Integer, Map<Integer, Long>> reserveHistoryForExchange() {
+        log.info(cctx.localNodeId() + " >xxx> reserve history for exchange ");
+
         assert reservedForExchange == null : reservedForExchange;
 
         reservedForExchange = new HashMap<>();
@@ -1861,6 +1867,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
+//        U.dumpStack(cctx.localNodeId() + " >xxx> release history for preloading");
+
         for (Map.Entry<T2<Integer, Integer>, T2<Long, WALPointer>> e : reservedForPreloading.entrySet()) {
             try {
                 cctx.wal().release(e.getValue().get2());
@@ -1873,6 +1881,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         reservedForPreloading.clear();
+    }
+
+    /**
+     * Get reserved WAL pointer for preloading.
+     *
+     * @param grpId Group ID.
+     * @param partId Part ID.
+     * @param initCntr Initial update counter.
+     * @return Reserved WAL pointer for preloading.
+     */
+    public FileWALPointer reservedWALPointer(int grpId, int partId, long initCntr) {
+        assert reservedForPreloading != null;
+
+        T2<Long, WALPointer> reserved = reservedForPreloading.get(new T2<>(grpId, partId));
+
+        assert reserved != null : "History should be reserved";
+
+        long cntr = reserved.get1();
+
+        assert cntr <= initCntr : "reserved=" + cntr + ", init=" + initCntr;
+
+        return (FileWALPointer)reserved.get2();
     }
 
     /**
@@ -2799,7 +2829,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
 
                         if (ctx != null && !ctx.isLocal()) {
-                            ctx.topology().forceCreatePartition(rbRec.partitionId());
+                            ctx.topology().forceCreatePartition(rbRec.partitionId(), false);
 
                             ctx.offheap().onPartitionInitialCounterUpdated(rbRec.partitionId(), rbRec.start(),
                                 rbRec.range());
@@ -2959,7 +2989,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
+        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId, false);
 
         switch (dataEntry.op()) {
             case CREATE:
@@ -3327,11 +3357,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      */
-    public void schedulePartitionDestroy(int grpId, int partId) {
+    public IgniteInternalFuture<Boolean> schedulePartitionDestroy(int grpId, int partId) {
         Checkpointer cp = checkpointer;
 
         if (cp != null)
-            cp.schedulePartitionDestroy(cctx.cache().cacheGroup(grpId), grpId, partId);
+            return cp.schedulePartitionDestroy(cctx.cache().cacheGroup(grpId), grpId, partId);
+
+        return null;
     }
 
     /**
@@ -3366,6 +3398,118 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLockTimeout = val;
     }
 
+    public void applyFastUpdates(
+        WALIterator it,
+        IgniteBiPredicate<WALPointer, WALRecord> recPredicate,
+        IgnitePredicate<DataEntry> entryPredicate,
+        boolean restore
+    ) {
+        if (it == null)
+            return;
+
+        while (it.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = it.next();
+
+            WALRecord rec = next.get2();
+
+            System.out.println(">xxx> rec ");
+
+            if (!recPredicate.apply(next.get1(), rec))
+                break;
+
+            applyFastWALRecord(rec, entryPredicate, restore);
+        }
+    }
+
+    /**
+     * @param rec The WAL record to process.
+     * @param entryPredicate An entry filter to apply.
+     */
+    private void applyFastWALRecord(WALRecord rec, IgnitePredicate<DataEntry> entryPredicate, boolean restore) {
+        switch (rec.type()) {
+            case MVCC_DATA_RECORD:
+            case DATA_RECORD:
+                checkpointReadLock();
+
+                try {
+                    DataRecord dataRec = (DataRecord)rec;
+
+                    for (DataEntry dataEntry : dataRec.writeEntries()) {
+                        if (entryPredicate.apply(dataEntry)) {
+//                            checkpointReadLock();
+//
+//                            try {
+                            int cacheId = dataEntry.cacheId();
+
+                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                            if (cacheCtx != null)
+                                applyFastUpdate(cacheCtx, dataEntry);
+                            else if (log != null)
+                                log.warning("Cache is not started. Updates cannot be applied " +
+                                    "[cacheId=" + cacheId + ']');
+//                            }
+//                            finally {
+//                                checkpointReadUnlock();
+//                            }
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            case MVCC_TX_RECORD:
+                checkpointReadLock();
+
+                try {
+                    MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                    byte txState = convertToTxState(txRecord.state());
+
+                    cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            default:
+                // Skip other records.
+        }
+    }
+
+    private void applyFastUpdate(GridCacheContext cctx, DataEntry entry) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = cctx.topology().readyTopologyVersion();
+
+        GridCacheEntryEx cached = cctx.cache().entryEx(entry.key(), topVer);
+
+        try {
+            boolean initVal = cached.initialValue(entry.value(),
+                entry.writeVersion(),
+                null, // cctx.mvccEnabled() ? ((MvccDataEntry)entry).mvccVersion() : null,
+                null, //cctx.mvccEnabled() ? ((MvccDataEntry)entry).newMvccVersion() : null,
+                (byte)0, // cctx.mvccEnabled() ? ((MvccDataEntry)entry).mvccTxState() : TxState.NA,
+                (byte)0, //cctx.mvccEnabled() ? ((MvccDataEntry)entry).newMvccTxState() : TxState.NA,
+                0,
+                entry.expireTime(),
+                true,
+                topVer,
+                cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                false);
+
+            System.out.println(">xxx> applying fast update: " + entry.key().value(cctx.cacheObjectContext(), false) + ", init = " + initVal);
+        } catch (GridCacheEntryRemovedException ignore) {
+            log.info("Ignoring removed entry");
+        }
+    }
+
     /**
      * Partition destroy queue.
      */
@@ -3378,7 +3522,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param grpCtx Group context.
          * @param partId Partition ID to destroy.
          */
-        private void addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+        private IgniteInternalFuture<Boolean> addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
             PartitionDestroyRequest req = new PartitionDestroyRequest(grpId, partId);
 
             PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpId, partId), req);
@@ -3387,6 +3531,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 + "[grpId=" + grpId
                 + ", grpName=" + grpCtx.cacheOrGroupName()
                 + ", partId=" + partId + ']';
+
+            return old != null ? old.reqFut : req.reqFut;
         }
 
         /**
@@ -3427,6 +3573,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Destroy future. Not null if partition destroy has begun. */
         private GridFutureAdapter<Void> destroyFut;
 
+        /** Destroy future. Not null if partition destroy has begun. */
+        private GridFutureAdapter<Boolean> reqFut = new GridFutureAdapter<>();
+
         /**
          * @param grpId Group ID.
          * @param partId Partition ID.
@@ -3449,6 +3598,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             cancelled = true;
+
+            reqFut.onDone(false);
 
             return true;
         }
@@ -3480,6 +3631,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             assert destroyFut != null;
 
             destroyFut.onDone(err);
+
+            if (err == null)
+                reqFut.onDone(true);
+            else
+                reqFut.onDone(err);
         }
 
         /**
@@ -3983,9 +4139,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param grpId Group ID.
          * @param partId Partition ID.
          */
-        private void schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+        private IgniteInternalFuture<Boolean> schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+            IgniteInternalFuture<Boolean> resFut;
+
             synchronized (this) {
-                scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
+                resFut = scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
             }
 
             if (log.isDebugEnabled())
@@ -3993,6 +4151,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (grpCtx != null)
                 wakeupForCheckpoint(PARTITION_DESTROY_CHECKPOINT_TIMEOUT, "partition destroy");
+
+            return resFut;
         }
 
         /**
@@ -4386,6 +4546,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
+                @Override public Map<Integer, Set<Integer>> gatherPartStats() {
+                    return delegate.gatherPartStats();
+                }
+
+                /** {@inheritDoc} */
+                @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
+                    delegate.gatherPartStats(parts);
+                }
+
+                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
@@ -4529,6 +4699,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** Partition map. */
             private final PartitionAllocationMap map;
 
+            /** Collection of partitions to gather statistics. */
+            private final Map<Integer, Set<Integer>> gatherParts = new HashMap<>();
+
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
 
@@ -4545,6 +4718,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public boolean nextSnapshot() {
                 return curr.nextSnapshot;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<Integer, Set<Integer>> gatherPartStats() {
+                return gatherParts;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void gatherPartStats(Map<Integer, Set<Integer>> parts) {
+                for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
+                    gatherParts.computeIfAbsent(e.getKey(), g -> new HashSet<>())
+                        .addAll(e.getValue());
+                }
             }
 
             /** {@inheritDoc} */

@@ -1276,6 +1276,8 @@ public class GridDhtPartitionDemander {
          * @return {@code True}.
          */
         @Override public boolean cancel() {
+            U.dumpStack("Rebalancing canceled [grp=" + grp.cacheOrGroupName() + "]");
+
             // Cancel lock is needed only for case when some message might be on the fly while rebalancing is
             // cancelled.
             cancelLock.writeLock().lock();
@@ -1379,8 +1381,11 @@ public class GridDhtPartitionDemander {
          */
         private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
-                if (updateState && grp.localWalEnabled())
-                    grp.topology().own(grp.topology().localPartition(p));
+                if (updateState && grp.localWalEnabled()) {
+                    boolean owned = grp.topology().own(grp.topology().localPartition(p));
+
+                    System.out.println(grp.cacheOrGroupName() + " own " + p + (owned ? "OWNED" : "MOVED"));
+                }
 
                 if (isDone())
                     return;

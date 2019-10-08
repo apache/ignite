@@ -62,6 +62,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -71,8 +72,10 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -158,6 +161,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * May be overriden by block read/write.
      */
     private FileIOFactory pageStoreFileIoFactory;
+
+    /** File page store factory. */
+    private FileVersionCheckingFactory pageStoreFactory;
 
     /**
      * File IO factory for page store V1 and for fast checking page store (non block read).
@@ -692,7 +698,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     cctx.gridConfig().getEncryptionSpi());
             }
 
-            FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
+            pageStoreFactory = new FileVersionCheckingFactory(
                 pageStoreFileIoFactory,
                 pageStoreV1FileIoFactory,
                 igniteCfg.getDataStorageConfiguration()
@@ -706,10 +712,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
 
             PageStore idxStore =
-            pageStoreFactory.createPageStore(
-                PageMemory.FLAG_IDX,
-                idxFile,
-                allocatedTracker);
+                pageStoreFactory.createPageStore(
+                    PageMemory.FLAG_IDX,
+                    idxFile,
+                    allocatedTracker);
+
+            if (cctx.backup() != null)
+                idxStore.setListener(new BackupPageStoreListener(grpId, partitions, cctx.backup(), idxStore));
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -722,8 +731,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 
-                    partStores[partId] = partStore;
-                }
+                if (cctx.backup() != null)
+                    partStore.setListener(new BackupPageStoreListener(grpId, partId, cctx.backup(), partStore));
+
+                partStores[partId] = partStore;
+            }
 
             return new CacheStoreHolder(idxStore, partStores);
         }
@@ -741,6 +753,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     @NotNull private Path getPartitionFilePath(File cacheWorkDir, int partId) {
         return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)).toPath();
+    }
+
+    /**
+     * @param cacheWorkDir Cache work directory.
+     * @param partId Partition id.
+     */
+    @NotNull public static File getPartitionFile(File cacheWorkDir, int partId) {
+        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
     }
 
     /** {@inheritDoc} */
@@ -999,23 +1019,52 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Store dir for given cache.
      */
     public File cacheWorkDir(CacheConfiguration ccfg) {
-        boolean isSharedGrp = ccfg.getGroupName() != null;
-
-        return cacheWorkDir(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+        return cacheWorkDir(storeWorkDir, ccfg);
     }
 
     /**
      *
      */
     public File cacheWorkDir(boolean isSharedGroup, String cacheOrGroupName) {
-        String dirName;
+        return cacheWorkDir(storeWorkDir, isSharedGroup, cacheOrGroupName);
+    }
 
-        if (isSharedGroup)
-            dirName = CACHE_GRP_DIR_PREFIX + cacheOrGroupName;
-        else
-            dirName = CACHE_DIR_PREFIX + cacheOrGroupName;
+    /**
+     * @param storeWorkDir Configured file page store base directory.
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return Cache directory.
+     */
+    public static File cacheWorkDir(File storeWorkDir, boolean isSharedGroup, String cacheOrGroupName) {
+        return new File(storeWorkDir, cacheDirName(isSharedGroup, cacheOrGroupName));
+    }
 
-        return new File(storeWorkDir, dirName);
+    /**
+     * @param ccfg Cache configuration.
+     * @return Store directory for given cache.
+     */
+    public static File cacheWorkDir(File storeWorkDir, CacheConfiguration ccfg) {
+        return new File(storeWorkDir, cacheDirName(ccfg));
+    }
+
+    /**
+     * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
+     * @param cacheOrGroupName Cache name.
+     * @return The full cache directory name.
+     */
+    public static String cacheDirName(boolean isSharedGroup, String cacheOrGroupName) {
+        return isSharedGroup ? CACHE_GRP_DIR_PREFIX + cacheOrGroupName
+            : CACHE_DIR_PREFIX + cacheOrGroupName;
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return The full cache directory name.
+     */
+    public static String cacheDirName(CacheConfiguration ccfg) {
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
     }
 
     /**
@@ -1220,6 +1269,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
+    }
+
+    /**
+     * @return File page store factory currently used.
+     */
+    public FilePageStoreFactory getFilePageStoreFactory() {
+        return pageStoreFactory;
     }
 
     /**
@@ -1428,6 +1484,42 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** {@inheritDoc} */
         @Override public V merge(K key, V val, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.merge(key, val, remappingFunction));
+        }
+    }
+
+    /** */
+    private static class BackupPageStoreListener implements PageStoreListener {
+        /** Pair of group id and its partiton id. */
+        private final GroupPartitionId key;
+
+        /** Backup manager. */
+        private final IgniteBackupManager backup;
+
+        /** Page store the listener associated with. */
+        private final PageStore store;
+
+        /**
+         * @param grpId Cache group id.
+         * @param partId Partition id.
+         * @param backup Backup manager.
+         * @param store Page store the listener associated with.
+         */
+        public BackupPageStoreListener(
+            int grpId,
+            int partId,
+            IgniteBackupManager backup,
+            PageStore store
+        ) {
+            assert backup != null;
+
+            key = new GroupPartitionId(grpId, partId);
+            this.backup = backup;
+            this.store = store;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onPageWrite(long pageId, ByteBuffer buf) {
+            backup.beforeStoreWrite(key, pageId, buf, store);
         }
     }
 }

@@ -180,6 +180,11 @@ public class IntHashMap<V> implements IntMap<V> {
         return size() == 0;
     }
 
+    @Override public void clear() {
+        for (int i = 0; i < entries.length; i++)
+            entries[i] = null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
         return find(key) >= 0;

@@ -2261,6 +2261,45 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            // todo reserve only moving partitions (not all)
+            // todo reserve only those partitions that will be supplied from current node
+            if (cctx.filePreloader() != null) {
+                for (CacheGroupContext ctx : cctx.cache().cacheGroups()) {
+                    if (ctx.topology().hasMovingPartitions()) {
+                        boolean reservedGrp = false;
+
+                        Set<ClusterNode> assigns = new HashSet<>();
+
+                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+                            assigns.addAll(ctx.affinity().assignments(res).get(part.id()));
+
+                            if (reservedGrp = localReserved != null && localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
+                                break;
+                        }
+
+                        if (reservedGrp || !assigns.contains(cctx.localNode()) || !cctx.filePreloader().fileRebalanceRequired(ctx, assigns))
+                            continue;
+
+                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+                            if (part.state() == GridDhtPartitionState.OWNING) {
+                                if (localReserved != null && !localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
+                                    continue;
+
+                                long cntr = part.updateCounter();
+
+                                // todo debug
+                                if (log.isInfoEnabled())
+                                    log.info("Reserve WAL history for file preloading [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr);
+
+                                boolean reserved = cctx.database().reserveHistoryForPreloading(ctx.groupId(), part.id(), cntr);
+
+                                assert reserved : "Unable to reserve history [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr + "]";
+                            }
+                        }
+                    }
+                }
+            }
+
             cctx.database().releaseHistoryForExchange();
 
             if (err == null) {
@@ -2274,6 +2313,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (changedAffinity())
                     cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
             }
+
+            cctx.filePreloader().onExchangeDone(this);
         }
         catch (Throwable t) {
             // In any case, this exchange future has to be completed. The original error should be preserved if exists.

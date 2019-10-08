@@ -836,8 +836,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
             }
-            else
+            else {
+                System.out.println("absolute ptr");
+
                 absPtr = seg.absolute(relPtr);
+            }
 
             seg.acquirePage(absPtr);
 

@@ -27,7 +27,7 @@ public abstract class FutureTask<T> extends GridFutureAdapter<T> implements Runn
     /**
      *
      */
-    protected abstract T body();
+    protected abstract T body() throws Exception;
 
     /** {@inheritDoc} */
     @Override public void run() {

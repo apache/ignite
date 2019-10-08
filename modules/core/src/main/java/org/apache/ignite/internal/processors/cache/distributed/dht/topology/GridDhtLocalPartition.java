@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,7 +76,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
-import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -158,7 +159,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** */
     @GridToStringExclude
-    private volatile CacheDataStore store;
+    private volatile CacheDataStoreEx store;
 
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
@@ -296,7 +297,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return Data store.
      */
-    public CacheDataStore dataStore() {
+    public CacheDataStoreEx dataStore() {
         return store;
     }
 
@@ -395,7 +396,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize) {
-                LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                U.dumpStack(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
                     "[grpId=" + this.grp.groupId() +
                     ", partId=" + id() +
                     ", grpParts=" + this.grp.affinity().partitions() +
@@ -438,6 +439,42 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         rmvQueue.add(new RemovedEntryHolder(cacheId, key, ver, rmvdEntryTtl));
     }
+
+    /**
+     * Set {@link CacheDataStoreEx.StorageMode} to the corresponding local partition storage.
+     */
+    public void readOnly(boolean readOnly) {
+        if (state() != MOVING)
+            throw new IgniteException("Expected MIVING partition, actual state is " + state());
+
+        store.readOnly(readOnly);
+    }
+
+    /**
+     * @return The curretly active storage mode.
+     */
+    public boolean readOnly() {
+        return store.readOnly();
+    }
+
+//    /**
+//     * @param mode The mode to associate with data storage instance.
+//     * @param storage The cache data storage instance to set to.
+//     */
+//    public void dataStore(CacheDataStoreEx.StorageMode mode, IgniteCacheOffheapManager.CacheDataStore storage) {
+//        if (state() != MOVING)
+//            return;
+//
+//        store.store(mode, storage);
+//    }
+
+//    /**
+//     * @param mode The storage mode.
+//     * @return The storage intance for the given mode.
+//     */
+//    public IgniteCacheOffheapManager.CacheDataStore dataStore(CacheDataStoreEx.StorageMode mode) {
+//        return store.store(mode);
+//    }
 
     /**
      * Reserves a partition so it won't be cleared or evicted.
@@ -616,7 +653,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             GridDhtPartitionState partState = getPartState(state);
 
-            assert partState == OWNING || partState == RENTING : "Only partitions in state OWNING or RENTING can be moved to MOVING state";
+            assert partState == OWNING || partState == RENTING : "Only partitions in state OWNING or RENTING can be moved to MOVING state: " + partState;
 
             if (casState(state, MOVING))
                 break;

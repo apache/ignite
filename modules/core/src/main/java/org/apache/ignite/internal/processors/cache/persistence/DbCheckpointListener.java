@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
@@ -34,6 +36,16 @@ public interface DbCheckpointListener {
          *
          */
         public boolean nextSnapshot();
+
+        /**
+         * @return Collection partition which require meta to be collected.
+         */
+        public Map<Integer, Set<Integer>> gatherPartStats();
+
+        /**
+         * @param parts Collection of partitions for which statistics should be gathered.
+         */
+        public void gatherPartStats(Map<Integer, Set<Integer>> parts);
 
         /**
          * @return Partition allocation statistic map

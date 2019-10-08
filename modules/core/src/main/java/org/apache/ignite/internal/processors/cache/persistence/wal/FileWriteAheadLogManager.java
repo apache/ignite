@@ -2827,8 +2827,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 fd = segmentRouter.findSegment(curWalSegmIdx);
 
-                if (log.isDebugEnabled())
-                    log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file.getAbsolutePath() + ']');
+                if (log.isInfoEnabled())
+                    log.info("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file.getAbsolutePath() + ']');
 
                 nextHandle = initReadHandle(fd, start != null && curWalSegmIdx == start.index() ? start : null);
             }

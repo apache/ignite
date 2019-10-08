@@ -907,13 +907,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException {
+    @Override public GridDhtLocalPartition forceCreatePartition(int p, boolean replace) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
             GridDhtLocalPartition part = locParts.get(p);
 
-            if (part != null) {
+            assert !replace || part.state() == MOVING : part.state();
+
+            if (part != null && !replace) {
                 if (part.state() != EVICTED)
                     return part;
                 else
@@ -996,6 +998,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                             "[grp=" + grp.cacheOrGroupName() + ", part=" + p + ", topVer=" + topVer +
                             ", this.topVer=" + this.readyTopVer + ']');
+
+                    System.out.println(">xxx> create partition");
 
                     locParts.set(p, loc = partFactory.create(ctx, grp, p));
 
@@ -1489,6 +1493,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 boolean fullMapUpdated = (node2part == null);
 
                 if (node2part != null) {
+                    System.out.println(">xxx> node2part update ");
+
                     for (GridDhtPartitionMap part : node2part.values()) {
                         GridDhtPartitionMap newPart = partMap.get(part.nodeId());
 
@@ -2377,8 +2383,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (clear)
+        if (clear) {
+            if (!grp.cacheOrGroupName().contains("sys-cache"))
+                U.dumpStack(ctx.localNodeId() + " >xxx> add historical part=" + p);
+
             exchFut.addClearingPartition(grp, part.id());
+        }
 
         assert part.state() == MOVING : part;
 

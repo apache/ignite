@@ -72,6 +72,7 @@ import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
+import org.apache.ignite.internal.processors.cache.preload.GridPartitionBatchDemandMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -158,6 +160,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridCachePreloadSharedManager.rebalanceThreadTopic;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
@@ -490,6 +493,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                 });
             }
+        }
+
+        // todo
+        if (cctx.filePreloader() != null && cctx.filePreloader().persistenceRebalanceApplicable()) {
+            if (log.isDebugEnabled())
+                log.debug("Starting file rebalancing messages handler.");
+
+            cctx.gridIO().addMessageListener(rebalanceThreadTopic(), new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof GridPartitionBatchDemandMessage) {
+                        if (!enterBusy())
+                            return;
+
+                        try {
+                            cctx.filePreloader().handleDemandMessage(nodeId, (GridPartitionBatchDemandMessage)msg);
+                        }
+                        finally {
+                            leaveBusy();
+                        }
+                    }
+                }
+            });
         }
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
@@ -1245,6 +1270,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
+
+            System.out.println("sending partitions");
 
             sendLocalPartitions(oldest, null, grps);
         }
@@ -3321,6 +3348,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Runnable r = null;
+                        Runnable loadPartsRun = null;
 
                         List<String> rebList = new LinkedList<>();
 
@@ -3331,6 +3359,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
+                        if (cctx.filePreloader() != null)
+                            loadPartsRun = cctx.filePreloader().addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -3339,6 +3370,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
+
+                                if (cctx.filePreloader() != null &&
+                                    cctx.filePreloader().FileRebalanceSupported(grp, assigns.keySet()))
+                                    continue;
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
@@ -3375,6 +3410,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
+                            loadPartsRun.run();
                             r.run();
                         }
                         else

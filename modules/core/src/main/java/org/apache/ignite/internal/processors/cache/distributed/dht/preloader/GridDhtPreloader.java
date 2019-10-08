@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -259,12 +260,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     GridDhtPartitionDemandMessage msg = assignments.get(histSupplier);
 
                     if (msg == null) {
+                        U.dumpStack(" >xxx> add assignments hist supplier " + histSupplier.id());
+
                         assignments.put(histSupplier, msg = new GridDhtPartitionDemandMessage(
                             top.updateSequence(),
                             assignments.topologyVersion(),
                             grp.groupId())
                         );
                     }
+
+                    System.out.println(">xxx> add hist cntrs p=" + p + " from=" + part.initialUpdateCounter() + ", to=" + countersMap.updateCounter(p));
 
                     // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);

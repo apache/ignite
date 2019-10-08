@@ -222,8 +222,8 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         long old = this.updateSeq;
 
         // Overwrite update sequence without checking in case of greater topology version
-        if (topVer.compareTo(top) == 0)
-            assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
+//        if (topVer.compareTo(top) == 0)
+//            assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
 

@@ -475,6 +475,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      */
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
+        System.out.println("onGroupRebalanceFinished " + grpId + " topVer="+ topVer.topologyVersion() + "." + topVer.minorTopologyVersion() + " session topVer=" + tmpDisabledWal.topVer.topologyVersion() + "." + tmpDisabledWal.topVer.minorTopologyVersion());
+
         TemporaryDisabledWal session0 = tmpDisabledWal;
 
         if (session0 == null || session0.topVer.compareTo(topVer) > 0)
@@ -522,8 +524,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                        if (grp != null)
+                        if (grp != null) {
+                            log.info("own moving " + grp.cacheOrGroupName() + " on topVer="+topVer.topologyVersion() + "." + topVer.minorTopologyVersion());
+
                             grp.topology().ownMoving(topVer);
+                        }
                         else if (log.isDebugEnabled())
                             log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
                     }
