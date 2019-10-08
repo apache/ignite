@@ -758,6 +758,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             proxy.context0().gate().onStopped();
     }
 
+    /**
+     * Blocks (stops) cache gateway for caches according to given {@code cacheGroupIds}.
+     *
+     * @param cacheGrpIds Cache group ids for which cache gateway should be stopped.
+     * @return Caches for which cache gateway is blocked (stopped).
+     */
+    public List<GridCacheAdapter> blockGateways(Collection<Integer> cacheGrpIds) {
+        List<GridCacheAdapter> affectedCaches = internalCaches().stream()
+            .filter(cache -> cacheGrpIds.contains(cache.context().groupId()))
+            .collect(Collectors.toList());
+
+        affectedCaches.forEach(cache -> {
+            // Add proxy if it's not initialized.
+            addjCacheProxy(cache.context().name(), new IgniteCacheProxyImpl(cache.context(), cache, false));
+
+            // Stop proxy.
+            blockGateway(cache.context().name(), true, false);
+        });
+
+        return affectedCaches;
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
@@ -2452,7 +2474,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param stop {@code True} for stop cache, {@code false} for close cache.
      * @param restart Restart flag.
      */
-    void blockGateway(String cacheName, boolean stop, boolean restart) {
+    public void blockGateway(String cacheName, boolean stop, boolean restart) {
         // Break the proxy before exchange future is done.
         IgniteCacheProxyImpl<?, ?> proxy = jcacheProxy(cacheName, false);
 
@@ -2863,7 +2885,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param success Future result.
      * @param err Error if any.
      */
-    void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Throwable err) {
+    public void completeCacheStartFuture(DynamicCacheChangeRequest req, boolean success, @Nullable Throwable err) {
         if (ctx.localNodeId().equals(req.initiatingNodeId())) {
             DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
@@ -4081,8 +4103,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return msg0.needExchange();
         }
 
-        if (msg instanceof DynamicCacheChangeBatch)
-            return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+        if (msg instanceof DynamicCacheChangeBatch) {
+            boolean changeRequested = cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+            ctx.query().onCacheChangeRequested((DynamicCacheChangeBatch)msg);
+
+            return changeRequested;
+        }
 
         if (msg instanceof DynamicCacheChangeFailureMessage)
             cachesInfo.onCacheChangeRequested((DynamicCacheChangeFailureMessage)msg, topVer);

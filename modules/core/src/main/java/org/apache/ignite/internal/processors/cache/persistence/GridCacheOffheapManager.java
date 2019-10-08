@@ -2393,13 +2393,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            ctx.database().checkpointReadLock();
-
-            try {
-                delegate.insertRows(rows, initPred);
-            } finally {
-                ctx.database().checkpointReadUnlock();
-            }
+            delegate.insertRows(rows, initPred);
         }
 
         /** {@inheritDoc} */
