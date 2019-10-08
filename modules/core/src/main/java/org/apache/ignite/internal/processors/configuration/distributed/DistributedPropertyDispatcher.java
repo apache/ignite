@@ -25,6 +25,13 @@ public interface DistributedPropertyDispatcher {
     /**
      * Attach already created property.
      *
+     * @param props Properties to attach to processor.
+     * @param <T> Type of property value.
+     */
+    public <T extends DistributedProperty> void registerProperties(T... props);
+    /**
+     * Attach already created property.
+     *
      * @param prop Property to attach to processor.
      * @param <T> Type of property value.
      */

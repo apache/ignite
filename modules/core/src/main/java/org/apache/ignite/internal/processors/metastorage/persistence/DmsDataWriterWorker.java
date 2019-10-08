@@ -173,6 +173,8 @@ class DmsDataWriterWorker extends GridWorker {
 
                         metastorage.write(versionKey(), fullNodeData.ver);
 
+                        workerDmsVer = fullNodeData.ver;
+
                         metastorage.remove(cleanupGuardKey());
                     }
                     else if (update instanceof Long) {

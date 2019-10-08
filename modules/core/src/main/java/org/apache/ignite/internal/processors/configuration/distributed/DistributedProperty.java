@@ -103,6 +103,24 @@ public class DistributedProperty<T extends Serializable> {
     }
 
     /**
+     * Change value across whole cluster.
+     *
+     * @param newVal Value which this property should be changed on.
+     * @param expectedVal Value from which this property should be changed.
+     * @return Future for update operation.
+     * @throws DetachedPropertyException If this property have not been attached to processor yet, please call {@link
+     * DistributedConfigurationProcessor#registerProperty(DistributedProperty)} before this method.
+     * @throws NotWritablePropertyException If this property don't ready to cluster wide update yet, perhaps cluster is
+     * not active yet.
+     * @throws IgniteCheckedException If failed during cluster wide update.
+     */
+    public GridFutureAdapter<?> propagateAsync(T expectedVal, T newVal) throws IgniteCheckedException {
+        ensureClusterWideUpdateIsReady();
+
+        return clusterWideUpdater.casUpdate(name, expectedVal, newVal);
+    }
+
+    /**
      * @return Current property value.
      */
     public T get() {

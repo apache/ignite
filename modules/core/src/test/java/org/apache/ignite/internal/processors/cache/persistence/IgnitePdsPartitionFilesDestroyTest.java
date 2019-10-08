@@ -46,11 +46,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
+ * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash
+ * recovery.
  */
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Partitions count. */
@@ -87,20 +87,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -149,7 +135,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer) (k * multiplier), cache.get(k));
+            Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer)(k * multiplier), cache.get(k));
     }
 
     /**
@@ -159,8 +145,9 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
-        IgniteEx crd = (IgniteEx) startGrids(2);
+        IgniteEx crd = (IgniteEx)startGrids(2);
 
+        crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
 
         int keysCnt = 50_000;
@@ -182,7 +169,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(crd, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
@@ -193,6 +180,8 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         IgniteEx node = startGrid(1);
 
@@ -230,7 +219,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(node, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 2);
+            checkData((IgniteEx)ignite, keysCnt, 2);
     }
 
     /**
@@ -241,6 +230,8 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         failFileIo = true;
 
@@ -287,18 +278,20 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(problemNode, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
-     * Test that partitions files are not deleted if they were re-created on next time
-     * and no checkpoint has done during this time.
+     * Test that partitions files are not deleted if they were re-created on next time and no checkpoint has done during
+     * this time.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         failFileIo = true;
 
@@ -354,7 +347,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(problemNode, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
@@ -364,7 +357,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
-        IgniteEx crd = (IgniteEx) startGrids(2);
+        IgniteEx crd = (IgniteEx)startGrids(2);
 
         crd.cluster().active(true);
 
@@ -386,15 +379,14 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * If {@code exists} is {@code true}, checks that all partition files exist
-     * if partition has state EVICTED.
+     * If {@code exists} is {@code true}, checks that all partition files exist if partition has state EVICTED.
      *
-     * If {@code exists} is {@code false}, checks that all partition files don't exist
-     * if partition is absent or has state EVICTED.
+     * If {@code exists} is {@code false}, checks that all partition files don't exist if partition is absent or has
+     * state EVICTED.
      *
      * @param ignite Node.
-     * @param exists If {@code true} method will check that partition file exists,
-     *               in other case will check that file doesn't exist.
+     * @param exists If {@code true} method will check that partition file exists, in other case will check that file
+     * doesn't exist.
      * @throws IgniteCheckedException If failed.
      */
     private void checkPartitionFiles(IgniteEx ignite, boolean exists) throws IgniteCheckedException {

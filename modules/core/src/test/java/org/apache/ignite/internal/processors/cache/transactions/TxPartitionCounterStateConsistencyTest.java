@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -792,6 +791,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         rndAddrsField.set(customDiscoSpi, true);
 
         Ignite crd = startGrid(0); // Start coordinator with custom discovery SPI.
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
+
         IgniteEx g1 = startGrid(1);
         startGrid(2);
 

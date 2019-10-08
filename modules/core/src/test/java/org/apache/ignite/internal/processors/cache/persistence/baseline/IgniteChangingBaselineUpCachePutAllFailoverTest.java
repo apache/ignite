@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailov
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  * Failover test for cache putAll operations when BaselineTopology is changed up
  * (new node is added to BaselineTopology).
@@ -60,8 +58,6 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         cleanPersistenceDir();
     }
 
@@ -71,6 +67,7 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
 
         startGrids(GRIDS_COUNT);
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).active(true);
 
         awaitPartitionMapExchange();
@@ -86,8 +83,6 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
