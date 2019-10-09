@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -124,6 +127,80 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 //                .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE_PART_COUNT));
 //            .setCommunicationSpi(new TestRecordingCommunicationSpi()
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
+    public void testReadRemovePartitionEviction() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+        ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
+
+        IgniteInternalCache<Object, Object> cache = ignite0.cachex(DEFAULT_CACHE_NAME);
+
+        CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
+
+        int hash = DEFAULT_CACHE_NAME.hashCode();
+
+        for (int i = 0; i < TEST_SIZE; i++)
+            assertEquals(i + hash, cache.localPeek(i, peekAll));
+
+        List<GridDhtLocalPartition> locParts = cache.context().topology().localPartitions();
+
+        CountDownLatch allPartsCleared = new CountDownLatch(locParts.size());
+
+        ignite0.context().cache().context().database().checkpointReadLock();
+
+        try {
+            for (GridDhtLocalPartition part : locParts) {
+                part.moving();
+
+                part.dataStore().readOnly(true);
+
+                part.clearAsync();
+
+                part.onClearFinished(f -> {
+                        allPartsCleared.countDown();
+                    }
+                );
+            }
+        } finally {
+            ignite0.context().cache().context().database().checkpointReadUnlock();
+        }
+
+        System.out.println("Clearing partitions");
+
+        allPartsCleared.await(20_000, TimeUnit.MILLISECONDS);
+
+        // Ensure twice that all entries evicted.
+        for (int i = 0; i < TEST_SIZE; i++)
+            assertNull(cache.localPeek(i, peekAll));
+
+        ignite0.context().cache().context().database().checkpointReadLock();
+
+        try {
+            for (GridDhtLocalPartition part : locParts) {
+                part.dataStore().readOnly(false);
+
+                part.own();
+            }
+        } finally {
+            ignite0.context().cache().context().database().checkpointReadUnlock();
+        }
+
+        for (int i = 0; i < TEST_SIZE; i++)
+            assertNull(cache.localPeek(i, peekAll));
+
+        cache.put(TEST_SIZE, TEST_SIZE);
+
+        assertEquals(TEST_SIZE, cache.get(TEST_SIZE));
     }
 
     /** */
