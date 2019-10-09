@@ -881,7 +881,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             switch (exchange) {
                 case ALL: {
                     if (exchCtx.baselineNodeLeft())
-                        recovery();
+                        distributedRecovery();
                     else
                         distributedExchange();
 
@@ -1393,7 +1393,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!centralizedAff)
                     sendLocalPartitions(crd);
 
-                if (context().baselineNodeLeft())
+                if (exchCtx.baselineNodeLeft())
                     onDone(initialVersion());
                 else
                     initDone();
@@ -1429,7 +1429,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void recovery() throws IgniteCheckedException {
+    private void distributedRecovery() throws IgniteCheckedException {
         initTopologies();
 
         waitRecovery();
@@ -1673,7 +1673,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             recoveryLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
 
-            partRecoveryFut = context().localRecovery() ?
+            partRecoveryFut = exchCtx.localRecovery() ?
                 cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
                 new GridFinishedFuture<>();
         }
