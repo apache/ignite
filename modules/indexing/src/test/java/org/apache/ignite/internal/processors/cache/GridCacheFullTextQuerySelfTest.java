@@ -68,6 +68,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     private static final class TestPair {
 
         public final Set<Integer> expected;
+
         public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
         public TestPair(Set<Integer> exp) {
