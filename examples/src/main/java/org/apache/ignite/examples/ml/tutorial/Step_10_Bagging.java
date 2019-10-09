@@ -21,26 +21,24 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.stacking.StackedModel;
-import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
+import org.apache.ignite.ml.composition.bagging.BaggedModel;
+import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
+import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
 /**
@@ -56,13 +54,13 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
-public class Step_9_Scaling_With_Stacking {
+public class Step_10_Bagging {
     /**
      * Run example.
      */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Tutorial step 9 (scaling with stacking) example started.");
+        System.out.println(">>> Tutorial step 10 (Bagging) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
@@ -106,24 +104,22 @@ public class Step_9_Scaling_With_Stacking {
                     );
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
-                DecisionTreeClassificationTrainer trainer1 = new DecisionTreeClassificationTrainer(3, 0);
-                DecisionTreeClassificationTrainer trainer2 = new DecisionTreeClassificationTrainer(4, 0);
 
-                LogisticRegressionSGDTrainer aggregator = new LogisticRegressionSGDTrainer()
-                    .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                        SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG));
+                BaggedTrainer<Double> baggedTrainer = TrainerTransformers.makeBagged(
+                    trainer,
+                    10,
+                    0.6,
+                    4,
+                    3,
+                    new OnMajorityPredictionsAggregator())
+                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(1));
 
-                StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
-                    new StackedVectorDatasetTrainer<>(aggregator)
-                        .addTrainerWithDoubleOutput(trainer)
-                        .addTrainerWithDoubleOutput(trainer1)
-                        .addTrainerWithDoubleOutput(trainer2)
-                        .fit(
-                            ignite,
-                            dataCache,
-                            split.getTrainFilter(),
-                            normalizationPreprocessor
-                        );
+                BaggedModel mdl = baggedTrainer.fit(
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor
+                );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
@@ -132,13 +128,13 @@ public class Step_9_Scaling_With_Stacking {
                     split.getTestFilter(),
                     mdl,
                     normalizationPreprocessor,
-                    new Accuracy<>()
+                    MetricName.ACCURACY
                 );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 5 (scaling) example completed.");
+                System.out.println(">>> Tutorial step 10 (Bagging) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
