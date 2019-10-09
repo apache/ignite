@@ -861,8 +861,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 res.add(tx.finishFuture());
 
                 assert needWaitTransaction(tx, topVer);
-
-                assert tx.dht() && ((IgniteTxAdapter)tx).remote() : tx; // This node is a backup.
             }
         }
 
