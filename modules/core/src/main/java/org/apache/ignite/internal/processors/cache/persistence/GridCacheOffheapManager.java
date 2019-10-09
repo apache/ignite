@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -202,7 +201,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
         CacheDataStore store = new GridCacheDataStore(p, exists);
-        CacheDataStore readOnlyStore = new ReadOnlyGridCacheDataStore(grp, ctx, store, grp.groupId());
+        CacheDataStore readOnlyStore = new ReadOnlyGridCacheDataStore(grp, store);
 
         return new CacheDataStoreExImpl(grp.shared(), store, readOnlyStore, log);
     }

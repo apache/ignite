@@ -305,11 +305,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 return;
             }
             else {
-                IgniteInternalFuture switchFut = cctx.filePreloader().partitionRestoreFuture(nodeId, cacheMsg);
+                IgniteInternalFuture<?> restoreFut = cctx.filePreloader().partitionRestoreFuture(nodeId, cacheMsg);
 
-                if (switchFut != null && !switchFut.isDone()) {
-                    System.out.println(">xxx> lock updates " + cacheMsg.getClass().getSimpleName());
-
+                if (restoreFut != null && !restoreFut.isDone()) {
                     synchronized (pendingMsgs) {
                         if (pendingMsgs.size() < MAX_STORED_PENDING_MESSAGES)
                             pendingMsgs.add(cacheMsg);
@@ -319,9 +317,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
 
-//                    log.info("wait for partition switch");
-
-                    switchFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    restoreFut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
                             Runnable c = new Runnable() {
                                 @Override public void run() {
@@ -331,13 +327,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                                    if (log.isInfoEnabled()) {
+                                    if (log.isDebugEnabled()) {
                                         StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
                                             "affinity topology version [");
 
                                         appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
 
-                                        log.info(msg0.toString());
+                                        log.debug(msg0.toString());
                                     }
 
                                     handleMessage(nodeId, cacheMsg, plc);

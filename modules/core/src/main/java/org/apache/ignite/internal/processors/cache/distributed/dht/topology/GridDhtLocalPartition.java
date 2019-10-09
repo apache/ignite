@@ -394,7 +394,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize) {
-                U.dumpStack(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                U.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
                     "[grpId=" + this.grp.groupId() +
                     ", partId=" + id() +
                     ", grpParts=" + this.grp.affinity().partitions() +

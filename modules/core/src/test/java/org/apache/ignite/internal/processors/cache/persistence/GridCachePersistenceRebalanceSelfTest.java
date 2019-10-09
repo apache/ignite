@@ -96,8 +96,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     public static Iterable<Object[]> data() {
         List<Object[]> params = new ArrayList<>(2);
 
-        params.add(new CacheAtomicityMode[] {CacheAtomicityMode.TRANSACTIONAL});
-//        params.add(new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
+//        params.add(new CacheAtomicityMode[] {CacheAtomicityMode.TRANSACTIONAL});
+        params.add(new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
 
         return params;
     }

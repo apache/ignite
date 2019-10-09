@@ -407,11 +407,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         part.clearAsync();
 
         part.onClearFinished(c -> {
-            //todo should prevent any removes on DESTROYED partition.
-            ReadOnlyGridCacheDataStore store = (ReadOnlyGridCacheDataStore)part.dataStore().store(true);
-
-            store.disableRemoves();
-
             try {
                 part.group().offheap().destroyCacheDataStore(part.dataStore()).listen(f -> {
                         try {
@@ -752,6 +747,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public synchronized boolean cancel() {
+            if (isDone())
+                return true;
+
             cpLsnr.cancelAll();
 
             for (FileRebalanceSingleNodeFuture fut : futMap.values())

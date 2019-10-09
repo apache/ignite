@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -31,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -60,47 +57,19 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     /** */
-    private final IgniteLogger log;
-
-    /** */
     private final CacheDataStore delegate;
 
     /** */
     private final NoopRowStore rowStore;
 
-    /** */
-    private final AtomicBoolean disableRemoves = new AtomicBoolean();
-
-    GridCacheSharedContext ctx;
-
-    int grpId;
-
     /**
-     * todo
+     * @param grp Cache group.
+     * @param delegate Data store delegate.
      */
-    public ReadOnlyGridCacheDataStore(
-        CacheGroupContext grp,
-        GridCacheSharedContext ctx,
-        CacheDataStore delegate,
-        int grpId
-    ) {
+    public ReadOnlyGridCacheDataStore(CacheGroupContext grp, CacheDataStore delegate) throws IgniteCheckedException {
         this.delegate = delegate;
-        this.ctx = ctx;
-        this.grpId = grpId;
 
-        log = ctx.logger(getClass());
-
-        try {
-            rowStore = new NoopRowStore(grp, new NoopFreeList(grp.dataRegion()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    public void disableRemoves() {
-        if (disableRemoves.compareAndSet(false, true))
-            log.info("Changing data store mode to READ [p=" + partId() + "]");
+        rowStore = new NoopRowStore(grp, new NoopFreeList(grp.dataRegion()));
     }
 
     /** {@inheritDoc} */
@@ -235,9 +204,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         KeyCacheObject key,
         int partId
     ) throws IgniteCheckedException {
-        // todo think
-        if (!disableRemoves.get())
-            delegate.remove(cctx, key, partId);
+        delegate.remove(cctx, key, partId);
     }
 
     /** {@inheritDoc} */
@@ -308,14 +275,12 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
-//        ((GridCacheOffheapManager)ctx.cache().cacheGroup(grpId).offheap()).destroyPartitionStore(grpId, partId());
         delegate.destroy();
     }
 
     /** {@inheritDoc} */
     @Override public void clear(int cacheId) throws IgniteCheckedException {
-        if (!disableRemoves.get())
-            delegate.clear(cacheId);
+        delegate.clear(cacheId);
     }
 
     /** {@inheritDoc} */
