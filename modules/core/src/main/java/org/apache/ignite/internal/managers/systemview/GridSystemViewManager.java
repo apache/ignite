@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
@@ -44,6 +47,7 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -82,6 +86,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(ComputeTaskView.class, new ComputeTaskViewWalker());
         registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
         registerWalker(TransactionView.class, new TransactionViewWalker());
+        registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
     }
 
@@ -99,7 +104,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers view which exports {@link Collection} content.
+     * Registers {@link SystemViewAdapter} view which exports {@link Collection} content.
      *
      * @param name Name.
      * @param desc Description.
@@ -116,6 +121,54 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
+            rowFunc));
+    }
+
+    /**
+     * Registers {@link SystemViewInnerCollectionsAdapter} view which exports container content.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param container Container of the data.
+     * @param dataExtractor Data extractor function.
+     * @param rowFunc Row function
+     * @param <C> Container entry type.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <C, R, D> void registerInnerCollectionView(String name, String desc, Class<R> rowCls,
+        Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            container,
+            dataExtractor,
+            rowFunc));
+    }
+
+    /**
+     * Registers {@link SystemViewInnerCollectionsAdapter} view which exports container content.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param container Container of the data.
+     * @param dataExtractor Data extractor function.
+     * @param rowFunc Row function
+     * @param <C> Container entry type.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <C, R, D> void registerInnerArrayView(String name, String desc, Class<R> rowCls, Collection<C> container,
+        Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            container,
+            c -> Arrays.asList(dataExtractor.apply(c)),
             rowFunc));
     }
 
