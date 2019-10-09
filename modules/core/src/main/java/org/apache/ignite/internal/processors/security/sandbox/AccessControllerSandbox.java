@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
+
 /**
  * Sandbox that based on AccessController.
  */
@@ -46,10 +48,10 @@ public class AccessControllerSandbox implements IgniteSandbox {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T execute(Callable<T> call) throws IgniteException {
-        Objects.requireNonNull(call);
+    @Override public <T> T execute(Callable<T> c) throws IgniteException {
+        Objects.requireNonNull(c);
 
-        if (System.getSecurityManager() == null)
+        if (!hasSecurityManager())
             throw new SecurityException("SecurityManager was, but it disappeared!");
 
         final SecurityContext secCtx = security.securityContext();
@@ -57,19 +59,16 @@ public class AccessControllerSandbox implements IgniteSandbox {
         assert secCtx != null;
 
         final AccessControlContext acc = AccessController.doPrivileged(
-            new PrivilegedAction<AccessControlContext>() {
-                @Override public AccessControlContext run() {
-                    return new AccessControlContext
-                        (new AccessControlContext(NULL_PD_ARRAY),
-                            new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()));
-                }
-            });
+            (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(
+                new AccessControlContext(NULL_PD_ARRAY),
+                new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()))
+        );
 
         try {
-            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)call::call, acc);
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call, acc);
         }
-        catch (PrivilegedActionException pae) {
-            throw new IgniteException(pae.getException());
+        catch (PrivilegedActionException e) {
+            throw new IgniteException(e.getException());
         }
     }
 

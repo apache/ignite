@@ -30,9 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -6729,16 +6727,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private <K, V, T> EntryProcessor<K, V, T> wrap(final EntryProcessor<K, V, T> prc) {
             final IgniteSandbox sandbox = entry.context().kernalContext().security().sandbox();
 
-            if (prc != null && sandbox.enabled()) {
-                return new EntryProcessor<K, V, T>() {
-                    @Override
-                    public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
-                        return sandbox.execute(() -> prc.process(entry, arguments));
-                    }
-                };
-            }
-
-            return prc;
+            return prc != null && sandbox.enabled() ? (e, a) -> sandbox.execute(() -> prc.process(e, a)) : prc;
         }
 
         /** {@inheritDoc} */

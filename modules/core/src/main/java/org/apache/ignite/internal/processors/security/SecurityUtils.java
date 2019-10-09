@@ -26,11 +26,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.security.sandbox.SandboxCallable;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -145,7 +145,7 @@ public class SecurityUtils {
      * @return Computed result.
      * @throws E if unable to compute a result.
      */
-    public static <T, E extends Exception> T doPrivileged(SandboxCallable<T, E> c) throws E {
+    public static <T, E extends Exception> T doPrivileged(Callable<T> c) throws E {
         try {
             return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call);
         }

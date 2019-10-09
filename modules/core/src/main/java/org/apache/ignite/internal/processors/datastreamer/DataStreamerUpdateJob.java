@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -159,16 +157,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     private <K, V> StreamReceiver<K, V> wrap(final StreamReceiver<K, V> r) {
         final IgniteSandbox sandbox = ctx.security().sandbox();
 
-        if (r != null && sandbox.enabled()) {
-            return new StreamReceiver<K, V>() {
-                @Override public void receive(IgniteCache<K, V> cache,
-                    Collection<Map.Entry<K, V>> entries) throws IgniteException {
-                    sandbox.execute(() -> r.receive(cache, entries));
-                }
-            };
-        }
-
-        return r;
+        return r != null && sandbox.enabled() ? (c, e) -> sandbox.execute(() -> r.receive(c, e)) : r;
     }
 
     /**

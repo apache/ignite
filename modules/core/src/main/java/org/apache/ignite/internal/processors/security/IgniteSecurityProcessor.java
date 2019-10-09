@@ -46,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -170,14 +171,14 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (System.getSecurityManager() == null) {
+        if (hasSecurityManager())
+            sandbox = new AccessControllerSandbox(this);
+        else {
             ctx.log(getClass()).warning("IgniteSecurity enabled, but system SecurityManager is not defined, " +
                 "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
 
             sandbox = new NoOpSandbox();
         }
-        else
-            sandbox = new AccessControllerSandbox(this);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
