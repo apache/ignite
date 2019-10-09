@@ -74,7 +74,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
     }
 
     /**
-     * Recursive realisation of DecisionTree to String converting.
+     * Recursive implementation of DecisionTree to String converting.
      *
      * @param node Decision tree.
      * @param depth Current depth.
