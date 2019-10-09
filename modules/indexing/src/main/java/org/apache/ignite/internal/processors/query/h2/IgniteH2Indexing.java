@@ -3061,8 +3061,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(CacheGroupContext grp,
-        Set<Integer> parts) {
+    @Override public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(
+        CacheGroupContext grp, Set<Integer> parts) {
         if (F.isEmpty(parts))
             return Collections.emptyList();
 

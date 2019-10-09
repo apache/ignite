@@ -46,7 +46,9 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -364,19 +366,26 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         private void stop() {
             stop = true;
-
-            synchronized (mux) {
-                ExclusiveClearFuture exclFut = exclClearFut;
-
-                if (exclFut != null)
-                    exclFut.stop();
-            }
         }
 
         /**
          * Await evict finish.
          */
         private void awaitFinishAll(){
+            ExclusiveClearFuture exclFut;
+
+            synchronized (mux) {
+                exclFut = exclClearFut;
+
+                exclClearFut = null;
+            }
+
+            if (exclFut != null) {
+                exclFut.stop();
+
+                awaitFinish(null, exclFut);
+            }
+
             partsEvictFutures.forEach(this::awaitFinish);
 
             evictionGroupsMap.remove(grp.groupId());
@@ -661,6 +670,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         List<GridDhtLocalPartition> parts) throws IgniteCheckedException {
         validateCacheGroupForExclusiveEvict(grp);
 
+        if (F.isEmpty(parts))
+            return new GridFinishedFuture<>();
+
         GroupEvictionContext grpEvictionCtx = evictionGroupsMap.computeIfAbsent(
             grp.groupId(), (k) -> new GroupEvictionContext(grp));
 
@@ -742,6 +754,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param part Partition.
          */
         public void onInit(GridDhtLocalPartition part) {
+            if (log.isInfoEnabled())
+                log.info("Exclusive partition evict: confirmed partition " + part.id() + ".");
+
             part.onClearFinished(f -> {
                 try {
                     f.get();
@@ -815,6 +830,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             markInitialized();
+
+            if (log.isInfoEnabled())
+                log.info("Exclusive partition evict: scheduling tasks." +
+                    " [total=" + tasks.size() + idxTasks.size() + ", idx=" + idxTasks.size() + "]");
 
             if (idxFut == null) {
                 for (BucketQueueTask r0 : tasks)

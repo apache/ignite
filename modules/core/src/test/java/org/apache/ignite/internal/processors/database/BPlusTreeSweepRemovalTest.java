@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -39,14 +43,9 @@ public class BPlusTreeSweepRemovalTest extends BPlusTreeReuseSelfTest {
 
         TestTree t = createTestTree(true);
 
-        t.put(1L);
-        t.put(2L);
-        t.put(3L);
-        t.put(4L);
-        t.put(5L);
-        t.put(6L);
-        t.put(7L);
-        t.put(8L);
+        for (int k = 1; k <= 8; k++)
+            t.putx((long)k);
+
         log.info(t.printTree());
 
         GridCursor<Void> cursor = t.sweep((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
@@ -60,6 +59,7 @@ public class BPlusTreeSweepRemovalTest extends BPlusTreeReuseSelfTest {
         assertFalse(t.removex(4L));
         assertFalse(t.removex(6L));
         assertFalse(t.removex(8L));
+
         assertEquals(1L, t.findOne(1L).longValue());
         assertEquals(3L, t.findOne(3L).longValue());
         assertEquals(5L, t.findOne(5L).longValue());
@@ -73,6 +73,42 @@ public class BPlusTreeSweepRemovalTest extends BPlusTreeReuseSelfTest {
         log.info(t.printTree());
 
         assertTrue(t.isEmpty());
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepAllOverDegenerateTree() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+
+        TestTree t = createTestTree(true);
+
+        log.info(t.printTree());
+
+        GridCursor<Void> cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+
+        while (cursor.next())
+            cursor.get();
+
+        for (int k = 0; k < 26; k++)
+            t.putx((long)k);
+
+        log.info("height=" + t.rootLevel());
+
+        cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+
+        while (cursor.next())
+            cursor.get();
+
+        log.info(t.printTree());
+
+        assertTrue(t.isEmpty());
+
+        t.destroy();
     }
 
     /**
@@ -176,6 +212,7 @@ public class BPlusTreeSweepRemovalTest extends BPlusTreeReuseSelfTest {
         thread.start();
 
         GridCursor<Void> cursor = t.sweep(clo);
+
         while (cursor.next())
             cursor.get();
 
@@ -187,6 +224,135 @@ public class BPlusTreeSweepRemovalTest extends BPlusTreeReuseSelfTest {
         }
 
         assertTrue(t.isEmpty());
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepConcurrentPutRemoveInvoke() throws IgniteCheckedException {
+        MAX_PER_PAGE = 10;
+
+        doTestSweepConcurrentPutRemoveInvoke();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestSweepConcurrentPutRemoveInvoke() throws IgniteCheckedException {
+        TestTree t = createTestTree(true);
+
+        for (long k = 0L; k < NUM_KEYS/2; k++)
+            t.putx(k);
+
+        BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 2 == 0;
+
+        GridCursor<Void> cursor = t.sweep(clo);
+
+        while (cursor.next())
+            cursor.get();
+
+        t.invoke(1L, null, new IgniteTree.InvokeClosure<Long>() {
+            /** {@inheritDoc} */
+            @Override public void call(@Nullable Long row) {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public Long newRow() {
+                return 1L;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteTree.OperationType operationType() {
+                return IgniteTree.OperationType.PUT;
+            }
+        });
+        // put, invoke-put
+        // remove, invoke-remove
+        // findOne
+        // findFirst, findLast
+        // iterate, visit
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testConcurrentSweeps() throws IgniteCheckedException {
+        //MAX_PER_PAGE = 2;
+
+        doTestConcurrentSweeps();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestConcurrentSweeps() throws IgniteCheckedException {
+        TestTree t = createTestTree(true);
+
+        int remCnt = NUM_KEYS;
+
+        for (long k = 0L; k < NUM_KEYS; k++) {
+            t.putx(k);
+
+            if (k % 11 == 3 || k % 7 == 4)
+                remCnt--;
+        }
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        //cnt++ % 11 == 3
+        //cnt++ % 7 = 4
+        BPlusTree.TreeRowClosure<Long, Long> clo1 = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 11 == 3;
+
+        BPlusTree.TreeRowClosure<Long, Long> clo2 = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 7 == 4;
+
+        class SweepThread extends Thread {
+            private BPlusTree.TreeRowClosure<Long, Long> clo;
+
+            private SweepThread(BPlusTree.TreeRowClosure<Long, Long> clo) {
+                this.clo = clo;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void run() {
+                while (!stop.get()) {
+                    try {
+                        GridCursor<Void> cursor = t.sweep(clo);
+
+                        while (cursor.next())
+                            cursor.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
+        }
+
+        new SweepThread(clo1).start();
+        new SweepThread(clo2).start();
+
+        U.sleep(30_000L);
+
+        stop.set(true);
+
+        assertEquals(remCnt, t.size());
+
+        log.info("remCnt = " + remCnt);
+
         t.destroy();
     }
 }
