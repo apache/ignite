@@ -17,13 +17,13 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.ru.RollingUpgradeStatus;
 import org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_ID_AND_TAG_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -223,6 +223,10 @@ public enum IgniteFeatures {
 
             boolean dmsEnabled = getBoolean(IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, false);
             if (DISTRIBUTED_METASTORAGE == value && !dmsEnabled)
+                continue;
+
+            boolean clusterIdAndTagEnabled = getBoolean(IGNITE_CLUSTER_ID_AND_TAG_FEATURE, false);
+            if (CLUSTER_ID_AND_TAG == value && !clusterIdAndTagEnabled)
                 continue;
 
             final int featureId = value.getFeatureId();

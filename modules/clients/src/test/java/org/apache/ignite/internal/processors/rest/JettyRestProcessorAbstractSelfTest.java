@@ -46,7 +46,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -138,8 +137,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PA
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
-import static org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler.IGNITE_CLUSTER_ID;
-import static org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler.IGNITE_CLUSTER_NAME;
 
 /**
  * Tests for Jetty REST protocol.
@@ -1519,11 +1516,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertTrue(res.get("attributes").isObject());
         assertTrue(res.get("metrics").isObject());
 
-        JsonNode attrs = res.get("attributes");
-        IgniteClusterEx cluster = ignite.cluster();
-
-        assertEquals(cluster.id().toString(), attrs.get(IGNITE_CLUSTER_ID).asText());
-        assertEquals(cluster.tag(), attrs.get(IGNITE_CLUSTER_NAME).asText());
+//        JsonNode attrs = res.get("attributes");
+//        IgniteClusterEx cluster = ignite.cluster();
+//
+//        assertEquals(cluster.id().toString(), attrs.get(IGNITE_CLUSTER_ID).asText());
+//        assertEquals(cluster.tag(), attrs.get(IGNITE_CLUSTER_NAME).asText());
 
         JsonNode caches = res.get("caches");
 
