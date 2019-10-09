@@ -58,6 +58,12 @@ import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -177,6 +183,12 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
+import org.apache.ignite.spi.systemview.view.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
+import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
@@ -2051,6 +2063,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         this.ctx = ctx;
+
+        ctx.systemView().registerWalker(SqlSchemaView.class, new SqlSchemaViewWalker());
+        ctx.systemView().registerWalker(SqlTableView.class, new SqlTableViewWalker());
+        ctx.systemView().registerWalker(SqlViewView.class, new SqlViewViewWalker());
+        ctx.systemView().registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
+        ctx.systemView().registerWalker(SqlTableColumnView.class, new SqlTableColumnViewWalker());
+        ctx.systemView().registerWalker(SqlViewColumnView.class, new SqlViewColumnViewWalker());
 
         partReservationMgr = new PartitionReservationManager(ctx);
 

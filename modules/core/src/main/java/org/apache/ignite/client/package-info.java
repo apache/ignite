@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.preprocessing;
-
-import org.apache.ignite.IgniteException;
-
 /**
- * Indicates an unknown categorial feature value for Encoder.
+ * <!-- Package description. -->
+ * Contains Ignite Thin Client API classes.
  */
-public class UnknownCategorialFeatureValue extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param unknownStr Categorial value that caused this exception.
-     */
-    public UnknownCategorialFeatureValue(String unknownStr) {
-        super("This categorial value is unknown for Encoder: " + unknownStr);
-    }
-}
+package org.apache.ignite.client;
