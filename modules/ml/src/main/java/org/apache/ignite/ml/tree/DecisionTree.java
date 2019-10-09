@@ -179,11 +179,14 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
         if (splitPnt == null)
             return decisionTreeLeafBuilder.createLeafNode(dataset, filter);
 
+        DecisionTreeNode thenNode = split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc);
+        DecisionTreeNode elseNode = split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc);
+
         return new DecisionTreeConditionalNode(
             splitPnt.col,
             splitPnt.threshold,
-            split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
-            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc),
+            thenNode,
+            elseNode,
             null
         );
     }
