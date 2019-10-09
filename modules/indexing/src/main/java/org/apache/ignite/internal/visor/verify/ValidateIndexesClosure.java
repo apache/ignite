@@ -667,6 +667,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             log.error("Find in index failed: " + is.toString());
 
+            idxValidationRes.reportIssue(is);
+
             enoughIssues = true;
         }
 
