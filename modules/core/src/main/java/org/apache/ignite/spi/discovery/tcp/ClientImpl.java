@@ -2078,6 +2078,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             assert msg != null;
             assert msg.verified() || msg.senderNodeId() == null;
 
+            spi.startMessageProcess(msg);
+
             spi.stats.onMessageProcessingStarted(msg);
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
