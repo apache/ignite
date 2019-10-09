@@ -187,7 +187,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
-    private static final String CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT =
+    static final String CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT =
         "Cannot start/stop cache within lock or transaction [cacheNames=%s, operation=%s]";
 
     /** Enables start caches in parallel. */
