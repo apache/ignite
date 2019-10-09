@@ -340,9 +340,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setArgs(args);
         qry.setAutoCommit(autoCommit);
 
-        if (timeout >= 0) {
+        if (timeout >= 0)
             qry.setTimeout(timeout, TimeUnit.SECONDS);
-        }
 
         return qry;
     }

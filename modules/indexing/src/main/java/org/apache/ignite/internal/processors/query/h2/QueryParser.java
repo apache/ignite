@@ -160,13 +160,11 @@ public class QueryParser {
 
         int timeout;
 
-        if (qry.getTimeout() >= 0) {
+        if (qry.getTimeout() >= 0)
             timeout = qry.getTimeout();
-        }
-        else {
+        else
             timeout = (int)idx.kernalContext().config().getDefaultQueryTimeout();
-            A.ensure(timeout >= 0 && timeout <= Integer.MAX_VALUE, "timeout value should be valid Integer.");
-        }
+
         return new QueryParameters(
             qry.getArgs(),
             qry.getPartitions(),
