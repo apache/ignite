@@ -24,7 +24,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 /**
  * Logical data record indented for master key change action.
  */
-public class EncryptionMasterKeyChangeRecord extends WALRecord {
+public class MasterKeyChangeRecord extends WALRecord {
     /** */
     private final String masterKeyId;
 
@@ -35,7 +35,7 @@ public class EncryptionMasterKeyChangeRecord extends WALRecord {
      * @param masterKeyId Master key id.
      * @param grpKeys Encrypted cache keys.
      */
-    public EncryptionMasterKeyChangeRecord(String masterKeyId, Map<Integer, byte[]> grpKeys) {
+    public MasterKeyChangeRecord(String masterKeyId, Map<Integer, byte[]> grpKeys) {
         this.masterKeyId = masterKeyId;
         this.grpKeys = grpKeys;
     }

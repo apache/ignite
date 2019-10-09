@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptionMasterKeyChangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -820,7 +820,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         }
         else {
-            EncryptionMasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
+            MasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
 
             ctx.cache().context().wal().log(rec);
 
@@ -941,7 +941,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param rec Record.
      */
-    public void applyKeys(EncryptionMasterKeyChangeRecord rec) {
+    public void applyKeys(MasterKeyChangeRecord rec) {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
 
         getSpi().setMasterKeyId(rec.getMasterKeyId());
@@ -967,7 +967,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             masterKeyId = newMasterKeyId;
 
-            EncryptionMasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
+            MasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
 
             ctx.cache().context().database().checkpointReadLock();
 
@@ -997,13 +997,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** @return Master key change record. */
-    private EncryptionMasterKeyChangeRecord prepareMasterKeyChangeRecord() {
+    private MasterKeyChangeRecord prepareMasterKeyChangeRecord() {
         Map<Integer, byte[]> reencryptedKeys = new HashMap<>();
 
         for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet())
             reencryptedKeys.put(entry.getKey(), getSpi().encryptKey(entry.getValue()));
 
-        return new EncryptionMasterKeyChangeRecord(masterKeyId, reencryptedKeys);
+        return new MasterKeyChangeRecord(masterKeyId, reencryptedKeys);
     }
 
     /**

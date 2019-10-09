@@ -37,8 +37,8 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
-import org.apache.ignite.internal.pagemem.wal.record.EncryptionMasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -534,7 +534,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return txRecordSerializer.size((TxRecord)record);
 
             case MASTER_KEY_CHANGE_RECORD:
-                EncryptionMasterKeyChangeRecord rec = (EncryptionMasterKeyChangeRecord)record;
+                MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
 
                 return rec.plainSize();
             default:
@@ -1168,16 +1168,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 for (int i = 0; i < keysCnt; i++) {
                     int grpId = in.readInt();
 
-                    int grpKeySize = in.readInt();
+                    int grpKeysSize = in.readInt();
 
-                    byte[] grpKey = new byte[grpKeySize];
+                    byte[] grpKey = new byte[grpKeysSize];
 
                     in.readFully(grpKey);
 
                     keys.put(grpId, grpKey);
                 }
 
-                res = new EncryptionMasterKeyChangeRecord(masterKeyId, keys);
+                res = new MasterKeyChangeRecord(masterKeyId, keys);
 
                 break;
 
@@ -1746,18 +1746,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case MASTER_KEY_CHANGE_RECORD:
-                EncryptionMasterKeyChangeRecord rotationRecord = (EncryptionMasterKeyChangeRecord) rec;
+                MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
 
-                byte[] keyIdBytes = rotationRecord.getMasterKeyId().getBytes();
+                byte[] keyIdBytes = mkChangeRec.getMasterKeyId().getBytes();
 
                 buf.putInt(keyIdBytes.length);
                 buf.put(keyIdBytes);
 
-                Map<Integer, byte[]> keys = rotationRecord.getGrpKeys();
+                Map<Integer, byte[]> keys = mkChangeRec.getGrpKeys();
 
                 buf.putInt(keys.size());
 
-                for (Map.Entry<Integer, byte[]> entry : rotationRecord.getGrpKeys().entrySet()) {
+                for (Map.Entry<Integer, byte[]> entry : mkChangeRec.getGrpKeys().entrySet()) {
                     buf.putInt(entry.getKey());
 
                     buf.putInt(entry.getValue().length);
