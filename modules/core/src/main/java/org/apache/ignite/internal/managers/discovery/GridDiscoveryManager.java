@@ -853,6 +853,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             notification.getSpanContainer()
                         )
                     );
+
+                if (type == EVT_CLIENT_NODE_DISCONNECTED)
+                    discoWrk.awaitDisconnectEvent();
             }
         });
 
@@ -2771,6 +2774,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean nodeSegFired;
 
         /**
+         * Future to wait for client disconnect event before an attempt to reconnect.
+         *
+         * Otherwise, we can continue process events from the previous cluster topology when the client already
+         * connected to a new topology.
+         */
+        private volatile GridFutureAdapter disconnectEvtFut;
+
+        /**
          *
          */
         private DiscoveryWorker() {
@@ -2832,6 +2843,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         void addEvent(NotificationEvent notificationEvt) {
             assert notificationEvt.node != null : notificationEvt.data;
+
+            if (notificationEvt.type == EVT_CLIENT_NODE_DISCONNECTED)
+                discoWrk.disconnectEvtFut = new GridFutureAdapter();
 
             evts.add(notificationEvt);
         }
@@ -2941,7 +2955,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 case EVT_CLIENT_NODE_DISCONNECTED: {
-                    // No-op.
+                    disconnectEvtFut.onDone();
 
                     break;
                 }
@@ -3069,6 +3083,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 default:
                     assert segPlc == NOOP : "Unsupported segmentation policy value: " + segPlc;
+            }
+        }
+
+        /** Awaits client disconnect event. */
+        private void awaitDisconnectEvent() {
+            try {
+                disconnectEvtFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for handling disconnect event.", e);
             }
         }
 

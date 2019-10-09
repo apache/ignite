@@ -22,6 +22,7 @@ import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
 import org.apache.ignite.spi.discovery.AuthenticationRestartTest;
 import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
+import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
@@ -138,6 +139,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     IgniteClientReconnectMassiveShutdownTest.class,
     IgniteClientReconnectMassiveShutdownSslTest.class,
     TcpDiscoveryClientSuspensionSelfTest.class,
+    IgniteClientReconnectEventHandlingTest.class,
 
     TcpDiscoveryFailedJoinTest.class,
 
