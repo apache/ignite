@@ -468,20 +468,20 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @Test
     public void testNodes() throws Exception {
         try(IgniteEx g1 = startGrid(0)) {
-            SystemView<ClusterNodeView> nodes = g1.context().systemView().view(NODES_SYS_VIEW);
+            SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
 
-            assertEquals(1, nodes.size());
+            assertEquals(1, views.size());
 
-            checkNodeView(nodes.iterator().next(), g1.localNode(), true);
+            checkNodeView(views.iterator().next(), g1.localNode(), true);
 
             try(IgniteEx g2 = startGrid(1)) {
                 awaitPartitionMapExchange();
 
-                assertEquals(2, nodes.size());
+                assertEquals(2, views.size());
 
                 boolean found = false;
 
-                for (ClusterNodeView node : nodes) {
+                for (ClusterNodeView node : views) {
                     if (!node.nodeId().equals(g2.localNode().id()))
                         continue;
 
@@ -505,20 +505,22 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                         checkNodeView(node, g1.localNode(), false);
                 }
             }
+
+            assertEquals(1, views.size());
         }
     }
 
     /** */
-    private void checkNodeView(ClusterNodeView n, ClusterNode loc, boolean isLocal) {
-        assertEquals(loc.id(), n.nodeId());
-        assertEquals(loc.consistentId().toString(), n.consistentId());
-        assertEquals(toStringSafe(loc.addresses()), n.addresses());
-        assertEquals(toStringSafe(loc.hostNames()), n.hostnames());
-        assertEquals(loc.order(), n.nodeOrder());
-        assertEquals(loc.version().toString(), n.version());
-        assertEquals(isLocal, n.isLocal());
-        assertEquals(loc.isDaemon(), n.isDaemon());
-        assertEquals(loc.isClient(), n.isClient());
+    private void checkNodeView(ClusterNodeView view, ClusterNode node, boolean isLoc) {
+        assertEquals(node.id(), view.nodeId());
+        assertEquals(node.consistentId().toString(), view.consistentId());
+        assertEquals(toStringSafe(node.addresses()), view.addresses());
+        assertEquals(toStringSafe(node.hostNames()), view.hostnames());
+        assertEquals(node.order(), view.nodeOrder());
+        assertEquals(node.version().toString(), view.version());
+        assertEquals(isLoc, view.isLocal());
+        assertEquals(node.isDaemon(), view.isDaemon());
+        assertEquals(node.isClient(), view.isClient());
     }
 
     /** */

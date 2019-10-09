@@ -111,19 +111,12 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
         Function<D, R> rowFunc) {
-
-        SystemView sysView = new SystemViewAdapter<>(name,
+        registerView0(name, new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             data,
-            rowFunc);
-
-        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
-
-        assert old == null;
-
-        notifyListeners(sysView, viewCreationLsnrs, log);
+            rowFunc));
     }
 
     /**
@@ -139,14 +132,21 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <R, D> void registerView(String name, String desc, Class<R> rowCls, Supplier<Collection<D>> dataSupplier,
         Function<D, R> rowFunc) {
-
-        SystemView sysView = new SystemViewAdapter<>(name,
+        registerView0(name, new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
             dataSupplier,
-            rowFunc);
+            rowFunc));
+    }
 
+    /**
+     * Registers view.
+     *
+     * @param name Name.
+     * @param sysView System view.
+     */
+    private void registerView0(String name, SystemView sysView) {
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 
         assert old == null;

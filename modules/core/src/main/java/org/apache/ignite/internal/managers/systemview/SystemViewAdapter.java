@@ -31,10 +31,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SystemViewAdapter<R, D> implements SystemView<R> {
     /** Data backed by this view. */
-    private final Collection<D> data;
+    private Collection<D> data;
 
     /** Data supplier for the view. */
-    private final Supplier<Collection<D>> dataSupplier;
+    private Supplier<Collection<D>> dataSupplier;
 
     /** Row function. */
     private final Function<D, R> rowFunc;
@@ -55,6 +55,18 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     private final SystemViewRowAttributeWalker<R> walker;
 
+    private SystemViewAdapter(String name, String desc, Class<R> rowCls,
+        SystemViewRowAttributeWalker<R> walker, Function<D, R> rowFunc) {
+        A.notNull(rowCls, "rowCls");
+        A.notNull(walker, "walker");
+
+        this.name = name;
+        this.desc = desc;
+        this.rowCls = rowCls;
+        this.walker = walker;
+        this.rowFunc = rowFunc;
+    }
+
     /**
      * @param name Name.
      * @param desc Description.
@@ -65,17 +77,11 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     public SystemViewAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        A.notNull(rowCls, "rowCls");
-        A.notNull(walker, "walker");
+        this(name, desc, rowCls, walker, rowFunc);
 
-        this.name = name;
-        this.desc = desc;
-        this.rowCls = rowCls;
-        this.walker = walker;
+        A.notNull(data, "data");
 
         this.data = data;
-        this.dataSupplier = null;
-        this.rowFunc = rowFunc;
     }
 
     /**
@@ -88,17 +94,11 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     public SystemViewAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker, Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
-        A.notNull(rowCls, "rowCls");
-        A.notNull(walker, "walker");
+        this(name, desc, rowCls, walker, rowFunc);
 
-        this.name = name;
-        this.desc = desc;
-        this.rowCls = rowCls;
-        this.walker = walker;
+        A.notNull(dataSupplier, "dataSupplier");
 
-        this.data = null;
         this.dataSupplier = dataSupplier;
-        this.rowFunc = rowFunc;
     }
 
     /** {@inheritDoc} */
