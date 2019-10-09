@@ -38,8 +38,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -113,15 +111,10 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.binary.BinaryUtils.fieldTypeName;
-import static org.apache.ignite.internal.binary.BinaryUtils.typeByClass;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
-import static org.apache.ignite.internal.processors.query.schema.SchemaOperationException.CODE_COLUMN_EXISTS;
 
 /**
  * Indexing processor.
@@ -1086,10 +1079,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             nop = true;
                         }
                         else
-                            err = new SchemaOperationException(CODE_COLUMN_EXISTS, col.name());
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
                     }
-                    else if (!checkFieldOnBinaryType(type.typeId(), col))
-                        err = new SchemaOperationException(CODE_COLUMN_EXISTS, "with a different type.");
                 }
             }
         }
@@ -1130,31 +1121,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             err = new SchemaOperationException("Unsupported operation: " + op);
 
         return new T3<>(type, nop, err);
-    }
-
-    /**
-     * It is checked that if a new column already existed in BinaryType,
-     * then its type does not change.
-     *
-     * @param typeId Binary type id.
-     * @param qryField New query field.
-     * @return {@code True} if the field is not added or type does not change.
-     */
-    private boolean checkFieldOnBinaryType(int typeId, QueryField qryField) {
-        assert nonNull(qryField);
-
-        try {
-            BinaryType binaryType = ctx.cacheObjects().metadata(typeId);
-            String binaryFieldType = nonNull(binaryType) ? binaryType.fieldTypeName(qryField.name()) : null;
-
-            return isNull(binaryFieldType) ||
-                binaryFieldType.equals(fieldTypeName(typeByClass(Class.forName(qryField.typeName()))));
-        }
-        catch (ClassNotFoundException e) {
-            throw new IgniteException(
-                "Class not found for property [name=" + qryField.name() + ", type=" + qryField.typeName() + ']'
-            );
-        }
     }
 
     /**
@@ -1276,7 +1242,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             nop = true;
                         }
                         else
-                            err = new SchemaOperationException(CODE_COLUMN_EXISTS, fld.name());
+                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, fld.name());
                     }
                 }
             }
