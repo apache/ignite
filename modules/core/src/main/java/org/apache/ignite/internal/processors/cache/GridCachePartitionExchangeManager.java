@@ -287,6 +287,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetric blockingDurationHistogram;
 
+    /** */
+    private final boolean bltForInMemoryCachesSupport = IgniteSystemProperties.getBoolean(
+        IgniteSystemProperties.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT,
+        false
+    );
+
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
@@ -569,8 +575,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
             }
 
-            if (!n.isClient() && !n.isDaemon())
-                exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
+            if (bltForInMemoryCachesSupport) {
+                if (!n.isClient() && !n.isDaemon())
+                    exchActs = cctx.kernalContext().state().autoAdjustExchangeActions(exchActs);
+            }
 
             exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }

@@ -1166,6 +1166,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISTRIBUTED_META_STORAGE_FEATURE = "IGNITE_DISTRIBUTED_META_STORAGE_FEATURE";
 
     /**
+     * Flag to turn on and off support of baseline topology for in-memory caches feature.
+     *
+     * For internal use only, must not be exposed to end users.
+     */
+    public static final String IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT =
+        "IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT";
+
+    /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.
      */
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";

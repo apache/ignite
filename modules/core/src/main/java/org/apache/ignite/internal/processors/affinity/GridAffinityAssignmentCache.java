@@ -55,6 +55,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -135,6 +136,14 @@ public class GridAffinityAssignmentCache {
     /** */
     private final boolean locCache;
 
+    /** */
+    private final boolean persistentCache;
+
+    /** */
+    private final boolean bltForInMemoryCachesSupport = IgniteSystemProperties.getBoolean(
+        IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, false
+    );
+
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
 
@@ -161,7 +170,8 @@ public class GridAffinityAssignmentCache {
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
-        boolean locCache
+        boolean locCache,
+        boolean persistentCache
     ) {
         assert ctx != null;
         assert aff != null;
@@ -175,6 +185,7 @@ public class GridAffinityAssignmentCache {
         this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
+        this.persistentCache = persistentCache;
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -344,6 +355,9 @@ public class GridAffinityAssignmentCache {
             blt = discoCache.state().baselineTopology();
 
             hasBaseline = blt != null;
+
+            if (!bltForInMemoryCachesSupport)
+                hasBaseline &= persistentCache;
 
             changedBaseline = !hasBaseline ? baselineTopology != null : !blt.equals(baselineTopology);
         }

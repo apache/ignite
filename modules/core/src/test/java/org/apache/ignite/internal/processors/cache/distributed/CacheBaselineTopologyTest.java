@@ -56,9 +56,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISTRIBUTED_META_STORAGE_FEATURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -149,6 +152,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key= IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testRebalanceForCacheWithNodeFilter() throws Exception {
         try {
             final int EMPTY_NODE_IDX = 2;
@@ -232,6 +236,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key= IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testTopologyChangesWithFixedBaseline() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -369,6 +374,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testBaselineTopologyChangesFromServer() throws Exception {
         testBaselineTopologyChanges(false);
     }
@@ -377,6 +383,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testBaselineTopologyChangesFromClient() throws Exception {
         testBaselineTopologyChanges(true);
     }
@@ -385,6 +392,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     public void testClusterActiveWhileBaselineChanging() throws Exception {
         startGrids(NODE_COUNT);
 
@@ -828,6 +836,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, value="true")
     public void testNonPersistentCachesDontIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
@@ -850,6 +859,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, value="true")
     public void testMapTxPrimaryNodes() throws Exception {
         checkMapTxNodes(true, false);
     }
@@ -859,6 +869,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, value="true")
     public void testMapTxBackupNodes() throws Exception {
         checkMapTxNodes(false, false);
     }
@@ -867,6 +878,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, value="true")
     public void testMapNearTxPrimaryNodes() throws Exception {
         checkMapTxNodes(true, true);
     }
@@ -876,6 +888,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_BASELINE_FOR_IN_MEMORY_CACHES_FEATURE_SUPPORT, value="true")
     public void testMapNearTxBackupNodes() throws Exception {
         checkMapTxNodes(false, true);
     }
@@ -1036,6 +1049,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key=IGNITE_DISTRIBUTED_META_STORAGE_FEATURE, value="true")
     @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
     public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
         Ignite ignite = startGrids(2);

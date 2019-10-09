@@ -35,12 +35,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Tests rebalancing of IgniteSet for a case when a custom class, that is used as a key, is absent
- * in the classpath on the joined node.
+ * Tests rebalancing of IgniteSet for a case when a custom class, that is used as a key, is absent in the classpath on
+ * the joined node.
  */
 public class GridCacheSetRebalanceTest extends GridCommonAbstractTest {
     /** */
@@ -107,7 +108,7 @@ public class GridCacheSetRebalanceTest extends GridCommonAbstractTest {
 
         useExtendedClasses = false;
 
-        startGrid(1);
+        GridTestUtils.runAsync(() -> startGrid(1));
 
         ignite0.cluster().setBaselineTopology(ignite0.cluster().forServers().nodes());
 

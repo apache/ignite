@@ -149,6 +149,9 @@ public class CacheGroupContext {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
+    /** {@code true} if this group was configured as persistence in despite of data region. */
+    private final boolean persistenceGroup;
+
     /** */
     private final CacheObjectContext cacheObjCtx;
 
@@ -202,6 +205,7 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
+     * @param persistenceGroup {@code true} if this group was configured as persistence in despite of data region.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -217,8 +221,8 @@ public class CacheGroupContext {
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
         boolean walEnabled,
-        boolean recoveryMode
-    ) {
+        boolean recoveryMode,
+        boolean persistenceGroup) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -238,6 +242,7 @@ public class CacheGroupContext {
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
+        this.persistenceGroup = persistenceGroup;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1081,7 +1086,8 @@ public class CacheGroupContext {
                 ccfg.getAffinity(),
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
+                ccfg.getCacheMode() == LOCAL,
+                persistenceGroup
             );
 
         if (ccfg.getCacheMode() != LOCAL) {

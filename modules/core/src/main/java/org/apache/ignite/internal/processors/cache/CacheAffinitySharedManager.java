@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -168,10 +168,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         DiscoveryDataClusterState state) {
         if (type == EVT_NODE_JOINED && node.isLocal())
             lastAffVer = null;
-
-        if ((state.transition() || !state.active()) &&
-            !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
-            return;
 
         if ((!node.isClient() && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
@@ -2824,7 +2820,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 affFunc,
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
+                ccfg.getCacheMode() == LOCAL,
+                grpDesc.persistenceEnabled()
             );
 
             return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
@@ -2871,7 +2868,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             affFunc,
             ccfg.getNodeFilter(),
             ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL
+            ccfg.getCacheMode() == LOCAL,
+            grpDesc.persistenceEnabled()
         );
 
         return new CacheGroupNoAffOrFiltredHolder(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
