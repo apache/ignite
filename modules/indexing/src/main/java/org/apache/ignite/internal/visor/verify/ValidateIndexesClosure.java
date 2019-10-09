@@ -64,9 +64,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -665,6 +665,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             IndexValidationIssue is = new IndexValidationIssue(null, ctx.name(), idx.getName(), t);
 
             log.error("Find in index failed: " + is.toString());
+
+            idxValidationRes.reportIssue(is);
 
             enoughIssues = true;
         }
