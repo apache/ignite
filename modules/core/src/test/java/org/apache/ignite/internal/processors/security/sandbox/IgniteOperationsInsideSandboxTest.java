@@ -120,7 +120,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
-        Ignite clnt = startGrid(CLNT_ALLOWED_THRAD_START, ALLOW_ALL, true);
+        Ignite clnt = startGrid(CLNT_ALLOWED_THREAD_START, ALLOW_ALL, true);
 
         srv.cluster().active(true);
 

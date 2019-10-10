@@ -45,7 +45,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         prepareCluster();
 
-        runOperation(operation(grid(CLNT_ALLOWED_THRAD_START)));
+        runOperation(operation(grid(CLNT_ALLOWED_THREAD_START)));
         runForbiddenOperation(operation(grid(CLNT_FORBIDDEN_THREAD_START)), AccessControlException.class);
     }
 

@@ -64,7 +64,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         prepareCluster();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED_THRAD_START);
+        Ignite clntAllowed = grid(CLNT_ALLOWED_THREAD_START);
 
         Ignite clntFrobidden = grid(CLNT_FORBIDDEN_THREAD_START);
 

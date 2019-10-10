@@ -62,7 +62,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected static final String SRV = "srv";
 
     /** Client node that can start a new thread. */
-    protected static final String CLNT_ALLOWED_THRAD_START = "clnt_allowed";
+    protected static final String CLNT_ALLOWED_THREAD_START = "clnt_allowed";
 
     /** Client node that cannot start a new thread. */
     protected static final String CLNT_FORBIDDEN_THREAD_START = "clnt_forbidden";
@@ -118,7 +118,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected void prepareCluster() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
-        startGrid(CLNT_ALLOWED_THRAD_START, ALLOW_ALL,
+        startGrid(CLNT_ALLOWED_THREAD_START, ALLOW_ALL,
             TestPermissionsBuilder.create()
                 .add(MODIFY_THREAD_PERMISSION)
                 .add(MODIFY_THREADGROUP_PERMISSION).get(), true);
