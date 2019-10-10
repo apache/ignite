@@ -69,7 +69,7 @@ public class ExchangeContext {
         GridDiscoveryManager disco = fut.sharedContext().discovery();
 
         if (protocolVer > 2 && fut.exchangeId().isLeft() && fut.isEventNodeInBaseline() &&
-            disco.baselineChanged(fut.sharedContext().exchange().readyAffinityVersion(), fut.initialVersion())) {
+            !disco.baselineChanged(fut.sharedContext().exchange().readyAffinityVersion(), fut.initialVersion())) {
             baselineNodeLeft = true;
 
             merge = false;

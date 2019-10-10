@@ -1814,7 +1814,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         BaselineTopology baseline1 = disco1 != null ? disco1.state().baselineTopology() : null;
         BaselineTopology baseline2 = disco2 != null ? disco2.state().baselineTopology() : null;
 
-        return Objects.equals(baseline1, baseline2);
+        return !Objects.equals(baseline1, baseline2);
     }
 
     /**
