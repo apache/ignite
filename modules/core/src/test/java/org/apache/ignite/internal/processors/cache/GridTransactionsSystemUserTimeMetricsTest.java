@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
@@ -55,6 +57,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_D
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.METRIC_TIME_BUCKETS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toJson;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -90,6 +94,12 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
     /** */
     private static final String ROLLBACK_TIME_DUMP_REGEX =
         ".*?Long transaction time dump .*?cacheOperationsTime=[0-9]{1,4}.*?rollbackTime=[0-9]{1,4}.*";
+
+    /** */
+    private static final String HISTOGRAM_REGEX = histogramRegex();
+
+    /** */
+    private static final Pattern HISTOGRAM_VALUE_COUNT_PATTERN = Pattern.compile("\"value\":(?<count>[0-9]{1})");
 
     /** */
     private LogListener logTxDumpLsnr = new MessageOrderLogListener(TRANSACTION_TIME_DUMP_REGEX);
@@ -252,16 +262,14 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * with given delay on user time for each transaction.
      *
      * @param client Client.
-     * @param txCount Transactions count.
+     * @param txCnt Transactions count.
      * @param userDelay User delay for each transaction.
      */
-    private void doAsyncTransactions(Ignite client, int txCount, long userDelay) {
-        ExecutorService executorService = Executors.newFixedThreadPool(txCount);
+    private void doAsyncTransactions(Ignite client, int txCnt, long userDelay) {
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(txCnt);
 
-        List<Future> futures = new LinkedList<>();
-
-        for (int i = 0; i < txCount; i++) {
-            futures.add(executorService.submit(() -> {
+        for (int i = 0; i < txCnt; i++) {
+            executorSrvc.submit(() -> {
                 try {
                     doInTransaction(client, () -> {
                         doSleep(userDelay);
@@ -274,10 +282,10 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
                 catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            }));
+            });
         }
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**
@@ -285,13 +293,13 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * mode.
      *
      * @param client Client.
-     * @param systemDelay System delay.
+     * @param sysDelay System delay.
      * @param userDelay User delay.
      * @param mode Mode, see {@link TxTestMode}.
      * @throws Exception If failed.
      */
-    private void doTransaction(Ignite client, boolean systemDelay, boolean userDelay, TxTestMode mode) throws Exception {
-        if (systemDelay)
+    private void doTransaction(Ignite client, boolean sysDelay, boolean userDelay, TxTestMode mode) throws Exception {
+        if (sysDelay)
             slowSystem = true;
 
         if (mode == TxTestMode.FAIL)
@@ -317,20 +325,20 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * Allows to run a transaction which executes {@link #txCallable} with given system delay, user delay and
      * mode, also measures it's start time, completion time, gets MX bean with metrics and gives it in a result.
      *
-     * @param systemDelay  System delay.
+     * @param sysDelay  System delay.
      * @param userDelay User delay.
      * @param mode Mode, see {@link TxTestMode}.
      * @return Result, see {@link ClientTxTestResult}.
      * @throws Exception If failed.
      */
-    private ClientTxTestResult measureClientTransaction(boolean systemDelay, boolean userDelay, TxTestMode mode) throws Exception {
+    private ClientTxTestResult measureClientTransaction(boolean sysDelay, boolean userDelay, TxTestMode mode) throws Exception {
         logTxDumpLsnr.reset();
         rollbackDumpLsnr.reset();
 
         long startTime = System.currentTimeMillis();
 
         try {
-            doTransaction(client, systemDelay, userDelay, mode);
+            doTransaction(client, sysDelay, userDelay, mode);
         }
         catch (Exception e) {
             // Giving a time for transaction to rollback.
@@ -354,10 +362,38 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      *
      * @param histogramJson Histogram json.
      */
-    private void assertNotEmpty(String histogramJson) {
+    private void checkHistogram(String histogramJson, int txCnt) {
         assertNotNull(histogramJson);
 
-        assertTrue(histogramJson.length() > 0);
+        assertTrue(histogramJson, histogramJson.matches(HISTOGRAM_REGEX));
+        assertTrue(histogramJson, histogramJson.contains("\"values\":[{\"fromInclusive\":0,\"toInclusive\":1,\""));
+
+        Matcher m = HISTOGRAM_VALUE_COUNT_PATTERN.matcher(histogramJson);
+
+        int cnt = 0;
+
+        while (m.find()) {
+            String c = m.group("count");
+
+            cnt += Integer.valueOf(c);
+        }
+
+        assertEquals("Must be " + txCnt + " transaction(s), actually were: " + cnt + ". Histogram: " + histogramJson, txCnt, cnt);
+    }
+
+    /**
+     * Creates histogram regex to check transaction histograms.
+     * @return Regex.
+     */
+    private static String histogramRegex() {
+        String regex = toJson(new HistogramMetric(METRIC_TIME_BUCKETS))
+            .replace("{", "\\{")
+            .replace("}", "\\}")
+            .replace("[", "\\[")
+            .replace("]", "\\]")
+            .replace("\"value\":0", "\"value\":[0-9]{1}");
+
+        return regex;
     }
 
     /**
@@ -385,8 +421,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             assertTrue(sysTime < res.completionTime - res.startTime - userTime + EPSILON);
         }
 
-        assertNotEmpty(res.mBean.getNodeSystemTimeHistogram());
-        assertNotEmpty(res.mBean.getNodeUserTimeHistogram());
+        checkHistogram(res.mBean.getNodeSystemTimeHistogram(), 2);
+        checkHistogram(res.mBean.getNodeUserTimeHistogram(), 2);
     }
 
     /**
