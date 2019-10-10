@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -48,9 +47,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -383,19 +379,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Get partition restore future.
-     *
-     * @param msg Message.
-     * @return Partition restore future or {@code null} if no partition currently restored.
-     */
-    public IgniteInternalFuture partitionRestoreFuture(UUID nodeId, GridCacheMessage msg) {
-        if (!(msg instanceof GridCacheGroupIdMessage) && !(msg instanceof GridCacheIdMessage))
-            return null;
-
-        return mainFut.lockMessagesFuture(null, -1, -1);
-    }
-
-    /**
      * Completely destroy the partition without changing its state.
      *
      * @param part Partition to destroy.
@@ -466,14 +449,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             Files.move(fsPartFile.toPath(), dst.toPath());
         }
         catch (IOException e) {
-            // todo FileAlreadyExistsException -> retry ?
             throw new IgniteCheckedException("Unable to move file from " + fsPartFile + " to " + dst, e);
         }
 
         // Reinitialize file store afte rmoving partition file.
         cctx.pageStore().ensure(grpId, partId);
 
-        return cpLsnr.schedule(() -> {
+        GridFutureAdapter<T2<Long, Long>> endFut = new GridFutureAdapter<>();
+
+        cpLsnr.schedule(() -> {
             // Save current update counter.
             PartitionUpdateCounter maxCntr = ctx.topology().localPartition(partId).dataStore().partUpdateCounter();
 
@@ -483,15 +467,25 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // File page store should be reinitialized.
             assert cctx.pageStore().exists(grpId, partId) : "File doesn't exist [grpId=" + grpId + ", p=" + partId + "]";
 
-            GridDhtLocalPartition part = ctx.topology().forceCreatePartition(partId, true);
+            GridDhtLocalPartition restoredPart = ctx.topology().forceCreatePartition(partId, true);
 
             // Switching to new datastore.
-            part.readOnly(false);
+            restoredPart.readOnly(false);
 
-            maxCntr.finalizeUpdateCounters();
+            PartitionUpdateCounter snpPartCntr = restoredPart.dataStore().partUpdateCounter();
 
-            return new T2<>(part.updateCounter(), maxCntr.get());
+            AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
+
+            IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
+
+            // todo Consistency check fails sometimes for ATOMIC cache.
+            partReleaseFut.listen(c -> endFut.onDone(new T2<>(snpPartCntr.get(),
+                Math.max(maxCntr.highestAppliedCounter(), snpPartCntr.highestAppliedCounter()))));
+
+            return null;
         });
+
+        return endFut;
     }
 
     /**
@@ -612,12 +606,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             IgniteInternalFuture evictFut = fut.evictionFuture(grpId);
 
             try {
-                // todo should lock only on checkpoint
-                mainFut.lockMessaging(nodeId, grpId, partId);
+                IgniteInternalFuture<T2<Long, Long>> restoreFut = restorePartition(grpId, partId, file, evictFut);
 
-                IgniteInternalFuture<T2<Long, Long>> switchFut = restorePartition(grpId, partId, file, evictFut);
-
-                switchFut.listen(f -> {
+                restoreFut.listen(f -> {
                     try {
                         T2<Long, Long> cntrs = f.get();
 
@@ -664,9 +655,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         /** */
         private final AffinityTopologyVersion topVer;
-
-        /** */
-        private final AtomicReference<GridFutureAdapter> switchFutRef = new AtomicReference<>();
 
         /** */
         private final Map<String, PageMemCleanupTask> cleanupRegions = new HashMap<>();
@@ -763,33 +751,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             futMap.clear();
 
             return onDone(false, null, true);
-        }
-
-        public IgniteInternalFuture lockMessagesFuture(UUID nodeId, int grpId, int partId) {
-            // todo we don't care from where request is coming - we should
-            //      lock partition for all updates! nodeId is redundant
-            // FileRebalanceSingleNodeFuture currFut = futMap.get(nodeId);
-
-            // todo how to get partition and group
-            // return staleFuture(currFut) ? null : currFut.switchFut(-1, -1);
-
-            return switchFutRef.get();
-        }
-
-        public void lockMessaging(UUID nodeId, Integer grpId, Integer partId) {
-            switchFutRef.compareAndSet(null, new GridFutureAdapter());
-        }
-
-        public boolean unlockMessaging() {
-            GridFutureAdapter fut = switchFutRef.get();
-
-            if (fut != null && switchFutRef.compareAndSet(fut, null)) {
-                fut.onDone();
-
-                return true;
-            }
-
-            return false;
         }
 
         public void onNodeGroupDone(int grpId, UUID nodeId, boolean historical) {
@@ -1056,10 +1017,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             assert parts != null : "Invalid group identifier: " + grpId;
 
-            boolean rmvd = parts.remove(partId);
-
-            assert rmvd : "Partition not found: " + partId;
-
             remainingHist.computeIfAbsent(grpId, v -> new ConcurrentSkipListSet<>())
                 .add(new HistoryDesc(partId, min, max));
 
@@ -1068,36 +1025,44 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                     ", p=" + partId + ", remaining=" + parts.size() + "]");
             }
 
-            if (parts.isEmpty()) {
-                mainFut.unlockMessaging();
+            boolean rmvd = parts.remove(partId);
 
+            assert rmvd : "Partition not found: " + partId;
+
+            if (parts.isEmpty())
                 onGroupRestored(grpId);
-            }
         }
 
         private void onGroupRestored(int grpId) {
-            if (remaining.remove(grpId) == null)
+            Set<Integer> parts = remaining.remove(grpId);
+
+            if (parts == null)
                 return;
 
-            Set<HistoryDesc> parts0 = remainingHist.remove(grpId);
+            Set<HistoryDesc> histParts = remainingHist.remove(grpId);
+
+            assert histParts.size() == assigns.get(grpId).size() : "expect=" + assigns.get(grpId).size() + ", actual=" + histParts.size();
 
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grpId);
 
-            for (HistoryDesc desc : parts0) {
+            for (HistoryDesc desc : histParts) {
                 assert desc.toCntr >= desc.fromCntr : "from=" + desc.fromCntr + ", to=" + desc.toCntr;
 
                 if (desc.fromCntr != desc.toCntr) {
-                    msg.partitions().addHistorical(desc.partId, desc.fromCntr, desc.toCntr, parts0.size());
+                    msg.partitions().addHistorical(desc.partId, desc.fromCntr, desc.toCntr, histParts.size());
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Prepare to request historical rebalancing [p=" +
+                            desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
+                    }
 
                     continue;
                 }
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Prepare to request historical rebalancing [p=" +
-                        desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
-                }
+                log.debug("Skipping historical rebalancing [p=" +
+                    desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
 
                 // No historical rebalancing required  -can own partition.
                 if (grp.localWalEnabled()) {

@@ -133,4 +133,11 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * @return Iterator for pairs [start, range] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();
+
+    /**
+     * todo naming
+     *
+     * @return Highest applied counter.
+     */
+    public long highestAppliedCounter();
 }

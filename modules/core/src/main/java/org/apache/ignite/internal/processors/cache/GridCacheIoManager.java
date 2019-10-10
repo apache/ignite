@@ -304,58 +304,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 return;
             }
-            else {
-                IgniteInternalFuture<?> restoreFut = cctx.filePreloader().partitionRestoreFuture(nodeId, cacheMsg);
-
-                if (restoreFut != null && !restoreFut.isDone()) {
-                    synchronized (pendingMsgs) {
-                        if (pendingMsgs.size() < MAX_STORED_PENDING_MESSAGES)
-                            pendingMsgs.add(cacheMsg);
-                    }
-
-                    Thread curThread = Thread.currentThread();
-
-                    final int stripe = curThread instanceof IgniteThread ? ((IgniteThread)curThread).stripe() : -1;
-
-                    restoreFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> t) {
-                            Runnable c = new Runnable() {
-                                @Override public void run() {
-                                    synchronized (pendingMsgs) {
-                                        pendingMsgs.remove(cacheMsg);
-                                    }
-
-                                    IgniteLogger log = cacheMsg.messageLogger(cctx);
-
-                                    if (log.isDebugEnabled()) {
-                                        StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
-                                            "affinity topology version [");
-
-                                        appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
-
-                                        log.debug(msg0.toString());
-                                    }
-
-                                    handleMessage(nodeId, cacheMsg, plc);
-                                }
-                            };
-
-                            if (stripe >= 0)
-                                cctx.kernalContext().getStripedExecutorService().execute(stripe, c);
-                            else {
-                                try {
-                                    cctx.kernalContext().pools().poolForPolicy(plc).execute(c);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(cacheMsg.messageLogger(cctx), "Failed to get pool for policy: " + plc, e);
-                                }
-                            }
-                        }
-                    });
-
-                    return;
-                }
-            }
 
             handleMessage(nodeId, cacheMsg, plc);
         }
