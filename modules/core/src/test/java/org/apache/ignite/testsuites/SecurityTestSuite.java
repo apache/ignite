@@ -29,13 +29,19 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+
+import static org.apache.ignite.internal.IgniteFeatures.IGNITE_SECURITY_PROCESSOR;
 
 /**
  * Security test suite.
  */
 @RunWith(Suite.class)
+@WithSystemProperty(key = "IGNITE_SECURITY_PROCESSOR", value = "true")
 @Suite.SuiteClasses({
     CacheOperationPermissionCheckTest.class,
     DataStreamerPermissionCheckTest.class,
@@ -53,4 +59,19 @@ import org.junit.runners.Suite;
     ThinClientPermissionCheckTest.class,
 })
 public class SecurityTestSuite {
+    /**
+     * Remote security context propagation is disabled by default, we have to enable it to run corresponding tests.
+     */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_SECURITY_PROCESSOR.name(), "true");
+    }
+
+    /**
+     * Clears property after suite run.
+     */
+    @AfterClass
+    public static void cleanUp() {
+        System.clearProperty(IGNITE_SECURITY_PROCESSOR.name());
+    }
 }
