@@ -6958,7 +6958,7 @@ public abstract class IgniteUtils {
         // then a caller's code that instantiated the ClassLoader doesn't too.
         // In that case, the method throws an exception.
         if (!hasSetContextClassLoaderPermission(ldr))
-            throw new IgniteCheckedException("Passed parameter \"ldr\" cannot be used.");
+            throw new IgniteCheckedException("The current thread cannot set the context ClassLoader.");
 
         Thread curThread = Thread.currentThread();
 
