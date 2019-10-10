@@ -94,16 +94,26 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
     public void testIndexesViewDisabledBySystemProperty() throws Exception {
         String old = System.getProperty(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
-        try {
-            startNodes();
+        System.setProperty(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS, "true");
 
+        try {
             ccfg = (CacheConfiguration<Object, Object>[])new CacheConfiguration[] {
                 new CacheConfiguration<>("cache")
                     .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, TestValue.class)
                     .setIndexes(Collections.singleton(new QueryIndex("i")))))
             };
 
-            checkIndexes(List::isEmpty);
+            startNodes();
+
+            for (Ignite ign : G.allGrids()) {
+                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME");
+
+                Throwable e = GridTestUtils.assertThrowsWithCause(
+                    () -> ign.cache("cache").query(qry).getAll(),
+                    IgniteSQLException.class);
+
+                assertTrue(e.getMessage().contains("Schema \"IGNITE\" not found"));
+            }
         }
         finally {
             if (old == null)

@@ -89,15 +89,13 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
     public void testDdlTableIndexes() throws Exception {
         execSql(driver, "CREATE TABLE Person(id INT PRIMARY KEY, name VARCHAR, age INT)");
 
-        System.err.println(driver.cacheNames());
-
-        List<Object> expInitial = Arrays.asList(
+        List<Object> expInit = Arrays.asList(
             Arrays.asList("PUBLIC", "PERSON", "__SCAN_", null, "SCAN", false, false, -1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", null),
             Arrays.asList("PUBLIC", "PERSON", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", 5),
             Arrays.asList("PUBLIC", "PERSON", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", null)
         );
 
-        checkIndexes(expInitial::equals);
+        checkIndexes(expInit::equals);
 
         driver.cluster().active(false);
 
@@ -106,7 +104,7 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
 
         driver.cluster().active(true);
 
-        checkIndexes(expInitial::equals);
+        checkIndexes(expInit::equals);
 
         try {
             execSql(driver, "CREATE INDEX NameIdx ON Person(surname)");
@@ -116,7 +114,7 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
         catch (IgniteSQLException ignored) {
         }
 
-        checkIndexes(expInitial::equals);
+        checkIndexes(expInit::equals);
 
         execSql(driver, "CREATE INDEX NameIdx ON Person(name)");
 
@@ -131,7 +129,7 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
 
         execSql(driver, "DROP INDEX NameIdx");
 
-        checkIndexes(expInitial::equals);
+        checkIndexes(expInit::equals);
 
         execSql(driver, "CREATE INDEX CompIdx ON Person(name, age)");
 
@@ -155,13 +153,13 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
 
         execSql(driver, "CREATE TABLE Person(id1 INT, id2 INT, name VARCHAR, age INT, PRIMARY KEY (id1, id2))");
 
-        List<Object> expInitial = Arrays.asList(
+        List<Object> expInit = Arrays.asList(
             Arrays.asList(-1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", "PUBLIC", "PERSON", "__SCAN_", "SCAN", null, false, false, null),
             Arrays.asList(-1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", "PUBLIC", "PERSON", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", true, true, 10),
             Arrays.asList(-1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", "PUBLIC", "PERSON", "_key_PK_hash", "HASH", "\"ID1\" ASC, \"ID2\" ASC", false, true, null)
         );
 
-        checkIndexes(expInitial::equals);
+        checkIndexes(expInit::equals);
 
         execSql(driver, "CREATE INDEX CompIdx ON Person(name, age)");
 
