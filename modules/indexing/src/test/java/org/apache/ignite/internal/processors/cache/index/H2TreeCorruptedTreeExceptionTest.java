@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -51,9 +50,6 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** */
     private final AtomicBoolean failWithCorruptTree = new AtomicBoolean(false);
-
-    /** */
-    private PageHandlerWrapper<BPlusTree.Result> regularWrapper;
 
     /** */
     private final LogListener logListener = new MessageOrderLogListener(
@@ -94,8 +90,6 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        regularWrapper = BPlusTree.pageHndWrapper;
-
         BPlusTree.pageHndWrapper = (tree, hnd) -> {
             if (hnd instanceof BPlusTree.Insert) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
@@ -129,9 +123,6 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        //restoring wrapper
-        BPlusTree.pageHndWrapper = regularWrapper;
-
         stopAllGrids();
 
         cleanPersistenceDir();
