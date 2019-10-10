@@ -22,9 +22,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -32,8 +32,6 @@ import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
-import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -42,6 +40,11 @@ import org.junit.Test;
  * Tests REST processor configuration via Ignite plugins functionality.
  */
 public class RestProcessorInitializationTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids(true);
+    }
+
     /**
      * @throws Exception if failed.
      */
@@ -133,7 +136,7 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
             if (cls.equals(IgniteRestProcessor.class))
-                return new TestGridRestProcessorImpl();
+                return new TestGridRestProcessorImpl(((IgniteEx)ctx.grid()).context());
 
             return null;
         }
@@ -149,76 +152,12 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
     /**
      * Test no-op implementation of {@link IgniteRestProcessor}.
      */
-    private static class TestGridRestProcessorImpl implements IgniteRestProcessor {
-        /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onKernalStart(boolean active) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onKernalStop(boolean cancel) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void printMemoryStats() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node,
-            DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable DiscoveryDataExchangeType discoveryDataType() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
-            return null;
+    private static class TestGridRestProcessorImpl extends GridProcessorAdapter implements IgniteRestProcessor {
+        /**
+         * @param ctx Kernal context.
+         */
+        protected TestGridRestProcessorImpl(GridKernalContext ctx) {
+            super(ctx);
         }
     }
 }
