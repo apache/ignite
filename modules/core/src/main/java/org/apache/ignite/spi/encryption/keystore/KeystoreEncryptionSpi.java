@@ -309,6 +309,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void setMasterKeyId(String masterKeyId) {
+        if (!started()) {
+            masterKey.set1(masterKeyId);
+
+            return;
+        }
+
         setMasterKey(masterKeyId);
     }
 
@@ -463,16 +469,20 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      * Gets master key name.
      *
      * @return Master key name.
+     * @deprecated Use {@link #getMasterKeyId()} instead.
      */
+    @Deprecated
     public String getMasterKeyName() {
         return masterKey.get1();
     }
 
     /**
-     * Sets mater key name.
+     * Sets master key name to use on SPI's start.
      *
      * @param masterKeyName Master key name.
+     * @deprecated Use {@link #setMasterKeyId(String)} instead.
      */
+    @Deprecated
     public void setMasterKeyName(String masterKeyName) {
         assert !started() : "Spi already started";
 

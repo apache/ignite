@@ -60,13 +60,13 @@ public class MasterKeyChangeRecord extends WALRecord {
     }
 
     /**
-     * @return Plain size.
+     * @return Record's data size.
      */
-    public int plainSize() {
-        int size = 4 + masterKeyId.length() + 4;
+    public int dataSize() {
+        int size = /*Master key id length*/4 + masterKeyId.length() + /*Group keys map size*/4;
 
         for (Map.Entry<Integer, byte[]> entry : grpKeys.entrySet())
-            size += 4 + 4 + entry.getValue().length;
+            size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;
 
         return size;
     }

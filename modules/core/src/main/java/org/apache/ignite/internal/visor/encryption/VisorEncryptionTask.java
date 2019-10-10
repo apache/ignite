@@ -55,6 +55,8 @@ public class VisorEncryptionTask extends VisorOneNodeTask<VisorEncryptionArgs, V
 
         /** {@inheritDoc} */
         @Override protected VisorEncryptionTaskResult run(@Nullable VisorEncryptionArgs arg) throws IgniteException {
+            assert arg != null;
+
             switch (arg.getCmd()) {
                 case GET_MASTER_KEY:
                     String masterKeyId = ignite.encryption().getMasterKeyId();

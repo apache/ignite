@@ -54,8 +54,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.spi.systemview.view.CacheGroupView;
-import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -73,6 +71,8 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -962,8 +962,8 @@ public class ClusterCachesInfo {
 
         GridEncryptionManager encMgr = ctx.encryption();
 
-        if (ccfg.isEncryptionEnabled() && encMgr.checkMasterKeyChangeSupported() &&
-            (encMgr.isMasterKeyChangeInProgress() || !F.eq(encMgr.getMasterKeyId(), req.masterKeyId()))) {
+        if (ccfg.isEncryptionEnabled() && (encMgr.isMasterKeyChangeInProgress() ||
+            !F.eq(encMgr.getMasterKeyId(), req.masterKeyId()))) {
             U.warn(log, "Ignore cache start request during the master key change process.");
 
             IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +

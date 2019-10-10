@@ -33,10 +33,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
  */
 public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest {
     /** */
-    private AtomicBoolean simulateOtherDigest = new AtomicBoolean();
+    private final AtomicBoolean simulateOtherDigest = new AtomicBoolean();
 
     /** */
-    private AtomicBoolean simulateSetMasterKeyError = new AtomicBoolean();
+    private final AtomicBoolean simulateSetMasterKeyError = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {

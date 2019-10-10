@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
-import java.util.Comparator;
-import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
@@ -31,7 +28,7 @@ import org.apache.ignite.internal.visor.encryption.VisorEncryptionTask;
 import org.apache.ignite.internal.visor.encryption.VisorEncryptionTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.CHANGE_MASTER_KEY;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.GET_MASTER_KEY;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.of;
@@ -46,16 +43,10 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            UUID coordinatorId = client.compute().nodes().stream()
-                .min(Comparator.comparingLong(GridClientNode::order))
-                .map(GridClientNode::nodeId)
-                .orElse(null);
-
-            VisorEncryptionTaskResult res = executeTaskByNameOnNode(
+            VisorEncryptionTaskResult res = executeTask(
                 client,
-                VisorEncryptionTask.class.getName(),
+                VisorEncryptionTask.class,
                 encryptionArgs,
-                coordinatorId,
                 clientCfg
             );
 
@@ -71,7 +62,7 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        if (encryptionArgs != null && GET_MASTER_KEY != encryptionArgs.getCmd())
+        if (encryptionArgs != null && CHANGE_MASTER_KEY == encryptionArgs.getCmd())
             return "Warning: the command will change the master key.";
 
         return null;

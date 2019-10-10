@@ -536,7 +536,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case MASTER_KEY_CHANGE_RECORD:
                 MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
 
-                return rec.plainSize();
+                return rec.dataSize();
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -1163,21 +1163,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 int keysCnt = in.readInt();
 
-                HashMap<Integer, byte[]> keys = new HashMap<>(keysCnt);
+                HashMap<Integer, byte[]> grpKeys = new HashMap<>(keysCnt);
 
                 for (int i = 0; i < keysCnt; i++) {
                     int grpId = in.readInt();
 
-                    int grpKeysSize = in.readInt();
+                    int grpKeySize = in.readInt();
 
-                    byte[] grpKey = new byte[grpKeysSize];
+                    byte[] grpKey = new byte[grpKeySize];
 
                     in.readFully(grpKey);
 
-                    keys.put(grpId, grpKey);
+                    grpKeys.put(grpId, grpKey);
                 }
 
-                res = new MasterKeyChangeRecord(masterKeyId, keys);
+                res = new MasterKeyChangeRecord(masterKeyId, grpKeys);
 
                 break;
 
@@ -1753,11 +1753,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(keyIdBytes.length);
                 buf.put(keyIdBytes);
 
-                Map<Integer, byte[]> keys = mkChangeRec.getGrpKeys();
+                Map<Integer, byte[]> grpKeys = mkChangeRec.getGrpKeys();
 
-                buf.putInt(keys.size());
+                buf.putInt(grpKeys.size());
 
-                for (Map.Entry<Integer, byte[]> entry : mkChangeRec.getGrpKeys().entrySet()) {
+                for (Map.Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
                     buf.putInt(entry.getKey());
 
                     buf.putInt(entry.getValue().length);

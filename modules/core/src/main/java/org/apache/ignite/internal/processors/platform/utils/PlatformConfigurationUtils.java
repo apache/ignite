@@ -987,7 +987,7 @@ public class PlatformConfigurationUtils {
 
         KeystoreEncryptionSpi enc = new KeystoreEncryptionSpi();
 
-        enc.setMasterKeyName(in.readString());
+        enc.setMasterKeyId(in.readString());
         enc.setKeySize(in.readInt());
         enc.setKeyStorePath(in.readString());
         enc.setKeyStorePassword(in.readCharArray());
@@ -1565,7 +1565,7 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
 
-        w.writeString(keystoreEnc.getMasterKeyName());
+        w.writeString(keystoreEnc.getMasterKeyId());
         w.writeInt(keystoreEnc.getKeySize());
         w.writeString(keystoreEnc.getKeyStorePath());
         w.writeCharArray(keystoreEnc.getKeyStorePwd());

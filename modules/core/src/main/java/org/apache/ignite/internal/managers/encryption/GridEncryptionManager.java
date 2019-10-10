@@ -377,6 +377,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return res;
 
         if (isMasterKeyChangeInProgress()) {
+            // Prevents new nodes join to avoid inconsistency of the master key. Clients and daemons are not allowed
+            // because may have configured caches.
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Master key change in progress! Node join is rejected. [node=" + node.id() + "]",
                 "Master key change in progress! Node join is rejected.");
@@ -568,14 +570,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ctx.gateway().readLock();
 
         try {
-            if (!checkMasterKeyChangeSupported())
-                throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
+            checkMasterKeyChangeSupported();
 
             MasterKeyChangeMessage msg = new MasterKeyChangeMessage(masterKeyId);
 
             MasterKeyChangeFuture fut = new MasterKeyChangeFuture(msg.requestId());
 
-            masterKeyChangeFuts.put(msg.requestId(), fut);
+            masterKeyChangeFuts.put(fut.id(), fut);
 
             ctx.grid().context().discovery().sendCustomEvent(msg);
 
@@ -594,8 +595,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         ctx.gateway().readLock();
 
         try {
-            if (!checkMasterKeyChangeSupported())
-                throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
+            checkMasterKeyChangeSupported();
 
             // It is safe to return a not-null master key id in case of the completed master key change process.
             if (ctx.clientNode() && masterKeyId == null) {
@@ -623,6 +623,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** */
     private void sendMasterKeyIdRequest(MasterKeyIdFuture fut) throws IgniteCheckedException {
+        assert ctx.clientNode();
+
         ClusterNode rndNode = U.randomServerNode(ctx);
 
         if (rndNode == null)
@@ -1043,9 +1045,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** @return {@code True} if the master key change process supported by all nodes in cluster. */
-    public boolean checkMasterKeyChangeSupported() {
-        return IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE);
+    /** Checks that the master key change process supported by all nodes in cluster. */
+    public void checkMasterKeyChangeSupported() {
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
+            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
     }
 
     /** */
@@ -1275,6 +1278,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
          */
         private MasterKeyChangeFuture(UUID id) {
             this.id = id;
+        }
+
+        /** */
+        public UUID id() {
+            return id;
         }
 
         /** {@inheritDoc} */
