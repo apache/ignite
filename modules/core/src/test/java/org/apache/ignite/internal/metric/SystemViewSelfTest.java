@@ -531,41 +531,27 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, views.size());
 
-            checkNodeView(views.iterator().next(), g1.localNode(), true);
-
             try(IgniteEx g2 = startGrid(1)) {
                 awaitPartitionMapExchange();
 
-                assertEquals(2, views.size());
+                checkViewsState(views, g1.localNode(), g2.localNode());
+                checkViewsState(g2.context().systemView().view(NODES_SYS_VIEW), g2.localNode(), g1.localNode());
 
-                boolean found = false;
-
-                for (ClusterNodeView node : views) {
-                    if (!node.nodeId().equals(g2.localNode().id()))
-                        continue;
-
-                    checkNodeView(node, g2.localNode(), false);
-
-                    found = true;
-
-                    break;
-                }
-
-                assertTrue(found);
-
-                SystemView<ClusterNodeView> nodes2 = g2.context().systemView().view(NODES_SYS_VIEW);
-
-                assertEquals(2, nodes2.size());
-
-                for (ClusterNodeView node : nodes2) {
-                    if(node.nodeId().equals(g2.localNode().id()))
-                        checkNodeView(node, g2.localNode(), true);
-                    else
-                        checkNodeView(node, g1.localNode(), false);
-                }
             }
 
             assertEquals(1, views.size());
+        }
+    }
+
+    /** */
+    private void checkViewsState(SystemView<ClusterNodeView> views, ClusterNode loc, ClusterNode rmt) {
+        assertEquals(2, views.size());
+
+        for (ClusterNodeView nodeView : views) {
+            if (nodeView.nodeId().equals(loc.id()))
+                checkNodeView(nodeView, loc, true);
+            else
+                checkNodeView(nodeView, rmt, false);
         }
     }
 
