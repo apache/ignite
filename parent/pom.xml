@@ -391,6 +391,10 @@
                                 <packages>org.apache.ignite.services</packages>
                             </group>
                             <group>
+                                <title>Ignite Thin Client APIs</title>
+                                <packages>org.apache.ignite.client</packages>
+                            </group>
+                            <group>
                                 <title>Streaming APIs</title>
                                 <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
                             </group>
