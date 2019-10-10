@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
 /**
- * 
+ * This example demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
  */
 public class JavaIgniteDataFrameJoinExample {
     /**
@@ -61,9 +61,7 @@ public class JavaIgniteDataFrameJoinExample {
         Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
 
         // Executing examples.
-
         sparkDSLJoinExample(spark);
-
         nativeSparkSqlJoinExample(spark);
 
         Ignition.stop(false);
@@ -92,10 +90,12 @@ public class JavaIgniteDataFrameJoinExample {
         cities.show();
 
         Dataset<Row> joinResult = persons.join(cities, persons.col("city_id").equalTo(cities.col("id")))
-                .select(persons.col("name").as("person"), cities.col("name").as("city"));
+                .select(persons.col("name").as("person"), persons.col("age"), cities.col("name").as("city"), cities.col("country"));
+
         joinResult.explain(true);
         joinResult.printSchema();
         joinResult.show();
+
 
     }
 
@@ -126,10 +126,13 @@ public class JavaIgniteDataFrameJoinExample {
         cities.createOrReplaceTempView("city");
 
         // Selecting data from Ignite through Spark SQL Engine.
-        Dataset<Row> joinResult = spark.sql("SELECT person.NAME AS person, city.NAME AS city FROM person JOIN city ON person.city_id = city.id");
+        Dataset<Row> joinResult = spark.sql("SELECT person.name AS person, age, city.name AS city, country FROM person JOIN city ON person.city_id = city.id");
+
         joinResult.explain(true);
         joinResult.printSchema();
         joinResult.show();
+
+
     }
 
     /** */
@@ -144,26 +147,26 @@ public class JavaIgniteDataFrameJoinExample {
 
         // Creating SQL tables.
         cache.query(new SqlFieldsQuery(
-                "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
+                "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR, country VARCHAR) WITH \"template=replicated\"")).getAll();
 
         cache.query(new SqlFieldsQuery(
-                "CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id)) " +
+                "CREATE TABLE person (id LONG, name VARCHAR, age INT, city_id LONG, PRIMARY KEY (id, city_id)) " +
                         "WITH \"backups=1, affinity_key=city_id\"")).getAll();
 
         cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll();
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)");
+        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO city (id, name, country) VALUES (?, ?, ?)");
 
         // Inserting some data to tables.
-        cache.query(qry.setArgs(1L, "Forest Hill")).getAll();
-        cache.query(qry.setArgs(2L, "Denver")).getAll();
-        cache.query(qry.setArgs(3L, "St. Petersburg")).getAll();
+        cache.query(qry.setArgs(1L, "Forest Hill", "USA")).getAll();
+        cache.query(qry.setArgs(2L, "Denver", "USA")).getAll();
+        cache.query(qry.setArgs(3L, "St. Petersburg", "Russia")).getAll();
 
-        qry = new SqlFieldsQuery("INSERT INTO person (id, name, city_id) values (?, ?, ?)");
+        qry = new SqlFieldsQuery("INSERT INTO person (id, name, age, city_id) values (?, ?, ?, ?)");
 
-        cache.query(qry.setArgs(1L, "John Doe", 3L)).getAll();
-        cache.query(qry.setArgs(2L, "Jane Roe", 2L)).getAll();
-        cache.query(qry.setArgs(3L, "Mary Major", 1L)).getAll();
-        cache.query(qry.setArgs(4L, "Richard Miles", 2L)).getAll();
+        cache.query(qry.setArgs(1L, "Alexey Zinoviev", 31, 3L)).getAll();
+        cache.query(qry.setArgs(2L, "Jane Roe", 27, 2L)).getAll();
+        cache.query(qry.setArgs(3L, "Mary Major", 86, 1L)).getAll();
+        cache.query(qry.setArgs(4L, "Richard Miles", 19, 2L)).getAll();
     }
 }
