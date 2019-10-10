@@ -852,17 +852,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /** */
-    private <T, R> IgniteBiPredicate<T, R> wrap(final IgniteBiPredicate<T, R> p) {
+    private <E1, E2> IgniteBiPredicate<E1, E2> wrap(final IgniteBiPredicate<E1, E2> p) {
         final IgniteSandbox sandbox = cctx.kernalContext().security().sandbox();
 
-        return p != null && sandbox.enabled() ? (t, r) -> sandbox.execute(() -> p.apply(t, r)) : p;
+        return p != null && sandbox.enabled() ? (e1, e2) -> sandbox.execute(() -> p.apply(e1, e2)) : p;
     }
 
     /** */
-    private <T, R> IgniteClosure<T, R> wrap(final IgniteClosure<T, R> c) {
+    private <E, R> IgniteClosure<E, R> wrap(final IgniteClosure<E, R> c) {
         final IgniteSandbox sandbox = cctx.kernalContext().security().sandbox();
 
-        return c != null && sandbox.enabled() ? t -> sandbox.execute(() -> c.apply(t)) : c;
+        return c != null && sandbox.enabled() ? e -> sandbox.execute(() -> c.apply(e)) : c;
     }
 
     /**

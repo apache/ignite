@@ -36,7 +36,9 @@ import org.junit.Test;
 
 import static java.util.Collections.singleton;
 
-/** */
+/**
+ * Checks that user-defined code for cache operations is executed inside the sandbox.
+ */
 public class CacheSandboxTest extends AbstractSandboxTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -53,9 +55,9 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         prepareCluster();
         populateCache();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED);
+        Ignite clntAllowed = grid(CLNT_ALLOWED_START_THRAD);
 
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN);
+        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_START_THREAD);
 
         entryProcessorOperations(clntAllowed).forEach(this::runOperation);
         entryProcessorOperations(clntFrobidden).forEach(this::runForbiddenOperation);

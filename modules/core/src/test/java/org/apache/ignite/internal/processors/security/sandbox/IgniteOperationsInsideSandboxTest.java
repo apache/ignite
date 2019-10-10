@@ -48,7 +48,8 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * A user-defined code inside the sandbox can use the public API of Ignite.
+ * A user-defined code inside the sandbox can use the public API of Ignite without additional
+ * sandbox permissions.
  */
 public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** Test compute task. */
@@ -119,7 +120,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
-        Ignite clnt = startGrid(CLNT_ALLOWED, ALLOW_ALL, true);
+        Ignite clnt = startGrid(CLNT_ALLOWED_START_THRAD, ALLOW_ALL, true);
 
         srv.cluster().active(true);
 

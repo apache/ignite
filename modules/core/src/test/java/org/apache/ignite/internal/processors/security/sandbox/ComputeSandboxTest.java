@@ -38,7 +38,9 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
-/** */
+/**
+ * Checks that user-defined code for compute operations is executed inside the sandbox.
+ */
 public class ComputeSandboxTest extends AbstractSandboxTest {
     /** */
     private static final TestComputeTask COMPUTE_TASK = new TestComputeTask(START_THREAD_RUNNABLE);
@@ -62,9 +64,9 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         prepareCluster();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED);
+        Ignite clntAllowed = grid(CLNT_ALLOWED_START_THRAD);
 
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN);
+        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_START_THREAD);
 
         computeOperations(clntAllowed).forEach(this::runOperation);
         computeOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, AccessControlException.class));

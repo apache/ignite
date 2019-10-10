@@ -6727,7 +6727,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private <K, V, T> EntryProcessor<K, V, T> wrap(final EntryProcessor<K, V, T> prc) {
             final IgniteSandbox sandbox = entry.context().kernalContext().security().sandbox();
 
-            return prc != null && sandbox.enabled() ? (e, a) -> sandbox.execute(() -> prc.process(e, a)) : prc;
+            return prc != null && sandbox.enabled() ?
+                (ent, args) -> sandbox.execute(() -> prc.process(ent, args)) : prc;
         }
 
         /** {@inheritDoc} */

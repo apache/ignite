@@ -6953,8 +6953,12 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If call failed.
      */
     public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
-        if (!checkClassLoader(ldr))
-            throw new IgniteCheckedException("Passed ldr cannot be used.");
+        // Checks that this method doesn't extend a caller's permissions.
+        // If a ProrectionDomain of passed ClassLoader doesn't have the RuntimePermission "setContextClassLoader",
+        // then a caller's code that instantiated the ClassLoader doesn't too.
+        // In that case, the method throws an exception.
+        if (!hasSetContextClassLoaderPermission(ldr))
+            throw new IgniteCheckedException("Passed parameter \"ldr\" cannot be used.");
 
         Thread curThread = Thread.currentThread();
 
@@ -6978,8 +6982,11 @@ public abstract class IgniteUtils {
         }
     }
 
-    /** */
-    private static boolean checkClassLoader(ClassLoader ldr) {
+    /**
+     * @param ldr ClassLoader
+     * @return True if the ProtectedDomain of passed ClassLoader has the RuntimePermission "setContextClassLoader".
+     */
+    private static boolean hasSetContextClassLoaderPermission(ClassLoader ldr) {
         if (SecurityUtils.hasSecurityManager()) {
             ProtectionDomain pd = SecurityUtils.doPrivileged(
                 () -> ldr.getClass().getProtectionDomain());

@@ -30,7 +30,9 @@ import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-/** */
+/**
+ * Checks that user-defined code for data streamer is executed inside the sandbox.
+ */
 public class DataStreamerSandboxTest extends AbstractSandboxTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -43,8 +45,8 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         prepareCluster();
 
-        runOperation(operation(grid(CLNT_ALLOWED)));
-        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN)), AccessControlException.class);
+        runOperation(operation(grid(CLNT_ALLOWED_START_THRAD)));
+        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN_START_THREAD)), AccessControlException.class);
     }
 
     /**

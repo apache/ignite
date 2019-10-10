@@ -152,7 +152,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     }
 
     /** */
-    static class TestCacheStore extends CacheStoreAdapter<Object, Object> {
+    private static class TestCacheStore extends CacheStoreAdapter<Object, Object> {
         /** */
         private final T2<Object, Object> keyVal;
 
