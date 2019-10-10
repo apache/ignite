@@ -30,9 +30,11 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UndefinedLabelException;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.frequency.FrequencyEncoderPreprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.label.LabelEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -59,23 +61,41 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> basePreprocessor) {
-        if (handledIndices.isEmpty())
+        if (handledIndices.isEmpty() && encoderType != EncoderType.LABEL_ENCODER)
             throw new RuntimeException("Add indices of handled features");
 
         try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
             (env, upstream, upstreamSize, ctx) -> {
-                // This array will contain not null values for handled indices
-                Map<String, Integer>[] categoryFrequencies = null;
+                EncoderPartitionData partData = new EncoderPartitionData();
 
-                while (upstream.hasNext()) {
-                    UpstreamEntry<K, V> entity = upstream.next();
-                    LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
-                    categoryFrequencies = updateFrequenciesForNextRow(row, categoryFrequencies);
+                if (encoderType == EncoderType.LABEL_ENCODER) {
+                    Map<String, Integer> lbFrequencies = null;
+
+                    while (upstream.hasNext()) {
+                        UpstreamEntry<K, V> entity = upstream.next();
+                        LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+
+                        lbFrequencies = updateLabelFrequenciesForNextRow(row, lbFrequencies);
+                    }
+
+                    partData.withLabelFrequencies(lbFrequencies);
                 }
-                return new EncoderPartitionData()
-                    .withCategoryFrequencies(categoryFrequencies);
+                else {
+                    // This array will contain not null values for handled indices
+                    Map<String, Integer>[] categoryFrequencies = null;
+
+                    while (upstream.hasNext()) {
+                        UpstreamEntry<K, V> entity = upstream.next();
+                        LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+
+                        categoryFrequencies = updateFeatureFrequenciesForNextRow(row, categoryFrequencies);
+                    }
+                    partData.withCategoryFrequencies(categoryFrequencies);
+                }
+
+                return partData;
             }, learningEnvironment(basePreprocessor)
         )) {
             switch (encoderType) {
@@ -83,13 +103,15 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     return new OneHotEncoderPreprocessor<>(calculateEncodingValuesByFrequencies(dataset), basePreprocessor, handledIndices);
                 case STRING_ENCODER:
                     return new StringEncoderPreprocessor<>(calculateEncodingValuesByFrequencies(dataset), basePreprocessor, handledIndices);
+                case LABEL_ENCODER:
+                    return new LabelEncoderPreprocessor<>(calculateEncodingValuesForLabelsByFrequencies(dataset), basePreprocessor);
                 case FREQUENCY_ENCODER:
                     return new FrequencyEncoderPreprocessor<>(calculateEncodingFrequencies(dataset), basePreprocessor, handledIndices);
                 default:
                     throw new IllegalStateException("Define the type of the resulting prerocessor.");
             }
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -149,6 +171,29 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     }
 
     /**
+     * Calculates frequencies for labels.
+     *
+     * @param dataset Dataset.
+     * @return Frequency for labels.
+     */
+    private Map<String, Integer> calculateFrequenciesForLabels(Dataset<EmptyContext, EncoderPartitionData> dataset) {
+        return dataset.compute(
+            EncoderPartitionData::labelFrequencies,
+            (a, b) -> {
+                if (a == null)
+                    return b;
+
+                if (b == null)
+                    return a;
+
+                a.forEach((k, v) -> b.merge(k, v, (f1, f2) -> f1 + f2));
+
+                return b;
+            }
+        );
+    }
+
+    /**
      * Calculates the encoding values values by frequencies keeping in the given dataset.
      *
      * @param dataset The dataset of frequencies for each feature aggregated in each partition.
@@ -163,6 +208,21 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
         for (int i = 0; i < frequencies.length; i++)
             if (handledIndices.contains(i))
                 res[i] = transformFrequenciesToEncodingValues(frequencies[i]);
+
+        return res;
+    }
+
+    /**
+     * Calculates the encoding values values by frequencies keeping in the given dataset.
+     *
+     * @param dataset The dataset of frequencies for each feature aggregated in each partition.
+     * @return Encoding values for each feature.
+     */
+    private Map<String, Integer> calculateEncodingValuesForLabelsByFrequencies(
+        Dataset<EmptyContext, EncoderPartitionData> dataset) {
+        Map<String, Integer> frequencies = calculateFrequenciesForLabels(dataset);
+
+        Map<String, Integer> res = transformFrequenciesToEncodingValues(frequencies);
 
         return res;
     }
@@ -195,11 +255,11 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /**
      * Updates frequencies by values and features.
      *
-     * @param row                 Feature vector.
+     * @param row Feature vector.
      * @param categoryFrequencies Holds the frequencies of categories by values and features.
      * @return Updated frequencies by values and features.
      */
-    private Map<String, Integer>[] updateFrequenciesForNextRow(LabeledVector row,
+    private Map<String, Integer>[] updateFeatureFrequenciesForNextRow(LabeledVector row,
         Map<String, Integer>[] categoryFrequencies) {
         if (categoryFrequencies == null)
             categoryFrequencies = initializeCategoryFrequencies(row);
@@ -215,8 +275,9 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 if (featureVal.equals(Double.NaN)) {
                     strVal = EncoderPreprocessor.KEY_FOR_NULL_VALUES;
                     row.features().setRaw(i, strVal);
-                } else if (featureVal instanceof String)
-                    strVal = (String) featureVal;
+                }
+                else if (featureVal instanceof String)
+                    strVal = (String)featureVal;
                 else if (featureVal instanceof Double)
                     strVal = String.valueOf(featureVal);
                 else
@@ -231,6 +292,39 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
             }
         }
         return categoryFrequencies;
+    }
+
+    /**
+     * Updates frequencies by values and features.
+     *
+     * @param row Feature vector.
+     * @param labelFrequencies Holds the frequencies of categories by values and features.
+     * @return Updated frequencies by values and features.
+     */
+    private Map<String, Integer> updateLabelFrequenciesForNextRow(LabeledVector row,
+        Map<String, Integer> labelFrequencies) {
+        if (labelFrequencies == null)
+            labelFrequencies = new HashMap<>();
+
+        String strVal;
+        Object lbVal = row.label();
+
+        if (lbVal.equals(Double.NaN) || lbVal == null)
+            throw new UndefinedLabelException(row);
+
+        else if (lbVal instanceof String)
+            strVal = (String)lbVal;
+        else if (lbVal instanceof Double)
+            strVal = String.valueOf(lbVal);
+        else
+            throw new RuntimeException("The type " + lbVal.getClass() + " is not supported for the feature values.");
+
+        if (labelFrequencies.containsKey(strVal))
+            labelFrequencies.put(strVal, (labelFrequencies.get(strVal)) + 1);
+        else
+            labelFrequencies.put(strVal, 1);
+
+        return labelFrequencies;
     }
 
     /**
