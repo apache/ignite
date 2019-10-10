@@ -55,9 +55,9 @@ public class CacheSandboxTest extends AbstractSandboxTest {
         prepareCluster();
         populateCache();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED_START_THRAD);
+        Ignite clntAllowed = grid(CLNT_ALLOWED_THRAD_START);
 
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_START_THREAD);
+        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_THREAD_START);
 
         entryProcessorOperations(clntAllowed).forEach(this::runOperation);
         entryProcessorOperations(clntFrobidden).forEach(this::runForbiddenOperation);

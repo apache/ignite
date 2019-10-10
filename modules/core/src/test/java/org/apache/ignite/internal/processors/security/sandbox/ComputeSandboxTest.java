@@ -64,9 +64,9 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         prepareCluster();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED_START_THRAD);
+        Ignite clntAllowed = grid(CLNT_ALLOWED_THRAD_START);
 
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_START_THREAD);
+        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_THREAD_START);
 
         computeOperations(clntAllowed).forEach(this::runOperation);
         computeOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, AccessControlException.class));
