@@ -239,6 +239,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     );
                 }
 
+                @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+                    throws BinaryObjectException {
+                    CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
+                }
+
                 @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }

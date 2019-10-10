@@ -34,8 +34,8 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
-import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
+import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -68,7 +68,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
-public class Step_13_Genetic_Programming_Search {
+public class Step_13_RandomSearch {
     /**
      * Run example.
      */
@@ -124,7 +124,11 @@ public class Step_13_Genetic_Programming_Search {
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .withParameterSearchStrategy(new EvolutionOptimizationStrategy())
+                    .withParameterSearchStrategy(
+                        new RandomStrategy()
+                            .withMaxTries(10)
+                            .withSeed(12L)
+                    )
                     .addHyperParam("p", normalizationTrainer::withP, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
