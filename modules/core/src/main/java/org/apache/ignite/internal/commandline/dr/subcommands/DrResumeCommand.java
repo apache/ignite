@@ -77,6 +77,9 @@ public class DrResumeCommand extends
             return;
         }
 
+        if (arg().getActionCoordinator() == null)
+            log.info("Cannot find sender hub node to execute action.");
+
         for (String msg : res.getResultMessages())
             log.info(msg);
     }
