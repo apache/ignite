@@ -76,9 +76,11 @@ public class KeystoreEncryptionSpiSelfTest {
     @Test
     public void testCantLoadMasterKeyDoesntExist() {
         GridTestUtils.assertThrowsWithCause(() -> {
-            KeystoreEncryptionSpi spi = new KeystoreEncryptionSpi();
+            EncryptionSpi encSpi = spi();
 
-            spi.setMasterKeyId("Unknown key");
+            encSpi.setMasterKeyId("Unknown key");
+
+            return null;
         }, IgniteException.class);
     }
 
