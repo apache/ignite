@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -567,8 +568,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void changeMasterKey(String masterKeyId) {
-        ctx.gateway().readLock();
-
         try {
             checkMasterKeyChangeSupported();
 
@@ -576,24 +575,23 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             MasterKeyChangeFuture fut = new MasterKeyChangeFuture(msg.requestId());
 
-            masterKeyChangeFuts.put(fut.id(), fut);
+            synchronized (opsMux) {
+                checkState();
 
-            ctx.grid().context().discovery().sendCustomEvent(msg);
+                masterKeyChangeFuts.put(fut.id(), fut);
+
+                ctx.grid().context().discovery().sendCustomEvent(msg);
+            }
 
             fut.get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-        finally {
-            ctx.gateway().readUnlock();
-        }
     }
 
     /** {@inheritDoc} */
     @Override public String getMasterKeyId() {
-        ctx.gateway().readLock();
-
         try {
             checkMasterKeyChangeSupported();
 
@@ -602,8 +600,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 MasterKeyIdFuture fut = new MasterKeyIdFuture();
 
                 synchronized (opsMux) {
-                    if (disconnected || stopped)
-                        throw new IgniteFutureCancelledException("Node " + (stopped ? "stopped" : "disconnected"));
+                    checkState();
 
                     sendMasterKeyIdRequest(fut);
                 }
@@ -616,9 +613,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-        finally {
-            ctx.gateway().readUnlock();
+    }
+
+    /** */
+    private void checkState() {
+        if (disconnected) {
+            throw new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
+                "Failed to perform operation, client node disconnected.");
         }
+
+        if (stopped)
+            throw new IgniteException("Failed to perform operation, node is stopping.");
     }
 
     /** */
