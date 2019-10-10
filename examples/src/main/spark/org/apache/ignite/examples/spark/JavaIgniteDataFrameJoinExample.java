@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
 /**
- *
+ * 
  */
 public class JavaIgniteDataFrameJoinExample {
     /**
@@ -48,7 +48,7 @@ public class JavaIgniteDataFrameJoinExample {
 
         setupServerAndData();
 
-        //Creating spark session.
+        // Creating spark session.
         SparkSession spark = SparkSession
                 .builder()
                 .appName("JavaIgniteDataFrameExample")
@@ -91,7 +91,8 @@ public class JavaIgniteDataFrameJoinExample {
         cities.printSchema();
         cities.show();
 
-        Dataset<Row> joinResult = persons.join(cities, persons.col("city_id").equalTo(cities.col("id")));
+        Dataset<Row> joinResult = persons.join(cities, persons.col("city_id").equalTo(cities.col("id")))
+                .select(persons.col("name").as("person"), cities.col("name").as("city"));
         joinResult.explain(true);
         joinResult.printSchema();
         joinResult.show();
@@ -102,38 +103,46 @@ public class JavaIgniteDataFrameJoinExample {
     private static void nativeSparkSqlJoinExample(SparkSession spark) {
         System.out.println("Querying using Spark SQL.");
 
-        Dataset<Row> df = spark.read()
-                .format(IgniteDataFrameSettings.FORMAT_IGNITE()) //Data source type.
-                .option(IgniteDataFrameSettings.OPTION_TABLE(), "person") //Table to read.
-                .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE(), CONFIG) //Ignite config.
+        Dataset<Row> persons = spark.read()
+                .format(IgniteDataFrameSettings.FORMAT_IGNITE())
+                .option(IgniteDataFrameSettings.OPTION_TABLE(), "person")
+                .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE(), CONFIG)
                 .load();
 
-        //Registering DataFrame as Spark view.
-        df.createOrReplaceTempView("person");
+        persons.printSchema();
+        persons.show();
 
-        //Selecting data from Ignite through Spark SQL Engine.
-        Dataset<Row> igniteDF = spark.sql("SELECT * FROM person WHERE id >= 2 AND name = 'Mary Major'");
+        Dataset<Row> cities = spark.read()
+                .format(IgniteDataFrameSettings.FORMAT_IGNITE())
+                .option(IgniteDataFrameSettings.OPTION_TABLE(), "city")
+                .option(IgniteDataFrameSettings.OPTION_CONFIG_FILE(), CONFIG)
+                .load();
 
-        System.out.println("Result schema:");
+        cities.printSchema();
+        cities.show();
 
-        igniteDF.printSchema(); //Printing query schema to console.
+        // Registering DataFrame as Spark view.
+        persons.createOrReplaceTempView("person");
+        cities.createOrReplaceTempView("city");
 
-        System.out.println("Result content:");
-
-        igniteDF.show(); //Printing query results to console.
+        // Selecting data from Ignite through Spark SQL Engine.
+        Dataset<Row> joinResult = spark.sql("SELECT person.NAME AS person, city.NAME AS city FROM person JOIN city ON person.city_id = city.id");
+        joinResult.explain(true);
+        joinResult.printSchema();
+        joinResult.show();
     }
 
     /** */
     private static void setupServerAndData() {
-        //Starting Ignite.
+        // Starting Ignite.
         Ignite ignite = Ignition.start(CONFIG);
 
-        //Creating first test cache.
+        // Creating first test cache.
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(CACHE_NAME).setSqlSchema("PUBLIC");
 
         IgniteCache<?, ?> cache = ignite.getOrCreateCache(ccfg);
 
-        //Creating SQL tables.
+        // Creating SQL tables.
         cache.query(new SqlFieldsQuery(
                 "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll();
 
@@ -145,7 +154,7 @@ public class JavaIgniteDataFrameJoinExample {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)");
 
-        //Inserting some data to tables.
+        // Inserting some data to tables.
         cache.query(qry.setArgs(1L, "Forest Hill")).getAll();
         cache.query(qry.setArgs(2L, "Denver")).getAll();
         cache.query(qry.setArgs(3L, "St. Petersburg")).getAll();
