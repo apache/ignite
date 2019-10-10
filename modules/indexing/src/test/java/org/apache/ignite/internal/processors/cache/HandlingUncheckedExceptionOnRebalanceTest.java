@@ -22,6 +22,7 @@ public class HandlingUncheckedExceptionOnRebalanceTest extends GridCommonAbstrac
             .setCacheConfiguration(
                 new CacheConfiguration()
                     .setName(DEFAULT_CACHE_NAME)
+                    .setRebalanceDelay(100)
                     .setCacheMode(CacheMode.REPLICATED))
             .setFailureHandler((i, f) -> {
                 failure.countDown();
