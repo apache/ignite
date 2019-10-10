@@ -30,7 +30,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
 /**
- * This example demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
+ * Example application demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
  */
 public class JavaIgniteDataFrameJoinExample {
     /**
@@ -51,7 +51,7 @@ public class JavaIgniteDataFrameJoinExample {
         // Creating spark session.
         SparkSession spark = SparkSession
                 .builder()
-                .appName("JavaIgniteDataFrameExample")
+                .appName("JavaIgniteDataFrameJoinExample")
                 .master("local")
                 .config("spark.executor.instances", "2")
                 .getOrCreate();
@@ -95,8 +95,6 @@ public class JavaIgniteDataFrameJoinExample {
         joinResult.explain(true);
         joinResult.printSchema();
         joinResult.show();
-
-
     }
 
     /** */
@@ -131,8 +129,6 @@ public class JavaIgniteDataFrameJoinExample {
         joinResult.explain(true);
         joinResult.printSchema();
         joinResult.show();
-
-
     }
 
     /** */
