@@ -595,7 +595,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "NODE_ORDER, ADDRESSES, HOSTNAMES FROM " + systemSchemaName() + ".NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
-            Integer.class, String.class, String.class);
+            Long.class, String.class, String.class);
 
         assertEquals(3, resAll.size());
 
