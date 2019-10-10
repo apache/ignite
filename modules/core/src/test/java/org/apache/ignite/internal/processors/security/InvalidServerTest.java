@@ -23,13 +23,15 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- *
+ * Test server connection when it's permissions are removed after
+ * {@link TcpDiscoveryJoinRequestMessage} processed.
  */
 public class InvalidServerTest extends AbstractSecurityTest {
     /** Test server name. */

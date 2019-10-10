@@ -35,7 +35,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** Empty array of permissions. */
     protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
 
-    /** Global authentication. */
+    /** Global authentication flag. */
     protected boolean globalAuth;
 
     /** {@inheritDoc} */
