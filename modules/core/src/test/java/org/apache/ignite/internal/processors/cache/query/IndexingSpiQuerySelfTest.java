@@ -228,7 +228,7 @@ public class IndexingSpiQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Indexing Spi implementation for test
      */
-    private static class MyIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+    public static class MyIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Index. */
         private final SortedMap<Object, Object> idx = new TreeMap<>();
 
