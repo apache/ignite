@@ -1,0 +1,130 @@
+WITH DirectReports (ManagerID, EmployeeID, Title, DeptID, Level)
+AS
+(
+-- Anchor member definition
+    SELECT e.ManagerID, e.EmployeeID, e.Title, edh.DepartmentID,
+        0 AS Level
+    FROM Employee AS e
+    INNER JOIN EmployeeDepartmentHistory AS edh
+        ON e.EmployeeID = edh.EmployeeID AND edh.EndDate IS NULL
+    WHERE ManagerID IS NULL
+    UNION ALL
+-- Recursive member definition
+    SELECT e.ManagerID, e.EmployeeID, e.Title, edh.DepartmentID,
+        Level + 1
+    FROM Employee AS e
+    INNER JOIN EmployeeDepartmentHistory AS edh
+        ON e.EmployeeID = edh.EmployeeID AND edh.EndDate IS NULL
+    INNER JOIN DirectReports AS d
+        ON e.ManagerID = d.EmployeeID
+)
+-- Statement that executes the CTE
+SELECT ManagerID, EmployeeID, Title, Level
+FROM DirectReports
+INNER JOIN Department AS dp
+    ON DirectReports.DeptID = dp.DepartmentID
+WHERE dp.GroupName = N'Research and Development' OR Level = 0;
+GO
+
+        DROP VIEW IF EXISTS TEST_REC;
+        DROP VIEW IF EXISTS TEST_2;
+        DROP TABLE IF EXISTS TEST;
+
+        CREATE TABLE TEST(ID INT PRIMARY KEY, PARENT INT, NAME VARCHAR(255));
+        INSERT INTO TEST VALUES(1, NULL, 'Root');
+        INSERT INTO TEST VALUES(2, 1, 'Plant');
+        INSERT INTO TEST VALUES(3, 1, 'Animal');
+        INSERT INTO TEST VALUES(4, 2, 'Tree');
+        INSERT INTO TEST VALUES(5, 2, 'Flower');
+        INSERT INTO TEST VALUES(6, 3, 'Elephant');
+        INSERT INTO TEST VALUES(7, 3, 'Dog');
+
+        CREATE FORCE VIEW TEST_2(ID, PARENT, NAME) AS SELECT ID, PARENT, NAME FROM TEST_REC;
+
+        CREATE FORCE VIEW TEST_REC(ID, PARENT, NAME) AS
+        SELECT ID, PARENT, NAME FROM TEST T
+        WHERE PARENT IS NULL
+        UNION ALL
+        SELECT T.ID, T.PARENT, T.NAME
+        FROM TEST T, TEST_2 R
+        WHERE T.PARENT=R.ID;
+
+        SELECT * FROM TEST_REC;
+
+------------
+
+        DROP VIEW IF EXISTS TEST_REC;
+        DROP VIEW IF EXISTS TEST_2;
+        DROP TABLE IF EXISTS TEST;
+
+        CREATE TABLE TEST(ID INT PRIMARY KEY, PARENT INT, NAME VARCHAR(255));
+        INSERT INTO TEST VALUES(1, NULL, 'Root');
+        INSERT INTO TEST VALUES(2, 1, 'Plant');
+        INSERT INTO TEST VALUES(3, 1, 'Animal');
+        INSERT INTO TEST VALUES(4, 2, 'Tree');
+        INSERT INTO TEST VALUES(5, 2, 'Flower');
+        INSERT INTO TEST VALUES(6, 3, 'Elephant');
+        INSERT INTO TEST VALUES(7, 3, 'Dog');
+
+        CREATE VIEW RECURSIVE TEST_REC(ID, PARENT, NAME) AS
+        SELECT ID, PARENT, NAME FROM TEST T
+        WHERE PARENT IS NULL
+        UNION ALL
+        SELECT T.ID, T.PARENT, T.NAME
+        FROM TEST T, TEST_REC R
+        WHERE T.PARENT=R.ID;
+
+        SELECT * FROM TEST_REC;
+
+----------------
+
+
+CREATE LOCAL TEMPORARY TABLE test (family_name VARCHAR_IGNORECASE(63) NOT NULL);
+INSERT INTO test VALUES('Smith');
+INSERT INTO test VALUES('de Smith');
+INSERT INTO test VALUES('el Smith');
+INSERT INTO test VALUES('von Smith');
+SELECT * FROM test WHERE family_name IN ('de Smith', 'Smith');
+-- okay IN(...) with TABLE_SCAN
+
+SELECT * FROM test WHERE family_name BETWEEN 'd' AND 'T';
+-- okay, ignorecase honoured
+
+SELECT * FROM test WHERE family_name BETWEEN 'D' AND 'T';
+-- okay, ignorecase honoured
+
+CREATE INDEX family_name ON test(family_name);
+SELECT * FROM test WHERE family_name IN ('de Smith', 'Smith');
+-- OOPS, the comparison's operands are sorted incorrectly for ignorecase!
+
+EXPLAIN SELECT * FROM test WHERE family_name IN ('de Smith', 'Smith');
+
+
+-------------------
+
+
+complete recursive views:
+
+drop all objects;
+create table parent(id int primary key, parent int);
+insert into parent values(1, null), (2, 1), (3, 1);
+
+with test_view(id, parent) as
+select id, parent from parent where id = ?
+union all
+select parent.id, parent.parent from test_view, parent
+where parent.parent = test_view.id
+select * from test_view {1: 1};
+
+drop view test_view;
+
+with test_view(id, parent) as
+select id, parent from parent where id = 1
+union all
+select parent.id, parent.parent from test_view, parent
+where parent.parent = test_view.id
+select * from test_view;
+
+drop view test_view;
+
+drop table parent;

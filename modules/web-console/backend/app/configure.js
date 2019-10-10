@@ -25,6 +25,7 @@ const session = require('express-session');
 const connectMongo = require('connect-mongo');
 const passport = require('passport');
 const passportSocketIo = require('passport.socketio');
+const mongoSanitize = require('express-mongo-sanitize');
 
 // Fire me up!
 
@@ -47,10 +48,11 @@ module.exports.factory = function(settings, mongo, apis) {
 
             _.forEach(apis, (api) => app.use(api));
 
-            app.use(cookieParser(settings.sessionSecret));
-
             app.use(bodyParser.json({limit: '50mb'}));
             app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
+
+            app.use(mongoSanitize({replaceWith: '_'}));
 
             app.use(session({
                 secret: settings.sessionSecret,
@@ -67,18 +69,26 @@ module.exports.factory = function(settings, mongo, apis) {
             app.use(passport.initialize());
             app.use(passport.session());
 
-            passport.serializeUser(mongo.Account.serializeUser());
-            passport.deserializeUser(mongo.Account.deserializeUser());
+            passport.serializeUser((user, done) => done(null, user._id));
+
+            passport.deserializeUser((id, done) => {
+                if (mongo.ObjectId.isValid(id))
+                    return mongo.Account.findById(id, done);
+
+                // Invalidates the existing login session.
+                done(null, false);
+            });
 
             passport.use(mongo.Account.createStrategy());
         },
         socketio: (io) => {
-            const _onAuthorizeSuccess = (data, accept) => {
-                accept(null, true);
-            };
+            const _onAuthorizeSuccess = (data, accept) => accept();
 
             const _onAuthorizeFail = (data, message, error, accept) => {
-                accept(null, false);
+                if (error)
+                    accept(new Error(message));
+
+                return accept(new Error(message));
             };
 
             io.use(passportSocketIo.authorize({

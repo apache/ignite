@@ -17,29 +17,34 @@
 
 package org.apache.ignite.logger.log4j;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j SPI test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jLoggingPathTest extends TestCase {
+public class GridLog4jLoggingPathTest {
     /** */
     private IgniteLogger log;
 
     /** Logger config */
     private String path = "modules/core/src/test/config/log4j-test.xml";
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    /** */
+    @Before
+    public void setUp() throws Exception {
         log = new Log4JLogger(path).getLogger(getClass());
     }
 
     /**
      * Tests log4j logging SPI.
      */
+    @Test
     public void testLog() {
         System.out.println(log.toString());
 

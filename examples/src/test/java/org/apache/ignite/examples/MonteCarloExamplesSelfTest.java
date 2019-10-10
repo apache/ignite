@@ -20,6 +20,7 @@ package org.apache.ignite.examples;
 //import org.apache.ignite.examples.computegrid.montecarlo.*;
 
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Ignore;
 
 /**
  * Ignite examples self test. Excludes Ignite Spring tests.
@@ -65,6 +66,7 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
  *      Classpath should contain the {@code ${IGNITE_HOME}/modules/tests/config/aop/aspectj} folder.
  * </li>
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class MonteCarloExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * TODO: IGNITE-711 next example(s) should be implemented for java 8

@@ -50,9 +50,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hsqldb.jdbc.jdbcDataSource;
@@ -111,9 +108,6 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     /** */
     private static final String SES_VAL_OVERWRITTEN = SES_VAL + "-overwritten";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Static variable to control whether test should retry checkpoint read attempts.
      * It is needed for s3-based tests because of weak s3 consistency model.
@@ -138,12 +132,6 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         assert igniteInstanceName != null;
 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         if (igniteInstanceName.contains("cache")) {
             String cacheName = "test-checkpoints";

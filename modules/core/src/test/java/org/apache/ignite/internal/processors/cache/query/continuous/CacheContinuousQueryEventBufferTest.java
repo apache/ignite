@@ -28,15 +28,20 @@ import java.util.concurrent.CyclicBarrier;
 import javax.cache.event.EventType;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBuffer1() throws Exception {
         testBuffer(1);
     }
@@ -44,6 +49,7 @@ public class CacheContinuousQueryEventBufferTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBuffer2() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);

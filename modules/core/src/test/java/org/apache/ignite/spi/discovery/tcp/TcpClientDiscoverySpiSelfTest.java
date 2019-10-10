@@ -42,6 +42,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -63,6 +64,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -73,6 +75,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -86,6 +91,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 /**
  * Client-based discovery tests.
  */
+@RunWith(JUnit4.class)
 public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -161,6 +167,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
+
+        // Override default settings to speed up reconnection.
+        cfg.setCommunicationSpi(
+            new TcpCommunicationSpi()
+                .setConnectTimeout(500)
+                .setMaxConnectTimeout(1000)
+                .setReconnectCount(2)
+        );
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 
@@ -299,6 +313,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinTimeout() throws Exception {
         clientIpFinder = new TcpDiscoveryVmIpFinder();
         joinTimeout = 1000;
@@ -320,6 +335,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientToClientPing() throws Exception {
         startGrid("server-p1");
         Ignite c1 = startGrid("client-p1");
@@ -335,6 +351,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoin() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -357,6 +374,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeLeave() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -379,6 +397,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeFail() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -401,6 +420,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeJoin() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -423,6 +443,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeave() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -445,6 +466,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeFail() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -469,6 +491,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPing() throws Exception {
         startServerNodes(2);
         startClientNodes(1);
@@ -487,6 +510,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingFailedNodeFromClient() throws Exception {
         startServerNodes(2);
         startClientNodes(1);
@@ -518,6 +542,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingFailedClientNode() throws Exception {
         startServerNodes(2);
         startClientNodes(1);
@@ -538,15 +563,25 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
-        Thread.sleep(2000);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    boolean ping1 = ((IgniteEx) srv1).context().discovery().pingNode(client.cluster().localNode().id());
 
-        assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
-        assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+                    boolean ping2 = ((IgniteEx) srv0).context().discovery().pingNode(client.cluster().localNode().id());
+
+                    return ping1 && ping2;
+                } catch (IgniteClientDisconnectedException | IgniteClientDisconnectedCheckedException e) {
+                    return false;
+                }
+            }
+        }, 5_000);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnRouterFail() throws Exception {
         clientsPerSrv = 1;
 
@@ -575,6 +610,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnRouterSuspend() throws Exception {
         reconnectAfterSuspend(false);
     }
@@ -584,6 +620,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnRouterSuspendTopologyChange() throws Exception {
         clientFailureDetectionTimeout = 20_000;
 
@@ -665,6 +702,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testClientReconnectHistoryMissingOnRouter() throws Exception {
         clientFailureDetectionTimeout = 60000;
         netTimeout = 60000;
@@ -712,6 +750,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAfterPause() throws Exception {
         startServerNodes(2);
         startClientNodes(1);
@@ -740,6 +779,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testReconnectAfterMassiveTopologyChange() throws Exception {
         clientIpFinder = IP_FINDER;
 
@@ -790,6 +830,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOnNetworkProblem() throws Exception {
         clientsPerSrv = 1;
 
@@ -815,6 +856,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectOneServerOneClient() throws Exception {
         clientsPerSrv = 1;
 
@@ -840,6 +882,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectTopologyChange1() throws Exception {
         clientFailureDetectionTimeout = 100000;
 
@@ -884,6 +927,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectTopologyChange2() throws Exception {
         clientFailureDetectionTimeout = 100000;
 
@@ -928,6 +972,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMissedMessagesOnReconnect() throws Exception {
         clientsPerSrv = 1;
 
@@ -965,6 +1010,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientSegmentation() throws Exception {
         clientsPerSrv = 1;
 
@@ -1014,6 +1060,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeJoinOneServer() throws Exception {
         startServerNodes(1);
 
@@ -1031,6 +1078,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeLeaveOneServer() throws Exception {
         startServerNodes(1);
         startClientNodes(1);
@@ -1053,6 +1101,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeFailOneServer() throws Exception {
         startServerNodes(1);
         startClientNodes(1);
@@ -1073,6 +1122,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientAndRouterFail() throws Exception {
         startServerNodes(2);
         startClientNodes(2);
@@ -1105,6 +1155,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetrics() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
@@ -1165,6 +1216,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataExchangeFromServer() throws Exception {
         testDataExchange("server-0");
     }
@@ -1172,6 +1224,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataExchangeFromClient() throws Exception {
         testDataExchange("client-0");
     }
@@ -1216,6 +1269,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataExchangeFromServer2() throws Exception {
         startServerNodes(2);
 
@@ -1246,6 +1300,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testDuplicateId() throws Exception {
         startServerNodes(2);
 
@@ -1267,6 +1322,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testTimeoutWaitingNodeAddedMessage() throws Exception {
         longSockTimeouts = true;
 
@@ -1310,6 +1366,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testGridStartTime() throws Exception {
         startServerNodes(2);
 
@@ -1332,6 +1389,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinError() throws Exception {
         startServerNodes(1);
 
@@ -1349,6 +1407,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinError2() throws Exception {
         startServerNodes(1);
 
@@ -1367,6 +1426,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinError3() throws Exception {
         startServerNodes(1);
 
@@ -1384,6 +1444,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinErrorMissedAddFinishedMessage1() throws Exception {
         missedAddFinishedMessage(true);
     }
@@ -1391,6 +1452,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinErrorMissedAddFinishedMessage2() throws Exception {
         missedAddFinishedMessage(false);
     }
@@ -1449,6 +1511,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientMessageWorkerStartSingleServer() throws Exception {
         clientMessageWorkerStart(1, 1);
     }
@@ -1456,6 +1519,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientMessageWorkerStartTwoServers1() throws Exception {
         clientMessageWorkerStart(2, 1);
     }
@@ -1463,6 +1527,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientMessageWorkerStartTwoServers2() throws Exception {
         clientMessageWorkerStart(2, 2);
     }
@@ -1527,6 +1592,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinMutlithreaded() throws Exception {
         startServerNodes(1);
 
@@ -1550,6 +1616,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAfterFail() throws Exception {
         reconnectAfterFail(false);
     }
@@ -1557,6 +1624,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAfterFailTopologyChanged() throws Exception {
         reconnectAfterFail(true);
     }
@@ -1678,6 +1746,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectAfterFailConcurrentJoin() throws Exception {
         startServerNodes(1);
 
@@ -1750,6 +1819,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientFailReconnectDisabled() throws Exception {
         reconnectDisabled = true;
 
@@ -1791,6 +1861,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectSegmentedAfterJoinTimeoutServerFailed() throws Exception {
         reconnectSegmentedAfterJoinTimeout(true);
     }
@@ -1798,6 +1869,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectSegmentedAfterJoinTimeoutNetworkError() throws Exception {
         reconnectSegmentedAfterJoinTimeout(false);
     }
@@ -1898,6 +1970,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClusterRestart() throws Exception {
         netTimeout = 3000;
         joinTimeout = 60_000;
@@ -1970,6 +2043,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisconnectAfterNetworkTimeout() throws Exception {
         netTimeout = 5000;
         joinTimeout = 60_000;
@@ -2055,6 +2129,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceClientReconnect() throws Exception {
         startServerNodes(1);
 

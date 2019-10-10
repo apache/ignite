@@ -28,19 +28,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
  */
+@RunWith(JUnit4.class)
 public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Nodes count. */
     protected static final int NODES_COUNT = 4;
 
@@ -74,12 +72,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
             cfg.setClientMode(true);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         cfg.setAuthenticationEnabled(true);
 
@@ -116,6 +108,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
             AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite");
@@ -128,6 +121,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultUserUpdate() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -153,6 +147,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveDefault() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -179,6 +174,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUserManagementPermission() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -232,6 +228,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProceedUsersOnJoinNode() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -259,6 +256,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAuthenticationInvalidUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -291,6 +289,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUpdateRemoveUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -308,6 +307,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -329,6 +329,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateRemoveDoesNotExistsUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -361,6 +362,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAlreadyExistsUser() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -387,6 +389,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAuthorizeOnClientDisconnect() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -431,6 +434,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentAddRemove() throws Exception {
         final AtomicInteger usrCnt = new AtomicInteger();
 
@@ -457,6 +461,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUserPersistence() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -494,6 +499,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultUserPersistence() throws Exception {
         AuthorizationContext.context(actxDflt);
 
@@ -529,6 +535,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidUserNamePassword() throws Exception {
         AuthorizationContext.context(actxDflt);
 

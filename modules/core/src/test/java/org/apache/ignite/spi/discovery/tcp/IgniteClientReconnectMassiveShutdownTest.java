@@ -38,10 +38,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,6 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Client reconnect test in multi threaded mode while cache operations are in progress.
  */
+@RunWith(JUnit4.class)
 public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 14;
@@ -62,16 +64,11 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /** */
     private static volatile boolean clientMode;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -95,13 +92,15 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown1() throws Exception {
+    @Test
+    public void testMassiveServersShutdown1() throws Exception {
         massiveServersShutdown(StopType.FAIL_EVENT);
     }
 
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMassiveServersShutdown2() throws Exception {
         massiveServersShutdown(StopType.SIMULATE_FAIL);
     }
@@ -109,7 +108,8 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown3() throws Exception {
+    @Test
+    public void testMassiveServersShutdown3() throws Exception {
         massiveServersShutdown(StopType.CLOSE);
     }
 

@@ -93,7 +93,7 @@ public class SslContextFactory implements Factory<SSLContext> {
     /** Enabled cipher suites. */
     private String[] cipherSuites;
 
-    /** Enabled cipher suites. */
+    /** Enabled protocols. */
     private String[] protocols;
 
     /**
@@ -289,6 +289,7 @@ public class SslContextFactory implements Factory<SSLContext> {
 
     /**
      * Sets enabled cipher suites.
+     *
      * @param cipherSuites enabled cipher suites.
      */
     public void setCipherSuites(String... cipherSuites) {
@@ -296,7 +297,8 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Gets enabled cipher suites
+     * Gets enabled cipher suites.
+     *
      * @return enabled cipher suites
      */
     public String[] getCipherSuites() {
@@ -304,8 +306,9 @@ public class SslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Gets enabled cipher suites
-     * @return enabled cipher suites
+     * Gets enabled protocols.
+     *
+     * @return Enabled protocols.
      */
     public String[] getProtocols() {
         return protocols;
@@ -313,7 +316,8 @@ public class SslContextFactory implements Factory<SSLContext> {
 
     /**
      * Sets enabled protocols.
-     * @param protocols enabled protocols.
+     *
+     * @param protocols Enabled protocols.
      */
     public void setProtocols(String... protocols) {
         this.protocols = protocols;

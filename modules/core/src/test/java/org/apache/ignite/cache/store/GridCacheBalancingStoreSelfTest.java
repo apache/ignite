@@ -43,14 +43,19 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Store test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoads() throws Exception {
         final int range = 300;
 
@@ -127,6 +132,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentLoad() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -138,6 +144,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentLoadCustomThreshold() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -179,6 +186,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentLoadAll() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -190,6 +198,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentLoadAllCustomThreshold() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

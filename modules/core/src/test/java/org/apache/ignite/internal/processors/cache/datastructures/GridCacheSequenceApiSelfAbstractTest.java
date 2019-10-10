@@ -38,6 +38,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -46,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence basic tests.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
     /**  */
     protected static final int BATCH_SIZE = 3;
@@ -145,6 +149,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareSequence() throws Exception {
         // Random sequence names.
         String locSeqName1 = UUID.randomUUID().toString();
@@ -169,6 +174,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddWrongValue() throws Exception {
         for (IgniteAtomicSequence seq : seqArr) {
             try {
@@ -194,6 +200,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndIncrement() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -207,6 +214,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementAndGet() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -220,6 +228,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAndGet() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -233,6 +242,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndAdd() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -246,6 +256,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndAddInTx() throws Exception {
         try (Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
@@ -261,6 +272,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceIntegrity0() throws Exception {
         // Random sequence names.
         String locSeqName1 = UUID.randomUUID().toString();
@@ -294,6 +306,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceIntegrity1() throws Exception {
         sequenceIntegrity(1, 0);
         sequenceIntegrity(7, -1500);
@@ -303,6 +316,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedSequenceIntegrity() throws Exception {
         multiThreadedSequenceIntegrity(1, 0);
         multiThreadedSequenceIntegrity(7, -1500);
@@ -312,6 +326,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
@@ -334,6 +349,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheSets() throws Exception {
         // Make new atomic sequence in cache.
         IgniteAtomicSequence seq = grid().atomicSequence(UUID.randomUUID().toString(), 0, true);
@@ -363,6 +379,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleStructuresInDifferentGroups() throws Exception {
         Ignite ignite = grid(0);
 
@@ -404,6 +421,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceReserveSizeFromExplicitConfiguration() throws Exception {
         Ignite ignite = grid(0);
 

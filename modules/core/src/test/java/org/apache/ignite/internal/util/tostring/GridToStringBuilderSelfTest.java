@@ -32,15 +32,22 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENG
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 
 /**
  * Tests for {@link GridToStringBuilder}.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToString() throws Exception {
         TestClass1 obj = new TestClass1();
 
@@ -55,6 +62,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringWithAdditions() throws Exception {
         TestClass1 obj = new TestClass1();
 
@@ -72,7 +80,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testToStringCheckSimpleRecursionPrevention() throws Exception {
+    @Test
+    public void testToStringCheckSimpleListRecursionPrevention() throws Exception {
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 
@@ -87,8 +96,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-602")
+    @Test
     public void testToStringCheckAdvancedRecursionPrevention() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-602");
 
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
@@ -103,6 +113,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testToStringPerformance() {
         TestClass1 obj = new TestClass1();
 
@@ -153,6 +164,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringCollectionLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
@@ -245,6 +257,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testToStringSizeLimits() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
         int tailLen = limit / 10 * 2;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -59,6 +60,9 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
         CacheObject val = peekVisibleValue(e);
 
         GridCacheContext cctx = e.context();
+
+        if (this.val instanceof BinaryObject && val instanceof BinaryObject)
+            return F.eq(val, this.val);
 
         Object thisVal = CU.value(this.val, cctx, false);
         Object cacheVal = CU.value(val, cctx, false);

@@ -72,12 +72,8 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
             VisorTxSortOrder sortOrder = null;
 
-            if (order != null) {
-                if ("DURATION".equals(order))
-                    sortOrder = VisorTxSortOrder.DURATION;
-                else if ("SIZE".equals(order))
-                    sortOrder = VisorTxSortOrder.SIZE;
-            }
+            if (order != null)
+                sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
 
             VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
                 limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);

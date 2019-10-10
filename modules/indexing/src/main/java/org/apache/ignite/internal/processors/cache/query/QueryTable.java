@@ -93,6 +93,7 @@ public class QueryTable implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -121,6 +122,7 @@ public class QueryTable implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(QueryTable.class);

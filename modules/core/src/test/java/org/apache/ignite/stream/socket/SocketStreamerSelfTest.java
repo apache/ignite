@@ -43,24 +43,22 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests {@link SocketStreamer}.
  */
+@RunWith(JUnit4.class)
 public class SocketStreamerSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid count. */
     private final static int GRID_CNT = 3;
 
@@ -81,12 +79,6 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         return cfg;
     }
 
@@ -103,6 +95,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedDefaultConverter() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -131,6 +124,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleEntriesFromOneMessage() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -162,6 +156,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -201,6 +196,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedDefaultConverter() throws Exception {
         test(null, DELIM, new Runnable() {
             @Override public void run() {
@@ -226,6 +222,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -263,8 +260,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Message> converter, 
-        @Nullable byte[] delim, 
+    private void test(@Nullable SocketMessageConverter<Message> converter,
+        @Nullable byte[] delim,
         Runnable r,
         boolean oneMessagePerTuple) throws Exception {
         SocketStreamer<Message, Integer, String> sockStmr = null;

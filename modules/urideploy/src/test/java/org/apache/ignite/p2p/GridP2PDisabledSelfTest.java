@@ -30,6 +30,9 @@ import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test what happens if peer class loading is disabled.
@@ -39,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown"})
 @GridCommonTest(group = "P2P")
+@RunWith(JUnit4.class)
 public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     /** Task name. */
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
@@ -174,6 +178,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -185,6 +190,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -196,6 +202,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -207,6 +214,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 

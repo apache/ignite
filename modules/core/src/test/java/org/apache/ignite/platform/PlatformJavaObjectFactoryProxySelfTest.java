@@ -33,11 +33,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Dedicated tests for {@link PlatformJavaObjectFactoryProxy}.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTest {
     /** Name of the class. */
     private static final String CLS_NAME = TestJavaObject.class.getName();
@@ -64,6 +67,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test normal object creation using default factory.
      */
+    @Test
     public void testDefaultFactoryNormal() {
         Map<String, Object> props = new HashMap<>();
 
@@ -96,6 +100,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test normal object creation using custom factory.
      */
+    @Test
     public void testCustomFactoryNormal() {
         Map<String, Object> props = new HashMap<>();
 
@@ -130,6 +135,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation with boxed property.
      */
+    @Test
     public void testCustomFactoryBoxedProperty() {
         PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
             Collections.singletonMap("fIntBoxed", (Object)1));
@@ -142,6 +148,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation without properties.
      */
+    @Test
     public void testCustomFactoryNoProperties() {
         PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
             Collections.<String, Object>emptyMap());
@@ -154,6 +161,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation with invalid property name.
      */
+    @Test
     public void testCustomFactoryInvalidPropertyName() {
         final PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
             Collections.singletonMap("invalid", (Object)1));
@@ -168,6 +176,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation with invalid property value.
      */
+    @Test
     public void testCustomFactoryInvalidPropertyValue() {
         final PlatformJavaObjectFactoryProxy proxy = proxyForCustom(NO_DFLT_CTOR_FACTORY_CLS_NAME,
             Collections.singletonMap("fInt", (Object)1L));
@@ -182,6 +191,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation with null class name.
      */
+    @Test
     public void testCustomFactoryNullClassName() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -199,6 +209,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
     /**
      * Test object creation with invalid class name.
      */
+    @Test
     public void testCustomFactoryInvalidClassName() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {

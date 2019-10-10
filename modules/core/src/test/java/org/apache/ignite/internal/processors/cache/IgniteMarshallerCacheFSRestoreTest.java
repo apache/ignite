@@ -44,10 +44,14 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean isDuplicateObserved = true;
@@ -128,6 +132,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      *
      * This test must never hang on proposing of MarshallerMapping.
      */
+    @Test
     public void testFileMappingReadAndPropose() throws Exception {
         isPersistenceEnabled = false;
 
@@ -185,6 +190,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-6536">IGNITE-6536</a> JIRA provides more information
      * about this case.
      */
+    @Test
     public void testNodeStartFailsOnCorruptedStorage() throws Exception {
         isPersistenceEnabled = true;
 

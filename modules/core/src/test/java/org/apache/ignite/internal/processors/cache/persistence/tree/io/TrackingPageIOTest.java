@@ -25,17 +25,22 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.TrackingPageIsCorruptedException;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  *
  */
-public class TrackingPageIOTest extends TestCase {
+public class TrackingPageIOTest {
     /** Page size. */
     public static final int PAGE_SIZE = 4096;
 
@@ -46,6 +51,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testBasics() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -72,6 +78,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testMarkingRandomly() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -82,6 +89,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testZeroingRandomly() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -142,6 +150,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFindNextChangedPage() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -197,6 +206,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testMerging() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -235,6 +245,7 @@ public class TrackingPageIOTest extends TestCase {
     /**
      *
      */
+    @Test
     public void testMerging_MarksShouldBeDropForSuccessfulBackup() throws Exception {
         ByteBuffer buf = createBuffer();
 
@@ -303,6 +314,7 @@ public class TrackingPageIOTest extends TestCase {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testThatWeDontFailIfSnapshotTagWasLost() throws Exception {
         ByteBuffer buf = createBuffer();
 

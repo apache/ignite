@@ -19,13 +19,13 @@ import {Selector, t} from 'testcafe';
 import {CustomFormField} from '../components/FormField';
 
 export const pageSignup = {
-    email: new CustomFormField({model: '$ctrl.data.email'}),
-    password: new CustomFormField({model: '$ctrl.data.password'}),
-    passwordConfirm: new CustomFormField({model: 'confirm'}),
-    firstName: new CustomFormField({model: '$ctrl.data.firstName'}),
-    lastName: new CustomFormField({model: '$ctrl.data.lastName'}),
-    company: new CustomFormField({model: '$ctrl.data.company'}),
-    country: new CustomFormField({model: '$ctrl.data.country'}),
+    email: new CustomFormField({id: 'emailInput'}),
+    password: new CustomFormField({id: 'passwordInput'}),
+    passwordConfirm: new CustomFormField({id: 'confirmInput'}),
+    firstName: new CustomFormField({id: 'firstNameInput'}),
+    lastName: new CustomFormField({id: 'lastNameInput'}),
+    company: new CustomFormField({id: 'companyInput'}),
+    country: new CustomFormField({id: 'countryInput'}),
     signupButton: Selector('button').withText('Sign Up'),
     async fillSignupForm({
         email,

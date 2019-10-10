@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,7 +38,9 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,6 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Data streaming test.
  */
+@RunWith(JUnit4.class)
 public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
@@ -165,6 +167,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -195,6 +198,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsertWithoutColumnsList() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -225,6 +229,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
         for (int i = 10; i <= 100; i += 10)
             put(i, nameForId(i * 100));
@@ -250,6 +255,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 

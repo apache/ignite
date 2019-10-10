@@ -43,10 +43,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -54,6 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * FullTest queries left test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /** Cache size. */
     private static final int MAX_ITEM_COUNT = 100;
@@ -61,18 +62,9 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /** Cache name */
     private static final String PERSON_CACHE = "Person";
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setIncludeEventTypes();
 
@@ -102,6 +94,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQueryWithField() throws Exception {
         checkTextQuery("name:1*", false, false);
     }
@@ -109,6 +102,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testLocalTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(true, true);
     }
@@ -116,6 +110,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testLocalTextQuery() throws Exception {
         checkTextQuery(true, false);
     }
@@ -123,6 +118,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(false, true);
     }
@@ -130,6 +126,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQuery() throws Exception {
         checkTextQuery(false, true);
     }

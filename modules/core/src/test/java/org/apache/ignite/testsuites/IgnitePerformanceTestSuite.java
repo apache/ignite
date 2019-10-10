@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentTxMultiNodeLoadTest;
 import org.apache.ignite.internal.processors.cache.GridCacheIteratorPerformanceTest;
@@ -57,42 +58,45 @@ import org.apache.ignite.loadtests.mergesort.GridMergeSortLoadTest;
 import org.apache.ignite.loadtests.nio.GridNioBenchmarkTest;
 import org.apache.ignite.marshaller.GridMarshallerPerformanceTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiLanLoadTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Tests suite for performance tests tests.
  * Note: Most of these are resource-consuming or non-terminating.
  */
-public class IgnitePerformanceTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgnitePerformanceTestSuite {
     /**
      * @return Tests suite for orphaned tests (not in any test sute previously).
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Load-Test Suite");
 
-        suite.addTestSuite(GridCacheDhtPreloadPerformanceTest.class);
-        suite.addTestSuite(GridCacheIteratorPerformanceTest.class);
-        suite.addTestSuite(GridCacheMultiNodeLoadTest.class);
-        suite.addTestSuite(GridCacheConcurrentTxMultiNodeLoadTest.class);
-        suite.addTestSuite(GridCachePartitionedAffinityExcludeNeighborsPerformanceTest.class);
-        suite.addTestSuite(GridCachePartitionedAtomicLongLoadTest.class);
-        suite.addTestSuite(GridCacheWriteBehindStoreLoadTest.class);
-        suite.addTestSuite(GridCircularBufferPerformanceTest.class);
-        suite.addTestSuite(GridFuncPerformanceTest.class);
-        suite.addTestSuite(GridHashMapLoadTest.class);
-        suite.addTestSuite(GridLeanMapPerformanceTest.class);
-        suite.addTestSuite(GridMarshallerPerformanceTest.class);
-        suite.addTestSuite(GridMetadataAwareAdapterLoadTest.class);
-        suite.addTestSuite(GridMultiSplitsLoadTest.class);
-        suite.addTestSuite(GridMultiSplitsRedeployLoadTest.class);
-        suite.addTestSuite(GridSessionLoadTest.class);
-        suite.addTestSuite(GridSingleSplitsNewNodesMulticastLoadTest.class);
-        suite.addTestSuite(GridSingleSplitsRedeployLoadTest.class);
-        suite.addTestSuite(GridStealingLoadTest.class);
-        suite.addTestSuite(GridTcpCommunicationSpiLanLoadTest.class);
-        suite.addTestSuite(GridUnsafeMapPerformanceTest.class);
-        suite.addTestSuite(GridUnsafePartitionedMapPerformanceTest.class);
-        suite.addTestSuite(IgniteDataStreamerPerformanceTest.class);
-        suite.addTestSuite(SortedEvictionPolicyPerformanceTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCacheDhtPreloadPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheIteratorPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheMultiNodeLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheConcurrentTxMultiNodeLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAffinityExcludeNeighborsPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedAtomicLongLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheWriteBehindStoreLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCircularBufferPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridFuncPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridHashMapLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridLeanMapPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMarshallerPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMetadataAwareAdapterLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMultiSplitsLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridMultiSplitsRedeployLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSessionLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSingleSplitsNewNodesMulticastLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridSingleSplitsRedeployLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridStealingLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridTcpCommunicationSpiLanLoadTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridUnsafeMapPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridUnsafePartitionedMapPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDataStreamerPerformanceTest.class));
+        suite.addTest(new JUnit4TestAdapter(SortedEvictionPolicyPerformanceTest.class));
 
         // Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
         // Main classes:

@@ -33,8 +33,13 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
@@ -74,6 +79,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateEncryptedCache() throws Exception {
         CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(ENCRYPTED_CACHE);
 
@@ -95,9 +101,9 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8640")
+    @Test
     public void testCreateEncryptedNotPersistedCacheFail() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8640");
-
         GridTestUtils.assertThrowsWithCause(() -> {
             CacheConfiguration<Long, String> ccfg = new CacheConfiguration<>(NO_PERSISTENCE_REGION);
 
@@ -109,6 +115,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPersistedContentEncrypted() throws Exception {
         IgniteCache<Integer, String> enc = grid(0).createCache(
             new CacheConfiguration<Integer, String>(ENCRYPTED_CACHE)

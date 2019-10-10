@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -253,6 +254,15 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeIgniteUuid(String name, IgniteUuid val);
+
+    /**
+     * Writes {@link AffinityTopologyVersion}.
+     *
+     * @param name Field name.
+     * @param val {@link AffinityTopologyVersion}.
+     * @return Whether value was fully written.
+     */
+    public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val);
 
     /**
      * Writes nested message.

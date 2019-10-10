@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
@@ -71,7 +72,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
  * {@link JdbcBulkLoadBatchRequest#CMD_FINISHED_ERROR} and the processing
  * is aborted on the both sides.
  */
-public class JdbcBulkLoadProcessor {
+public class JdbcBulkLoadProcessor extends JdbcCursor {
     /** A core processor that handles incoming data packets. */
     private final BulkLoadProcessor processor;
 
@@ -82,8 +83,11 @@ public class JdbcBulkLoadProcessor {
      * Creates a JDBC-specific adapter for bulk load processor.
      *
      * @param processor Bulk load processor from the core to delegate calls to.
+     * @param reqId Id of the request that created given processor.
      */
-    public JdbcBulkLoadProcessor(BulkLoadProcessor processor) {
+    public JdbcBulkLoadProcessor(BulkLoadProcessor processor, long reqId) {
+        super(reqId);
+
         this.processor = processor;
         nextBatchIdx = 0;
     }
@@ -98,7 +102,7 @@ public class JdbcBulkLoadProcessor {
      */
     public void processBatch(JdbcBulkLoadBatchRequest req)
         throws IgniteCheckedException {
-        if (nextBatchIdx != req.batchIdx())
+        if (nextBatchIdx != req.batchIdx() && req.cmd() != CMD_FINISHED_ERROR)
             throw new IgniteSQLException("Batch #" + (nextBatchIdx + 1) +
                     " is missing. Received #" + req.batchIdx() + " instead.");
 
@@ -127,10 +131,15 @@ public class JdbcBulkLoadProcessor {
      * Closes the underlying objects.
      * Currently we don't handle normal termination vs. abort.
      */
-    public void close() throws Exception {
-        processor.close();
+    @Override public void close() throws IOException {
+        try {
+            processor.close();
 
-        nextBatchIdx = -1;
+            nextBatchIdx = -1;
+        }
+        catch (Exception e) {
+            throw new IOException("Unable to close processor: " + e.getMessage(), e);
+        }
     }
 
     /**

@@ -215,5 +215,5 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @return Ignite binary interface.
      */
-    public IgniteBinary binary();
+    public IgniteBinary binary() ;
 }

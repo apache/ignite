@@ -1,0 +1,94 @@
+TIMESTAMPDIFF
+-----------------
+Test cases:
+select timestampdiff(year, '2000-01-01', '2001-01-01');
+select timestampdiff(year, '2000-03-01', '2001-03-01');
+select timestampdiff(day, '2000-03-01', '2001-03-01');
+select timestampdiff(year, '2000-02-29', '2001-02-28');
+select timestampdiff(day, '2000-02-29', '2001-02-28');
+select timestampdiff(month, '2000-02-29', '2001-02-28');
+select timestampadd(year, 1, '2000-02-29');
+
+
+Auto Upgrade
+-----------------
+file conversion should be done automatically when the new engine connects.
+
+auto-upgrade application:
+check if new version is available
+(option: digital signature)
+if yes download new version
+(option: http, https, ftp)
+backup database to SQL script
+(option: list of databases, use recovery mechanism)
+install new version
+
+ftp client
+task to download new version from another HTTP / HTTPS / FTP server
+multi-task
+
+
+Direct Lookup
+-----------------
+drop table test;
+create table test(id int, version int, idx int);
+@LOOP 1000 insert into test values(1, 1, ?);
+@LOOP 1000 insert into test values(1, 2, ?);
+@LOOP 1000 insert into test values(2, 1, ?);
+create index idx_test on test(id, version, idx);
+@LOOP 1000 select max(id)+1 from test;
+@LOOP 1000 select max(idx)+1 from test where id=1 and version=2;
+@LOOP 1000 select max(id)+1 from test;
+@LOOP 1000 select max(idx)+1 from test where id=1 and version=2;
+@LOOP 1000 select max(id)+1 from test;
+@LOOP 1000 select max(idx)+1 from test where id=1 and version=2;
+-- should be direct query
+
+
+Update Multiple Tables with Merge
+-----------------
+drop table statisticlog;
+create table statisticlog(id int primary key, datatext varchar, moment int);
+@LOOP 20000 insert into statisticlog values(?, ?, ?);
+merge into statisticlog(id, datatext) key(id)
+select id, 'data1' from statisticlog order by moment limit 5;
+select * from statisticlog where id < 10;
+UPDATE statisticlog SET datatext = 'data2'
+WHERE id IN (SELECT id FROM statisticlog ORDER BY moment LIMIT 5);
+select * from statisticlog where id < 10;
+
+Auto-Reconnect
+-----------------
+Implemented:
+- auto_server includes auto_reconnect
+- works with server mode
+- works with auto_server mode
+- keep temporary linked tables, variables on client
+- statements
+- prepared statements
+- small result sets (up to fetch size)
+- throws an error when autocommit is false
+- an error is thrown when the connection is lost
+    while looping over large result sets (larger than fetch size)
+Not implemented / not tested:
+- batch updates
+- ignored in embedded mode
+- keep temporary tables (including data) on client
+- keep identity, getGeneratedKeys on client
+- throw error when in cluster mode
+
+Support Model
+-----------------
+Check JBoss and Spring support models
+http://wiki.bonita.ow2.org/xwiki/bin/view/Main/BullOffer
+- starting 2500 euros / year
+- unlimited support requests
+- 2 named contacts
+- optional half days of technical aid by remote services
+
+Durability
+-----------------
+Improve documentation.
+You can't make a system that will not lose data, you can only make
+a system that knows the last save point of 100% integrity. There are
+too many variables and too much randomness on a cold hard power failure.

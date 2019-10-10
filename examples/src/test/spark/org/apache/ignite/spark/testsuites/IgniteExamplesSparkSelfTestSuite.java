@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spark.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spark.examples.IgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.JavaIgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.SharedRDDExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -30,20 +33,20 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only Spring ignite examples tests.
  */
-public class IgniteExamplesSparkSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteExamplesSparkSelfTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesSparkSelfTestSuite.class));
 
         TestSuite suite = new TestSuite("Ignite Spark Examples Test Suite");
 
-        suite.addTest(new TestSuite(SharedRDDExampleSelfTest.class));
-        suite.addTest(new TestSuite(IgniteDataFrameSelfTest.class));
-        suite.addTest(new TestSuite(JavaIgniteDataFrameSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SharedRDDExampleSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteDataFrameSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(JavaIgniteDataFrameSelfTest.class));
 
         return suite;
     }

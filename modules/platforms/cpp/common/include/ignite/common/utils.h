@@ -549,6 +549,62 @@ namespace ignite
         }
 
         /**
+         * Method guard class template.
+         *
+         * Upon destruction calls provided method on provided class instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class MethodGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Mehtod type. */
+            typedef void (ValueType::*MethodType)();
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            MethodGuard(ValueType* val, MethodType method) :
+                val(val),
+                method(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~MethodGuard()
+            {
+                if (val && method)
+                    (val->*method)();
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                method = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            MethodType method;
+        };
+
+        /**
          * Get dynamic library full name.
          * @param name Name without extension.
          * @return Full name.

@@ -41,7 +41,7 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);

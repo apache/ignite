@@ -27,10 +27,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * SQL listener query fetch result.
  */
-class JdbcQueryCursor {
-    /** Query ID. */
-    private final long queryId;
-
+class JdbcQueryCursor extends JdbcCursor {
     /** Fetch size. */
     private int pageSize;
 
@@ -44,20 +41,26 @@ class JdbcQueryCursor {
     private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private final Iterator<List<Object>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
-     * @param queryId Query ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
+     * @param reqId Id of the request that created given cursor.
      */
-    JdbcQueryCursor(long queryId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
-        this.queryId = queryId;
+    JdbcQueryCursor(int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur, long reqId) {
+        super(reqId);
+
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+    }
 
+    /**
+     * Open iterator;
+     */
+    void openIterator(){
         iter = cur.iterator();
     }
 
@@ -105,16 +108,9 @@ class JdbcQueryCursor {
     }
 
     /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
-    }
-
-    /**
      * Close the cursor.
      */
-    public void close() {
+    @Override public void close() {
         cur.close();
     }
 

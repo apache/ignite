@@ -38,12 +38,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests checks case when one node is unable to connect to next in a ring,
  * but those nodes are not experiencing any connectivity troubles between
  * each other.
  */
+@RunWith(JUnit4.class)
 public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     /** */
     private static final int FAILURE_DETECTION_TIMEOUT = 5_000;
@@ -118,6 +122,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailDisabledRecovery() throws Exception {
         timeout = 0; // Disable previous node check.
 
@@ -176,6 +181,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailSelfKill() throws Exception {
         startGrids(5);
 
@@ -211,6 +217,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailAndRecovery() throws Exception {
         startGrids(5);
 
@@ -254,6 +261,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFail() throws Exception {
         failNodes = true;
 
@@ -270,6 +278,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMassiveFailForceNodeFail() throws Exception {
         failNodes = true;
 
@@ -285,6 +294,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryOnDisconnect() throws Exception {
         startGrids(3);
 

@@ -82,15 +82,17 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -105,10 +107,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private CacheConfiguration ccfg;
 
@@ -124,7 +124,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setClientMode(client);
 
@@ -140,6 +140,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -149,6 +154,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPutAllPrimaryMode() throws Exception {
         atomicPut(true, null);
     }
@@ -156,6 +162,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPutAllNearEnabledPrimaryMode() throws Exception {
         atomicPut(true, new NearCacheConfiguration());
     }
@@ -163,6 +170,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPutPrimaryMode() throws Exception {
         atomicPut(false, null);
     }
@@ -288,6 +296,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicNoRemapPrimaryMode() throws Exception {
         atomicNoRemap();
     }
@@ -375,6 +384,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetAndPutPrimaryMode() throws Exception {
         atomicGetAndPut();
     }
@@ -442,6 +452,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPutAll() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -509,6 +520,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         pessimisticTx(null);
     }
@@ -516,6 +528,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNearEnabled() throws Exception {
         pessimisticTx(new NearCacheConfiguration());
     }
@@ -734,6 +747,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx2() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -827,6 +841,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNearEnabledNoRemap() throws Exception {
         pessimisticTxNoRemap(new NearCacheConfiguration());
     }
@@ -834,6 +849,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNoRemap() throws Exception {
         pessimisticTxNoRemap(null);
     }
@@ -948,6 +964,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx3() throws Exception {
         for (int iter = 0; iter < 5; iter++) {
             info("Iteration: " + iter);
@@ -1013,6 +1030,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTx() throws Exception {
         optimisticSerializableTx(null);
     }
@@ -1020,6 +1038,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxNearEnabled() throws Exception {
         optimisticSerializableTx(new NearCacheConfiguration());
     }
@@ -1165,6 +1184,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLock() throws Exception {
         lock(null);
     }
@@ -1172,6 +1192,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockNearEnabled() throws Exception {
         lock(new NearCacheConfiguration());
     }
@@ -1302,6 +1323,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxMessageClientFirstFlag() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -1402,6 +1424,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxMessageClientFirstFlag() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -1497,6 +1520,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRemoveAfterClientFailed() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -1555,6 +1579,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockFromClientBlocksExchange() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -1703,7 +1728,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                     }
                                 }
                                 finally {
-                                    entry.touch(entry.context().affinity().affinityTopologyVersion());
+                                    entry.touch();
                                 }
                             }
                             else
@@ -1730,6 +1755,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
         multinode(ATOMIC, TestType.PUT_ALL);
     }
@@ -1737,6 +1763,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxPutAllMultinode() throws Exception {
         multinode(TRANSACTIONAL, TestType.OPTIMISTIC_TX);
     }
@@ -1744,6 +1771,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxPutAllMultinode() throws Exception {
         multinode(TRANSACTIONAL, TestType.OPTIMISTIC_SERIALIZABLE_TX);
     }
@@ -1751,6 +1779,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxPutAllMultinode() throws Exception {
         multinode(TRANSACTIONAL, TestType.PESSIMISTIC_TX);
     }
@@ -1758,6 +1787,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAllMultinode() throws Exception {
         multinode(TRANSACTIONAL, TestType.LOCK);
     }
@@ -1993,6 +2023,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServersLeaveOnStart() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

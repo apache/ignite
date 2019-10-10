@@ -39,6 +39,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -49,6 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends CacheMvccAbstractTest  {
     /** */
     private static final int TIMEOUT = 3000;
@@ -64,6 +69,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerInsert() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -117,6 +123,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerInsertDuplicateKey() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -165,6 +172,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerMerge() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -217,6 +225,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerMultiBatchPerNodeServer() throws Exception {
         checkMultiBatchPerNode(false);
     }
@@ -224,6 +233,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerMultiBatchPerNodeClient() throws Exception {
         checkMultiBatchPerNode(true);
     }
@@ -292,6 +302,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerDelete() throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
@@ -343,6 +354,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerUpdate() throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
@@ -395,6 +407,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerImplicitTxInsert() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -444,6 +457,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerRollbackInsert() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -506,6 +520,8 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10763")
+    @Test
     public void testQueryReducerDeadlockInsertWithTxTimeout() throws Exception {
         checkQueryReducerDeadlockInsert(TimeoutMode.TX);
     }
@@ -513,6 +529,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerDeadlockInsertWithStmtTimeout() throws Exception {
         checkQueryReducerDeadlockInsert(TimeoutMode.STMT);
     }
@@ -612,6 +629,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerInsertVersionConflict() throws Exception {
         ccfgs = new CacheConfiguration[] {
             cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
@@ -686,6 +704,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerInsertValues() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -723,6 +742,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerMergeValues() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
@@ -763,6 +783,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerFastUpdate() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -804,6 +825,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReducerFastDelete() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);

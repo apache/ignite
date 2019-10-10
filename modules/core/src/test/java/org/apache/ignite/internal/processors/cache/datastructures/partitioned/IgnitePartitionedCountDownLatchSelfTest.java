@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCountDownLatchAbstractSelfTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -32,7 +34,9 @@ public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatc
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1793")
+    @Test
     @Override public void testLatch() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1793");
+        // No-op.
     }
 }

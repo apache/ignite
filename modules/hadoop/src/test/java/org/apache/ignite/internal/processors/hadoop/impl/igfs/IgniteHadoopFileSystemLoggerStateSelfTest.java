@@ -38,6 +38,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,6 +52,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.fs.HadoopParamet
 /**
  * Ensures that sampling is really turned on/off.
  */
+@RunWith(JUnit4.class)
 public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstractTest {
     /** IGFS. */
     private IgfsEx igfs;
@@ -142,6 +146,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingDisabledSamplingNotSet() throws Exception {
         startUp();
 
@@ -153,6 +158,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingEnabledSamplingNotSet() throws Exception {
         logging = true;
 
@@ -166,6 +172,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingDisabledSamplingDisabled() throws Exception {
         sampling = false;
 
@@ -179,6 +186,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingEnabledSamplingDisabled() throws Exception {
         logging = true;
         sampling = false;
@@ -193,6 +201,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingDisabledSamplingEnabled() throws Exception {
         sampling = true;
 
@@ -206,6 +215,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLoggingEnabledSamplingEnabled() throws Exception {
         logging = true;
         sampling = true;
@@ -220,6 +230,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSamplingChange() throws Exception {
         // Start with sampling not set.
         startUp();
@@ -286,6 +297,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testLogDirectory() throws Exception {
         startUp();
 

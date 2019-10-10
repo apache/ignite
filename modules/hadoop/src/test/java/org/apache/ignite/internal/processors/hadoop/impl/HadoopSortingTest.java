@@ -50,12 +50,16 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Tests correct sorting.
  */
+@RunWith(JUnit4.class)
 public class HadoopSortingTest extends HadoopAbstractSelfTest {
     /** */
     private static final String PATH_INPUT = "/test-in";
@@ -98,6 +102,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSortSimple() throws Exception {
         // Generate test data.
         Job job = Job.getInstance();

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCreateRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheNearRestartRollbackSelfTest;
@@ -24,25 +25,27 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Cache stability test suite on changing topology.
  */
-public class IgniteCacheRestartTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheRestartTestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class);
-        suite.addTestSuite(IgniteCacheNearRestartRollbackSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNodeRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedOptimisticTxNodeRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCacheReplicatedNodeRestartSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheNearRestartRollbackSelfTest.class));
 
-        suite.addTestSuite(IgniteCacheCreateRestartSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(IgniteCacheCreateRestartSelfTest.class));
 
         return suite;
     }

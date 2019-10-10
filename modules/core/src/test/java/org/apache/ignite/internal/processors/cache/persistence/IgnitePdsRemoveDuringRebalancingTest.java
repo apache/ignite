@@ -33,21 +33,19 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -70,11 +68,6 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-            .setIpFinder(IP_FINDER)
-        );
 
         return cfg;
     }
@@ -100,6 +93,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 

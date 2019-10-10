@@ -26,12 +26,16 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
  * Base class for memory leaks tests.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTest {
     /** */
     private static final int CONCURRENCY_LEVEL = 16;
@@ -173,6 +177,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
 
