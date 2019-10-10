@@ -4942,7 +4942,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param secCtx Sec context.
+         * @param secCtx Security context.
          * @return Security permission set.
          */
         private @Nullable SecurityPermissionSet getPermissions(SecurityContext secCtx) {
