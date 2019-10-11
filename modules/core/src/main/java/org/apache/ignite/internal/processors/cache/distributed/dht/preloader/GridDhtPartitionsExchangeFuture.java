@@ -1029,7 +1029,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code true} if Event node is in baseline and {@code false} otherwise.
      */
     public boolean isEventNodeInBaseline() {
-        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
+        BaselineTopology top = firstEvtDiscoCache.state().baselineTopology();
 
         return top != null && top.consistentIds().contains(firstDiscoEvt.eventNode().consistentId());
     }
