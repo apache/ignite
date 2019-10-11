@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Dispatcher of distributed properties.
- *
- * Hold of all register properties of distributed configuration.
+ * Inner interface to maintenance of distributed property.
  */
-public interface DistributedPropertyDispatcher {
+public interface DistributedChangeableProperty<T extends Serializable> extends DistributedProperty<T> {
     /**
-     * Attach already created property.
-     *
-     * @param props Properties to attach to processor.
-     * @param <T> Type of property value.
+     * This property have been attached to processor.
      */
-    <T extends DistributedChangeableProperty> void registerProperties(T... props);
+    void onAttached();
+
     /**
-     * Attach already created property.
+     * On this property ready to be update on cluster wide.
      *
-     * @param prop Property to attach to processor.
+     * @param updater Consumer for update value across cluster.
      */
-    <T extends Serializable> DistributedProperty<T> registerProperty(DistributedChangeableProperty<T> prop);
+    void onReadyForUpdate(@NotNull PropertyUpdateClosure updater);
+
+    /**
+     * Update only local value without updating remote cluster.
+     *
+     * @param newVal New value.
+     */
+    void localUpdate(Serializable newVal);
 }

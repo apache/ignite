@@ -16,19 +16,25 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
+import static org.apache.ignite.internal.IgniteFeatures.BASELINE_AUTO_ADJUST;
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
@@ -50,6 +56,8 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
     private final GridClusterStateProcessor stateProcessor;
     /** Scheduler of specific task of baseline changing. */
     private final BaselineAutoAdjustScheduler baselineAutoAdjustScheduler;
+    /** Context.*/
+    private final GridKernalContext ctx;
 
     /** Last data for set new baseline. */
     private BaselineAutoAdjustData lastBaselineData = NULL_BASELINE_DATA;
@@ -70,6 +78,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -117,8 +126,27 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      * @return {@code true} if auto-adjust baseline enabled.
      */
     private boolean isTopologyWatcherEnabled() {
-        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled()
+        return isSupported(ctx)
+            && !ctx.clientNode()
+            && stateProcessor.clusterState().active()
+            && baselineConfiguration.isBaselineAutoAdjustEnabled()
             && (CU.isPersistenceEnabled(cluster.ignite().configuration()) || cluster.baselineAutoAdjustTimeout() != 0L);
+    }
+
+    /**
+     * @return {@code True} if all nodes in the cluster support auto-adjust baseline.
+     * @see IgniteFeatures#BASELINE_AUTO_ADJUST
+     */
+    private static boolean isSupported(GridKernalContext ctx) {
+        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
+
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(BASELINE_AUTO_ADJUST);
+        else {
+            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
+
+            return IgniteFeatures.allNodesSupports(ctx, nodes, BASELINE_AUTO_ADJUST);
+        }
     }
 
     /**
