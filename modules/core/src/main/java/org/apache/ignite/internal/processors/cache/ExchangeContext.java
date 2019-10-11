@@ -106,10 +106,10 @@ public class ExchangeContext {
             GridAffinityAssignmentCache aff = grp.affinity();
 
             Set<Integer> failedPrimaries = aff.primaryPartitions(fut.exchangeId().eventNode().id(), aff.lastVersion());
-            Set<Integer> locBackups = aff.backupPartitions(fut.sharedContext().localNodeId(), aff.lastVersion());
+            Set<Integer> loc = grp.topology().localPartitionMap().keySet();
 
             for (int part : failedPrimaries) {
-                if (locBackups.contains(part))
+                if (loc.contains(part))
                     return true;
             }
         }

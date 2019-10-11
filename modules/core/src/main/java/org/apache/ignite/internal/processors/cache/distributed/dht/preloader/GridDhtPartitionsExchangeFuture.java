@@ -3974,7 +3974,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // Failed node's primary partitions or just all local backups in case of possible exchange merge.
                     Set<Integer> parts = nodeId != null ?
                         grp.affinity().primaryPartitions(nodeId, topVer) :
-                        grp.affinity().backupPartitions(cctx.localNodeId(), topVer);
+                        grp.topology().localPartitionMap().keySet();
 
                     grp.topology().finalizeUpdateCounters(parts);
 
