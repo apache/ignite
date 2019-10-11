@@ -68,7 +68,7 @@ public class ExchangeContext {
 
         GridDiscoveryManager disco = fut.sharedContext().discovery();
 
-        if (protocolVer > 2 && fut.exchangeId().isLeft() && fut.isEventNodeInBaseline() &&
+        if (protocolVer > 2 && fut.exchangeId().isLeft() && fut.isFirstEventNodeInBaseline() &&
             !disco.baselineChanged(fut.sharedContext().exchange().readyAffinityVersion(), fut.initialVersion())) {
             baselineNodeLeft = true;
 
