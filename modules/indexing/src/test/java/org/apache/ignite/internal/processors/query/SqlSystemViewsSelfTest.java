@@ -469,7 +469,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cache.put(100,"200");
 
         String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
-            systemSchemaName() + ".LOCAL_SQL_RUNNING_QUERIES";
+            systemSchemaName() + ".SQL_QUERY";
 
         FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
 
@@ -536,15 +536,15 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         notClosedQryCursor.close();
 
-        sql = "SELECT SQL, QUERY_ID FROM " + systemSchemaName() + ".LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='" + qryPrefix + "7'";
+        sql = "SELECT SQL, QUERY_ID FROM " + systemSchemaName() + ".SQL_QUERY WHERE QUERY_ID='" + qryPrefix + "7'";
 
         assertEquals(qryPrefix + "7", ((List<?>)cache.query(new SqlFieldsQuery(sql)).getAll().get(0)).get(1));
 
-        sql = "SELECT SQL FROM " + systemSchemaName() + ".LOCAL_SQL_RUNNING_QUERIES WHERE DURATION > 100000";
+        sql = "SELECT SQL FROM " + systemSchemaName() + ".SQL_QUERY WHERE DURATION > 100000";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
 
-        sql = "SELECT SQL FROM " + systemSchemaName() + ".LOCAL_SQL_RUNNING_QUERIES WHERE QUERY_ID='UNKNOWN'";
+        sql = "SELECT SQL FROM " + systemSchemaName() + ".SQL_QUERY WHERE QUERY_ID='UNKNOWN'";
 
         assertTrue(cache.query(new SqlFieldsQuery(sql)).getAll().isEmpty());
     }

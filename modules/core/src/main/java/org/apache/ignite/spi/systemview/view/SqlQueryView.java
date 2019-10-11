@@ -17,66 +17,63 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Query representation for a {@link SystemView}.
+ * SQL query representation for a {@link SystemView}.
  */
-public class QueryView {
-    /** */
-    private String qry;
-
-    /** */
-    private String cacheName;
-
-    /** */
-    private GridCacheQueryType type;
-
-    /** */
-    private long startTime;
+public class SqlQueryView {
+    /** Query. */
+    private final GridRunningQueryInfo qry;
 
     /**
-     * @param qry
-     * @param cacheName
-     * @param type
-     * @param startTime
+     * @param qry Query.
      */
-    public QueryView(String qry, String cacheName, GridCacheQueryType type, long startTime) {
+    public SqlQueryView(GridRunningQueryInfo qry) {
         this.qry = qry;
-        this.cacheName = cacheName;
-        this.type = type;
-        this.startTime = startTime;
     }
 
-    /** @return Cache name. */
+    /** @return Origin query node. */
+    @Order(2)
+    public UUID originNodeId() {
+        return qry.nodeId();
+    }
+
+    /** @return Query ID. */
     @Order
-    public String cacheName() {
-        return cacheName;
+    public String queryId() {
+        return qry.globalQueryId();
     }
 
     /** @return Query text. */
     @Order(1)
-    public String query() {
-        return qry;
+    public String sql() {
+        return qry.query();
     }
 
-    /** @return Query type. */
-    @Order(2)
-    public GridCacheQueryType type() {
-        return type;
+    /** @return Schema name. */
+    public String schemaName() {
+        return qry.schemaName();
     }
 
-    /** @return Start time. */
+    /** @return Query start time. */
     @Order(3)
-    public long startTime() {
-        return startTime;
+    public Date startTime() {
+        return new Date(qry.startTime());
     }
 
     /** @return Query duration. */
     @Order(4)
     public long duration() {
-        return U.currentTimeMillis() - startTime;
+        return U.currentTimeMillis() - qry.startTime();
+    }
+
+    /** @return {@code True} if query is local. */
+    public boolean local() {
+        return qry.local();
     }
 }

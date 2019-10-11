@@ -36,7 +36,9 @@ import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.QueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
@@ -45,7 +47,9 @@ import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.QueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -84,6 +88,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
+        registerWalker(SqlQueryView.class, new SqlQueryViewWalker());
+        registerWalker(QueryView.class, new QueryViewWalker());
     }
 
     /** {@inheritDoc} */

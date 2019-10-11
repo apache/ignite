@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +32,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -117,6 +118,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.systemview.view.QueryView;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,11 +126,18 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String QRY_VIEW = metricName("query");
+
+    /** */
+    public static final String QRY_VIEW_DESC = "Running queries.";
+
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
@@ -209,6 +218,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
     private final Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** Running queries. */
+    private final Set<QueryView> runningQry = new HashSet<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -238,6 +250,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     U.warn(log, "Unsupported IO message: " + msg);
             }
         };
+
+        ctx.systemView().registerView(QRY_VIEW, QRY_VIEW_DESC,
+            QueryView.class,
+            runningQry,
+            Function.identity());
     }
 
     /** {@inheritDoc} */
@@ -2877,6 +2894,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         IgniteOutClosureX<R> clo, boolean complete) throws IgniteCheckedException {
         final long startTime = U.currentTimeMillis();
 
+        QueryView qryView = new QueryView(qry,
+            cctx == null ? null : cctx.name(),
+            qryType,
+            startTime);
+
+        runningQry.add(qryView);
+
         Throwable err = null;
 
         R res = null;
@@ -2908,6 +2932,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(e);
         }
         finally {
+            runningQry.remove(qryView);
+
             boolean failed = err != null;
 
             long duration = U.currentTimeMillis() - startTime;

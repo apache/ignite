@@ -31,15 +31,23 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Keep information about all running queries.
  */
 public class RunningQueryManager {
+    /** */
+    public static final String SQL_QRY_VIEW = metricName("sql", "query");
+
+    /** */
+    public static final String SQL_QRY_VIEW_DESC = "Running SQL queries.";
+
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
@@ -66,6 +74,11 @@ public class RunningQueryManager {
         histSz = ctx.config().getSqlQueryHistorySize();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
+
+        ctx.systemView().registerView(SQL_QRY_VIEW, SQL_QRY_VIEW_DESC,
+            SqlQueryView.class,
+            runs.values(),
+            SqlQueryView::new);
     }
 
     /**
@@ -80,7 +93,7 @@ public class RunningQueryManager {
      */
     public Long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel) {
-        Long qryId = qryIdGen.incrementAndGet();
+        long qryId = qryIdGen.incrementAndGet();
 
         GridRunningQueryInfo run = new GridRunningQueryInfo(
             qryId,
