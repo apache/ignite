@@ -132,6 +132,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Apache.Ignite.Core.Tests\PathUtils.cs">
+      <Link>PathUtils.cs</Link>
+    </Compile>
     <Compile Include="Log4NetTest.cs" />
     <Compile Include="NLogTest.cs" />
     <Compile Include="AspNetTest.cs" />
@@ -162,19 +165,11 @@
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>if not exist "$(TargetDir)libs" md "$(TargetDir)libs"
-xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.1.8.0\libs\*.*" "$(TargetDir)libs"</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  <Import Project="packages\Apache.Ignite.2.0.0\build\Apache.Ignite.targets" Condition="Exists('packages\Apache.Ignite.2.0.0\build\Apache.Ignite.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\Apache.Ignite.9.0.0\build\Apache.Ignite.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Apache.Ignite.9.0.0\build\Apache.Ignite.targets'))" />
   </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
