@@ -118,6 +118,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void ensure(int grpId, int partId, boolean force) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public long pageOffset(int grpId, long pageId) throws IgniteCheckedException {
         return 0;
     }

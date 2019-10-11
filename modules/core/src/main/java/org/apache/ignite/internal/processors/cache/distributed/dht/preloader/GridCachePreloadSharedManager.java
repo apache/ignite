@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REBALANCE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
@@ -398,15 +399,21 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             store.disableRemoves();
 
             try {
-                part.group().offheap().destroyCacheDataStore(part.dataStore()).listen(f -> {
-                        try {
-                            fut.onDone(f.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.onDone(e);
-                        }
-                    }
-                );
+                IgniteInternalFuture<Boolean> fut0 = part.group().offheap().destroyCacheDataStore(part.dataStore());
+
+                fut0.cancel();
+
+                fut.onDone(true);
+
+//                    .listen(f -> {
+//                        try {
+//                            fut.onDone(f.get());
+//                        }
+//                        catch (IgniteCheckedException e) {
+//                            fut.onDone(e);
+//                        }
+//                    }
+//                );
             }
             catch (IgniteCheckedException e) {
                 fut.onDone(e);
@@ -435,6 +442,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     ) throws IgniteCheckedException {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
+//        destroyFut.cancel();
+
         if (!destroyFut.isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Await partition destroy [grp=" + grpId + ", partId=" + partId + "]");
@@ -448,14 +457,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             log.info("Moving downloaded partition file: " + fsPartFile + " --> " + dst);
 
         try {
-            Files.move(fsPartFile.toPath(), dst.toPath());
+            Files.move(fsPartFile.toPath(), dst.toPath(), REPLACE_EXISTING);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to move file from " + fsPartFile + " to " + dst, e);
         }
 
         // Reinitialize file store afte rmoving partition file.
-        cctx.pageStore().ensure(grpId, partId);
+        cctx.pageStore().ensure(grpId, partId, true);
 
         // todo
         ctx.topology().localPartition(partId).dataStore().store(false).reinit();
@@ -913,9 +922,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                                 throw new IgniteCheckedException("Partition was not destroyed " +
                                     "properly [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]");
 
-                            boolean exists = cctx.pageStore().exists(grpId, part.id());
-
-                            assert !exists : "File exists [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]";
+//                            boolean exists = cctx.pageStore().exists(grpId, part.id());
+//
+//                            assert !exists : "File exists [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]";
 
                             onPartitionEvicted(grpId, partId);
                         }

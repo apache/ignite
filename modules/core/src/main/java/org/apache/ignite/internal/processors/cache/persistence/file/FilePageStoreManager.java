@@ -896,6 +896,18 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
+    @Override public void ensure(int grpId, int partId, boolean force) throws IgniteCheckedException {
+        try {
+            getStore(grpId, partId).ensure(force);
+        }
+        catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 

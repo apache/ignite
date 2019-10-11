@@ -533,15 +533,19 @@ public class FilePageStore implements PageStore {
         }
     }
 
+    public void init() throws StorageException {
+        init(false);
+    }
+
     /**
      * @throws StorageException If failed to initialize store file.
      */
-    public void init() throws StorageException {
-        if (!inited) {
+    public void init(boolean force) throws StorageException {
+        if (!inited || force) {
             lock.writeLock().lock();
 
             try {
-                if (!inited) {
+                if (!inited || force) {
                     FileIO fileIO = null;
 
                     StorageException err = null;
@@ -573,7 +577,7 @@ public class FilePageStore implements PageStore {
                             }
                         }
 
-                        assert allocated.get() == 0;
+//                        assert allocated.get() == 0;
 
                         allocated.set(newSize);
 
@@ -800,6 +804,11 @@ public class FilePageStore implements PageStore {
     /** {@inheritDoc} */
     @Override public synchronized void ensure() throws IgniteCheckedException {
         init();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void ensure(boolean force) throws IgniteCheckedException {
+        init(force);
     }
 
     /** {@inheritDoc} */
