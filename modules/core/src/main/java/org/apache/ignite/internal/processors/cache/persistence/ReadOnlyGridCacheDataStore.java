@@ -71,6 +71,8 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     /** */
     private final AtomicBoolean disableRemoves = new AtomicBoolean();
 
+    private volatile PartitionUpdateCounter cntr;
+
     GridCacheSharedContext ctx;
 
     int grpId;
@@ -85,6 +87,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         int grpId
     ) {
         this.delegate = delegate;
+
         this.ctx = ctx;
         this.grpId = grpId;
 
@@ -105,47 +108,56 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void reinit() {
+        cntr = delegate.partUpdateCounter();
+
+        assert cntr != null;
+
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public long nextUpdateCounter() {
-        return delegate.nextUpdateCounter();
+        return cntr.next();
     }
 
     /** {@inheritDoc} */
     @Override public long initialUpdateCounter() {
-        return delegate.initialUpdateCounter();
+        return cntr.initial();
     }
 
     /** {@inheritDoc} */
     @Override public void resetUpdateCounter() {
-        delegate.resetUpdateCounter();
+        cntr.reset();
     }
 
     /** {@inheritDoc} */
     @Override public long getAndIncrementUpdateCounter(long delta) {
-        return delegate.getAndIncrementUpdateCounter(delta);
+        return cntr.reserve(delta);//delegate.getAndIncrementUpdateCounter(delta);
     }
 
     /** {@inheritDoc} */
     @Override public long updateCounter() {
-        return delegate.updateCounter();
+        return cntr.get();
     }
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long val) {
-        delegate.updateCounter(val);
+        try {
+            cntr.update(val);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean updateCounter(long start, long delta) {
-        return delegate.updateCounter(start, delta);
+        return cntr.update(start, delta);
     }
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
-        return delegate.finalizeUpdateCounters();
+        return cntr.finalizeUpdateCounters();
     }
 
     /** {@inheritDoc} */
@@ -190,17 +202,17 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public @Nullable PartitionUpdateCounter partUpdateCounter() {
-        return delegate.partUpdateCounter();
+        return cntr;
     }
 
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-        return delegate.reserve(delta);
+        return cntr.reserve(delta);
     }
 
     /** {@inheritDoc} */
     @Override public void updateInitialCounter(long start, long delta) {
-        delegate.updateInitialCounter(start, delta);
+        cntr.updateInitial(start, delta);
     }
 
     /** {@inheritDoc} */

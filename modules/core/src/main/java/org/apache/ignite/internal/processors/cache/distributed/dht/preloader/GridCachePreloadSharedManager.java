@@ -457,11 +457,16 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         // Reinitialize file store afte rmoving partition file.
         cctx.pageStore().ensure(grpId, partId);
 
+        // todo
+        ctx.topology().localPartition(partId).dataStore().store(false).reinit();
+
         GridFutureAdapter<T2<Long, Long>> endFut = new GridFutureAdapter<>();
 
         cpLsnr.schedule(() -> {
             // Save current update counter.
             PartitionUpdateCounter maxCntr = ctx.topology().localPartition(partId).dataStore().partUpdateCounter();
+
+            assert maxCntr != null;
 
             // Replacing partition and cache data store with the new one.
             // After this operation all on-heap cached entries should be cleaned.
@@ -473,9 +478,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             restoredPart.readOnly(false);
 
-            // todo
-            restoredPart.dataStore().reinit();
-
             // todo should be called on reinitilization?
             // todo check on large partition
             restoredPart.entriesMap(null).map.clear();
@@ -484,6 +486,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 //            restoredPart.readOnly(false);
 
             PartitionUpdateCounter snpPartCntr = restoredPart.dataStore().partUpdateCounter();
+
+            assert snpPartCntr != null;
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -870,6 +874,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                             continue;
 
                         part.readOnly(true);
+
+                        part.dataStore().reinit();
                     }
                 }
             });
