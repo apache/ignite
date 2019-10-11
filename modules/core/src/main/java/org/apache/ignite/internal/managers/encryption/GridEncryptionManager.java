@@ -124,7 +124,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Synchronization mutex. */
     private final Object metaStorageMux = new Object();
 
-    /** Synchronization mutex for generate encryption keys and get master key id operations. */
+    /** Synchronization mutex for generate encryption keys and get/change master key id operations. */
     private final Object opsMux = new Object();
 
     /** Synchronization mutex for spi master key id change. */
