@@ -1454,7 +1454,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             createFile(first);
         }
-        else
+        else if (isArchiverEnabled())
             checkFiles(0, false, null, null);
     }
 
@@ -2443,7 +2443,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         "(WAL segment size change is not supported in 'DEFAULT' WAL mode) " +
                         "[filePath=" + checkFile.getAbsolutePath() +
                         ", fileSize=" + checkFile.length() +
-                        ", configSize=" + dsCfg.getWalSegments() + ']');
+                        ", configSize=" + dsCfg.getWalSegmentSize() + ']');
             }
             else if (create)
                 createFile(checkFile);
