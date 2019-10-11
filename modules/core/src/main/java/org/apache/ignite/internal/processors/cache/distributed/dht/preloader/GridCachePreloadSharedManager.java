@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -689,7 +691,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
          *
          * @param assignments Assignments.
          */
-        private void initialize(Map<Integer, GridDhtPreloaderAssignments> assignments) {
+        private synchronized void initialize(Map<Integer, GridDhtPreloaderAssignments> assignments) {
             if (assignments == null || assignments.isEmpty())
                 return;
 
@@ -748,18 +750,75 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized boolean cancel() {
-            if (isDone())
-                return true;
-
-            cpLsnr.cancelAll();
-
-            for (FileRebalanceSingleNodeFuture fut : futMap.values())
-                fut.cancel();
-
-            futMap.clear();
-
+        @Override public boolean cancel() {
             return onDone(false, null, true);
+        }
+
+        private ReentrantLock cancelLock = new ReentrantLock();
+
+        /** {@inheritDoc} */
+        @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+            if (cancel) {
+                cancelLock.lock();
+
+                try {
+                    synchronized (this) {
+                        if (isDone())
+                            return true;
+
+                        cpLsnr.cancelAll();
+
+                        for (FileRebalanceSingleNodeFuture fut : futMap.values()) {
+                            if (!staleFuture(fut))
+                                fut.cancel();
+                        }
+
+                        futMap.clear();
+
+                        cctx.database().checkpointReadLock();
+
+                        try {
+                            for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
+                                int grpId = e.getKey();
+
+                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                                if (grp == null)
+                                    continue;
+
+                                for (int partId : e.getValue()) {
+                                    if (grp != null) {
+                                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+                                        CacheDataStoreEx store = part.dataStore();
+
+                                        if (!cctx.pageStore().exists(grpId, partId)) {
+                                            cctx.pageStore().sync(grpId, partId);
+
+                                            store.reinit();
+
+                                            System.out.println(">xxx> init grp=" + grpId + " p=" + partId);
+                                        }
+
+                                        if (store.readOnly())
+                                            store.readOnly(false);
+                                    }
+                                }
+                            }
+                        } finally {
+                            cctx.database().checkpointReadUnlock();
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+                finally {
+                    cancelLock.unlock();
+                }
+            }
+
+            return super.onDone(res, err, cancel);
         }
 
         public void onNodeGroupDone(int grpId, UUID nodeId, boolean historical) {
@@ -848,7 +907,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                                 throw new IgniteCheckedException("Partition was not destroyed " +
                                     "properly [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]");
 
-                            boolean exists = gctx.shared().pageStore().exists(grpId, part.id());
+                            boolean exists = cctx.pageStore().exists(grpId, part.id());
 
                             assert !exists : "File exists [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]";
 
