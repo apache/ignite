@@ -89,10 +89,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (plcEnabled)
             prepare(cfg, plc, cctx.isNear());
 
-        if (!cctx.isNear()) {
-            filter = cfg.getEvictionFilter();
+        filter = cfg.getEvictionFilter();
+
+        if (!cctx.isNear())
             prepare(cfg, filter, cctx.isNear());
-        }
 
         if (log.isDebugEnabled())
             log.debug("Eviction manager started on node: " + cctx.nodeId());
@@ -411,7 +411,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel, boolean destroy) {
-        cleanup(cctx.config(), filter, cctx.isNear());
+        if (!cctx.isNear())
+            cleanup(cctx.config(), filter, cctx.isNear());
+
         cleanup(cctx.config(), plc, cctx.isNear());
         cleanup(cctx.config(), factory, cctx.isNear());
     }
