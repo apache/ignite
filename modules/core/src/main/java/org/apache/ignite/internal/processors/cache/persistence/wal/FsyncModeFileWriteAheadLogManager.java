@@ -1346,7 +1346,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             createFile(first);
         }
-        else
+        else if (isArchiverEnabled())
             checkFiles(0, false, null, null);
     }
 
