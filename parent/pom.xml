@@ -371,6 +371,10 @@
                                 <packages>org.apache.ignite.services</packages>
                             </group>
                             <group>
+                                <title>Ignite Thin Client APIs</title>
+                                <packages>org.apache.ignite.client</packages>
+                            </group>
+                            <group>
                                 <title>File System APIs</title>
                                 <packages>org.apache.ignite.igfs*</packages>
                             </group>

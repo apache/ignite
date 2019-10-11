@@ -21,8 +21,6 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.stacking.StackedModel;
-import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -38,10 +36,9 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 
 /**
  * {@link MinMaxScalerTrainer} and {@link NormalizationTrainer} are used in this example due to different values
@@ -56,13 +53,13 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
-public class Step_9_Scaling_With_Stacking {
+public class Step_12_Model_Update {
     /**
      * Run example.
      */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Tutorial step 9 (scaling with stacking) example started.");
+        System.out.println(">>> Tutorial step 12 (Model update) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
@@ -73,7 +70,7 @@ public class Step_9_Scaling_With_Stacking {
                     = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
-                    .split(0.75);
+                    .split(0.5);
 
                 Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
@@ -105,40 +102,47 @@ public class Step_9_Scaling_With_Stacking {
                         minMaxScalerPreprocessor
                     );
 
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
-                DecisionTreeClassificationTrainer trainer1 = new DecisionTreeClassificationTrainer(3, 0);
-                DecisionTreeClassificationTrainer trainer2 = new DecisionTreeClassificationTrainer(4, 0);
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
+                    .withUpdatesStgy(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate.SUM_LOCAL,
+                        SimpleGDParameterUpdate.AVG
+                    ))
+                    .withMaxIterations(100000)
+                    .withLocIterations(100)
+                    .withBatchSize(10)
+                    .withSeed(123L);
 
-                LogisticRegressionSGDTrainer aggregator = new LogisticRegressionSGDTrainer()
-                    .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
-                        SimpleGDParameterUpdate.SUM_LOCAL, SimpleGDParameterUpdate.AVG));
+                // Train LogReg model.
+                LogisticRegressionModel mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    split.getTrainFilter(),
+                    normalizationPreprocessor
+                );
 
-                StackedModel<Vector, Vector, Double, LogisticRegressionModel> mdl =
-                    new StackedVectorDatasetTrainer<>(aggregator)
-                        .addTrainerWithDoubleOutput(trainer)
-                        .addTrainerWithDoubleOutput(trainer1)
-                        .addTrainerWithDoubleOutput(trainer2)
-                        .fit(
-                            ignite,
-                            dataCache,
-                            split.getTrainFilter(),
-                            normalizationPreprocessor
-                        );
+                // Update LogReg model with new portion of data.
+                LogisticRegressionModel mdl2 = trainer.update(
+                    mdl,
+                    ignite,
+                    dataCache,
+                    split.getTestFilter(),
+                    normalizationPreprocessor
+                );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
                 double accuracy = Evaluator.evaluate(
                     dataCache,
-                    split.getTestFilter(),
-                    mdl,
+                    mdl2,
                     normalizationPreprocessor,
-                    new Accuracy<>()
+                    MetricName.ACCURACY
                 );
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 5 (scaling) example completed.");
+                System.out.println(">>> Tutorial step 12 (Model update) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
