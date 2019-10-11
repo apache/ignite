@@ -25,7 +25,7 @@ import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.composition.stacking.StackedModel;
 import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -104,7 +104,7 @@ public class StackingTest extends TrainerTest {
             .withVector2SubmodelInputConverter(IgniteFunction.identity())
             .withOriginalFeaturesKept(IgniteFunction.identity())
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor), parts, new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
+            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
@@ -146,7 +146,7 @@ public class StackingTest extends TrainerTest {
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
             .addMatrix2MatrixTrainer(mlpTrainer)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor), parts, new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
+            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);

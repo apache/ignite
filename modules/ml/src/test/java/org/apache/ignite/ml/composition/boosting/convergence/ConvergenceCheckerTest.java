@@ -61,7 +61,7 @@ public abstract class ConvergenceCheckerTest {
     }
 
     /** */
-    public ConvergenceChecker<Integer, LabeledVector<Double>, Integer> createChecker(ConvergenceCheckerFactory factory,
+    public ConvergenceChecker<Integer, LabeledVector<Double>> createChecker(ConvergenceCheckerFactory factory,
         LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder) {
 
         return factory.create(data.size(),

@@ -34,7 +34,6 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -63,7 +62,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static final long DURATION = 60_000;
+    protected static final long DURATION = GridTestUtils.SF.applyLB(30_000, 7_000);
 
     /** */
     protected static final int GRID_CNT = 4;

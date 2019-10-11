@@ -334,8 +334,10 @@ public class DatabaseListener {
     private static class JdbcDriver {
         /** */
         public final String jdbcDriverJar;
+
         /** */
         public final String jdbcDriverCls;
+
         /** */
         public final String jdbcDriverImplVersion;
 

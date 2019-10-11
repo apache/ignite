@@ -17,22 +17,20 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
-import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Partition data for GMM algorithm. Unlike partition data for other algorithms this class aggregate probabilities of
@@ -116,12 +114,12 @@ class GmmPartitionData implements AutoCloseable {
     /**
      * Builder for GMM partition data.
      */
-    public static class Builder<K, V, C extends Serializable> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
+    public static class Builder<K, V> implements PartitionDataBuilder<K, V, EmptyContext, GmmPartitionData> {
         /** Serial version uid. */
         private static final long serialVersionUID = 1847063348042022561L;
 
         /** Upsteam vectorizer. */
-        private final Vectorizer<K, V, C, Double> extractor;
+        private final Preprocessor<K, V> preprocessor;
 
         /** Count of components of mixture. */
         private final int countOfComponents;
@@ -129,11 +127,11 @@ class GmmPartitionData implements AutoCloseable {
         /**
          * Creates an instance of Builder.
          *
-         * @param extractor Extractor.
+         * @param preprocessor preprocessor.
          * @param countOfComponents Count of components.
          */
-        public Builder(Vectorizer<K, V, C, Double> extractor, int countOfComponents) {
-            this.extractor = extractor;
+        public Builder(Preprocessor<K, V> preprocessor, int countOfComponents) {
+            this.preprocessor = preprocessor;
             this.countOfComponents = countOfComponents;
         }
 
@@ -147,7 +145,7 @@ class GmmPartitionData implements AutoCloseable {
 
             while (upstreamData.hasNext()) {
                 UpstreamEntry<K, V> entry = upstreamData.next();
-                LabeledVector<Double> x = extractor.extract(entry.getKey(), entry.getValue());
+                LabeledVector<Double> x = preprocessor.apply(entry.getKey(), entry.getValue());
                 xs.add(x);
             }
 

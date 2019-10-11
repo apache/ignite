@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Tree root class.
@@ -83,5 +83,59 @@ public class TreeRoot implements IgniteModel<Vector, Double> {
             getLeafs(root.getLeft(), res);
             getLeafs(root.getRight(), res);
         }
+    }
+
+    /**
+     * Represents DecisionTree as String.
+     *
+     * @param node Decision tree.
+     * @param pretty Use pretty mode.
+     */
+    public static String printTree(TreeNode node, boolean pretty) {
+        StringBuilder builder = new StringBuilder();
+        printTree(node, 0, builder, pretty, false);
+        return builder.toString();
+    }
+
+    /**
+     * Recursive implementation of DecisionTree to String converting.
+     *
+     * @param node Decision tree.
+     * @param depth Current depth.
+     * @param builder String builder.
+     * @param pretty Use pretty mode.
+     */
+    private static void printTree(TreeNode node, int depth, StringBuilder builder, boolean pretty,
+        boolean isThen) {
+        builder.append(pretty ? String.join("", Collections.nCopies(depth, "\t")) : "");
+        if (node.getType() == TreeNode.Type.LEAF) {
+            TreeNode leaf = node;
+            builder.append(String.format("%s return ", isThen ? "then" : "else"))
+                .append(String.format("%.4f", leaf.getVal()));
+        }
+        else if (node.getType() == TreeNode.Type.CONDITIONAL) {
+            TreeNode cond = node;
+            String prefix = depth == 0 ? "" : (isThen ? "then " : "else ");
+            builder.append(String.format("%sif (x", prefix))
+                .append(cond.getFeatureId())
+                .append(" > ")
+                .append(String.format("%.4f", cond.getVal()))
+                .append(pretty ? ")\n" : ") ");
+            printTree(cond.getLeft(), depth + 1, builder, pretty, true);
+            builder.append(pretty ? "\n" : " ");
+            printTree(cond.getRight(), depth + 1, builder, pretty, false);
+        }
+        else
+            throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString(boolean pretty) {
+        return printTree(getRootNode(), pretty);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return printTree(getRootNode(), false);
     }
 }

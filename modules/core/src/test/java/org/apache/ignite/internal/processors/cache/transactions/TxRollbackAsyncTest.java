@@ -109,7 +109,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public static final int DURATION = SF.applyLB(60_000, 5_000);
 
     /** */
-    private static final String CACHE_NAME = "test";
+    protected static final String CACHE_NAME = "test";
 
     /** */
     private static final int GRID_CNT = 3;
@@ -1002,7 +1002,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         // Rollback tx using kill task.
         VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
+            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
 
         Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
             execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));

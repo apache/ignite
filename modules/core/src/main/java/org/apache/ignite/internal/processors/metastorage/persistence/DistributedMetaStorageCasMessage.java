@@ -62,6 +62,6 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DistributedMetaStorageCasMessage.class, this);
+        return S.toString(DistributedMetaStorageCasMessage.class, this, super.toString());
     }
 }

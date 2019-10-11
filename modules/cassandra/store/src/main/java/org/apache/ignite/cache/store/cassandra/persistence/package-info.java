@@ -18,4 +18,5 @@
 /**
  * Contains persistent settings configuration
  */
+
 package org.apache.ignite.cache.store.cassandra.persistence;

@@ -67,6 +67,8 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(ccfgs);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -141,7 +143,6 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                     return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
-
 
             int smallDuration = 2000;
 

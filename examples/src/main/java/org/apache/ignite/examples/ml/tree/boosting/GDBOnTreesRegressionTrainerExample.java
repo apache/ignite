@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.convergence.mean.MeanAbsValueConvergenceCheckerFactory;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -34,9 +34,9 @@ import org.apache.ignite.ml.tree.boosting.GDBRegressionOnTreesTrainer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Example represents a solution for the task of regression learning based on
- * Gradient Boosting on trees implementation. It shows an initialization of {@link GDBRegressionOnTreesTrainer},
- * initialization of Ignite Cache, learning step and comparing of predicted and real values.
+ * Example represents a solution for the task of regression learning based on Gradient Boosting on trees implementation.
+ * It shows an initialization of {@link GDBRegressionOnTreesTrainer}, initialization of Ignite Cache, learning step and
+ * comparing of predicted and real values.
  * <p>
  * In this example dataset is created automatically by parabolic function {@code f(x) = x^2}.</p>
  */
@@ -67,7 +67,7 @@ public class GDBOnTreesRegressionTrainerExample {
                 Model<Vector, Double> mdl = trainer.fit(
                     ignite,
                     trainingSet,
-                    new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+                    new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
                 );
 
                 System.out.println(">>> ---------------------------------");
@@ -83,9 +83,13 @@ public class GDBOnTreesRegressionTrainerExample {
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> GDB regression trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
@@ -102,13 +106,13 @@ public class GDBOnTreesRegressionTrainerExample {
     /**
      * Fill parabolic training data.
      *
-     * @param ignite Ignite instance.
+     * @param ignite         Ignite instance.
      * @param trainingSetCfg Training set config.
      */
     @NotNull private static IgniteCache<Integer, double[]> fillTrainingData(Ignite ignite,
         CacheConfiguration<Integer, double[]> trainingSetCfg) {
         IgniteCache<Integer, double[]> trainingSet = ignite.getOrCreateCache(trainingSetCfg);
-        for(int i = -50; i <= 50; i++) {
+        for (int i = -50; i <= 50; i++) {
             double x = ((double)i) / 10.0;
             double y = Math.pow(x, 2);
             trainingSet.put(i, new double[] {x, y});

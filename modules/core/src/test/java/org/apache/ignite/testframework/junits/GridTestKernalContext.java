@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
@@ -79,7 +80,10 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                U.allPluginProviders(),
+                null,
+                null,
+                cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+                    Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
                 null,
                 null,

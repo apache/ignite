@@ -85,7 +85,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
-
     /**
      *
      */

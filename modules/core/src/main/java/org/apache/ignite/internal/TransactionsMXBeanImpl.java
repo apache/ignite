@@ -76,7 +76,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                 sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
 
             VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
-                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);
+                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder, null);
 
             Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
                 new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
@@ -139,6 +139,36 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
         ctx.cache().setTxOwnerDumpRequestsAllowed(allowed);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongTransactionTimeDumpThreshold() {
+        return ctx.cache().context().tm().longTransactionTimeDumpThreshold();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLongTransactionTimeDumpThreshold(long threshold) {
+        ctx.cache().longTransactionTimeDumpThreshold(threshold);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getTransactionTimeDumpSamplesCoefficient() {
+        return ctx.cache().context().tm().transactionTimeDumpSamplesCoefficient();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeDumpSamplesCoefficient(double coefficient) {
+        ctx.cache().transactionTimeDumpSamplesCoefficient(coefficient);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTransactionTimeDumpSamplesPerSecondLimit() {
+        return ctx.cache().context().tm().transactionTimeDumpSamplesPerSecondLimit();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTransactionTimeDumpSamplesPerSecondLimit(int limit) {
+        ctx.cache().longTransactionTimeDumpSamplesPerSecondLimit(limit);
     }
 
     /** {@inheritDoc} */

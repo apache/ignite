@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.dataset.primitive.builder.data;
 
+import java.io.Serializable;
+import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.io.Serializable;
-import java.util.Iterator;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
@@ -35,20 +34,20 @@ import java.util.Iterator;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> type of a partition <tt>context</tt>.
  */
-public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
+public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleLabeledDatasetData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Function that extracts labeled vectors from an {@code upstream} data. */
-    private final Vectorizer<K, V, CO, double[]> vectorizer;
+    private final Preprocessor<K, V> vectorizer;
 
     /**
      * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
      *
      * @param vectorizer Function that extracts labeled vectors from an {@code upstream} data.
      */
-    public SimpleLabeledDatasetDataBuilder(Vectorizer<K, V, CO, double[]> vectorizer) {
+    public SimpleLabeledDatasetDataBuilder(Preprocessor<K, V> vectorizer) {
         this.vectorizer = vectorizer;
     }
 

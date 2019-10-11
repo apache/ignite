@@ -101,17 +101,15 @@ namespace ignite
 {
     namespace binary
     {
-        IGNITE_BINARY_TYPE_START(ignite::examples::Person)
+        template<>
+        struct BinaryType<examples::Person> : BinaryTypeDefaultAll<examples::Person>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "Person";
+            }
 
-            typedef ignite::examples::Person Person;
-
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(Person)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
-
-            static void Write(BinaryWriter& writer, const ignite::examples::Person& obj)
+            static void Write(BinaryWriter& writer, const examples::Person& obj)
             {
                 writer.WriteInt64("orgId", obj.orgId);
                 writer.WriteString("firstName", obj.firstName);
@@ -120,7 +118,7 @@ namespace ignite
                 writer.WriteDouble("salary", obj.salary);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::Person& dst)
+            static void Read(BinaryReader& reader, examples::Person& dst)
             {
                 dst.orgId = reader.ReadInt64("orgId");
                 dst.firstName = reader.ReadString("firstName");
@@ -128,32 +126,28 @@ namespace ignite
                 dst.resume = reader.ReadString("resume");
                 dst.salary = reader.ReadDouble("salary");
             }
+        };
 
-        IGNITE_BINARY_TYPE_END
+        template<>
+        struct BinaryType<examples::PersonKey> : BinaryTypeDefaultAll<examples::PersonKey>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "PersonKey";
+            }
 
-        IGNITE_BINARY_TYPE_START(ignite::examples::PersonKey)
-
-            typedef ignite::examples::PersonKey PersonKey;
-
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(PersonKey)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(PersonKey)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_IS_NULL_FALSE(PersonKey)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(PersonKey)
-
-            static void Write(BinaryWriter& writer, const ignite::examples::PersonKey& obj)
+            static void Write(BinaryWriter& writer, const examples::PersonKey& obj)
             {
                 writer.WriteInt64("id", obj.id);
                 writer.WriteInt64("orgIdAff", obj.orgIdAff);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::PersonKey& dst)
+            static void Read(BinaryReader& reader, examples::PersonKey& dst)
             {
                 dst.id = reader.ReadInt64("id");
                 dst.orgIdAff = reader.ReadInt64("orgIdAff");
             }
-
-        IGNITE_BINARY_TYPE_END
+        };
     }
 };
 

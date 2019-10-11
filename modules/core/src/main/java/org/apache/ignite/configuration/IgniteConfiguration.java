@@ -17,6 +17,11 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -24,11 +29,6 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.UUID;
-import java.util.zip.Deflater;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -77,6 +77,8 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -154,7 +156,19 @@ public class IgniteConfiguration {
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default limit of threads used for rebalance. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
+
+    /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
+    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
+
+    /** Default rebalance batches prefetch count (value is {@code 3}). */
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 3;
+
+    /** Time to wait between rebalance messages in milliseconds to avoid overloading CPU (value is {@code 0}). */
+    public static final long DFLT_REBALANCE_THROTTLE = 0;
+
+    /** Default rebalance batch size in bytes (value is {@code 512Kb}). */
+    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
@@ -384,6 +398,12 @@ public class IgniteConfiguration {
     /** Encryption SPI. */
     private EncryptionSpi encryptionSpi;
 
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
+
+    /** System view exporter SPI. */
+    private SystemViewExporterSpi[] sysViewExporterSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -393,10 +413,23 @@ public class IgniteConfiguration {
     /** Rebalance thread pool size. */
     private int rebalanceThreadPoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
+    /** Rrebalance messages timeout in milliseconds. */
+    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
+
+    /** Rebalance batches prefetch count. */
+    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+
+    /** Time to wait between rebalance messages in milliseconds. */
+    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
+
+    /** Rebalance batch size in bytes. */
+    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
+
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
+    @Deprecated
     private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
@@ -530,6 +563,9 @@ public class IgniteConfiguration {
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
 
+    /** Plugin providers. */
+    private PluginProvider[] pluginProvs;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -557,6 +593,8 @@ public class IgniteConfiguration {
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
+        metricExporterSpi = cfg.getMetricExporterSpi();
+        sysViewExporterSpi = cfg.getSystemViewExporterSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -622,9 +660,14 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
+        pluginProvs = cfg.getPluginProviders();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
+        rebalanceTimeout = cfg.getRebalanceTimeout();
+        rebalanceBatchesPrefetchCnt = cfg.getRebalanceBatchesPrefetchCount();
+        rebalanceThrottle = cfg.getRebalanceThrottle();
+        rebalanceBatchSize = cfg.getRebalanceBatchSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -1312,7 +1355,6 @@ public class IgniteConfiguration {
         return this;
     }
 
-
     /**
      * Returns {@code true} if peer class loading is enabled, {@code false}
      * otherwise. Default value is {@code false} specified by {@link #DFLT_P2P_ENABLED}.
@@ -1608,6 +1650,133 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setRebalanceThreadPoolSize(int rebalanceThreadPoolSize) {
         this.rebalanceThreadPoolSize = rebalanceThreadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Rebalance timeout for supply and demand messages in milliseconds. The {@code rebalanceTimeout} parameter
+     * specifies how long a message will stay in a receiving queue, waiting for other ordered messages that are
+     * ordered ahead of it to arrive will be processed. If timeout expires, then all messages that have not arrived
+     * before this message will be skipped. If an expired supply (demand) message actually does arrive, it will be
+     * ignored.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}, if {@code 0} than the
+     * {@link IgniteConfiguration#getNetworkTimeout()} will be used instead.
+     *
+     * @return Rebalance message timeout in milliseconds.
+     */
+    public long getRebalanceTimeout() {
+        return rebalanceTimeout;
+    }
+
+    /**
+     * Rebalance timeout for supply and demand messages in milliseconds. The {@code rebalanceTimeout} parameter
+     * specifies how long a message will stay in a receiving queue, waiting for other ordered messages that are
+     * ordered ahead of it to arrive will be processed. If timeout expires, then all messages that have not arrived
+     * before this message will be skipped. If an expired supply (demand) message actually does arrive, it will be
+     * ignored.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}, if {@code 0} than the
+     * {@link IgniteConfiguration#getNetworkTimeout()} will be used instead.
+     *
+     * @param rebalanceTimeout Rebalance message timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceTimeout(long rebalanceTimeout) {
+        this.rebalanceTimeout = rebalanceTimeout;
+
+        return this;
+    }
+
+    /**
+     * The number of batches generated by supply node at rebalancing procedure start. To gain better rebalancing
+     * performance supplier node can provide more than one batch at rebalancing start and provide one new to each
+     * next demand request.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT}, minimum value is {@code 1}.
+     *
+     * @return The number of batches prefetch count.
+     */
+    public long getRebalanceBatchesPrefetchCount() {
+        return rebalanceBatchesPrefetchCnt;
+    }
+
+    /**
+     * The number of batches generated by supply node at rebalancing procedure start. To gain better rebalancing
+     * performance supplier node can provide more than one batch at rebalancing start and provide one new to each
+     * next demand request.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT}, minimum value is {@code 1}.
+     *
+     * @param rebalanceBatchesCnt The number of batches prefetch count.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
+        this.rebalanceBatchesPrefetchCnt = rebalanceBatchesCnt;
+
+        return this;
+    }
+
+    /**
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+     * When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
+     * which consecutively may slow down the application performance. This parameter helps tune
+     * the amount of time to wait between rebalance messages to make sure that rebalancing process
+     * does not have any negative performance impact. Note that application will continue to work
+     * properly while rebalancing is still in progress.
+     * <p>
+     * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
+     * the default is defined by {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     *
+     * @return Time in milliseconds to wait between rebalance messages, {@code 0} to disable throttling.
+     */
+    public long getRebalanceThrottle() {
+        return rebalanceThrottle;
+    }
+
+    /**
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network. When rebalancing
+     * large data sets, the CPU or network can get over-consumed with rebalancing messages, which consecutively may slow
+     * down the application performance. This parameter helps tune the amount of time to wait between rebalance messages
+     * to make sure that rebalancing process does not have any negative performance impact. Note that application will
+     * continue to work properly while rebalancing is still in progress.
+     * <p>
+     * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
+     * the default is defined by {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     *
+     * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages, {@code 0} to disable throttling.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceThrottle(long rebalanceThrottle) {
+        this.rebalanceThrottle = rebalanceThrottle;
+
+        return this;
+    }
+
+    /**
+     * The supply message size in bytes to be loaded within a single rebalance batch. The data balancing algorithm
+     * splits all the cache data entries on supply node into multiple batches prior to sending them to the demand node.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}.
+     *
+     * @return Rebalance message size in bytes.
+     */
+    public int getRebalanceBatchSize() {
+        return rebalanceBatchSize;
+    }
+
+    /**
+     * The supply message size in bytes to be loaded within a single rebalance batch. The data balancing algorithm
+     * splits all the cache data entries on supply node into multiple batches prior to sending them to the demand node.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}.
+     *
+     * @param rebalanceBatchSize Rebalance message size in bytes.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceBatchSize(int rebalanceBatchSize) {
+        this.rebalanceBatchSize = rebalanceBatchSize;
 
         return this;
     }
@@ -2167,6 +2336,50 @@ public class IgniteConfiguration {
      */
     public EncryptionSpi getEncryptionSpi() {
         return encryptionSpi;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getMetricExporterSpi()
+     */
+    public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+
+        return this;
+    }
+
+    /**
+     * Sets fully configured instances of {@link SystemViewExporterSpi}.
+     *
+     * @param sysViewExporterSpi Fully configured instances of {@link SystemViewExporterSpi}.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getSystemViewExporterSpi()
+     */
+    public IgniteConfiguration setSystemViewExporterSpi(SystemViewExporterSpi... sysViewExporterSpi) {
+        this.sysViewExporterSpi = sysViewExporterSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured metric SPI implementations.
+     *
+     * @return Metric exporter SPI implementations.
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
+    }
+
+    /**
+     * Gets fully configured system view SPI implementations.
+     *
+     * @return System view exporter SPI implementations.
+     */
+    public SystemViewExporterSpi[] getSystemViewExporterSpi() {
+        return sysViewExporterSpi;
     }
 
     /**
@@ -2846,6 +3059,7 @@ public class IgniteConfiguration {
      * @return Plugin configurations.
      * @see PluginProvider
      */
+    @Deprecated
     public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
@@ -2856,7 +3070,10 @@ public class IgniteConfiguration {
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
      * @see PluginProvider
+     * @deprecated Since {@link PluginProvider}s can be set explicitly via {@link #setPluginProviders(PluginProvider[])}
+     * it's preferable to store {@link PluginConfiguration} as a part of {@link PluginProvider}.
      */
+    @Deprecated
     public IgniteConfiguration setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
 
@@ -3194,6 +3411,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
         this.sqlSchemas = sqlSchemas;
+
+        return this;
+    }
+
+    /**
+     * Gets plugin providers.
+     *
+     * @return Plugin providers.
+     */
+    public PluginProvider[] getPluginProviders() {
+        return pluginProvs;
+    }
+
+    /**
+     * Sets plugin providers.
+     *
+     * @param pluginProvs Plugin providers.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPluginProviders(PluginProvider... pluginProvs) {
+        this.pluginProvs = pluginProvs;
 
         return this;
     }

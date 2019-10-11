@@ -111,7 +111,6 @@ public class MvccFeatureChecker {
                 iso == TransactionIsolation.REPEATABLE_READ;
     }
 
-
     /**
      * Check if Cache mode is supported.
      *

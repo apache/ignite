@@ -469,7 +469,7 @@ class ScanQuery extends Query {
     /**
      * Sets a partition number over which this query should iterate.
      *
-     * If negative, the query will iterate over all partitions in the cache. 
+     * If negative, the query will iterate over all partitions in the cache.
      *
      * @param {number} partitionNumber - partition number over which this query should iterate.
      *

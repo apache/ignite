@@ -16,8 +16,7 @@ To set up local IDE to easier access to examples, it is possible to add followin
    --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
    --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
    --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-   --illegal-access=permit
-   -Djdk.tls.client.protocols=TLSv1.2``
+   --illegal-access=permit``
 
 For example, for IntelliJ IDEA it is possible to use Application Templates.
 

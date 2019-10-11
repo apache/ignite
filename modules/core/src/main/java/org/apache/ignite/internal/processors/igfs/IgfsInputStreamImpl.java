@@ -211,7 +211,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         if (pos < 0)
             throw new IOException("Seek position cannot be negative: " + pos);
 
-
         this.pos = pos;
     }
 

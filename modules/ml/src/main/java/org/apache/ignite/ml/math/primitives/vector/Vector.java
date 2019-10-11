@@ -572,7 +572,6 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      **/
     public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
 
-
     /**
      * Returns array of doubles corresponds to vector components.
      *

@@ -35,11 +35,13 @@ public class VectorizedViewMatrix extends AbstractVector {
 
     /** */
     private int row;
+
     /** */
     private int col;
 
     /** */
     private int rowStride;
+
     /** */
     private int colStride;
 

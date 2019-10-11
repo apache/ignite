@@ -70,6 +70,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
             }
         };
     }
+
     /**
      * @throws Exception If failed.
      */

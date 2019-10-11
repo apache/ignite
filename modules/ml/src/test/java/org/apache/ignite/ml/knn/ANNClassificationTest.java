@@ -17,19 +17,20 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /** Tests behaviour of ANNClassificationTest. */
 public class ANNClassificationTest extends TrainerTest {
@@ -55,16 +56,16 @@ public class ANNClassificationTest extends TrainerTest {
         NNClassificationModel mdl = trainer.fit(
             cacheMock,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
         Assert.assertNotNull(((ANNClassificationModel) mdl).getCandidates());
 
-        Assert.assertTrue(mdl.toString().contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(mdl.toString(true).contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(mdl.toString(false).contains(NNStrategy.SIMPLE.name()));
+        assertTrue(mdl.toString().contains("weighted = [false]"));
+        assertTrue(mdl.toString(true).contains("weighted = [false]"));
+        assertTrue(mdl.toString(false).contains("weighted = [false]"));
     }
 
     /** */
@@ -84,35 +85,35 @@ public class ANNClassificationTest extends TrainerTest {
         ANNClassificationModel originalMdl = (ANNClassificationModel) trainer.fit(
             cacheMock,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
         ANNClassificationModel updatedOnSameDataset = (ANNClassificationModel) trainer.update(originalMdl,
             cacheMock, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
         ANNClassificationModel updatedOnEmptyDataset = (ANNClassificationModel) trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
         Assert.assertNotNull(updatedOnSameDataset.getCandidates());
 
-        Assert.assertTrue(updatedOnSameDataset.toString().contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(updatedOnSameDataset.toString(true).contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(updatedOnSameDataset.toString(false).contains(NNStrategy.SIMPLE.name()));
+        assertTrue(updatedOnSameDataset.toString().contains("weighted = [false]"));
+        assertTrue(updatedOnSameDataset.toString(true).contains("weighted = [false]"));
+        assertTrue(updatedOnSameDataset.toString(false).contains("weighted = [false]"));
 
-        Assert.assertNotNull(updatedOnEmptyDataset.getCandidates());
+        assertNotNull(updatedOnEmptyDataset.getCandidates());
 
-        Assert.assertTrue(updatedOnEmptyDataset.toString().contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(updatedOnEmptyDataset.toString(true).contains(NNStrategy.SIMPLE.name()));
-        Assert.assertTrue(updatedOnEmptyDataset.toString(false).contains(NNStrategy.SIMPLE.name()));
+        assertTrue(updatedOnEmptyDataset.toString().contains("weighted = [false]"));
+        assertTrue(updatedOnEmptyDataset.toString(true).contains("weighted = [false]"));
+        assertTrue(updatedOnEmptyDataset.toString(false).contains("weighted = [false]"));
     }
 }

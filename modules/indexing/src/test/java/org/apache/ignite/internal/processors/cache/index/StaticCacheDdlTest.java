@@ -38,7 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -385,7 +384,6 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
         fields.put("name", String.class.getName());
         fields.put("field_to_drop", String.class.getName());
         fields.put("some_field", String.class.getName());
-
 
         QueryEntity qryEntity = new QueryEntity()
             .setTableName(TABLE_NAME)

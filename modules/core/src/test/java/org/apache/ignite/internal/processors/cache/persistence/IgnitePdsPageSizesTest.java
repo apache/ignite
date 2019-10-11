@@ -134,7 +134,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         try {
             final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
-            final long endTime = System.currentTimeMillis() + 60_000;
+            final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {

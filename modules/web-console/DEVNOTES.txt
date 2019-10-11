@@ -1,6 +1,6 @@
 Ignite Web Console Build Instructions
 =====================================
-1. Install MongoDB (version >=3.2.0 <=3.4.15) using instructions from http://docs.mongodb.org/manual/installation.
+1. Install MongoDB (version >=3.0) using instructions from http://docs.mongodb.org/manual/installation.
 2. Install Node.js (version >=8.0.0) using installer from https://nodejs.org/en/download/current for your OS.
 3. Change directory to 'modules/web-console/backend' and
  run "npm install --no-optional" for download backend dependencies.

@@ -167,6 +167,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             replicatedOnly,
             lazy,
             skipReducerOnUpdate,
+            null,
             null
         );
 
@@ -317,6 +318,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void unregisterRequest(long reqId) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return ver;
     }
 
     /**

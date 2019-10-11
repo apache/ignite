@@ -17,13 +17,13 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.cluster.ClusterGroupExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -31,12 +31,11 @@ public class ClusterGroupExampleSelfTest extends GridAbstractExamplesTest {
         startGrid("ignite-cluster-groups-example", DFLT_CFG);
     }
 
-//    TODO: IGNITE-711 next example(s) should be implemented for java 8
-//    or testing method(s) should be removed if example(s) does not applicable for java 8.
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testComputeClusterGroupsExample() throws Exception {
-//        ClusterGroupExample.main(EMPTY_ARGS);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testComputeClusterGroupsExample() throws Exception {
+        ClusterGroupExample.main(EMPTY_ARGS);
+    }
 }

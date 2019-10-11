@@ -40,7 +40,7 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
         data.put(666, VectorUtils.of(10, 11).labeled(100000.0));
         LocalDatasetBuilder<Integer, LabeledVector<Double>> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
 
-        ConvergenceChecker<Integer, LabeledVector<Double>, Integer> checker = createChecker(
+        ConvergenceChecker<Integer, LabeledVector<Double>> checker = createChecker(
             new MedianOfMedianConvergenceCheckerFactory(0.1), datasetBuilder);
 
         double error = checker.computeError(VectorUtils.of(1, 2), 4.0, notConvergedMdl);
@@ -53,7 +53,8 @@ public class MedianOfMedianConvergenceCheckerTest extends ConvergenceCheckerTest
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer),
+            TestUtils.testEnvBuilder().buildForTrainer())) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.6, onDSError, 0.01);

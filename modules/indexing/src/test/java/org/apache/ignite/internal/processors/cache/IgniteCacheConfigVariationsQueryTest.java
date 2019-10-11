@@ -32,12 +32,15 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -71,6 +74,11 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
 
     /** */
     private Map<Object, Object> expMap;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
 
     /**
      * @throws Exception If failed.
@@ -211,6 +219,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11886")
     @Test
     public void testLocalScanQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -249,6 +258,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11886")
     @Test
     public void testScanQueryLocalFilter() throws Exception {
         runInAllDataModes(new TestRunnable() {

@@ -176,11 +176,6 @@ public class GridRouterClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return clientImpl.data();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(String cacheName) throws GridClientException {
         return clientImpl.data(cacheName);
     }
@@ -218,5 +213,10 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public void close() {
         clientImpl.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void throwLastError() throws GridClientException {
+        clientImpl.throwLastError();
     }
 }

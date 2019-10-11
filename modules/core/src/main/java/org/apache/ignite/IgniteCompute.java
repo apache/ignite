@@ -523,7 +523,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs on nodes within the underlying cluster group.
      * Collection of all returned job results is returned from the result future.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @return Collection of job results for this execution.
      * @throws IgniteException If execution failed.
      */
@@ -534,7 +534,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs asynchronously on nodes within the underlying cluster group.
      * Collection of all returned job results is returned from the result future.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @return a Future representing pending completion of the job.
      * @throws IgniteException If execution failed.
      */
@@ -545,7 +545,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs on nodes within the underlying cluster group. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return Reduced job result for this execution.
      * @throws IgniteException If execution failed.
@@ -558,7 +558,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Executes collection of jobs asynchronously on nodes within the underlying cluster group. The returned
      * job results will be reduced into an individual result by provided reducer.
      *
-     * @param jobs Collection of jobs to execute.
+     * @param jobs Non-empty collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return a Future with reduced job result for this execution.
      * @throws IgniteException If execution failed.
@@ -701,7 +701,6 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @return This {@code IgniteCompute} instance for chaining calls.
      */
     public IgniteCompute withNoFailover();
-
 
     /**
      * Disables caching for the next executed task in the <b>current thread</b>.

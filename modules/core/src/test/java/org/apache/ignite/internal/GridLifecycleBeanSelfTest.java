@@ -116,7 +116,6 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-
         assertEquals(IgniteState.STOPPED, G.state(getTestIgniteInstanceName()));
 
         assertEquals(1, bean.count(BEFORE_NODE_START));

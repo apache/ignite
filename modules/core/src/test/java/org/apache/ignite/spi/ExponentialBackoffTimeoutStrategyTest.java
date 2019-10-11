@@ -93,7 +93,5 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                 return;
             }
         }
-
-
     }
 }

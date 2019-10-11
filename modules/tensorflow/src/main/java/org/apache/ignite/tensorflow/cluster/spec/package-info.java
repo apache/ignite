@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains specifications that describes TensorFlow cluster configuration.
  */
+
 package org.apache.ignite.tensorflow.cluster.spec;

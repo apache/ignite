@@ -32,7 +32,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.h2.result.SortOrder;
 import org.h2.value.CompareMode;
 import org.h2.value.Value;
@@ -202,7 +202,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();
@@ -323,7 +323,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();
@@ -375,7 +375,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();
@@ -434,7 +434,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();
@@ -576,7 +576,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             false);
 
         pageMem.start();

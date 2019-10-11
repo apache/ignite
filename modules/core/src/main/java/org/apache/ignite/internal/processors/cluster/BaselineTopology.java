@@ -254,7 +254,6 @@ public class BaselineTopology implements Serializable {
         return compactIdMapping.get(constId);
     }
 
-
     /**
      * @return Activation hash.
      */

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Tests for {@link SVMLinearClassificationTrainer}.
@@ -47,7 +46,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
 
         SVMLinearClassificationModel mdl = trainer.fit(
             cacheMock, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
 
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
@@ -66,7 +65,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
             .withAmountOfIterations(1000)
             .withSeed(1234L);
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
         SVMLinearClassificationModel originalMdl = trainer.fit(
             cacheMock, parts,
             vectorizer

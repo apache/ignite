@@ -73,7 +73,7 @@ public class VisorIdleVerifyTask extends VisorOneNodeTask<VisorIdleVerifyTaskArg
         /** {@inheritDoc} */
         @Override protected VisorIdleVerifyTaskResult run(VisorIdleVerifyTaskArg arg) throws IgniteException {
             if (fut == null) {
-                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTask.class, arg.getCaches());
+                fut = ignite.compute().executeAsync(VerifyBackupPartitionsTask.class, arg.caches());
 
                 if (!fut.isDone()) {
                     jobCtx.holdcc();

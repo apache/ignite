@@ -33,8 +33,9 @@
 #include <ignite/network/tcp_range.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
+#include "impl/affinity/affinity_assignment.h"
+#include "impl/affinity/affinity_manager.h"
 #include "impl/data_channel.h"
-#include "impl/cache/cache_affinity_info.h"
 
 namespace ignite
 {
@@ -53,12 +54,15 @@ namespace ignite
              */
             class DataRouter
             {
+                typedef std::map<Guid, SP_DataChannel> ChannelsGuidMap;
+                typedef std::vector<SP_DataChannel> ChannelsVector;
+
             public:
                 /** Connection establishment timeout in seconds. */
                 enum { DEFAULT_CONNECT_TIMEOUT = 5 };
 
                 /** Network IO operation timeout in seconds. */
-                enum { DEFALT_IO_TIMEOUT = 5 };
+                enum { DEFAULT_IO_TIMEOUT = 5 };
 
                 /** Default port. */
                 enum { DEFAULT_PORT = 10800 };
@@ -86,6 +90,27 @@ namespace ignite
                 void Close();
 
                 /**
+                 * Update affinity if needed.
+                 *
+                 * @param rsp Response.
+                 */
+                template <typename RspT>
+                void CheckAffinity(RspT& rsp)
+                {
+                    const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
+
+                    if (ver != 0 && config.IsAffinityAwareness())
+                        affinityManager.UpdateAffinity(*ver);
+                }
+
+                /**
+                 * Process meta if needed.
+                 *
+                 * @param metaVer Version of meta.
+                 */
+                void ProcessMeta(int32_t metaVer);
+
+                /**
                  * Synchronously send request message and receive response.
                  * Uses provided timeout.
                  *
@@ -100,15 +125,9 @@ namespace ignite
 
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
-                    if (typeMgr.IsUpdatedSince(metaVer))
-                    {
-                        IgniteError err;
-
-                        if (!typeMgr.ProcessPendingUpdates(err))
-                            throw err;
-                    }
+                    ProcessMeta(metaVer);
                 }
 
                 /**
@@ -116,25 +135,19 @@ namespace ignite
                  *
                  * @param req Request message.
                  * @param rsp Response message.
-                 * @param hint End points of the preferred server node to use.
+                 * @param hint Preferred server node to use.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                void SyncMessage(const ReqT& req, RspT& rsp, const std::vector<network::EndPoint>& hint)
+                void SyncMessage(const ReqT& req, RspT& rsp, const Guid& hint)
                 {
                     SP_DataChannel channel = GetBestChannel(hint);
 
                     int32_t metaVer = typeMgr.GetVersion();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
 
-                    if (typeMgr.IsUpdatedSince(metaVer))
-                    {
-                        IgniteError err;
-                        
-                        if (!typeMgr.ProcessPendingUpdates(err))
-                            throw err;
-                    }
+                    ProcessMeta(metaVer);
                 }
 
                 /**
@@ -151,16 +164,32 @@ namespace ignite
                 {
                     SP_DataChannel channel = GetRandomChannel();
 
-                    channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                    SyncMessagePreferredChannelNoMetaUpdate(req, rsp, channel);
                 }
 
                 /**
                  * Update affinity mapping for the cache.
                  *
                  * @param cacheId Cache ID.
-                 * @param binary Cache binary flag.
                  */
-                void RefreshAffinityMapping(int32_t cacheId, bool binary);
+                void RefreshAffinityMapping(int32_t cacheId);
+
+                /**
+                 * Update affinity mapping for caches.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                void RefreshAffinityMapping(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Checked whether affinity awareness enabled.
+                 *
+                 * @return @c true if affinity awareness enabled.
+                 */
+                bool IsAffinityAwarenessEnabled() const
+                {
+                    return config.IsAffinityAwareness();
+                }
 
                 /**
                  * Get affinity mapping for the cache.
@@ -168,77 +197,91 @@ namespace ignite
                  * @param cacheId Cache ID.
                  * @return Mapping.
                  */
-                cache::SP_CacheAffinityInfo GetAffinityMapping(int32_t cacheId);
-
-                /**
-                 * Clear affinity mapping for the cache.
-                 *
-                 * @param cacheId Cache ID.
-                 */
-                void ReleaseAffinityMapping(int32_t cacheId);
+                affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 
-                /** End point collection. */
-                typedef std::vector<network::EndPoint> EndPoints;
-
-                /** Shared pointer to end points. */
-                typedef common::concurrent::SharedPointer<EndPoints> SP_EndPoints;
+                /**
+                 * Invalidate provided data channel.
+                 *
+                 * @param channel Data channel.
+                 */
+                void InvalidateChannel(SP_DataChannel& channel);
 
                 /**
-                 * Get endpoints for the key.
-                 * Always using Rendezvous Affinity Function algorithm for now.
+                 * Synchronously send request message and receive response.
                  *
-                 * @param cacheId Cache ID.
-                 * @param key Key.
-                 * @return Endpoints for the key.
+                 * @param req Request message.
+                 * @param rsp Response message.
+                 * @param preferred Preferred channel to use.
+                 * @throw IgniteError on error.
                  */
-                int32_t GetPartitionForKey(int32_t cacheId, const WritableKey& key);
+                template<typename ReqT, typename RspT>
+                void SyncMessagePreferredChannelNoMetaUpdate(const ReqT& req, RspT& rsp, const SP_DataChannel& preferred)
+                {
+                    SP_DataChannel channel = preferred;
+
+                    if (!channel.IsValid())
+                        channel = GetRandomChannel();
+
+                    if (!channel.IsValid())
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Can not connect to any available cluster node. Please restart client");
+                    }
+
+                    try
+                    {
+                        channel.Get()->SyncMessage(req, rsp, ioTimeout);
+                    }
+                    catch (IgniteError&)
+                    {
+                        InvalidateChannel(channel);
+                    }
+
+                    if (!channel.IsValid())
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_NETWORK_FAILURE,
+                            "Connection failure during command processing. Please re-run command");
+                    }
+
+                    CheckAffinity(rsp);
+                }
+
+                /** Shared pointer to end points. */
+                typedef common::concurrent::SharedPointer<network::EndPoints> SP_EndPoints;
 
                 /**
                  * Get random data channel.
                  *
-                 * @return Random data channel.
+                 * @return Random data channel or null, if not connected.
                  */
                 SP_DataChannel GetRandomChannel();
 
                 /**
-                 * Check whether the provided address hint is the local host.
+                 * Get random data channel.
+                 * @warning May only be called when lock is held!
                  *
-                 * @param hint Hint.
-                 * @return @c true if the local host.
+                 * @return Random data channel or null, if not connected.
                  */
-                bool IsLocalHost(const std::vector<network::EndPoint>& hint);
-
-                /**
-                 * Check whether the provided address is the local host.
-                 *
-                 * @param host Host.
-                 * @return @c true if the local host.
-                 */
-                static bool IsLocalAddress(const std::string& host);
+                SP_DataChannel GetRandomChannelUnsafe();
 
                 /**
                  * Check whether the provided end point is provided by user using configuration.
                  *
                  * @param endPoint End point to check.
-                 * @return @c true if provided by user using configuration. 
+                 * @return @c true if provided by user using configuration.
                  */
                 bool IsProvidedByUser(const network::EndPoint& endPoint);
 
                 /**
                  * Get the best data channel.
                  *
-                 * @param hint End points of the preferred server node to use.
-                 * @return The best available data channel.
+                 * @param hint GUID of preferred server node to use.
+                 * @return The best available data channel or null if not connected.
                  */
-                SP_DataChannel GetBestChannel(const std::vector<network::EndPoint>& hint);
-
-                /**
-                 * Update local addresses.
-                 */
-                void UpdateLocalAddresses();
+                SP_DataChannel GetBestChannel(const Guid& hint);
 
                 /**
                  * Collect all addresses from string.
@@ -260,9 +303,6 @@ namespace ignite
                 /** Address ranges. */
                 std::vector<network::TcpRange> ranges;
 
-                /** Local addresses. */
-                std::set<std::string> localAddresses;
-
                 /** Type updater. */
                 std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;
 
@@ -270,16 +310,16 @@ namespace ignite
                 binary::BinaryTypeManager typeMgr;
 
                 /** Data channels. */
-                std::map<network::EndPoint, SP_DataChannel> channels;
+                ChannelsGuidMap channels;
+
+                /** Data channels. */
+                ChannelsVector legacyChannels;
 
                 /** Channels mutex. */
                 common::concurrent::CriticalSection channelsMutex;
 
-                /** Cache affinity mapping. */
-                std::map<int32_t, cache::SP_CacheAffinityInfo> cacheAffinityMapping;
-
-                /** Cache affinity mapping mutex. */
-                common::concurrent::CriticalSection cacheAffinityMappingMutex;
+                /** Cache affinity manager. */
+                affinity::AffinityManager affinityManager;
             };
 
             /** Shared pointer type. */

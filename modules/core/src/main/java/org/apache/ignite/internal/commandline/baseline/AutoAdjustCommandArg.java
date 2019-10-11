@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.baseline;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /**
- * {@link BaselineCommand#AUTO_ADJUST} command arguments.
+ * {@link BaselineSubcommands#AUTO_ADJUST} command arguments.
  */
 public enum AutoAdjustCommandArg implements CommandArg {
     /** Enable auto-adjust. */

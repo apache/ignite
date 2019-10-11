@@ -17,6 +17,7 @@
 
 'use strict';
 
+const mongoose = require('mongoose');
 const passportMongo = require('passport-local-mongoose');
 
 // Fire me up!
@@ -26,10 +27,10 @@ const passportMongo = require('passport-local-mongoose');
  */
 module.exports = {
     implements: 'schemas',
-    inject: ['mongoose']
+    inject: []
 };
 
-module.exports.factory = function(mongoose) {
+module.exports.factory = function() {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
 

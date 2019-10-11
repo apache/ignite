@@ -350,9 +350,11 @@ abstract class TcpDiscoveryImpl {
      * @throws IgniteSpiException If failed.
      */
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
+        long spiJoinTimeout = spi.getJoinTimeout();
+
         // Make sure address registration succeeded.
         // ... but limit it if join timeout is configured.
-        long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
+        long startNanos = spiJoinTimeout > 0 ? System.nanoTime() : 0;
 
         while (true) {
             try {
@@ -372,12 +374,12 @@ abstract class TcpDiscoveryImpl {
                     "change 'reconnectDelay' to configure the frequency of retries).");
             };
 
-            if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
+            if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
                 throw new IgniteSpiException(
                     "Failed to register local addresses with IP finder within join timeout " +
                         "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
                         "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
-                        "[joinTimeout=" + spi.getJoinTimeout() + ']');
+                        "[joinTimeout=" + spiJoinTimeout + ']');
 
             try {
                 U.sleep(spi.getReconnectDelay());

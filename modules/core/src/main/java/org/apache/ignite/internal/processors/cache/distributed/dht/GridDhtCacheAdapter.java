@@ -182,6 +182,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
                 ", res=" + msg + ']');
     }
+
     /**
      * @param node Node originated request.
      * @param msg Force keys message.
@@ -761,6 +762,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         boolean skipVals,
         boolean needVer
     ) {
@@ -774,6 +776,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            readRepair,
             forcePrimary,
             null,
             skipVals,
@@ -815,6 +818,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
+            false,
             /*need version*/true,
             txLbl,
             mvccSnapshot);

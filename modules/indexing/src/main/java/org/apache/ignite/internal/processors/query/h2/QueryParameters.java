@@ -18,11 +18,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
-
-import java.util.List;
 
 /**
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
@@ -57,6 +56,12 @@ public class QueryParameters {
     private final List<Object[]> batchedArgs;
 
     /**
+     * Update internal batch size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in several concurrent updates.
+     */
+    private final int updateBatchSize;
+
+    /**
      * Create parameters from query.
      *
      * @param qry Query.
@@ -84,10 +89,11 @@ public class QueryParameters {
             qry.getTimeout(),
             qry.isLazy(),
             qry.getPageSize(),
-            qry.isDataPageScanEnabled(),
+            null,
             nestedTxMode,
             autoCommit,
-            batchedArgs
+            batchedArgs,
+            qry.getUpdateBatchSize()
         );
     }
 
@@ -103,6 +109,7 @@ public class QueryParameters {
      * @param nestedTxMode Nested TX mode.
      * @param autoCommit Auto-commit flag.
      * @param batchedArgs Batched arguments.
+     * @param updateBatchSize Update internal batch size.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     private QueryParameters(
@@ -114,7 +121,8 @@ public class QueryParameters {
         Boolean dataPageScanEnabled,
         NestedTxMode nestedTxMode,
         boolean autoCommit,
-        List<Object[]> batchedArgs
+        List<Object[]> batchedArgs,
+        int updateBatchSize
     ) {
         this.args = args;
         this.parts = parts;
@@ -125,6 +133,7 @@ public class QueryParameters {
         this.nestedTxMode = nestedTxMode;
         this.autoCommit = autoCommit;
         this.batchedArgs = batchedArgs;
+        this.updateBatchSize = updateBatchSize;
     }
 
     /**
@@ -194,6 +203,16 @@ public class QueryParameters {
     }
 
     /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequance are different in several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int updateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
      * Convert current batched arguments to a form with single arguments.
      *
      * @param args Arguments.
@@ -209,7 +228,8 @@ public class QueryParameters {
             this.dataPageScanEnabled,
             this.nestedTxMode,
             this.autoCommit,
-            null
+            null,
+            this.updateBatchSize
         );
     }
 }

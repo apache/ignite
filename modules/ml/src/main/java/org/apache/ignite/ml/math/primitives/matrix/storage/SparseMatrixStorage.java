@@ -36,12 +36,16 @@ import org.apache.ignite.ml.math.primitives.matrix.MatrixStorage;
 public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     /** Default zero value. */
     private static final double DEFAULT_VALUE = 0.0;
+
     /** */
     private int rows;
+
     /** */
     private int cols;
+
     /** */
     private int acsMode;
+
     /** */
     private int stoMode;
 
@@ -68,9 +72,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
         sto = new HashMap<>();
     }
 
-    /**
-     * @return Matrix elements storage mode.
-     */
+    /** {@inheritDoc} */
     @Override public int storageMode() {
         return stoMode;
     }

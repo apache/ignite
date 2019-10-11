@@ -129,7 +129,6 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
         },  "grid-notaop-deploy-load-test").start();
 
-
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {

@@ -42,6 +42,7 @@
         <doxygen.exec>doxygen</doxygen.exec>
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
+        <javadoc.opts>-Xdoclint:none</javadoc.opts>
         <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
 
         <!-- Dependency versions -->
@@ -59,8 +60,9 @@
         <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
+        <commons.io.version>2.6</commons.io.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>2.9.1</curator.version>
+        <curator.version>4.2.0</curator.version>
         <easymock.version>3.4</easymock.version>
         <ezmorph.bundle.version>1.0.6_1</ezmorph.bundle.version>
         <ezmorph.version>1.0.6</ezmorph.version>
@@ -88,7 +90,7 @@
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
-        <jnr.posix.version>3.0.46</jnr.posix.version>
+        <jnr.posix.version>3.0.50</jnr.posix.version>
         <jotm.version>2.2.3</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
@@ -102,6 +104,8 @@
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
+        <checkstyle.puppycrawl.version>8.19</checkstyle.puppycrawl.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -132,14 +136,13 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <yardstick.version>0.8.3</yardstick.version>
         <zkclient.version>0.5</zkclient.version>
-        <zookeeper.version>3.4.13</zookeeper.version>
+        <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
+        <opencensus.version>0.22.0</opencensus.version>
 
-        <!-- Plugin versions -->
-        <maven.javadoc.plugin.version>2.10.1</maven.javadoc.plugin.version>
 
         <!-- Maven plugins versions -->
-        <maven.javadoc.plugin.version>3.0.0</maven.javadoc.plugin.version>
+        <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -230,7 +233,7 @@
             </snapshots>
             <id>h2database.com</id>
             <name>Snapshot repository on h2database.com</name>
-            <url>http://h2database.com/m2-repo</url>
+            <url>https://h2database.com/m2-repo</url>
             <layout>default</layout>
         </repository>
     </repositories>
@@ -334,9 +337,9 @@
                         <use>true</use>
                         <author>false</author>
                         <version>false</version>
-                        <doclint>none</doclint>
+                        <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://hadoop.apache.org/docs/current/api/</link>
+                            <link>https://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
                             <group>
@@ -366,6 +369,10 @@
                             <group>
                                 <title>Service Grid APIs</title>
                                 <packages>org.apache.ignite.services</packages>
+                            </group>
+                            <group>
+                                <title>Ignite Thin Client APIs</title>
+                                <packages>org.apache.ignite.client</packages>
                             </group>
                             <group>
                                 <title>File System APIs</title>
@@ -527,12 +534,15 @@
                                 <title>Ignite Web Console</title>
                                 <packages>org.apache.ignite.console*</packages>
                             </group>
+                            <group>
+                                <title>Metric SPI</title>
+                                <packages>org.apache.ignite.spi.metric*</packages>
+                            </group>
+                            <group>
+                                <title>System view SPI</title>
+                                <packages>org.apache.ignite.spi.systemview*</packages>
+                            </group>
                         </groups>
-                        <header>
-                            <![CDATA[
-                                    Ignite - In-Memory Database and Caching Platform
-                                ]]>
-                        </header>
                         <bottom>
                             <![CDATA[
                                     <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
@@ -542,7 +552,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2019 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>${current.year} Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -800,6 +810,45 @@
 
     <profiles>
         <profile>
+            <id>checkstyle</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven.checkstyle.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>style</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <consoleOutput>true</consoleOutput>
+                                    <logViolationsToConsole>true</logViolationsToConsole>
+                                    <failsOnError>true</failsOnError>
+                                    <failOnViolation>true</failOnViolation>
+                                    <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+                                    <configLocation>../checkstyle/checkstyle.xml</configLocation>
+                                    <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.puppycrawl.tools</groupId>
+                                <artifactId>checkstyle</artifactId>
+                                <version>${checkstyle.puppycrawl.version}</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>check-licenses</id>
             <build>
                 <plugins>
@@ -874,10 +923,7 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
-                                        <exclude>idea/disabled_plugins.txt</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>idea/ignite_inspections.xml</exclude>
-                                        <exclude>idea/ignite_inspections_teamcity.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
@@ -888,6 +934,8 @@
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_cache_help.output</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_help.output</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
@@ -906,6 +954,7 @@
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/maven-metadata-local.xml</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.pom</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/maven-metadata-local.xml</exclude>
+                                        <exclude>src/test/resources/org/apache/ignite/internal/managers/discovery/Wrapper.ser</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
@@ -1277,6 +1326,5 @@
                 </pluginManagement>
             </build>
         </profile>
-
     </profiles>
 </project>

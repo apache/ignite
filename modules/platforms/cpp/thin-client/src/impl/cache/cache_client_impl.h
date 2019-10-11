@@ -285,11 +285,6 @@ namespace ignite
                      */
                     void GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut);
 
-                    /**
-                     * Update cache partitions info.
-                     */
-                    void RefreshAffinityMapping();
-
                 private:
                     /**
                      * Synchronously send request message and receive response.

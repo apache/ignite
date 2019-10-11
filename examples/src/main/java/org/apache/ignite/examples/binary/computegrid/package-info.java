@@ -18,4 +18,5 @@
 /**
  * Demonstrates the usage of binary objects with task execution.
  */
+
 package org.apache.ignite.examples.binary.computegrid;

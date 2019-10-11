@@ -86,7 +86,6 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
             assert waitJobs != null;
             assert activeJobs != null;
 
-
             for (CollisionJobContext job : waitJobs) {
                 assert job.getJob() != null;
                 assert job.getJobContext() != null;

@@ -130,6 +130,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         return cfg;
     }
+
     /**
      * @param igniteInstanceName Ignite instance name.
      * @return Hibernate configuration.

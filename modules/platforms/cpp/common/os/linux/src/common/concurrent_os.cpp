@@ -28,49 +28,82 @@ namespace ignite
 
             /** Helper to ensure that attach key is allocated only once. */
             static pthread_once_t tlsKeyInit = PTHREAD_ONCE_INIT;
-            
+
             /**
              * Routine to destroy TLS key.
-             * 
+             *
              * @param key Key.
              */
             void DestroyTlsKey(void* key) {
                 ThreadLocal::Clear0(key);
             }
-            
+
             /**
              * Routine to allocate TLS key.
              */
             void AllocateTlsKey() {
                 pthread_key_create(&tlsKey, DestroyTlsKey);
             }
-            
+
             void Memory::Fence() {
                 __asm__ volatile ("" ::: "memory");
             }
 
             CriticalSection::CriticalSection() {
                 pthread_mutex_init(&mux, NULL);
-                
+
                 Memory::Fence();
             }
 
             CriticalSection::~CriticalSection() {
                 Memory::Fence();
-                
+
                 pthread_mutex_destroy(&mux);
             }
 
             void CriticalSection::Enter() {
                 Memory::Fence();
-                
+
                 pthread_mutex_lock(&mux);
             }
 
             void CriticalSection::Leave() {
                 Memory::Fence();
-                
+
                 pthread_mutex_unlock(&mux);
+            }
+
+            ReadWriteLock::ReadWriteLock() :
+                lock()
+            {
+                pthread_rwlock_init(&lock, NULL);
+
+                Memory::Fence();
+            }
+
+            ReadWriteLock::~ReadWriteLock()
+            {
+                pthread_rwlock_destroy(&lock);
+            }
+
+            void ReadWriteLock::LockExclusive()
+            {
+                pthread_rwlock_wrlock(&lock);
+            }
+
+            void ReadWriteLock::ReleaseExclusive()
+            {
+                pthread_rwlock_unlock(&lock);
+            }
+
+            void ReadWriteLock::LockShared()
+            {
+                pthread_rwlock_rdlock(&lock);
+            }
+
+            void ReadWriteLock::ReleaseShared()
+            {
+                pthread_rwlock_unlock(&lock);
             }
 
             SingleLatch::SingleLatch()
@@ -78,7 +111,7 @@ namespace ignite
                 pthread_mutex_init(&mux, NULL);
                 pthread_cond_init(&cond, NULL);
                 ready = false;
-                
+
                 Memory::Fence();
             }
 
@@ -93,27 +126,27 @@ namespace ignite
             void SingleLatch::CountDown()
             {
                 pthread_mutex_lock(&mux);
-                
+
                 if (!ready) {
                     ready = true;
-                    
+
                     pthread_cond_broadcast(&cond);
                 }
-                
+
                 pthread_mutex_unlock(&mux);
-                
+
                 Memory::Fence();
             }
 
             void SingleLatch::Await()
             {
                 pthread_mutex_lock(&mux);
-                
+
                 while (!ready)
                     pthread_cond_wait(&cond, &mux);
-                
+
                 pthread_mutex_unlock(&mux);
-                
+
                 Memory::Fence();
             }
 
@@ -160,14 +193,14 @@ namespace ignite
             void* ThreadLocal::Get0()
             {
                 pthread_once(&tlsKeyInit, AllocateTlsKey);
-                                
+
                 return pthread_getspecific(tlsKey);
             }
 
             void ThreadLocal::Set0(void* ptr)
             {
                 pthread_once(&tlsKeyInit, AllocateTlsKey);
-                
+
                 pthread_setspecific(tlsKey, ptr);
             }
         }

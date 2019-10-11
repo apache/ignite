@@ -28,8 +28,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -47,6 +50,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -55,9 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
@@ -508,7 +509,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt2 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.cluster().setBaselineTopology(baselineNodes(blt2));
+        ignite.cluster().setBaselineTopology(baselineNodes(
+            blt2.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
@@ -529,7 +531,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt3 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.cluster().setBaselineTopology(baselineNodes(blt3));
+        ignite.cluster().setBaselineTopology(baselineNodes(
+            blt3.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
@@ -820,7 +823,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        startGrids(5);
+        startGrid(1); //TODO https://issues.apache.org/jira/browse/IGNITE-8717 (replace with startGrids(5); //after)
+        startGrid(0);
+        startGrid(2);
+        startGrid(3);
+        startGrid(4);
 
         GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
 
@@ -834,7 +841,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+    public void testNonPersistentCachesDontIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
@@ -849,32 +856,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
-        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
+        assertEquals(0, ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testNotMapNonBaselineTxPrimaryNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(true, false);
-    }
-
-    /**
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotMapNonBaselineTxBackupNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotMapNonBaselineNearTxPrimaryNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(true, true);
+    public void testMapTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, false);
     }
 
     /**
@@ -882,8 +872,25 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNotMapNonBaselineNearTxBackupNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(false, true);
+    public void testMapTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, true);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, true);
     }
 
     /**
@@ -891,7 +898,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @param near Whether non-baseline nod is near node.
      * @throws Exception If failed.
      */
-    public void checkNotMapNonBaselineTxNodes(boolean primary, boolean near) throws Exception {
+    public void checkMapTxNodes(boolean primary, boolean near) throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         int bltNodesCnt = 3;
@@ -927,33 +934,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(0, nearIgnite.affinity(persistentCache.getName()).allPartitions(nonBltNode).length);
 
-        assertTrue(nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length > 0);
-
-        ClusterNode nearNode = nearIgnite.cluster().localNode();
-
-        try (Transaction tx = nearIgnite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
-            for (int i = 0; ; i++) {
-                List<ClusterNode> nodes = new ArrayList<>(nearIgnite.affinity(inMemoryCache.getName())
-                    .mapKeyToPrimaryAndBackups(i));
-
-                ClusterNode primaryNode = nodes.get(0);
-
-                List<ClusterNode> backupNodes = nodes.subList(1, nodes.size());
-
-                if (nonBltNode.equals(primaryNode) == primary) {
-                    if (backupNodes.contains(nonBltNode) != primary) {
-                        inMemoryCache.put(i, i);
-
-                        // add some persistent data in the same transaction
-                        for (int j = 0; j < 100; j++)
-                            persistentCache.put(j, j);
-
-                        break;
-                    }
-                }
-            }
-            tx.commit();
-        }
+        assertEquals(0, nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length);
     }
 
     /**
@@ -1032,6 +1013,58 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < 1000; k++)
             assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+    }
+
+    /**
+     * Verify that in case of setting baseline topology with offline node among others
+     * {@link IgniteException} is thrown.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    public void testSettingBaselineTopologyWithOfflineNode() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
+            (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
+
+        Collection<ClusterNode> nodes = new ArrayList<>(ignite.cluster().nodes());
+        nodes.add(new DetachedClusterNode("non-existing-node-id", null));
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ignite.cluster().setBaselineTopology(nodes);
+
+            return null;
+        }, IgniteException.class, "Check arguments. Node with consistent ID [non-existing-node-id] " +
+            "not found in server nodes.");
+    }
+
+    /**
+     * Verify that in case of setting baseline topology with offline node among others {@link IgniteException} is
+     * thrown.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        stopGrid(1);
+
+        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion() - 1);
+
+            return null;
+        }, IgniteException.class, "Check arguments. Node with consistent ID " +
+            "[distributed.CacheBaselineTopologyTest1] not found in server nodes.");
     }
 
     /** */

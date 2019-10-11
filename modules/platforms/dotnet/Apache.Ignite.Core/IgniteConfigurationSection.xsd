@@ -118,6 +118,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="Lz4" />
+            <xs:enumeration value="Snappy" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -1469,6 +1479,20 @@
                         <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
+                        <xs:all>
+                            <xs:element name="thinClientConfiguration" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thin client specific configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="maxActiveTxPerConnection" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Active transactions count per connection limit.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
                         <xs:attribute name="port" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Connector port.</xs:documentation>
@@ -1512,6 +1536,11 @@
                         <xs:attribute name="idleTimeout" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="handshakeTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Handshake timeout for client connections on the server side. If no successful handshake is performed within this timeout upon successful establishment of TCP connection, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="thinClientEnabled" type="xs:boolean">
@@ -1714,6 +1743,13 @@
                                             <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Enable lazy memory allocation.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1785,6 +1821,13 @@
                                                 <xs:attribute name="checkpointPageBufferSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable lazy memory allocation.
+                                                        </xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
@@ -1933,6 +1976,16 @@
                                 <xs:documentation>
                                     Timeout for checkpoint read lock acquisition.
                                 </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2091,6 +2144,32 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="executorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Custom executor configuration for compute tasks.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="executorConfiguration" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thread pool configuration for compute tasks.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute type="xs:string" name="name" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute type="xs:int" name="size" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool size.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

@@ -158,10 +158,13 @@ class VectorImplementationsFixtures {
     private static class VectorSizesExtraIterator<T> extends VectorSizesIterator {
         /** */
         private final T[] extras;
+
         /** */
         private int extraIdx = 0;
+
         /** */
         private final BiFunction<Integer, T, Vector> ctor;
+
         /** */
         private final String extraParamName;
 
@@ -215,7 +218,7 @@ class VectorImplementationsFixtures {
             return (size, delta) -> ctor.apply(size + delta, extras[extraIdx]);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 

@@ -1,8 +1,22 @@
 {
   "name": "apache-ignite-client",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "NodeJS Client for Apache Ignite",
   "main": "index.js",
+  "files": [
+    "/examples",
+    "/lib",
+    "index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apache/ignite/tree/master/modules/platforms/nodejs"
+  },
+  "keywords": [
+    "apache",
+    "ignite",
+    "client"
+  ],
   "author": "",
   "license": "Apache-2.0",
   "engines": {

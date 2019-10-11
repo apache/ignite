@@ -17,13 +17,12 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
@@ -31,11 +30,9 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model based on  based on
@@ -44,8 +41,8 @@ import java.io.FileNotFoundException;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it trains the linear regression model based on stochastic gradient descent algorithm using
- * the specified data.</p>
+ * After that it trains the linear regression model based on stochastic gradient descent algorithm using the specified
+ * data.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict the target value
  * and compares prediction to expected outcome (ground truth).</p>
@@ -53,8 +50,10 @@ import java.io.FileNotFoundException;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionSGDTrainerExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
         // Start ignite grid.
@@ -79,25 +78,21 @@ public class LinearRegressionSGDTrainerExample {
 
                 LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-                final IgniteBiFunction<Integer, Vector, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(vectorizer);
-                final IgniteBiFunction<Integer, Vector, Double> lbExtractor = CompositionUtils.asLabelExtractor(vectorizer);
                 System.out.println(">>> Linear regression model: " + mdl);
 
-                double rmse = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    featureExtractor,
-                    lbExtractor,
-                    new RegressionMetrics()
-                );
+                double rmse = Evaluator.evaluate(dataCache, mdl, vectorizer, MetricName.RMSE);
 
                 System.out.println("\n>>> Rmse = " + rmse);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

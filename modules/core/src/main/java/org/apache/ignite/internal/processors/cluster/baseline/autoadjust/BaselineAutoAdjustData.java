@@ -23,11 +23,13 @@ package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 class BaselineAutoAdjustData {
     /** Task represented NULL value is using when normal task can not be created. */
     public static final BaselineAutoAdjustData NULL_BASELINE_DATA = nullValue();
+
     /** Topology version nodes of which should be set to baseline by this task. */
     private final long targetTopologyVersion;
 
     /** {@code true} If this data don't actual anymore and it setting should be skipped. */
     private volatile boolean invalidated = false;
+
     /** {@code true} If this data was adjusted. */
     private volatile boolean adjusted = false;
 

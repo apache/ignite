@@ -70,6 +70,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -145,6 +146,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -818,7 +821,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (long i = 0; i < 50; i++)
             cache.put(i, new EnumObject(i, i % 2 == 0 ? EnumType.TYPE_A : EnumType.TYPE_B));
 
-
         assertEnumQry("type = ?", EnumType.TYPE_A, EnumType.TYPE_A, cache, 25);
         assertEnumQry("type > ?", EnumType.TYPE_A, EnumType.TYPE_B, cache, 25);
         assertEnumQry("type < ?", EnumType.TYPE_B, EnumType.TYPE_A, cache, 25);
@@ -977,7 +979,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }
         }
-
 
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
             cache.query(new SqlQuery<Integer, ObjectValue>(ObjectValue.class, "intVal >= ? order by intVal").

@@ -22,6 +22,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -35,9 +36,11 @@ class DistributedMetaStorageUpdateMessage implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** Request ID. */
+    @GridToStringInclude
     private final UUID reqId;
 
     /** */
+    @GridToStringInclude
     private final String key;
 
     /** */

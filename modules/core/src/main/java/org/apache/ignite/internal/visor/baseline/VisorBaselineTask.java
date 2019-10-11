@@ -173,7 +173,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 BaselineNode node = srvrs.get(consistentId);
 
                 if (node == null)
-                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
+                    throw new IllegalArgumentException("Node not found for consistent ID: " + consistentId);
 
                 baseline.put(consistentId, node);
             }
@@ -197,7 +197,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 BaselineNode node = baseline.remove(consistentId);
 
                 if (node == null)
-                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
+                    throw new IllegalArgumentException("Node not found for consistent ID: " + consistentId);
             }
 
             return set0(baseline.values());

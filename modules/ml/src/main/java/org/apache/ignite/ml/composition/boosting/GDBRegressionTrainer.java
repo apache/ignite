@@ -19,10 +19,8 @@ package org.apache.ignite.ml.composition.boosting;
 
 import org.apache.ignite.ml.composition.boosting.loss.SquaredError;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-
-import java.io.Serializable;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Trainer for regressor using Gradient Boosting. This algorithm uses gradient of Mean squared error loss metric [MSE]
@@ -40,8 +38,8 @@ public abstract class GDBRegressionTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
-        Vectorizer<K, V, C, Double> vectorizer) {
+    @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
+                                                   Preprocessor<K, V> preprocessor) {
 
         return true;
     }

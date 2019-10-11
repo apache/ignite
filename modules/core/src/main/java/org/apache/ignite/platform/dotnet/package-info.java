@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains .Net platform-related classes.
  */
+
 package org.apache.ignite.platform.dotnet;

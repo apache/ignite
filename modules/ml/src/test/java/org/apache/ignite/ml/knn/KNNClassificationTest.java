@@ -17,24 +17,23 @@
 
 package org.apache.ignite.ml.knn;
 
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests behaviour of KNNClassification. */
@@ -59,38 +58,33 @@ public class KNNClassificationTest {
     }
 
     /** */
-    @Test(expected = IllegalStateException.class)
-    public void testNullDataset() {
-        new KNNClassificationModel(null).predict(null);
-    }
-
-    /** */
     @Test
     public void testBinaryClassification() {
         Map<Integer, double[]> data = new HashMap<>();
-        data.put(0, new double[] {1.0, 1.0, 1.0});
-        data.put(1, new double[] {1.0, 2.0, 1.0});
-        data.put(2, new double[] {2.0, 1.0, 1.0});
+        data.put(0, new double[] { 1.0,  1.0, 1.0});
+        data.put(1, new double[] { 1.0,  2.0, 1.0});
+        data.put(2, new double[] { 2.0,  1.0, 1.0});
         data.put(3, new double[] {-1.0, -1.0, 2.0});
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
-        NNClassificationModel knnMdl = trainer.fit(
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).withK(3)
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+            .withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
+
+        KNNClassificationModel knnMdl = trainer.fit(
+            data, parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        );
 
         assertTrue(!knnMdl.toString().isEmpty());
         assertTrue(!knnMdl.toString(true).isEmpty());
         assertTrue(!knnMdl.toString(false).isEmpty());
 
-        Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
+        Vector firstVector = VectorUtils.of(2.0, 2.0);
         assertEquals(1.0, knnMdl.predict(firstVector), 0);
-        Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
+        Vector secondVector = VectorUtils.of(-2.0, -2.0);
         assertEquals(2.0, knnMdl.predict(secondVector), 0);
     }
 
@@ -105,19 +99,18 @@ public class KNNClassificationTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
-        NNClassificationModel knnMdl = trainer.fit(
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).withK(1)
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+            .withK(1)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
-        Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(1.0, knnMdl.predict(firstVector), 0);
-        Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(2.0, knnMdl.predict(secondVector), 0);
+        KNNClassificationModel knnMdl = trainer.fit(
+            data, parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        );
+
+        assertEquals(1.0, knnMdl.predict(VectorUtils.of(2.0, 2.0)), 0);
+        assertEquals(2.0, knnMdl.predict(VectorUtils.of(-2.0, -2.0)), 0);
     }
 
     /** */
@@ -131,17 +124,17 @@ public class KNNClassificationTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
-        NNClassificationModel knnMdl = trainer.fit(
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).withK(3)
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+            .withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.SIMPLE);
+            .withWeighted(false);
 
-        Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(2.0, knnMdl.predict(vector), 0);
+        KNNClassificationModel knnMdl = trainer.fit(
+            data, parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        );
+
+        assertEquals(2.0, knnMdl.predict(VectorUtils.of(-1.01, -1.01)), 0);
     }
 
     /** */
@@ -150,22 +143,22 @@ public class KNNClassificationTest {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {10.0, 10.0, 1.0});
         data.put(1, new double[] {10.0, 20.0, 1.0});
-        data.put(2, new double[] {-1, -1, 1.0});
-        data.put(3, new double[] {-2, -2, 2.0});
+        data.put(2, new double[] {-1.0, -1.0, 1.0});
+        data.put(3, new double[] {-2.0, -2.0, 2.0});
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
-        NNClassificationModel knnMdl = trainer.fit(
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).withK(3)
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+            .withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.WEIGHTED);
+            .withWeighted(true);
 
-        Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(1.0, knnMdl.predict(vector), 0);
+        KNNClassificationModel knnMdl = trainer.fit(
+            data, parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        );
+
+        assertEquals(1.0, knnMdl.predict(VectorUtils.of(-1.01, -1.01)), 0);
     }
 
     /** */
@@ -179,27 +172,26 @@ public class KNNClassificationTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
-        KNNClassificationModel originalMdl = (KNNClassificationModel)trainer.fit(
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
-        ).withK(3)
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+            .withK(3)
             .withDistanceMeasure(new EuclideanDistance())
-            .withStrategy(NNStrategy.WEIGHTED);
+            .withWeighted(false);
 
-        KNNClassificationModel updatedOnSameDataset = trainer.update(originalMdl,
-            data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        KNNClassificationModel originalMdlOnEmptyDataset = trainer.fit(
+            new HashMap<>(),
+            parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        KNNClassificationModel updatedOnEmptyDataset = trainer.update(originalMdl,
-            new HashMap<Integer, double[]>(), parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+        KNNClassificationModel updatedOnData = trainer.update(
+            originalMdlOnEmptyDataset,
+            data,
+            parts,
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Vector vector = new DenseVector(new double[] {-1.01, -1.01});
-        assertEquals(originalMdl.predict(vector), updatedOnSameDataset.predict(vector));
-        assertEquals(originalMdl.predict(vector), updatedOnEmptyDataset.predict(vector));
+        Vector vector = VectorUtils.of(-1.01, -1.01);
+        assertNull(originalMdlOnEmptyDataset.predict(vector));
+        assertEquals(Double.valueOf(2.0), updatedOnData.predict(vector));
     }
 }

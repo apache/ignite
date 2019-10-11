@@ -78,6 +78,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public bool IsReadRepair
+        {
+            get { return _cache.IsReadRepair; }
+        }
+
+        /** <inheritDoc /> */
         public bool IsAllowAtomicOpsInTx {
             get { return _cache.IsAllowAtomicOpsInTx; }
         }
@@ -104,6 +110,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
             return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithReadRepair()
+        {
+            return _cache.WithReadRepair().WrapAsync();
         }
 
         /** <inheritDoc /> */

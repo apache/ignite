@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaI
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -92,7 +94,16 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     private void init(GridKernalContext ctx) throws IgniteCheckedException {
+        String txLogName = TX_LOG_CACHE_NAME + "##Tree";
+
+        CacheDiagnosticManager diagnosticMgr = ctx.cache().context().diagnostic();
+
+        PageLockListener txLogLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogName);
+
         if (CU.isPersistenceEnabled(ctx.config())) {
+            String txLogReuseListName = TX_LOG_CACHE_NAME + "##ReuseList";
+            PageLockListener txLogReuseListLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogReuseListName);
+
             mgr.checkpointReadLock();
 
             try {
@@ -126,6 +137,8 @@ public class TxLog implements DbCheckpointListener {
                             io.setReuseListRoot(pageAddr, reuseListRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMemory, TX_LOG_CACHE_ID, metaId, metaPage, wal, null))
+                                assert io.getType() == PageIO.T_META;
+
                                 wal.log(new MetaPageInitRecord(
                                     TX_LOG_CACHE_ID,
                                     metaId,
@@ -163,9 +176,20 @@ public class TxLog implements DbCheckpointListener {
                     pageMemory,
                     wal,
                     reuseListRoot,
-                    isNew);
+                    isNew,
+                    txLogReuseListLockLsnr
+                );
 
-                tree = new TxLogTree(pageMemory, wal, treeRoot, reuseList, ctx.failure(), isNew);
+                tree = new TxLogTree(
+                    TX_LOG_CACHE_NAME,
+                    pageMemory,
+                    wal,
+                    treeRoot,
+                    reuseList,
+                    ctx.failure(),
+                    isNew,
+                    txLogLockLsnr
+                );
 
                 ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this);
             }
@@ -182,7 +206,16 @@ public class TxLog implements DbCheckpointListener {
             if ((treeRoot = reuseList1.takeRecycledPage()) == 0L)
                 treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
 
-            tree = new TxLogTree(pageMemory, null, treeRoot, reuseList1, ctx.failure(), true);
+            tree = new TxLogTree(
+                txLogName,
+                pageMemory,
+                null,
+                treeRoot,
+                reuseList1,
+                ctx.failure(),
+                true,
+                txLogLockLsnr
+            );
         }
     }
 

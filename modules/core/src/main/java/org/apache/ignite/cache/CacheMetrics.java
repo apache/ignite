@@ -315,6 +315,7 @@ public interface CacheMetrics {
 
     /**
      * Gets number of non-{@code null} values in the cache.
+     * Note this method will always return {@code 0}
      *
      * @return Number of non-{@code null} values in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
@@ -331,6 +332,7 @@ public interface CacheMetrics {
 
     /**
      * Gets number of keys in the cache, possibly with {@code null} values.
+     * Note this method will always return {@code 0}
      *
      * @return Number of keys in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.

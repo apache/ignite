@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.tree;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,7 +28,6 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
@@ -38,17 +37,16 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using classification algorithms for fraud detection problem.
- *
- * Description of models can be found in:
- *      https://en.wikipedia.org/wiki/Logistic_regression and
- *      https://en.wikipedia.org/wiki/Decision_tree_learning .
- * Original dataset can be downloaded from: https://www.kaggle.com/mlg-ulb/creditcardfraud/ .
- * Copy of dataset are stored in:  modules/ml/src/main/resources/datasets/fraud_detection.csv .
- * Score for clusterizer estimation: accuracy, recall, precision, f1-score .
- * Description of entropy can be found in: https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers .
+ * <p>
+ * Description of models can be found in: https://en.wikipedia.org/wiki/Logistic_regression and
+ * https://en.wikipedia.org/wiki/Decision_tree_learning . Original dataset can be downloaded from:
+ * https://www.kaggle.com/mlg-ulb/creditcardfraud/ . Copy of dataset are stored in:
+ * modules/ml/src/main/resources/datasets/fraud_detection.csv . Score for clusterizer estimation: accuracy, recall,
+ * precision, f1-score . Description of entropy can be found in: https://en.wikipedia.org/wiki/Evaluation_of_binary_classifiers
+ * .
  */
 public class FraudDetectionExample {
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -83,43 +81,32 @@ public class FraudDetectionExample {
                 dataCache.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
     /**
      * Train model and estimate it.
      *
-     * @param ignite Ignite
-     * @param dataCache Data set cache.
-     * @param trainer Trainer.
+     * @param ignite     Ignite
+     * @param dataCache  Data set cache.
+     * @param trainer    Trainer.
      * @param vectorizer Upstream vectorizer.
-     * @param splitter Train test splitter.
+     * @param splitter   Train test splitter.
      */
     private static void trainAndEstimateModel(Ignite ignite,
         IgniteCache<Integer, Vector> dataCache,
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer,
         Vectorizer<Integer, Vector, Integer, Double> vectorizer, TrainTestSplit<Integer, Vector> splitter) {
         System.out.println(">>> Start traininig.");
-        IgniteModel<Vector, Double> model = trainer.fit(
+        IgniteModel<Vector, Double> mdl = trainer.fit(
             ignite, dataCache,
             splitter.getTrainFilter(),
             vectorizer
         );
 
         System.out.println(">>> Perform scoring.");
-        BinaryClassificationMetricValues metricValues = Evaluator.evaluate(
-            dataCache,
-            splitter.getTestFilter(),
-            model,
-            vectorizer
-        );
-
-        System.out.println(String.format(">> Model accuracy: %.2f", metricValues.accuracy()));
-        System.out.println(String.format(">> Model precision: %.2f", metricValues.precision()));
-        System.out.println(String.format(">> Model recall: %.2f", metricValues.recall()));
-        System.out.println(String.format(">> Model f1-score: %.2f", metricValues.f1Score()));
-        System.out.println(">> Confusion matrix:");
-        System.out.println(">>                    fraud (ans) | not fraud (ans)");
-        System.out.println(String.format(">> fraud (pred)     | %1$11.2f | %2$15.2f ", metricValues.tp(), metricValues.fp()));
-        System.out.println(String.format(">> not fraud (pred) | %1$11.2f | %2$15.2f ", metricValues.fn(), metricValues.tn()));
+        System.out.println(Evaluator.evaluateBinaryClassification(dataCache, splitter.getTestFilter(), mdl, vectorizer));
     }
 }

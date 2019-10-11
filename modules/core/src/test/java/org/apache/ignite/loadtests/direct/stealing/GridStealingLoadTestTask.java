@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Stealing load test task.
@@ -46,7 +47,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     private int stolenJobs;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
         assert arg != null;
         assert subgrid.size() > 1: "Test requires at least 2 nodes. One with load and another one to steal.";
 

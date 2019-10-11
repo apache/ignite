@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
     public static final String FIRST_CACHE = "cache1";
+
     public static final String SECOND_CACHE = "cache2";
 
     /** {@inheritDoc} */
@@ -209,7 +210,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> argument = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = ((IgniteEx)grid1).context().task().execute(new VisorValidateIndexesTask(), argument);
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().execute(new VisorValidateIndexesTask(), argument);
 
         VisorValidateIndexesTaskResult result = execute.get();
 
@@ -254,10 +255,13 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
     public class Account {
         /** */
         private Long id;
+
         /** */
         private String name;
+
         /** */
         private Long amount;
+
         /** */
         private Date updateDate;
 

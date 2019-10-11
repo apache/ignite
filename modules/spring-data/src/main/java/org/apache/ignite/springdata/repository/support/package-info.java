@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Package contains supporting files required by Spring Data framework.
  */
+
 package org.apache.ignite.springdata.repository.support;

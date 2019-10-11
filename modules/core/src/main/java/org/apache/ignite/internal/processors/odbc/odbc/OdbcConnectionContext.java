@@ -113,7 +113,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion defaultVersion() {
         return CURRENT_VER;
     }
 
