@@ -16,8 +16,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Set;
 import javax.management.ObjectName;
+import java.util.Set;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;

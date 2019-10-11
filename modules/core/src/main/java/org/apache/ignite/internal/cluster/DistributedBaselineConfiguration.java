@@ -23,9 +23,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -59,12 +58,12 @@ public class DistributedBaselineConfiguration {
     private final IgniteLogger log;
 
     /** Value of manual baseline control or auto adjusting baseline. */
-    private final DistributedBooleanProperty baselineAutoAdjustEnabled =
+    private final DistributedChangeableProperty<Boolean> baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled");
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
-    private final DistributedLongProperty baselineAutoAdjustTimeout =
+    private final DistributedChangeableProperty<Long> baselineAutoAdjustTimeout =
         detachedLongProperty("baselineAutoAdjustTimeout");
 
     /**
