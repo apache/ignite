@@ -194,17 +194,6 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Reinitializes affinity without offline nodes.
-     *
-     * @param topVer Topology version.
-     */
-    public void reinitializeWithoutOfflineNodes(AffinityTopologyVersion topVer) {
-        idealAssignment(topVer, baselineAssignmentWithoutOfflineNodes(topVer));
-
-        initialize(topVer, initializedAssignmentWithoutOfflineNodes(topVer));
-    }
-
-    /**
      * Initializes affinity with given topology version and assignment.
      *
      * @param topVer Topology version.
@@ -460,17 +449,17 @@ public class GridAffinityAssignmentCache {
 
     /**
      * @param topVer Topology version.
-     * @param assignment Assignment.
      * @return Baseline assignment with filtered out offline nodes.
      */
-    private List<List<ClusterNode>> assignmentWithoutOfflineNodes(List<List<ClusterNode>> assignment,
-        AffinityTopologyVersion topVer) {
+    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
         Map<Object, ClusterNode> alives = new HashMap<>();
 
         for (ClusterNode node : ctx.discovery().nodes(topVer)) {
             if (!node.isClient() && !node.isDaemon())
                 alives.put(node.consistentId(), node);
         }
+
+        List<List<ClusterNode>> assignment = baselineAssignment.assignment();
 
         List<List<ClusterNode>> result = new ArrayList<>(assignment.size());
 
@@ -493,22 +482,6 @@ public class GridAffinityAssignmentCache {
         }
 
         return result;
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @return Baseline assignment with filtered out offline nodes.
-     */
-    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
-        return assignmentWithoutOfflineNodes(baselineAssignment.assignment(), topVer);
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @return Current assignment with filtered out offline nodes.
-     */
-    private List<List<ClusterNode>> initializedAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
-        return assignmentWithoutOfflineNodes(head.get().assignment(), topVer);
     }
 
     /**
