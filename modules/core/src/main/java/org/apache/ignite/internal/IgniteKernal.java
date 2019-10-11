@@ -174,6 +174,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
@@ -1218,7 +1219,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridJobProcessor(ctx));
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-                startProcessor(new GridRestProcessor(ctx));
+                startProcessor(createComponent(IgniteRestProcessor.class, ctx));
                 startProcessor(new DataStreamProcessor(ctx));
                 startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
                 startProcessor(new GridContinuousProcessor(ctx));
@@ -4401,6 +4402,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if(cls.equals(GridSecurityProcessor.class))
             return null;
+
+        if (cls.equals(IgniteRestProcessor.class))
+            return (T)new GridRestProcessor(ctx);
 
         Class<T> implCls = null;
 
