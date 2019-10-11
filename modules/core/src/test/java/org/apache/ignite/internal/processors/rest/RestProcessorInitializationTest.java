@@ -119,7 +119,7 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
+        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
             return null;
         }
 
