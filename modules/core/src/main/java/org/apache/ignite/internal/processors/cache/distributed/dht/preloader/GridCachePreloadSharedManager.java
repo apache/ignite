@@ -467,10 +467,19 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // File page store should be reinitialized.
             assert cctx.pageStore().exists(grpId, partId) : "File doesn't exist [grpId=" + grpId + ", p=" + partId + "]";
 
-            GridDhtLocalPartition restoredPart = ctx.topology().forceCreatePartition(partId, true);
+            GridDhtLocalPartition restoredPart = ctx.topology().localPartition(partId);
+
+            restoredPart.readOnly(false);
+
+            // todo
+            restoredPart.dataStore().reinit();
+
+            // todo should be called on reinitilization?
+            // todo check on large partition
+            restoredPart.entriesMap(null).map.clear();
 
             // Switching to new datastore.
-            restoredPart.readOnly(false);
+//            restoredPart.readOnly(false);
 
             PartitionUpdateCounter snpPartCntr = restoredPart.dataStore().partUpdateCounter();
 

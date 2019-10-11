@@ -104,6 +104,11 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     }
 
     /** {@inheritDoc} */
+    @Override public void reinit() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public long nextUpdateCounter() {
         return delegate.nextUpdateCounter();
     }

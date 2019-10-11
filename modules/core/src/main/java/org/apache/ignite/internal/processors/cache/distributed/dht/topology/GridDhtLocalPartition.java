@@ -260,7 +260,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMapHolder entriesMap(GridCacheContext cctx) {
+    @Override public CacheMapHolder entriesMap(GridCacheContext cctx) {
         if (grp.sharedGroup())
             return cacheMapHolder(cctx);
 
