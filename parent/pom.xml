@@ -359,7 +359,7 @@
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://hadoop.apache.org/docs/current/api/</link>
+                            <link>https://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
                             <group>
