@@ -285,7 +285,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
             ClusterNodeView.class,
-            this::allNodes,
+            () -> F.concat(false, allNodes(), daemonNodes()),
             ClusterNodeView::new);
     }
 
