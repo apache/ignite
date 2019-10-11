@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +28,10 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 
-public class HandlingUncheckedExceptionOnRebalanceTest extends GridCommonAbstractTest {
+/**
+ * Test case for checking uncaught exceptions handling during rebalancing.
+ */
+public class GridCacheRebalancingFailureHandlingTest extends GridCommonAbstractTest {
     /** Node failure occurs. */
     private final CountDownLatch failure = new CountDownLatch(1);
 
