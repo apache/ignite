@@ -19,7 +19,6 @@ package org.apache.ignite.plugin;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Validates node on join, it requires nodes to provide token that matches configured on primary node.
  */
-public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugin {
+public class NodeValidationPluginProvider extends AbstractTestPluginProvider implements IgnitePlugin {
     /** */
     private NodeValidationPluginConfiguration pluginConfiguration;
 
@@ -55,11 +54,6 @@ public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugi
     }
 
     /** {@inheritDoc} */
-    @Override public String copyright() {
-        return "";
-    }
-
-    /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
         return this;
     }
@@ -83,36 +77,6 @@ public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-        //no-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        //no-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
-        //no-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
-        //no-op
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
         if (!enabled)
             return null;
@@ -120,17 +84,6 @@ public class NodeValidationPluginProvider implements PluginProvider, IgnitePlugi
         MyDiscoData data = new MyDiscoData(pluginConfiguration.getToken());
 
         return data;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        if (!enabled)
-            return;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // no-op
     }
 
     /** {@inheritDoc} */

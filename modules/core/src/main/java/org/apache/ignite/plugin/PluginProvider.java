@@ -28,11 +28,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Pluggable Ignite component.
  * <p>
- * Ignite plugins are loaded using JDK {@link ServiceLoader}.
+ * Ignite plugins can be loaded using JDK {@link ServiceLoader} or set up explicitly via
+ * {@link IgniteConfiguration#setPluginProviders(PluginProvider[])}.
  * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
- * If plugin requires configuration it can be set in {@link IgniteConfiguration} using
+ * If {@link ServiceLoader} approach of plugin loading is chosen, plugin required configuration can be set via
  * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
  *
+ * @see IgniteConfiguration#setPluginProviders(PluginProvider[])
  * @see IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)
  * @see PluginContext
  */
