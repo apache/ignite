@@ -113,7 +113,7 @@ public class Step_11_Boosting {
                     normalizationPreprocessor
                 );
 
-                System.out.println("\n>>> Trained model: " + mdl);
+                System.out.println("\n>>> Trained model: " + mdl.toString(true));
 
                 double accuracy = Evaluator.evaluate(
                     dataCache,
