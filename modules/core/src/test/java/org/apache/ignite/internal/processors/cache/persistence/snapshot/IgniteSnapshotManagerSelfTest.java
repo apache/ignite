@@ -183,6 +183,15 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ds.addData(i, new TestOrderItem(i, i));
         }
 
+        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 2048; i++)
+                ds.addData(i, new TestOrderItem(i, i) {
+                    @Override public String toString() {
+                        return "_" + super.toString();
+                    }
+                });
+        }
+
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
@@ -514,14 +523,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             this.delegate = delegate;
         }
 
+        /** {@inheritDoc} */
+        @Override public void receiveMeta(Set<File> binaryMeta, Set<File> marshallerMeta, File ccfg) {
+            delegate.receiveMeta(binaryMeta, marshallerMeta, ccfg);
+        }
+
+        /** {@inheritDoc} */
         @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             delegate.receivePart(part, cacheDirName, pair, length);
         }
 
+        /** {@inheritDoc} */
         @Override public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair) {
             delegate.receiveDelta(delta, cacheDirName, pair);
         }
 
+        /** {@inheritDoc} */
         @Override public void close() throws IOException {
             delegate.close();
         }

@@ -1317,6 +1317,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public void receiveMeta(Set<File> binaryMeta, Set<File> marshallerMeta, File ccfg) {
+            // There is no need to send meta to the remote node.
+        }
+
+        /** {@inheritDoc} */
         @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             try {
                 sndr.send(part, 0, length, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.FILE);
@@ -1404,6 +1409,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             this.ioFactory = ioFactory;
             this.storeFactory = storeFactory;
             this.pageSize = pageSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMeta(Set<File> binaryMeta, Set<File> marshallerMeta, File ccfg) {
+            // todo save configuration
         }
 
         /** {@inheritDoc} */

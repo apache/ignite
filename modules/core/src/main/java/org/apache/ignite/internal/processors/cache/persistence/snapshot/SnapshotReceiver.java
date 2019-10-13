@@ -19,12 +19,20 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.Set;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
 /**
  *
  */
 interface SnapshotReceiver extends Closeable {
+    /**
+     * @param binaryMeta The set of binary metadata files.
+     * @param marshallerMeta The set of marshalled objects.
+     * @param ccfg Cache configuration file.
+     */
+    public void receiveMeta(Set<File> binaryMeta, Set<File> marshallerMeta, File ccfg);
+
     /**
      * @param part Partition file to receive.
      * @param cacheDirName Cache group directory name.
