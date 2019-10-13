@@ -520,7 +520,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean disableWal(String cacheName) throws IgniteException;
 
     /**
-     * Disables write-ahead logging for specified caches.
+     * Disables write logging for specified caches from the one cache group.
      * @param cacheNames Cache names.
      * @return Whether WAL disabled by this call.
      * @throws IgniteException If error occurs.
@@ -531,7 +531,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean disableWal(Collection<String> cacheNames) throws IgniteException;
 
     /**
-     * Disables write-ahead logging for specified caches.
+     * Disables write-ahead logging for all caches.
      *
      * @throws IgniteException If error occurs.
      * @see #disableWal(String)
@@ -559,7 +559,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean enableWal(String cacheName) throws IgniteException;
 
     /**
-     * Enables write-ahead logging for specified caches.
+     * Enables write logging for specified caches from the one cache group.
      *
      * @param cacheNames Cache names.
      * @return Whether WAL disabled by this call.
