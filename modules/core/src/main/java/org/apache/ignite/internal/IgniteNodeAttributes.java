@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+
 /**
  * This class defines constants (NOT enums) for <b>internally-used</b> node attributes.
  */
@@ -190,7 +192,11 @@ public final class IgniteNodeAttributes {
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
-    /** Encryption master key digest. */
+    /**
+     * Encryption master key digest.
+     *
+     * @deprecated {@link DiscoveryDataBag} is used instead it since version 2.8.
+     */
     @Deprecated
     public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
 

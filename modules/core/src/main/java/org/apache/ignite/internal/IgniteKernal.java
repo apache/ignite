@@ -1190,6 +1190,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.add(discoMgr, false);
 
+            // Start the encryption manager after assigning the discovery manager to context, so it will be
+            // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
 
             // Start processors before discovery manager, so they will

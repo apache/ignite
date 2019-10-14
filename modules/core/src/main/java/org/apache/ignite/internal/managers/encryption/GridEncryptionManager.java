@@ -713,7 +713,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 byte[] encGrpKey = (byte[])val;
 
-                grpEncKeys.computeIfAbsent(grpId, i -> getSpi().decryptKey(encGrpKey));
+                grpEncKeys.computeIfAbsent(grpId, k -> getSpi().decryptKey(encGrpKey));
             }, true);
 
             if (!grpEncKeys.isEmpty()) {
@@ -956,7 +956,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         masterKeyId = rec.getMasterKeyId();
 
         for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
-            grpEncKeys.computeIfAbsent(entry.getKey(), i -> getSpi().decryptKey(entry.getValue()));
+            grpEncKeys.computeIfAbsent(entry.getKey(), k -> getSpi().decryptKey(entry.getValue()));
 
         forceWriteAllKeysToMetaStore = true;
     }
@@ -1306,6 +1306,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * Master key id future.
+     * <p>
+     * Used to request a cluster master key id on the client or daemon side.
      */
     private class MasterKeyIdFuture extends GridFutureAdapter<String> {
         /** */

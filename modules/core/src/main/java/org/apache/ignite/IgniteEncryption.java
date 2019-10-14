@@ -34,6 +34,8 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  *
  * IgniteEncryption encryption = ignite.encryption();
  * </pre>
+ * Two types of keys are involved in data encryption: group and master keys.
+ * <p>
  * Group key encrypts data of cache group caches. Each group key is encrypted by a master key. Encrypted group key and
  * encrypted data are written to disk.
  * <p>
