@@ -192,11 +192,23 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
 
         checkIndexes(List::isEmpty);
 
-        List<Object> expGrp = Arrays.asList(
+        List<Object> expGrpBoth = Arrays.asList(
             Arrays.asList("cache1", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047377, "cache1", 98629247, "group", 10),
             Arrays.asList("cache1", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047377, "cache1", 98629247, "group", null),
             Arrays.asList("cache1", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047377, "cache1", 98629247, "group", 5),
-            Arrays.asList("cache1", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047377, "cache1", 98629247, "group", null)
+            Arrays.asList("cache1", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047377, "cache1", 98629247, "group", null),
+
+            Arrays.asList("cache2", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047376, "cache2", 98629247, "group", 10),
+            Arrays.asList("cache2", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047376, "cache2", 98629247, "group", null),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047376, "cache2", 98629247, "group", 5),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047376, "cache2", 98629247, "group", null)
+        );
+
+        List<Object> expGrpSingle = Arrays.asList(
+            Arrays.asList("cache2", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047376, "cache2", 98629247, "group", 10),
+            Arrays.asList("cache2", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047376, "cache2", 98629247, "group", null),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047376, "cache2", 98629247, "group", 5),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047376, "cache2", 98629247, "group", null)
         );
 
         driver.createCache(new CacheConfiguration<>("cache1")
@@ -205,13 +217,15 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
                 .setIndexes(Collections.singleton(new QueryIndex("i"))))));
 
         driver.createCache(new CacheConfiguration<>("cache2")
-            .setGroupName("group"));
+            .setGroupName("group")
+            .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, TestValue.class)
+                .setIndexes(Collections.singleton(new QueryIndex("i"))))));
 
-        checkIndexes(expGrp::equals);
+        checkIndexes(expGrpBoth::equals);
 
         driver.destroyCache("cache1");
 
-        checkIndexes(List::isEmpty);
+        checkIndexes(expGrpSingle::equals);
     }
 
     /** */
@@ -248,7 +262,7 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
                 continue;
 
             assertTrue(GridTestUtils.waitForCondition(() -> {
-                List<List<?>> indexes = execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY INDEX_NAME");
+                List<List<?>> indexes = execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY CACHE_NAME, INDEX_NAME");
 
                 return checker.test(indexes);
             }, 1000));

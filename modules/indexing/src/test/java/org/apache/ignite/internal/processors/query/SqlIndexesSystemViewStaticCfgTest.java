@@ -106,10 +106,8 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
             startNodes();
 
             for (Ignite ign : G.allGrids()) {
-                SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME");
-
                 Throwable e = GridTestUtils.assertThrowsWithCause(
-                    () -> ign.cache("cache").query(qry).getAll(),
+                    () -> execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME"),
                     IgniteSQLException.class);
 
                 assertTrue(e.getMessage().contains("Schema \"IGNITE\" not found"));
@@ -124,6 +122,7 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     public void testStaticCacheCfg() throws Exception {
         ccfg = (CacheConfiguration<Object, Object>[])new CacheConfiguration[] {
             new CacheConfiguration<>("cache")
@@ -142,6 +141,20 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
 
         checkIndexes(expCache::equals);
 
+        driver.cluster().active(false);
+
+        for (Ignite ign : G.allGrids()) {
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME");
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> ign.cache("cache").query(qry).getAll(),
+                IgniteException.class);
+        }
+
+        driver.cluster().active(true);
+
+        checkIndexes(expCache::equals);
+
         driver.destroyCache("cache");
 
         checkIndexes(List::isEmpty);
@@ -156,22 +169,36 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
                 .setIndexes(Collections.singleton(new QueryIndex("i"))))),
             new CacheConfiguration<>("cache2")
                 .setGroupName("group")
+                .setQueryEntities(Collections.singleton(new QueryEntity(Integer.class, TestValue.class)
+                .setIndexes(Collections.singleton(new QueryIndex("i")))))
         };
 
         startNodes();
 
-        List<Object> expGrp = Arrays.asList(
+        List<Object> expBoth = Arrays.asList(
             Arrays.asList("cache1", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047377, "cache1", 98629247, "group", 10),
             Arrays.asList("cache1", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047377, "cache1", 98629247, "group", null),
             Arrays.asList("cache1", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047377, "cache1", 98629247, "group", 5),
-            Arrays.asList("cache1", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047377, "cache1", 98629247, "group", null)
+            Arrays.asList("cache1", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047377, "cache1", 98629247, "group", null),
+
+            Arrays.asList("cache2", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047376, "cache2", 98629247, "group", 10),
+            Arrays.asList("cache2", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047376, "cache2", 98629247, "group", null),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047376, "cache2", 98629247, "group", 5),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047376, "cache2", 98629247, "group", null)
         );
 
-        checkIndexes(expGrp::equals);
+        List<Object> expSingle = Arrays.asList(
+            Arrays.asList("cache2", "TESTVALUE", "TESTVALUE_I_ASC_IDX", "\"I\" ASC, \"_KEY\" ASC", "BTREE", false, false, -1368047376, "cache2", 98629247, "group", 10),
+            Arrays.asList("cache2", "TESTVALUE", "__SCAN_", null, "SCAN", false, false, -1368047376, "cache2", 98629247, "group", null),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK", "\"_KEY\" ASC", "BTREE", true, true, -1368047376, "cache2", 98629247, "group", 5),
+            Arrays.asList("cache2", "TESTVALUE", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1368047376, "cache2", 98629247, "group", null)
+        );
+
+        checkIndexes(expBoth::equals);
 
         driver.destroyCache("cache1");
 
-        checkIndexes(List::isEmpty);
+        checkIndexes(expSingle::equals);
     }
 
     /** */
@@ -194,7 +221,7 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
     private void checkIndexes(Predicate<List<List<?>>> checker) throws Exception {
         for (Ignite ign : G.allGrids()) {
             assertTrue(GridTestUtils.waitForCondition(() -> {
-                List<List<?>> indexes = execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY INDEX_NAME");
+                List<List<?>> indexes = execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY CACHE_NAME, INDEX_NAME");
 
                 return checker.test(indexes);
             }, 1000));
