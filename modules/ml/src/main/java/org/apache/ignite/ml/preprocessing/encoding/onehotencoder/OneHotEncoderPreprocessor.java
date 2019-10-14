@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialValueException;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
@@ -99,7 +99,7 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                         res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] = 1.0;
 
                     } else
-                        throw new UnknownCategorialFeatureValue(tmpObj.toString());
+                        throw new UnknownCategorialValueException(tmpObj.toString());
                 }
 
             } else {

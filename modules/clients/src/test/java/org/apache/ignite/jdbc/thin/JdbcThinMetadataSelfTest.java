@@ -344,7 +344,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_ATTRIBUTES",
                 "SYS.TABLES",
                 "SYS.CLIENT_CONNECTIONS",
-                "SYS.TRANSACTIONS"
+                "SYS.TRANSACTIONS",
+                "SYS.VIEWS",
+                "SYS.TABLE_COLUMNS",
+                "SYS.VIEW_COLUMNS",
+                "SYS.QUERY_CONTINUOUS"
             ))
         );
     }
@@ -622,8 +626,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
                 "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
                 "SYS.CACHE_GROUPS.BACKUPS.null.10",
-                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
-                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.INDEXES.CACHE_ID.null.10",
                 "SYS.INDEXES.CACHE_NAME.null.2147483647",
                 "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
@@ -657,7 +659,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.VERSION.null.2147483647",
                 "SYS.NODES.IS_CLIENT.null.1",
                 "SYS.NODES.IS_DAEMON.null.1",
-                "SYS.NODES.NODE_ORDER.null.10",
+                "SYS.NODES.IS_LOCAL.null.1",
+                "SYS.NODES.NODE_ORDER.null.19",
                 "SYS.NODES.ADDRESSES.null.2147483647",
                 "SYS.NODES.HOSTNAMES.null.2147483647",
                 "SYS.NODE_ATTRIBUTES.NODE_ID.null.2147483647",
@@ -720,9 +723,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
-                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
-                "SYS.TABLES.CACHE_GROUP_ID.null.10",
-                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
                 "SYS.TABLES.CACHE_NAME.null.2147483647",
                 "SYS.TABLES.SCHEMA_NAME.null.2147483647",
@@ -788,13 +788,51 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TRANSACTIONS.OTHER_NODE_ID.null.2147483647",
                 "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
                 "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
-                "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647"
+                "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
+                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.PREDEFINED.null.1",
+                "SYS.VIEWS.NAME.null.2147483647",
+                "SYS.VIEWS.DESCRIPTION.null.2147483647",
+                "SYS.VIEWS.SCHEMA.null.2147483647",
+                "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null.1",
+                "SYS.TABLE_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCALE.null.10",
+                "SYS.TABLE_COLUMNS.PK.null.1",
+                "SYS.TABLE_COLUMNS.TYPE.null.2147483647",
+                "SYS.TABLE_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.TABLE_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.NULLABLE.null.1",
+                "SYS.TABLE_COLUMNS.PRECISION.null.10",
+                "SYS.TABLE_COLUMNS.AUTO_INCREMENT.null.1",
+                "SYS.VIEW_COLUMNS.NULLABLE.null.1",
+                "SYS.VIEW_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.TYPE.null.2147483647",
+                "SYS.VIEW_COLUMNS.PRECISION.null.19",
+                "SYS.VIEW_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.VIEW_COLUMNS.SCALE.null.10",
+                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
+                "SYS.QUERY_CONTINUOUS.OLD_VALUE_REQUIRED.null.1",
+                "SYS.QUERY_CONTINUOUS.KEEP_BINARY.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_MESSAGING.null.1",
+                "SYS.QUERY_CONTINUOUS.AUTO_UNSUBSCRIBE.null.1",
+                "SYS.QUERY_CONTINUOUS.LAST_SEND_TIME.null.19",
+                "SYS.QUERY_CONTINUOUS.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.TOPIC.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.BUFFER_SIZE.null.10",
+                "SYS.QUERY_CONTINUOUS.REMOTE_TRANSFORMER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.DELAYED_REGISTER.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_QUERY.null.1",
+                "SYS.QUERY_CONTINUOUS.NODE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.INTERVAL.null.19",
+                "SYS.QUERY_CONTINUOUS.IS_EVENTS.null.1",
+                "SYS.QUERY_CONTINUOUS.ROUTINE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.REMOTE_FILTER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.CACHE_NAME.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647"
             ));
-
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }

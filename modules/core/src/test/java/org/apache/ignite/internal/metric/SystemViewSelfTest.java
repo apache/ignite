@@ -38,6 +38,9 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -59,7 +62,9 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -70,14 +75,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -427,7 +435,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             int port = g0.configuration().getClientConnectorConfiguration().getPort();
 
-            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_SYS_VIEW);
+            SystemView<ClientConnectionView> conns = g0.context().systemView().view(CLI_CONN_VIEW);
 
             try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
                 assertEquals(1, conns.size());
@@ -459,6 +467,105 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
         }
+    }
+
+    /** */
+    @Test
+    public void testContinuousQuery() throws Exception {
+        try(IgniteEx originNode = startGrid(0); IgniteEx remoteNode = startGrid(1)) {
+            IgniteCache<Integer, Integer> cache = originNode.createCache("cache-1");
+
+            SystemView<ContinuousQueryView> origQrys = originNode.context().systemView().view(CQ_SYS_VIEW);
+            SystemView<ContinuousQueryView> remoteQrys = remoteNode.context().systemView().view(CQ_SYS_VIEW);
+
+            assertEquals(0, origQrys.size());
+            assertEquals(0, remoteQrys.size());
+
+            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
+                .setInitialQuery(new ScanQuery<>())
+                .setPageSize(100)
+                .setTimeInterval(1000)
+                .setLocalListener(evts -> {
+                    // No-op.
+                })
+                .setRemoteFilterFactory(() -> evt -> true)
+            )) {
+                for (int i=0; i<100; i++)
+                    cache.put(i, i);
+
+                checkContinuousQueryView(originNode, origQrys, true);
+                checkContinuousQueryView(originNode, remoteQrys, false);
+            }
+
+            assertEquals(0, origQrys.size());
+            assertEquals(0, remoteQrys.size());
+        }
+    }
+
+    /** */
+    private void checkContinuousQueryView(IgniteEx g, SystemView<ContinuousQueryView> qrys, boolean loc) {
+        assertEquals(1, qrys.size());
+
+        for (ContinuousQueryView cq : qrys) {
+            assertEquals("cache-1", cq.cacheName());
+            assertEquals(100, cq.bufferSize());
+            assertEquals(1000, cq.interval());
+            assertEquals(g.localNode().id(), cq.nodeId());
+
+            if (loc)
+                assertTrue(cq.localListener().startsWith(getClass().getName()));
+            else
+                assertNull(cq.localListener());
+
+            assertTrue(cq.remoteFilter().startsWith(getClass().getName()));
+            assertNull(cq.localTransformedListener());
+            assertNull(cq.remoteTransformer());
+        }
+    }
+
+    /** */
+    @Test
+    public void testNodes() throws Exception {
+        try(IgniteEx g1 = startGrid(0)) {
+            SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
+
+            assertEquals(1, views.size());
+
+            try(IgniteEx g2 = startGrid(1)) {
+                awaitPartitionMapExchange();
+
+                checkViewsState(views, g1.localNode(), g2.localNode());
+                checkViewsState(g2.context().systemView().view(NODES_SYS_VIEW), g2.localNode(), g1.localNode());
+
+            }
+
+            assertEquals(1, views.size());
+        }
+    }
+
+    /** */
+    private void checkViewsState(SystemView<ClusterNodeView> views, ClusterNode loc, ClusterNode rmt) {
+        assertEquals(2, views.size());
+
+        for (ClusterNodeView nodeView : views) {
+            if (nodeView.nodeId().equals(loc.id()))
+                checkNodeView(nodeView, loc, true);
+            else
+                checkNodeView(nodeView, rmt, false);
+        }
+    }
+
+    /** */
+    private void checkNodeView(ClusterNodeView view, ClusterNode node, boolean isLoc) {
+        assertEquals(node.id(), view.nodeId());
+        assertEquals(node.consistentId().toString(), view.consistentId());
+        assertEquals(toStringSafe(node.addresses()), view.addresses());
+        assertEquals(toStringSafe(node.hostNames()), view.hostnames());
+        assertEquals(node.order(), view.nodeOrder());
+        assertEquals(node.version().toString(), view.version());
+        assertEquals(isLoc, view.isLocal());
+        assertEquals(node.isDaemon(), view.isDaemon());
+        assertEquals(node.isClient(), view.isClient());
     }
 
     /** */

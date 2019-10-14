@@ -1250,15 +1250,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 info.cacheId(),
                 grp.storeCacheIdInDataPage()));
 
-            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK) {
-                dataStore.insertRows(batch, initPred);
+            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
+                ctx.database().checkpointReadLock();
+
+                try {
+                    dataStore.insertRows(batch, initPred);
+                } finally {
+                    ctx.database().checkpointReadUnlock();
+                }
 
                 batch.clear();
             }
         }
-
-        if (!batch.isEmpty())
-            dataStore.insertRows(batch, initPred);
     }
 
     /** {@inheritDoc} */
@@ -1804,7 +1807,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 for (DataRowCacheAware row : rows) {
                     row.storeCacheId(cacheIdAwareGrp);
 
-                    if (!initPred.apply(row) && row.value() != null)
+                    if (!initPred.applyx(row) && row.value() != null)
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
             }
