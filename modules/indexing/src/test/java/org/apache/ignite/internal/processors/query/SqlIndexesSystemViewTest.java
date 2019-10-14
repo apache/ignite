@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -95,12 +96,15 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
             Arrays.asList("PUBLIC", "PERSON", "_key_PK_hash", "\"_KEY\" ASC", "HASH", false, true, -1447683814, "SQL_PUBLIC_PERSON", -1447683814, "SQL_PUBLIC_PERSON", null)
         );
 
-        checkIndexes(expInit::equals);
-
         driver.cluster().active(false);
 
-        // Indexes view is empty for inactive cluster in 2.5
-        checkIndexes(List::isEmpty);
+        for (Ignite ign : G.allGrids()) {
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM IGNITE.INDEXES ORDER BY TABLE_NAME, INDEX_NAME");
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> ign.cache("cache").query(qry).getAll(),
+                IgniteException.class);
+        }
 
         driver.cluster().active(true);
 
