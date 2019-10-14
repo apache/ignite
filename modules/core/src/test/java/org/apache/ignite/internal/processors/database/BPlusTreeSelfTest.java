@@ -44,8 +44,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,6 +86,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
@@ -2683,6 +2686,398 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         tree.validateTree();
 
         assertNoLocks();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepTiny() throws IgniteCheckedException {
+        MAX_PER_PAGE = 2;
+
+        TestTree t = createTestTree(true);
+
+        for (int k = 1; k <= 8; k++)
+            t.putx((long)k);
+
+        log.info(t.printTree());
+
+        GridCursor<Void> cur = t.sweep((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
+
+        while (cur.next())
+            cur.get();
+
+        log.info(t.printTree());
+
+        assertFalse(t.removex(2L));
+        assertFalse(t.removex(4L));
+        assertFalse(t.removex(6L));
+        assertFalse(t.removex(8L));
+
+        assertEquals(1L, t.findOne(1L).longValue());
+        assertEquals(3L, t.findOne(3L).longValue());
+        assertEquals(5L, t.findOne(5L).longValue());
+        assertEquals(7L, t.findOne(7L).longValue());
+
+        cur = t.sweep((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 1);
+
+        while (cur.next())
+            cur.get();
+
+        log.info(t.printTree());
+
+        assertTrue(t.isEmpty());
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepAllDegenerateTree() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+
+        TestTree t = createTestTree(true);
+
+        log.info(t.printTree());
+
+        GridCursor<Void> cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+
+        while (cursor.next())
+            cursor.get();
+
+        for (int k = 0; k < 26; k++)
+            t.putx((long)k);
+
+        log.info("height=" + t.rootLevel());
+
+        cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+
+        while (cursor.next())
+            cursor.get();
+
+        log.info(t.printTree());
+
+        assertTrue(t.isEmpty());
+
+        t.destroy();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepLarge() throws IgniteCheckedException {
+        CNT = 10_000;
+
+        TestTree t = createTestTree(true);
+
+        BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 2 == 0;
+
+        for (long k = 0L; k < CNT; k++)
+            t.putx(k);
+
+        log.info("height=" + t.rootLevel());
+
+        GridCursor<Void> cursor = t.sweep(clo);
+
+        while (cursor.next())
+            cursor.get();
+
+        for (long k = 0L; k < CNT; k++) {
+            Long res = t.findOne(k);
+
+            if (k % 2 == 0)
+                assertNull(res);
+            else
+                assertEquals(k, res.longValue());
+        }
+
+        t.destroy();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepConcurrentRemovals() throws IgniteCheckedException {
+        doTestSweepConcurrentRemovals(0);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepConcurrentRemovalsBackwards() throws IgniteCheckedException {
+        doTestSweepConcurrentRemovals(1);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testSweepConcurrentRemovalsAll() throws IgniteCheckedException {
+        doTestSweepConcurrentRemovals(2);
+    }
+
+    /**
+     *
+     * @param mode Mode.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestSweepConcurrentRemovals(int mode) throws IgniteCheckedException {
+        CNT = 10_000;
+
+        final TestTree t = createTestTree(true);
+
+        for (long k = 0L; k < CNT; k++)
+            t.putx(k);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try {
+                switch (mode) {
+                    case 0: {
+                        for (long k = 0L; k < CNT; k++) {
+                            if (k % 2 == 1)
+                                t.removex(k);
+                        }
+
+                        break;
+                    }
+                    case 1: {
+                        for (long k = CNT; k > 0; k--) {
+                            if (k % 2 == 1)
+                                t.removex(k);
+                        }
+                        break;
+                    }
+                    case 2: {
+                        for (long k = 0L; k < CNT; k++)
+                            t.removex(k);
+
+                        break;
+                    }
+                }
+
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        });
+
+        BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 2 == 0;
+
+        GridCursor<Void> cur = t.sweep(clo);
+
+        while (cur.next())
+            cur.get();
+
+        fut.get(getTestTimeout());
+
+        assertTrue(t.isEmpty());
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSweepConcurrentPutRemoveInvoke() throws Exception {
+        MAX_PER_PAGE = 10;
+        CNT = 25_000;
+
+        doTestSweepConcurrentPutRemoveInvoke();
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    private void doTestSweepConcurrentPutRemoveInvoke() throws Exception {
+        TestTree t = createTestTree(true);
+
+        for (long k = 0L; k < CNT; k++)
+            t.putx(k);
+
+        AtomicBoolean stop = new AtomicBoolean();
+        AtomicInteger cnt = new AtomicInteger();
+        AtomicLong lastKey = new AtomicLong();
+
+        Random rnd = new Random();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                while (!stop.get()) {
+                    long k = lastKey.get() + rnd.nextInt(2 * MAX_PER_PAGE);
+
+                    int opt = rnd.nextInt(4);
+
+                    cnt.incrementAndGet();
+
+                    switch (opt) {
+                        case 0: {
+                            t.putx(k);
+
+                            break;
+                        }
+                        case 1: {
+                            final long key = k;
+
+                            t.invoke(k, null, new IgniteTree.InvokeClosure<Long>() {
+                                @Override public void call(@Nullable Long row) {
+                                    // No-op.
+                                }
+
+                                @Override public Long newRow() {
+                                    return key;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return IgniteTree.OperationType.PUT;
+                                }
+                            });
+
+                            break;
+                        }
+                        case 2: {
+                            t.removex(k);
+
+                            break;
+                        }
+                        case 3: {
+                            t.invoke(k, null, new IgniteTree.InvokeClosure<Long>() {
+                                Long old = null;
+
+                                @Override public void call(@Nullable Long row) {
+                                    old = row;
+                                }
+
+                                @Override public Long newRow() {
+                                    return null;
+                                }
+
+                                @Override public IgniteTree.OperationType operationType() {
+                                    return old == null ? IgniteTree.OperationType.NOOP : IgniteTree.OperationType.REMOVE;
+                                }
+                            });
+
+                            break;
+                        }
+                        default:
+                            fail("Unexpected opt=" + opt);
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }, 1, "test");
+
+        BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) -> {
+            lastKey.set(io.getLookupRow(tree, pageAddr, idx));
+
+            return lastKey.get() % MAX_PER_PAGE == 3;
+        };
+
+        while (cnt.get() < 100 && !t.isEmpty()) {
+            GridCursor<Void> cur = t.sweep(clo);
+
+            while (cur.next())
+                cur.get();
+        }
+
+        stop.set(true);
+
+        fut.get(getTestTimeout());
+
+        log.info("Count is " + cnt.get());
+
+        t.destroy();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testConcurrentSweeps() throws IgniteCheckedException {
+        CNT = 25_000;
+
+        doTestConcurrentSweeps();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testConcurrentSweeps2_2000() throws IgniteCheckedException {
+        MAX_PER_PAGE = 2;
+        CNT = 2000;
+
+        doTestConcurrentSweeps();
+    }
+
+    /**
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestConcurrentSweeps() throws IgniteCheckedException {
+        TestTree t = createTestTree(true);
+
+        int cnt = CNT;
+
+        for (long k = 0L; k < CNT; k++) {
+            t.putx(k);
+
+            if (k % 11 == 3 || k % 7 == 4)
+                cnt--;
+        }
+
+        BPlusTree.TreeRowClosure<Long, Long> clo1 = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 11 == 3;
+
+        BPlusTree.TreeRowClosure<Long, Long> clo2 = (tree, io, pageAddr, idx) ->
+            io.getLookupRow(tree, pageAddr, idx) % 7 == 4;
+
+        CyclicBarrier bar = new CyclicBarrier(2);
+
+        Function<BPlusTree.TreeRowClosure<Long, Long>, Runnable> fun = clo -> () -> {
+            try {
+                bar.await(getTestTimeout(), MILLISECONDS);
+
+                GridCursor<Void> cur = t.sweep(clo);
+
+                while (cur.next())
+                    cur.get();
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(fun.apply(clo1));
+
+        fun.apply(clo2).run();
+
+        fut.get(getTestTimeout());
+
+        assertEquals(cnt, t.size());
+
+        log.info("cnt = " + cnt);
+
+        t.destroy();
     }
 
     /**

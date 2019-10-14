@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,27 +42,28 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
- *
+ * Tests for index partition clearing.
  */
-@RunWith(Parameterized.class)
 public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     /** */
     private final static int NUM_KEYS = 1_000;
@@ -72,8 +75,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     private final static long TIMEOUT = 600_000L;
 
     /** */
-    @Parameterized.Parameter(0)
-    public int maxInlineSize;
+    private int maxInlineSize = 20;
 
     /**
      * {@inheritDoc}
@@ -102,14 +104,6 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
         return TIMEOUT;
     }
 
-    @Parameterized.Parameters(name = "maxInlineSize={0}")
-    public static Collection parameters() {
-        return Arrays.asList(new Object[][] {
-            {0},
-            //{20},
-        });
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
@@ -118,8 +112,13 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
         igniteCfg.setConsistentId(igniteInstanceName);
 
         igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setWalSegmentSize(16 * 1024 * 1024)
+                .setCheckpointFrequency(20 * 60 * 1000)
                 .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(1024 * 1024 * 1024)
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(1024 * 1024 * 1024)
                 )
             );
 
@@ -190,9 +189,37 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testPartitionSetEvictInlineSize0() throws Exception {
+        maxInlineSize = 0;
+
+        doTestPartitionSetEvict("cache1");
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testPartitionSetEvict() throws Exception {
+        doTestPartitionSetEvict("cache1");
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionSetEvictNoCacheGroup() throws Exception {
+        doTestPartitionSetEvict("cache3");
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    private void doTestPartitionSetEvict(String cacheName) throws Exception {
         startGrids(2);
 
         IgniteEx grid = grid(0);
@@ -205,9 +232,9 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         fillData(grid);
 
-        IgniteCache cache = grid.cache("cache1");
+        IgniteCache cache = grid.cache(cacheName);
 
-        GridCacheContext cctx = grid.cachex("cache1").context();
+        GridCacheContext cctx = grid.cachex(cacheName).context();
 
         List<Integer> partIds = evictingPartitionsAfterJoin(grid, cache, NUM_PARTS);
 
@@ -230,19 +257,14 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         fut.get(getTestTimeout());
 
-        for (GridDhtLocalPartition part : parts) {
-            assertTrue(part.markForDestroy());
-
-            part.setState(GridDhtPartitionState.EVICTED);
-
-            part.destroy();
-
-            part.awaitDestroy();
+        if (cctx.group().sharedGroup()) {
+            for (GridCacheContext cctx0 : cctx.group().caches())
+                checkIndexRowsAreCleared(grid, cctx0.name(), partIds);
         }
+        else
+            checkIndexRowsAreCleared(grid, cacheName, partIds);
 
-        checkIndexRows(grid, partIds);
-
-        grid(2).cachex("cache1").cache().context().group().preloader().rebalanceFuture().get(getTestTimeout());
+        grid(2).cachex(cacheName).cache().context().group().preloader().rebalanceFuture().get(getTestTimeout());
 
         stopGrid(2);
 
@@ -250,51 +272,9 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         grid.cluster().active(true);
 
-        grid.cachex("cache1").cache().context().group().preloader().rebalanceFuture().get(getTestTimeout());
+        grid.cachex(cacheName).cache().context().group().preloader().rebalanceFuture().get(getTestTimeout());
 
-        assertPartitionsSame(idleVerify(grid, "cache1"));
-    }
-
-    private void checkIndexRows(IgniteEx ignite, List<Integer> clearedParts) {
-        long cnt = 0L;
-
-        for (int k = 0; k < NUM_KEYS/2; k++) {
-            if (!clearedParts.contains(k % NUM_PARTS)) // ~ cctx.affinity().partition(k)
-                cnt++;
-        }
-
-        checkIndexRows(ignite, "\"cache1\".TBL_TESTVALUEA", clearedParts, cnt);
-        checkIndexRows(ignite, "\"cache1\".TBL_TESTVALUEB", clearedParts, cnt);
-        checkIndexRows(ignite, "\"cache2\".TBL_TESTVALUEA", clearedParts, cnt);
-        checkIndexRows(ignite, "\"cache2\".TBL_TESTVALUEB", clearedParts, cnt);
-    }
-
-    private void checkIndexRows(IgniteEx ignite, String schemaTable, List<Integer> clearedParts, long cnt) {
-        List<List<?>> r = ignite.context().query().querySqlFields(
-            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE A > ? AND B > ?")
-                .setLocal(true)
-                .setArgs(Integer.toString(0), 0)
-                .setPartitions(U.toIntArray(clearedParts))
-            , false).getAll();
-
-        assertEquals(0L, r.get(0).get(0));
-
-        r = ignite.context().query().querySqlFields(
-            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE C > ?")
-                .setLocal(true)
-                .setArgs(Integer.toString(0))
-                .setPartitions(U.toIntArray(clearedParts))
-            , false).getAll();
-
-        assertEquals(0L, r.get(0).get(0));
-
-        r = ignite.context().query().querySqlFields(
-            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable)
-                .setLocal(true)
-                .setPartitions(IntStream.range(0, NUM_PARTS).toArray())
-            , false).getAll();
-
-        assertEquals(cnt, r.get(0).get(0));
+        assertPartitionsSame(idleVerify(grid, cacheName));
     }
 
     /**
@@ -327,7 +307,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         List<Integer> partIds = evictingPartitionsAfterJoin(grid, cache, NUM_PARTS);
 
-        List<GridDhtLocalPartition> parts = partIds.stream().map(id-> cctx.topology().localPartition(id))
+        List<GridDhtLocalPartition> parts = partIds.stream().map(id -> cctx.topology().localPartition(id))
             .collect(Collectors.toList());
 
         parts.forEach(GridDhtLocalPartition::reserve);
@@ -344,22 +324,277 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         blkIdx.waitPhase1();
 
-        GridTestUtils.runAsync(() -> stopGrid(0));
-
-        U.sleep(500);
+        stopGrid(0);
 
         blkIdx.startPhase2();
 
-        GridTestUtils.assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class, "");
+        GridTestUtils.assertThrows(log, () -> fut.get(getTestTimeout()),
+            IgniteCheckedException.class, "is stopping");
     }
 
-    // TODO: Need recovery test to see if new delta record works
-    // TODO: Is concurrent IndexRebuild and eviction possible? indexes not reported by GridH2Table while rebuilding any.
-    // TODO: exclusivePartitionsEvict(grp, parts) on two different cache groups.
-    // TODO: part.clearAsync() after exclusivePartitionsEvict(grp, parts)
-    // TODO: exclusivePartitionsEvict(grp, parts) after part.clearAsync()
-    // TODO: Simultaneous exclusive evict and regular clear on different partitions of the same cache group.
-    // TODO: checks to prevent mvcc, dr, cq, cache-store, indexing spi, text index.
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testSinglePartitionClearAfterExclusiveEvict() throws Exception {
+        startGrids(2);
+
+        IgniteEx grid = grid(0);
+
+        grid.cluster().baselineAutoAdjustEnabled(false);
+
+        grid.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        fillData(grid);
+
+        GridCacheContext cctx = grid.cachex("cache1").context();
+
+        List<Integer> partIds = F.asList(0, 4, 8);
+
+        List<GridDhtLocalPartition> parts = partIds.stream().map(id -> cctx.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        parts.forEach(GridDhtLocalPartition::moving);
+
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+
+        fut.get(getTestTimeout());
+
+        parts.forEach(GridDhtLocalPartition::clearAsync);
+
+        CountDownFuture clFut = new CountDownFuture(partIds.size());
+
+        parts.forEach(p->p.onClearFinished(f -> {
+            if (f.error() == null)
+                clFut.onDone();
+            else
+                clFut.onDone(f.error());
+        }));
+
+        clFut.get(getTestTimeout());
+
+        parts.forEach(p->assertEquals(0, p.fullSize()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testPartitionSetEvictOnTwoCacheGroups() throws Exception {
+        startGrids(2);
+
+        IgniteEx grid = grid(0);
+
+        grid.cluster().baselineAutoAdjustEnabled(false);
+
+        grid.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        fillData(grid);
+
+        GridCacheContext cctx1 = grid.cachex("cache1").context();
+        GridCacheContext cctx2 = grid.cachex("cache3").context();
+
+        List<Integer> partIds = F.asList(0, 4, 8);
+
+        List<GridDhtLocalPartition> parts1 = partIds.stream().map(id -> cctx1.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        List<GridDhtLocalPartition> parts2 = partIds.stream().map(id -> cctx2.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        List<GridDhtLocalPartition> parts = new ArrayList<>(parts1);
+        parts.addAll(parts2);
+
+        parts.forEach(GridDhtLocalPartition::moving);
+
+        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().evictPartitionsExclusively(cctx1.group(), parts1);
+        IgniteInternalFuture<Void> fut2 = cctx2.shared().evict().evictPartitionsExclusively(cctx2.group(), parts2);
+
+        fut1.get(getTestTimeout());
+        fut2.get(getTestTimeout());
+
+        checkIndexRowsAreCleared(grid, "cache1", partIds);
+        checkIndexRowsAreCleared(grid, "cache2", partIds);
+        checkIndexRowsAreCleared(grid, "cache3", partIds);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testDifferentEvictTypesTwoCacheGroups() throws Exception {
+        startGrids(2);
+
+        IgniteEx grid = grid(0);
+
+        grid.cluster().baselineAutoAdjustEnabled(false);
+
+        grid.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        fillData(grid);
+
+        GridCacheContext cctx1 = grid.cachex("cache1").context();
+        GridCacheContext cctx2 = grid.cachex("cache3").context();
+
+        List<Integer> partIds = F.asList(0, 4, 8);
+
+        List<GridDhtLocalPartition> parts1 = partIds.stream().map(id -> cctx1.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        List<GridDhtLocalPartition> parts2 = partIds.stream().map(id -> cctx2.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        List<GridDhtLocalPartition> parts = new ArrayList<>(parts1);
+
+        parts.addAll(parts2);
+
+        parts.forEach(GridDhtLocalPartition::moving);
+
+        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().evictPartitionsExclusively(cctx1.group(), parts1);
+
+        parts2.forEach(GridDhtLocalPartition::clearAsync);
+
+        CountDownFuture clFut = new CountDownFuture(partIds.size());
+
+        parts2.forEach(p->p.onClearFinished(f -> {
+            if (f.error() == null)
+                clFut.onDone();
+            else
+                clFut.onDone(f.error());
+        }));
+
+        fut1.get(getTestTimeout());
+        clFut.get(getTestTimeout());
+
+        checkIndexRowsAreCleared(grid, "cache1", partIds);
+        checkIndexRowsAreCleared(grid, "cache2", partIds);
+        checkIndexRowsAreCleared(grid, "cache3", partIds);
+
+        parts2.forEach(p->assertEquals(0, p.fullSize()));
+    }
+
+    /**
+     * Check that wal delta records are applied OK.
+     */
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testWalRecovery() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        grid.cluster().baselineAutoAdjustEnabled(false);
+
+        grid.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        fillData(grid);
+
+        GridCacheContext cctx = grid.cachex("cache1").context();
+
+        List<Integer> partIds = F.asList(0, 4, 8);
+
+        List<GridDhtLocalPartition> parts = partIds.stream().map(id -> cctx.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        parts.forEach(GridDhtLocalPartition::moving);
+
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+
+        fut.get(getTestTimeout());
+
+        partIds = F.asList(1, 2, 3, 5, 6, 7, 9);
+
+        parts = partIds.stream().map(id -> cctx.topology().localPartition(id))
+            .collect(Collectors.toList());
+
+        parts.forEach(GridDhtLocalPartition::moving);
+
+        fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+
+        fut.get(getTestTimeout());
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cctx.shared().database();
+
+        db.forceCheckpoint("test").finishFuture().get();
+
+        db.enableCheckpoints(false).get();
+
+        CheckpointEntry cpEntry = db.checkpointHistory().lastCheckpoint();
+
+        String cpEndFileName = GridCacheDatabaseSharedManager.checkpointFileName(cpEntry, CheckpointEntryType.END);
+
+        Files.delete(Paths.get(db.checkpointDirectory().getAbsolutePath(), cpEndFileName));
+
+        stopGrid(0);
+
+        grid = startGrid(0);
+
+        grid.cluster().active(true);
+    }
+
+    /**
+     * Check that indexes do not return rows from cleared partitions.
+     *
+     * @param ignite Ignite.
+     * @param cacheName Cache name.
+     * @param clearedParts Id of partitions that were cleared.
+     */
+    private void checkIndexRowsAreCleared(IgniteEx ignite, String cacheName, List<Integer> clearedParts) {
+        long cnt = 0L;
+
+        for (int k = 0; k < NUM_KEYS/2; k++) {
+            if (!clearedParts.contains(k % NUM_PARTS)) // ~ cctx.affinity().partition(k)
+                cnt++;
+        }
+
+        checkIndexRowsAreCleared(ignite, "\"" + cacheName + "\".TBL_TESTVALUEA", clearedParts, cnt);
+        checkIndexRowsAreCleared(ignite, "\"" + cacheName + "\".TBL_TESTVALUEB", clearedParts, cnt);
+    }
+
+    /**
+     * Check that indexes do not return rows from cleared partitions.
+     *
+     * @param ignite Ignite.
+     * @param schemaTable Schema and table name.
+     * @param clearedParts Id of partitions that were cleared.
+     * @param cnt Count of rows expected to exist overall (for all other partitions).
+     */
+    private void checkIndexRowsAreCleared(IgniteEx ignite, String schemaTable, List<Integer> clearedParts, long cnt) {
+        List<List<?>> r = ignite.context().query().querySqlFields(
+            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE A > ? AND B > ?")
+                .setLocal(true)
+                .setArgs(Integer.toString(0), 0)
+                .setPartitions(U.toIntArray(clearedParts))
+            , false).getAll();
+
+        assertEquals(0L, r.get(0).get(0));
+
+        r = ignite.context().query().querySqlFields(
+            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE C > ?")
+                .setLocal(true)
+                .setArgs(Integer.toString(0))
+                .setPartitions(U.toIntArray(clearedParts))
+            , false).getAll();
+
+        assertEquals(0L, r.get(0).get(0));
+
+        r = ignite.context().query().querySqlFields(
+            new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable)
+                .setLocal(true)
+                .setPartitions(IntStream.range(0, NUM_PARTS).toArray())
+            , false).getAll();
+
+        assertEquals(cnt, r.get(0).get(0));
+    }
 
     /**
      *
@@ -369,7 +604,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     private void fillData(IgniteEx ignite) throws Exception {
         Collection<String> caches = F.asList("cache1", "cache2", "cache3");
 
-        ignite.context().cache().changeWalMode(caches, false);
+        ignite.context().cache().changeWalMode(caches, false).get();
 
         fillData(ignite, "cache1");
         fillData(ignite, "cache2");
@@ -377,7 +612,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         forceCheckpoint(ignite);
 
-        ignite.context().cache().changeWalMode(caches, true);
+        ignite.context().cache().changeWalMode(caches, true).get();
     }
 
     /**
@@ -459,24 +694,30 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      */
     private static class BlockPurgeIndexing extends IgniteH2Indexing {
         /** */
-        private AtomicInteger count = new AtomicInteger();
+        private AtomicInteger cnt = new AtomicInteger();
 
         /** */
         CountDownLatch phase1 = new CountDownLatch(1);
 
         /** */
-        CountDownLatch phase2 = new CountDownLatch(1);
+        volatile CountDownLatch phase2;
+
 
         /** {@inheritDoc} */
         @Override public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(
             CacheGroupContext grp, Set<Integer> parts) {
             List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> res = super.purgeIndexPartitions(grp, parts);
 
-            count.set(res.size());
+            cnt.set(res.size());
+
+            phase2 = new CountDownLatch(res.size());
 
             return res.stream().map(this::wrap).collect(Collectors.toList());
         }
 
+        /**
+         * Wait for latch 1.
+         */
         public void waitPhase1() {
             try {
                 phase1.await(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -486,20 +727,24 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
             }
         }
 
+        /**
+         * Signal latch 2.
+         */
         public void startPhase2() {
             phase2.countDown();
         }
 
         /**
+         * Wrap a tuple and embed synchronization into runnable.
          *
-         * @param t
-         * @return
+         * @param t Tuple.
+         * @return Wrapped tuple.
          */
         private IgniteBiTuple<Runnable, IgniteInternalFuture<Void>> wrap(
             IgniteBiTuple<Runnable, IgniteInternalFuture<Void>> t) {
 
             return new IgniteBiTuple<>(() -> {
-                if (count.decrementAndGet() == 0) {
+                if (cnt.decrementAndGet() == 0) {
                     phase1.countDown();
 
                     try {
@@ -510,7 +755,12 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
                     }
                 }
 
-                t.get1().run();
+                try {
+                    t.get1().run();
+                }
+                finally {
+                    phase2.countDown();
+                }
             }, t.get2());
         }
     }

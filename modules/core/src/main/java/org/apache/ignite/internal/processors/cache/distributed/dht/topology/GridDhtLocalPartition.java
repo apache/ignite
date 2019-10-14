@@ -1478,9 +1478,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Initialize this partition to be a part of a exclusive clear over a set of partitions.
      *
-     * @param fut Future to listen for clearing completion.
-     * @return {@code true} if successfully initialized.
+     * @param fut Future to listen for completion of a larger clear procedure.
+     * @return {@code true} if successfully initialized, otherwise a retry is required.
      */
     public boolean exclusiveClearAsync(IgniteInternalFuture<Void> fut) {
         long state = this.state.get();
@@ -1504,9 +1505,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 if (clearEvicting()) {
                     if (f.error() == null)
-                        clearFuture.onDone();
+                        clearFuture.finish();
                     else
-                        clearFuture.onDone(f.error());
+                        clearFuture.finish(f.error());
                 }
             });
         }

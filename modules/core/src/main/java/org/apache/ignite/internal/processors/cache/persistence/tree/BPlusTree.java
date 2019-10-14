@@ -5932,7 +5932,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void doPurge(long pageId) throws IgniteCheckedException {
-            final boolean walPlc = Boolean.TRUE;
             boolean dirty = false;
 
             long page = acquirePage(pageId);
@@ -5957,10 +5956,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     assert cnt > 0 : cnt; // Empty leaf is nonsensical.
 
-                    dirty = modifyPage(pageId, page, walPlc, io, pageAddr, cnt);
+                    dirty = modifyPage(pageId, page, null, io, pageAddr, cnt);
                 }
                 finally {
-                    writeUnlock(pageId, page, pageAddr, walPlc, dirty);
+                    writeUnlock(pageId, page, pageAddr, null, dirty);
                 }
             }
             finally {
@@ -5976,7 +5975,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Item count.
          * @return {@code true} if page was modified.
          */
-        private boolean modifyPage(long pageId, long page, Boolean walPlc, BPlusIO<L> io, long pageAddr, int cnt) throws IgniteCheckedException {
+        private boolean modifyPage(long pageId, long page, Boolean walPlc, BPlusIO<L> io, long pageAddr, int cnt)
+            throws IgniteCheckedException {
             int write = -1;
             int read = -1;
             int idx = 0;
@@ -5991,12 +5991,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 h = clo.apply(BPlusTree.this, io, pageAddr, idx);
 
                 if (h) {
-                    if (walPlc && h && (idx != cnt - 1)) {
-                        if (idxs == null) {
+                    if (walPlc != Boolean.TRUE && (idx != cnt - 1)) {
+                        if (idxs == null)
                             idxs = new int[cnt - idx];
 
-                            idxs[idxsCnt++] = idx;
-                        }
+                        idxs[idxsCnt++] = idx;
                     }
 
                     if (write < 0)

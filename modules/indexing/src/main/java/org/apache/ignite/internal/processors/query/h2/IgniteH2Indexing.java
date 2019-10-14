@@ -3078,16 +3078,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     GridWorkerFuture<Void> fut = new GridWorkerFuture<>();
 
+                    String details = "[grpId=" + grp.groupId() + ", cache=" + cctx.name() + ", idx=" +
+                        idx.getName() + ", partIds=" + Arrays.toString(U.toIntArray(parts)) + "]";
+
                     GridWorker worker = new GridWorker(cctx.igniteInstanceName(),
                         "idx-part-purge-" + grp.groupId() + "-" + tblDesc.cacheName() + "-" + idx.getName(), log) {
                         @Override protected void body() {
                             try {
+                                if (log.isInfoEnabled())
+                                    log.info("Starting clearing partitions in index. " + details);
+
                                 ((H2TreeIndex)idx).purge(parts, this::isCancelled);
 
                                 fut.onDone();
                             }
                             catch (Throwable e) {
                                 fut.onDone(e);
+                            }
+                            finally {
+                                if (log.isInfoEnabled())
+                                    log.info("Finished clearing partitions in index. " + details);
                             }
                         }
                     };

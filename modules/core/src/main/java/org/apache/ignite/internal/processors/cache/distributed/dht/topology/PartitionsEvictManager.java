@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -143,7 +143,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             if (exclFut != null && exclFut.partIds.contains(part.id())) {
                 // Exclusive evict has been requested earlier.
-                if (part.exclusiveClearAsync(exclFut))
+                if (part.exclusiveClearAsync(exclFut.resFut))
                     exclFut.onInit(part);
 
                 return;
@@ -689,23 +689,30 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             if (!res.isEmpty())
                 throw new IgniteCheckedException("Can't schedule exclusive evict for a partition " +
-                    "due to scheduled regular evict for the same partition. [grpId=" + grp.groupId() + "]");
+                    "due to scheduled regular evict for the same partition. [grpId=" + grp.groupId() +
+                    ", partIds=" + Arrays.toString(U.toIntArray(res)) + "]");
 
             grpEvictionCtx.exclClearFut = fut;
+
+            fut.listen(f -> {
+                synchronized (mux) {
+                    grpEvictionCtx.exclClearFut = null;
+                }
+            });
         }
 
         for (GridDhtLocalPartition part : parts) {
-            if (part.exclusiveClearAsync(fut))
+            if (part.exclusiveClearAsync(fut.resFut))
                 fut.onInit(part);
         }
 
-        return fut.resFut;
+        return fut;
     }
 
     /**
      * Context of exclusive partition evict.
      */
-    private class ExclusiveClearFuture extends GridCompoundFuture<Void, Void> {
+    private class ExclusiveClearFuture extends GridFutureAdapter<Void> {
         /** Group eviction context. */
         GroupEvictionContext grpEvictionCtx;
 
@@ -715,11 +722,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** Partitions. */
         List<GridDhtLocalPartition> parts;
 
-        /** All partitions initialized future. */
-        CountDownFuture initFut;
+        /** All partitions initialized counter. */
+        AtomicInteger initCounter;
 
-        /** Future to return from an API call. */
-        CountDownFuture resFut;
+        /** */
+        AtomicInteger resultCounter;
+
+        /** Tasks future */
+        GridCompoundFuture<Void, Void> resFut = new GridCompoundFuture<>();
 
         /** Allows to cancel index tasks. */
         GridCompoundFuture<Void, Void> cancelFut = new GridCompoundFuture<>();
@@ -736,16 +746,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             partIds = Collections.unmodifiableSet(
                 parts.stream().mapToInt(GridDhtLocalPartition::id).boxed().collect(Collectors.toSet()));
 
-            initFut = new CountDownFuture(parts.size());
+            initCounter = new AtomicInteger(parts.size());
 
-            resFut = new CountDownFuture(parts.size());
-
-            initFut.listen(f -> {
-                if (f.error() == null)
-                    initTasks();
-                else
-                    onDone(f.error());
-            });
+            resultCounter = new AtomicInteger(parts.size());
         }
 
         /**
@@ -755,20 +758,21 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         public void onInit(GridDhtLocalPartition part) {
             if (log.isInfoEnabled())
-                log.info("Exclusive partition evict: confirmed partition " + part.id() + ".");
+                log.info("Partition confirmed exclusive clear. [partId=" + part.id() + "]");
 
             part.onClearFinished(f -> {
-                try {
-                    f.get();
+                if (resultCounter.decrementAndGet() == 0) {
+                    assert resFut.isDone();
 
-                    resFut.onDone();
-                }
-                catch (Throwable e) {
-                    resFut.onDone(e);
+                    if (resFut.error() == null)
+                        onDone();
+                    else
+                        onDone(resFut.error());
                 }
             });
 
-            initFut.onDone();
+            if (initCounter.decrementAndGet() == 0)
+                initTasks();
         }
 
         /**
@@ -783,7 +787,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                 tasks.add(task);
 
-                add(task);
+                resFut.add(task);
             }
 
             CacheGroupContext grp = grpEvictionCtx.grp;
@@ -800,7 +804,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                     tasks.add(task);
 
-                    add(task);
+                    resFut.add(task);
                 }
 
                 List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> idxPurgeList =
@@ -825,15 +829,15 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
                     idxFut.markInitialized();
 
-                    add(idxFut);
+                    resFut.add(idxFut);
                 }
             }
 
-            markInitialized();
+            resFut.markInitialized();
 
             if (log.isInfoEnabled())
                 log.info("Exclusive partition evict: scheduling tasks." +
-                    " [total=" + tasks.size() + idxTasks.size() + ", idx=" + idxTasks.size() + "]");
+                    " [total=" + (tasks.size() + idxTasks.size()) + ", idx=" + idxTasks.size() + "]");
 
             if (idxFut == null) {
                 for (BucketQueueTask r0 : tasks)
@@ -843,7 +847,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
             else {
                 idxFut.listen(f -> {
-                    if (f.error() == null) {
+                    if (f.error() == null && !grpEvictionCtx.shouldStop()) {
                         for (BucketQueueTask r0 : tasks)
                             evictionQueue.offer(r0);
 
@@ -866,6 +870,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * Cancels index clearing tasks.
          */
         public void stop() {
+            if (log.isInfoEnabled())
+                log.info("Exclusive evict : stop");
+
+            resFut.onDone(new IgniteCheckedException("Cache is stopping."));
+
             try {
                 cancelFut.cancel();
             }

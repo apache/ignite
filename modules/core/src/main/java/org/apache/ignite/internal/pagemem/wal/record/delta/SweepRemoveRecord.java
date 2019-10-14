@@ -30,7 +30,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
     /** Indexes of items to remove from the page. */
     private int[] items;
 
-    /** Number of elements in items array that are meaningful. */
+    /** Number of used elements in items array. */
     private int itemsCnt;
 
     /** Resulting count of items that should remain on the page. */
@@ -40,7 +40,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param items Indexes of items to remove on the page.
-     * @param itemsCnt Number of elements in {@code items} array that are meaningful.
+     * @param itemsCnt Number of used elements in {@code items} array.
      * @param cnt Resulting count of items that should remain on the page.
      */
     public SweepRemoveRecord(int grpId, long pageId, int[] items, int itemsCnt, int cnt) {
@@ -59,7 +59,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
 
         int cnt0 = io.getCount(pageAddr);
 
-        assert cnt0 == cnt + itemsCnt;
+        assert cnt0 == cnt + itemsCnt : "unexpected count: cnt0=" + cnt0 + ", cnt=" + cnt + ", itemsCnt=" + itemsCnt;
 
         for (int i = 0; i < itemsCnt; ++i) {
             int idx = items[i];
@@ -83,7 +83,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
     }
 
     /**
-     * @return Number of elements in the items array that are meaningful.
+     * @return Number of used elements in the items array.
      */
     public int itemsCount() {
         return itemsCnt;

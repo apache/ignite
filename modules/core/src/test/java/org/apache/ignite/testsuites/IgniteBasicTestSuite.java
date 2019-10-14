@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.BPlusTreeSweepRemovalTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
@@ -276,9 +275,7 @@ import org.junit.runners.Suite;
 
     IncompleteDeserializationExceptionTest.class,
 
-    GridIoManagerFileTransmissionSelfTest.class,
-
-    BPlusTreeSweepRemovalTest.class
+    GridIoManagerFileTransmissionSelfTest.class
 })
 public class IgniteBasicTestSuite {
 }
