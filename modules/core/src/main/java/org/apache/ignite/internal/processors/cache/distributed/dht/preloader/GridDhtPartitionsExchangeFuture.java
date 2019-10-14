@@ -1026,12 +1026,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if Event node is in baseline and {@code false} otherwise.
+     * @return {@code true} if Event node is in baseline and failed and {@code false} otherwise.
      */
-    public boolean isFirstEventNodeInBaseline() {
+    public boolean isBaselineNodeFailed() {
         BaselineTopology top = firstEvtDiscoCache.state().baselineTopology();
 
-        return top != null && top.consistentIds().contains(firstDiscoEvt.eventNode().consistentId());
+        return (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) &&
+            top != null &&
+            top.consistentIds().contains(firstDiscoEvt.eventNode().consistentId());
+    }
+
+    /**
+     * @return {@code true} if Event's baseline auto-adjusted and {@code false} otherwise.
+     */
+    public boolean isBaselineAutoAdjusted() {
+        return firstEvtDiscoCache.state().localBaselineAutoAdjustment();
     }
 
     /**

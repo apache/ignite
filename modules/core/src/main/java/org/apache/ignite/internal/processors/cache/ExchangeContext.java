@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -66,19 +65,14 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        GridDiscoveryManager disco = fut.sharedContext().discovery();
-
-        if (protocolVer > 2 && fut.exchangeId().isLeft() && fut.isFirstEventNodeInBaseline() &&
-            !disco.baselineChanged(fut.sharedContext().exchange().readyAffinityVersion(), fut.initialVersion())) {
+        if (protocolVer > 2 && fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted()) {
             baselineNodeLeft = true;
-
             merge = false;
 
             locRecovery = localRecoveryNeeded(fut); // Check local node affected.
         }
         else if (compatibilityNode || (crd && fut.localJoinExchange())) {
             fetchAffOnJoin = true;
-
             merge = false;
         }
         else {
