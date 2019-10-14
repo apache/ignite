@@ -16,21 +16,26 @@
 
 package org.apache.ignite.internal.commandline.dr.subcommands;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientDisconnectedException;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.dr.DrSubCommandsList;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.dr.VisorDrNodeTaskArgs;
 import org.apache.ignite.internal.visor.dr.VisorDrNodeTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
 /** */
 public class DrNodeCommand
@@ -110,12 +115,23 @@ public class DrNodeCommand
         GridClientConfiguration clientCfg,
         GridClient client
     ) throws Exception {
-        return executeTaskByNameOnNode(
-            client,
+        GridClientCompute compute = client.compute();
+
+        Collection<GridClientNode> connectableNodes = compute.nodes(GridClientNode::connectable);
+
+        if (F.isEmpty(connectableNodes))
+            throw new GridClientDisconnectedException("Connectable nodes not found", null);
+
+        GridClientNode node = connectableNodes.stream()
+            .filter(n -> nodeId.equals(n.nodeId()))
+            .findAny().orElse(null);
+
+        if (node == null)
+            node = compute.balancer().balancedNode(connectableNodes);
+
+        return compute.projection(node).execute(
             visorTaskName(),
-            arg().toVisorArgs(),
-            nodeId,
-            clientCfg
+            new VisorTaskArgument<>(nodeId, arg().toVisorArgs(), false)
         );
     }
 
