@@ -164,7 +164,9 @@ public class TxLog implements DbCheckpointListener {
                     pageMemory,
                     wal,
                     reuseListRoot,
-                    isNew);
+                    isNew,
+                    ctx
+                );
 
                 tree = new TxLogTree(pageMemory, wal, treeRoot, reuseList, ctx.failure(), isNew);
 

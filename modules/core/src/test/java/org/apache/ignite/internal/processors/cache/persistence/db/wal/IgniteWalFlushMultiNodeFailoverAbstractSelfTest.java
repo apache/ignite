@@ -168,11 +168,14 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
 
+        // We should have value size large enough to switch WAL segment by ITRS/4 puts.
+        String valPrefix = "testValue" + new String(new char[512]).replace('\0', '#');
+
         for (int i = 0; i < ITRS; i++) {
             while (!Thread.currentThread().isInterrupted()) {
                 try (Transaction tx = grid.transactions().txStart(
                         TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
-                    cache.put(i, "testValue" + i);
+                    cache.put(i, valPrefix + i);
 
                     tx.commit();
 
@@ -225,7 +228,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
         cache = grid0.cache(TEST_CACHE);
 
         for (int i = 0; i < ITRS; i++)
-            assertEquals(cache.get(i), "testValue" + i);
+            assertEquals(cache.get(i), valPrefix + i);
     }
 
     /** */

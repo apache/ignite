@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -121,6 +122,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final FailureProcessor failureProcessor;
 
     /** */
+    private final GridKernalContext ctx;
+
+    /** */
     public MetaStorage(
         GridCacheSharedContext cctx,
         DataRegion dataRegion,
@@ -133,6 +137,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
+        ctx = cctx.kernalContext();
     }
 
     /** */
@@ -147,7 +152,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!empty) {
             freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+                reuseListRoot.isAllocated(), ctx);
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
@@ -512,9 +517,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     public static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
         FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
-            ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+            ReuseList reuseList, IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew,
+            GridKernalContext ctx) throws IgniteCheckedException {
+            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, ctx);
         }
 
         /** {@inheritDoc} */

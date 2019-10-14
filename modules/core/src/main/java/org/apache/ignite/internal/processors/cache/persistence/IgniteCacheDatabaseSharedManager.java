@@ -201,7 +201,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     null,
                     persistenceEnabled ? cctx.wal() : null,
                     0L,
-                    true);
+                    true,
+                    cctx.kernalContext());
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
