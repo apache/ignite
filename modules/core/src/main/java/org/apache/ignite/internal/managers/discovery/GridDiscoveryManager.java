@@ -1800,24 +1800,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Compares baselines at different topologies.
-     *
-     * @param topVer1 Topology version 1.
-     * @param topVer2 Topology version 2.
-     */
-    public boolean baselineChanged(AffinityTopologyVersion topVer1, AffinityTopologyVersion topVer2) {
-        assert !topVer1.equals(topVer2);
-
-        DiscoCache disco1 = discoCache(topVer1);
-        DiscoCache disco2 = discoCache(topVer2);
-
-        BaselineTopology baseline1 = disco1 != null ? disco1.state().baselineTopology() : null;
-        BaselineTopology baseline2 = disco2 != null ? disco2.state().baselineTopology() : null;
-
-        return !Objects.equals(baseline1, baseline2);
-    }
-
-    /**
      * Gets node from history for given topology version.
      *
      * @param topVer Topology version.
