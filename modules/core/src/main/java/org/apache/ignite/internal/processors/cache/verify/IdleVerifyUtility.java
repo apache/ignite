@@ -106,10 +106,7 @@ public class IdleVerifyUtility {
         GridCacheDatabaseSharedManager.CheckpointProgress progress =
             ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
 
-        if (progress == null)
-            return false;
-
-        return progress.started() && !progress.finished();
+        return progress != null && progress.inProgress();
     }
 
     /** */
