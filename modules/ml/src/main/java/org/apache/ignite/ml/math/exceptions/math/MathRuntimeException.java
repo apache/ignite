@@ -14,24 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.math;
+
+import org.apache.ignite.IgniteException;
 
 /**
- * Base class for all preconditions violation exceptions.
+ * This class is based on the corresponding class from Apache Common Math lib.
  * In most cases, this class should not be instantiated directly: it should
- * serve as a base class to create all the exceptions that have the semantics
- * of the standard {@link IllegalArgumentException}.
+ * serve as a base class for implementing exception classes that describe a
+ * specific "problem".
  */
-public class MathIllegalArgumentException extends MathRuntimeException {
+public class MathRuntimeException extends IgniteException {
     /** Serializable version Id. */
-    private static final long serialVersionUID = -6024911025449780478L;
+    private static final long serialVersionUID = 20120926L;
 
     /**
-     * @param format Message format string explaining the cause of the error.
+     * @param format Message pattern explaining the cause of the error.
      * @param args Arguments.
      */
-    public MathIllegalArgumentException(String format, Object... args) {
-        super(String.format(format, args));
+    public MathRuntimeException(String format, Object... args) {
+        this(null, format, args);
     }
 
+    /**
+     * @param cause Root cause.
+     * @param format Message pattern explaining the cause of the error.
+     * @param args Arguments.
+     */
+    public MathRuntimeException(Throwable cause, String format, Object... args) {
+        super(String.format(format, args), cause);
+    }
 }
