@@ -974,7 +974,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Release created data store for this partition.
      */
-    private void destroyCacheDataStore() {
+    public void destroyCacheDataStore() {
         try {
             grp.offheap().destroyCacheDataStore(dataStore());
         }

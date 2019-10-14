@@ -399,9 +399,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             store.disableRemoves();
 
             try {
-                IgniteInternalFuture<Boolean> fut0 = part.group().offheap().destroyCacheDataStore(part.dataStore());
+                cctx.database().checkpointReadLock();
+                try {
+                    part.group().offheap().destroyCacheDataStore(part.dataStore());
 
-                fut0.cancel();
+                    ((GridCacheDatabaseSharedManager)cctx.database()).cancelOrWaitPartitionDestroy(part.group().groupId(), part.id());
+                } finally {
+                    cctx.database().checkpointReadUnlock();
+                }
 
                 fut.onDone(true);
 
@@ -434,15 +439,13 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @throws IgniteCheckedException If file store for specified partition doesn't exists or partition file cannot be
      * moved.
      */
-    private IgniteInternalFuture<T2<Long, Long>> restorePartition(
+    public IgniteInternalFuture<T2<Long, Long>> restorePartition(
         int grpId,
         int partId,
         File fsPartFile,
         IgniteInternalFuture destroyFut
     ) throws IgniteCheckedException {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
-
-//        destroyFut.cancel();
 
         if (!destroyFut.isDone()) {
             if (log.isDebugEnabled())
@@ -464,9 +467,16 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
 
         // Reinitialize file store afte rmoving partition file.
-        cctx.pageStore().ensure(grpId, partId, true);
+        int tag = ((PageMemoryEx)cctx.cache().cacheGroup(grpId).dataRegion().pageMemory()).invalidate(grpId, partId);
 
-        // todo
+        cctx.pageStore().ensure(grpId, partId, tag);
+
+        // todo should do this for whole memory region
+        ((PageMemoryEx)cctx.database().dataRegion(cctx.cache().cacheGroup(grpId).dataRegion().config().getName()).pageMemory())
+            .clearAsync(
+                (grp, pageId) -> grp == grpId && PageIdUtils.partId(pageId) == partId, true)
+            .get();
+
         ctx.topology().localPartition(partId).dataStore().store(false).reinit();
 
         GridFutureAdapter<T2<Long, Long>> endFut = new GridFutureAdapter<>();

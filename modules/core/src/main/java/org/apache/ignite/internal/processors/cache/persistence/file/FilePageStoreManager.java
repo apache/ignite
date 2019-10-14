@@ -896,7 +896,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void ensure(int grpId, int partId, boolean force) throws IgniteCheckedException {
+    @Override public void ensure(int grpId, int partId, int force) throws IgniteCheckedException {
         try {
             getStore(grpId, partId).ensure(force);
         }

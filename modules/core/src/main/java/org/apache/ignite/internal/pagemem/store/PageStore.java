@@ -114,7 +114,7 @@ public interface PageStore extends Closeable {
      */
     public void ensure() throws IgniteCheckedException;
 
-    public void ensure(boolean force) throws IgniteCheckedException;
+    public void ensure(int force) throws IgniteCheckedException;
 
     /**
      * Size of page store header.

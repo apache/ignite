@@ -360,6 +360,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public void truncate(int tag) throws StorageException {
+        System.out.println("truncate " + getFileAbsolutePath());
         init();
 
         Path filePath = pathProvider.apply();
@@ -534,18 +535,25 @@ public class FilePageStore implements PageStore {
     }
 
     public void init() throws StorageException {
-        init(false);
+        init(-1);
     }
 
     /**
      * @throws StorageException If failed to initialize store file.
+     * @param force
      */
-    public void init(boolean force) throws StorageException {
-        if (!inited || force) {
+    public void init(int force) throws StorageException {
+        if (force != -1) {
+            tag = force;
+
+            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
+        }
+
+        if (!inited || force != -1) {
             lock.writeLock().lock();
 
             try {
-                if (!inited || force) {
+                if (!inited || force != -1) {
                     FileIO fileIO = null;
 
                     StorageException err = null;
@@ -577,7 +585,7 @@ public class FilePageStore implements PageStore {
                             }
                         }
 
-//                        assert allocated.get() == 0;
+                        assert allocated.get() == 0 : allocated.get();
 
                         allocated.set(newSize);
 
@@ -806,8 +814,9 @@ public class FilePageStore implements PageStore {
         init();
     }
 
-    /** {@inheritDoc} */
-    @Override public synchronized void ensure(boolean force) throws IgniteCheckedException {
+    /** {@inheritDoc}
+     * @param force*/
+    @Override public synchronized void ensure(int force) throws IgniteCheckedException {
         init(force);
     }
 

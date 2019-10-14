@@ -118,7 +118,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void ensure(int grpId, int partId, boolean force) throws IgniteCheckedException {
+    @Override public void ensure(int grpId, int partId, int force) throws IgniteCheckedException {
         // No-op.
     }
 
