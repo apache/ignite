@@ -3391,6 +3391,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     update0 |= (!preload && val == null);
 
+                    if (!preload && val == null) {
+                        U.dumpStack(log, "Suspsicious operation.");
+
+                        assert false;
+                    }
+
                     return update0;
                 }
             };
