@@ -1371,7 +1371,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             exchCtx.events().warnNoAffinityNodes(cctx);
 
             centralizedAff = exchCtx.baselineNodeLeft() ?
-                cctx.affinity().onBaselineNodeLeft(this, crd) :
+                cctx.affinity().onBaselineNodeLeft(this) :
                 cctx.affinity().onCentralizedAffinityChange(this, crd);
         }
         else

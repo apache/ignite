@@ -1614,19 +1614,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert fut.context().mergeExchanges();
         assert evts.hasServerLeft();
 
-        return onReassignmentEnforced(fut);
+        Map<Integer, Map<Integer, List<Long>>> res = onReassignmentEnforced(fut);
+
+        return CacheGroupAffinityMessage.createAffinityDiffMessages(res);
     }
 
     /**
      * Called on exchange initiated by baseline server node leave.
      *
      * @param fut Exchange future.
-     * @param crd Coordinator flag.
      * @return {@code True} if affinity should be assigned by coordinator (local node for this case).
      */
-    public boolean onBaselineNodeLeft(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
+    public boolean onBaselineNodeLeft(final GridDhtPartitionsExchangeFuture fut) {
         assert (fut.events().hasServerLeft() && !fut.firstEvent().eventNode().isClient()) : fut.firstEvent();
-
         assert !fut.context().mergeExchanges();
 
         onReassignmentEnforced(fut);
@@ -1702,24 +1702,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
-     * @throws IgniteCheckedException If failed.
      */
     public Map<Integer, CacheGroupAffinityMessage> onCustomEventWithEnforcedAffinityReassignment(
-        final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        final GridDhtPartitionsExchangeFuture fut) {
         assert DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(fut.firstEvent());
 
-        Map<Integer, CacheGroupAffinityMessage> result = onReassignmentEnforced(fut);
+        Map<Integer, Map<Integer, List<Long>>> res = onReassignmentEnforced(fut);
 
-        return result;
+        return CacheGroupAffinityMessage.createAffinityDiffMessages(res);
     }
 
     /**
-     * Calculates new affinity assignment on coordinator and creates affinity diff messages for other nodes.
+     * Calculates new affinity assignment.
      *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
      */
-    private Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
+    private Map<Integer, Map<Integer, List<Long>>> onReassignmentEnforced(
         final GridDhtPartitionsExchangeFuture fut) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
@@ -1739,12 +1738,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        Map<Integer, Map<Integer, List<Long>>> diff = initAffinityBasedOnPartitionsAvailability(evts.topologyVersion(),
+        return initAffinityBasedOnPartitionsAvailability(evts.topologyVersion(),
             fut,
             NODE_TO_ORDER,
             true);
-
-        return CacheGroupAffinityMessage.createAffinityDiffMessages(diff);
     }
 
     /**
