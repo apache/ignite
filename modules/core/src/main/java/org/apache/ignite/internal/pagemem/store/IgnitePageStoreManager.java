@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 
 /**
  *
@@ -53,7 +53,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tracker Allocation tracker.
      * @throws IgniteCheckedException If failed.
      */
-    void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
+    void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
         throws IgniteCheckedException;
 
     /**

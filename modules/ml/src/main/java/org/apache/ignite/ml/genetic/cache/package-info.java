@@ -18,4 +18,5 @@
 /**
  * Contains cache configurations for GA Grid
  */
+
 package org.apache.ignite.ml.genetic.cache;

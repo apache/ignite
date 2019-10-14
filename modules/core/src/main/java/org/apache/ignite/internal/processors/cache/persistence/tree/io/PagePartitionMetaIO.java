@@ -194,6 +194,40 @@ public class PagePartitionMetaIO extends PageMetaIO {
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
+    public long getPartitionMetaStoreReuseListRoot(long pageAddr) {
+        throw new UnsupportedOperationException("Partition metastore is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param listRoot List root.
+     */
+    public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
+        throw new UnsupportedOperationException("Partition metastore is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public long getGapsLink(long pageAddr) {
+        throw new UnsupportedOperationException("Gaps link is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param link Link.
+     */
+    public boolean setGapsLink(long pageAddr, long link) {
+        throw new UnsupportedOperationException("Gaps link is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
     /** {@inheritDoc} */
     @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         super.printPage(pageAddr, pageSize, sb);

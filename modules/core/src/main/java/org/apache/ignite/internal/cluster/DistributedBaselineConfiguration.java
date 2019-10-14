@@ -43,28 +43,37 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator
 public class DistributedBaselineConfiguration {
     /** Default auto-adjust timeout for persistence grid. */
     private static final int DEFAULT_PERSISTENCE_TIMEOUT = 5 * 60_000;
+
     /** Default auto-adjust timeout for in-memory grid. */
     private static final int DEFAULT_IN_MEMORY_TIMEOUT = 0;
+
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
+
     /** Message of baseline auto-adjust parameter was changed from default. */
     private static final String DEFAULT_PROPERTY_UPDATE_MESSAGE =
         "Baseline parameter '%s' was changed from default value='%s' to '%s'";
+
     /** Message of baseline auto-adjust parameter was changed. */
     private static final String PROPERTY_UPDATE_MESSAGE =
         "Baseline parameter '%s' was changed from '%s' to '%s'";
+
     /** */
     private volatile long dfltTimeout;
+
     /** Default auto-adjust enable/disable. */
     private volatile boolean dfltEnabled;
+
     /** */
     private final GridKernalContext ctx;
+
     /** */
     private final IgniteLogger log;
 
     /** Value of manual baseline control or auto adjusting baseline. */
     private final DistributedBooleanProperty baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled");
+
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains compatibility test framework related classes and interfaces.
  */
+
 package org.apache.ignite.compatibility.testframework.junits.logger;

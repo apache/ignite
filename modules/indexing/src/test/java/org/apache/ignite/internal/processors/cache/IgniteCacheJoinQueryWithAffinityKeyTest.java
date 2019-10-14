@@ -296,7 +296,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         SqlFieldsQuery[] qrys = new SqlFieldsQuery[2];
 
-
         if (escape) {
             qrys[0] = new SqlFieldsQuery("select count(*) " +
                 "from \"Person\" p, \"" + (affKey ? "AccountKeyWithAffinity" : "Account") + "\" a " +

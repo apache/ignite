@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -84,6 +85,7 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SCHEMA;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
@@ -100,6 +102,14 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 public class JdbcConnection implements Connection {
     /** Null stub. */
     private static final String NULL = "null";
+
+    /** Multiple statements supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.4.0");
+
+    /** Multiple statements V2 task supported since version. */
+    private static final IgniteProductVersion MULTIPLE_STATEMENTS_TASK_V2_SUPPORTED_SINCE =
+        IgniteProductVersion.fromString("2.8.0");
 
     /**
      * Ignite nodes cache.
@@ -215,6 +225,7 @@ public class JdbcConnection implements Connection {
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
         skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
+        schemaName = QueryUtils.normalizeSchemaName(null, props.getProperty(PROP_SCHEMA));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -241,10 +252,13 @@ public class JdbcConnection implements Connection {
                         IgniteQueryErrorCode.CACHE_NOT_FOUND);
                 }
 
-                schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+                if (schemaName == null)
+                    schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
             }
-            else
-                schemaName = QueryUtils.DFLT_SCHEMA;
+            else {
+                if (schemaName == null)
+                    schemaName = QueryUtils.DFLT_SCHEMA;
+            }
         }
         catch (Exception e) {
             close();
@@ -848,6 +862,20 @@ public class JdbcConnection implements Connection {
      */
     boolean isMultipleStatementsAllowed() {
         return multipleStmts;
+    }
+
+    /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsSupported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_SUPPORTED_SINCE, ignite.cluster().nodes());
+    }
+
+    /**
+     * @return {@code true} if multiple statements allowed, {@code false} otherwise.
+     */
+    boolean isMultipleStatementsTaskV2Supported() {
+        return U.isOldestNodeVersionAtLeast(MULTIPLE_STATEMENTS_TASK_V2_SUPPORTED_SINCE, ignite.cluster().nodes());
     }
 
     /**

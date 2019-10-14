@@ -186,7 +186,6 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
             assertEqualsCollections(asList(asList(3, 4), asList(5, 6)), mixed);
         }
 
-
         {
             List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer WHERE id >= 42")).getAll();
 

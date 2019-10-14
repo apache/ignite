@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -51,7 +52,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of all nodes in topology.
+ * Information about partitions of all nodes in topology. <br> Is sent by topology coordinator: when all {@link
+ * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
+ * CacheAffinityChangeMessage} for node left or failed case.<br>
  */
 public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
@@ -440,12 +443,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     @Override public byte[] apply(Object payload) throws IgniteCheckedException {
                         byte[] marshalled = U.marshal(ctx, payload);
 
-                        if(compressed())
+                        if (compressed())
                             marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
 
                         return marshalled;
                     }
-            });
+                });
 
             Iterator<byte[]> iterator = marshalled.iterator();
 
@@ -582,10 +585,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partCntrs2 == null)
             partCntrs2 = new IgniteDhtPartitionCountersMap2();
 
-        if(partHistSuppliers == null)
+        if (partHistSuppliers == null)
             partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
-        if(partsToReload == null)
+        if (partsToReload == null)
             partsToReload = new IgniteDhtPartitionsToReloadMap();
 
         if (errs == null)
@@ -820,7 +823,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void merge(GridDhtPartitionsFullMessage other, GridDiscoveryManager discovery) {
         assert other.exchangeId() == null && exchangeId() == null :
             "Both current and merge full message must have exchangeId == null"
-             + other.exchangeId() + "," + exchangeId();
+                + other.exchangeId() + "," + exchangeId();
 
         for (Map.Entry<Integer, GridDhtPartitionFullMap> groupAndMap : other.partitions().entrySet()) {
             int grpId = groupAndMap.getKey();

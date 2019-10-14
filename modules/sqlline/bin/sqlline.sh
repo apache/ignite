@@ -61,8 +61,6 @@ JVM_OPTS=${JVM_OPTS:-}
 #
 # Final JVM_OPTS for Java 9+ compatibility
 #
-javaMajorVersion "${JAVA_HOME}/bin/java"
-
 if [ $version -eq 8 ] ; then
     JVM_OPTS="\
         -XX:+AggressiveOpts \
@@ -77,7 +75,6 @@ elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
         --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         --illegal-access=permit \
-        --add-modules=java.transaction \
         --add-modules=java.xml.bind \
         ${JVM_OPTS}"
 

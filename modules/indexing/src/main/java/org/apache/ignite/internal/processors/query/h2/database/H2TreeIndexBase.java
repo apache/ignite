@@ -145,9 +145,4 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     @Override public boolean canGetFirstOrLast() {
         return true;
     }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
 }

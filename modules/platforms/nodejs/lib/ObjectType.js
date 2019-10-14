@@ -109,7 +109,7 @@ const COMPOSITE_TYPE = Object.freeze({
     COMPLEX_OBJECT : 103
 });
 
-/** 
+/**
  * Base class representing a type of Ignite object.
  *
  * The class has no public constructor. Only subclasses may be instantiated.
@@ -351,8 +351,8 @@ class MapObjectType extends CompositeType {
      * If key and/or value type is not specified then during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
-     * 
-     * @param {MapObjectType.MAP_SUBTYPE} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the 
+     *
+     * @param {MapObjectType.MAP_SUBTYPE} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the
      *   {@link MapObjectType.MAP_SUBTYPE} constants.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [keyType=null] - type of the keys in the map:
      *   - either a type code of primitive (simple) type
@@ -424,8 +424,8 @@ class CollectionObjectType extends CompositeType {
      * If the type of elements is not specified then during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
-     * 
-     * @param {CollectionObjectType.COLLECTION_SUBTYPE} collectionSubType - collection subtype, one of the 
+     *
+     * @param {CollectionObjectType.COLLECTION_SUBTYPE} collectionSubType - collection subtype, one of the
      *  {@link CollectionObjectType.COLLECTION_SUBTYPE} constants.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of elements in the collection:
      *   - either a type code of primitive (simple) type
@@ -529,7 +529,7 @@ class ComplexObjectType extends CompositeType {
      *
      * By default, the name of the complex type is the name of the JavaScript Object.
      * The name may be explicitely specified using optional typeName parameter in the constructor.
-     * 
+     *
      * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
      * @param {string} [typeName] - name of the complex type.
      *
@@ -560,7 +560,7 @@ class ComplexObjectType extends CompositeType {
      * If the type is not specified then during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
-     * 
+     *
      * @param {string} fieldName - name of the field.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType - type of the field:
      *   - either a type code of primitive (simple) type

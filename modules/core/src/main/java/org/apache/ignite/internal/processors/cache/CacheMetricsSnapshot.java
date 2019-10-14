@@ -751,6 +751,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         return (float) offHeapMisses / offHeapGets * 100.0f;
     }
+
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;

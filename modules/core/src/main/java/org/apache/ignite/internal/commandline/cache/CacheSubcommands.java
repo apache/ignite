@@ -70,7 +70,6 @@ public enum CacheSubcommands {
      */
     FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class, new FindAndDeleteGarbage());
 
-
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();
 

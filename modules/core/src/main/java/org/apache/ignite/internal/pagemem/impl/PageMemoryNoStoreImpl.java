@@ -36,10 +36,10 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -131,9 +131,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** Name of DataRegion this PageMemory is associated with. */
     private final DataRegionConfiguration dataRegionCfg;
 
-    /** Object to collect memory usage metrics. */
-    private final DataRegionMetricsImpl memMetrics;
-
     /** */
     private AtomicLong freePageListHead = new AtomicLong(INVALID_REL_PTR);
 
@@ -145,6 +142,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** */
     private final AtomicInteger allocatedPages = new AtomicInteger();
+
+    /** */
+    private final LongAdderMetric totalAllocatedPagesMetric;
 
     /** */
     private AtomicInteger selector = new AtomicInteger();
@@ -178,7 +178,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
      * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
      * @param dataRegionCfg Data region configuration.
-     * @param memMetrics Memory Metrics.
+     * @param totalAllocatedPagesMetric Total allocated pages metric.
      * @param trackAcquiredPages If {@code true} tracks number of allocated pages (for tests purpose only).
      */
     public PageMemoryNoStoreImpl(
@@ -187,7 +187,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
         DataRegionConfiguration dataRegionCfg,
-        DataRegionMetricsImpl memMetrics,
+        LongAdderMetric totalAllocatedPagesMetric,
         boolean trackAcquiredPages
     ) {
         assert log != null || sharedCtx != null;
@@ -196,7 +196,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryNoStoreImpl.class) : log;
         this.directMemoryProvider = directMemoryProvider;
         this.trackAcquiredPages = trackAcquiredPages;
-        this.memMetrics = memMetrics;
+        this.totalAllocatedPagesMetric = totalAllocatedPagesMetric;
         this.dataRegionCfg = dataRegionCfg;
         this.ctx = sharedCtx;
 
@@ -328,7 +328,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
             throw oom;
         }
-
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
@@ -628,7 +627,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (freePageListHead.compareAndSet(freePageRelPtrMasked, relPtr)) {
                 allocatedPages.decrementAndGet();
 
-                memMetrics.updateTotalAllocatedPages(-1L);
+                totalAllocatedPagesMetric.decrement();
 
                 return;
             }
@@ -658,7 +657,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     allocatedPages.incrementAndGet();
 
-                    memMetrics.updateTotalAllocatedPages(1L);
+                    totalAllocatedPagesMetric.increment();
 
                     return freePageRelPtr;
                 }
@@ -860,7 +859,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
                     allocatedPages.incrementAndGet();
 
-                    memMetrics.updateTotalAllocatedPages(1L);
+                    totalAllocatedPagesMetric.increment();
 
                     return pageIdx;
                 }

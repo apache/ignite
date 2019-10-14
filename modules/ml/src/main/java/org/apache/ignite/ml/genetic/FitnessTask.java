@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Responsible for fitness operation
@@ -51,7 +52,7 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    @NotNull @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
 

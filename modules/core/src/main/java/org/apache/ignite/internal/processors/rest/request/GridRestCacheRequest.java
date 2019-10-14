@@ -136,7 +136,6 @@ public class GridRestCacheRequest extends GridRestRequest {
         this.vals = vals;
     }
 
-
     /**
      * @return Cache configuration.
      */

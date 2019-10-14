@@ -18,47 +18,36 @@
 package org.apache.ignite.client;
 
 import java.lang.management.ManagementFactory;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.rules.Timeout;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * High Availability tests.
  */
-public class ReliabilityTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
-
+public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Thin clint failover.
      */
@@ -88,6 +77,8 @@ public class ReliabilityTest {
 
                 assertEquals(val, cachedVal);
             });
+
+            cache.clear();
 
             // Composite operation failover: query
             Map<Integer, String> data = IntStream.rangeClosed(1, 1000).boxed()
@@ -142,19 +133,13 @@ public class ReliabilityTest {
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
                  .setAddresses(cluster.clientAddresses().iterator().next()))
         ) {
-            ObjectName mbeanName = U.makeMBeanName(Ignition.allGrids().get(0).name(), "Clients",
-                ClientListenerProcessor.class.getSimpleName());
-
-            ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
-                ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class,true);
-
             ClientCache<Integer, Integer> cache = client.createCache("cache");
 
             // Before fail.
             cache.put(0, 0);
 
             // Fail.
-            mxBean.dropAllConnections();
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
 
             try {
                 cache.put(0, 0);
@@ -168,62 +153,94 @@ public class ReliabilityTest {
         }
     }
 
-    /** */
-    @FunctionalInterface
-    private interface Assertion {
-        /** */
-        void call() throws Exception;
+    /**
+     * Test that failover doesn't lead to silent query inconsistency.
+     */
+    @Test
+    public void testQueryConsistencyOnFailover() throws Exception {
+        int CLUSTER_SIZE = 2;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            cache.put(0, 0);
+            cache.put(1, 1);
+
+            Query<Cache.Entry<Integer, String>> qry = new ScanQuery<Integer, String>().setPageSize(1);
+
+            try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
+                int cnt = 0;
+
+                for (Iterator<Cache.Entry<Integer, String>> it = cur.iterator(); it.hasNext(); it.next()) {
+                    cnt++;
+
+                    if (cnt == 1) {
+                        for (int i = 0; i < CLUSTER_SIZE; i++)
+                            dropAllThinClientConnections(Ignition.allGrids().get(i));
+                    }
+                }
+
+                fail("ClientReconnectedException must be thrown");
+            }
+            catch (ClientReconnectedException expected) {
+                // No-op.
+            }
+        }
     }
 
     /**
-     * Run the assertion while Ignite nodes keep failing/recovering 10 times.
+     * Drop all thin client connections on given Ignite instance.
+     *
+     * @param ignite Ignite.
      */
-    private static void assertOnUnstableCluster(LocalIgniteCluster cluster, Assertion assertion) {
-        // Keep changing Ignite cluster topology by adding/removing nodes
-        final AtomicBoolean isTopStable = new AtomicBoolean(false);
+    private void dropAllThinClientConnections(Ignite ignite) throws Exception {
+        ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Clients",
+            ClientListenerProcessor.class.getSimpleName());
 
-        final AtomicReference<Throwable> err = new AtomicReference<>(null);
+        ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
+            ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class, true);
+
+        mxBean.dropAllConnections();
+    }
+
+    /**
+     * Run the closure while Ignite nodes keep failing/recovering several times.
+     */
+    private void assertOnUnstableCluster(LocalIgniteCluster cluster, Runnable clo) throws Exception {
+        // Keep changing Ignite cluster topology by adding/removing nodes.
+        final AtomicBoolean stopFlag = new AtomicBoolean(false);
 
         Future<?> topChangeFut = Executors.newSingleThreadExecutor().submit(() -> {
-            for (int i = 0; i < 10 && err.get() == null; i++) {
-                while (cluster.size() != 1)
-                    cluster.failNode();
+            try {
+                for (int i = 0; i < 5 && !stopFlag.get(); i++) {
+                    while (cluster.size() != 1)
+                        cluster.failNode();
 
-                while (cluster.size() != cluster.getInitialSize())
-                    cluster.restoreNode();
+                    while (cluster.size() != cluster.getInitialSize())
+                        cluster.restoreNode();
+
+                    awaitPartitionMapExchange();
+                }
+            }
+            catch (InterruptedException ignore) {
+                // No-op.
             }
 
-            isTopStable.set(true);
+            stopFlag.set(true);
         });
 
-        // Use Ignite while the nodes keep failing
+        // Use Ignite while nodes keep failing.
         try {
-            while (err.get() == null && !isTopStable.get()) {
-                try {
-                    assertion.call();
-                }
-                catch (ClientServerError ex) {
-                    // TODO: fix CACHE_DOES_NOT_EXIST server error and remove this exception handler
-                    if (ex.getCode() != ClientStatus.CACHE_DOES_NOT_EXIST)
-                        throw ex;
-                }
-            }
-        }
-        catch (Throwable e) {
-            err.set(e);
-        }
+            while (!stopFlag.get())
+                clo.run();
 
-        try {
             topChangeFut.get();
         }
-        catch (Exception e) {
-            err.set(e);
+        finally {
+            stopFlag.set(true);
         }
-
-        Throwable ex = err.get();
-
-        String msg = ex == null ? "" : ex.getMessage();
-
-        assertNull(msg, ex);
     }
 }

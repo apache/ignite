@@ -52,6 +52,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param connId Connection id.
      */
     protected ClientListenerAbstractConnectionContext(GridKernalContext ctx, long connId) {
         this.ctx = ctx;

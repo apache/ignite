@@ -334,6 +334,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: replicated only flag (SQL hint). */
     public static final String PARAM_LAZY = "lazy";
 
+    /** Parameter: schema name. */
+    public static final String PARAM_SCHEMA = "schema";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -384,6 +387,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Lazy property name. */
     public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
+
+    /** Schema property name. */
+    public static final String PROP_SCHEMA = PROP_PREFIX + PARAM_SCHEMA;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -458,7 +464,8 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
-            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
+            new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

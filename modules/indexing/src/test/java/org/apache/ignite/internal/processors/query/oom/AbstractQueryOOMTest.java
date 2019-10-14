@@ -284,7 +284,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
     }
 
-
     /**
      * @param sql Query.
      * @param lazy Lazy mode.

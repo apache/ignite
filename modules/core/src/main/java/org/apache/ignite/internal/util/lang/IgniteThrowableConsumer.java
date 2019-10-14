@@ -23,15 +23,17 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
  * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
- * Also it is able to throw {@link IgniteCheckedException} unlike {@link java.util.function.Function}.
  *
- * @param <E> Type of closure parameter.
+ * Also it is able to throw {@link IgniteCheckedException} unlike {@link java.util.function.Consumer}.
+ *
+ * @param <E> The type of the input to the operation.
  */
+@FunctionalInterface
 public interface IgniteThrowableConsumer<E> extends Serializable {
     /**
-     * Consumer body.
+     * Performs this operation on the given argument.
      *
-     * @param e Consumer parameter.
+     * @param e the input argument
      * @throws IgniteCheckedException If body execution was failed.
      */
     public void accept(E e) throws IgniteCheckedException;

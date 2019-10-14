@@ -29,6 +29,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,7 +57,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         @Nullable Object arg)
     {

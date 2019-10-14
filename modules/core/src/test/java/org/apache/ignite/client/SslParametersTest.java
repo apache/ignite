@@ -177,7 +177,7 @@ public class SslParametersTest extends GridCommonAbstractTest {
             },
             null,
             IllegalArgumentException.class,
-            "Unsupported ciphersuite"
+            "TLC_FAKE_CIPHER"
         );
     }
 

@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -351,7 +351,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(60_000, 5_000);
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -368,7 +368,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(60_000, 5_000);
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithTx(duration, 2, 2, 3);
     }
@@ -385,7 +385,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(60_000, 5_000);
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -402,7 +402,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = true;
 
-        long duration = SF.applyLB(60_000, 5_000);
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithPut(duration, 2, 2);
     }
@@ -419,7 +419,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(60_000, 5_000);
+        long duration = SF.applyLB(30_000, 5_000);
 
         checkRestartWithTx(duration, 2, 2, 3);
     }
@@ -453,7 +453,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 3, 3);
     }
@@ -470,7 +470,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 3, 3, 3);
     }
@@ -487,7 +487,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 4, 4);
     }
@@ -504,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 4, 4, 3);
     }
@@ -521,7 +521,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithPut(duration, 5, 5);
     }
@@ -538,7 +538,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTx(duration, 5, 5, 3);
     }
@@ -555,7 +555,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTxPutAll(duration, 5, 5);
     }
@@ -572,7 +572,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         rebalancMode = ASYNC;
         evict = false;
 
-        long duration = SF.applyLB(90_000, 6_000);
+        long duration = SF.applyLB(30_000, 6_000);
 
         checkRestartWithTxPutAll(duration, 2, 2);
     }

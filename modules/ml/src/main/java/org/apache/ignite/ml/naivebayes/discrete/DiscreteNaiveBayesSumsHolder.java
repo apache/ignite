@@ -25,8 +25,10 @@ import org.apache.ignite.ml.math.util.MapUtil;
 public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = -2059362365851744206L;
+
     /** Sums of values correspones to a particular bucket for all features for each label */
     Map<Double, long[][]> valuesInBucketPerLbl = new HashMap<>();
+
     /** Rows count for each label */
     Map<Double, Integer> featureCountersPerLbl = new HashMap<>();
 
@@ -47,7 +49,7 @@ public class DiscreteNaiveBayesSumsHolder implements AutoCloseable, Serializable
         return arr1;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         // Do nothing, GC will clean up.
     }

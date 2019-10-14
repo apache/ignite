@@ -1041,10 +1041,11 @@ public class BinaryUtils {
 
                     if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(
-                            "Binary type has different field types [" + "typeName=" + oldMeta.typeName() +
-                                ", fieldName=" + newField.getKey() +
-                                ", fieldTypeName1=" + oldFieldTypeName +
-                                ", fieldTypeName2=" + newFieldTypeName + ']'
+                            "Type '" + oldMeta.typeName() + "' with typeId " + oldMeta.typeId()
+                                + " has a different/incorrect type for field '" + newField.getKey()
+                                + "'. Expected '" + oldFieldTypeName + "' but '" + newFieldTypeName
+                                + "' was provided. Field type's modification is unsupported, clean {root_path}/marshaller " +
+                                "and {root_path}/binary_meta directories if the type change is required."
                         );
                     }
                 }

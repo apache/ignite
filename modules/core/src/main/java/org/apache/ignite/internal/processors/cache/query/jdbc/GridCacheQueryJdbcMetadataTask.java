@@ -44,6 +44,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,7 +62,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String cacheName) {
         Map<JdbcDriverMetadataJob, ClusterNode> map = new HashMap<>();
 

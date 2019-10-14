@@ -35,7 +35,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -60,6 +62,11 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+    
     /**
      * @throws Exception If failed.
      */
@@ -111,7 +118,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         if (closeClientSock)
             testSockNio = true;
 
-        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 5_000);
+        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 5_000);
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -847,7 +854,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         int nextNodeIdx = 0;
         int nextCacheIdx = 0;
 
-        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 5_000);
+        long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(30_000, 5_000);
 
         int MAX_NODES = 20;
         int MAX_CACHES = 10;

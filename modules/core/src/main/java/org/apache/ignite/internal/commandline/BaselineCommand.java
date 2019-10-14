@@ -22,8 +22,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
@@ -38,9 +41,10 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
 /**
@@ -51,7 +55,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
     private BaselineArguments baselineArgs;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
         Command.usage(logger, "Print cluster baseline topology:", BASELINE);
@@ -64,12 +68,12 @@ public class BaselineCommand implements Command<BaselineArguments> {
         Command.usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
         Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
-            BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", optional(CMD_AUTO_CONFIRMATION));
+            BaselineSubcommands.AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        if (BaselineSubcommands.COLLECT != baselineArgs.getCmd())
+        if (baselineArgs != null && BaselineSubcommands.COLLECT != baselineArgs.getCmd())
             return "Warning: the command will perform changes in baseline.";
 
         return null;
@@ -78,18 +82,29 @@ public class BaselineCommand implements Command<BaselineArguments> {
     /**
      * Change baseline.
      *
-     *
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute baseline action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs), clientCfg);
+            UUID coordinatorId = client.compute().nodes().stream()
+                .min(Comparator.comparingLong(GridClientNode::order))
+                .map(GridClientNode::nodeId)
+                .orElse(null);
+
+            VisorBaselineTaskResult res = executeTaskByNameOnNode(
+                client,
+                VisorBaselineTask.class.getName(),
+                toVisorArguments(baselineArgs),
+                coordinatorId,
+                clientCfg
+            );
 
             baselinePrint0(res, logger);
         }
         catch (Throwable e) {
-            logger.error("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'", e);
+            logger.severe("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'");
+            logger.severe(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -121,27 +136,27 @@ public class BaselineCommand implements Command<BaselineArguments> {
      *
      * @param res Task result with baseline topology.
      */
-    private void baselinePrint0(VisorBaselineTaskResult res, CommandLogger logger) {
-        logger.log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
-        logger.log("Current topology version: " + res.getTopologyVersion());
+    private void baselinePrint0(VisorBaselineTaskResult res, Logger logger) {
+        logger.info("Cluster state: " + (res.isActive() ? "active" : "inactive"));
+        logger.info("Current topology version: " + res.getTopologyVersion());
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
 
         if (autoAdjustSettings != null) {
-            logger.log("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
+            logger.info("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
                 + ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
             );
         }
 
         if (autoAdjustSettings.enabled) {
             if (res.isBaselineAdjustInProgress())
-                logger.log("Baseline auto-adjust is in progress");
+                logger.info("Baseline auto-adjust is in progress");
             else if (res.getRemainingTimeToBaselineAdjust() < 0)
-                logger.log("Baseline auto-adjust are not scheduled");
+                logger.info("Baseline auto-adjust are not scheduled");
             else
-                logger.log("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
+                logger.info("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
         }
 
-        logger.nl();
+        logger.info("");
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
 
@@ -157,13 +172,13 @@ public class BaselineCommand implements Command<BaselineArguments> {
             .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
             .orElse("");
 
-        logger.log("Current topology version: " + res.getTopologyVersion() + crdStr);
-        logger.nl();
+        logger.info("Current topology version: " + res.getTopologyVersion() + crdStr);
+        logger.info("");
 
         if (F.isEmpty(baseline))
-            logger.log("Baseline nodes not found.");
+            logger.info("Baseline nodes not found.");
         else {
-            logger.log("Baseline nodes:");
+            logger.info("Baseline nodes:");
 
             for (VisorBaselineNode node : baseline.values()) {
                 VisorBaselineNode srvNode = srvs.get(node.getConsistentId());
@@ -172,13 +187,13 @@ public class BaselineCommand implements Command<BaselineArguments> {
 
                 String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
 
-                logger.logWithIndent("ConsistentId=" + node.getConsistentId() + state + order, 2);
+                logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + state + order);
             }
 
-            logger.log(DELIM);
-            logger.log("Number of baseline nodes: " + baseline.size());
+            logger.info(DELIM);
+            logger.info("Number of baseline nodes: " + baseline.size());
 
-            logger.nl();
+            logger.info("");
 
             List<VisorBaselineNode> others = new ArrayList<>();
 
@@ -188,14 +203,14 @@ public class BaselineCommand implements Command<BaselineArguments> {
             }
 
             if (F.isEmpty(others))
-                logger.log("Other nodes not found.");
+                logger.info("Other nodes not found.");
             else {
-                logger.log("Other nodes:");
+                logger.info("Other nodes:");
 
                 for (VisorBaselineNode node : others)
-                    logger.logWithIndent("ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder(), 2);
+                    logger.info(DOUBLE_INDENT + "ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder());
 
-                logger.log("Number of other nodes: " + others.size());
+                logger.info("Number of other nodes: " + others.size());
             }
         }
     }
@@ -254,5 +269,10 @@ public class BaselineCommand implements Command<BaselineArguments> {
         }
 
         this.baselineArgs = baselineArgs.build();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return BASELINE.toCommandName();
     }
 }

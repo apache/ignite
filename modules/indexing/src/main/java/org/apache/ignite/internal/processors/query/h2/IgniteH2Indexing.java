@@ -26,13 +26,17 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -50,14 +54,22 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -78,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -86,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
@@ -94,6 +108,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
@@ -103,6 +118,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.processors.query.TableInformation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
@@ -167,15 +183,23 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
+import org.apache.ignite.spi.systemview.view.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
+import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
+import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Boolean.FALSE;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
@@ -185,12 +209,12 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
+import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
-import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -524,7 +548,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 null,
                 mvccSnapshot,
-                null
+                null,
+                true
             );
 
             return new GridQueryFieldsResultAdapter(select.meta(), null) {
@@ -848,7 +873,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void enableDataPageScan(Boolean dataPageScanEnabled) {
         // Data page scan is enabled by default for SQL.
-        CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled != FALSE);
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+        CacheDataTree.setDataPageScanEnabled(false);
     }
 
     /**
@@ -883,11 +909,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");            return rs;
+                qryInfo.printLogMessage(log, "Long running query is finished");
+
+            return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error: "
+                qryInfo.printLogMessage(log, "Long running query is finished with error: "
                     + e.getMessage());
             }
 
@@ -933,7 +961,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         res.setReplicatedOnly(qry.isReplicatedOnly());
         res.setSchema(schemaName);
         res.setSql(sql);
-        res.setDataPageScanEnabled(qry.isDataPageScanEnabled());
 
         if (qry.getTimeout() > 0)
             res.setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
@@ -1169,6 +1196,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (IgniteCheckedException e) {
             fail = true;
+
+            ClusterReadOnlyModeCheckedException roEx = X.cause(e, ClusterReadOnlyModeCheckedException.class);
+
+            if (roEx != null) {
+                throw new IgniteSQLException(
+                    "Failed to execute DML statement. Cluster in read-only mode [stmt=" + qryDesc.sql() +
+                    ", params=" + Arrays.deepToString(qryParams.arguments()) + "]",
+                    IgniteQueryErrorCode.CLUSTER_READ_ONLY_MODE_ENABLED,
+                    e
+                );
+            }
 
             throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qryDesc.sql() +
                 ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
@@ -1510,7 +1548,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         fldsQry.setTimeout(timeout, TimeUnit.MILLISECONDS);
         fldsQry.setPageSize(pageSize);
         fldsQry.setLocal(true);
-        fldsQry.setDataPageScanEnabled(isDataPageScanEnabled(flags));
 
         boolean loc = true;
 
@@ -1550,8 +1587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setEnforceJoinOrder(fldsQry.isEnforceJoinOrder())
             .setLocal(fldsQry.isLocal())
             .setPageSize(fldsQry.getPageSize())
-            .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS)
-            .setDataPageScanEnabled(fldsQry.isDataPageScanEnabled());
+            .setTimeout(fldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
         QueryCursorImpl<List<?>> cur;
 
@@ -1759,6 +1795,114 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
+        String... tblTypes) {
+        Set<String> types = F.isEmpty(tblTypes) ? Collections.emptySet() : new HashSet<>(Arrays.asList(tblTypes));
+
+        Collection<TableInformation> infos = new ArrayList<>();
+
+        boolean allTypes = F.isEmpty(tblTypes);
+
+        if (allTypes || types.contains(TableType.TABLE.name())) {
+            schemaMgr.dataTables().stream()
+                .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
+                .filter(t -> matches(t.getName(), tblNamePtrn))
+                .map(t -> {
+                    int cacheGrpId = t.cacheInfo().groupId();
+
+                    CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
+
+                    // We should skip table in case regarding cache group has been removed.
+                    if (cacheGrpDesc == null)
+                        return null;
+
+                    GridQueryTypeDescriptor type = t.rowDescriptor().type();
+
+                    IndexColumn affCol = t.getExplicitAffinityKeyColumn();
+
+                    String affinityKeyCol = affCol != null ? affCol.columnName : null;
+
+                    return new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name(), cacheGrpId,
+                        cacheGrpDesc.cacheOrGroupName(), t.cacheId(), t.cacheName(), affinityKeyCol,
+                        type.keyFieldAlias(), type.valueFieldAlias(), type.keyTypeName(), type.valueTypeName());
+                })
+                .filter(Objects::nonNull)
+                .forEach(infos::add);
+        }
+
+        if ((allTypes || types.contains(TableType.VIEW.name()))
+            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            schemaMgr.systemViews().stream()
+                .filter(t -> matches(t.getTableName(), tblNamePtrn))
+                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
+                .forEach(infos::add);
+        }
+
+        return infos;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
+        String colNamePtrn) {
+        Collection<ColumnInformation> infos = new ArrayList<>();
+
+        // Gather information about tables.
+        schemaMgr.dataTables().stream()
+            .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
+            .filter(t -> matches(t.getName(), tblNamePtrn))
+            .flatMap(
+                tbl -> {
+                    IndexColumn affCol = tbl.getAffinityKeyColumn();
+
+                    return Stream.of(tbl.getColumns())
+                        .filter(Column::getVisible)
+                        .filter(c -> matches(c.getName(), colNamePtrn))
+                        .map(c -> {
+                            GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
+
+                            boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
+
+                            return new ColumnInformation(
+                                c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
+                                tbl.getSchema().getName(),
+                                tbl.getName(),
+                                c.getName(),
+                                prop.type(),
+                                c.isNullable(),
+                                prop.defaultValue(),
+                                prop.precision(),
+                                prop.scale(),
+                                isAff);
+                        });
+                }
+            ).forEach(infos::add);
+
+        // Gather information about system views.
+        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            schemaMgr.systemViews().stream()
+                .filter(v -> matches(v.getTableName(), tblNamePtrn))
+                .flatMap(
+                    view ->
+                        Stream.of(view.getColumns())
+                            .filter(c -> matches(c.getName(), colNamePtrn))
+                            .map(c -> new ColumnInformation(
+                                c.getColumnId() + 1,
+                                QueryUtils.SCHEMA_SYS,
+                                view.getTableName(),
+                                c.getName(),
+                                IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
+                                c.isNullable(),
+                                null,
+                                (int)c.getPrecision(),
+                                c.getScale(),
+                                false))
+                ).forEach(infos::add);
+        }
+
+        return infos;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery qry) throws SQLException{
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
@@ -1813,6 +1957,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
 
         markIndexRebuild(cctx.name(), true);
+
+        if (cctx.group().metrics() != null)
+            cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
@@ -1916,6 +2063,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         this.ctx = ctx;
+
+        ctx.systemView().registerWalker(SqlSchemaView.class, new SqlSchemaViewWalker());
+        ctx.systemView().registerWalker(SqlTableView.class, new SqlTableViewWalker());
+        ctx.systemView().registerWalker(SqlViewView.class, new SqlViewViewWalker());
+        ctx.systemView().registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
+        ctx.systemView().registerWalker(SqlTableColumnView.class, new SqlTableColumnViewWalker());
+        ctx.systemView().registerWalker(SqlViewColumnView.class, new SqlViewColumnViewWalker());
 
         partReservationMgr = new PartitionReservationManager(ctx);
 
@@ -2221,9 +2375,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int inlineSize = getInlineSize(page, grpId, pageMemory);
 
+        String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
+
+        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
+            .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
+
         BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
             indexName,
             grpId,
+            grpName,
             pageMemory,
             ctx.cache().context().wal(),
             removeId,
@@ -2231,7 +2391,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             reuseList,
             H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
             H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
-            ctx.failure()
+            ctx.failure(),
+            lockLsnr
         ) {
             @Override protected int compare(BPlusIO io, long pageAddr, int idx, H2Row row) {
                 throw new AssertionError();
@@ -2657,8 +2818,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
             .setLocal(qryDesc.local())
             .setPageSize(qryParams.pageSize())
-            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS)
-            .setDataPageScanEnabled(qryParams.dataPageScanEnabled());
+            .setTimeout(qryParams.timeout(), TimeUnit.MILLISECONDS);
 
         Iterable<List<?>> cur;
 
@@ -2785,8 +2945,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         .setEnforceJoinOrder(qryDesc.enforceJoinOrder())
                         .setLocal(qryDesc.local())
                         .setPageSize(qryParams.pageSize())
-                        .setTimeout((int)timeout, TimeUnit.MILLISECONDS)
-                        .setDataPageScanEnabled(qryParams.dataPageScanEnabled());
+                        .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
 
                     FieldsQueryCursor<List<?>> cur = executeSelectForDml(
                         qryDesc.schemaName(),

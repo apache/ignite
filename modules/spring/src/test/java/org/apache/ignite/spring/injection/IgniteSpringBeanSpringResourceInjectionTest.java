@@ -100,6 +100,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     public static class ServiceWithSpringResourceImpl implements ServiceWithSpringResource, Service {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         @SpringResource(resourceClass = Integer.class)
         private transient Integer injectedSpringFld;

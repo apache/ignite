@@ -77,14 +77,12 @@ public class TxVerboseKey extends IgniteDataTransferObject {
         return lockType;
     }
 
-
     /**
      * @return Owner version.
      */
     public GridCacheVersion ownerVersion() {
         return ownerVer;
     }
-
 
     /**
      * @return Read.

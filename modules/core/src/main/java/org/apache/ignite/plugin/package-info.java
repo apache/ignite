@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains plugins management API.
  */
+
 package org.apache.ignite.plugin;

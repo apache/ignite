@@ -34,7 +34,7 @@ public class IgniteSpiOperationTimeoutHelper {
     // We need to reuse new logic ExponentialBackoffTimeout logic in TcpDiscovery instead of this class.
 
     /** */
-    private long lastOperStartTs;
+    private long lastOperStartNanos;
 
     /** */
     private long timeout;
@@ -72,16 +72,16 @@ public class IgniteSpiOperationTimeoutHelper {
         if (!failureDetectionTimeoutEnabled)
             return dfltTimeout;
 
-        if (lastOperStartTs == 0) {
+        if (lastOperStartNanos == 0) {
             timeout = failureDetectionTimeout;
-            lastOperStartTs = U.currentTimeMillis();
+            lastOperStartNanos = System.nanoTime();
         }
         else {
-            long curTs = U.currentTimeMillis();
+            long curNanos = System.nanoTime();
 
-            timeout = timeout - (curTs - lastOperStartTs);
+            timeout -= U.nanosToMillis(curNanos - lastOperStartNanos);
 
-            lastOperStartTs = curTs;
+            lastOperStartNanos = curNanos;
 
             if (timeout <= 0)
                 throw new IgniteSpiOperationTimeoutException("Network operation timed out. Increase " +
@@ -105,6 +105,6 @@ public class IgniteSpiOperationTimeoutHelper {
         if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
             return true;
 
-        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
+        return (timeout - U.millisSinceNanos(lastOperStartNanos) <= 0);
     }
 }

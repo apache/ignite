@@ -663,7 +663,6 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
             awaitPartitionMapExchange();
         }
 
-
         try {
             grid(1).compute().affinityCallAsync(
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),

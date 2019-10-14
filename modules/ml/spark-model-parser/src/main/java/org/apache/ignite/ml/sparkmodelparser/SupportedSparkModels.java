@@ -58,7 +58,6 @@ public enum SupportedSparkModels {
      */
     GRADIENT_BOOSTED_TREES("org.apache.spark.ml.classification.GBTClassificationModel");
 
-
     /** The separator between words. */
     private final String mdlClsNameInSpark;
 

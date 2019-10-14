@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -30,20 +30,20 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
-import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run linear regression model based on <a href="http://web.stanford.edu/group/SOL/software/lsqr/">LSQR algorithm</a>
- * ({@link LinearRegressionLSQRTrainer}) over cached dataset that was created using
- * a minmaxscaling preprocessor ({@link MinMaxScalerTrainer}, {@link MinMaxScalerPreprocessor}).
+ * ({@link LinearRegressionLSQRTrainer}) over cached dataset that was created using a minmaxscaling preprocessor ({@link
+ * MinMaxScalerTrainer}, {@link MinMaxScalerPreprocessor}).
  * <p>
- * Code in this example launches Ignite grid, fills the cache with simple test data, and defines minmaxscaling
- * trainer and preprocessor.</p>
+ * Code in this example launches Ignite grid, fills the cache with simple test data, and defines minmaxscaling trainer
+ * and preprocessor.</p>
  * <p>
- * After that it trains the linear regression model based on the specified data that has been processed
- * using minmaxscaling.</p>
+ * After that it trains the linear regression model based on the specified data that has been processed using
+ * minmaxscaling.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict predict the target
  * value and compares prediction to expected outcome (ground truth).</p>
@@ -51,8 +51,10 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model with Min Max Scaling preprocessor over cached dataset usage example started.");
         // Start ignite grid.
@@ -85,20 +87,20 @@ public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
 
                 System.out.println(">>> Linear regression model: " + mdl);
 
-                double rmse = Evaluator.evaluate(
-                    dataCache,
-                    mdl,
-                    preprocessor,
-                    new RegressionMetrics()
-                );
+                double rmse = Evaluator.evaluate(dataCache, mdl, preprocessor, MetricName.RMSE);
 
                 System.out.println("\n>>> Rmse = " + rmse);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model with MinMaxScaler preprocessor over cache based dataset usage example completed.");
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

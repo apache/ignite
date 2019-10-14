@@ -40,7 +40,6 @@ import org.junit.runners.Suite;
     JdbcThinAffinityAwarenessTransactionsSelfTest.class,
 })
 public class IgniteJdbcThinDriverAffinityAwarenessTestSuite {
-
     /**
      * Setup affinity awareness mode.
      */

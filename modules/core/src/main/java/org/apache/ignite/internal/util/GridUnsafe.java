@@ -1649,7 +1649,6 @@ public abstract class GridUnsafe {
         }
     }
 
-
     /**
      * @param obj Object.
      * @param off Offset.

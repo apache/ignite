@@ -18,4 +18,5 @@
 /**
  * Contains Ignite runtime startup classes.
  */
+
 package org.apache.ignite.startup;

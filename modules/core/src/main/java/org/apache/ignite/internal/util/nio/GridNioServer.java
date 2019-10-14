@@ -2684,17 +2684,32 @@ public class GridNioServer<T> {
         }
 
         /**
-         * Closes the session and all associated resources, then notifies the listener.
-         *
          * @param ses Session to be closed.
          * @param e Exception to be passed to the listener, if any.
          * @return {@code True} if this call closed the ses.
          */
         protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
+            return close(ses, e, ses.closeSocketOnSessionClose());
+        }
+
+        /**
+         * Closes the session and all associated resources, then notifies the listener.
+         *
+         * @param ses Session to be closed.
+         * @param e Exception to be passed to the listener, if any.
+         * @param closeSock If {@code True} the channel will be closed.
+         * @return {@code True} if this call closed the ses.
+         */
+        protected boolean close(
+            final GridSelectorNioSessionImpl ses,
+            @Nullable final IgniteCheckedException e,
+            boolean closeSock
+        ) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
-                    U.warn(log, "Closing NIO session because of unhandled exception [cls=" + e.getClass() +
+                    U.warn(log, "Client disconnected abruptly due to network connection loss or because " +
+                        "the connection was left open on application shutdown. [cls=" + e.getClass() +
                         ", msg=" + e.getMessage() + ']');
                 else
                     U.error(log, "Closing NIO session because of unhandled exception.", e);
@@ -2714,7 +2729,10 @@ public class GridNioServer<T> {
                         GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
-                closeKey(ses.key());
+                if (closeSock)
+                    closeKey(ses.key());
+                else
+                    ses.key().cancel(); // Unbind socket to the current SelectionKey.
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
@@ -2877,6 +2895,16 @@ public class GridNioServer<T> {
             super(igniteInstanceName, name, log, workerLsnr);
 
             this.selector = selector;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            super.cancel();
+
+            // If accept worker never was started then explicitly close selector, otherwise selector will be closed
+            // in finally block when workers thread will be stopped.
+            if (runner() == null)
+                closeSelector();
         }
 
         /** {@inheritDoc} */

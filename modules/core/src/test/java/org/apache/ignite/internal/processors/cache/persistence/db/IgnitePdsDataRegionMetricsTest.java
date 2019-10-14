@@ -114,6 +114,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
+
     /**
      * @return Ignite cache configuration.
      */

@@ -41,6 +41,7 @@ import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */
     private double externalFirstCls; //internal 0.0
+
     /** External representation of second class. */
     private double externalSecondCls; //internal 1.0
 
@@ -68,13 +69,15 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** {@inheritDoc} */
     @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
         Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
 
         Set<Double> uniqLabels = builder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor))
-            .compute((IgniteFunction<LabeledVectorSet<Double, LabeledVector>, Set<Double>>)x ->
-                    Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor),
+            learningEnvironment()
+        ).compute((IgniteFunction<LabeledVectorSet<LabeledVector>, Set<Double>>)x ->
+                        Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                     if (a == null)
                         return b;
                     if (b == null)
@@ -82,7 +85,7 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
                     a.addAll(b);
                     return a;
                 }
-            );
+        );
 
         if (uniqLabels != null && uniqLabels.size() == 2) {
             ArrayList<Double> lblsArr = new ArrayList<>(uniqLabels);

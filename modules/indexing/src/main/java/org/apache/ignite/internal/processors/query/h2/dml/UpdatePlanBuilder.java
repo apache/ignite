@@ -781,7 +781,6 @@ public final class UpdatePlanBuilder {
         return false;
     }
 
-
     /**
      * Checks that DML query (insert, merge, update, bulk load aka copy) columns: <br/>
      * 1) doesn't contain both entire key (_key or alias) and columns referring to part of the key; <br/>

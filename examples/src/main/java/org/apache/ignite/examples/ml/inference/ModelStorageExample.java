@@ -42,7 +42,9 @@ import org.apache.ignite.ml.inference.storage.model.ModelStorageFactory;
  * This example demonstrates how to work with {@link ModelStorage}.
  */
 public class ModelStorageExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String... args) throws IOException, ClassNotFoundException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite-ml.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -83,6 +85,9 @@ public class ModelStorageExample {
                 }
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
     /**
@@ -105,10 +110,10 @@ public class ModelStorageExample {
     /**
      * Deserialized object represented as a byte array.
      *
-     * @param o Serialized object.
+     * @param o   Serialized object.
      * @param <T> Type of serialized object.
      * @return Deserialized object.
-     * @throws IOException In case of exception.
+     * @throws IOException            In case of exception.
      * @throws ClassNotFoundException In case of exception.
      */
     @SuppressWarnings("unchecked")

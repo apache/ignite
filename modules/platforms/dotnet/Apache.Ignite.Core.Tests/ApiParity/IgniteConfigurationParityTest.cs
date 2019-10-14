@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="IgniteConfiguration"/> has all properties from Java configuration APIs.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class IgniteConfigurationParityTest
     {
         /** Known property name mappings Java -> .NET. */
@@ -63,15 +64,19 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "ClassLoader",
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
-            "ExecutorConfiguration",
             "CommunicationFailureResolver",
-            "EncryptionSpi"
+            "EncryptionSpi",
+            "MetricExporterSpi"
         };
 
         /** Properties that are missing on .NET side. */
         private static readonly string[] MissingProperties =
         {
             "RebalanceThreadPoolSize",
+            "RebalanceTimeout",
+            "RebalanceBatchesPrefetchCount",
+            "RebalanceThrottle",
+            "RebalanceBatchSize",
             "SegmentationPolicy",
             "isWaitForSegmentOnStart",
             "isAllSegmentationResolversPassRequired",
@@ -83,7 +88,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "IncludeProperties",
             "isAutoActivationEnabled",  // IGNITE-7301
             "NetworkCompressionLevel",
-            "PluginProviders"
+            "PluginProviders",
+            "MetricExporterSpi",
+            "TracingSpi"
         };
 
         /// <summary>

@@ -33,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 public class MSEHistogramTest extends ImpurityHistogramTest {
     /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta("", 0, true));
+
     /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta("", 1, false));
 

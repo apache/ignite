@@ -808,18 +808,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
         assert e != null : "Exception is expected";
 
-        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s]";
 
         try {
             // First try printing a full transaction. This is error prone.
-            U.error(log, String.format(fmt, commit, this,
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, this), e);
         }
         catch (Throwable e0) {
             e.addSuppressed(e0);
 
-            U.error(log, String.format(fmt, commit, CU.txString(this),
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, CU.txString(this)), e);
         }
     }
 
@@ -874,7 +872,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
+            entry.lockedBy(xidVersion()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidate(xidVersion()) || entry.lockedBy(xidVersion());
@@ -889,7 +887,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
+            entry.lockedByUnsafe(xidVersion()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidateUnsafe(xidVersion()) || entry.lockedByUnsafe(xidVersion());

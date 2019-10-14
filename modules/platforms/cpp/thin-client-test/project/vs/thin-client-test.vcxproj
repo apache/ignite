@@ -56,6 +56,9 @@
     <None Include="..\..\config\cache-32.xml" />
     <None Include="..\..\config\cache-default.xml" />
     <None Include="..\..\config\cache.xml" />
+    <None Include="..\..\config\non-ssl-32.xml" />
+    <None Include="..\..\config\non-ssl-default.xml" />
+    <None Include="..\..\config\non-ssl.xml" />
     <None Include="..\..\config\ssl-32.xml" />
     <None Include="..\..\config\ssl-default.xml" />
     <None Include="..\..\config\ssl.xml" />

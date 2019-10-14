@@ -215,7 +215,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert threadId == tx.threadId();
 
         this.threadId = threadId;
         this.cctx = cctx;
@@ -756,7 +755,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
                 && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0)
                 entry.newMvccTxState(row.newMvccTxState());
-
 
             assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
 

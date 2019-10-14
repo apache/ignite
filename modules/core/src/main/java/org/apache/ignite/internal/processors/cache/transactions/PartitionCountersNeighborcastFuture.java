@@ -46,13 +46,17 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdentityFuture<Void> {
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
+
     /** */
     @GridToStringExclude
     private boolean trackable = true;
+
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
+
     /** */
     private final IgniteInternalTx tx;
+
     /** */
     private final IgniteLogger log;
 
@@ -94,7 +98,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
                 // we must add mini future before sending a message, otherwise mini future must miss completion
                 add(miniFut);
 
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId, tx.topologyVersion()), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))

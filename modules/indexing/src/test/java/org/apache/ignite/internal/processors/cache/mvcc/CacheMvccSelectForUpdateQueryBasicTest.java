@@ -138,24 +138,27 @@ public class CacheMvccSelectForUpdateQueryBasicTest  extends CacheMvccAbstractTe
     @Override public void beforeTest() throws Exception {
         Ignite client = grid(3);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("dummy")
+        CacheConfiguration<Object, Object> dummyCfg = new CacheConfiguration<>("dummy")
             .setSqlSchema("PUBLIC").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         // Create dummy cache as entry point.
-        client.getOrCreateCache(ccfg);
+        client.getOrCreateCache(dummyCfg);
 
-        if (segmented) {
-            CacheConfiguration<Object, Object> seg = new CacheConfiguration<>("segmented*");
+        String templateName = String.valueOf(cacheMode) + backups + fromClient + segmented;
 
-            seg.setQueryParallelism(4);
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(templateName);
 
-            client.addCacheConfiguration(seg);
-        }
+        ccfg.setCacheMode(cacheMode);
+        ccfg.setBackups(backups);
+
+        if (segmented)
+            ccfg.setQueryParallelism(4);
+
+        client.addCacheConfiguration(ccfg);
 
         // Create MVCC table and cache.
         runSql(client, "CREATE TABLE person (id INT PRIMARY KEY, name VARCHAR, salary INT) " +
-            "WITH \"ATOMICITY=TRANSACTIONAL_SNAPSHOT, BACKUPS=" + backups +
-            (segmented ? ", TEMPLATE=segmented" : "") + "\"", false);
+            "WITH \"ATOMICITY=TRANSACTIONAL_SNAPSHOT, TEMPLATE=" + templateName + "\"", false);
 
         runSql(client, "CREATE INDEX salaryIdx ON person(salary)", false);
 

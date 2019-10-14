@@ -50,7 +50,9 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class MinMaxScalerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> MinMax preprocessing example started.");
@@ -71,14 +73,20 @@ public class MinMaxScalerExample {
                     new DatasetHelper(dataset).describe();
                 }
 
-                System.out.println(">>> Imputing example completed.");
-            } finally {
+                System.out.println(">>> MinMax preprocessing example completed.");
+            }
+            finally {
                 data.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
@@ -87,10 +95,10 @@ public class MinMaxScalerExample {
 
         IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
-        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
-        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
-        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
+        persons.put(1, new DenseVector(new Serializable[] {"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[] {"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[] {"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[] {"Karl", 24, 70000}));
 
         return persons;
     }

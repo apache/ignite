@@ -62,7 +62,8 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
@@ -100,7 +101,8 @@ public class LSQROnHeapTest extends TrainerTest {
         LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
@@ -138,7 +140,7 @@ public class LSQROnHeapTest extends TrainerTest {
         try (LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor)))
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor), TestUtils.testEnvBuilder().buildForTrainer()))
         {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 

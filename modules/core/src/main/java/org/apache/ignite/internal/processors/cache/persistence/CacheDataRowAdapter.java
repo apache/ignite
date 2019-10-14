@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -31,12 +33,12 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRuntimeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -115,7 +117,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     public final void initFromLink(CacheGroupContext grp, RowData rowData) throws IgniteCheckedException {
         initFromLink(grp, rowData, false);
     }
-
 
     /**
      * Read row from data pages.
@@ -233,7 +234,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IoStatisticsHolder statHolder,
         boolean readCacheId,
         RowData rowData,
-        IncompleteObject<?> incomplete,
+        @Nullable IncompleteObject<?> incomplete,
         boolean skipVer
     ) throws IgniteCheckedException {
         assert link != 0 : "link";
@@ -244,32 +245,49 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
-            final long page = pageMem.acquirePage(grpId, pageId, statHolder);
-
             try {
-                long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
-
-                assert pageAddr != 0L : nextLink;
+                final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
                 try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
-                    int itemId = itemId(nextLink);
+                    assert pageAddr != 0L : nextLink;
 
-                    incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                        grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+                    try {
+                        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
-                        return;
+                        int itemId = itemId(nextLink);
 
-                    nextLink = incomplete.getNextLink();
+                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
+                            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                            return;
+
+                        nextLink = incomplete.getNextLink();
+                    }
+                    finally {
+                        pageMem.readUnlock(grpId, pageId, page);
+                    }
                 }
                 finally {
-                    pageMem.readUnlock(grpId, pageId, page);
+                    pageMem.releasePage(grpId, pageId, page);
                 }
             }
-            finally {
-                pageMem.releasePage(grpId, pageId, page);
+            catch (RuntimeException | AssertionError e) {
+                // Collect all pages from first link to pageId.
+                long[] pageIds;
+
+                try {
+                    pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
+
+                }
+                catch (IgniteCheckedException e0) {
+                    // Ignore exception if failed to resolve related page ids.
+                    pageIds = new long[] {pageId};
+                }
+
+                throw new BPlusTreeRuntimeException(e, grpId, pageIds);
             }
         }
         while (nextLink != 0);
@@ -718,6 +736,60 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert !buf.hasRemaining();
 
         return incomplete;
+    }
+
+    /**
+     *
+     * @param grpId Group id.
+     * @param link Link.
+     * @param pageId PageId.
+     * @param pageMem Page memory.
+     * @param statHolder Status holder.
+     * @return Array of page ids from link to pageId.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long[] relatedPageIds(
+        int grpId,
+        long link,
+        long pageId,
+        PageMemory pageMem,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        GridLongList pageIds = new GridLongList();
+
+        long nextLink = link;
+        long nextLinkPageId = pageId(nextLink);
+
+        while (nextLinkPageId != pageId) {
+            pageIds.add(nextLinkPageId);
+
+            long page = pageMem.acquirePage(grpId, nextLinkPageId, statHolder);
+
+            try {
+                long pageAddr = pageMem.readLock(grpId, nextLinkPageId, page);
+
+                try {
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+                    int itemId = itemId(nextLink);
+
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
+
+                    nextLink = data.nextLink();
+                    nextLinkPageId = pageId(nextLink);
+                }
+                finally {
+                    pageMem.readUnlock(grpId, nextLinkPageId, page);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, nextLinkPageId, page);
+            }
+        }
+
+        pageIds.add(pageId);
+
+        return pageIds.array();
     }
 
     /**

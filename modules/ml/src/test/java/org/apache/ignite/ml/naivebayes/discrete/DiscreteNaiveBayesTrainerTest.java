@@ -42,6 +42,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
@@ -78,7 +79,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         data.put(11, new double[] {2, 1, .45, 748, LABEL_2});
     }
 
-    /** */
+    /** Trainer under test. */
     private DiscreteNaiveBayesTrainer trainer;
 
     /** Initialization {@code DiscreteNaiveBayesTrainer}. */
@@ -87,7 +88,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(binarizedDatathresholds);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectLabelProbalities() {
 
@@ -100,7 +101,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(expectedProbabilities, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
@@ -115,7 +116,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
@@ -131,7 +132,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(priorProbabilities, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectPriorProbabilities() {
         double[][][] expectedPriorProbabilites = new double[][][] {
@@ -150,7 +151,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         }
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectPriorProbabilitiesWithDefferentThresholds() {
         double[][][] expectedPriorProbabilites = new double[][][] {

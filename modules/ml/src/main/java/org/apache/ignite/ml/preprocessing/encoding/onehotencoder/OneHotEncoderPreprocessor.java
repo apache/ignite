@@ -17,9 +17,12 @@
 
 package org.apache.ignite.ml.preprocessing.encoding.onehotencoder;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialValueException;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
@@ -46,7 +49,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  *
  * NOTE: the index value associated with NULL will located in binary vector according the frequency of NULL values.
  */
-public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
+public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> implements DeployableObject {
     /** */
     private static final long serialVersionUID = 6237812226552623469L;
 
@@ -96,7 +99,7 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
                         res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] = 1.0;
 
                     } else
-                        throw new UnknownCategorialFeatureValue(tmpObj.toString());
+                        throw new UnknownCategorialValueException(tmpObj.toString());
                 }
 
             } else {
@@ -146,5 +149,10 @@ public class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
         idxOff += indexedVal;
 
         return idxOff;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

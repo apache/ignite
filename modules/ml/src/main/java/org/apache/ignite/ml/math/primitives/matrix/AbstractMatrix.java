@@ -28,9 +28,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
-import org.apache.ignite.ml.math.exceptions.RowIndexException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.ColumnIndexException;
+import org.apache.ignite.ml.math.exceptions.math.RowIndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -52,15 +52,19 @@ public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     /** */
     private static final double Z95 = 1.959964;
+
     /** */
     private static final double Z80 = 1.281552;
+
     /** */
     private static final int MAX_SAMPLES = 500;
+
     /** */
     private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
+
     /** Cached maximum element. */
     private Element maxElm = null;
 

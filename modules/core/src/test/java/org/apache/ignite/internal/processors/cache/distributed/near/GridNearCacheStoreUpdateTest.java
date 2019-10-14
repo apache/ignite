@@ -230,9 +230,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
                 }
             });
 
-
 //            IgniteInternalFuture<Object> fut2 = null;
-
             // TODO Sometimes Near cache becomes inconsistent
 //            if (!tx) {
 //                // TODO: IGNITE-3498

@@ -185,7 +185,6 @@ public class QueryUtils {
         return indexName(tableName(entity), idx);
     }
 
-
     /**
      * Get index name.
      *
@@ -1195,7 +1194,7 @@ public class QueryUtils {
      * @param e Original exception.
      * @return Schema exception.
      */
-    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
+    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Throwable e) {
         if (e == null)
             return null;
 

@@ -293,7 +293,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -302,11 +302,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.containsKey(key)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.containsKey(key)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -325,7 +331,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -334,13 +340,19 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && !(isFound = isAttributeSet(key, val)) && now < end) {
-                mux.wait(end - now);
+            long passedMillis = 0L;
 
-                now = U.currentTimeMillis();
+            while (!closed && !(isFound = isAttributeSet(key, val)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -363,7 +375,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -372,11 +384,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -404,7 +422,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -413,18 +431,24 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && now < end) {
+            long passedMillis = 0L;
+
+            while (!closed && passedMillis < timeout) {
                 isFound = this.attrs != null && this.attrs.entrySet().containsAll(attrs.entrySet());
 
                 if (isFound)
                     break;
 
-                mux.wait(end - now);
+                mux.wait(timeout - passedMillis);
 
-                now = U.currentTimeMillis();
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)

@@ -300,6 +300,13 @@ public class DataStorageConfiguration implements Serializable {
     private Integer walPageCompressionLevel;
 
     /**
+     * Creates valid durable memory configuration with all default values.
+     */
+    @SuppressWarnings("RedundantNoArgConstructor")
+    public DataStorageConfiguration() {
+    }
+
+    /**
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.
@@ -363,7 +370,8 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Changes the page size.
      *
-     * @param pageSize Page size in bytes. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} will be used.
+     * @param pageSize Page size in bytes. Supported values are: {@code 1024}, {@code 2048}, {@code 4096}, {@code 8192}
+     * and {@code 16384}. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} ({@code 4096}) will be used.
      * @see #MIN_PAGE_SIZE
      * @see #MAX_PAGE_SIZE
      */
@@ -402,17 +410,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
-     * to the number of available CPUs.
+     * Returns the number of concurrent segments in Ignite internal page mapping tables.
      *
-     * @return Mapping table concurrency level.
+     * By default equals to the number of available CPUs.
+     *
+     * @return Mapping table concurrency level(always greater than 0).
      */
     public int getConcurrencyLevel() {
-        return concLvl;
+        return concLvl <= 0 ? Runtime.getRuntime().availableProcessors() : concLvl;
     }
 
     /**
      * Sets the number of concurrent segments in Ignite internal page mapping tables.
+     *
+     * If value is not positive, the number of available CPUs will be used.
      *
      * @param concLvl Mapping table concurrency level.
      */
@@ -463,7 +474,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets checkpoint frequency.
      *
-     * @return checkpoint frequency in milliseconds.
+     * @return Checkpoint frequency in milliseconds.
      */
     public long getCheckpointFrequency() {
         return checkpointFreq <= 0 ? DFLT_CHECKPOINT_FREQ : checkpointFreq;
@@ -473,7 +484,9 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
      * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
      *
-     * @param checkpointFreq checkpoint frequency in milliseconds.
+     * If value is not positive, {@link #DFLT_CHECKPOINT_FREQ} will be used.
+     *
+     * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setCheckpointFrequency(long checkpointFreq) {
@@ -561,18 +574,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets a max allowed size of WAL archives. In bytes.
+     * Gets a max allowed size(in bytes) of WAL archives.
      *
-     * @return max size of WAL archive directory.
+     * @return max size(in bytes) of WAL archive directory(always greater than 0).
      */
     public long getMaxWalArchiveSize() {
         return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
     }
 
     /**
-     * Sets a max allowed size of WAL archives. In bytes
+     * Sets a max allowed size(in bytes) of WAL archives.
      *
-     * @param walArchiveMaxSize max size of WAL archive directory.
+     * If value is not positive, {@link #DFLT_WAL_ARCHIVE_MAX_SIZE} will be used.
+     *
+     * @param walArchiveMaxSize max size(in bytes) of WAL archive directory.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
@@ -604,19 +619,19 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets size of a WAL segment in bytes.
+     * Gets size(in bytes) of a WAL segment.
      *
-     * @return WAL segment size.
+     * @return WAL segment size(in bytes).
      */
     public int getWalSegmentSize() {
         return walSegmentSize == 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
     }
 
     /**
-     * Sets size of a WAL segment.
+     * Sets size(in bytes) of a WAL segment.
      * If value is not set (or zero), {@link #DFLT_WAL_SEGMENT_SIZE} will be used.
      *
-     * @param walSegmentSize WAL segment size. Value must be between 512Kb and 2Gb.
+     * @param walSegmentSize WAL segment size(in bytes). Value must be between 512Kb and 2Gb.
      * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
@@ -802,17 +817,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property defines size of WAL buffer.
+     * Property defines size(in bytes) of WAL buffer.
      * Each WAL record will be serialized to this buffer before write in WAL file.
      *
-     * @return WAL buffer size.
+     * @return WAL buffer size(in bytes).
      */
     public int getWalBufferSize() {
         return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
     }
 
     /**
-     * @param walBuffSize WAL buffer size.
+     * Property defines size(in bytes) of WAL buffer.
+     * If value isn't positive it calculation will be based on {@link #getWalSegmentSize()}.
+     *
+     * @param walBuffSize WAL buffer size(in bytes).
      */
     public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
         this.walBuffSize = walBuffSize;

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Hadoop Accelerator APIs.
  */
+
 package org.apache.ignite.hadoop;

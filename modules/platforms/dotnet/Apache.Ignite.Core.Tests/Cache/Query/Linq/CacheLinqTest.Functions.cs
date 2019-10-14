@@ -55,8 +55,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(key, cache.Where(x => -x.Key > -key).ToArray().Length);
 
             Assert.AreEqual(1, GetRoleCache().AsCacheQueryable().Where(x => x.Key.Foo < 2).ToArray().Length);
-            Assert.AreEqual(2, GetRoleCache().AsCacheQueryable().Where(x => x.Key.Bar > 2 && x.Value.Name != "11")
-                .ToArray().Length);
+            var cacheEntries = GetRoleCache().AsCacheQueryable().Where(x => x.Key.Bar > 2 && x.Value.Name != "11")
+                .ToArray();
+            Assert.AreEqual(3, cacheEntries.Length);
         }
 
         /// <summary>

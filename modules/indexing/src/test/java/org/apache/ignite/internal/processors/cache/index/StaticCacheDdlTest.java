@@ -385,7 +385,6 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
         fields.put("field_to_drop", String.class.getName());
         fields.put("some_field", String.class.getName());
 
-
         QueryEntity qryEntity = new QueryEntity()
             .setTableName(TABLE_NAME)
             .setKeyType("CUSTOM_SQL_KEY_TYPE") // Replace by Integer to reproduce "Key is missing from query"

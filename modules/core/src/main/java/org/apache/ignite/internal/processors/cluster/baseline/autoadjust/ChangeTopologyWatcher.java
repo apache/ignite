@@ -39,16 +39,22 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator
 public class ChangeTopologyWatcher implements GridLocalEventListener {
     /** */
     private final IgniteLogger log;
+
     /** */
     private final IgniteClusterImpl cluster;
+
     /** */
     private final GridCachePartitionExchangeManager<?, ?> exchangeManager;
+
     /** Configuration of baseline. */
     private final DistributedBaselineConfiguration baselineConfiguration;
+
     /** Discovery manager. */
     private final GridDiscoveryManager discoveryMgr;
+
     /** */
     private final GridClusterStateProcessor stateProcessor;
+
     /** Scheduler of specific task of baseline changing. */
     private final BaselineAutoAdjustScheduler baselineAutoAdjustScheduler;
 

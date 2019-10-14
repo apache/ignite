@@ -49,6 +49,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
+
 /**
  * Tests for dynamic index creation.
  */
@@ -379,6 +381,21 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     protected static void assertSqlSimpleData(String sql, int expSize) {
         for (Ignite node : Ignition.allGrids())
             assertSqlSimpleData(node, sql, expSize);
+    }
+
+    /**
+     * Wait appropriate exception.
+     *
+     * @param e Exception to be processed.
+     * @throws Exception If failed.
+     */
+    protected void awaitConcDestroyException(Exception e) throws Exception {
+        for (Throwable th = e; th != null; th = th.getCause()) {
+            if (th.getMessage().contains(CONC_DESTROY_MSG))
+                return;
+        }
+
+        throw e;
     }
 
     /**

@@ -59,7 +59,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
 
-
         CacheConfiguration ccfg = cacheConfiguration(CACHE);
 
         c.setCacheConfiguration(ccfg, mvccCfg);
@@ -183,7 +182,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     public void testPessimisticMvccMixed() throws Exception {
         testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
-
 
     /**
      * Test transaction behavior.

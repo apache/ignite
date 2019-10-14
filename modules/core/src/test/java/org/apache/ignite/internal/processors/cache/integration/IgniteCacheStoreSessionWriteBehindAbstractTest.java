@@ -79,7 +79,6 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg0 = super.cacheConfiguration(igniteInstanceName);
 
-
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
         ccfg0.setWriteBehindBatchSize(10);

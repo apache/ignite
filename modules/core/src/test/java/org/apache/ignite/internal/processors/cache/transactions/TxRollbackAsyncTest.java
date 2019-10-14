@@ -109,7 +109,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public static final int DURATION = SF.applyLB(60_000, 5_000);
 
     /** */
-    private static final String CACHE_NAME = "test";
+    protected static final String CACHE_NAME = "test";
 
     /** */
     private static final int GRID_CNT = 3;

@@ -98,7 +98,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-
         tcp = false; // Embedded mode:
 
         checkValid(IGFS_NAME + ":" + IGNITE_INSTANCE_NAME + "@");
@@ -126,7 +125,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
-
 
         tcp = false; // Embedded mode:
 
