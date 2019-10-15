@@ -51,7 +51,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -662,18 +662,24 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
     }
 
+    /**
+     * Change WAL mode for all caches.
+     *
+     * @param enabled Enabled.
+     */
     private Map<String, Boolean> changeWalMode(boolean enabled) {
-        Map<String,Boolean> resault = new HashMap<>();
+        Map<String,Boolean> result = new HashMap<>();
 
         guard();
+
         try {
-            Map<String, DynamicCacheDescriptor> mapDscs = ctx.cache().cacheDescriptors();
-            mapDscs.forEach((grpNames,dsc) -> {
-                Set<String> cacheNames = dsc.groupDescriptor().caches().keySet();
+            Collection<CacheGroupDescriptor> cacheGrpDscs = ctx.cache().cacheGroupDescriptors().values();
+            cacheGrpDscs.forEach(dsc -> {
+                Set<String> cacheNames = dsc.caches().keySet();
 
                 try {
                     Boolean b = ctx.cache().changeWalMode(Collections.unmodifiableCollection(cacheNames), enabled).get();
-                    resault.put(grpNames,b);
+                    cacheNames.forEach(name->result.put(name,b));
                 }
                 catch (IgniteCheckedException e) {
                     throw U.convertException(e);
@@ -684,7 +690,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             unguard();
         }
 
-        return resault;
+        return result;
     }
 
     /** {@inheritDoc} */
