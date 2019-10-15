@@ -529,8 +529,8 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary"/>. Using unordered
-        /// dictionary, such as <see cref="Dictionary"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary{K, V}"/>. Using unordered
+        /// dictionary, such as <see cref="Dictionary{K, V}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
         void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals);
@@ -541,8 +541,8 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary"/>. Using unordered
-        /// dictionary, such as <see cref="Dictionary"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedDictionary{K, V}"/>. Using unordered
+        /// dictionary, such as <see cref="Dictionary{K, V}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="vals">Key-value pairs to store in cache.</param>
         Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals);
@@ -666,8 +666,8 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedSet"/>. Using unordered
-        /// collection, such as <see cref="HashSet"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
         void RemoveAll(IEnumerable<TK> keys);
@@ -678,8 +678,8 @@ namespace Apache.Ignite.Core.Cache
         /// This method is transactional and will enlist the entry into ongoing transaction if there is one.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedSet"/>. Using unordered
-        /// collection, such as <see cref="HashSet"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <param name="keys">Keys whose mappings are to be removed from cache.</param>
         Task RemoveAllAsync(IEnumerable<TK> keys);
@@ -866,8 +866,8 @@ namespace Apache.Ignite.Core.Cache
         /// to process each entry, as the case may be in a non-local cache topology.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedSet"/>. Using unordered
-        /// collection, such as <see cref="HashSet"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <typeparam name="TArg">The type of the argument.</typeparam>
         /// <typeparam name="TRes">The type of the result.</typeparam>
@@ -894,8 +894,8 @@ namespace Apache.Ignite.Core.Cache
         /// to process each entry, as the case may be in a non-local cache topology.
         ///
         /// Keys are locked in the order in which they are enumerated. It is caller's responsibility to
-        /// make sure keys always follow same order, such as by using <see cref="SortedSet"/>. Using unordered
-        /// collection, such as <see cref="HashSet"/>, while calling this method in parallel <b>will lead to deadlock</b>.
+        /// make sure keys always follow same order, such as by using <see cref="SortedSet{K}"/>. Using unordered
+        /// collection, such as <see cref="HashSet{K}"/>, while calling this method in parallel <b>will lead to deadlock</b>.
         /// </summary>
         /// <typeparam name="TArg">The type of the argument.</typeparam>
         /// <typeparam name="TRes">The type of the result.</typeparam>
