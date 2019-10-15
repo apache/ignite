@@ -22,8 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +35,7 @@ import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -41,6 +44,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -188,6 +192,74 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             catch (ClientReconnectedException expected) {
                 // No-op.
             }
+        }
+    }
+
+    /**
+     * Test that client works properly with servers txId intersection.
+     */
+    @Test
+    public void testTxWithIdIntersection() throws Exception {
+        int CLUSTER_SIZE = 2;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration().setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            CyclicBarrier barrier = new CyclicBarrier(2);
+
+            GridTestUtils.runAsync(() -> {
+                try {
+                    // Another thread starts transaction here.
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    for (int i = 0; i < CLUSTER_SIZE; i++)
+                        dropAllThinClientConnections(Ignition.allGrids().get(i));
+
+                    ClientTransaction tx = client.transactions().txStart();
+
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    // Another thread puts to cache here.
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    tx.commit();
+
+                    barrier.await(1, TimeUnit.SECONDS);
+                }
+                catch (Exception e) {
+                    log.error("Unexpected error", e);
+                }
+            });
+
+            ClientTransaction tx = client.transactions().txStart();
+
+            barrier.await(1, TimeUnit.SECONDS);
+
+            // Another thread drops connections and create new transaction here, which started on another node with the
+            // same transaction id as we started in this thread.
+            barrier.await(1, TimeUnit.SECONDS);
+
+            try {
+                cache.put(0, 0);
+
+                fail("Exception expected");
+            }
+            catch (ClientException expected) {
+                // No-op.
+            }
+
+            tx.close();
+
+            barrier.await(1, TimeUnit.SECONDS);
+
+            // Another thread commit transaction here.
+            barrier.await(1, TimeUnit.SECONDS);
+
+            assertFalse(cache.containsKey(0));
         }
     }
 
