@@ -94,17 +94,14 @@ public enum IgniteFeatures {
     /** Support of chain parameter in snapshot delete task for Web Console. */
     WC_SNAPSHOT_CHAIN_MODE(22),
 
-    /** Support of baseline auto adjustment for Web Console. */
-    WC_BASELINE_AUTO_ADJUSTMENT(23),
+    /** Support of baseline auto adjustment. */
+    BASELINE_AUTO_ADJUSTMENT(23),
 
     /** Scheduling disabled. */
     WC_SCHEDULING_NOT_AVAILABLE(24),
 
     /** Support of DR-specific visor tasks used by control utility. */
-    DR_CONTROL_UTILITY(25),
-
-    /** Baseline auto-adjust. */
-    BASELINE_AUTO_ADJUST(28);
+    DR_CONTROL_UTILITY(25);
 
     /**
      * Unique feature identifier.
