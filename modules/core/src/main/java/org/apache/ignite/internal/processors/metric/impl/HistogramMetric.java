@@ -40,6 +40,16 @@ public class HistogramMetric {
     }
 
     /**
+     * @param bounds Bounds.
+     * @param vals Initial values.
+     */
+    public HistogramMetric(long[] bounds, long[] vals) {
+        holder = new HistogramHolder(bounds);
+
+        value(vals);
+    }
+
+    /**
      * Sets value.
      *
      * @param x Value.
@@ -91,6 +101,20 @@ public class HistogramMetric {
             res[i] = h.measurements.get(i);
 
         return res;
+    }
+
+    /**
+     * Sets holder values.
+     *
+     * @param vals New values array.
+     */
+    private void value(long[] vals) {
+        HistogramHolder h = holder;
+
+        assert vals.length == h.measurements.length();
+
+        for (int i = 0; i < vals.length; i++)
+            h.measurements.set(i, vals[i]);
     }
 
     /**
