@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartition
 import org.apache.ignite.internal.processors.cache.distributed.CachePageWriteLockUnlockTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossDetectionOnNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLostWhileClearingTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheRebalanceThreadPoolTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
@@ -123,6 +124,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(SafeLogTxFinishErrorTest.class);
 
         suite.addTestSuite(TxCrossCachePartitionConsistencyTest.class);
+
+        suite.addTestSuite(CacheRebalanceThreadPoolTest.class);
 
         return suite;
     }
