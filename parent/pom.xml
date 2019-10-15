@@ -447,6 +447,10 @@
                                 <packages>org.apache.ignite.spi.eventstorage*</packages>
                             </group>
                             <group>
+                                <title>SPI: Metric</title>
+                                <packages>org.apache.ignite.spi.metric*</packages>
+                            </group>
+                            <group>
                                 <title>Communication Failure Detection</title>
                                 <packages>org.apache.ignite.failure</packages>
                             </group>
