@@ -86,7 +86,7 @@ public class CacheMessagesTimeLoggingTest extends GridCacheMessagesTimeLoggingAb
 
         TcpCommunicationSpiMBean mbean = mbean(0);
 
-        Map<UUID, Map<String, HistogramMetric>> nodeMap = mbean.getOutMetricsByNodeByMsgClass();
+        Map<UUID, Map<String, HistogramMetric>> nodeMap = getOutMetricsByNodeByMsgClass(mbean);
 
         assertNotNull(nodeMap);
 

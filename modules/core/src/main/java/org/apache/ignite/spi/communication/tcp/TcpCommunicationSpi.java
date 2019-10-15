@@ -75,7 +75,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1944,9 +1943,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * @return Map containing histogram metrics for outcoming messages by node by message class name.
+     * @return Map containing json representation of histogram metrics
+     *         for outgoing messages by node by message class name.
      */
-    public Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass() {
+    public Map<UUID, Map<String, String>> getOutMetricsByNodeByMsgClass() {
         return metricsLsnr.outMetricsByNodeByMsgClass();
     }
 
@@ -5087,7 +5087,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         /** {@inheritDoc} */
-        @Override public Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass() {
+        @Override public Map<UUID, Map<String, String>> getOutMetricsByNodeByMsgClass() {
             return TcpCommunicationSpi.this.getOutMetricsByNodeByMsgClass();
         }
 
