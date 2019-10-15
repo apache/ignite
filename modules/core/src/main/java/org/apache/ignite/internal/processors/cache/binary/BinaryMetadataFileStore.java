@@ -18,17 +18,20 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -39,12 +42,9 @@ import org.jetbrains.annotations.Nullable;
  * Current implementation needs to be rewritten as it issues IO operations from discovery thread
  * which may lead to segmentation of nodes from cluster.
  */
-class BinaryMetadataFileStore {
+class BinaryMetadataFileStore implements BinaryTypeWriter {
     /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
-
-    /** */
-    private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
 
     /** */
     private final GridKernalContext ctx;
@@ -56,18 +56,16 @@ class BinaryMetadataFileStore {
     private final IgniteLogger log;
 
     /**
-     * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
      * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta and consistentId
      */
     BinaryMetadataFileStore(
-        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
+        final String igniteWorkDir,
         @Nullable final File binaryMetadataFileStoreDir
-    ) throws IgniteCheckedException {
-        this.metadataLocCache = metadataLocCache;
+    ) {
         this.ctx = ctx;
         this.log = log;
 
@@ -76,20 +74,33 @@ class BinaryMetadataFileStore {
 
         fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
 
-        if (binaryMetadataFileStoreDir != null)
-            workDir = binaryMetadataFileStoreDir;
-        else {
-            final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
+        try {
+            if (binaryMetadataFileStoreDir != null)
+                workDir = binaryMetadataFileStoreDir;
+            else {
+                final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
 
-            workDir = new File(U.resolveWorkDirectory(
-                ctx.config().getWorkDirectory(),
-                "binary_meta",
-                false
-            ),
-                subFolder);
+                workDir = new File(U.resolveWorkDirectory(
+                    igniteWorkDir,
+                    "binary_meta",
+                    false
+                ),
+                    subFolder);
+            }
+
+            U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
 
-        U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
+    /** {@inheritDoc} */
+    @Override public void writeMeta(int typeId, BinaryType type) {
+        assert type instanceof BinaryTypeImpl;
+        assert !ctx.clientNode();
+
+        mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
     }
 
     /**
@@ -126,8 +137,10 @@ class BinaryMetadataFileStore {
 
     /**
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
+     *
+     * @param locCache Restore metadata to.
      */
-    void restoreMetadata() {
+    void restoreMetadata(BiConsumer<Integer, BinaryMetadataHolder> locCache) {
         if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
@@ -135,7 +148,7 @@ class BinaryMetadataFileStore {
             try (FileInputStream in = new FileInputStream(file)) {
                 BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
 
-                metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+                locCache.accept(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
             }
             catch (Exception e) {
                 U.warn(log, "Failed to restore metadata from file: " + file.getName() +
@@ -158,7 +171,8 @@ class BinaryMetadataFileStore {
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(existingMeta, binMeta);
 
             writeMetadata(mergedMeta);
-        } else
+        }
+        else
             writeMetadata(binMeta);
     }
 
