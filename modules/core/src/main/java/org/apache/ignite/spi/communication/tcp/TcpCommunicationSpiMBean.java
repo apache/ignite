@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
@@ -186,7 +185,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * grouped by response class name and node ids.
      */
     @MXBeanDescription("Network time for message grouped by message class name and node.")
-    public Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass();
+    public Map<UUID, Map<String, String>> getOutMetricsByNodeByMsgClass();
 
     /**
      * Gets outbound messages queue size.

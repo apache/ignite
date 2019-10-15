@@ -40,6 +40,16 @@ public class HistogramMetric {
     }
 
     /**
+     * @param bounds Bounds.
+     * @param vals Initial values.
+     */
+    public HistogramMetric(long[] bounds, long[] vals) {
+        holder = new HistogramHolder(bounds);
+
+        value(vals);
+    }
+
+    /**
      * Sets value.
      *
      * @param x Value.
@@ -91,6 +101,24 @@ public class HistogramMetric {
             res[i] = h.measurements.get(i);
 
         return res;
+    }
+
+    /**
+     * Sets holder values.
+     *
+     * @param vals New values array.
+     */
+    private void value(long[] vals) {
+        HistogramHolder h = holder;
+
+        final String errorMsg = "Vals array doesn't match bounds: \n" +
+                                "Vals: " + Arrays.toString(vals) + "; length: " + vals.length + "\n" +
+                                "Measurements: " + Arrays.toString(h.bounds) + "; length: " + h.bounds.length;
+
+        assert vals.length == h.bounds.length + 1 : errorMsg;
+
+        for (int i = 0; i < vals.length; i++)
+            h.measurements.set(i, vals[i]);
     }
 
     /**

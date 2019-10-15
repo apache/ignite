@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -314,9 +315,10 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     }
 
     /**
-     * @return Map containing histogram metrics for outgoing messages by node by message class name.
+     * @return Map containing json representation of histogram metrics
+     *         for outgoing messages by node by message class name.
      */
-    public Map<UUID, Map<String, HistogramMetric>> outMetricsByNodeByMsgClass() {
+    public Map<UUID, Map<String, String>> outMetricsByNodeByMsgClass() {
         return convertMap(msgNetworkTimeMetric.outMetricsMap);
     }
 
@@ -394,15 +396,15 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @param typeIdMap typeId map.
      * @return class name map.
      */
-    private Map<UUID, Map<String, HistogramMetric>> convertMap(Map<UUID, Map<Short, HistogramMetric>> typeIdMap) {
-        Map<UUID, Map<String, HistogramMetric>> res = new HashMap<>(typeIdMap.size());
+    private Map<UUID, Map<String, String>> convertMap(Map<UUID, Map<Short, HistogramMetric>> typeIdMap) {
+        Map<UUID, Map<String, String>> res = new HashMap<>(typeIdMap.size());
 
         typeIdMap.forEach((uuid, map) -> {
-            Map<String, HistogramMetric> clsNameMap = new HashMap<>();
+            Map<String, String> clsNameMap = new HashMap<>();
 
             map.forEach((typeId, metric) -> {
                 if (msgTypMap.containsKey(typeId))
-                    clsNameMap.put(msgTypMap.get(typeId), metric);
+                    clsNameMap.put(msgTypMap.get(typeId), MetricUtils.toJson(metric));
             });
 
             res.put(uuid, clsNameMap);

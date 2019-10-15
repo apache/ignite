@@ -164,7 +164,7 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
         if (mbean == null)
             return null;
 
-        Map<UUID, Map<String, HistogramMetric>> nodeMap = mbean.getOutMetricsByNodeByMsgClass();
+        Map<UUID, Map<String, HistogramMetric>> nodeMap = getOutMetricsByNodeByMsgClass(mbean);
 
         assertNotNull(nodeMap);
 
@@ -174,6 +174,30 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
             return null;
 
         return clsNameMap.get(respCls.getName());
+    }
+
+    /**
+     * Converts json histograms to HistogramMetrics.
+     *
+     * @param mbean Source mbean for histogram.
+     * @return converted histograms.
+     */
+    public static Map<UUID, Map<String, HistogramMetric>> getOutMetricsByNodeByMsgClass(TcpCommunicationSpiMBean mbean) {
+        Map<UUID, Map<String, String>> nodeMap = mbean.getOutMetricsByNodeByMsgClass();
+
+        Map<UUID, Map<String, HistogramMetric>> res = new HashMap<>();
+
+        nodeMap.forEach((uuid, map) -> {
+            Map<String, HistogramMetric> clsNameMap = new HashMap<>();
+
+            map.forEach((cls, metricJson) -> {
+                clsNameMap.put(cls, fromJson(metricJson));
+            });
+
+            res.put(uuid, clsNameMap);
+        });
+
+        return res;
     }
 
     /** */
@@ -328,6 +352,66 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
             else
                 assertTrue(errorMsg, totalReqsNum >= respNum);
         });
+    }
+
+    /**
+     * Parses json string and constructs {@code HistogramMetric} from it.
+     *
+     * @param json Source json.
+     * @return Constructed HistogramMetric.
+     */
+    public static HistogramMetric fromJson(String json) {
+        String[] mainParts = json.split(",\"values\":");
+        assert mainParts.length == 2;
+
+        String boundsPart = mainParts[0];
+        String valsPart = mainParts[1];
+
+        String boundsString = boundsPart.replace("{\"bounds\":", "")
+            .replace("[", "")
+            .replace("]", "");
+
+        try {
+            long[] bounds = Arrays.stream(boundsString.split(","))
+                .mapToLong(Long::parseLong)
+                .toArray();
+
+            return new HistogramMetric(bounds, parseVals(valsPart, bounds.length + 1));
+        } catch (NumberFormatException e) {
+            fail("Failed to extract hist bounds");
+
+            return null;
+        }
+    }
+
+    /** */
+    private static long[] parseVals(String valsStr, int size) {
+        long[] result = new long[size];
+
+        int valIdx = 0;
+        int bracketIdx = 0;
+
+        try {
+            for (int i = 0; i < size; i++) {
+                valIdx = valsStr.indexOf("\"value\":", valIdx + 1);
+                bracketIdx = valsStr.indexOf("}", valIdx);
+
+                assert valIdx > 0;
+                assert bracketIdx > 0;
+
+                String valStr = valsStr.substring(valIdx + "\"value\":".length(), bracketIdx);
+
+                result[i] = Long.parseLong(valStr);
+            }
+        } catch (NumberFormatException e) {
+            fail("Failed to extract hist value");
+
+            return null;
+        }
+
+        assert valsStr.indexOf("\"value\":", valIdx + 1) == -1;
+
+        return result;
     }
 
     /**
