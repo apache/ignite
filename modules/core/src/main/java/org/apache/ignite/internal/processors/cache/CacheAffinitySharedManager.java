@@ -1532,7 +1532,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupContext grp = cctx.cache().cacheGroup(holder.groupId());
 
                 if (affReq != null && affReq.contains(aff.groupId())) {
-                    assert AffinityTopologyVersion.NONE.equals(aff.lastVersion()) : aff.lastVersion();
+                    assert resTopVer.compareTo(aff.lastVersion()) >= 0 : aff.lastVersion();
 
                     CacheGroupAffinityMessage affMsg = receivedAff.get(aff.groupId());
 
@@ -1702,7 +1702,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
      */
-    private Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
+    public Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
         final GridDhtPartitionsExchangeFuture fut) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
@@ -1710,12 +1710,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                 AffinityTopologyVersion topVer = evts.topologyVersion();
 
-                CacheGroupHolder cache = getOrCreateGroupHolder(topVer, desc);
+                CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
 
-                List<List<ClusterNode>> assign = cache.affinity().calculate(topVer, evts, evts.discoveryCache()).assignment();
+                // Already calculated.
+                if (grpHolder.affinity().lastVersion().equals(topVer))
+                    return;
 
-                if (!cache.rebalanceEnabled || fut.cacheGroupAddedOnExchange(desc.groupId(), desc.receivedFrom()))
-                    cache.affinity().initialize(topVer, assign);
+                List<List<ClusterNode>> assign = grpHolder.affinity().calculate(topVer, evts, evts.discoveryCache()).assignment();
+
+                if (!grpHolder.rebalanceEnabled || fut.cacheGroupAddedOnExchange(desc.groupId(), desc.receivedFrom()))
+                    grpHolder.affinity().initialize(topVer, assign);
 
                 fut.timeBag().finishLocalStage("Affinity initialization (enforced) " +
                     "[grp=" + desc.cacheOrGroupName() + "]");
@@ -2196,7 +2200,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                 CacheGroupHolder grpHolder = getOrCreateGroupHolder(evts.topologyVersion(), desc);
 
-                boolean latePrimary = grpHolder.rebalanceEnabled;
+                CacheGroupHolder cache = getOrCreateGroupHolder(evts.topologyVersion(), desc);
+
+                // Already calculated.
+                if (cache.affinity().lastVersion().equals(evts.topologyVersion()))
+                    return;
+
+                boolean latePrimary = cache.rebalanceEnabled;
 
                 boolean grpAdded = evts.nodeJoined(desc.receivedFrom());
 

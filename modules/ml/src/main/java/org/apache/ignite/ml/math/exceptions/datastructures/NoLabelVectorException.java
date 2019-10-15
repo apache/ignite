@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.knn;
+package org.apache.ignite.ml.math.exceptions.datastructures;
 
 import org.apache.ignite.IgniteException;
 
 /**
- * Shows Labeled Dataset index with non-existing Labeled Vector.
+ * This exception is used to indicate error with non-existing Labeled Vector in the given Labeled Dataset.
  */
 public class NoLabelVectorException extends IgniteException {
     /** */
