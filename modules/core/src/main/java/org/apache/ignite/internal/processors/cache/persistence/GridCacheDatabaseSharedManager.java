@@ -1466,8 +1466,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         checkpointer = null;
 
-                        cp.scheduledCp.cpFinishFut.onDone(
-                            new NodeStoppingException("Checkpointer is stopped during node stop."));
+                        cp.scheduledCp.fail(new NodeStoppingException("Checkpointer is stopped during node stop."));
 
                         break;
                     }
@@ -1726,7 +1725,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             failCheckpointReadLock();
 
                         try {
-                            checkpointer.wakeupForCheckpoint(0, "too many dirty pages").cpBeginFut
+                            checkpointer.wakeupForCheckpoint(0, "too many dirty pages")
+                                .futureFor(LOCK_RELEASED)
                                 .getUninterruptibly();
                         }
                         catch (IgniteFutureTimeoutCheckedException e) {
@@ -1953,7 +1953,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Checkpointer cp = checkpointer;
 
         if (cp != null)
-            return cp.wakeupForCheckpoint(0, reason).cpBeginFut;
+            return cp.wakeupForCheckpoint(0, reason).futureFor(LOCK_RELEASED);
 
         return null;
     }
@@ -1966,24 +1966,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cp == null)
             return;
 
-        CheckpointProgressSnapshot progSnapshot = cp.wakeupForCheckpoint(0, reason, lsnr);
-
-        IgniteInternalFuture fut1 = progSnapshot.cpFinishFut;
-
-        fut1.get();
-
-        if (!progSnapshot.started)
-            return;
-
-        IgniteInternalFuture fut2 = cp.wakeupForCheckpoint(0, reason).cpFinishFut;
-
-        assert fut1 != fut2;
-
-        fut2.get();
+        cp.wakeupForCheckpoint(0, reason, lsnr).futureFor(FINISHED).get();
     }
 
     /** {@inheritDoc} */
-    @Override public CheckpointFuture forceCheckpoint(String reason) {
+    @Override public CheckpointProgress forceCheckpoint(String reason) {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
@@ -2217,10 +2204,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointerThread = cpThread;
 
-        CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
+        CheckpointProgress chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
         if (chp != null)
-            chp.cpBeginFut.get();
+            chp.futureFor(LOCK_RELEASED).get();
     }
 
     /**
@@ -3523,7 +3510,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             catch (Throwable t) {
                 err = t;
 
-                scheduledCp.cpFinishFut.onDone(t);
+                scheduledCp.fail(t);
 
                 throw t;
             }
@@ -3536,21 +3523,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
 
-                scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                scheduledCp.fail(new NodeStoppingException("Node is stopping."));
             }
         }
 
         /**
          *
          */
-        private CheckpointProgressSnapshot wakeupForCheckpoint(long delayFromNow, String reason) {
+        private CheckpointProgress wakeupForCheckpoint(long delayFromNow, String reason) {
             return wakeupForCheckpoint(delayFromNow, reason, null);
         }
 
         /**
          *
          */
-        private <R> CheckpointProgressSnapshot wakeupForCheckpoint(
+        private <R> CheckpointProgress wakeupForCheckpoint(
             long delayFromNow,
             String reason,
             IgniteInClosure<? super IgniteInternalFuture<R>> lsnr
@@ -3560,7 +3547,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 synchronized (this) {
                     CheckpointProgress sched = scheduledCp;
 
-                    sched.cpFinishFut.listen(lsnr);
+                    sched.futureFor(FINISHED).listen(lsnr);
                 }
             }
 
@@ -3569,9 +3556,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
             if (sched.nextCpNanos <= nextNanos)
-                return new CheckpointProgressSnapshot(sched);
-
-            CheckpointProgressSnapshot ret;
+                return sched;
 
             synchronized (this) {
                 sched = scheduledCp;
@@ -3582,12 +3567,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     sched.nextCpNanos = nextNanos;
                 }
 
-                ret = new CheckpointProgressSnapshot(sched);
-
                 notifyAll();
             }
 
-            return ret;
+            return sched;
         }
 
         /**
@@ -3605,7 +3588,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 scheduledCp.snapshotOperation = snapshotOperation;
 
-                ret = scheduledCp.cpBeginFut;
+                ret = scheduledCp.futureFor(LOCK_RELEASED);
 
                 notifyAll();
             }
@@ -3627,7 +3610,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
                 catch (IgniteCheckedException e) {
                     if (curCpProgress != null)
-                        curCpProgress.cpFinishFut.onDone(e);
+                        curCpProgress.fail(e);
 
                     // In case of checkpoint initialization error node should be invalidated and stopped.
                     cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -3712,7 +3695,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         try {
                             doneWriteFut.get();
                         } catch (IgniteCheckedException e) {
-                            chp.progress.cpFinishFut.onDone(e);
+                            chp.progress.fail(e);
 
                             // In case of checkpoint writing error node should be invalidated and stopped.
                             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -3723,7 +3706,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
                         if (shutdownNow) {
-                            chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                            chp.progress.fail(new NodeStoppingException("Node is stopping."));
 
                             return;
                         }
@@ -3733,7 +3716,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (!skipSync) {
                             for (Map.Entry<PageStore, LongAdder> updStoreEntry : updStores.entrySet()) {
                                 if (shutdownNow) {
-                                    chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                                    chp.progress.fail(new NodeStoppingException("Node is stopping."));
 
                                     return;
                                 }
@@ -3762,7 +3745,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         destroyedPartitionsCnt = destroyEvictedPartitions();
                     }
                     catch (IgniteCheckedException e) {
-                        chp.progress.cpFinishFut.onDone(e);
+                        chp.progress.fail(e);
 
                         cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -3778,7 +3761,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             markCheckpointEnd(chp);
                         }
                         catch (IgniteCheckedException e) {
-                            chp.progress.cpFinishFut.onDone(e);
+                            chp.progress.fail(e);
 
                             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -4069,7 +4052,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 //There are allowable to replace pages only after checkpoint entry was stored to disk.
                 GridTuple3<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer, Boolean> cpPagesTriple =
-                    beginAllCheckpoints(curr.cpMarkerStored);
+                    beginAllCheckpoints(curr.futureFor(MARKER_STORED_TO_DISK));
 
                 cpPagesTuple = new IgniteBiTuple<>(cpPagesTriple.get1(), cpPagesTriple.get2());
 
@@ -4109,7 +4092,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, hasPages, hasUserPages);
 
-            curr.cpBeginFut.onDone();
+            curr.transitTo(LOCK_RELEASED);
 
             for (DbCheckpointListener lsnr : lsnrs)
                 lsnr.onCheckpointBegin(ctx);
@@ -4137,7 +4120,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
 
-                curr.cpMarkerStored.onDone();
+                curr.transitTo(MARKER_STORED_TO_DISK);
 
                 tracker.onSplitAndSortCpPagesStart();
 
@@ -4321,7 +4304,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             synchronized (this) {
                 curr = scheduledCp;
 
-                curr.state(LOCK_TAKEN);
+                curr.transitTo(LOCK_TAKEN);
 
                 if (curr.reason == null)
                     curr.reason = "timeout";
@@ -4466,7 +4449,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 removeCheckpointFiles(cp);
 
             if (chp.progress != null)
-                chp.progress.cpFinishFut.onDone();
+                chp.progress.transitTo(FINISHED);
         }
 
         /** {@inheritDoc} */
@@ -4985,44 +4968,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Scheduled time of checkpoint. */
         private volatile long nextCpNanos;
 
-        /** Checkpoint begin phase future. TODO it should be encapsulated. */
-        private GridFutureAdapter cpBeginFut = new GridFutureAdapter<Void>() {
-            @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
-                CheckpointProgress.this.state(LOCK_RELEASED);
+        /** Current checkpoint state. */
+        private volatile AtomicReference<State> state = new AtomicReference(State.SCHEDULED);
 
-                return super.onDone(res, err, cancel);
-            }
-        };
+        /** Future which would be finished when corresponds state is set. */
+        private final Map<State, GridFutureAdapter> stateFutures = new ConcurrentHashMap<>();
 
-        /** Checkpoint marker stored to disk phase future. TODO it should be encapsulated. */
-        private GridFutureAdapter cpMarkerStored = new GridFutureAdapter<Void>() {
-            @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
-                CheckpointProgress.this.state(MARKER_STORED_TO_DISK);
-
-                return super.onDone(res, err, cancel);
-            }
-        };
-
-        /** Checkpoint finish phase future. TODO it should be encapsulated. */
-        private GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
-            @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
-                if (err != null && !cpBeginFut.isDone())
-                    cpBeginFut.onDone(err);
-
-                if (err != null && !cpMarkerStored.isDone())
-                    cpMarkerStored.onDone(err);
-
-                CheckpointProgress.this.state(FINISHED);
-
-                return super.onDone(res, err, cancel);
-            }
-        };
+        /** Cause of fail, which has happened during the checkpoint or null if checkpoint was successful. */
+        private volatile Throwable failCause;
 
         /** Flag indicates that snapshot operation will be performed after checkpoint. */
         private volatile boolean nextSnapshot;
-
-        /** Current checkpoint state. */
-        private volatile AtomicReference<State> state = new AtomicReference(State.SCHEDULED);
 
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
@@ -5041,30 +4997,42 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return {@code true} if checkpoint is stated.
-         * @deprecated For legacy reason.
+         * @return {@code true} If checkpoint already started but have not finished yet.
          */
-        @Deprecated
         public boolean inProgress() {
-            return state.get().ordinal() >= State.LOCK_TAKEN.ordinal();
-        }
-
-        /** */
-        public boolean started() {
-            return cpBeginFut.isDone();
-        }
-
-        /** */
-        public boolean finished() {
-            return cpFinishFut.isDone();
+            return greaterOrEqualTo(LOCK_RELEASED) && !greaterOrEqualTo(FINISHED);
         }
 
         /**
          * @param expectedState Expected state.
          * @return {@code true} if current state equal to given state.
          */
-        public boolean atLeastState(State expectedState) {
+        public boolean greaterOrEqualTo(State expectedState) {
             return state.get().ordinal() >= expectedState.ordinal();
+        }
+
+        /**
+         * @param state State for which future should be returned.
+         * @return Existed or new future which corresponds to the given state.
+         */
+        public GridFutureAdapter futureFor(State state) {
+            GridFutureAdapter stateFut = stateFutures.computeIfAbsent(state, (k) -> new GridFutureAdapter());
+
+            if (greaterOrEqualTo(state) && !stateFut.isDone())
+                stateFut.onDone(failCause);
+
+            return stateFut;
+        }
+
+        /**
+         * Mark this checkpoint execution as failed.
+         *
+         * @param error Causal error of fail.
+         */
+        public void fail(Throwable error) {
+            failCause = error;
+
+            transitTo(FINISHED);
         }
 
         /**
@@ -5072,17 +5040,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @param newState New checkpoint state.
          */
-        public void state(@NotNull State newState) {
+        public void transitTo(@NotNull State newState) {
             State state = this.state.get();
 
-            if (state.ordinal() < newState.ordinal())
+            if (state.ordinal() < newState.ordinal()) {
                 this.state.compareAndSet(state, newState);
+
+                doFinishFuturesWhichLessOrEqualTo(newState);
+            }
+        }
+
+        /**
+         * Finishing futures with correct result in direct state order until lastState(included).
+         *
+         * @param lastState State until which futures should be done.
+         */
+        private void doFinishFuturesWhichLessOrEqualTo(@NotNull State lastState) {
+            for (State old : State.values()) {
+                GridFutureAdapter fut = stateFutures.get(old);
+
+                if (fut != null && !fut.isDone())
+                    fut.onDone(failCause);
+
+                if (old == lastState)
+                    return;
+            }
         }
 
         /**
          * Possible checkpoint states. Ordinal is important. Every next state follows the previous one.
          */
-        enum State {
+        public enum State {
             /** Checkpoint is waiting to execution. **/
             SCHEDULED,
             /** Checkpoint was awakened and it is preparing to start. **/
@@ -5093,37 +5081,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             MARKER_STORED_TO_DISK,
             /** Checkpoint was finished. **/
             FINISHED
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CheckpointProgressSnapshot implements CheckpointFuture {
-        /** */
-        private final boolean started;
-
-        /** */
-        private final GridFutureAdapter<Object> cpBeginFut;
-
-        /** */
-        private final GridFutureAdapter<Object> cpFinishFut;
-
-        /** */
-        CheckpointProgressSnapshot(CheckpointProgress cpProgress) {
-            started = cpProgress.inProgress();
-            cpBeginFut = cpProgress.cpBeginFut;
-            cpFinishFut = cpProgress.cpFinishFut;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridFutureAdapter beginFuture() {
-            return cpBeginFut;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridFutureAdapter<Object> finishFuture() {
-            return cpFinishFut;
         }
     }
 
