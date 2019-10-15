@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
@@ -80,6 +79,7 @@ public class DistributedBaselineConfiguration {
         boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
 
         dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
+        dfltEnabled = !persistenceEnabled;
 
         isp.registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
@@ -91,8 +91,6 @@ public class DistributedBaselineConfiguration {
                 }
 
                 @Override public void onReadyToWrite() {
-                    dfltEnabled = ChangeTopologyWatcher.isSupported(ctx) && !persistenceEnabled;
-
                     setDefaultValue(baselineAutoAdjustEnabled, dfltEnabled, log);
                     setDefaultValue(baselineAutoAdjustTimeout, dfltTimeout, log);
                 }

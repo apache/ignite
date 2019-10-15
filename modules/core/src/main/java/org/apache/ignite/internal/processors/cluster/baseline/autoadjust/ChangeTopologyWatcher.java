@@ -137,7 +137,7 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      * @return {@code True} if all nodes in the cluster support auto-adjust baseline.
      * @see IgniteFeatures#BASELINE_AUTO_ADJUSTMENT
      */
-    public static boolean isSupported(GridKernalContext ctx) {
+    private static boolean isSupported(GridKernalContext ctx) {
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
 
         if (discoSpi instanceof IgniteDiscoverySpi)

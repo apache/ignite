@@ -302,9 +302,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** Notify components listeners. */
     private void notifyReadyForRead() {
-        if (isSupported(ctx))
-            for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
-                subscriber.onReadyForRead(this);
+        for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
+            subscriber.onReadyForRead(this);
     }
 
     /**
@@ -313,7 +312,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * @param fut Local join future. There won't be any notifications for that failed it's join.
      */
     private void notifyReadyForWrite(IgniteInternalFuture<DiscoveryLocalJoinData> fut) {
-        if (fut.error() == null && isSupported(ctx))
+        if (fut.error() == null)
             for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForWrite(this);
     }
