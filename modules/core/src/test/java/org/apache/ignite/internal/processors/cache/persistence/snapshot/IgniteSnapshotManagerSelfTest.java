@@ -23,12 +23,10 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -312,27 +310,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteUtils.delete(cpDir);
         IgniteUtils.delete(walDir);
 
-        Files.walk(cacheBackup.toPath())
-            .map(Path::toFile)
-            .forEach(System.out::println);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setWorkDirectory(mgr.localSnapshotDir(SNAPSHOT_NAME).getAbsolutePath());
 
-        // copy all backups to the cache directory
-        Files.walk(cacheBackup.toPath())
-            .map(Path::toFile)
-            .filter(f -> !f.isDirectory())
-            .forEach(f -> {
-                try {
-                    File target = new File(cacheWorkDir, f.getName());
-
-                    Files.copy(f.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-                catch (IOException e) {
-                    throw new IgniteException(e);
-                }
-            });
-
-
-        IgniteEx ig2 = startGrid(0);
+        IgniteEx ig2 = startGrid(cfg);
 
         ig2.cluster().active(true);
 
