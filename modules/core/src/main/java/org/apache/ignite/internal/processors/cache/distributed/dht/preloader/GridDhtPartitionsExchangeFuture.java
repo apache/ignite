@@ -1789,6 +1789,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return;
 
         try {
+            String troubleshootingHint;
+
+            if (crd.isLocal())
+                troubleshootingHint = "Some nodes have not sent acknowledgement for latch completion. "
+                    + "It's possible due to unfinishined atomic updates, transactions "
+                    + "or not released explicit locks on that nodes. "
+                    + "Please check logs for errors on nodes with ids reported in latch `pendingAcks` collection";
+            else
+                troubleshootingHint = "For more details please check coordinator node logs [crdNode=" + crd.toString() + "]";
+
             while (true) {
                 try {
                     cctx.exchange().exchangerBlockingSectionBegin();
@@ -1806,7 +1816,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     break;
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                    U.warn(log, "Unable to await partitions release latch within timeout: " + releaseLatch);
+                    U.warn(log, "Unable to await partitions release latch within timeout. "
+                        + troubleshootingHint + " [latch=" + releaseLatch + "]");
 
                     // Try to resend ack.
                     releaseLatch.countDown();
