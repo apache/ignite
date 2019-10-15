@@ -15,9 +15,15 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains exceptions for distributed ML.
- */
+package org.apache.ignite.internal.processors.rest;
 
-package org.apache.ignite.ml.math.exceptions;
+import org.apache.ignite.internal.processors.GridProcessor;
+
+/**
+ * REST processor marker interface.
+ *
+ * @see GridRestProcessor
+ */
+public interface IgniteRestProcessor extends GridProcessor {
+    // No-op.
+}

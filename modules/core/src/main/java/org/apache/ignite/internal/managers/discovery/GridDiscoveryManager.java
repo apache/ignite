@@ -128,6 +128,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -171,6 +172,12 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private static final String PREFIX = "Topology snapshot";
+
+    /** */
+    public static final String NODES_SYS_VIEW = "nodes";
+
+    /** */
+    public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
 
     /** Discovery cached history size. */
     private static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
@@ -276,6 +283,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
+
+        ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
+            ClusterNodeView.class,
+            () -> F.concat(false, allNodes(), daemonNodes()),
+            ClusterNodeView::new);
     }
 
     /** {@inheritDoc} */
