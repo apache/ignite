@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.LongStream;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -37,6 +37,7 @@ import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.mxbean.TransactionsMXBean;
@@ -262,16 +263,14 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * with given delay on user time for each transaction.
      *
      * @param client Client.
-     * @param txCount Transactions count.
+     * @param txCnt Transactions count.
      * @param userDelay User delay for each transaction.
      */
-    private void doAsyncTransactions(Ignite client, int txCount, long userDelay) {
-        ExecutorService executorService = Executors.newFixedThreadPool(txCount);
+    private void doAsyncTransactions(Ignite client, int txCnt, long userDelay) {
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(txCnt);
 
-        List<Future> futures = new LinkedList<>();
-
-        for (int i = 0; i < txCount; i++) {
-            futures.add(executorService.submit(() -> {
+        for (int i = 0; i < txCnt; i++) {
+            executorSrvc.submit(() -> {
                 try {
                     doInTransaction(client, () -> {
                         doSleep(userDelay);
@@ -284,10 +283,10 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
                 catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            }));
+            });
         }
 
-        executorService.shutdown();
+        executorSrvc.shutdown();
     }
 
     /**
@@ -295,13 +294,13 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * mode.
      *
      * @param client Client.
-     * @param systemDelay System delay.
+     * @param sysDelay System delay.
      * @param userDelay User delay.
      * @param mode Mode, see {@link TxTestMode}.
      * @throws Exception If failed.
      */
-    private void doTransaction(Ignite client, boolean systemDelay, boolean userDelay, TxTestMode mode) throws Exception {
-        if (systemDelay)
+    private void doTransaction(Ignite client, boolean sysDelay, boolean userDelay, TxTestMode mode) throws Exception {
+        if (sysDelay)
             slowSystem = true;
 
         if (mode == TxTestMode.FAIL)
@@ -327,20 +326,20 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * Allows to run a transaction which executes {@link #txCallable} with given system delay, user delay and
      * mode, also measures it's start time, completion time, gets MX bean with metrics and gives it in a result.
      *
-     * @param systemDelay  System delay.
+     * @param sysDelay  System delay.
      * @param userDelay User delay.
      * @param mode Mode, see {@link TxTestMode}.
      * @return Result, see {@link ClientTxTestResult}.
      * @throws Exception If failed.
      */
-    private ClientTxTestResult measureClientTransaction(boolean systemDelay, boolean userDelay, TxTestMode mode) throws Exception {
+    private ClientTxTestResult measureClientTransaction(boolean sysDelay, boolean userDelay, TxTestMode mode) throws Exception {
         logTxDumpLsnr.reset();
         rollbackDumpLsnr.reset();
 
         long startTime = System.currentTimeMillis();
 
         try {
-            doTransaction(client, systemDelay, userDelay, mode);
+            doTransaction(client, sysDelay, userDelay, mode);
         }
         catch (Exception e) {
             // Giving a time for transaction to rollback.
@@ -358,11 +357,14 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      * Checks that histogram long array is not null and is not empty.
      *
      * @param histogram Array.
+     * @param txCnt Total count of transactions, that should be presented in histogram.
      */
-    private void assertNotEmpty(long[] histogram) {
+    private void checkHistogram(long[] histogram, long txCnt) {
         assertNotNull(histogram);
 
-        assertTrue(histogram.length > 0);
+        long cnt = LongStream.of(histogram).sum();
+
+        assertEquals("Must be " + txCnt + " transaction(s), actually were: " + cnt + ". Histogram: " + histogram, txCnt, cnt);
     }
 
     /**
@@ -394,8 +396,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             assertTrue(sysTime < res.completionTime - res.startTime - userTime + EPSILON);
         }
 
-        assertNotEmpty((long[])res.mBean.getAttribute(METRIC_SYSTEM_TIME_HISTOGRAM));
-        assertNotEmpty((long[])res.mBean.getAttribute(METRIC_USER_TIME_HISTOGRAM));
+        checkHistogram((long[])res.mBean.getAttribute(METRIC_SYSTEM_TIME_HISTOGRAM), 2);
+        checkHistogram((long[])res.mBean.getAttribute(METRIC_USER_TIME_HISTOGRAM), 2);
     }
 
     /**
@@ -717,7 +719,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
-                if (msg0 instanceof GridNearLockRequest) {
+                if (msg0 instanceof GridNearLockRequest || msg0 instanceof MvccTxSnapshotRequest) {
                     if (slowSystem) {
                         slowSystem = false;
 
