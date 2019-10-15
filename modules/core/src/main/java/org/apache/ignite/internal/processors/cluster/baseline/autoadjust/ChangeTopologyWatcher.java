@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 
-import static org.apache.ignite.internal.IgniteFeatures.BASELINE_AUTO_ADJUST;
+import static org.apache.ignite.internal.IgniteFeatures.BASELINE_AUTO_ADJUSTMENT;
 import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustData.NULL_BASELINE_DATA;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
@@ -135,17 +135,17 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
 
     /**
      * @return {@code True} if all nodes in the cluster support auto-adjust baseline.
-     * @see IgniteFeatures#BASELINE_AUTO_ADJUST
+     * @see IgniteFeatures#BASELINE_AUTO_ADJUSTMENT
      */
     private static boolean isSupported(GridKernalContext ctx) {
         DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
 
         if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(BASELINE_AUTO_ADJUST);
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(BASELINE_AUTO_ADJUSTMENT);
         else {
             Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
 
-            return IgniteFeatures.allNodesSupports(ctx, nodes, BASELINE_AUTO_ADJUST);
+            return IgniteFeatures.allNodesSupports(ctx, nodes, BASELINE_AUTO_ADJUSTMENT);
         }
     }
 
