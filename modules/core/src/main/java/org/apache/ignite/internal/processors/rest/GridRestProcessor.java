@@ -843,6 +843,18 @@ public class GridRestProcessor extends GridProcessorAdapter {
         String name = null;
 
         switch (req.command()) {
+            case CACHE_CREATE:
+                perm = SecurityPermission.CACHE_CREATE;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
+            case CACHE_DESTROY:
+                perm = SecurityPermission.CACHE_DESTROY;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
             case CACHE_GET:
             case CACHE_CONTAINS_KEY:
             case CACHE_CONTAINS_KEYS:

@@ -30,6 +30,12 @@ public enum GridRestCommand {
      * =============
      */
 
+    /** Create cache. */
+    CACHE_CREATE("create"),
+
+    /** Destroy cache. */
+    CACHE_DESTROY("destroy"),
+
     /** Get cached value. */
     CACHE_GET("get"),
 
