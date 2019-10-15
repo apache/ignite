@@ -32,7 +32,8 @@ public interface IgniteTxRemoteState extends IgniteTxState {
     public void clearEntry(IgniteTxKey key);
 
     /**
+     * @param cacheId Cache id.
      * @param part Partition number.
      */
-    public void invalidPartition(int part);
+    public void invalidPartition(int cacheId, int part);
 }

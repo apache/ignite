@@ -304,7 +304,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        txState.invalidPartition(part);
+        txState.invalidPartition(cacheCtx.cacheId(), part);
     }
 
     /**

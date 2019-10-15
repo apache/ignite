@@ -117,7 +117,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidPartition(int part) {
+    @Override public void invalidPartition(int cacheId, int part) {
         if (entry != null && entry.context().affinity().partition(entry.key()) == part)
             entry = null;
     }

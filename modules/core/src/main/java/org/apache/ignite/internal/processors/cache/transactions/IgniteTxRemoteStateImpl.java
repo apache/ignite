@@ -155,10 +155,13 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidPartition(int part) {
+    @Override public void invalidPartition(int cacheId, int part) {
         if (writeMap != null) {
             for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext(); ) {
                 IgniteTxEntry e = it.next();
+
+                if (e.cacheId() != cacheId)
+                    continue;
 
                 GridCacheContext cacheCtx = e.context();
 
