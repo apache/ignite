@@ -127,6 +127,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchSize(1);
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
+        cachePCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -160,7 +162,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
-        iCfg.setRebalanceThreadPoolSize(3);
+        iCfg.setRebalanceThreadPoolSize(4);
 
         return iCfg;
     }
@@ -557,7 +559,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         Thread t4 = new Thread() {
             @Override public void run() {
                 generateData(ignite3, 0, 2);
-
             }
         };
 

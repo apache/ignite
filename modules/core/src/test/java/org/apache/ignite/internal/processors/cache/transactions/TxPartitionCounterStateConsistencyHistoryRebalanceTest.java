@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
- * Test partitions consistency in various scenarios.
+ * Test partitions consistency in various scenarios when all rebalance is historical.
  */
 public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPartitionCounterStateConsistencyTest {
     /** {@inheritDoc} */
