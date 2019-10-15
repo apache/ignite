@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
@@ -143,12 +141,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
-    /** */
-    private byte[] tombstoneBytes;
-
-    /** */
-    private CacheObject tombstoneVal;
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
@@ -163,17 +155,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
-
-        tombstoneBytes = cctx.marshaller().marshal(null);
-
-        tombstoneVal = new CacheObjectImpl(null, tombstoneBytes);
-    }
-
-    /**
-     * @return Value to be stored for removed entry.
-     */
-    public CacheObject tombstoneValue() {
-        return tombstoneVal;
     }
 
     /**
@@ -189,13 +170,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert val != null : row;
 
-        if (val.cacheObjectType() == CacheObject.TYPE_REGULAR) {
-            byte[] bytes = val.valueBytes(null);
-
-            return Arrays.equals(tombstoneBytes, bytes);
-        }
-
-        return false;
+        return val.cacheObjectType() == CacheObject.TOMBSTONE;
     }
 
     /**
@@ -204,14 +179,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param incomplete Incomplete object.
      * @return Tombstone flag or {@code null} if there is no enough data.
      */
-    public Boolean isTombstone(ByteBuffer buf,
+    public Boolean isTombstone(
+        ByteBuffer buf,
         @Nullable KeyCacheObject key,
-        @Nullable IncompleteCacheObject incomplete) {
+        @Nullable IncompleteCacheObject incomplete
+    ) {
         if (key == null) {
             if (incomplete == null) { // Did not start read key yet.
-                if (buf.remaining() < IncompleteCacheObject.HEAD_LEN) {
+                if (buf.remaining() < IncompleteCacheObject.HEAD_LEN)
                     return null;
-                }
 
                 int keySize = buf.getInt(buf.position());
 
@@ -253,15 +229,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             return isTombstone(buf, 0);
         }
 
-        byte[] data = incomplete.data();
-
-        if (data == null) // Header is not available yet.
-            return null;
-
-        if (incomplete.type() != CacheObject.TYPE_REGULAR || data.length != tombstoneBytes.length)
-            return Boolean.FALSE;
-
-        return null;
+        return incomplete.type() == CacheObject.TOMBSTONE;
      }
 
     /**
@@ -270,23 +238,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Tombstone flag or {@code null} if there is no enough data.
      */
      private Boolean isTombstone(ByteBuffer buf, int offset) {
-         int valLen = buf.getInt(buf.position() + offset);
-         if (valLen != tombstoneBytes.length)
-             return Boolean.FALSE;
-
          byte valType = buf.get(buf.position() + offset + 4);
-         if (valType != CacheObject.TYPE_REGULAR)
-             return Boolean.FALSE;
 
-         if (buf.remaining() < (offset + 5 + tombstoneBytes.length))
-             return null;
-
-         for (int i = 0; i < tombstoneBytes.length; i++) {
-             if (tombstoneBytes[i] != buf.get(buf.position() + offset + 5 + i))
-                 return Boolean.FALSE;
-         }
-
-         return Boolean.TRUE;
+         return valType == CacheObject.TOMBSTONE;
      }
 
     /**
@@ -294,28 +248,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return {@code True} if stored value is tombstone.
      */
     public boolean isTombstone(long addr) {
-        int off = 0;
+        byte type = PageUtils.getByte(addr, 4);
 
-        byte type = PageUtils.getByte(addr, off + 4);
-
-        if (type != CacheObject.TYPE_REGULAR)
-            return false;
-
-        int len = PageUtils.getInt(addr, off);
-
-        if (len != tombstoneBytes.length)
-            return false;
-
-        off += 5;
-
-        for (int i = 0; i < len; i++) {
-            byte b = PageUtils.getByte(addr, off++);
-
-            if (tombstoneBytes[i] != b)
-                return false;
-        }
-
-        return true;
+        return type == CacheObject.TOMBSTONE;
     }
 
     /**

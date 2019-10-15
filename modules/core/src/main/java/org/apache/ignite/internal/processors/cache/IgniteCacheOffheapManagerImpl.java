@@ -2765,7 +2765,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 this.oldRow = oldRow;
 
-                newRow = createRow(cctx, key, cctx.shared().database().tombstoneValue(), ver, 0, oldRow);
+                newRow = createRow(cctx, key, TombstoneCacheObject.INSTANCE, ver, 0, oldRow);
             }
 
             /** {@inheritDoc} */
