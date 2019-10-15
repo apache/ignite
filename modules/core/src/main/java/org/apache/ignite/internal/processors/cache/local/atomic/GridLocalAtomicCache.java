@@ -563,6 +563,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkSetType(keys, "Invoke All");
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -650,6 +652,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkSetType(keys, "Invoke All");
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -681,6 +685,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         if (keyCheck)
             validateCacheKeys(map.keySet());
+
+        checkMapType(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -716,6 +722,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         if (keyCheck)
             validateCacheKeys(map.keySet());
+
+        checkMapType(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -858,9 +866,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean readThrough,
         boolean keepBinary
     ) throws IgniteCheckedException {
-        if (keyCheck)
-            validateCacheKeys(keys);
-
         if (op == DELETE)
             ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
         else

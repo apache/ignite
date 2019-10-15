@@ -30,10 +30,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -114,6 +118,7 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.transactions.TransactionCheckedException;
+import org.apache.ignite.internal.util.GridSerializableMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -134,6 +139,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -2723,6 +2729,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkSetType(keys, "Invoke All");
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2812,6 +2820,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkSetType(keys, "Invoke All Async");
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2862,6 +2872,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
+        checkMapType(map, "Invoke All Async");
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2906,6 +2918,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (keyCheck)
             validateCacheKeys(map.keySet());
+
+        checkMapType(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -3052,6 +3066,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
+        checkMapType(m, "Put All");
+
         putAll0(m);
 
         if (statsEnabled)
@@ -3082,6 +3098,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (keyCheck)
             validateCacheKeys(m.keySet());
+
+        checkMapType(m, "Put All");
 
         return putAllAsync0(m);
     }
@@ -3240,6 +3258,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkSetType(keys, "Remove All");
+
         removeAll0(keys);
 
         if (statsEnabled)
@@ -3279,6 +3299,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        checkSetType(keys, "Remove All Async");
 
         IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
 
@@ -5174,6 +5196,58 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 keyCheck = false;
             }
         }
+    }
+
+    /**
+     * Checks that given map is sorted or otherwise constant order.
+     *
+     * Issues developer warning otherwise.
+     *
+     * @param m Map to examine.
+     */
+    protected void checkMapType(Map m, String op) {
+        if (m == null || m.size() <= 1)
+            return;
+
+        if (m instanceof SortedMap || m instanceof LinkedHashMap || m instanceof GridSerializableMap)
+            return;
+
+        Transaction tx = ctx.kernalContext().cache().transactions().tx();
+        if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
+            return;
+
+        LT.warn(log, "Unordered map of type " + m.getClass().getSimpleName() +
+            " was passed to " + op + " operation on cache: " + name() + ". " +
+            "Locking order of keys cannot be guaranteed - this will lead to deadlock! " +
+            "Please always use sorted map such as TreeMap with bulk operations.");
+    }
+
+
+    /**
+     * Checks that given collection is not a set, or that it is sorted or otherwise constant order.
+     *
+     * Issues developer warning otherwise.
+     *
+     * @param coll Collection to examine.
+     */
+    protected void checkSetType(Collection coll, String op) {
+        if (coll == null || coll.size() <= 1)
+            return;
+
+        if (!(coll instanceof Set))
+            return;
+
+        if (coll instanceof SortedSet || coll instanceof LinkedHashSet)
+            return;
+
+        Transaction tx = ctx.kernalContext().cache().transactions().tx();
+        if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
+            return;
+
+        LT.warn(log, "Unordered set of type " + coll.getClass().getSimpleName() +
+            " was passed to " + op + " operation on cache: " + name() + ". " +
+            "Locking order of keys cannot be guaranteed - this will lead to deadlock! " +
+            "Please always use sorted map such as TreeMap with bulk operations.");
     }
 
     /**
