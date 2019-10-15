@@ -119,7 +119,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
     }
 
     /** {@inheritDoc} */
-    public void removeByPartition(Set<Integer> parts) {
+    @Override public void removeByPartition(Set<Integer> parts) {
         Iterator<Map.Entry<Long, H2CacheRow>> iter = rows.entrySet().iterator();
 
         while (iter.hasNext()) {

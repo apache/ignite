@@ -66,13 +66,13 @@ import org.junit.Test;
  */
 public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     /** */
-    private final static int NUM_KEYS = 1_000;
+    private static final int NUM_KEYS = 1_000;
 
     /** */
-    private final static int NUM_PARTS = 10;
+    private static final int NUM_PARTS = 10;
 
     /** */
-    private final static long TIMEOUT = 600_000L;
+    private static final long TIMEOUT = 600_000L;
 
     /** */
     private int maxInlineSize = 20;
