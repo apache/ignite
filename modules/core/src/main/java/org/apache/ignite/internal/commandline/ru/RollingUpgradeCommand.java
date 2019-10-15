@@ -16,6 +16,7 @@
 package org.apache.ignite.internal.commandline.ru;
 
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatus;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusResult;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeStatusTask;
 
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_ROLLING_UPGRADE_MODE;
 import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
 import static org.apache.ignite.internal.commandline.CommandList.ROLLING_UPGRADE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
@@ -46,6 +49,13 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        if(!getBoolean(DISTRIBUTED_ROLLING_UPGRADE_MODE.name(), false)) {
+            log.severe("Failed to execute rolling upgrade command='" + rollingUpgradeArgs.command().text() + "\' "
+                + "Rolling upgrade isn't supported.");
+
+            throw new IgniteCheckedException("Rolling upgrade isn't supported.");
+        }
+
         try (GridClient client = Command.startClient(clientCfg)) {
             if (RollingUpgradeSubCommands.STATUS == rollingUpgradeArgs.command()) {
                 VisorRollingUpgradeStatusResult status = executeTask(

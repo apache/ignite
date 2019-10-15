@@ -359,6 +359,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
+    @WithSystemProperty(key = "DISTRIBUTED_ROLLING_UPGRADE_MODE", value = "true")
     public void testHelp() throws Exception {
         injectTestSystemOut();
 

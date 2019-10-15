@@ -56,8 +56,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteFeatures.DISTRIBUTED_ROLLING_UPGRADE_MODE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.commandline.CommandList.ROLLING_UPGRADE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -680,7 +683,7 @@ public class CommandHandler {
 
         logger.info("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
+        Arrays.stream(CommandList.values()).filter(this::skipCommand).forEach(c -> c.command().printUsage(logger));
 
         logger.info("By default commands affecting the cluster require interactive confirmation.");
         logger.info("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
@@ -704,5 +707,16 @@ public class CommandHandler {
         logger.info(DOUBLE_INDENT + EXIT_CODE_CONNECTION_FAILED + " - connection failed.");
         logger.info(DOUBLE_INDENT + ERR_AUTHENTICATION_FAILED + " - authentication failed.");
         logger.info(DOUBLE_INDENT + EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.");
+    }
+
+    /**
+     * Returns {@code true}, if the given command should be skipped.
+     * @param cmd Command.
+     */
+    private boolean skipCommand(CommandList cmd) {
+        if (cmd == ROLLING_UPGRADE && !getBoolean(DISTRIBUTED_ROLLING_UPGRADE_MODE.name(), false))
+            return false;
+
+        return true;
     }
 }

@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Result;
 import org.apache.ignite.internal.visor.ru.VisorRollingUpgradeChangeModeResult;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -31,6 +32,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 /**
  * Command handler tests for rolling-upgrade.
  */
+@WithSystemProperty(key  = "DISTRIBUTED_ROLLING_UPGRADE_MODE", value = "true")
 public class GridCommandHandlerRUTest extends GridCommandHandlerAbstractTest {
     /** */
     private boolean addExtraArguments;
@@ -51,6 +53,11 @@ public class GridCommandHandlerRUTest extends GridCommandHandlerAbstractTest {
         super.beforeTest();
 
         addExtraArguments = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
     }
 
     /**
