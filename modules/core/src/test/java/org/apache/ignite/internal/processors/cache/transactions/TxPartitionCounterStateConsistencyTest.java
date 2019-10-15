@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,12 +32,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -60,8 +59,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -99,7 +101,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Test if same updates order on all owners after txs are finished.
+     * Tests for same order of updates on all owners after txs are finished.
      */
     public void testSingleThreadedUpdateOrder() throws Exception {
         backups = 2;
@@ -320,8 +322,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     /**
      * Tests reproduces the problem: in-place update in tree during rebalance in partition was not handled as update
      * causing missed WAL record which has to be processed on recovery.
-     *
-     * @throws Exception
      */
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance() throws Exception {
         backups = 2;
@@ -359,6 +359,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                if (msg0.groupId() != CU.cacheId(DEFAULT_CACHE_NAME))
+                    return false;
 
                 Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
 
@@ -438,9 +441,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
 
         // Block all rebalance from crd.
-        crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+        crdSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtPartitionSupplyMessage;
+            }
+        });
 
-        crd.cluster().active(true);
+        crd.cluster().active(true); // Rebalancing is triggered on activation.
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             try {
@@ -785,39 +792,35 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
         clientSpi.blockMessages((node, msg) -> msg instanceof GridNearLockRequest);
 
-        IgniteInternalFuture txFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = client.transactions().txStart()) {
-                    Map<Integer, Integer> map = new LinkedHashMap<>();
+        IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
+            try (Transaction tx = client.transactions().txStart()) {
+                Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                    map.put(g1Keys.get(0), g1Keys.get(0)); // clientFirst=true in lockAll mapped to stable part.
-                    map.put(key, key); // clientFirst=false in lockAll mapped to moving part.
+                map.put(g1Keys.get(0), g1Keys.get(0)); // clientFirst=true in lockAll mapped to stable part.
+                map.put(key, key); // clientFirst=false in lockAll mapped to moving part.
 
-                    cache.putAll(map);
-                    cache2.putAll(new LinkedHashMap<>(map));
+                cache.putAll(map);
+                cache2.putAll(new LinkedHashMap<>(map));
 
-                    tx.commit(); // Will start preparing in the middle of PME.
-                }
+                tx.commit(); // Will start preparing in the middle of PME.
             }
         });
 
-        IgniteInternalFuture lockFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    // Wait for first lock request sent on local (late) topology.
-                    clientSpi.waitForBlocked();
-                    // Continue late switch PME.
-                    resumeDiscoSndLatch.countDown();
-                    crdDiscoSpi.setClosure(null);
+        IgniteInternalFuture lockFut = GridTestUtils.runAsync(() -> {
+            try {
+                // Wait for first lock request sent on local (late) topology.
+                clientSpi.waitForBlocked();
+                // Continue late switch PME.
+                resumeDiscoSndLatch.countDown();
+                crdDiscoSpi.setClosure(null);
 
-                    // Wait late affinity switch.
-                    awaitPartitionMapExchange();
-                    // Continue tx mapping and preparing.
-                    clientSpi.stopBlock();
-                }
-                catch (InterruptedException e) {
-                    fail(X.getFullStackTrace(e));
-                }
+                // Wait late affinity switch.
+                awaitPartitionMapExchange();
+                // Continue tx mapping and preparing.
+                clientSpi.stopBlock();
+            }
+            catch (InterruptedException e) {
+                fail(X.getFullStackTrace(e));
             }
         });
 
@@ -979,6 +982,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                if (msg0.groupId() != CU.cacheId(DEFAULT_CACHE_NAME))
+                    return false;
 
                 Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
 
