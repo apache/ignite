@@ -14,24 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.ml.math.exceptions.knn;
-
-import org.apache.ignite.IgniteException;
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
- * Shows Labeled Dataset index with non-existing Labeled Vector.
+ * This class is based on the corresponding class from Apache Common Math lib.
+ * Exception to be thrown when the required data is missing.
  */
-public class NoLabelVectorException extends IgniteException {
+public class NoDataException extends MathIllegalArgumentException {
+    /** Serializable version Id. */
+    private static final long serialVersionUID = -3629324471511904459L;
+
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final String NO_DATA = "No data.";
 
     /**
-     * Creates new exception.
-     *
-     * @param idx index of missed Labeled vector.
+     * Construct the exception.
      */
-    public NoLabelVectorException(int idx) {
-        super("No vector in position" + idx);
+    public NoDataException() {
+        this(NO_DATA);
+    }
+
+    /**
+     * Construct the exception with a specific message.
+     *
+     * @param msg Message.
+     */
+    public NoDataException(String msg) {
+        super(msg);
     }
 }

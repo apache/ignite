@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
  * Exception to be thrown when a non-singular matrix is expected.

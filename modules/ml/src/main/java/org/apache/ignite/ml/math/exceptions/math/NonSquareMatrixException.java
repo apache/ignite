@@ -15,9 +15,19 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains exceptions for kNN algorithms.
- */
+package org.apache.ignite.ml.math.exceptions.math;
 
-package org.apache.ignite.ml.math.exceptions.knn;
+/**
+ * Indicates that given matrix is not a square matrix.
+ */
+public class NonSquareMatrixException extends CardinalityException {
+    /**
+     * Creates new square size violation exception.
+     *
+     * @param exp Expected cardinality.
+     * @param act Actual cardinality.
+     */
+    public NonSquareMatrixException(int exp, int act) {
+        super(exp, act);
+    }
+}

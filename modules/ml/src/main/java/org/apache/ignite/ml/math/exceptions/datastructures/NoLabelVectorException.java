@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.datastructures;
 
 import org.apache.ignite.IgniteException;
 
 /**
- * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
+ * This exception is used to indicate error with non-existing Labeled Vector in the given Labeled Dataset.
  */
-public class IndexException extends IgniteException {
+public class NoLabelVectorException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param idx Index value that caused this exception.
+     * Creates new exception.
+     *
+     * @param idx index of missed Labeled vector.
      */
-    public IndexException(int idx) {
-        super("Invalid (out of bound) index: " + idx);
+    public NoLabelVectorException(int idx) {
+        super("No vector in position" + idx);
     }
 }
