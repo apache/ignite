@@ -356,7 +356,9 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
+    /**
+     *
+     */
     @Before
     public void before() throws Exception {
         clientMode = true;
@@ -383,6 +385,9 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         startGrid(2);
     }
 
+    /**
+     *
+     */
     @After
     public void after() throws Exception {
         // Stop client nodes.
