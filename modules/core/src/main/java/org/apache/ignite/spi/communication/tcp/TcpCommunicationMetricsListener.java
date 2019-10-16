@@ -315,7 +315,8 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     }
 
     /**
-     * @return Map containing histogram metrics for outgoing messages by node by message class name.
+     * @return Map containing json representation of histogram metrics
+     *         for outgoing messages by node by message class name.
      */
     public Map<UUID, Map<String, String>> outMetricsByNodeByMsgClass() {
         return convertMap(msgNetworkTimeMetric.outMetricsMap);

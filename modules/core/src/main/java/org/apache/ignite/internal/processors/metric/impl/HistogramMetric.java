@@ -111,7 +111,11 @@ public class HistogramMetric {
     private void value(long[] vals) {
         HistogramHolder h = holder;
 
-        assert vals.length == h.measurements.length();
+        final String errorMsg = "Vals array doesn't match bounds: \n" +
+                                "Vals: " + Arrays.toString(vals) + "; length: " + vals.length + "\n" +
+                                "Measurements: " + Arrays.toString(h.bounds) + "; length: " + h.bounds.length;
+
+        assert vals.length == h.bounds.length + 1 : errorMsg;
 
         for (int i = 0; i < vals.length; i++)
             h.measurements.set(i, vals[i]);

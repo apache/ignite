@@ -1943,7 +1943,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * @return Map containing histogram metrics for outcoming messages by node by message class name.
+     * @return Map containing json representation of histogram metrics
+     *         for outgoing messages by node by message class name.
      */
     public Map<UUID, Map<String, String>> getOutMetricsByNodeByMsgClass() {
         return metricsLsnr.outMetricsByNodeByMsgClass();
