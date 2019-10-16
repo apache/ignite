@@ -437,10 +437,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     try {
                         String snpName = msg0.snapshotName();
 
-                        // Directory to store snapshots locally
-                        File snapshotDir0 = localSnapshotDir(snpName);
-
-                        IgniteInternalFuture<?> fut = scheduleSnapshot(snpName,
+                        scheduleSnapshot(snpName,
                             msg0.parts(),
                             new SerialExecutor(cctx.kernalContext()
                                 .pools()
