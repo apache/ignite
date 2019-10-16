@@ -510,19 +510,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              * @param grpId Cache group id.
              * @param partId Partition id.
              */
-            private void stopRecover(FilePageStore pageStore, UUID rmtNodeId, String snpName, File part, Integer grpId, Integer partId) {
+            private void stopRecover(
+                FilePageStore pageStore,
+                UUID rmtNodeId,
+                String snpName,
+                File part,
+                Integer grpId,
+                Integer partId
+            ) {
                 try {
                     pageStore.finishRecover();
 
                     U.closeQuiet(pageStore);
 
-                    if (snpLsnr != null) {
+                    cctx.kernalContext().closure().runLocalSafe(() -> {
+                        if (snpLsnr == null)
+                            return;
+
                         snpLsnr.onPartition(rmtNodeId,
                             snpName,
                             part,
                             grpId,
                             partId);
-                    }
+                    });
                 }
                 catch (StorageException e) {
                     throw new IgniteException(e);
