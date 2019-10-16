@@ -1361,13 +1361,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMeta(Set<File> marshallerMeta, File ccfg) {
-            // There is no need to send meta to the remote node.
+        @Override public void receiveCacheConfig(File ccfg) {
+            // There is no need send it to a remote node.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+            // There is no need send it to a remote node.
         }
 
         /** {@inheritDoc} */
         @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
-
+            // There is no need send it to a remote node.
         }
 
         /** {@inheritDoc} */
@@ -1471,8 +1476,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMeta(Set<File> marshallerMeta, File ccfg) {
-            // todo save configuration
+        @Override public void receiveCacheConfig(File ccfg) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+
         }
 
         /** {@inheritDoc} */

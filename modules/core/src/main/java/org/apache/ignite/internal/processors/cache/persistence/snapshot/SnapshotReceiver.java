@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 
@@ -29,10 +29,14 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
  */
 interface SnapshotReceiver extends Closeable {
     /**
-     * @param marshallerMeta The set of marshalled objects.
      * @param ccfg Cache configuration file.
      */
-    public void receiveMeta(Set<File> marshallerMeta, File ccfg);
+    public void receiveCacheConfig(File ccfg);
+
+    /**
+     * @param mappings Local node marshaller mappings.
+     */
+    public void receiveMarshallerMeta(List<Map<Integer, String>> mappings);
 
     /**
      * @param types Collection of known binary types.

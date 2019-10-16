@@ -29,6 +29,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -507,10 +508,16 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMeta(Set<File> marshallerMeta, File ccfg) {
-            delegate.receiveMeta( marshallerMeta, ccfg);
+        @Override public void receiveCacheConfig(File ccfg) {
+            delegate.receiveCacheConfig(ccfg);
         }
 
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+            delegate.receiveMarshallerMeta(mappings);
+        }
+
+        /** {@inheritDoc} */
         @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
             delegate.receiveBinaryMeta(types);
         }
