@@ -390,7 +390,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                                     assert deleted;
                                 },
-                                sctx0.exec);
+                                sctx0.exec)
+                            .thenRunAsync(() -> sctx0.snpRcv.receiveCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair));
 
                         futs.add(fut0);
                     }
@@ -1361,7 +1362,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveCacheConfig(File ccfg) {
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
             // There is no need send it to a remote node.
         }
 
@@ -1476,8 +1477,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveCacheConfig(File ccfg) {
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+            try {
+                File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
 
+                copy(ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+            }
+            catch (IgniteCheckedException | IOException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1507,15 +1515,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 if (length == 0)
                     return;
 
-                try (FileIO src = ioFactory.create(part);
-                     FileChannel dest = new FileOutputStream(snpPart).getChannel()) {
-                    src.position(0);
-
-                    long written = 0;
-
-                    while (written < length)
-                        written += src.transferTo(written, length - written, dest);
-                }
+                copy(part, snpPart, length);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition has been snapshotted [snapshotDir=" + dbNodeSnpDir.getAbsolutePath() +
@@ -1585,6 +1585,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             // No-op.
+        }
+
+        /**
+         * @param from Copy from file.
+         * @param to Copy data to file.
+         * @param length Number of bytes to copy from beginning.
+         * @throws IOException If fails.
+         */
+        private void copy(File from, File to, long length) throws IOException {
+            try (FileIO src = ioFactory.create(from);
+                 FileChannel dest = new FileOutputStream(to).getChannel()) {
+                src.position(0);
+
+                long written = 0;
+
+                while (written < length)
+                    written += src.transferTo(written, length - written, dest);
+            }
         }
     }
 }

@@ -29,11 +29,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
  */
 interface SnapshotReceiver extends Closeable {
     /**
-     * @param ccfg Cache configuration file.
-     */
-    public void receiveCacheConfig(File ccfg);
-
-    /**
      * @param mappings Local node marshaller mappings.
      */
     public void receiveMarshallerMeta(List<Map<Integer, String>> mappings);
@@ -42,6 +37,13 @@ interface SnapshotReceiver extends Closeable {
      * @param types Collection of known binary types.
      */
     public void receiveBinaryMeta(Map<Integer, BinaryType> types);
+
+    /**
+     * @param ccfg Cache configuration file.
+     * @param cacheDirName Cache group directory name.
+     * @param pair Group id with partition id pair.
+     */
+    public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair);
 
     /**
      * @param part Partition file to receive.

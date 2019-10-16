@@ -508,8 +508,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveCacheConfig(File ccfg) {
-            delegate.receiveCacheConfig(ccfg);
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+            delegate.receiveCacheConfig(ccfg, cacheDirName, pair);
         }
 
         /** {@inheritDoc} */
