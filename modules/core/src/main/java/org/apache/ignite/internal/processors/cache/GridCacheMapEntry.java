@@ -3389,7 +3389,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     else
                         update0 = isStartVer;
 
-                    // Such combination may exist during datastreamer udpates.
+                    // Such combination may exist during datastreamer first update.
                     update0 |= (!preload && val == null);
 
                     return update0;

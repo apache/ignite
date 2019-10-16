@@ -166,7 +166,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheConfiguration(atomicityMode));
 
-        final int KEYS = 1024 * 256;
+        final int KEYS = histRebalance ? 1024 : 1024 * 256;
 
         if (histRebalance) {
             // Preload initial data to have start point for WAL rebalance.
@@ -174,7 +174,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
                 streamer.allowOverwrite(true);
 
                 for (int i = 0; i < KEYS; i++)
-                    streamer.addData(i, 0);
+                    streamer.addData(-i, 0);
             }
 
             forceCheckpoint();
@@ -182,6 +182,7 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
             stopGrid(1);
         }
 
+        // This data will be rebalanced.
         try (IgniteDataStreamer<Object, Object> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
@@ -204,7 +205,8 @@ public class CacheRemoveWithTombstonesTest extends GridCommonAbstractTest {
         Set<Integer> keysWithTombstone = new HashSet<>();
 
         // Do removes while rebalance is in progress.
-        for (int i = 0; i < KEYS; i += 64) {
+        // All keys are removed during historical rebalance.
+        for (int i = 0, step = histRebalance ? 1 : 64; i < KEYS; i += step) {
             keysWithTombstone.add(i);
 
             cache0.remove(i);
