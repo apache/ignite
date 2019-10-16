@@ -61,8 +61,9 @@ public class GridRestRequest {
     /**
      * @param destId Destination ID.
      */
-    public void destinationId(UUID destId) {
+    public GridRestRequest destinationId(UUID destId) {
         this.destId = destId;
+        return this;
     }
 
     /**
@@ -75,8 +76,9 @@ public class GridRestRequest {
     /**
      * @param cmd Command.
      */
-    public void command(GridRestCommand cmd) {
+    public GridRestRequest command(GridRestCommand cmd) {
         this.cmd = cmd;
+        return this;
     }
 
     /**
@@ -93,8 +95,9 @@ public class GridRestRequest {
      *
      * @param clientId Client ID.
      */
-    public void clientId(UUID clientId) {
+    public GridRestRequest clientId(UUID clientId) {
         this.clientId = clientId;
+        return this;
     }
 
     /**
@@ -111,8 +114,9 @@ public class GridRestRequest {
      *
      * @param cred Credentials.
      */
-    public void credentials(Object cred) {
+    public GridRestRequest credentials(Object cred) {
         this.cred = cred;
+        return this;
     }
 
     /**
@@ -129,8 +133,9 @@ public class GridRestRequest {
      *
      * @param sesTok Session token.
      */
-    public void sessionToken(byte[] sesTok) {
+    public GridRestRequest sessionToken(byte[] sesTok) {
         this.sesTok = sesTok;
+        return this;
     }
 
     /**
@@ -143,8 +148,9 @@ public class GridRestRequest {
     /**
      * @param addr Client address.
      */
-    public void address(InetSocketAddress addr) {
+    public GridRestRequest address(InetSocketAddress addr) {
         this.addr = addr;
+        return this;
     }
 
     /**
@@ -157,8 +163,9 @@ public class GridRestRequest {
     /**
      * @param authCtx Authorization context.
      */
-    public void authorizationContext(AuthorizationContext authCtx) {
+    public GridRestRequest authorizationContext(AuthorizationContext authCtx) {
         this.authCtx = authCtx;
+        return this;
     }
 
     /** {@inheritDoc} */

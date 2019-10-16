@@ -62,8 +62,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param cacheName Cache name.
      */
-    public void cacheName(String cacheName) {
+    public GridRestCacheRequest cacheName(String cacheName) {
         this.cacheName = cacheName;
+        return this;
     }
 
     /**
@@ -76,8 +77,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param templateName Template name.
      */
-    public void templateName(String templateName) {
+    public GridRestCacheRequest templateName(String templateName) {
         this.templateName = templateName;
+        return this;
     }
 
     /**
@@ -90,8 +92,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param key Key.
      */
-    public void key(Object key) {
+    public GridRestCacheRequest key(Object key) {
         this.key = key;
+        return this;
     }
 
     /**
@@ -104,8 +107,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param val Value 1.
      */
-    public void value(Object val) {
+    public GridRestCacheRequest value(Object val) {
         this.val = val;
+        return this;
     }
 
     /**
@@ -118,8 +122,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param val2 Value 2.
      */
-    public void value2(Object val2) {
+    public GridRestCacheRequest value2(Object val2) {
         this.val2 = val2;
+        return this;
     }
 
     /**
@@ -132,8 +137,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param vals Keys and values for put all, get all, remove all operations.
      */
-    public void values(Map<Object, Object> vals) {
+    public GridRestCacheRequest values(Map<Object, Object> vals) {
         this.vals = vals;
+        return this;
     }
 
     /**
@@ -146,15 +152,17 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param cfg Cache configuration.
      */
-    public void configuration(CacheConfigurationOverride cfg) {
+    public GridRestCacheRequest configuration(CacheConfigurationOverride cfg) {
         this.cfg = cfg;
+        return this;
     }
 
     /**
      * @param cacheFlags Bit representation of cache flags.
      */
-    public void cacheFlags(int cacheFlags) {
+    public GridRestCacheRequest cacheFlags(int cacheFlags) {
         this.cacheFlags = cacheFlags;
+        return this;
     }
 
     /**
@@ -174,8 +182,9 @@ public class GridRestCacheRequest extends GridRestRequest {
     /**
      * @param ttl Expiration time.
      */
-    public void ttl(Long ttl) {
+    public GridRestCacheRequest ttl(Long ttl) {
         this.ttl = ttl;
+        return this;
     }
 
     /** {@inheritDoc} */
