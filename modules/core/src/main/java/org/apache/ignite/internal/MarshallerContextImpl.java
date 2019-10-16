@@ -36,9 +36,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -186,25 +187,51 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param marshallerMappings All marshaller mappings for given platformId.
-     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
-        throws IgniteCheckedException
-    {
+    public void onMappingDataReceived(
+        byte platformId,
+        Map<Integer, MappedName> marshallerMappings
+    ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
-            int typeId = e.getKey();
+        addPlatformMappings(platformId,
+            marshallerMappings,
+            (typeId, clsName) -> {
+                MappedName mappedName = platformCache.get(typeId);
+
+                return mappedName == null || F.isEmpty(clsName) || !clsName.equals(mappedName.className());
+            },
+            platformCache::put,
+            fileStore);
+    }
+
+    /**
+     * @param platformId Platform id to add mappings to.
+     * @param mappings Map of marshaller mappings.
+     * @param mappedPred Check mapping can be added.
+     * @param mappedAdder Add mapping to local cache map.
+     * @param mappedWriter Persistence mapping writer.
+     * @throws IgniteCheckedException If fails.
+     */
+    public static void addPlatformMappings(
+        byte platformId,
+        Map<Integer, MappedName> mappings,
+        BiPredicate<Integer, String> mappedPred,
+        BiConsumer<Integer, MappedName> mappedAdder,
+        MarshallerMappingWriter mappedWriter
+    ) throws IgniteCheckedException {
+        if (mappings == null)
+            return;
+
+        for (Map.Entry<Integer, MappedName> e : mappings.entrySet()) {
+            Integer typeId = e.getKey();
             String clsName = e.getValue().className();
 
-            MappedName mappedName = platformCache.get(typeId);
+            if (mappedPred.test(typeId, clsName)) {
+                mappedWriter.write(platformId, typeId, clsName);
 
-            if (mappedName != null && !F.isEmpty(clsName) && clsName.equals(mappedName.className()))
-                continue;
-
-            platformCache.put(typeId, new MappedName(clsName, true));
-
-            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+                mappedAdder.accept(typeId, new MappedName(clsName, true));
+            }
         }
     }
 
@@ -552,16 +579,29 @@ public class MarshallerContextImpl implements MarshallerContext {
         IgniteConfiguration cfg = ctx.config();
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
-        final IgniteLogger fileStoreLog = ctx.log(MarshallerMappingFileStore.class);
         fileStore = marshallerMappingFileStoreDir == null ?
-            new MarshallerMappingFileStore(workDir, fileStoreLog) :
-            new MarshallerMappingFileStore(fileStoreLog, marshallerMappingFileStoreDir);
+            (MarshallerMappingFileStore) marshallerMappingWriter(ctx, workDir) :
+            new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
+
         this.transport = transport;
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
 
         if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @param igniteWorkDir Ignite working directory.
+     * @return Marshaller store writer.
+     * @throws IgniteCheckedException If fails.
+     */
+    public MarshallerMappingWriter marshallerMappingWriter(
+        GridKernalContext ctx,
+        String igniteWorkDir
+    ) throws IgniteCheckedException {
+        return new MarshallerMappingFileStore(ctx, igniteWorkDir);
     }
 
     /**

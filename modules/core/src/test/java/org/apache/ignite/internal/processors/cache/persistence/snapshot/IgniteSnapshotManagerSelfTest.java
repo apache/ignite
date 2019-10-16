@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -513,7 +514,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
             delegate.receiveMarshallerMeta(mappings);
         }
 

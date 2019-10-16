@@ -66,6 +66,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
@@ -92,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.Partiti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntIterator;
@@ -108,6 +110,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
+import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
@@ -345,7 +348,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     // Process binary meta
                     futs.add(CompletableFuture.runAsync(() ->
-                            sctx0.snpRcv.receiveBinaryMeta(cctx.kernalContext().cacheObjects().metadataTypes()),
+                            sctx0.snpRcv.receiveBinaryMeta(cctx.kernalContext()
+                                .cacheObjects()
+                                .metadataTypes()),
+                        sctx0.exec));
+
+                    // Process marshaller meta
+                    futs.add(CompletableFuture.runAsync(() ->
+                            sctx0.snpRcv.receiveMarshallerMeta(cctx.kernalContext()
+                                .marshallerContext()
+                                .getCachedMappings()),
                         sctx0.exec));
 
                     // Process partitions
@@ -861,7 +873,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             new File(rootSnpDir, dbNodePath),
             ioFactory,
             storeFactory,
-            cctx.kernalContext().cacheObjects().binaryWriter(rootSnpDir.getAbsolutePath()),
+            cctx.kernalContext()
+                .cacheObjects()
+                .binaryWriter(rootSnpDir.getAbsolutePath()),
+            cctx.kernalContext()
+                .marshallerContext()
+                .marshallerMappingWriter(cctx.kernalContext(), rootSnpDir.getAbsolutePath()),
             pageSize);
     }
 
@@ -1367,7 +1384,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
             // There is no need send it to a remote node.
         }
 
@@ -1450,6 +1467,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Store binary files. */
         private final BinaryTypeWriter binaryWriter;
 
+        /** Marshaller mapping writer. */
+        private final MarshallerMappingWriter mappingWriter;
+
         /** Size of page. */
         private final int pageSize;
 
@@ -1466,6 +1486,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             FileIOFactory ioFactory,
             BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory,
             BinaryTypeWriter binaryWriter,
+            MarshallerMappingWriter mappingWriter,
             int pageSize
         ) {
             this.log = log.getLogger(LocalSnapshotReceiver.class);
@@ -1474,6 +1495,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             this.storeFactory = storeFactory;
             this.pageSize = pageSize;
             this.binaryWriter = binaryWriter;
+            this.mappingWriter = mappingWriter;
         }
 
         /** {@inheritDoc} */
@@ -1489,13 +1511,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void receiveMarshallerMeta(List<Map<Integer, String>> mappings) {
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+            if (mappings == null)
+                return;
 
+            for (int platformId = 0; platformId < mappings.size(); platformId++) {
+                Map<Integer, MappedName> cached = mappings.get(platformId);
+
+                try {
+                    addPlatformMappings((byte)platformId,
+                        cached,
+                        (typeId, clsName) -> true,
+                        (typeId, mapping) -> {
+                        },
+                        mappingWriter);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
-            if (types == null || types.isEmpty())
+            if (types == null)
                 return;
 
             for (Map.Entry<Integer, BinaryType> e : types.entrySet())

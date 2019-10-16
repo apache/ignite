@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 
 /**
  *
@@ -31,7 +32,7 @@ interface SnapshotReceiver extends Closeable {
     /**
      * @param mappings Local node marshaller mappings.
      */
-    public void receiveMarshallerMeta(List<Map<Integer, String>> mappings);
+    public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings);
 
     /**
      * @param types Collection of known binary types.
