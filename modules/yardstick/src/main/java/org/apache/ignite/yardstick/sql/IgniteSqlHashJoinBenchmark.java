@@ -237,89 +237,17 @@ public class IgniteSqlHashJoinBenchmark extends IgniteAbstractBenchmark {
 
         printParameters();
 
-        if (initStep)
-            init();
-
-        if (createIndexStep)
-            createIndex();
-
-        printPlan();
-    }
-
-    /**
-     *
-     */
-    private void init() {
         IgniteSemaphore sem = ignite().semaphore("sql-setup", 1, true, true);
 
         try {
             if (sem.tryAcquire()) {
                 println(cfg, "Create tables...");
 
-                sql("CREATE TABLE DATA_TBL(" +
-                    "ID LONG PRIMARY KEY, " +
-                    "FACT0_ID LONG, " +
-                    "FACT1_ID_STR VARCHAR, " +
-                    "VAL VARCHAR, " +
-                    "NO_IDX_ID LONG," +
-                    "IDX_ID LONG) " +
-                    "WITH \"CACHE_NAME=DATA_TBL,VALUE_TYPE=DATA_VAL\"");
+                if (initStep)
+                    init();
 
-                sql("CREATE TABLE FACT0(" +
-                    "ID LONG PRIMARY KEY, " +
-                    "FACT_ID LONG, " +
-                    "VAL VARCHAR) " +
-                    "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0,VALUE_TYPE=FACT0_VAL\"");
-
-                sql("CREATE TABLE FACT0_INT(" +
-                    "ID LONG PRIMARY KEY, " +
-                    "FACT_ID INT, " +
-                    "VAL VARCHAR) " +
-                    "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0_INT,VALUE_TYPE=FACT0_INT_VAL\"");
-
-                sql("CREATE TABLE FACT1(" +
-                    "ID LONG PRIMARY KEY, " +
-                    "FACT_ID_STR VARCHAR, " +
-                    "VAL VARCHAR) " +
-                    "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT1,VALUE_TYPE=FACT1_VAL\"");
-
-                sql("CREATE INDEX DATA_TBL_IDX_ID_IDX ON DATA_TBL(IDX_ID)");
-
-                final int fact0Size = args.getIntParameter("FACTS0_SIZE", 1000);
-                final int fact1Size = args.getIntParameter("FACTS1_SIZE", 1000);
-
-                fillCache("DATA_TBL", "DATA_VAL", (long)args.range(),
-                    (k, bob) -> {
-                        bob.setField("FACT0_ID", ThreadLocalRandom.current().nextLong(fact0Size));
-                        bob.setField("FACT1_ID_STR",
-                            fact1IdByKey(ThreadLocalRandom.current().nextLong(fact1Size)));
-                        bob.setField("VAL", UUID.randomUUID());
-                        bob.setField("NO_IDX_ID", k);
-                        bob.setField("IDX_ID", k);
-                    });
-
-                println(cfg, "Populate FACT0: " + fact0Size);
-                fillCache("FACT0", "FACT0_VAL", fact0Size,
-                    (k, bob) -> {
-                        bob.setField("FACT_ID", k);
-                        bob.setField("VAL", "FACT0_" + k);
-                    });
-
-                println(cfg, "Populate FACT0_INT: " + fact0Size);
-                fillCache("FACT0_INT", "FACT0_INT_VAL", fact0Size,
-                    (k, bob) -> {
-                        bob.setField("FACT_ID", k.intValue());
-                        bob.setField("VAL", "FACT0_" + k);
-                    });
-
-                println(cfg, "Populate FACT1: " + fact1Size);
-                fillCache("FACT1", "FACT1_VAL", fact0Size,
-                    (k, bob) -> {
-                        bob.setField("FACT_ID_STR", fact1IdByKey(k));
-                        bob.setField("VAL", "FACT1_" + k);
-                    });
-
-                println(cfg, "Finished populating data");
+                if (createIndexStep)
+                    createIndex();
             }
             else {
                 // Acquire (wait setup by other client) and immediately release/
@@ -331,18 +259,95 @@ public class IgniteSqlHashJoinBenchmark extends IgniteAbstractBenchmark {
         finally {
             sem.release();
         }
+
+        printPlan();
+    }
+
+    /**
+     *
+     */
+    private void init() {
+        sql("CREATE TABLE DATA_TBL(" +
+            "ID LONG PRIMARY KEY, " +
+            "FACT0_ID LONG, " +
+            "FACT1_ID_STR VARCHAR, " +
+            "VAL VARCHAR, " +
+            "NO_IDX_ID LONG," +
+            "IDX_ID LONG) " +
+            "WITH \"CACHE_NAME=DATA_TBL,VALUE_TYPE=DATA_VAL\"");
+
+        sql("CREATE TABLE FACT0(" +
+            "ID LONG PRIMARY KEY, " +
+            "FACT_ID LONG, " +
+            "VAL VARCHAR) " +
+            "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0,VALUE_TYPE=FACT0_VAL\"");
+
+        sql("CREATE TABLE FACT0_INT(" +
+            "ID LONG PRIMARY KEY, " +
+            "FACT_ID INT, " +
+            "VAL VARCHAR) " +
+            "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT0_INT,VALUE_TYPE=FACT0_INT_VAL\"");
+
+        sql("CREATE TABLE FACT1(" +
+            "ID LONG PRIMARY KEY, " +
+            "FACT_ID_STR VARCHAR, " +
+            "VAL VARCHAR) " +
+            "WITH \"TEMPLATE=REPLICATED,CACHE_NAME=FACT1,VALUE_TYPE=FACT1_VAL\"");
+
+        sql("CREATE INDEX DATA_TBL_IDX_ID_IDX ON DATA_TBL(IDX_ID)");
+
+        final int fact0Size = args.getIntParameter("FACTS0_SIZE", 1000);
+        final int fact1Size = args.getIntParameter("FACTS1_SIZE", 1000);
+
+        fillCache("DATA_TBL", "DATA_VAL", (long)args.range(),
+            (k, bob) -> {
+                bob.setField("FACT0_ID", ThreadLocalRandom.current().nextLong(fact0Size));
+                bob.setField("FACT1_ID_STR",
+                    fact1IdByKey(ThreadLocalRandom.current().nextLong(fact1Size)));
+                bob.setField("VAL", UUID.randomUUID());
+                bob.setField("NO_IDX_ID", k);
+                bob.setField("IDX_ID", k);
+            });
+
+        println(cfg, "Populate FACT0: " + fact0Size);
+        fillCache("FACT0", "FACT0_VAL", fact0Size,
+            (k, bob) -> {
+                bob.setField("FACT_ID", k);
+                bob.setField("VAL", "FACT0_" + k);
+            });
+
+        println(cfg, "Populate FACT0_INT: " + fact0Size);
+        fillCache("FACT0_INT", "FACT0_INT_VAL", fact0Size,
+            (k, bob) -> {
+                bob.setField("FACT_ID", k.intValue());
+                bob.setField("VAL", "FACT0_" + k);
+            });
+
+        println(cfg, "Populate FACT1: " + fact1Size);
+        fillCache("FACT1", "FACT1_VAL", fact0Size,
+            (k, bob) -> {
+                bob.setField("FACT_ID_STR", fact1IdByKey(k));
+                bob.setField("VAL", "FACT1_" + k);
+            });
+
+        println(cfg, "Finished populating data");
     }
 
     /**
      * Create index for JOIN.
      */
     private void createIndex() {
+        IgniteSemaphore sem = ignite().semaphore("sql-setup", 1, true, true);
+
         println("Create indexes...");
+
         sql("CREATE INDEX DATA_TBL_FACT0_FACT1_IDX ON DATA_TBL(FACT0_ID, FACT1_ID_STR)");
         sql("CREATE INDEX DATA_TBL_FACT0_IDX ON DATA_TBL(FACT0_ID)");
         sql("CREATE INDEX DATA_TBL_FACT1_IDX ON DATA_TBL(FACT1_ID_STR)");
         sql("CREATE INDEX FACT0_FACT_ID_IDX ON FACT0(FACT_ID)");
         sql("CREATE INDEX FACT1_FACT_STR_ID_IDX ON FACT1(FACT_ID_STR)");
+
+        println(cfg, "Indexes are created");
     }
 
     /**
