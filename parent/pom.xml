@@ -1032,15 +1032,6 @@
                                         <exclude>**/*.ps1</exclude>
                                         <exclude>**/*.json</exclude>
                                         <exclude>**/.dockerignore</exclude>
-                                        <exclude>modules/platforms/nodejs/examples/certs/client.crt</exclude>
-                                        <exclude>modules/platforms/nodejs/examples/certs/ca.crt</exclude>
-                                        <exclude>modules/platforms/nodejs/examples/certs/client.key</exclude>
-                                        <exclude>modules/platforms/nodejs/api_spec/**</exclude>
-                                        <exclude>modules/platforms/python/**/*.md</exclude><!--markdown can not be commented-->
-                                        <exclude>modules/platforms/python/docs/Makefile</exclude><!--sphinx files: BSD license-->
-                                        <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
-                                        <exclude>modules/platforms/python/docs/**/*.rst</exclude><!--sphinx-apidoc generated files-->
-                                        <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
                                         <!-- H2 forked module. -->
                                         <exclude>**/org/h2/**</exclude>
                                         <exclude>src/docsrc/**</exclude>
