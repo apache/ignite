@@ -167,8 +167,6 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      */
     public void ensure(int grpId, int partId) throws IgniteCheckedException;
 
-    public void ensure(int grpId, int partId, int force) throws IgniteCheckedException;
-
     /**
      * Allocates a page for the given page space.
      *

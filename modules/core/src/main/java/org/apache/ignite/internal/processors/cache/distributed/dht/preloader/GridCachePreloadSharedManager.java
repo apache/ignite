@@ -53,9 +53,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.ReadOnlyGridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -382,53 +382,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Completely destroy the partition without changing its state.
-     *
-     * @param part Partition to destroy.
-     * @return Future that will be completed after removing the partition file.
-     */
-    private IgniteInternalFuture<Boolean> destroyPartitionAsync(GridDhtLocalPartition part) {
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
-
-        part.clearAsync();
-
-        part.onClearFinished(c -> {
-            //todo should prevent any removes on DESTROYED partition.
-            ReadOnlyGridCacheDataStore store = (ReadOnlyGridCacheDataStore)part.dataStore().store(true);
-
-            store.disableRemoves();
-
-            try {
-                cctx.database().checkpointReadLock();
-                try {
-                    part.group().offheap().destroyCacheDataStore(part.dataStore());
-
-                    ((GridCacheDatabaseSharedManager)cctx.database()).cancelOrWaitPartitionDestroy(part.group().groupId(), part.id());
-                } finally {
-                    cctx.database().checkpointReadUnlock();
-                }
-
-                fut.onDone(true);
-
-//                    .listen(f -> {
-//                        try {
-//                            fut.onDone(f.get());
-//                        }
-//                        catch (IgniteCheckedException e) {
-//                            fut.onDone(e);
-//                        }
-//                    }
-//                );
-            }
-            catch (IgniteCheckedException e) {
-                fut.onDone(e);
-            }
-        });
-
-        return fut;
-    }
-
-    /**
      * Restore partition on new file. Partition should be completely destroyed before restore it with new file.
      *
      * @param grpId Group id.
@@ -443,15 +396,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         int grpId,
         int partId,
         File fsPartFile,
-        IgniteInternalFuture destroyFut
+        IgniteInternalFuture evictFut
     ) throws IgniteCheckedException {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
-        if (!destroyFut.isDone()) {
+        if (!evictFut.isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Await partition destroy [grp=" + grpId + ", partId=" + partId + "]");
 
-            destroyFut.get();
+            evictFut.get();
         }
 
         File dst = new File(getStorePath(grpId, partId));
@@ -465,17 +418,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to move file from " + fsPartFile + " to " + dst, e);
         }
-
-        // Reinitialize file store afte rmoving partition file.
-        int tag = ((PageMemoryEx)cctx.cache().cacheGroup(grpId).dataRegion().pageMemory()).invalidate(grpId, partId);
-
-        cctx.pageStore().ensure(grpId, partId, tag);
-
-        // todo should do this for whole memory region
-        ((PageMemoryEx)cctx.database().dataRegion(cctx.cache().cacheGroup(grpId).dataRegion().config().getName()).pageMemory())
-            .clearAsync(
-                (grp, pageId) -> grp == grpId && PageIdUtils.partId(pageId) == partId, true)
-            .get();
 
         ctx.topology().localPartition(partId).dataStore().store(false).reinit();
 
@@ -501,9 +443,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // todo check on large partition
             restoredPart.entriesMap(null).map.clear();
 
-            // Switching to new datastore.
-//            restoredPart.readOnly(false);
-
             PartitionUpdateCounter snpPartCntr = restoredPart.dataStore().partUpdateCounter();
 
             assert snpPartCntr != null;
@@ -515,6 +454,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // todo Consistency check fails sometimes for ATOMIC cache.
             partReleaseFut.listen(c -> endFut.onDone(new T2<>(snpPartCntr.get(),
                 Math.max(maxCntr.highestAppliedCounter(), snpPartCntr.highestAppliedCounter()))));
+
+            // todo update counter should be used from delegate but method should not be delegated to store
+            ctx.topology().localPartition(partId).dataStore().store(true).reinit();
 
             return null;
         });
@@ -894,6 +836,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
                         part.readOnly(true);
 
+                        // todo reinit just set update counter from delegate
                         part.dataStore().reinit();
                     }
                 }
@@ -923,19 +866,16 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 for (Integer partId : e.getValue()) {
                     GridDhtLocalPartition part = gctx.topology().localPartition(partId);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Add destroy future for partition " + part.id());
+                    part.clearAsync();
 
-                    destroyPartitionAsync(part).listen(fut -> {
+                    part.onClearFinished(c -> {
+                        CacheDataStoreEx dataStore = part.dataStore();
+
+                        assert dataStore.readOnly() : "p=" + part.id();
+
+                        //((ReadOnlyGridCacheDataStore)dataStore.store(true)).disableRemoves();
+
                         try {
-                            if (!fut.get())
-                                throw new IgniteCheckedException("Partition was not destroyed " +
-                                    "properly [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]");
-
-//                            boolean exists = cctx.pageStore().exists(grpId, part.id());
-//
-//                            assert !exists : "File exists [grp=" + gctx.cacheOrGroupName() + ", p=" + part.id() + "]";
-
                             onPartitionEvicted(grpId, partId);
                         }
                         catch (IgniteCheckedException ex) {
@@ -952,6 +892,10 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             String regName = gctx.dataRegion().config().getName();
 
             PageMemCleanupTask pageMemFut = cleanupRegions.get(regName);
+
+            int tag = ((PageMemoryEx)cctx.cache().cacheGroup(grpId).dataRegion().pageMemory()).invalidate(grpId, partId);
+
+            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
             pageMemFut.cleanupMemory();
         }
@@ -981,13 +925,16 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 assert evictedCnt <= parts.size();
 
                 if (evictedCnt == parts.size()) {
-                    ((PageMemoryEx)cctx.database().dataRegion(name).pageMemory())
-                        .clearAsync(
+                    DataRegion region = cctx.database().dataRegion(name);
+
+                    PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+
+                    memEx.clearAsync(
                             (grp, pageId) ->
                                 parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
                         .listen(c1 -> {
                             if (log.isDebugEnabled())
-                                log.debug("Eviction is done [region=" + name + "]");
+                                log.debug("Off heap memory cleared for region [region=" + name + "]");
 
                             onDone();
                         });

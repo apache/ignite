@@ -360,7 +360,6 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public void truncate(int tag) throws StorageException {
-        System.out.println("truncate " + getFileAbsolutePath());
         init();
 
         Path filePath = pathProvider.apply();
@@ -534,26 +533,15 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    public void init() throws StorageException {
-        init(-1);
-    }
-
     /**
      * @throws StorageException If failed to initialize store file.
-     * @param force
      */
-    public void init(int force) throws StorageException {
-        if (force != -1) {
-            tag = force;
-
-            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
-        }
-
-        if (!inited || force != -1) {
+    public void init() throws StorageException {
+        if (!inited) {
             lock.writeLock().lock();
 
             try {
-                if (!inited || force != -1) {
+                if (!inited) {
                     FileIO fileIO = null;
 
                     StorageException err = null;
@@ -585,7 +573,7 @@ public class FilePageStore implements PageStore {
                             }
                         }
 
-                        assert allocated.get() == 0 : allocated.get();
+                        assert allocated.get() == 0;
 
                         allocated.set(newSize);
 
@@ -791,6 +779,10 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public void sync() throws StorageException {
+        // todo
+        if (!inited)
+            return;
+
         lock.writeLock().lock();
 
         try {
@@ -812,12 +804,6 @@ public class FilePageStore implements PageStore {
     /** {@inheritDoc} */
     @Override public synchronized void ensure() throws IgniteCheckedException {
         init();
-    }
-
-    /** {@inheritDoc}
-     * @param force*/
-    @Override public synchronized void ensure(int force) throws IgniteCheckedException {
-        init(force);
     }
 
     /** {@inheritDoc} */

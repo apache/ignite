@@ -126,8 +126,11 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
     }
 
     @Test
+    @Ignore
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
     public void checkInitPartitionWithConstantLoad() throws Exception {
+        fail("Doesn't support classic evictions");
+
         IgniteEx node0 = startGrid(1);
         IgniteEx node1 = startGrid(2);
 
@@ -178,20 +181,14 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
             GridFutureAdapter fut = new GridFutureAdapter();
 
             part.onClearFinished(f -> {
-                ((ReadOnlyGridCacheDataStore)part.dataStore().store(true)).disableRemoves();
-//                part.destroy();
+//                ((ReadOnlyGridCacheDataStore)part.dataStore().store(true)).disableRemoves();
+
                 cctx.group().onPartitionEvicted(p);
-
-
-                //Object fut0 = part.destroyCacheDataStore();
 
                 try {
                     IgniteInternalFuture<Boolean> fut0 = cctx.group().offheap().destroyCacheDataStore(part.dataStore());
 
                     ((GridCacheDatabaseSharedManager)cctx.shared().database()).cancelOrWaitPartitionDestroy(cctx.groupId(), p);
-
-//                    /// cancel before move file
-//                    fut0.cancel();
 
                     ((PageMemoryEx)cctx.shared().database().dataRegion(cctx.dataRegion().config().getName()).pageMemory())
                         .clearAsync(

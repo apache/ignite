@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -112,11 +111,15 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(8 * 1024L * 1024 * 1024)
                     .setPersistenceEnabled(true))
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setMaxSize(4*1024*1024*1024L)
+                    .setPersistenceEnabled(true)
+                    .setName("someRegion"))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setCheckpointFrequency(3_000)) // todo check with default timeout!
 //                .setWalSegmentSize(4 * 1024 * 1024)
 //                .setMaxWalArchiveSize(32 * 1024 * 1024 * 1024L))
-            .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME), cacheConfig(CACHE1), cacheConfig(CACHE2));
+            .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME).setDataRegionName("someRegion"), cacheConfig(CACHE1), cacheConfig(CACHE2));
     }
 
     private CacheConfiguration cacheConfig(String name) {
@@ -127,6 +130,10 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 //                .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE_PART_COUNT));
 //            .setCommunicationSpi(new TestRecordingCommunicationSpi()
+    }
+
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60_000;
     }
 
     /** */

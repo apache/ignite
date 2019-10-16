@@ -2033,8 +2033,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (init.compareAndSet(true, false)) {
                     delegate = null;
 
-                    init.set(false);
-
                     // TODO add test when the storage is not inited and the current method called
                     CacheDataStore delegate0 = init0(false);
 
