@@ -340,7 +340,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
-                    List<CompletableFuture<Void>> futs = new ArrayList<>(sctx0.parts.size());
+                    List<CompletableFuture<Void>> futs = new ArrayList<>();
                     FilePageStoreManager storeMgr = (FilePageStoreManager) cctx.pageStore();
 
                     if (log.isInfoEnabled())
@@ -408,7 +408,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         futs.add(fut0);
                     }
 
-                    CompletableFuture.allOf(futs.toArray(new CompletableFuture[sctx0.parts.size()]))
+                    int futsSize = futs.size();
+
+                    CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
                         .whenComplete(new BiConsumer<Void, Throwable>() {
                             @Override public void accept(Void res, Throwable t) {
                                 if (t == null)
