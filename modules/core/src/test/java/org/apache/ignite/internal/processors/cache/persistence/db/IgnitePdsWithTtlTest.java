@@ -316,7 +316,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             IgniteCacheOffheapManager.CacheDataStore dataStore =
                 ctx.cache().cacheGroup(CU.cacheId(GROUP_NAME)).offheap().dataStore(locPart);
 
-            GridCursor cur = dataStore.cursor();
+            GridCursor cur = dataStore.cursor(false);
 
             assertFalse(cur.next());
             assertEquals(0, locPart.fullSize());
