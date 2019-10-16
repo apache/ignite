@@ -96,7 +96,6 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T4;
@@ -338,7 +337,73 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
-                    submitTasks(sctx0);
+                    List<CompletableFuture<Void>> futs = new ArrayList<>(sctx0.parts.size());
+                    FilePageStoreManager storeMgr = (FilePageStoreManager) cctx.pageStore();
+
+                    if (log.isInfoEnabled())
+                        log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx0.partFileLengths);
+
+                    // Process binary meta
+                    futs.add(CompletableFuture.runAsync(() ->
+                            sctx0.snpRcv.receiveBinaryMeta(cctx.kernalContext().cacheObjects().metadataTypes()),
+                        sctx0.exec));
+
+                    // Process partitions
+                    for (GroupPartitionId pair : sctx0.parts) {
+                        CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
+                        String cacheDirName = cacheDirName(ccfg);
+                        Long length = sctx0.partFileLengths.get(pair);
+
+                        try {
+                            // Initialize empty partition file.
+                            if (length == 0) {
+                                FilePageStore filePageStore = (FilePageStore) storeMgr.getStore(pair.getGroupId(),
+                                    pair.getPartitionId());
+
+                                filePageStore.init();
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+
+                        CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
+                                sctx0.snpRcv.receivePart(
+                                    getPartitionFileEx(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                                    cacheDirName,
+                                    pair,
+                                    length);
+
+                                // Stop partition writer.
+                                sctx0.partDeltaWriters.get(pair).partProcessed = true;
+                            },
+                            sctx0.exec)
+                            // Wait for the completion of both futures - checkpoint end, copy partition
+                            .runAfterBothAsync(sctx0.cpEndFut,
+                                () -> {
+                                    File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
+                                        pair.getPartitionId());
+
+                                    sctx0.snpRcv.receiveDelta(delta, cacheDirName, pair);
+
+                                    boolean deleted = delta.delete();
+
+                                    assert deleted;
+                                },
+                                sctx0.exec);
+
+                        futs.add(fut0);
+                    }
+
+                    CompletableFuture.allOf(futs.toArray(new CompletableFuture[sctx0.parts.size()]))
+                        .whenComplete(new BiConsumer<Void, Throwable>() {
+                            @Override public void accept(Void res, Throwable t) {
+                                if (t == null)
+                                    sctx0.snpFut.onDone(sctx0.snpName);
+                                else
+                                    sctx0.snpFut.onDone(t);
+                            }
+                        });
 
                     sctx0.started = true;
                 }
@@ -367,17 +432,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 .poolForPolicy(plc)),
                             remoteSnapshotReceiver(snpName,
                                 nodeId));
-
-                        fut.listen(f -> {
-                            if (log.isInfoEnabled()) {
-                                log.info("The requested snapshot has been completed [result=" + (f.error() == null) +
-                                    ", name=" + snpName + ']');
-                            }
-
-                            boolean done = IgniteUtils.delete(snapshotDir0);
-
-                            assert done;
-                        });
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to create remote snapshot [from=" + nodeId + ", msg=" + msg0 + ']');
@@ -863,68 +917,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         catch (IOException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @param sctx Context to handle.
-     */
-    private void submitTasks(SnapshotContext sctx) {
-        List<CompletableFuture<Void>> futs = new ArrayList<>(sctx.parts.size());
-        File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
-
-        if (log.isInfoEnabled())
-            log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx.partFileLengths);
-
-        // Process binary meta
-        futs.add(CompletableFuture.runAsync(() ->
-                sctx.snpRcv.receiveBinaryMeta(cctx.kernalContext().cacheObjects().metadataTypes()),
-            sctx.exec));
-
-        // Process partitions
-        for (GroupPartitionId pair : sctx.parts) {
-            CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
-            String cacheDirName = cacheDirName(ccfg);
-
-            CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
-                Long length = sctx.partFileLengths.get(pair);
-
-                    sctx.snpRcv.receivePart(
-                        length == 0 ? new File(getPartitionNameEx(pair.getPartitionId())) :
-                            getPartitionFileEx(workDir, cacheDirName, pair.getPartitionId()),
-                        cacheDirName,
-                        pair,
-                        length);
-
-                    // Stop partition writer.
-                    sctx.partDeltaWriters.get(pair).partProcessed = true;
-                },
-                sctx.exec)
-                // Wait for the completion of both futures - checkpoint end, copy partition
-                .runAfterBothAsync(sctx.cpEndFut,
-                    () -> {
-                        File delta = getPartionDeltaFile(cacheWorkDir(sctx.nodeSnpDir, cacheDirName),
-                            pair.getPartitionId());
-
-                        sctx.snpRcv.receiveDelta(delta, cacheDirName, pair);
-
-                        boolean deleted = delta.delete();
-
-                        assert deleted;
-                    },
-                    sctx.exec);
-
-            futs.add(fut0);
-        }
-
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[sctx.parts.size()]))
-             .whenComplete(new BiConsumer<Void, Throwable>() {
-                 @Override public void accept(Void res, Throwable t) {
-                     if (t == null)
-                         sctx.snpFut.onDone(sctx.snpName);
-                     else
-                         sctx.snpFut.onDone(t);
-                 }
-             });
     }
 
     /**
