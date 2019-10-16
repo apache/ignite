@@ -2692,7 +2692,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepTiny() throws IgniteCheckedException {
+    public void testPurgeTiny() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
 
         TestTree t = createTestTree(true);
@@ -2702,7 +2702,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info(t.printTree());
 
-        GridCursor<Void> cur = t.sweep((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
+        GridCursor<Void> cur = t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
 
         while (cur.next())
             cur.get();
@@ -2719,7 +2719,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals(5L, t.findOne(5L).longValue());
         assertEquals(7L, t.findOne(7L).longValue());
 
-        cur = t.sweep((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 1);
+        cur = t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 1);
 
         while (cur.next())
             cur.get();
@@ -2736,14 +2736,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepAllDegenerateTree() throws IgniteCheckedException {
+    public void testPurgeAllDegenerateTree() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
 
         TestTree t = createTestTree(true);
 
         log.info(t.printTree());
 
-        GridCursor<Void> cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+        GridCursor<Void> cursor = t.purge((tree, io, pageAddr, idx) -> true);
 
         while (cursor.next())
             cursor.get();
@@ -2753,7 +2753,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info("height=" + t.rootLevel());
 
-        cursor = t.sweep((tree, io, pageAddr, idx) -> true);
+        cursor = t.purge((tree, io, pageAddr, idx) -> true);
 
         while (cursor.next())
             cursor.get();
@@ -2769,7 +2769,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepLarge() throws IgniteCheckedException {
+    public void testPurgeLarge() throws IgniteCheckedException {
         CNT = 10_000;
 
         TestTree t = createTestTree(true);
@@ -2782,7 +2782,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info("height=" + t.rootLevel());
 
-        GridCursor<Void> cursor = t.sweep(clo);
+        GridCursor<Void> cursor = t.purge(clo);
 
         while (cursor.next())
             cursor.get();
@@ -2803,24 +2803,24 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepConcurrentRemovals() throws IgniteCheckedException {
-        doTestSweepConcurrentRemovals(0);
+    public void testPurgeConcurrentRemovals() throws IgniteCheckedException {
+        doTestPurgeConcurrentRemovals(0);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepConcurrentRemovalsBackwards() throws IgniteCheckedException {
-        doTestSweepConcurrentRemovals(1);
+    public void testPurgeConcurrentRemovalsBackwards() throws IgniteCheckedException {
+        doTestPurgeConcurrentRemovals(1);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testSweepConcurrentRemovalsAll() throws IgniteCheckedException {
-        doTestSweepConcurrentRemovals(2);
+    public void testPurgeConcurrentRemovalsAll() throws IgniteCheckedException {
+        doTestPurgeConcurrentRemovals(2);
     }
 
     /**
@@ -2828,7 +2828,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @param mode Mode.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestSweepConcurrentRemovals(int mode) throws IgniteCheckedException {
+    private void doTestPurgeConcurrentRemovals(int mode) throws IgniteCheckedException {
         CNT = 10_000;
 
         final TestTree t = createTestTree(true);
@@ -2871,7 +2871,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) ->
             io.getLookupRow(tree, pageAddr, idx) % 2 == 0;
 
-        GridCursor<Void> cur = t.sweep(clo);
+        GridCursor<Void> cur = t.purge(clo);
 
         while (cur.next())
             cur.get();
@@ -2888,18 +2888,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSweepConcurrentPutRemoveInvoke() throws Exception {
+    public void testPurgeConcurrentPutRemoveInvoke() throws Exception {
         MAX_PER_PAGE = 10;
         CNT = 25_000;
 
-        doTestSweepConcurrentPutRemoveInvoke();
+        doTestPurgeConcurrentPutRemoveInvoke();
     }
 
     /**
      *
      * @throws Exception If failed.
      */
-    private void doTestSweepConcurrentPutRemoveInvoke() throws Exception {
+    private void doTestPurgeConcurrentPutRemoveInvoke() throws Exception {
         TestTree t = createTestTree(true);
 
         for (long k = 0L; k < CNT; k++)
@@ -2986,7 +2986,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         };
 
         while (cnt.get() < 100 && !t.isEmpty()) {
-            GridCursor<Void> cur = t.sweep(clo);
+            GridCursor<Void> cur = t.purge(clo);
 
             while (cur.next())
                 cur.get();
@@ -3006,10 +3006,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testConcurrentSweeps() throws IgniteCheckedException {
+    public void testConcurrentPurges() throws IgniteCheckedException {
         CNT = 25_000;
 
-        doTestConcurrentSweeps();
+        doTestConcurrentPurges();
     }
 
     /**
@@ -3017,18 +3017,18 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testConcurrentSweeps2_2000() throws IgniteCheckedException {
+    public void testConcurrentPurges2_2000() throws IgniteCheckedException {
         MAX_PER_PAGE = 2;
         CNT = 2000;
 
-        doTestConcurrentSweeps();
+        doTestConcurrentPurges();
     }
 
     /**
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestConcurrentSweeps() throws IgniteCheckedException {
+    private void doTestConcurrentPurges() throws IgniteCheckedException {
         TestTree t = createTestTree(true);
 
         int cnt = CNT;
@@ -3052,7 +3052,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             try {
                 bar.await(getTestTimeout(), MILLISECONDS);
 
-                GridCursor<Void> cur = t.sweep(clo);
+                GridCursor<Void> cur = t.purge(clo);
 
                 while (cur.next())
                     cur.get();

@@ -49,7 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.SweepRemoveRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PurgeRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -1834,14 +1834,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param clo TreeRowClosure Closure to filter rows.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCursor<Void> sweep(TreeRowClosure<L, T> clo) throws IgniteCheckedException {
+    public GridCursor<Void> purge(TreeRowClosure<L, T> clo) throws IgniteCheckedException {
         checkDestroyed();
 
-        SweepCursor cursor = new SweepCursor(clo);
+        PurgeCursor cur = new PurgeCursor(clo);
 
-        cursor.start();
+        cur.start();
 
-        return cursor;
+        return cur;
     }
 
     /** {@inheritDoc} */
@@ -5752,7 +5752,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Most rows are expected to be deleted "in place" on a leaf page.
      * The last row and the rightmost row on a page are deleted starting from root.
      */
-    private class SweepCursor implements GridCursor<Void> {
+    private class PurgeCursor implements GridCursor<Void> {
         /** Row filter. */
         private final TreeRowClosure<L, T> clo;
 
@@ -5770,7 +5770,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          *
          * @param clo Row filter.
          */
-        SweepCursor(TreeRowClosure clo) {
+        PurgeCursor(TreeRowClosure clo) {
             this.clo = clo;
         }
 
@@ -5944,7 +5944,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     curPageId = 0L;
 
-                    return; // RETRY;
+                    return; // Retry.
                 }
 
                 try {
@@ -6041,7 +6041,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 io.setCount(pageAddr, cnt);
 
                 if (needWalDeltaRecord(pageId, page, walPlc))
-                    wal.log(new SweepRemoveRecord(grpId, pageId, idxs, idxsCnt, cnt));
+                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt));
             }
 
             if (h) // The rightmost row is eligible for removal.

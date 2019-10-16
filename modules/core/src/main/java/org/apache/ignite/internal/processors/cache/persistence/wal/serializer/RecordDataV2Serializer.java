@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
-import org.apache.ignite.internal.pagemem.wal.record.delta.SweepRemoveRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PurgeRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -116,10 +116,10 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case ROLLBACK_TX_RECORD:
                 return 4 + 4 + 8 + 8;
 
-            case BTREE_PAGE_SWEEP_REMOVE:
-                SweepRemoveRecord sweepRmvRec = (SweepRemoveRecord)rec;
+            case BTREE_PAGE_PURGE:
+                PurgeRecord purgeRec = (PurgeRecord)rec;
 
-                return 4 + 8 + 2 + 2 + 2*sweepRmvRec.itemsCount();
+                return 4 + 8 + 2 + 2 + 2 * purgeRec.itemsCount();
 
             default:
                 return super.plainSize(rec);
@@ -224,7 +224,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
                 return new RollbackRecord(grpId, partId, start, range);
 
-            case BTREE_PAGE_SWEEP_REMOVE:
+            case BTREE_PAGE_PURGE:
                 cacheId = in.readInt();
                 pageId = in.readLong();
 
@@ -237,7 +237,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
                 int cnt = in.readUnsignedShort();
 
-                return new SweepRemoveRecord(cacheId, pageId, items, itemsCnt, cnt);
+                return new PurgeRecord(cacheId, pageId, items, itemsCnt, cnt);
 
             default:
                 return super.readPlainRecord(type, in, encrypted, recordSize);
@@ -331,18 +331,18 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
                 break;
 
-            case BTREE_PAGE_SWEEP_REMOVE:
-                SweepRemoveRecord sweepRec = (SweepRemoveRecord)rec;
+            case BTREE_PAGE_PURGE:
+                PurgeRecord purgeRec = (PurgeRecord)rec;
 
-                buf.putInt(sweepRec.groupId());
-                buf.putLong(sweepRec.pageId());
+                buf.putInt(purgeRec.groupId());
+                buf.putLong(purgeRec.pageId());
 
-                buf.putShort((short)sweepRec.itemsCount());
+                buf.putShort((short)purgeRec.itemsCount());
 
-                for (int i = 0; i < sweepRec.itemsCount(); i++)
-                    buf.putShort((short)sweepRec.items()[i]);
+                for (int i = 0; i < purgeRec.itemsCount(); i++)
+                    buf.putShort((short)purgeRec.items()[i]);
 
-                buf.putShort((short)sweepRec.count());
+                buf.putShort((short)purgeRec.count());
 
                 break;
 

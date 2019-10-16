@@ -164,8 +164,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile boolean delayedRenting;
 
-    /** Set if partition is requested for exclusive evict. */
-    private volatile boolean exclClear;
+    /** Set if partition is requested for exclusive purge. */
+    private volatile boolean exclPurge;
 
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
@@ -503,7 +503,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         rent(true);
                     else if (getPartState(state) == RENTING)
                         tryContinueClearing();
-                    else if (exclClear)
+                    else if (exclPurge)
                         ctx.evict().evictPartitionAsync(grp, this);
                 }
 
@@ -935,7 +935,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (getReservations(state) != 0 || groupReserved())
             return false;
 
-        if (exclClear)
+        if (exclPurge)
             return false;
 
         if (addEvicting()) {
@@ -1478,12 +1478,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Initialize this partition to be a part of a exclusive clear over a set of partitions.
+     * Initialize this partition to be a part of a exclusive purge over a set of partitions.
      *
-     * @param fut Future to listen for completion of a larger clear procedure.
+     * @param fut Future to listen for completion of a larger purge procedure.
      * @return {@code true} if successfully initialized, otherwise a retry is required.
      */
-    public boolean exclusiveClearAsync(IgniteInternalFuture<Void> fut) {
+    public boolean exclusivePurgeAsync(IgniteInternalFuture<Void> fut) {
         long state = this.state.get();
 
         GridDhtPartitionState state0 = getPartState(state);
@@ -1491,7 +1491,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state0 != MOVING && state0 != RENTING)
             return false;
 
-        exclClear = true;
+        exclPurge = true;
 
         if (getReservations(state) != 0 || groupReserved())
             return false;
@@ -1501,7 +1501,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (addEvicting()) {
             fut.listen(f -> {
-                exclClear = false;
+                exclPurge = false;
 
                 if (clearEvicting()) {
                     if (f.error() == null)

@@ -139,11 +139,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         int bucket;
 
         synchronized (mux) {
-            ExclusiveClearFuture exclFut = grpEvictionCtx.exclClearFut;
+            ExclusivePurgeFuture exclFut = grpEvictionCtx.exclPurgeFut;
 
             if (exclFut != null && exclFut.partIds.contains(part.id())) {
-                // Exclusive evict has been requested earlier.
-                if (part.exclusiveClearAsync(exclFut.resFut))
+                // Exclusive purge has been requested earlier.
+                if (part.exclusivePurgeAsync(exclFut.resFut))
                     exclFut.onInit(part);
 
                 return;
@@ -301,8 +301,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** Deduplicate set partition ids. */
         private final Set<Integer> partIds = new HashSet<>();
 
-        /** Future for exclusive clear of a set of partitions. */
-        private ExclusiveClearFuture exclClearFut;
+        /** Future for exclusive purge of a set of partitions. */
+        private ExclusivePurgeFuture exclPurgeFut;
 
         /** Future for currently running partition eviction task. */
         private final Map<Integer, IgniteInternalFuture<?>> partsEvictFutures = new ConcurrentHashMap<>();
@@ -372,12 +372,12 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * Await evict finish.
          */
         private void awaitFinishAll(){
-            ExclusiveClearFuture exclFut;
+            ExclusivePurgeFuture exclFut;
 
             synchronized (mux) {
-                exclFut = exclClearFut;
+                exclFut = exclPurgeFut;
 
-                exclClearFut = null;
+                exclPurgeFut = null;
             }
 
             if (exclFut != null) {
@@ -666,9 +666,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed.
      * @return Future.
      */
-    public IgniteInternalFuture<Void> evictPartitionsExclusively(CacheGroupContext grp,
+    public IgniteInternalFuture<Void> purgePartitionsExclusively(CacheGroupContext grp,
         List<GridDhtLocalPartition> parts) throws IgniteCheckedException {
-        validateCacheGroupForExclusiveEvict(grp);
+        validateCacheGroupForExclusivePurge(grp);
 
         if (F.isEmpty(parts))
             return new GridFinishedFuture<>();
@@ -676,11 +676,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         GroupEvictionContext grpEvictionCtx = evictionGroupsMap.computeIfAbsent(
             grp.groupId(), (k) -> new GroupEvictionContext(grp));
 
-        ExclusiveClearFuture fut = new ExclusiveClearFuture(grpEvictionCtx, parts);
+        ExclusivePurgeFuture fut = new ExclusivePurgeFuture(grpEvictionCtx, parts);
 
         synchronized (mux) {
-            if (grpEvictionCtx.exclClearFut != null)
-                throw new IgniteCheckedException("Only one exclusive evict can be scheduled for the same cache group." +
+            if (grpEvictionCtx.exclPurgeFut != null)
+                throw new IgniteCheckedException("Only one exclusive purge can be scheduled for the same cache group." +
                     " [grpId=" + grp.groupId() + "]");
 
             Set<Integer> res = new HashSet<>(grpEvictionCtx.partIds);
@@ -688,21 +688,21 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             res.retainAll(fut.partIds);
 
             if (!res.isEmpty())
-                throw new IgniteCheckedException("Can't schedule exclusive evict for a partition " +
-                    "due to scheduled regular evict for the same partition. [grpId=" + grp.groupId() +
+                throw new IgniteCheckedException("Can't schedule exclusive purge for a partition " +
+                    "due to scheduled regular clear for the same partition. [grpId=" + grp.groupId() +
                     ", partIds=" + Arrays.toString(U.toIntArray(res)) + "]");
 
-            grpEvictionCtx.exclClearFut = fut;
+            grpEvictionCtx.exclPurgeFut = fut;
 
             fut.listen(f -> {
                 synchronized (mux) {
-                    grpEvictionCtx.exclClearFut = null;
+                    grpEvictionCtx.exclPurgeFut = null;
                 }
             });
         }
 
         for (GridDhtLocalPartition part : parts) {
-            if (part.exclusiveClearAsync(fut.resFut))
+            if (part.exclusivePurgeAsync(fut.resFut))
                 fut.onInit(part);
         }
 
@@ -710,9 +710,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Context of exclusive partition evict.
+     * Context of exclusive partition purge.
      */
-    private class ExclusiveClearFuture extends GridFutureAdapter<Void> {
+    private class ExclusivePurgeFuture extends GridFutureAdapter<Void> {
         /** Group eviction context. */
         GroupEvictionContext grpEvictionCtx;
 
@@ -739,7 +739,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param grpEvictionCtx Group eviction context.
          * @param parts Partitions.
          */
-        public ExclusiveClearFuture(GroupEvictionContext grpEvictionCtx, List<GridDhtLocalPartition> parts) {
+        public ExclusivePurgeFuture(GroupEvictionContext grpEvictionCtx, List<GridDhtLocalPartition> parts) {
             this.grpEvictionCtx = grpEvictionCtx;
             this.parts = parts;
 
@@ -752,13 +752,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
 
         /**
-         * Initializes partition for exclusive evict.
+         * Initializes partition for exclusive purge.
          *
          * @param part Partition.
          */
         public void onInit(GridDhtLocalPartition part) {
             if (log.isInfoEnabled())
-                log.info("Partition confirmed exclusive clear. [partId=" + part.id() + "]");
+                log.info("Partition confirmed exclusive purge. [partId=" + part.id() + "]");
 
             part.onClearFinished(f -> {
                 if (resultCounter.decrementAndGet() == 0) {
@@ -816,7 +816,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                     idxFut = new GridCompoundFuture<>();
 
                     for (IgniteBiTuple<Runnable, IgniteInternalFuture<Void>> r : idxPurgeList) {
-                        BucketQueueTask idxTask = new IndexEvictTask(grpEvictionCtx, r.get1(), r.get2());
+                        BucketQueueTask idxTask = new IndexPurgeTask(grpEvictionCtx, r.get1(), r.get2());
 
                         cancelFut.add(r.get2());
 
@@ -836,7 +836,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             resFut.markInitialized();
 
             if (log.isInfoEnabled())
-                log.info("Exclusive partition evict: scheduling tasks." +
+                log.info("Exclusive partition purge: scheduling tasks." +
                     " [total=" + (tasks.size() + idxTasks.size()) + ", idx=" + idxTasks.size() + "]");
 
             if (idxFut == null) {
@@ -867,11 +867,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
 
         /**
-         * Cancels index clearing tasks.
+         * Cancels index purge tasks.
          */
         public void stop() {
             if (log.isInfoEnabled())
-                log.info("Exclusive evict : stop");
+                log.info("Exclusive purge : stop");
 
             resFut.onDone(new IgniteCheckedException("Cache is stopping."));
 
@@ -879,7 +879,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 cancelFut.cancel();
             }
             catch (IgniteCheckedException e) {
-                log.error("Error cancelling index clearing tasks", e);
+                log.error("Error cancelling index purge tasks", e);
             }
         }
     }
@@ -889,7 +889,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
      * @param grp Cache group context.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateCacheGroupForExclusiveEvict(CacheGroupContext grp) throws IgniteCheckedException {
+    private void validateCacheGroupForExclusivePurge(CacheGroupContext grp) throws IgniteCheckedException {
         if (grp.hasContinuousQueryCaches())
             throw new IgniteCheckedException("Group has active continuous queries. [grpId=" + grp.groupId() + "]");
 
@@ -914,9 +914,9 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Evicts partitions from single index.
+     * Purges partitions from single index.
      */
-    private static class IndexEvictTask extends BucketQueueTask {
+    private static class IndexPurgeTask extends BucketQueueTask {
         /** Actual worker that removes rows from the index. */
         Runnable runnable;
 
@@ -929,7 +929,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param runnable Actual worker that removes rows from the index.
          * @param fut Future internal to the worker.
          */
-        IndexEvictTask(GroupEvictionContext grpEvictionCtx, Runnable runnable, IgniteInternalFuture<?> fut) {
+        IndexPurgeTask(GroupEvictionContext grpEvictionCtx, Runnable runnable, IgniteInternalFuture<?> fut) {
             super(grpEvictionCtx);
 
             this.runnable = runnable;
@@ -1009,7 +1009,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Performs per-partition actions in scope of exclusive partition set evict.
+     * Performs per-partition actions in scope of exclusive partition set purge.
      */
     private static class ExclusiveEvictPerPartitionTask extends BucketQueueTask {
         /** Partition. */

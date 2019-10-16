@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Removal of multiple items (designated by their 0-based indexes) in an index leaf page.
  */
-public class SweepRemoveRecord extends PageDeltaRecord {
+public class PurgeRecord extends PageDeltaRecord {
     /** Indexes of items to remove from the page. */
     private int[] items;
 
@@ -43,7 +43,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
      * @param itemsCnt Number of used elements in {@code items} array.
      * @param cnt Resulting count of items that should remain on the page.
      */
-    public SweepRemoveRecord(int grpId, long pageId, int[] items, int itemsCnt, int cnt) {
+    public PurgeRecord(int grpId, long pageId, int[] items, int itemsCnt, int cnt) {
         super(grpId, pageId);
 
         assert itemsCnt > 0 && itemsCnt <= items.length;
@@ -72,7 +72,7 @@ public class SweepRemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.BTREE_PAGE_SWEEP_REMOVE;
+        return RecordType.BTREE_PAGE_PURGE;
     }
 
     /**
@@ -98,6 +98,6 @@ public class SweepRemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SweepRemoveRecord.class, this, "super", super.toString());
+        return S.toString(PurgeRecord.class, this, "super", super.toString());
     }
 }

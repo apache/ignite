@@ -706,15 +706,16 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             if (shouldStop.call())
                 return;
 
-            GridCursor<Void> sweeper = sweep(rowClo);
+            GridCursor<Void> cur = purge(rowClo);
 
-            while (sweeper.next()) {
+            while (cur.next()) {
                 if (shouldStop.call())
                     return;
 
                 cctx.shared().database().checkpointReadLock();
+
                 try {
-                    sweeper.get(); // Reuse cursor interface for now.
+                    cur.get(); // Reuse cursor interface for now.
                 }
                 catch (IgniteCheckedException e) {
                     throw U.convertException(e);

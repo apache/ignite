@@ -62,7 +62,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Tests for index partition clearing.
+ * Tests for index partition purge.
  */
 public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     /** */
@@ -148,7 +148,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction().setPartitions(NUM_PARTS))
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-            .setCacheMode(CacheMode.PARTITIONED) // REPLICATED cache partitions are never evicted, but may be cleared alright.
+            .setCacheMode(CacheMode.PARTITIONED)
             .setQueryEntities(F.asList(
                     getQueryEntity(TestValueA.class),
                     getQueryEntity(TestValueB.class)))
@@ -190,10 +190,10 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPartitionSetEvictInlineSize0() throws Exception {
+    public void testPartitionPurgeInlineSize0() throws Exception {
         maxInlineSize = 0;
 
-        doTestPartitionSetEvict("cache1");
+        doTestPartitionPurge("cache1");
     }
 
     /**
@@ -201,8 +201,8 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPartitionSetEvict() throws Exception {
-        doTestPartitionSetEvict("cache1");
+    public void testPartitionPurge() throws Exception {
+        doTestPartitionPurge("cache1");
     }
 
     /**
@@ -210,8 +210,8 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPartitionSetEvictNoCacheGroup() throws Exception {
-        doTestPartitionSetEvict("cache3");
+    public void testPartitionPurgeNoCacheGroup() throws Exception {
+        doTestPartitionPurge("cache3");
     }
 
     /**
@@ -219,7 +219,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private void doTestPartitionSetEvict(String cacheName) throws Exception {
+    private void doTestPartitionPurge(String cacheName) throws Exception {
         startGrids(2);
 
         IgniteEx grid = grid(0);
@@ -247,7 +247,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().purgePartitionsExclusively(cctx.group(), parts);
 
         parts.forEach(GridDhtLocalPartition::release);
 
@@ -259,10 +259,10 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         if (cctx.group().sharedGroup()) {
             for (GridCacheContext cctx0 : cctx.group().caches())
-                checkIndexRowsAreCleared(grid, cctx0.name(), partIds);
+                checkIndexRowsArePurged(grid, cctx0.name(), partIds);
         }
         else
-            checkIndexRowsAreCleared(grid, cacheName, partIds);
+            checkIndexRowsArePurged(grid, cacheName, partIds);
 
         grid(2).cachex(cacheName).cache().context().group().preloader().rebalanceFuture().get(getTestTimeout());
 
@@ -282,7 +282,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ConstantConditions", "ThrowableNotThrown"})
     @Test
-    public void testCacheStopDuringPartitionSetEvict() throws Exception {
+    public void testCacheStopDuringPartitionPurge() throws Exception {
         GridQueryProcessor.idxCls = BlockPurgeIndexing.class;
 
         startGrid(0);
@@ -316,7 +316,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().purgePartitionsExclusively(cctx.group(), parts);
 
         parts.forEach(GridDhtLocalPartition::release);
 
@@ -337,7 +337,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void testSinglePartitionClearAfterExclusiveEvict() throws Exception {
+    public void testSinglePartitionClearAfterExclusivePurge() throws Exception {
         startGrids(2);
 
         IgniteEx grid = grid(0);
@@ -359,7 +359,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().purgePartitionsExclusively(cctx.group(), parts);
 
         fut.get(getTestTimeout());
 
@@ -384,7 +384,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void testPartitionSetEvictOnTwoCacheGroups() throws Exception {
+    public void testPartitionPurgeOnTwoCacheGroups() throws Exception {
         startGrids(2);
 
         IgniteEx grid = grid(0);
@@ -413,15 +413,15 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().evictPartitionsExclusively(cctx1.group(), parts1);
-        IgniteInternalFuture<Void> fut2 = cctx2.shared().evict().evictPartitionsExclusively(cctx2.group(), parts2);
+        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().purgePartitionsExclusively(cctx1.group(), parts1);
+        IgniteInternalFuture<Void> fut2 = cctx2.shared().evict().purgePartitionsExclusively(cctx2.group(), parts2);
 
         fut1.get(getTestTimeout());
         fut2.get(getTestTimeout());
 
-        checkIndexRowsAreCleared(grid, "cache1", partIds);
-        checkIndexRowsAreCleared(grid, "cache2", partIds);
-        checkIndexRowsAreCleared(grid, "cache3", partIds);
+        checkIndexRowsArePurged(grid, "cache1", partIds);
+        checkIndexRowsArePurged(grid, "cache2", partIds);
+        checkIndexRowsArePurged(grid, "cache3", partIds);
     }
 
     /**
@@ -429,7 +429,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    public void testDifferentEvictTypesTwoCacheGroups() throws Exception {
+    public void testSimultaneousClearAndPurgeTwoCacheGroups() throws Exception {
         startGrids(2);
 
         IgniteEx grid = grid(0);
@@ -459,7 +459,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().evictPartitionsExclusively(cctx1.group(), parts1);
+        IgniteInternalFuture<Void> fut1 = cctx1.shared().evict().purgePartitionsExclusively(cctx1.group(), parts1);
 
         parts2.forEach(GridDhtLocalPartition::clearAsync);
 
@@ -475,9 +475,9 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
         fut1.get(getTestTimeout());
         clFut.get(getTestTimeout());
 
-        checkIndexRowsAreCleared(grid, "cache1", partIds);
-        checkIndexRowsAreCleared(grid, "cache2", partIds);
-        checkIndexRowsAreCleared(grid, "cache3", partIds);
+        checkIndexRowsArePurged(grid, "cache1", partIds);
+        checkIndexRowsArePurged(grid, "cache2", partIds);
+        checkIndexRowsArePurged(grid, "cache3", partIds);
 
         parts2.forEach(p->assertEquals(0, p.fullSize()));
     }
@@ -507,7 +507,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        IgniteInternalFuture<Void> fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+        IgniteInternalFuture<Void> fut = cctx.shared().evict().purgePartitionsExclusively(cctx.group(), parts);
 
         fut.get(getTestTimeout());
 
@@ -518,7 +518,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
 
         parts.forEach(GridDhtLocalPartition::moving);
 
-        fut = cctx.shared().evict().evictPartitionsExclusively(cctx.group(), parts);
+        fut = cctx.shared().evict().purgePartitionsExclusively(cctx.group(), parts);
 
         fut.get(getTestTimeout());
 
@@ -542,38 +542,38 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that indexes do not return rows from cleared partitions.
+     * Check that indexes do not return rows from purged partitions.
      *
      * @param ignite Ignite.
      * @param cacheName Cache name.
-     * @param clearedParts Id of partitions that were cleared.
+     * @param purgedParts Id of partitions that were purged.
      */
-    private void checkIndexRowsAreCleared(IgniteEx ignite, String cacheName, List<Integer> clearedParts) {
+    private void checkIndexRowsArePurged(IgniteEx ignite, String cacheName, List<Integer> purgedParts) {
         long cnt = 0L;
 
         for (int k = 0; k < NUM_KEYS/2; k++) {
-            if (!clearedParts.contains(k % NUM_PARTS)) // ~ cctx.affinity().partition(k)
+            if (!purgedParts.contains(k % NUM_PARTS)) // ~ cctx.affinity().partition(k)
                 cnt++;
         }
 
-        checkIndexRowsAreCleared(ignite, "\"" + cacheName + "\".TBL_TESTVALUEA", clearedParts, cnt);
-        checkIndexRowsAreCleared(ignite, "\"" + cacheName + "\".TBL_TESTVALUEB", clearedParts, cnt);
+        checkIndexRowsArePurged(ignite, "\"" + cacheName + "\".TBL_TESTVALUEA", purgedParts, cnt);
+        checkIndexRowsArePurged(ignite, "\"" + cacheName + "\".TBL_TESTVALUEB", purgedParts, cnt);
     }
 
     /**
-     * Check that indexes do not return rows from cleared partitions.
+     * Check that indexes do not return rows from purged partitions.
      *
      * @param ignite Ignite.
      * @param schemaTable Schema and table name.
-     * @param clearedParts Id of partitions that were cleared.
+     * @param purgedParts Id of partitions that were purged.
      * @param cnt Count of rows expected to exist overall (for all other partitions).
      */
-    private void checkIndexRowsAreCleared(IgniteEx ignite, String schemaTable, List<Integer> clearedParts, long cnt) {
+    private void checkIndexRowsArePurged(IgniteEx ignite, String schemaTable, List<Integer> purgedParts, long cnt) {
         List<List<?>> r = ignite.context().query().querySqlFields(
             new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE A > ? AND B > ?")
                 .setLocal(true)
                 .setArgs(Integer.toString(0), 0)
-                .setPartitions(U.toIntArray(clearedParts))
+                .setPartitions(U.toIntArray(purgedParts))
             , false).getAll();
 
         assertEquals(0L, r.get(0).get(0));
@@ -582,7 +582,7 @@ public class IndexPartitionPurgeTest extends GridCommonAbstractTest {
             new SqlFieldsQuery("SELECT COUNT(1) FROM " + schemaTable + " WHERE C > ?")
                 .setLocal(true)
                 .setArgs(Integer.toString(0))
-                .setPartitions(U.toIntArray(clearedParts))
+                .setPartitions(U.toIntArray(purgedParts))
             , false).getAll();
 
         assertEquals(0L, r.get(0).get(0));
