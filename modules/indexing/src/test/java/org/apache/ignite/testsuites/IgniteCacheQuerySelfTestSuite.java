@@ -146,8 +146,8 @@ import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTes
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
-import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.CancelLazyDistributedJoinQueryTest;
+import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
@@ -167,6 +167,8 @@ import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlIndexesSystemViewStaticCfgTest;
+import org.apache.ignite.internal.processors.query.SqlIndexesSystemViewTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlSystemViewsSelfTest;
@@ -414,6 +416,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
         suite.addTestSuite(OptimizedMarshallerIndexNameTest.class);
         suite.addTestSuite(SqlSystemViewsSelfTest.class);
+        suite.addTestSuite(SqlIndexesSystemViewTest.class);
+        suite.addTestSuite(SqlIndexesSystemViewStaticCfgTest.class);
 
         suite.addTestSuite(IgniteSqlDefaultValueTest.class);
 
