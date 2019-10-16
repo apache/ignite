@@ -510,7 +510,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              * @param grpId Cache group id.
              * @param partId Partition id.
              */
-            private void stopRecover(
+            private void finishRecover(
                 FilePageStore pageStore,
                 UUID rmtNodeId,
                 String snpName,
@@ -556,7 +556,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 pageStore.beginRecover();
 
                 if (initMeta.count() == 0) {
-                    stopRecover(pageStore,
+                    finishRecover(pageStore,
                         nodeId,
                         snpName,
                         new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
@@ -576,7 +576,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             transferred.add(buff.capacity());
 
                             if (transferred.longValue() == initMeta.count()) {
-                                stopRecover(pageStore,
+                                finishRecover(pageStore,
                                     nodeId,
                                     snpName,
                                     new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
