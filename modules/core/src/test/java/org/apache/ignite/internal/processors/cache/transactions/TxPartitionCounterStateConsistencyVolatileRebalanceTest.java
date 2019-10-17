@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  * Test partitions consistency in various scenarios when all rebalance is in-memory.
@@ -39,15 +36,10 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
         // Not applicable for volatile mode.
     }
 
+    /** {@inheritDoc} */
     @Ignore
     @Override public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
         // Not applicable for volatile mode.
-    }
-
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, value = "1000")
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
-        super.testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared();
     }
 
     /** {@inheritDoc} */
