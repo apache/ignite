@@ -19,7 +19,8 @@ package org.apache.ignite.plugin.security;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
-import java.security.Permissions;
+import java.security.PermissionCollection;
+import java.security.ProtectionDomain;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 
@@ -65,7 +66,9 @@ public interface SecuritySubject extends Serializable {
     /**
      * @return Permissions for SecurityManager checks.
      */
-    public default Permissions sandboxPermissions(){
-        return SecurityUtils.ALL_PERMISSIONS;
+    public default PermissionCollection sandboxPermissions() {
+        ProtectionDomain pd = SecurityUtils.doPrivileged(() -> getClass().getProtectionDomain());
+
+        return pd != null ? pd.getPermissions() : SecurityUtils.ALL_PERMISSIONS;
     }
 }

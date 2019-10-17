@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.lang.ref.WeakReference;
 import java.security.DomainCombiner;
-import java.security.Permissions;
+import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
 import java.util.WeakHashMap;
 
@@ -31,10 +31,10 @@ public class IgniteDomainCombiner implements DomainCombiner {
     private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
 
     /** */
-    private final Permissions perms;
+    private final PermissionCollection perms;
 
     /** */
-    public IgniteDomainCombiner(Permissions perms) {
+    public IgniteDomainCombiner(PermissionCollection perms) {
         this.perms = perms;
     }
 
