@@ -23,13 +23,13 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -183,6 +185,15 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ds.addData(i, new TestOrderItem(i, i));
         }
 
+        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 2048; i++)
+                ds.addData(i, new TestOrderItem(i, i) {
+                    @Override public String toString() {
+                        return "_" + super.toString();
+                    }
+                });
+        }
+
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
@@ -202,16 +213,17 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(new File(mgr.snapshotDir(SNAPSHOT_NAME),
-            cacheDirName(defaultCacheCfg)));
+        String nodePath = ig.context().pdsFolderResolver().resolveFolders().pdsNodePath();
+
+        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
+            Paths.get(mgr.localSnapshotDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
+        );
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
 
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(
-            cacheWorkDir(new File(mgr.snapshotWorkDir(), SNAPSHOT_NAME), cacheDirName(defaultCacheCfg)).toPath(),
-            DELTA_FILE_MATCHER::matches)) {
-            assertFalse(".delta files must be cleaned after snapshot", files.iterator().hasNext());
-        }
+        File snpWorkDir = mgr.snapshotWorkDir();
+
+        assertEquals("Snapshot working directory must be cleand after usage", 0, snpWorkDir.listFiles().length);
     }
 
     /**
@@ -249,18 +261,17 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(mgr.snapshotDir(SNAPSHOT_NAME), cacheDirName(defaultCacheCfg));
+        File cacheBackup = cacheWorkDir(mgr.localSnapshotDir(SNAPSHOT_NAME), cacheDirName(defaultCacheCfg));
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File snapshotDir0 = mgr.snapshotDir(SNAPSHOT_NAME);
+        File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
             .scheduleSnapshot(SNAPSHOT_NAME,
                 parts,
-                snapshotDir0,
                 mgr.snapshotExecutorService(),
                 new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snapshotDir0)) {
                     @Override
@@ -301,27 +312,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteUtils.delete(cpDir);
         IgniteUtils.delete(walDir);
 
-        Files.walk(cacheBackup.toPath())
-            .map(Path::toFile)
-            .forEach(System.out::println);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setWorkDirectory(mgr.localSnapshotDir(SNAPSHOT_NAME).getAbsolutePath());
 
-        // copy all backups to the cache directory
-        Files.walk(cacheBackup.toPath())
-            .map(Path::toFile)
-            .filter(f -> !f.isDirectory())
-            .forEach(f -> {
-                try {
-                    File target = new File(cacheWorkDir, f.getName());
-
-                    Files.copy(f.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-                catch (IOException e) {
-                    throw new IgniteException(e);
-                }
-            });
-
-
-        IgniteEx ig2 = startGrid(0);
+        IgniteEx ig2 = startGrid(cfg);
 
         ig2.cluster().active(true);
 
@@ -389,11 +383,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        File snpDir0 = new File(mgr.snapshotWorkDir(), SNAPSHOT_NAME);
+        File snpDir0 = new File(mgr.localSnapshotWorkDir(), SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
             parts,
-            snpDir0,
             mgr.snapshotExecutorService(),
             new DeleagateSnapshotReceiver(mgr.localSnapshotReceiver(snpDir0)) {
                 @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
@@ -427,7 +420,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         cpFut.finishFuture().get();
 
-        IgniteSnapshotManager mgr = ig0.context()
+        IgniteSnapshotManager mgr0 = ig0.context()
             .cache()
             .context()
             .snapshotMgr();
@@ -442,7 +435,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch awaitLatch = new CountDownLatch(ints.size());
 
-        mgr.addSnapshotListener(new SnapshotListener() {
+        mgr0.addSnapshotListener(new SnapshotListener() {
             @Override public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId) {
                 log.info("Snapshot partition received successfully [snpName=" + snpName +
                     ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
@@ -459,7 +452,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        String snpName = mgr.createRemoteSnapshot(grid(1).localNode().id(), parts);
+        // Snapshot must be taken on node1 and transmitted to node0.
+        String snpName = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
 
         awaitLatch.await();
     }
@@ -514,14 +508,32 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             this.delegate = delegate;
         }
 
+        /** {@inheritDoc} */
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+            delegate.receiveCacheConfig(ccfg, cacheDirName, pair);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+            delegate.receiveMarshallerMeta(mappings);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
+            delegate.receiveBinaryMeta(types);
+        }
+
+        /** {@inheritDoc} */
         @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             delegate.receivePart(part, cacheDirName, pair, length);
         }
 
+        /** {@inheritDoc} */
         @Override public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair) {
             delegate.receiveDelta(delta, cacheDirName, pair);
         }
 
+        /** {@inheritDoc} */
         @Override public void close() throws IOException {
             delegate.close();
         }

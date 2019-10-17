@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.TombstoneCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
@@ -206,7 +207,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode())
-                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
+                metadataFileStore = (BinaryMetadataFileStore)binaryWriter(ctx.config().getWorkDirectory());
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
@@ -309,7 +310,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             if (!ctx.clientNode())
-                metadataFileStore.restoreMetadata();
+                metadataFileStore.restoreMetadata(metadataLocCache::put);
         }
     }
 
@@ -532,6 +533,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryTypeWriter binaryWriter(String igniteWorkDir) {
+        return new BinaryMetadataFileStore(ctx, log, igniteWorkDir, binaryMetadataFileStoreDir);
+    }
+
+    /** {@inheritDoc} */
     @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered)
         throws BinaryObjectException {
         assert newMeta != null;
@@ -631,7 +637,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
             if (!ctx.clientNode())
-                metadataFileStore.mergeAndWriteMetadata(mergedMeta);
+                metadataFileStore.writeMeta(typeId, mergedMeta.wrap(binaryCtx));
 
             metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
         }
@@ -810,19 +816,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds)
-        throws BinaryObjectException {
-        try {
-            Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
+    @Override public Map<Integer, BinaryType> metadataTypes() {
+        Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
 
-            for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
-                res.put(e.getKey(), e.getValue().metadata().wrap(binaryCtx));
+        for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
+            res.put(e.getKey(), e.getValue().metadata().wrap(binaryCtx));
 
-            return res;
-        }
-        catch (CacheException e) {
-            throw new BinaryObjectException(e);
-        }
+        return res;
     }
 
     /** {@inheritDoc} */

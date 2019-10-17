@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import javax.management.InstanceNotFoundException;
 import java.util.function.Predicate;
 import javax.management.InstanceNotFoundException;
@@ -997,6 +998,17 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param reason Reason.
      */
     @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
+     * Perform a snapshot operation on checkponter.
+     *
+     * @param op Snapshot operation.
+     * @param reason The text message reason.
+     * @return Checkpoint progress future.
+     */
+    public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
         return null;
     }
 
