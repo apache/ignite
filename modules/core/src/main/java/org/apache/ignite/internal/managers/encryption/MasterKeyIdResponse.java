@@ -30,8 +30,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * @see MasterKeyIdRequest
  */
 public class MasterKeyIdResponse implements Message {
-    /** Initial channel message type (value is {@code 177}). */
-    public static final short TYPE_CODE = 177;
+    /** Initial channel message type (value is {@code 178}). */
+    public static final short TYPE_CODE = 178;
 
     /** */
     private static final long serialVersionUID = 0L;

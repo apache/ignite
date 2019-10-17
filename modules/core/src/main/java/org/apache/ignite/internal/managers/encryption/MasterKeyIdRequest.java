@@ -30,8 +30,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Used to request a cluster master key id on the client or daemon side.
  */
 public class MasterKeyIdRequest implements Message {
-    /** Initial channel message type (value is {@code 176}). */
-    public static final short TYPE_CODE = 176;
+    /** Initial channel message type (value is {@code 177}). */
+    public static final short TYPE_CODE = 177;
 
     /** */
     private static final long serialVersionUID = 0L;
