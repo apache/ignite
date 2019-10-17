@@ -14,32 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
+
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Exception to be thrown when the required data is missing.
+ * Indicates a cardinality mismatch in matrix or vector operations.
  */
-public class NoDataException extends MathIllegalArgumentException {
-    /** Serializable version Id. */
-    private static final long serialVersionUID = -3629324471511904459L;
-
+public class CardinalityException extends MathIllegalArgumentException {
     /** */
-    private static final String NO_DATA = "No data.";
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Construct the exception.
-     */
-    public NoDataException() {
-        this(NO_DATA);
-    }
-
-    /**
-     * Construct the exception with a specific message.
+     * Creates new cardinality violation exception.
      *
-     * @param msg Message.
+     * @param exp Expected cardinality.
+     * @param act Actual cardinality.
      */
-    public NoDataException(String msg) {
-        super(msg);
+    public CardinalityException(int exp, int act) {
+        super("Cardinality violation [expected=%d, actual=%d]", exp, act);
     }
 }

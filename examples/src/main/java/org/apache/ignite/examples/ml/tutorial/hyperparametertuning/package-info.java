@@ -15,19 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
-
 /**
- * Indicates that given matrix is not a square matrix.
+ * <!-- Package description. --> Hyper-parameter tuning tutorial.
  */
-public class NonSquareMatrixException extends CardinalityException {
-    /**
-     * Creates new square size violation exception.
-     *
-     * @param exp Expected cardinality.
-     * @param act Actual cardinality.
-     */
-    public NonSquareMatrixException(int exp, int act) {
-        super(exp, act);
-    }
-}
+package org.apache.ignite.examples.ml.tutorial.hyperparametertuning;

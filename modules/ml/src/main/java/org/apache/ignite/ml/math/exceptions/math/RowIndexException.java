@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.knn;
+package org.apache.ignite.ml.math.exceptions.math;
 
-import java.nio.file.Path;
 import org.apache.ignite.IgniteException;
 
 /**
- * Shows non-parsed data in specific row by given file path.
+ * This exception is used to indicate any error condition accessing matrix elements by invalid row index.
  */
-public class FileParsingException extends IgniteException {
+public class RowIndexException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception.
-     * @param parsedData Data to parse.
-     * @param rowIdx Index of row in file.
-     * @param file File path
+     * @param idx Index value that caused this exception.
      */
-    public FileParsingException(String parsedData, int rowIdx, Path file) {
-        super("Data " + parsedData + " in row # " + rowIdx + " in file " + file + " can not be parsed to appropriate format");
+    public RowIndexException(int idx) {
+        super("Invalid (out of bound) row index: " + idx);
     }
 }

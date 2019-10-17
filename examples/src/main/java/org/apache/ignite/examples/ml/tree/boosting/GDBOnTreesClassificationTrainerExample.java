@@ -57,7 +57,7 @@ public class GDBOnTreesClassificationTrainerExample {
             try {
                 trainingSet = fillTrainingData(ignite, trainingSetCfg);
 
-                // Create regression trainer.
+                // Create classification trainer.
                 DatasetTrainer<ModelsComposition, Double> trainer = new GDBBinaryClassifierOnTreesTrainer(1.0, 300, 2, 0.)
                     .withCheckConvergenceStgyFactory(new MeanAbsValueConvergenceCheckerFactory(0.1));
 
