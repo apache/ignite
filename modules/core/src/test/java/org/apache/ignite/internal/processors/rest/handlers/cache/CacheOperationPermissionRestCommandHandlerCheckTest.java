@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
@@ -51,10 +50,10 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Tests Rest Cache commands handler directly.
+ * Test CRUD, create and destroy cache permissions with rest commands handler.
  */
-public class GridCacheRestCommandExecutionSelfTest extends GridCommonAbstractTest {
-    /** Empty perm. */
+public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCommonAbstractTest {
+    /** Empty permission. */
     public static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
 
     /** Cache name for tests. */
@@ -72,53 +71,13 @@ public class GridCacheRestCommandExecutionSelfTest extends GridCommonAbstractTes
     /** Handler. */
     private GridRestCommandHandler hnd;
 
-    /**
-     * Tests the execution of the GridRestCommand commands.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheRestCommand() throws Exception {
-        // This won't fail since defaultAllowAll is true.
-        createCache(NEW_TEST_CACHE);
-        createCache(CACHE_NAME);
-        createCache(CREATE_CACHE_NAME);
-
-        assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
-
-        assertFalse(grid().cacheNames().contains(FORBIDDEN_CACHE_NAME));
-        assertTrue(grid().cacheNames().containsAll(Arrays.asList(NEW_TEST_CACHE,CACHE_NAME,CREATE_CACHE_NAME)));
-
-
-        for (Function<String, IgniteInternalFuture<GridRestResponse>> f : operations()) {
-            f.apply(NEW_TEST_CACHE).get();
-            f.apply(CACHE_NAME).get();
-
-            assertThrowsWithCause(() -> f.apply(CREATE_CACHE_NAME).get(), IgniteCheckedException.class);
-        }
-
-        // This won't fail since defaultAllowAll is true and Task permissions is empty.
-        handle(new GridRestCacheRequest().cacheName(NEW_TEST_CACHE).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
-        handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
-        handle(new GridRestCacheRequest().cacheName(CREATE_CACHE_NAME).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
-
-        // This won't fail since defaultAllowAll is true.
-        handle(new GridRestCacheRequest().cacheName(NEW_TEST_CACHE).command(GridRestCommand.DESTROY_CACHE)).get().getResponse();
-
-        assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
-        assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CREATE_CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
-
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        // Discovery config.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
         disco.setJoinTimeout(5000);
 
-        // Grid config.
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
@@ -149,24 +108,51 @@ public class GridCacheRestCommandExecutionSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param cfg Config.
+     * Tests the execution of the GridRestCommand for Cache commands.
+     *
+     * @throws Exception If failed.
      */
-    protected GridRestResponse createCache(String cacheName,
-        CacheConfigurationOverride cfg) throws IgniteCheckedException {
-        GridRestCacheRequest req = new GridRestCacheRequest().cacheName(cacheName);
-        if (cfg != null)
-            req.configuration(cfg);
-        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
+    @Test
+    public void testCacheRestCommand() throws Exception {
+        // This won't fail since defaultAllowAll is true.
+        createCache(NEW_TEST_CACHE);
+        createCache(CACHE_NAME);
+        createCache(CREATE_CACHE_NAME);
 
-        return handle(req).get();
+        assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
+
+        assertFalse(grid().cacheNames().contains(FORBIDDEN_CACHE_NAME));
+        assertTrue(grid().cacheNames().containsAll(Arrays.asList(NEW_TEST_CACHE,CACHE_NAME,CREATE_CACHE_NAME)));
+
+        for (Function<String, IgniteInternalFuture<GridRestResponse>> f : operations()) {
+            f.apply(NEW_TEST_CACHE).get();
+            f.apply(CACHE_NAME).get();
+
+            assertThrowsWithCause(() -> f.apply(CREATE_CACHE_NAME).get(), IgniteCheckedException.class);
+        }
+
+        // This won't fail since defaultAllowAll is true and Task permissions is empty.
+        handle(new GridRestCacheRequest().cacheName(NEW_TEST_CACHE).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
+        handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
+        handle(new GridRestCacheRequest().cacheName(CREATE_CACHE_NAME).command(GridRestCommand.CACHE_CLEAR)).get().getResponse();
+
+        // This won't fail since defaultAllowAll is true.
+        handle(new GridRestCacheRequest().cacheName(NEW_TEST_CACHE).command(GridRestCommand.DESTROY_CACHE)).get().getResponse();
+
+        assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
+        assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CREATE_CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
+
     }
 
     /**
      * @param cacheName Cache name.
      */
-    protected GridRestResponse createCache(String cacheName) throws IgniteCheckedException {
-        return createCache(cacheName, null);
+    protected GridRestResponse createCache(String cacheName)
+        throws IgniteCheckedException {
+        GridRestCacheRequest req = new GridRestCacheRequest().cacheName(cacheName);
+        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
+
+        return handle(req).get();
     }
 
     /** */
@@ -175,7 +161,7 @@ public class GridCacheRestCommandExecutionSelfTest extends GridCommonAbstractTes
     }
 
     /** */
-    private List<Function<String, IgniteInternalFuture<GridRestResponse>>> operations() {
+    protected List<Function<String, IgniteInternalFuture<GridRestResponse>>> operations() {
         return Arrays.asList(
             n -> handle(new GridRestCacheRequest().cacheName(n).key("key").value("value").command(GridRestCommand.CACHE_PUT)),
             n -> handle(new GridRestCacheRequest().cacheName(n).values(singletonMap("key", "value")).command(GridRestCommand.CACHE_PUT_ALL)),
