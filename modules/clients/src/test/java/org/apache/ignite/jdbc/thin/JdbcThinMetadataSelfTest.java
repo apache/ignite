@@ -636,6 +636,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.INDEXES.IS_PK.null.1",
                 "SYS.INDEXES.IS_UNIQUE.null.1",
                 "SYS.INDEXES.INLINE_SIZE.null.10",
+                "SYS.INDEXES.IS_REBUILD_IN_PROGRESS.null.1",
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_ID.null.10",
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null.19",
