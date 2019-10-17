@@ -116,6 +116,11 @@ public class SqlIndexView {
         return idx instanceof H2TreeIndexBase ? ((H2TreeIndexBase)idx).inlineSize() : 0;
     }
 
+    /** @return {@code True} if index rebuilding in progress. */
+    public boolean isRebuildInProgress() {
+        return tbl.rebuildFromHashInProgress();
+    }
+
     /**
      * @param idx Inde.
      * @return Index type.
