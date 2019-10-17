@@ -220,11 +220,14 @@ public abstract class WALRecord {
         /** Rollback tx record. */
         ROLLBACK_TX_RECORD (57, LOGICAL),
 
-        /** */
+        /** Partition meta page containing update counter gaps. */
         PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
 
+        /** Partition meta page containing tombstone presence flag. */
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V3 (59, PHYSICAL),
+
         /** */
-        MASTER_KEY_CHANGE_RECORD(59, LOGICAL);
+        MASTER_KEY_CHANGE_RECORD(60, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;
