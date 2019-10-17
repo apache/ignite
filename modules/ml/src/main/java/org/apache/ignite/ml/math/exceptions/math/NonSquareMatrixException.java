@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
  * Indicates that given matrix is not a square matrix.

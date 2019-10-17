@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.TombstoneCacheObject;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -1164,6 +1165,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case SessionChannelMessage.TYPE_CODE:
                 msg = new SessionChannelMessage();
+
+                break;
+
+            case 176:
+                msg = TombstoneCacheObject.INSTANCE;
 
                 break;
 

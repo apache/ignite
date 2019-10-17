@@ -1268,8 +1268,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 throw e;
             }
 
-            next.writeHeader();
-
             if (rec != null) {
                 WALPointer ptr = next.addRecord(rec);
 
@@ -1441,6 +1439,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
             }
+
+            hnd.writeHeader();
 
             return hnd;
         }

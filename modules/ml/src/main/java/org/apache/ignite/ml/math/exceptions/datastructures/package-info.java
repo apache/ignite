@@ -15,22 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
-
 /**
- * Indicates a cardinality mismatch in matrix or vector operations.
+ * <!-- Package description. -->
+ * Contains exceptions for kNN algorithms.
  */
-public class CardinalityException extends MathIllegalArgumentException {
-    /** */
-    private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates new cardinality violation exception.
-     *
-     * @param exp Expected cardinality.
-     * @param act Actual cardinality.
-     */
-    public CardinalityException(int exp, int act) {
-        super("Cardinality violation [expected=%d, actual=%d]", exp, act);
-    }
-}
+package org.apache.ignite.ml.math.exceptions.datastructures;

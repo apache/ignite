@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.knn;
-
-import java.nio.file.Path;
-import org.apache.ignite.IgniteException;
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
- * Shows non-parsed data in specific row by given file path.
+ * Indicates a cardinality mismatch in matrix or vector operations.
  */
-public class FileParsingException extends IgniteException {
+public class CardinalityException extends MathIllegalArgumentException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception.
-     * @param parsedData Data to parse.
-     * @param rowIdx Index of row in file.
-     * @param file File path
+     * Creates new cardinality violation exception.
+     *
+     * @param exp Expected cardinality.
+     * @param act Actual cardinality.
      */
-    public FileParsingException(String parsedData, int rowIdx, Path file) {
-        super("Data " + parsedData + " in row # " + rowIdx + " in file " + file + " can not be parsed to appropriate format");
+    public CardinalityException(int exp, int act) {
+        super("Cardinality violation [expected=%d, actual=%d]", exp, act);
     }
 }

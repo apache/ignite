@@ -70,6 +70,7 @@ public class CacheGroupMetricsImpl {
     private final LongMetric sparseStorageSize;
 
     /** Interface describing a predicate of two integers. */
+    @FunctionalInterface
     private interface IntBiPredicate {
         /**
          * Predicate body.
@@ -169,6 +170,10 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
+
+        mreg.register("Tombstones",
+            this::getTombstones,
+            "Number of tombstone entries.");
     }
 
     /** */
@@ -253,20 +258,12 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public int getMinimumNumberOfPartitionCopies() {
-        return numberOfPartitionCopies(new IntBiPredicate() {
-            @Override public boolean apply(int targetVal, int nextVal) {
-                return nextVal < targetVal;
-            }
-        });
+        return numberOfPartitionCopies((targetVal, nextVal) -> nextVal < targetVal);
     }
 
     /** */
     public int getMaximumNumberOfPartitionCopies() {
-        return numberOfPartitionCopies(new IntBiPredicate() {
-            @Override public boolean apply(int targetVal, int nextVal) {
-                return nextVal > targetVal;
-            }
-        });
+        return numberOfPartitionCopies((targetVal, nextVal) -> nextVal > targetVal);
     }
 
     /**
@@ -460,6 +457,12 @@ public class CacheGroupMetricsImpl {
     /** */
     public long getSparseStorageSize() {
         return sparseStorageSize == null ? 0 : sparseStorageSize.value();
+    }
+
+    /** */
+    public long getTombstones() {
+        return ctx.topology().localPartitions().stream()
+            .map(part -> part.dataStore().tombstonesCount()).reduce(Long::sum).orElse(0L);
     }
 
     /** Removes all metric for cache group. */
