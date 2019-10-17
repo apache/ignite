@@ -36,6 +36,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
+import org.apache.ignite.testframework.junits.Repeat;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +61,11 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
         return c;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30 * 60 * 1000;
+    }
+
     /**
      * Spawns one job on the node other than task node and
      * ensures that all checkpoints were removed after task completion.
@@ -67,7 +73,8 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
-    public void testCheckpointCleanup() throws Exception {
+    @Repeat(5_000)
+    public void testCheckpointCleanup_5000() throws Exception {
         try {
             checkpointSpi = new TestCheckpointSpi("task-checkpoints", cntr);
 
