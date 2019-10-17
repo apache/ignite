@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -90,7 +92,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration().setName("in-memory").setMaxSize(100L * 1024 * 1024))
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
@@ -417,7 +423,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "TRANSACTIONS",
             "CONTINUOUS_QUERIES",
             "STRIPED_THREADPOOL_QUEUE",
-            "DATASTREAM_THREADPOOL_QUEUE"
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "DATA_REGION_PAGE_LISTS",
+            "CACHE_GROUP_PAGE_LISTS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -833,6 +841,66 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         finally {
             latch.countDown();
         }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        String cacheName = "cacheFL";
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(new CacheConfiguration<Integer, byte[]>()
+            .setName(cacheName).setAffinity(new RendezvousAffinityFunction().setPartitions(1)));
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite0.context().cache().context()
+            .database();
+
+        int pageSize = dbMgr.pageSize();
+
+        try {
+            dbMgr.enableCheckpoints(false).get();
+
+            int key = 0;
+
+            // Fill up different free-list buckets.
+            for (int j = 0; j < pageSize / 2; j++)
+                cache.put(key++, new byte[j + 1]);
+
+            // Put some pages to one bucket to overflow pages cache.
+            for (int j = 0; j < 1000; j++)
+                cache.put(key++, new byte[pageSize / 2]);
+
+            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_SIZE > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE STRIPES_COUNT > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHED_PAGES_COUNT > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertTrue(!execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%'")
+                .isEmpty());
+
+            assertEquals(0L, execute(ignite0, "SELECT COUNT(*) FROM SYS.DATA_REGION_PAGE_LISTS " +
+                "WHERE NAME LIKE 'in-memory%' AND BUCKET_SIZE > 0").get(0).get(0));
+        }
+        finally {
+            dbMgr.enableCheckpoints(true).get();
+        }
+
+        ignite0.cluster().active(false);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cacheInMemory = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cacheFLInMemory").setDataRegionName("in-memory"));
+
+        cacheInMemory.put(0, 0);
+
+        // After activation/deactivation new view for data region pages lists should be created, check that new view
+        // correctly reflects changes in free-lists.
+        assertTrue(!execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%' AND " +
+            "BUCKET_SIZE > 0").isEmpty());
     }
 
     /**

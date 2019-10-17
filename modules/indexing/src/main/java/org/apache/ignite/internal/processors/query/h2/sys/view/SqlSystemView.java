@@ -62,6 +62,11 @@ public interface SqlSystemView {
     public long getRowCount();
 
     /**
+     * Gets approximated row count (required to build execution plan).
+     */
+    public long getRowCountApproximation();
+
+    /**
      * Check if the row count can be retrieved quickly.
      *
      * @return true if it can
@@ -72,6 +77,11 @@ public interface SqlSystemView {
      * Gets SQL script for creating table.
      */
     public String getCreateSQL();
+
+    /**
+     * Gets SQL script for dropping table.
+     */
+    public String getDropSQL();
 
     /**
      * @return {@code True} if view is distributed.

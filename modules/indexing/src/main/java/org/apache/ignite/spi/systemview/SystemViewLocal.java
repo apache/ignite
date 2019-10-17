@@ -214,6 +214,13 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRowCountApproximation() {
+        // getRowCount() method is not really fast, for some system views it's required to iterate over elements to
+        // calculate size, so it's more safe to use constant here.
+        return DEFAULT_ROW_COUNT_APPROXIMATION;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
     }

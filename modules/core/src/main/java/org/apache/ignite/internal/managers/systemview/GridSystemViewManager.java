@@ -154,7 +154,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <D> Collection data type.
      */
     public <C, R, D> void registerInnerCollectionView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
-        Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        Iterable<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
         registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             walker,
@@ -213,9 +213,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param sysView System view.
      */
     private void registerView0(String name, SystemView sysView) {
-        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
-
-        assert old == null;
+        systemViews.put(name, sysView);
 
         notifyListeners(sysView, viewCreationLsnrs, log);
     }

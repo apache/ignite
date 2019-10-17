@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewCach
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
@@ -129,7 +128,7 @@ public class SchemaManager {
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
     /** System VIEW collection. */
-    private final Set<SqlSystemView> systemViews = new GridConcurrentHashSet<>();
+    private final Map<String, SqlSystemView> sysViews = new ConcurrentHashMap<>();
 
     /** Mutex to synchronize schema operations. */
     private final Object schemaMux = new Object();
@@ -164,7 +163,7 @@ public class SchemaManager {
 
         ctx.systemView().registerView(SQL_VIEWS_VIEW, SQL_VIEWS_VIEW_DESC,
             new SqlViewViewWalker(),
-            systemViews,
+            sysViews.values(),
             SqlViewView::new);
 
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
@@ -181,7 +180,7 @@ public class SchemaManager {
 
         ctx.systemView().registerInnerArrayView(SQL_VIEW_COLS_VIEW, SQL_VIEW_COLS_VIEW_DESC,
             new SqlViewColumnViewWalker(),
-            systemViews,
+            sysViews.values(),
             SqlSystemView::getColumns,
             SqlViewColumnView::new);
     }
@@ -235,7 +234,7 @@ public class SchemaManager {
             try (Connection c = connMgr.connectionNoCache(schema)) {
                 SqlSystemTableEngine.registerView(c, view);
 
-                    systemViews.add(view);
+                sysViews.put(view.getTableName(), view);
             }
         }
         catch (IgniteCheckedException | SQLException e) {
@@ -815,7 +814,7 @@ public class SchemaManager {
      * @return all known system views.
      */
     public Collection<SqlSystemView> systemViews() {
-        return Collections.unmodifiableSet(systemViews);
+        return Collections.unmodifiableCollection(sysViews.values());
     }
 
     /**

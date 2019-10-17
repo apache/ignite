@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -56,6 +59,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -1827,6 +1831,18 @@ public abstract class PagesList extends DataStructure {
         // Ok to have a race here, see the field javadoc.
         if (!changed)
             changed = true;
+    }
+
+    /**
+     * Gets buckets representation for a {@link SystemView}
+     */
+    public Collection<PagesListView> bucketsView() {
+        List<PagesListView> views = new ArrayList<>(buckets);
+
+        for (int i = 0; i < buckets; i++)
+            views.add(i, new PagesListView(this, i));
+
+        return views;
     }
 
     /**

@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -52,9 +53,13 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -89,8 +94,10 @@ import static org.apache.ignite.internal.managers.systemview.GridSystemViewManag
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
@@ -980,6 +987,77 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return TEST_TRANSFORMER;
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setName("dr0").setMaxSize(100L * 1024 * 1024),
+                    new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                )))) {
+            ignite.cluster().active(true);
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
+                .database();
+
+            int pageSize = dbMgr.pageSize();
+
+            dbMgr.enableCheckpoints(false).get();
+
+            for (int i = 0; i < 2; i++) {
+                IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("cache" + i)
+                    .setDataRegionName("dr" + i).setAffinity(new RendezvousAffinityFunction().setPartitions(1)));
+
+                int key = 0;
+
+                // Fill up different free-list buckets.
+                for (int j = 0; j < pageSize / 2; j++)
+                    cache.put(key++, new byte[j + 1]);
+
+                // Put some pages to one bucket to overflow pages cache.
+                for (int j = 0; j < 1000; j++)
+                    cache.put(key++, new byte[pageSize / 2]);
+            }
+
+            long dr0flPages = 0;
+            int dr0flStripes = 0;
+
+            SystemView<PagesListView> dataRegionPageLists = ignite.context().systemView().view(DATA_REGION_PAGE_LIST_VIEW);
+
+            for (PagesListView pagesListView : dataRegionPageLists) {
+                if (pagesListView.name().startsWith("dr0")) {
+                    dr0flPages += pagesListView.bucketSize();
+                    dr0flStripes += pagesListView.stripesCount();
+                }
+            }
+
+            assertTrue(dr0flPages > 0);
+            assertTrue(dr0flStripes > 0);
+
+            SystemView<PagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
+
+            long dr1flPages = 0;
+            int dr1flStripes = 0;
+            int dr1flCached = 0;
+
+            for (PagesListView pagesListView : cacheGrpPageLists) {
+                if (pagesListView.cacheGroupId() == cacheId("cache1")) {
+                    dr1flPages += pagesListView.bucketSize();
+                    dr1flStripes += pagesListView.stripesCount();
+                    dr1flCached += pagesListView.cachedPagesCount();
+                }
+            }
+
+            assertTrue(dr1flPages > 0);
+            assertTrue(dr1flStripes > 0);
+            assertTrue(dr1flCached > 0);
         }
     }
 

@@ -41,11 +41,12 @@ public class SqlSystemTableEngine implements TableEngine {
         throws SQLException {
         curView = view;
 
-        String sql = view.getCreateSQL() + " ENGINE \"" + SqlSystemTableEngine.class.getName() + "\"";
+        String createSql = view.getCreateSQL() + " ENGINE \"" + SqlSystemTableEngine.class.getName() + "\"";
 
         try {
             try (Statement s = conn.createStatement()) {
-                s.execute(sql);
+                s.execute(view.getDropSQL());
+                s.execute(createSql);
             }
         }
         finally {

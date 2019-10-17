@@ -105,6 +105,11 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRowCountApproximation() {
+        return getRowCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return false;
     }
@@ -130,5 +135,10 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
         sql.append(')');
 
         return sql.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getDropSQL() {
+        return "DROP TABLE IF EXISTS " + getTableName();
     }
 }

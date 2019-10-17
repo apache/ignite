@@ -74,6 +74,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -101,9 +102,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -200,19 +204,17 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
-    /** Invalid region configuration message. */
-    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
-        "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
-
-    /** Template of message of failed node join because encryption settings are different for the same cache. */
-    private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
-        "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
-
     /** */
     private static final String CACHE_NAME_AND_OPERATION_FORMAT = "[cacheName=%s, operation=%s]";
 
     /** */
     private static final String CACHE_NAMES_AND_OPERATION_FORMAT = "[cacheNames=%s, operation=%s]";
+
+    /** System view name. */
+    public static final String CACHE_GRP_PAGE_LIST_VIEW = "cacheGroupPageLists";
+
+    /** System view description. */
+    public static final String CACHE_GRP_PAGE_LIST_VIEW_DESC = "Cache group page lists";
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -594,6 +596,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
+
+        ctx.systemView().registerInnerCollectionView(
+            CACHE_GRP_PAGE_LIST_VIEW,
+            CACHE_GRP_PAGE_LIST_VIEW_DESC,
+            new PagesListViewWalker(),
+            () -> F.concat(F.iterator(cacheGrps.values().iterator(),
+                grp -> grp.offheap().cacheDataStores().iterator(), true)),
+            dataStore -> {
+                RowStore rowStore = dataStore.rowStore();
+
+                if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
+                    return Collections.emptySet();
+
+                PagesList pagesList = (PagesList)rowStore.freeList();
+
+                return pagesList.bucketsView();
+            },
+            (dataStore, view) -> view
+        );
     }
 
 

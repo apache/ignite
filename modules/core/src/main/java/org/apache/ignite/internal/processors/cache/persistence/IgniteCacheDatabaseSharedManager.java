@@ -42,6 +42,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.walker.DataRegionPagesListViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -93,6 +95,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+
+    /** System view name. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
+
+    /** System view description. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW_DESC = "Data region page lists";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
@@ -245,6 +253,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(dataRegionMap.size());
+
+        cctx.kernalContext().systemView().registerInnerCollectionView(
+            DATA_REGION_PAGE_LIST_VIEW,
+            DATA_REGION_PAGE_LIST_VIEW_DESC,
+            new DataRegionPagesListViewWalker(),
+            freeListMap.values(),
+            PagesList::bucketsView,
+            (dataStore, view) -> view
+        );
 
         String dfltMemPlcName = dbCfg.getDefaultDataRegionConfiguration().getName();
 
