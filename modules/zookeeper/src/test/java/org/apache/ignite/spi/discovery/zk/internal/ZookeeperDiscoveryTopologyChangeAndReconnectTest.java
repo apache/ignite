@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -45,8 +44,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -54,6 +55,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -562,6 +564,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SQL_DISABLE_SYSTEM_VIEWS, value = "true")
     public void testDuplicatedNodeId() throws Exception {
         UUID nodeId0 = nodeId = UUID.randomUUID();
 
@@ -569,25 +572,15 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         int failingNodeIdx = 100;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             final int idx = failingNodeIdx++;
 
             nodeId = nodeId0;
 
             info("Start node with duplicated ID [iter=" + i + ", nodeId=" + nodeId + ']');
 
-            Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    startGrid(idx);
-
-                    return null;
-                }
-            }, IgniteCheckedException.class, null);
-
-            assertTrue(err instanceof IgniteCheckedException);
-
-            assertTrue(err.getMessage().contains("Failed to start processor:")
-                || err.getMessage().contains("Failed to start manager:"));
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> startGrid(idx), IgniteSpiException.class, "Node with the same ID already exists");
 
             nodeId = null;
 
