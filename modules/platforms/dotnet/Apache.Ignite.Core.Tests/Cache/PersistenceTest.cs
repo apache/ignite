@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.
@@ -223,6 +223,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests the baseline topology.
         /// </summary>
         [Test]
+        [Ignore("SetBaselineAutoAdjustEnabledFlag is not supported in 8.7, and IGNITE_BASELINE_AUTO_ADJUST_ENABLED " +
+                "can't be set reliably with environment variables.'")]
         public void TestBaselineTopology()
         {
             using (EnvVar.Set("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false"))

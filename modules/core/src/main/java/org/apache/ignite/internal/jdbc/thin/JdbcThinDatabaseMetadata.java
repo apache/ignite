@@ -792,7 +792,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),       // 5
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),      // 6
             new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),   // 7
-            new JdbcColumnMeta(null, null, "BUFFER_LENGTH ", Integer.class), // 8
+            new JdbcColumnMeta(null, null, "BUFFER_LENGTH", Integer.class), // 8
             new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class), // 9
             new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),  // 10
             new JdbcColumnMeta(null, null, "NULLABLE", Short.class),        // 11
@@ -808,7 +808,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),    // 21
             new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class), // 22
             new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class), // 23
-            new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN ", String.class) // 24
+            new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN", String.class) // 24
         );
 
         if (!isValidCatalog(catalog))
