@@ -3956,7 +3956,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             List<PartitionDestroyRequest> reqs = null;
 
             for (final PartitionDestroyRequest req : destroyQueue.pendingReqs.values()) {
-                if (!req.beginDestroy())
+                if (!req.beginDestroy() || req.reqFut.isCancelled())
                     continue;
 
                 final int grpId = req.grpId;

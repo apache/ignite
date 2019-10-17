@@ -141,6 +141,11 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     }
 
     /** {@inheritDoc} */
+    @Override public long highestAppliedCounter() {
+        return get();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "Counter [init=" + initCntr + ", val=" + get() + ']';
     }

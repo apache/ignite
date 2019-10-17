@@ -2095,6 +2095,26 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void reinit() {
+            try {
+                if (init.compareAndSet(true, false)) {
+                    delegate = null;
+
+                    // TODO add test when the storage is not inited and the current method called
+                    CacheDataStore delegate0 = init0(false);
+
+                    assert delegate0 != null;
+
+                    // todo initialize properly or don't remove them
+                    partDataStores.put(partId, this);
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }

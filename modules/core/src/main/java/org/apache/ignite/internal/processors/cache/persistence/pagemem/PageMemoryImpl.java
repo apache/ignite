@@ -816,7 +816,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
             }
             else if (relPtr == OUTDATED_REL_PTR) {
-                assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
+                assert PageIdUtils.pageIndex(pageId) == 0 : fullId + " p=" + PageIdUtils.partId(pageId);
 
                 relPtr = refreshOutdatedPage(seg, grpId, pageId, false);
 
@@ -1424,6 +1424,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     seg.writeLock().unlock();
                 }
             }
+
+//            U.dumpStack("invalidate p=" + partId + ", tag=" + tag);
 
             return tag;
         }

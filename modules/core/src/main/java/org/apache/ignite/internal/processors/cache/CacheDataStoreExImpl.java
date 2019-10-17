@@ -124,6 +124,11 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void reinit() {
+        activeStorage().reinit();
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheDataRow createRow(
         GridCacheContext cctx,
         KeyCacheObject key,
