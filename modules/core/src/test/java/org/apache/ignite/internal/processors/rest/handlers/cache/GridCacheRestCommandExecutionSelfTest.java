@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -52,42 +51,49 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Tests command handler directly.
+ * Tests Rest Cache commands handler directly.
  */
-public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest {
+public class GridCacheRestCommandExecutionSelfTest extends GridCommonAbstractTest {
+    /** Empty perm. */
     public static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+
     /** Cache name for tests. */
     protected static final String CACHE_NAME = "TEST_CACHE";
 
+    /** Create cache name. */
     protected static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
+
     /** Forbidden cache. */
     protected static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
+
     /** New cache. */
     protected static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
 
-    private GridRestCommandHandler hnd = null;
+    /** Handler. */
+    private GridRestCommandHandler hnd;
 
     /**
-     * Tests the execution of the CACHE_CLEAR command.
+     * Tests the execution of the GridRestCommand commands.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testCacheRestCommand() throws Exception {
-        AtomicInteger count = new AtomicInteger(0);
-
         // This won't fail since defaultAllowAll is true.
         createCache(NEW_TEST_CACHE);
         createCache(CACHE_NAME);
         createCache(CREATE_CACHE_NAME);
+
         assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
 
         assertFalse(grid().cacheNames().contains(FORBIDDEN_CACHE_NAME));
+        assertTrue(grid().cacheNames().containsAll(Arrays.asList(NEW_TEST_CACHE,CACHE_NAME,CREATE_CACHE_NAME)));
 
 
         for (Function<String, IgniteInternalFuture<GridRestResponse>> f : operations()) {
             f.apply(NEW_TEST_CACHE).get();
             f.apply(CACHE_NAME).get();
+
             assertThrowsWithCause(() -> f.apply(CREATE_CACHE_NAME).get(), IgniteCheckedException.class);
         }
 
@@ -106,7 +112,6 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-
         // Discovery config.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -120,6 +125,7 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
 
         ConnectorConfiguration clnCfg = new ConnectorConfiguration();
         clnCfg.setHost("127.0.0.1");
+        clnCfg.setPort(11212);
 
         cfg.setConnectorConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
@@ -132,17 +138,15 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
                 )
         )
             .setAuthenticationEnabled(true)
-            .setPluginProviders(new TestSecurityPluginProvider("login", "", SecurityPermissionSetBuilder.create()
+            .setPluginProviders(new TestSecurityPluginProvider("login", "password", SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
                 .appendCachePermissions(CREATE_CACHE_NAME, CACHE_CREATE)
                 .appendCachePermissions(FORBIDDEN_CACHE_NAME, EMPTY_PERM)
                 .appendSystemPermissions(JOIN_AS_SERVER)
                 .build()));
-        ;
 
         return cfg;
     }
-
 
     /**
      * @param cacheName Cache name.
@@ -150,12 +154,12 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
      */
     protected GridRestResponse createCache(String cacheName,
         CacheConfigurationOverride cfg) throws IgniteCheckedException {
-        GridRestCacheRequest request = new GridRestCacheRequest().cacheName(cacheName);
+        GridRestCacheRequest req = new GridRestCacheRequest().cacheName(cacheName);
         if (cfg != null)
-            request.configuration(cfg);
-        request.command(GridRestCommand.GET_OR_CREATE_CACHE);
+            req.configuration(cfg);
+        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
 
-        return handle(request).get();
+        return handle(req).get();
     }
 
     /**
@@ -166,15 +170,8 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
-    protected GridRestCommandHandler getHandler() {
-        if (hnd == null)
-            hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
-        return hnd;
-    }
-
-    /** */
-    protected IgniteInternalFuture<GridRestResponse> handle(GridRestRequest request) {
-        return getHandler().handleAsync(request);
+    protected IgniteInternalFuture<GridRestResponse> handle(GridRestRequest req) {
+        return hnd.handleAsync(req);
     }
 
     /** */
@@ -198,15 +195,12 @@ public class GridCacheCrudCommandHandlerSelfTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid(getConfiguration()).cluster().active(true);
+        hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
     }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception { }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
         cleanPersistenceDir();
     }
-
 }
