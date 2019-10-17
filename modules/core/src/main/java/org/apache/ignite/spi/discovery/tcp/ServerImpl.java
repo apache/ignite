@@ -4842,8 +4842,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         spi.marshaller(), ldr, locNode
                                     );
 
-                                    if (!permissionsEqual(locCrd.subject().permissions(),
-                                        rmCrd.subject().permissions())) {
+                                    if (!permissionsEqual(getPermissions(locCrd), getPermissions(rmCrd))) {
                                         // Node has not pass authentication.
                                         LT.warn(log,
                                             "Failed to authenticate local node " +
