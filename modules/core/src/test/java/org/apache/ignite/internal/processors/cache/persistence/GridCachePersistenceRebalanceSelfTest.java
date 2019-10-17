@@ -59,6 +59,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED;
 
 /**
@@ -308,6 +309,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
     @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    //@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD,)
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
     public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
         IgniteEx ignite0 = startGrid(0);
@@ -322,19 +324,21 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         IgniteEx ignite1 = startGrid(1);
 
-        U.sleep(2_000);
-
-        IgniteEx ignite2 = startGrid(2);
-
         awaitPartitionMapExchange();
 
+//        U.sleep(4_000);
+//
+        IgniteEx ignite2 = startGrid(2);
+//
+        awaitPartitionMapExchange();
+//
         U.sleep(1_000);
-
+//
         U.sleep(1_000);
-
+//
         verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
         verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
-
+//
         verifyLocalCache(ignite0.cachex(CACHE1), ignite2.cachex(CACHE1));
         verifyLocalCache(ignite0.cachex(CACHE2), ignite2.cachex(CACHE2));
     }

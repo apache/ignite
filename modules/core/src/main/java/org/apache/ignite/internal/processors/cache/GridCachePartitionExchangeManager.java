@@ -1553,6 +1553,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         ExchangeActions exchActions,
         Collection<CacheGroupContext> grps
     ) {
+//        if (cctx.localNodeId().toString().endsWith("1"))
+//            U.dumpStack("send single message");
+
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
@@ -1572,7 +1575,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     grp.affinity().similarAffinityKey());
 
                 if (sndCounters) {
-                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(true);
+                    CachePartitionPartialCountersMap cntrsMap = grp.topology().localUpdateCounters(false);
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
@@ -3333,7 +3336,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                         if (cctx.filePreloader() != null)
-                            loadPartsRun = cctx.filePreloader().addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+                            loadPartsRun = cctx.filePreloader().addNodeAssignments(assignsMap, resVer, forcePreload, cnt, exchId, exchFut);
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {

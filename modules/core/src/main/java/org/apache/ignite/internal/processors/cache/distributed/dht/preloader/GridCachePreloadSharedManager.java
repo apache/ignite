@@ -148,18 +148,22 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param assignsMap A map of cache assignments grouped by grpId.
      * @param force {@code true} if must cancel previous rebalance.
      * @param rebalanceId Current rebalance id.
+     * @param exchId
+     * @param exchFut
      * @return Runnable to execute the chain.
      */
     public Runnable addNodeAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap,
         AffinityTopologyVersion topVer,
         boolean force,
-        long rebalanceId
-    ) {
+        long rebalanceId,
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut) {
         U.dumpStack(cctx.localNodeId() + ">>> add assignments");
 
+
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> nodeOrderAssignsMap =
-            sliceNodeCacheAssignments(assignsMap);
+            sliceNodeCacheAssignments(assignsMap, exchId, exchFut);
 
         if (nodeOrderAssignsMap.isEmpty())
             return NO_OP;
@@ -287,11 +291,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param assignsMap The map of cache groups assignments to process.
+     * @param exchId
+     * @param exchFut
      * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
     private NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sliceNodeCacheAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap
-    ) {
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap,
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> result = new TreeMap<>();
 
         for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
@@ -455,8 +462,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             partReleaseFut.listen(c -> endFut.onDone(new T2<>(snpPartCntr.get(),
                 Math.max(maxCntr.highestAppliedCounter(), snpPartCntr.highestAppliedCounter()))));
 
-            // todo update counter should be used from delegate but method should not be delegated to store
-            ctx.topology().localPartition(partId).dataStore().store(true).reinit();
+//            // todo update counter should be used from delegate but method should not be delegated to store
+//            ctx.topology().localPartition(partId).dataStore().store(true).reinit();
 
             return null;
         });

@@ -525,6 +525,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
+    @Nullable public UUID partitionFileSupplier(int grpId, int partId) {
+        return partHistSuppliers.getFileSupplier(grpId, partId);
+//        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : partHistSuppliers.map.entrySet()) {
+//            UUID supplierNode = e.getKey();
+//
+//            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+//
+//            if (historyCounter != null && historyCounter <= cntrSince)
+//                return supplierNode;
+//        }
+//
+//        return partHistSuppliers.getSupplier(grpId, partId);
+    }
+
     /**
      * @param cacheId Cache ID.
      * @param rcvdFrom Node ID cache was received from.
@@ -1439,6 +1453,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
             partHistReserved = cctx.database().reserveHistoryForExchange();
+
+            log.info(cctx.localNodeId() + " partHistReserved: " + partHistReserved);
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -2249,56 +2265,62 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
+//            log.info("partHistSuppliers " + partHistSuppliers.isEmpty());
+
             if (localReserved != null) {
+                log.info("localReserved: " + localReserved);
+
                 for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
                     boolean success = cctx.database().reserveHistoryForPreloading(
                         e.getKey().get1(), e.getKey().get2(), e.getValue());
 
-                    if (!success) {
-                        // TODO: how to handle?
-                        err = new IgniteCheckedException("Could not reserve history");
-                    }
+                    // Since we reserved history for exchange we can't fail here
+                    assert success;
+//                    if (!success) {
+//                        // TODO: how to handle?
+//                        err = new IgniteCheckedException("Could not reserve history");
+//                    }
                 }
             }
 
             // todo reserve only moving partitions (not all)
             // todo reserve only those partitions that will be supplied from current node
-            if (cctx.filePreloader() != null) {
-                for (CacheGroupContext ctx : cctx.cache().cacheGroups()) {
-                    if (ctx.topology().hasMovingPartitions()) {
-                        boolean reservedGrp = false;
-
-                        Set<ClusterNode> assigns = new HashSet<>();
-
-                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-                            assigns.addAll(ctx.affinity().assignments(res).get(part.id()));
-
-                            if (reservedGrp = localReserved != null && localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
-                                break;
-                        }
-
-                        if (reservedGrp || !assigns.contains(cctx.localNode()) || !cctx.filePreloader().fileRebalanceRequired(ctx, assigns))
-                            continue;
-
-                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-                            if (part.state() == GridDhtPartitionState.OWNING) {
-                                if (localReserved != null && !localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
-                                    continue;
-
-                                long cntr = part.updateCounter();
-
-                                // todo debug
-                                if (log.isInfoEnabled())
-                                    log.info("Reserve WAL history for file preloading [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr);
-
-                                boolean reserved = cctx.database().reserveHistoryForPreloading(ctx.groupId(), part.id(), cntr);
-
-                                assert reserved : "Unable to reserve history [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr + "]";
-                            }
-                        }
-                    }
-                }
-            }
+//            if (cctx.filePreloader() != null) {
+//                for (CacheGroupContext ctx : cctx.cache().cacheGroups()) {
+//                    if (ctx.topology().hasMovingPartitions()) {
+//                        boolean reservedGrp = false;
+//
+//                        Set<ClusterNode> assigns = new HashSet<>();
+//
+//                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+//                            assigns.addAll(ctx.affinity().assignments(res).get(part.id()));
+//
+//                            if (reservedGrp = localReserved != null && localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
+//                                break;
+//                        }
+//
+//                        if (reservedGrp || !assigns.contains(cctx.localNode()) || !cctx.filePreloader().fileRebalanceRequired(ctx, assigns))
+//                            continue;
+//
+//                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+//                            if (part.state() == GridDhtPartitionState.OWNING) {
+//                                if (localReserved != null && !localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
+//                                    continue;
+//
+//                                long cntr = part.updateCounter();
+//
+//                                // todo debug
+//                                if (log.isInfoEnabled())
+//                                    log.info("Reserve WAL history for file preloading [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr);
+//
+//                                boolean reserved = cctx.database().reserveHistoryForPreloading(ctx.groupId(), part.id(), cntr);
+//
+//                                assert reserved : "Unable to reserve history [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr + "]";
+//                            }
+//                        }
+//                    }
+//                }
+//            }
 
             cctx.database().releaseHistoryForExchange();
 
@@ -3138,6 +3160,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 Long minCntr = minCntrs.get(p);
 
+//                log.info("minCntr = " + minCntr + ", cache=" + cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName() + " p=" + p + " node=" + e.getKey());
+
                 if (minCntr == null || minCntr > cntr)
                     minCntrs.put(p, cntr);
 
@@ -3190,7 +3214,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
+//        log.info("partHistReserved0=" + partHistReserved0.size());
+
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
+
+        log.info("localReserved: " + localReserved);
 
         Set<Integer> haveHistory = new HashSet<>();
 
@@ -3202,31 +3230,64 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
 
-            // If minimal counter is zero, do clean preloading.
-            if (minCntr == 0 || minCntr == maxCntr)
+//            //
+//            if (minCntr == 0) {
+//                // file rebalancing - supplier should have history from maxCntr!
+//
+//            }
+
+            if (minCntr == maxCntr) {
+//                log.info(cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName() + " p=" + p + " skip maxCntr="+maxCntr);
+
                 continue;
+            }
 
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
 
-                if (localHistCntr != null && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
+//                log.info("crd localHist cntr: " + localHistCntr);
 
-                    haveHistory.add(p);
+                if (localHistCntr != null) {
+                    // todo crd node should always have history for max counter - this is redundant
+                    // todo if minCntr is zero - check that file rebalancing is supported and partition is ig enough, otherwise - do regular  preloading
+                    if (minCntr == 0 && localHistCntr <= maxCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
-                    continue;
+                        haveHistory.add(p);
+
+                        continue;
+                    }
+                    else
+                    if (localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
+
+                        haveHistory.add(p);
+
+                        continue;
+                    }
                 }
             }
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
-                if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                    partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
+                if (histCntr != null) {
+                    // todo merge conditions (with else)
+                    if (minCntr == 0 && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
 
-                    haveHistory.add(p);
+                        haveHistory.add(p);
 
-                    break;
+                        break;
+                    }
+                    else
+                    if (histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
+
+                        haveHistory.add(p);
+
+                        break;
+                    }
                 }
             }
         }

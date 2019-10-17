@@ -53,7 +53,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @return Supplier UUID.
      */
     @Nullable public synchronized UUID getSupplier(int grpId, int partId, long cntrSince) {
-        if (map == null)
+        if (map == null || cntrSince == 0)
             return null;
 
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
@@ -62,6 +62,22 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
             Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
 
             if (historyCounter != null && historyCounter <= cntrSince)
+                return supplierNode;
+        }
+
+        return null;
+    }
+
+    @Nullable public synchronized UUID getFileSupplier(int grpId, int partId) {
+        if (map == null)
+            return null;
+
+        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
+            UUID supplierNode = e.getKey();
+
+            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+
+            if (historyCounter != null)
                 return supplierNode;
         }
 

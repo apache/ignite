@@ -293,7 +293,23 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             log.debug("Owning partition as there are no other owners: " + part);
                     }
                     else {
-                        ClusterNode n = picked.get(p % picked.size());
+                        ClusterNode n = null;
+
+                        // file rebalance
+                        if (exchFut != null) {
+                            UUID nodeId = exchFut.partitionFileSupplier(grp.groupId(), p);
+
+                            if (nodeId != null) {
+                                log.info("Got file rebalance supplier=" + nodeId + ", p=" + p + "  cache=" + ctx.cache().cacheGroup(grp.groupId()).cacheOrGroupName());
+
+                                n = ctx.discovery().node(nodeId);
+
+                                assert picked.contains(n);
+                            }
+                        }
+
+                        if (n == null)
+                            n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);
 

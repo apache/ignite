@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.function.BiConsumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,9 +176,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 //equal value found
                 long actualVer = getVersion(base);
                 boolean freshVal = actualVer >= reqVer;
-
-                if (!freshVal)
-                    System.out.println("req=" + reqVer + ", actual=" + actualVer + " p=" + PageIdUtils.partId(pageId));
 
                 return freshVal ? getValue(base) : outdated;
             }
