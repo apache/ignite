@@ -306,9 +306,38 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows) {
         // No-op.
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+        // todo think about evictions
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver,
+        GridDhtLocalPartition part) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long tombstonesCount() {
+        // todo think
+        return delegate.tombstonesCount();
+    }
+
+    @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key,
+        MvccSnapshot snapshot) throws IgniteCheckedException {
+        return delegate.mvccFind(cctx, key, snapshot);
+    }
+
+    @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx,
+        KeyCacheObject key) throws IgniteCheckedException {
+        return delegate.mvccFindAllVersions(cctx, key);
     }
 
     @Override public boolean mvccInitialValue(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val,
@@ -356,31 +385,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val,
         GridCacheVersion ver, long expireTime, MvccVersion mvccVer) throws IgniteCheckedException {
 
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-        return null;
-    }
-
-    @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key,
-        MvccSnapshot snapshot) throws IgniteCheckedException {
-        return delegate.mvccFind(cctx, key, snapshot);
-    }
-
-    @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx,
-        KeyCacheObject key) throws IgniteCheckedException {
-        return delegate.mvccFindAllVersions(cctx, key);
-    }
-
-    @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver,
-        GridDhtLocalPartition part) throws IgniteCheckedException {
-        delegate.removeWithTombstone(cctx, key, ver, part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long tombstonesCount() {
-        return delegate.tombstonesCount();
     }
 
     /** {@inheritDoc} */

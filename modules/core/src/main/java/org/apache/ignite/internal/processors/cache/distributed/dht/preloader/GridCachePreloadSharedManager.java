@@ -159,8 +159,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         long rebalanceId,
         GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut) {
-        U.dumpStack(cctx.localNodeId() + ">>> add assignments");
-
+//        U.dumpStack(cctx.localNodeId() + ">>> add assignments");
 
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> nodeOrderAssignsMap =
             sliceNodeCacheAssignments(assignsMap, exchId, exchFut);
