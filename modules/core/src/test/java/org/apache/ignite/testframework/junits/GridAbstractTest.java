@@ -998,7 +998,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     }
                 }
 
-                Ignite node = IgnitionEx.start(cfg, ctx);
+                Ignite node = IgnitionEx.start(optimize(cfg), ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
 
