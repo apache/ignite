@@ -18,74 +18,25 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Tests for delayed client join.
- * When client node joins to cluster it sends SingleMessage to coordinator.
- * During this time topology on server nodes can be changed,
- * because client exchange doesn't require acknowledgement for SingleMessage on coordinator.
- * Delay is simulated by blocking sending this SingleMessage and resume sending after topology is changed.
+ *
  */
-public class ClientDelayedJoinTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE_NAME = "cache";
-
-    /** Cache configuration. */
-    private final CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME)
-            .setReadFromBackup(false)
-            .setBackups(1)
-            .setAffinity(new RendezvousAffinityFunction(false, 64));
-
-    /** Client mode. */
-    private boolean clientMode;
-
-    /** Communication SPI supplier. */
-    private Supplier<CommunicationSpi> communicationSpiSupplier = TestRecordingCommunicationSpi::new;
-
-    /** Discovery SPI supplier. */
-    private Supplier<DiscoverySpi> discoverySpiSupplier = CustomMessageInterceptingDiscoverySpi::new;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setConsistentId(igniteInstanceName);
-        cfg.setCacheConfiguration(ccfg);
-        cfg.setCommunicationSpi(communicationSpiSupplier.get());
-        cfg.setDiscoverySpi(discoverySpiSupplier.get());
-        cfg.setClientMode(clientMode);
-
-        return cfg;
-    }
-
+public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAbstractTest {
     /**
      *
      */
@@ -107,7 +58,12 @@ public class ClientDelayedJoinTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test check that client join works well if cache configured on it stopped on server nodes
+     * but discovery event about cache stop is not delivered to client node immediately.
+     * When client node joins to cluster it sends SingleMessage to coordinator.
+     * During this time topology on server nodes can be changed,
+     * because client exchange doesn't require acknowledgement for SingleMessage on coordinator.
+     * Delay is simulated by blocking sending this SingleMessage and resume sending after topology is changed.
      */
     @Test
     public void testClientJoinAndCacheStop() throws Exception {
@@ -130,9 +86,9 @@ public class ClientDelayedJoinTest extends GridCommonAbstractTest {
             GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
 
             return Optional.ofNullable(singleMsg.exchangeId())
-                    .map(GridDhtPartitionExchangeId::topologyVersion)
-                    .filter(topVer -> topVer.equals(new AffinityTopologyVersion(4, 0)))
-                    .isPresent();
+                .map(GridDhtPartitionExchangeId::topologyVersion)
+                .filter(topVer -> topVer.equals(new AffinityTopologyVersion(4, 0)))
+                .isPresent();
         });
 
         communicationSpiSupplier = () -> clientCommSpi;
@@ -149,7 +105,7 @@ public class ClientDelayedJoinTest extends GridCommonAbstractTest {
             DynamicCacheChangeBatch cacheChangeBatch = (DynamicCacheChangeBatch) msg;
 
             boolean hasCacheStopReq = cacheChangeBatch.requests().stream()
-                    .anyMatch(req -> req.stop() && req.cacheName().equals(CACHE_NAME));
+                .anyMatch(req -> req.stop() && req.cacheName().equals(CACHE_NAME));
 
             if (hasCacheStopReq)
                 U.awaitQuiet(clientDiscoSpiBlock);
@@ -184,7 +140,7 @@ public class ClientDelayedJoinTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue("Got unexpected exception during cache get " + e,
-                    X.hasCause(e, CacheStoppedException.class));
+                X.hasCause(e, CacheStoppedException.class));
         }
         finally {
             // Resume processing cache destroy on client node.
@@ -194,45 +150,12 @@ public class ClientDelayedJoinTest extends GridCommonAbstractTest {
         // Wait till cache destroyed on client node.
         GridTestUtils.waitForCondition(() -> {
             AffinityTopologyVersion topVer = client.context().cache().context().exchange().lastFinishedFuture()
-                    .topologyVersion();
+                .topologyVersion();
 
             // Cache destroy version.
             return topVer.equals(new AffinityTopologyVersion(4, 1));
         }, 5_000); // Reasonable timeout.
 
         Assert.assertNull("Cache should be destroyed on client node", client.cache(CACHE_NAME));
-    }
-
-    /**
-     *
-     */
-    static class CustomMessageInterceptingDiscoverySpi extends TcpDiscoverySpi {
-        /** Interceptor. */
-        private volatile IgniteInClosure<DiscoveryCustomMessage> interceptor;
-
-        /** {@inheritDoc} */
-        @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-            if (!(msg instanceof TcpDiscoveryCustomEventMessage))
-                return;
-
-            TcpDiscoveryCustomEventMessage cm = (TcpDiscoveryCustomEventMessage)msg;
-
-            DiscoveryCustomMessage delegate;
-
-            try {
-                DiscoverySpiCustomMessage custMsg = cm.message(marshaller(),
-                        U.resolveClassLoader(ignite().configuration()));
-
-                assertNotNull(custMsg);
-
-                delegate = ((CustomMessageWrapper)custMsg).delegate();
-            }
-            catch (Throwable throwable) {
-                throw new RuntimeException(throwable);
-            }
-
-            if (interceptor != null)
-                interceptor.apply(delegate);
-        }
     }
 }
