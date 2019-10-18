@@ -1364,7 +1364,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     processRegularMessage0(msg, nodeId);
                 }
-                finally {
+                catch (Throwable e) {
+                    log.error("An error occurred processing the message [msg=" + msg + ", nodeId=" + nodeId + "].", e);
+
+                    throw e;
+                } finally {
                     threadProcessingMessage(false, null);
 
                     msgC.run();
@@ -2047,7 +2051,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
-    /** */
+    /**
+     * @return One of two message wrappers. The first is {@link GridIoMessage}, the second is secured version {@link
+     * GridIoSecurityAwareMessage}.
+     */
     private @NotNull GridIoMessage createGridIoMessage(
         Object topic,
         int topicOrd,
@@ -2376,6 +2383,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
     }
 
+    /**
+     * Subscribe at messages from a topic.
+     *
+     * @param topic Topic to subscribe to.
+     * @param p Message predicate.
+     */
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
         addUserMessageListener(topic, p, null);
     }

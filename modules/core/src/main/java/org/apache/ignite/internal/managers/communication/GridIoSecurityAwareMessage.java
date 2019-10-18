@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Represents a security communication message.
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */

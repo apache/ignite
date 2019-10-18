@@ -66,6 +66,9 @@ public enum IgniteFeatures {
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11),
 
+    /** Support new security processor */
+    IGNITE_SECURITY_PROCESSOR(13),
+
     /** The node can communicate with others via socket channel. */
     CHANNEL_COMMUNICATION(12),
 

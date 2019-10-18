@@ -304,7 +304,8 @@ public class CacheEvent extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID initiated this cache event, if available. This property is available only for
+     * Gets security subject ID initiated this cache event if IgniteSecurity is
+     * enabled, otherwise returns null. This property is available only for
      * {@link EventType#EVT_CACHE_OBJECT_PUT}, {@link EventType#EVT_CACHE_OBJECT_REMOVED} and
      * {@link EventType#EVT_CACHE_OBJECT_READ} cache events.
      * <p>

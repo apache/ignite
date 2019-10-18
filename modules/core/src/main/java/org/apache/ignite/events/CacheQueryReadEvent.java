@@ -236,7 +236,8 @@ public class CacheQueryReadEvent<K, V> extends EventAdapter {
     }
 
     /**
-     * Gets security subject ID.
+     * Gets security subject ID initiated this query event if IgniteSecurity is
+     * enabled, otherwise returns null.
      *
      * @return Security subject ID.
      */
