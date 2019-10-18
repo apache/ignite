@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;

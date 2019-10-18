@@ -102,7 +102,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
 /**
  * Rest processor implementation.
  */
-public class GridRestProcessor extends GridProcessorAdapter {
+public class GridRestProcessor extends GridProcessorAdapter implements IgniteRestProcessor {
     /** HTTP protocol class name. */
     private static final String HTTP_PROTO_CLS =
         "org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol";
