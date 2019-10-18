@@ -47,6 +47,9 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** Empty array of permissions. */
     protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
 
+    /** Global authentication flag. */
+    protected boolean globalAuth;
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -94,7 +97,8 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
     /** */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet,
         Permissions sandboxPerms, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms))
+        return startGrid(getConfiguration(login,
+            new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth))
             .setClientMode(isClient));
     }
 

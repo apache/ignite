@@ -38,22 +38,26 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** */
     private final Permissions sandboxPerms;
 
+    /** Global authentication. */
+    private final boolean globalAuth;
+
     /** Users security data. */
     private final TestSecurityData[] clientData;
 
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        TestSecurityData... clientData) {
-        this(login, pwd, perms, null, clientData);
+        boolean globalAuth, TestSecurityData... clientData) {
+        this(login, pwd, perms, null, globalAuth, clientData);
     }
 
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        Permissions sandboxPerms, TestSecurityData... clientData) {
+        Permissions sandboxPerms, boolean globalAuth, TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
         this.sandboxPerms = sandboxPerms != null ? sandboxPerms : new Permissions();
+        this.globalAuth = globalAuth;
         this.clientData = clientData.clone();
     }
 
@@ -61,6 +65,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms, sandboxPerms),
-            Arrays.asList(clientData));
+            Arrays.asList(clientData),
+            globalAuth);
     }
 }
