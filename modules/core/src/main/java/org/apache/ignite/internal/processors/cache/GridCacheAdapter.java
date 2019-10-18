@@ -30,8 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -5209,17 +5207,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (m == null || m.size() <= 1)
             return;
 
-        if (m instanceof SortedMap || m instanceof LinkedHashMap || m instanceof GridSerializableMap)
+        if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
         if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
             return;
 
-        LT.warn(log, "Unordered map of type " + m.getClass().getSimpleName() +
-            " was passed to " + op + " operation on cache: " + name() + ". " +
-            "Locking order of keys cannot be guaranteed - this will lead to deadlock! " +
-            "Please always use sorted map such as TreeMap with bulk operations.");
+        LT.warn(log, "Unordered map " + m.getClass().getSimpleName() +
+            " is used for " + op + " operation on cache " + name() + ". " +
+            "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
 
 
@@ -5234,20 +5231,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (coll == null || coll.size() <= 1)
             return;
 
-        if (!(coll instanceof Set))
-            return;
-
-        if (coll instanceof SortedSet || coll instanceof LinkedHashSet)
+        if (coll instanceof SortedSet)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
         if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
             return;
 
-        LT.warn(log, "Unordered set of type " + coll.getClass().getSimpleName() +
-            " was passed to " + op + " operation on cache: " + name() + ". " +
-            "Locking order of keys cannot be guaranteed - this will lead to deadlock! " +
-            "Please always use sorted map such as TreeMap with bulk operations.");
+        LT.warn(log, "Unordered collection " + coll.getClass().getSimpleName() +
+            " is used for " + op + " operation on cache " + name() + ". " +
+            "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }
 
     /**

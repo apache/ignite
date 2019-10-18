@@ -94,9 +94,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered map of type HashMap was passed to Put All operation on cache: exact. " +
-                "Locking order of keys cannot be guaranteed - this will lead to deadlock! " +
-                "Please always use sorted map such as TreeMap with bulk operations."))
+            if (message.contains("Unordered map HashMap is used for Put All operation on cache exact. " +
+                "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead."))
                 found++;
         }
 
@@ -138,10 +137,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered map of type"))
+            if (message.contains("Unordered map"))
                 found++;
 
-            if (message.contains("operation on cache:"))
+            if (message.contains("operation on cache"))
                 found++;
         }
 
@@ -187,7 +186,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered set of type HashSet was passed to Invoke All operation on cache: invoke. "))
+            if (message.contains("Unordered collection HashSet is used for Invoke All operation on cache invoke. "))
                 found++;
         }
 
@@ -223,10 +222,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered set of type"))
+            if (message.contains("Unordered collection "))
                 found++;
 
-            if (message.contains("operation on cache:"))
+            if (message.contains("operation on cache"))
                 found++;
         }
 
