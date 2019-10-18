@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,40 +34,16 @@ public class IdealAffinityAssignment {
     /** Assignment. */
     private final List<List<ClusterNode>> assignment;
 
-    /** Ideal primaries. */
-    private final Map<Object, Set<Integer>> idealPrimaries;
-
     /**
      * @param topologyVersion Topology version.
      * @param assignment Assignment.
-     * @param idealPrimaries Ideal primaries.
      */
     private IdealAffinityAssignment(
         AffinityTopologyVersion topologyVersion,
-        List<List<ClusterNode>> assignment,
-        Map<Object, Set<Integer>> idealPrimaries
+        List<List<ClusterNode>> assignment
     ) {
         this.topologyVersion = topologyVersion;
         this.assignment = assignment;
-        this.idealPrimaries = idealPrimaries;
-    }
-
-    /**
-     * @param clusterNode Cluster node.
-     */
-    public Set<Integer> idealPrimaries(ClusterNode clusterNode) {
-        Object consistentId = clusterNode.consistentId();
-
-        assert consistentId != null : clusterNode;
-
-        return idealPrimaries.getOrDefault(consistentId, Collections.emptySet());
-    }
-
-    /**
-     * @param partition Partition.
-     */
-    public ClusterNode currentPrimary(int partition) {
-        return assignment.get(partition).get(0);
     }
 
     /**
@@ -116,32 +91,6 @@ public class IdealAffinityAssignment {
      * @param assignment Assignment.
      */
     public static IdealAffinityAssignment create(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
-        return create(topVer, null, assignment);
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @param nodes Nodes.
-     * @param assignment Assignment.
-     */
-    public static IdealAffinityAssignment create(
-        AffinityTopologyVersion topVer,
-        @Nullable List<ClusterNode> nodes,
-        List<List<ClusterNode>> assignment
-    ) {
-        return new IdealAffinityAssignment(topVer, assignment, calculatePrimaries(nodes, assignment));
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @param assignment Assignment.
-     * @param previousAssignment Previous assignment.
-     */
-    public static IdealAffinityAssignment createWithPreservedPrimaries(
-        AffinityTopologyVersion topVer,
-        List<List<ClusterNode>> assignment,
-        IdealAffinityAssignment previousAssignment
-    ) {
-        return new IdealAffinityAssignment(topVer, assignment, previousAssignment.idealPrimaries);
+        return new IdealAffinityAssignment(topVer, assignment);
     }
 }

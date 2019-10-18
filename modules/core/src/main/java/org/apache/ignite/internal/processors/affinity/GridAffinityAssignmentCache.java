@@ -368,11 +368,7 @@ public class GridAffinityAssignmentCache {
             if (hasBaseline && changedBaseline) {
                 recalculateBaselineAssignment(topVer, events, prevAssignment, sorted, blt);
 
-                assignment = IdealAffinityAssignment.create(
-                    topVer,
-                    sorted,
-                    baselineAssignmentWithoutOfflineNodes(topVer)
-                );
+                assignment = IdealAffinityAssignment.create(topVer, baselineAssignmentWithoutOfflineNodes(topVer));
             }
             else if (skipCalculation)
                 assignment = prevAssignment;
@@ -380,11 +376,7 @@ public class GridAffinityAssignmentCache {
                 if (baselineAssignment == null)
                     recalculateBaselineAssignment(topVer, events, prevAssignment, sorted, blt);
 
-                assignment = IdealAffinityAssignment.create(
-                    topVer,
-                    sorted,
-                    baselineAssignmentWithoutOfflineNodes(topVer)
-                );
+                assignment = IdealAffinityAssignment.create(topVer, baselineAssignmentWithoutOfflineNodes(topVer));
             }
             else {
                 List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(
@@ -395,18 +387,14 @@ public class GridAffinityAssignmentCache {
                     backups
                 ));
 
-                assignment = IdealAffinityAssignment.create(topVer, sorted, calculated);
+                assignment = IdealAffinityAssignment.create(topVer, calculated);
             }
         }
         else {
             if (hasBaseline) {
                 recalculateBaselineAssignment(topVer, events, prevAssignment, sorted, blt);
 
-                assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
-                    topVer,
-                    baselineAssignmentWithoutOfflineNodes(topVer),
-                    baselineAssignment
-                );
+                assignment = IdealAffinityAssignment.create(topVer, baselineAssignmentWithoutOfflineNodes(topVer));
             }
             else {
                 List<List<ClusterNode>> calculated = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted,
@@ -416,7 +404,7 @@ public class GridAffinityAssignmentCache {
                     backups
                 ));
 
-                assignment = IdealAffinityAssignment.create(topVer, sorted, calculated);
+                assignment = IdealAffinityAssignment.create(topVer, calculated);
             }
         }
 
@@ -467,7 +455,7 @@ public class GridAffinityAssignmentCache {
             backups
         ));
 
-        baselineAssignment = IdealAffinityAssignment.create(topVer, baselineAffinityNodes, calculated);
+        baselineAssignment = IdealAffinityAssignment.create(topVer, calculated);
     }
 
     /**
@@ -670,13 +658,6 @@ public class GridAffinityAssignmentCache {
     public List<ClusterNode> nodes(int part, AffinityTopologyVersion topVer) {
         // Resolve cached affinity nodes.
         return cachedAffinity(topVer).get(part);
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public Set<Integer> partitionPrimariesDifferentToIdeal(AffinityTopologyVersion topVer) {
-        return cachedAffinity(topVer).partitionPrimariesDifferentToIdeal();
     }
 
     /**
