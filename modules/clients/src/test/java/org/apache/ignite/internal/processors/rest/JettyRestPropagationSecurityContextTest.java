@@ -79,7 +79,7 @@ public class JettyRestPropagationSecurityContextTest extends JettyRestProcessorC
 
         cfg.setDataStorageConfiguration(dsCfg)
            .setAuthenticationEnabled(true)
-            .setPluginProviders(new TestSecurityPluginProvider("server", "server", ALLOW_ALL,
+            .setPluginProviders(new TestSecurityPluginProvider("server", "server", ALLOW_ALL, false,
                 new TestSecurityData("client", "client", SecurityPermissionSetBuilder.create()
                     .defaultAllowAll(false)
                     .appendTaskPermissions("org.apache.ignite.internal.visor.query.VisorQueryTask", TASK_EXECUTE)
