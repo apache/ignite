@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -314,13 +313,12 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testGetAllView() throws Exception {
-        List<String> expViews = Arrays.asList(
+        Set<String> expViews = new HashSet<>(Arrays.asList(
             "BASELINE_NODES",
             "CACHES",
             "CACHE_GROUPS",
@@ -332,30 +330,39 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "NODE_ATTRIBUTES",
             "NODE_METRICS",
             "SCHEMAS",
-            "TABLES"
-        );
+            "TABLES",
+            "TASKS",
+            "SERVICES",
+            "CLIENT_CONNECTIONS",
+            "TRANSACTIONS",
+            "VIEWS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "QUERY_CONTINUOUS"
+        ));
+
+        Set<String> actViews = new HashSet<>();
 
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getTables(null, null, "%", new String[]{"VIEW"});
 
-            for (String viewName : expViews) {
-                assertTrue(rs.next());
-
+            while (rs.next()) {
                 assertEquals("VIEW", rs.getString("TABLE_TYPE"));
 
                 assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
 
                 assertEquals(QueryUtils.SCHEMA_SYS, rs.getString("TABLE_SCHEM"));
 
-                assertEquals(viewName, rs.getString("TABLE_NAME"));
+                actViews.add(rs.getString("TABLE_NAME"));
             }
 
             assertFalse(rs.next());
+
+            assertEquals(expViews, actViews);
         }
     }
-
 
     /**
      * @throws Exception If failed.

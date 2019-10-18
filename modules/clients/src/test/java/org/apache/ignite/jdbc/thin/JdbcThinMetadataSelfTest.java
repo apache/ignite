@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -48,8 +47,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
 import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -61,6 +60,8 @@ import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * Metadata tests.
@@ -71,7 +72,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+        return super.getConfiguration(igniteInstanceName)
+            .setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2")
+            .setMetricExporterSpi(new SqlViewMetricExporterSpi());
     }
 
     /**
@@ -325,18 +328,27 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         testGetTables(
             new String[] {"VIEW"},
             new HashSet<>(Arrays.asList(
+                "SYS.METRICS",
+                "SYS.SERVICES",
+                "SYS.CACHE_GROUPS",
+                "SYS.CACHES",
+                "SYS.TASKS",
                 "SYS.LOCAL_SQL_QUERY_HISTORY",
                 "SYS.NODES",
                 "SYS.SCHEMAS",
-                "SYS.CACHE_GROUPS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
                 "SYS.INDEXES",
                 "SYS.LOCAL_CACHE_GROUPS_IO",
                 "SYS.LOCAL_SQL_RUNNING_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
-                "SYS.CACHES",
-                "SYS.TABLES"
+                "SYS.TABLES",
+                "SYS.CLIENT_CONNECTIONS",
+                "SYS.TRANSACTIONS",
+                "SYS.VIEWS",
+                "SYS.TABLE_COLUMNS",
+                "SYS.VIEW_COLUMNS",
+                "SYS.QUERY_CONTINUOUS"
             ))
         );
     }
@@ -485,7 +497,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             ResultSet rs = meta.getColumns(null, null, null, null);
 
-            List<String> expectedCols = Arrays.asList(
+            Set<String> expectedCols = new HashSet<>(Arrays.asList(
                 "PUBLIC.Quoted.Id.null",
                 "PUBLIC.Quoted.Name.null.50",
                 "PUBLIC.TEST.ID.null",
@@ -506,11 +518,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.NAME.null",
                 "pers.PERSON.AGE.null",
                 "pers.PERSON.ORGID.null"
-            );
+            ));
 
-            List<String> actualUserCols = new ArrayList<>(expectedCols.size());
+            Set<String> actualUserCols = new HashSet<>(expectedCols.size());
 
-            List<String> actualSystemCols = new ArrayList<>();
+            Set<String> actualSystemCols = new HashSet<>();
 
             while(rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
@@ -526,7 +538,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     + (precision == 0 ? "" : ("." + precision))
                     + (scale == 0 ? "" : ("." + scale));
 
-                if (!schemaName.equals(QueryUtils.SCHEMA_SYS))
+                if (!schemaName.equals(SCHEMA_SYS))
                     actualUserCols.add(colDefinition);
                 else
                     actualSystemCols.add(colDefinition);
@@ -534,7 +546,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Assert.assertEquals(expectedCols, actualUserCols);
 
-            expectedCols = Arrays.asList(
+            expectedCols = new HashSet<>(Arrays.asList(
                 "SYS.BASELINE_NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.BASELINE_NODES.ONLINE.null.1",
                 "SYS.CACHES.CACHE_GROUP_ID.null.10",
@@ -573,7 +585,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHES.NEAR_CACHE_EVICTION_POLICY_FACTORY.null.2147483647",
                 "SYS.CACHES.NEAR_CACHE_START_SIZE.null.10",
                 "SYS.CACHES.DEFAULT_LOCK_TIMEOUT.null.19",
-                "SYS.CACHES.CACHE_INTERCEPTOR.null.2147483647",
+                "SYS.CACHES.INTERCEPTOR.null.2147483647",
                 "SYS.CACHES.CACHE_STORE_FACTORY.null.2147483647",
                 "SYS.CACHES.IS_STORE_KEEP_BINARY.null.1",
                 "SYS.CACHES.IS_READ_THROUGH.null.1",
@@ -583,17 +595,18 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHES.WRITE_BEHIND_FLUSH_SIZE.null.10",
                 "SYS.CACHES.WRITE_BEHIND_FLUSH_FREQUENCY.null.19",
                 "SYS.CACHES.WRITE_BEHIND_FLUSH_THREAD_COUNT.null.10",
-                "SYS.CACHES.WRITE_BEHIND_FLUSH_BATCH_SIZE.null.10",
+                "SYS.CACHES.WRITE_BEHIND_BATCH_SIZE.null.10",
                 "SYS.CACHES.MAX_CONCURRENT_ASYNC_OPERATIONS.null.10",
                 "SYS.CACHES.CACHE_LOADER_FACTORY.null.2147483647",
                 "SYS.CACHES.CACHE_WRITER_FACTORY.null.2147483647",
                 "SYS.CACHES.EXPIRY_POLICY_FACTORY.null.2147483647",
                 "SYS.CACHES.IS_SQL_ESCAPE_ALL.null.1",
+                "SYS.CACHES.IS_ENCRYPTION_ENABLED.null.1",
                 "SYS.CACHES.SQL_SCHEMA.null.2147483647",
                 "SYS.CACHES.SQL_INDEX_MAX_INLINE_SIZE.null.10",
                 "SYS.CACHES.IS_SQL_ONHEAP_CACHE_ENABLED.null.1",
                 "SYS.CACHES.SQL_ONHEAP_CACHE_MAX_SIZE.null.10",
-                "SYS.CACHES.QUERY_DETAILS_METRICS_SIZE.null.10",
+                "SYS.CACHES.QUERY_DETAIL_METRICS_SIZE.null.10",
                 "SYS.CACHES.QUERY_PARALLELISM.null.10",
                 "SYS.CACHES.MAX_QUERY_ITERATORS_COUNT.null.10",
                 "SYS.CACHES.DATA_REGION_NAME.null.2147483647",
@@ -613,8 +626,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
                 "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
                 "SYS.CACHE_GROUPS.BACKUPS.null.10",
-                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
-                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.INDEXES.CACHE_ID.null.10",
                 "SYS.INDEXES.CACHE_NAME.null.2147483647",
                 "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
@@ -648,7 +659,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.VERSION.null.2147483647",
                 "SYS.NODES.IS_CLIENT.null.1",
                 "SYS.NODES.IS_DAEMON.null.1",
-                "SYS.NODES.NODE_ORDER.null.10",
+                "SYS.NODES.IS_LOCAL.null.1",
+                "SYS.NODES.NODE_ORDER.null.19",
                 "SYS.NODES.ADDRESSES.null.2147483647",
                 "SYS.NODES.HOSTNAMES.null.2147483647",
                 "SYS.NODE_ATTRIBUTES.NODE_ID.null.2147483647",
@@ -711,9 +723,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
-                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
-                "SYS.TABLES.CACHE_GROUP_ID.null.10",
-                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
                 "SYS.TABLES.CACHE_NAME.null.2147483647",
                 "SYS.TABLES.SCHEMA_NAME.null.2147483647",
@@ -722,10 +731,110 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TABLES.KEY_ALIAS.null.2147483647",
                 "SYS.TABLES.VALUE_ALIAS.null.2147483647",
                 "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
-                "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647"
-            );
-            Assert.assertEquals(expectedCols, actualSystemCols);
+                "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "SYS.METRICS.NAME.null.2147483647",
+                "SYS.METRICS.VALUE.null.2147483647",
+                "SYS.METRICS.DESCRIPTION.null.2147483647",
+                "SYS.SERVICES.SERVICE_ID.null.2147483647",
+                "SYS.SERVICES.NAME.null.2147483647",
+                "SYS.SERVICES.SERVICE_CLASS.null.2147483647",
+                "SYS.SERVICES.CACHE_NAME.null.2147483647",
+                "SYS.SERVICES.ORIGIN_NODE_ID.null.2147483647",
+                "SYS.SERVICES.TOTAL_COUNT.null.10",
+                "SYS.SERVICES.MAX_PER_NODE_COUNT.null.10",
+                "SYS.SERVICES.AFFINITY_KEY.null.2147483647",
+                "SYS.SERVICES.NODE_FILTER.null.2147483647",
+                "SYS.SERVICES.STATICALLY_CONFIGURED.null.1",
+                "SYS.SERVICES.SERVICE_ID.null.2147483647",
+                "SYS.TASKS.AFFINITY_CACHE_NAME.null.2147483647",
+                "SYS.TASKS.INTERNAL.null.1",
+                "SYS.TASKS.END_TIME.null.19",
+                "SYS.TASKS.START_TIME.null.19",
+                "SYS.TASKS.USER_VERSION.null.2147483647",
+                "SYS.TASKS.TASK_NAME.null.2147483647",
+                "SYS.TASKS.TASK_NODE_ID.null.2147483647",
+                "SYS.TASKS.JOB_ID.null.2147483647",
+                "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
+                "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
+                "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.TYPE.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.TRANSACTIONS.LOCAL_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.STATE.null.2147483647",
+                "SYS.TRANSACTIONS.XID.null.2147483647",
+                "SYS.TRANSACTIONS.LABEL.null.2147483647",
+                "SYS.TRANSACTIONS.START_TIME.null.19",
+                "SYS.TRANSACTIONS.ISOLATION.null.2147483647",
+                "SYS.TRANSACTIONS.CONCURRENCY.null.2147483647",
+                "SYS.TRANSACTIONS.COLOCATED.null.1",
+                "SYS.TRANSACTIONS.DHT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT_SINGLE.null.1",
+                "SYS.TRANSACTIONS.INTERNAL.null.1",
+                "SYS.TRANSACTIONS.LOCAL.null.1",
+                "SYS.TRANSACTIONS.NEAR.null.1",
+                "SYS.TRANSACTIONS.ONE_PHASE_COMMIT.null.1",
+                "SYS.TRANSACTIONS.SUBJECT_ID.null.2147483647",
+                "SYS.TRANSACTIONS.SYSTEM.null.1",
+                "SYS.TRANSACTIONS.THREAD_ID.null.19",
+                "SYS.TRANSACTIONS.TIMEOUT.null.19",
+                "SYS.TRANSACTIONS.DURATION.null.19",
+                "SYS.TRANSACTIONS.ORIGINATING_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.OTHER_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
+                "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
+                "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
+                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.PREDEFINED.null.1",
+                "SYS.VIEWS.NAME.null.2147483647",
+                "SYS.VIEWS.DESCRIPTION.null.2147483647",
+                "SYS.VIEWS.SCHEMA.null.2147483647",
+                "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null.1",
+                "SYS.TABLE_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCALE.null.10",
+                "SYS.TABLE_COLUMNS.PK.null.1",
+                "SYS.TABLE_COLUMNS.TYPE.null.2147483647",
+                "SYS.TABLE_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.TABLE_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.NULLABLE.null.1",
+                "SYS.TABLE_COLUMNS.PRECISION.null.10",
+                "SYS.TABLE_COLUMNS.AUTO_INCREMENT.null.1",
+                "SYS.VIEW_COLUMNS.NULLABLE.null.1",
+                "SYS.VIEW_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.TYPE.null.2147483647",
+                "SYS.VIEW_COLUMNS.PRECISION.null.19",
+                "SYS.VIEW_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.VIEW_COLUMNS.SCALE.null.10",
+                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
+                "SYS.QUERY_CONTINUOUS.OLD_VALUE_REQUIRED.null.1",
+                "SYS.QUERY_CONTINUOUS.KEEP_BINARY.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_MESSAGING.null.1",
+                "SYS.QUERY_CONTINUOUS.AUTO_UNSUBSCRIBE.null.1",
+                "SYS.QUERY_CONTINUOUS.LAST_SEND_TIME.null.19",
+                "SYS.QUERY_CONTINUOUS.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.TOPIC.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.BUFFER_SIZE.null.10",
+                "SYS.QUERY_CONTINUOUS.REMOTE_TRANSFORMER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.DELAYED_REGISTER.null.1",
+                "SYS.QUERY_CONTINUOUS.IS_QUERY.null.1",
+                "SYS.QUERY_CONTINUOUS.NODE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.INTERVAL.null.19",
+                "SYS.QUERY_CONTINUOUS.IS_EVENTS.null.1",
+                "SYS.QUERY_CONTINUOUS.ROUTINE_ID.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.REMOTE_FILTER.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.CACHE_NAME.null.2147483647",
+                "SYS.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647"
+            ));
 
+            Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
 
@@ -990,8 +1099,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("SYS", "PUBLIC", "pers",
-                "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList(SCHEMA_SYS, DFLT_SCHEMA,
+                "pers", "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
             Set<String> schemas = new HashSet<>();
 

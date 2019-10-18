@@ -66,7 +66,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
@@ -110,6 +109,8 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -598,7 +599,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setClientMode(false);
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                //No-op
+                // No-op.
+            }
+        });
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi() {
+            @Override protected void register(SystemView<?> sysView) {
+                // No-op.
             }
         });
 
@@ -740,7 +746,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid() throws Exception {
+    protected IgniteEx startGrid() throws Exception {
         return startGrid(getTestIgniteInstanceName());
     }
 
@@ -1100,21 +1106,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
-
-                    m.setAccessible(true);
-
-                    cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
 
                     resetDiscovery = false;
                 }
-                catch (NoSuchMethodException e) {
+                catch (NoSuchMethodException ignore) {
                     // Ignore.
                 }
             }
         }
 
         return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * Clone added to support ZookeeperDiscoverySpi.
+     *
+     * @param discoverySpi Discovery spi.
+     * @return Clone of discovery spi.
+     */
+    protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
+        Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+
+        m.setAccessible(true);
+
+        return (DiscoverySpi) m.invoke(discoverySpi);
     }
 
     /**
@@ -1733,8 +1749,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setCheckpointSpi(cpSpi);
 
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 
@@ -2641,7 +2655,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return MX bean.
      * @throws Exception If failed.
      */
-    public DynamicMBean metricSet(
+    public DynamicMBean metricRegistry(
         String igniteInstanceName,
         String grp,
         String metrics

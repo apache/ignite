@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -92,6 +93,8 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
             c.setClientMode(true);
 
         c.setCacheKeyConfiguration(new CacheKeyConfiguration(CallKey.class));
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
