@@ -99,7 +99,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
         return getConfiguration(
             instanceName,
-            new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, clientData)
+            new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, false, clientData)
         ).setCacheConfiguration(
             new CacheConfiguration().setName(CACHE),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)
