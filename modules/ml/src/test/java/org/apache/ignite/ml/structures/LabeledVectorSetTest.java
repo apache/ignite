@@ -24,11 +24,11 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import org.apache.ignite.ml.knn.LabeledDatasetHelper;
 import org.apache.ignite.ml.math.ExternalizableTest;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
-import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
-import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.datastructures.EmptyFileException;
+import org.apache.ignite.ml.math.exceptions.datastructures.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.datastructures.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.NoDataException;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.junit.Test;
 

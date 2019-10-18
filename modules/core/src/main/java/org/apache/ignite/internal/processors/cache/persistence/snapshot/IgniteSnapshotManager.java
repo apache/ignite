@@ -25,7 +25,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -59,6 +58,7 @@ import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -66,6 +66,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
@@ -91,11 +92,12 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAl
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T4;
@@ -108,6 +110,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
+import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
@@ -134,10 +137,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     public static final String SNAPSHOT_CP_REASON = "Wakeup for checkpoint to take snapshot [name=%s]";
 
     /** Default working directory for snapshot temporary files. */
-    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+    public static final String DFLT_LOCAL_SNAPSHOT_DIRECTORY = "snapshots";
 
     /** Default snapshot directory for loading remote snapshots. */
-    public static final String DFLT_LOADED_SNAPSHOT_DIRECTORY = "snapshots/loaded";
+    public static final String DFLT_SNAPSHOT_WORK_DIRECTORY = "snp";
 
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -154,8 +157,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Cache partition id parameter name for a file transmission. */
     private static final String SNP_PART_ID_PARAM = "partId";
 
+    /** Cache local node directory path name (e.g. db/IgniteNode0). */
+    private static final String SNP_DB_NODE_PATH_PARAM = "dbNodePath";
+
     /** Cache directory parameter name for a file transmission. */
-    private static final String SNP_DIR_PATH_PARAM = "snpDirPath";
+    private static final String SNP_CACHE_DIR_NAME_PARAM = "cacheDirName";
 
     /** Snapshot parameter name for a file transmission. */
     private static final String SNP_NAME_PARAM = "snpName";
@@ -170,10 +176,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private final GridBusyLock busyLock = new GridBusyLock();
 
     /** Main snapshot directory to store files. */
-    private File snpWorkDir;
+    private File localSnpDir;
 
     /** Working directory for loaded snapshots from remote nodes. */
-    private File rmtSnpWorkDir;
+    private File snpWorkDir;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -240,12 +246,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         assert pageSize > 0;
 
-        PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
-
-        // todo must be available on storage configuration
-        snpWorkDir = initWorkDirectory(rslvDir, DFLT_SNAPSHOT_DIRECTORY, log, "snapshot work directory");
-        rmtSnpWorkDir = initWorkDirectory(rslvDir, DFLT_LOADED_SNAPSHOT_DIRECTORY, log, "work directory for remote snapshots");
-
         snpRunner = new IgniteThreadPoolExecutor(
             SNAPSHOT_RUNNER_THREAD_PREFIX,
             cctx.igniteInstanceName(),
@@ -259,6 +259,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+
+        PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
+
+        // todo must be available on storage configuration
+        localSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false);
+        snpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
+
+        U.ensureDirectory(localSnpDir, "local snapshots directory", log);
+        U.ensureDirectory(snpWorkDir, "work directory for snapshots creation", log);
 
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
@@ -331,7 +340,85 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
-                    submitTasks(sctx0);
+                    List<CompletableFuture<Void>> futs = new ArrayList<>();
+                    FilePageStoreManager storeMgr = (FilePageStoreManager) cctx.pageStore();
+
+                    if (log.isInfoEnabled())
+                        log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx0.partFileLengths);
+
+                    // Process binary meta
+                    futs.add(CompletableFuture.runAsync(() ->
+                            sctx0.snpRcv.receiveBinaryMeta(cctx.kernalContext()
+                                .cacheObjects()
+                                .metadataTypes()),
+                        sctx0.exec));
+
+                    // Process marshaller meta
+                    futs.add(CompletableFuture.runAsync(() ->
+                            sctx0.snpRcv.receiveMarshallerMeta(cctx.kernalContext()
+                                .marshallerContext()
+                                .getCachedMappings()),
+                        sctx0.exec));
+
+                    // Process partitions
+                    for (GroupPartitionId pair : sctx0.parts) {
+                        CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
+                        String cacheDirName = cacheDirName(ccfg);
+                        Long length = sctx0.partFileLengths.get(pair);
+
+                        try {
+                            // Initialize empty partition file.
+                            if (length == 0) {
+                                FilePageStore filePageStore = (FilePageStore) storeMgr.getStore(pair.getGroupId(),
+                                    pair.getPartitionId());
+
+                                filePageStore.init();
+                            }
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+
+                        CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
+                                sctx0.snpRcv.receivePart(
+                                    getPartitionFileEx(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                                    cacheDirName,
+                                    pair,
+                                    length);
+
+                                // Stop partition writer.
+                                sctx0.partDeltaWriters.get(pair).partProcessed = true;
+                            },
+                            sctx0.exec)
+                            // Wait for the completion of both futures - checkpoint end, copy partition
+                            .runAfterBothAsync(sctx0.cpEndFut,
+                                () -> {
+                                    File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
+                                        pair.getPartitionId());
+
+                                    sctx0.snpRcv.receiveDelta(delta, cacheDirName, pair);
+
+                                    boolean deleted = delta.delete();
+
+                                    assert deleted;
+                                },
+                                sctx0.exec)
+                            .thenRunAsync(() -> sctx0.snpRcv.receiveCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair));
+
+                        futs.add(fut0);
+                    }
+
+                    int futsSize = futs.size();
+
+                    CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
+                        .whenComplete(new BiConsumer<Void, Throwable>() {
+                            @Override public void accept(Void res, Throwable t) {
+                                if (t == null)
+                                    sctx0.snpFut.onDone(sctx0.snpName);
+                                else
+                                    sctx0.snpFut.onDone(t);
+                            }
+                        });
 
                     sctx0.started = true;
                 }
@@ -350,29 +437,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     try {
                         String snpName = msg0.snapshotName();
 
-                        File snapshotDir0 = snapshotDir(snpName);
-
-                        IgniteInternalFuture<?> fut = scheduleSnapshot(snpName,
+                        scheduleSnapshot(snpName,
                             msg0.parts(),
-                            snapshotDir0,
                             new SerialExecutor(cctx.kernalContext()
                                 .pools()
                                 .poolForPolicy(plc)),
                             remoteSnapshotReceiver(snpName,
-                                cctx.localNode().consistentId(),
-                                nodeId,
-                                DFLT_RMT_SNAPSHOT_TOPIC));
-
-                        fut.listen(f -> {
-                            if (log.isInfoEnabled()) {
-                                log.info("The requested snapshot has been completed [result=" + (f.error() == null) +
-                                    ", name=" + snpName + ']');
-                            }
-
-                            boolean done = IgniteUtils.delete(snapshotDir0);
-
-                            assert done;
-                        });
+                                nodeId));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to create remote snapshot [from=" + nodeId + ", msg=" + msg0 + ']');
@@ -416,11 +487,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             /** {@inheritDoc} */
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
                 Integer partId = (Integer)fileMeta.params().get(SNP_PART_ID_PARAM);
-                String snpDirPath = (String)fileMeta.params().get(SNP_DIR_PATH_PARAM);
+                String snpName = (String)fileMeta.params().get(SNP_NAME_PARAM);
+                String rmtDbNodePath = (String)fileMeta.params().get(SNP_DB_NODE_PATH_PARAM);
+                String cacheDirName = (String)fileMeta.params().get(SNP_CACHE_DIR_NAME_PARAM);
 
-                return Paths.get(rmtSnpWorkDir.getPath(), snpDirPath, getPartitionNameEx(partId))
-                    .toAbsolutePath()
-                    .toString();
+                try {
+                    File cacheDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(),
+                        cacheSnapshotPath(snpName, rmtDbNodePath, cacheDirName),
+                        false);
+
+                    return new File(cacheDir, getPartitionNameEx(partId)).getAbsolutePath();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
 
             /**
@@ -430,19 +510,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              * @param grpId Cache group id.
              * @param partId Partition id.
              */
-            private void stopRecover(FilePageStore pageStore, UUID rmtNodeId, String snpName, File part, Integer grpId, Integer partId) {
+            private void finishRecover(
+                FilePageStore pageStore,
+                UUID rmtNodeId,
+                String snpName,
+                File part,
+                Integer grpId,
+                Integer partId
+            ) {
                 try {
                     pageStore.finishRecover();
 
                     U.closeQuiet(pageStore);
 
-                    if (snpLsnr != null) {
+                    cctx.kernalContext().closure().runLocalSafe(() -> {
+                        if (snpLsnr == null)
+                            return;
+
                         snpLsnr.onPartition(rmtNodeId,
                             snpName,
                             part,
                             grpId,
                             partId);
-                    }
+                    });
                 }
                 catch (StorageException e) {
                     throw new IgniteException(e);
@@ -466,7 +556,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 pageStore.beginRecover();
 
                 if (initMeta.count() == 0) {
-                    stopRecover(pageStore,
+                    finishRecover(pageStore,
                         nodeId,
                         snpName,
                         new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
@@ -486,7 +576,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             transferred.add(buff.capacity());
 
                             if (transferred.longValue() == initMeta.count()) {
-                                stopRecover(pageStore,
+                                finishRecover(pageStore,
                                     nodeId,
                                     snpName,
                                     new File(loadedPageStores.remove(partKey).getFileAbsolutePath()),
@@ -564,20 +654,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param snapshotName snapshot name.
-     * @return snapshot directory.
+     * @param snpName Snapshot name.
+     * @return Local snapshot directory for snapshot with given name.
      */
-    public File snapshotDir(String snapshotName) {
-        return new File(snpWorkDir, snapshotName);
+    public File localSnapshotDir(String snpName) {
+        return new File(localSnapshotWorkDir(), snpName);
     }
 
     /**
-     * @return Snapshot directory used by manager.
+     * @return Snapshot directory used by manager for local snapshots.
+     */
+    public File localSnapshotWorkDir() {
+        assert localSnpDir != null;
+
+        return localSnpDir;
+    }
+
+    /**
+     * @return Node snapshot working directory.
      */
     public File snapshotWorkDir() {
         assert snpWorkDir != null;
 
         return snpWorkDir;
+    }
+
+    /**
+     * @return Node snapshot working directory with given snapshot name.
+     */
+    public File snapshotWorkDir(String snpName) {
+        return new File(snapshotWorkDir(), snpName);
     }
 
     /**
@@ -605,13 +711,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     return GridIntList.valueOf(grpParts);
                 }));
 
-        File snapshotDir0 = snapshotDir(snpName);
+        File rootSnpDir0 = localSnapshotDir(snpName);
 
         return scheduleSnapshot(snpName,
             parts,
-            snapshotDir0,
             snpRunner,
-            localSnapshotReceiver(snapshotDir0));
+            localSnapshotReceiver(rootSnpDir0));
     }
 
     /**
@@ -629,14 +734,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         if (rmtNode == null)
             throw new IgniteCheckedException("Requested snpashot node doesn't exists [rmtNodeId=" + rmtNodeId + ']');
-
-        for (Integer grpId : parts.keySet()) {
-            CacheConfiguration ccfg = cctx.cache().cacheGroup(grpId).config();
-
-            U.resolveWorkDirectory(rmtSnpWorkDir.getAbsolutePath(),
-                cacheSnapshotPath(rmtNode.consistentId().toString(), snpName, cacheDirName(ccfg)),
-                false);
-        }
 
         SnapshotRequestMessage msg0 =
             new SnapshotRequestMessage(snpName,
@@ -656,7 +753,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      * @param snpName Unique snapshot name.
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
-     * @param snpDir Local directory to save cache partition deltas and snapshots to.
      * @param snpRcv Factory which produces snapshot receiver instance.
      * @return Future which will be completed when snapshot is done.
      * @throws IgniteCheckedException If initialiation fails.
@@ -664,7 +760,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     IgniteInternalFuture<String> scheduleSnapshot(
         String snpName,
         Map<Integer, GridIntList> parts,
-        File snpDir,
         Executor exec,
         SnapshotReceiver snpRcv
     ) throws IgniteCheckedException {
@@ -684,12 +779,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         if (!busyLock.enterBusy())
             throw new IgniteCheckedException("Snapshot manager is stopping");
 
+        File nodeSnpDir = null;
+
         try {
-            // Atomic operation, fails with exception if not.
-            Files.createDirectory(snpDir.toPath());
+            String dbNodePath = cctx.kernalContext().pdsFolderResolver().resolveFolders().pdsNodePath();
+            nodeSnpDir = U.resolveWorkDirectory(new File(snpWorkDir, snpName).getAbsolutePath(), dbNodePath, false);
 
             sctx = new SnapshotContext(snpName,
-                snpDir,
+                nodeSnpDir,
                 parts,
                 exec,
                 snpRcv);
@@ -706,7 +803,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
 
                 // Create cache snapshot directory if not.
-                File grpDir = U.resolveWorkDirectory(sctx.snpDir.getAbsolutePath(),
+                File grpDir = U.resolveWorkDirectory(sctx.nodeSnpDir.getAbsolutePath(),
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
@@ -754,13 +851,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         catch (IOException e) {
             closeSnapshotResources(sctx);
 
-            try {
-                Files.delete(snpDir.toPath());
-            }
-            catch (IOException ioe) {
-                throw new IgniteCheckedException("Error deleting snapshot directory during context initialization " +
-                    "failed: " + snpName, e);
-            }
+            if (nodeSnpDir != null)
+                nodeSnpDir.delete();
 
             throw new IgniteCheckedException(e);
         }
@@ -773,29 +865,52 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /**
      *
-     * @param snapshotDir Snapshot directory.
+     * @param rootSnpDir Absolute snapshot directory.
      * @return Snapshot receiver instance.
      */
-    SnapshotReceiver localSnapshotReceiver(File snapshotDir) {
+    SnapshotReceiver localSnapshotReceiver(File rootSnpDir) throws IgniteCheckedException {
+        // Relative path to snapshot storage of local node.
+        // Example: snapshotWorkDir/db/IgniteNodeName0
+        String dbNodePath = cctx.kernalContext()
+            .pdsFolderResolver()
+            .resolveFolders()
+            .pdsNodePath();
+
+        U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
+
         return new LocalSnapshotReceiver(log,
-            snapshotDir,
+            new File(rootSnpDir, dbNodePath),
             ioFactory,
             storeFactory,
+            cctx.kernalContext()
+                .cacheObjects()
+                .binaryWriter(rootSnpDir.getAbsolutePath()),
+            cctx.kernalContext()
+                .marshallerContext()
+                .marshallerMappingWriter(cctx.kernalContext(), rootSnpDir.getAbsolutePath()),
             pageSize);
     }
 
     /**
      * @param snpName Snapshot name.
-     * @param consistentId Local node consistent id.
      * @param rmtNodeId Remote node id to send snapshot to.
-     * @param topic Remote topic.
      * @return Snapshot receiver instance.
      */
-    SnapshotReceiver remoteSnapshotReceiver(String snpName, Object consistentId, UUID rmtNodeId, Object topic) {
+    SnapshotReceiver remoteSnapshotReceiver(
+        String snpName,
+        UUID rmtNodeId
+    ) throws IgniteCheckedException {
+        // Relative path to snapshot storage of local node.
+        // Example: snapshotWorkDir/db/IgniteNodeName0
+        String dbNodePath = cctx.kernalContext()
+            .pdsFolderResolver()
+            .resolveFolders()
+            .pdsNodePath();
+
         return new RemoteSnapshotReceiver(log,
-            cctx.gridIO().openTransmissionSender(rmtNodeId, topic),
+            cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_RMT_SNAPSHOT_TOPIC),
             snpName,
-            consistentId);
+            dbNodePath);
     }
 
     /**
@@ -818,61 +933,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             U.closeQuiet(writer);
 
         U.closeQuiet(sctx.snpRcv);
-    }
+        U.delete(sctx.nodeSnpDir);
 
-    /**
-     * @param sctx Context to handle.
-     */
-    private void submitTasks(SnapshotContext sctx) {
-        List<CompletableFuture<Void>> futs = new ArrayList<>(sctx.parts.size());
-        File workDir = ((FilePageStoreManager) cctx.pageStore()).workDir();
+        // Delete snapshot directory if no other files exists.
+        try {
+            if (U.fileCount(snapshotWorkDir(sctx.snpName).toPath()) == 0)
+                U.delete(snapshotWorkDir(sctx.snpName).toPath());
 
-        if (log.isInfoEnabled())
-            log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx.partFileLengths);
-
-        for (GroupPartitionId pair : sctx.parts) {
-            CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
-            String cacheDirName = cacheDirName(ccfg);
-
-            CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
-                Long length = sctx.partFileLengths.get(pair);
-
-                    sctx.snpRcv.receivePart(
-                        getPartitionFileEx(length == 0 ? sctx.snpDir : workDir, cacheDirName, pair.getPartitionId()),
-                        cacheDirName,
-                        pair,
-                        length);
-
-                    // Stop partition writer.
-                    sctx.partDeltaWriters.get(pair).partProcessed = true;
-                },
-                sctx.exec)
-                // Wait for the completion of both futures - checkpoint end, copy partition
-                .runAfterBothAsync(sctx.cpEndFut,
-                    () -> {
-                        File delta = getPartionDeltaFile(cacheWorkDir(sctx.snpDir, cacheDirName),
-                            pair.getPartitionId());
-
-                        sctx.snpRcv.receiveDelta(delta, cacheDirName, pair);
-
-                        boolean deleted = delta.delete();
-
-                        assert deleted;
-                    },
-                    sctx.exec);
-
-            futs.add(fut0);
         }
-
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[sctx.parts.size()]))
-             .whenComplete(new BiConsumer<Void, Throwable>() {
-                 @Override public void accept(Void res, Throwable t) {
-                     if (t == null)
-                         sctx.snpFut.onDone(sctx.snpName);
-                     else
-                         sctx.snpFut.onDone(t);
-                 }
-             });
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -938,13 +1009,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param consistentId Node consistent id to resolve path from.
+     * @param dbNodePath Persistence node path.
      * @param snpName Snapshot name.
      * @param cacheDirName Cache directory name.
      * @return Relative cache path.
      */
-    private static String cacheSnapshotPath(String consistentId, String snpName, String cacheDirName) {
-        return Paths.get(U.maskForFileName(consistentId), snpName, cacheDirName).toString();
+    private static String cacheSnapshotPath(String snpName, String dbNodePath, String cacheDirName) {
+        return Paths.get(snpName, dbNodePath, cacheDirName).toString();
     }
 
     /**
@@ -1143,7 +1214,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         private final String snpName;
 
         /** Absolute snapshot storage path. */
-        private final File snpDir;
+        private final File nodeSnpDir;
 
         /** Service to perform partitions copy. */
         private final Executor exec;
@@ -1181,24 +1252,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param snpName Unique identifier of snapshot process.
-         * @param snpDir snapshot storage directory.
+         * @param nodeSnpDir snapshot storage directory.
          * @param exec Service to perform partitions copy.
          */
         public SnapshotContext(
             String snpName,
-            File snpDir,
+            File nodeSnpDir,
             Map<Integer, GridIntList> parts,
             Executor exec,
             SnapshotReceiver snpRcv
         ) {
             A.notNull(snpName, "snapshot name cannot be empty or null");
-            A.notNull(snpDir, "You must secify correct snapshot directory");
-            A.ensure(snpDir.isDirectory(), "Specified path is not a directory");
+            A.notNull(nodeSnpDir, "You must secify correct snapshot directory");
+            A.ensure(nodeSnpDir.isDirectory(), "Specified path is not a directory");
             A.notNull(exec, "Executor service must be not null");
             A.notNull(snpRcv, "Snapshot receiver which handles execution tasks must be not null");
 
             this.snpName = snpName;
-            this.snpDir = snpDir;
+            this.nodeSnpDir = nodeSnpDir;
             this.exec = exec;
             this.snpRcv = snpRcv;
 
@@ -1296,8 +1367,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Snapshot name */
         private final String snpName;
 
-        /** Local node consistent id. */
-        private final String consistentId;
+        /** Local node persistent directory with consistent id. */
+        private final String dbNodePath;
 
         /**
          * @param log Ignite logger.
@@ -1308,17 +1379,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             IgniteLogger log,
             GridIoManager.TransmissionSender sndr,
             String snpName,
-            Object consistentId
+            String dbNodePath
         ) {
             this.log = log.getLogger(RemoteSnapshotReceiver.class);
             this.sndr = sndr;
             this.snpName = snpName;
-            this.consistentId = consistentId.toString();
+            this.dbNodePath = dbNodePath;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+            // There is no need send it to a remote node.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+            // There is no need send it to a remote node.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
+            // There is no need send it to a remote node.
         }
 
         /** {@inheritDoc} */
         @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             try {
+                assert part.exists();
+
                 sndr.send(part, 0, length, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
@@ -1354,7 +1442,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
-            params.put(SNP_DIR_PATH_PARAM, cacheSnapshotPath(consistentId, snpName, cacheDirName));
+            params.put(SNP_DB_NODE_PATH_PARAM, dbNodePath);
+            params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
             params.put(SNP_NAME_PARAM, snpName);
 
             return params;
@@ -1373,14 +1462,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Ignite logger to use. */
         private final IgniteLogger log;
 
-        /** Local node snapshot directory. */
-        private final File snpDir;
+        /**
+         * Local node snapshot directory calculated on snapshot directory.
+         */
+        private final File dbNodeSnpDir;
 
         /** Facotry to produce IO interface over a file. */
         private final FileIOFactory ioFactory;
 
         /** Factory to create page store for restore. */
         private final BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory;
+
+        /** Store binary files. */
+        private final BinaryTypeWriter binaryWriter;
+
+        /** Marshaller mapping writer. */
+        private final MarshallerMappingWriter mappingWriter;
 
         /** Size of page. */
         private final int pageSize;
@@ -1397,50 +1494,91 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             File snpDir,
             FileIOFactory ioFactory,
             BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory,
+            BinaryTypeWriter binaryWriter,
+            MarshallerMappingWriter mappingWriter,
             int pageSize
         ) {
             this.log = log.getLogger(LocalSnapshotReceiver.class);
-            this.snpDir = snpDir;
+            dbNodeSnpDir = snpDir;
             this.ioFactory = ioFactory;
             this.storeFactory = storeFactory;
             this.pageSize = pageSize;
+            this.binaryWriter = binaryWriter;
+            this.mappingWriter = mappingWriter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+            try {
+                File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
+
+                copy(ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+            }
+            catch (IgniteCheckedException | IOException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+            if (mappings == null)
+                return;
+
+            for (int platformId = 0; platformId < mappings.size(); platformId++) {
+                Map<Integer, MappedName> cached = mappings.get(platformId);
+
+                try {
+                    addPlatformMappings((byte)platformId,
+                        cached,
+                        (typeId, clsName) -> true,
+                        (typeId, mapping) -> {
+                        },
+                        mappingWriter);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void receiveBinaryMeta(Map<Integer, BinaryType> types) {
+            if (types == null)
+                return;
+
+            for (Map.Entry<Integer, BinaryType> e : types.entrySet())
+                binaryWriter.writeMeta(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-            File snpPart = new File(cacheWorkDir(snpDir, cacheDirName), part.getName());
-
             try {
+                File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
+
+                File snpPart = new File(cacheDir, part.getName());
+
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
                 if (length == 0)
                     return;
 
-                try (FileIO src = ioFactory.create(part);
-                     FileChannel dest = new FileOutputStream(snpPart).getChannel()) {
-                    src.position(0);
-
-                    long written = 0;
-
-                    while (written < length)
-                        written += src.transferTo(written, length - written, dest);
-                }
+                copy(part, snpPart, length);
 
                 if (log.isInfoEnabled()) {
-                    log.info("Partition has been snapshotted [snapshotDir=" + snpDir.getAbsolutePath() +
+                    log.info("Partition has been snapshotted [snapshotDir=" + dbNodeSnpDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
                         ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
             }
-            catch (IOException ex) {
+            catch (IOException | IgniteCheckedException ex) {
                 throw new IgniteException(ex);
             }
         }
 
         /** {@inheritDoc} */
         @Override public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair) {
-            File snpPart = getPartitionFileEx(snpDir, cacheDirName, pair.getPartitionId());
+            File snpPart = getPartitionFileEx(dbNodeSnpDir, cacheDirName, pair.getPartitionId());
 
             U.log(log, "Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                 ", delta=" + delta + ']');
@@ -1495,6 +1633,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             // No-op.
+        }
+
+        /**
+         * @param from Copy from file.
+         * @param to Copy data to file.
+         * @param length Number of bytes to copy from beginning.
+         * @throws IOException If fails.
+         */
+        private void copy(File from, File to, long length) throws IOException {
+            try (FileIO src = ioFactory.create(from);
+                 FileChannel dest = new FileOutputStream(to).getChannel()) {
+                src.position(0);
+
+                long written = 0;
+
+                while (written < length)
+                    written += src.transferTo(written, length - written, dest);
+            }
         }
     }
 }

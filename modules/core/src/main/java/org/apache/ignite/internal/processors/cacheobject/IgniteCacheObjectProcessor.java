@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -239,6 +238,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public BinaryObjectBuilder builder(BinaryObject binaryObj);
 
     /**
+     * @param igniteWorkDir Absolute working directory to write meta to.
+     * @return Binary writer instance.
+     */
+    public BinaryTypeWriter binaryWriter(String igniteWorkDir);
+
+    /**
      * @param typeId Type ID.
      * @param newMeta New metadata.
      * @param failIfUnregistered Fail if unregistered.
@@ -288,11 +293,10 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
 
     /**
-     * @param typeIds Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
+    public Map<Integer, BinaryType> metadataTypes();
 
     /**
      * @return Metadata for all types.

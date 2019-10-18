@@ -17,8 +17,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class SnapshotRequestMessage implements Message {
-    /** Snapshot request message type (value is {@code 176}). */
-    public static final short TYPE_CODE = 176;
+    /** Snapshot request message type (value is {@code 177}). */
+    public static final short TYPE_CODE = 177;
 
     /** Serialization version. */
     private static final long serialVersionUID = 0L;

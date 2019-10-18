@@ -925,6 +925,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return store.pages();
     }
 
+    /**
+     * @param ccfg Cache configuration to find an approriate stored configuration file.
+     * @return File of stored cache configuration or {@code null} if doesn't exists.
+     */
+    public File cacheConfiguration(CacheConfiguration ccfg) {
+        File cacheDir = new File(storeWorkDir, cacheDirName(ccfg));
+
+        if (!cacheDir.exists())
+            return null;
+
+        File[] ccfgFile = cacheDir.listFiles((dir, name) -> CACHE_DATA_FILENAME.equals(name));
+
+        assert ccfgFile.length <= 1 : "Too many configurations file found: " + ccfgFile.length;
+
+        return ccfgFile.length == 0 ? null : ccfgFile[0];
+    }
+
     /** {@inheritDoc} */
     @Override public Map<String, StoredCacheData> readCacheConfigurations() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())
