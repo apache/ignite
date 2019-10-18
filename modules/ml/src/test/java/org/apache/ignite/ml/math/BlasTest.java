@@ -19,7 +19,7 @@ package org.apache.ignite.ml.math;
 
 import java.util.Arrays;
 import java.util.function.BiPredicate;
-import org.apache.ignite.ml.math.exceptions.NonSquareMatrixException;
+import org.apache.ignite.ml.math.exceptions.math.NonSquareMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
