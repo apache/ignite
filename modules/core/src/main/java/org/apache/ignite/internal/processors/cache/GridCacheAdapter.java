@@ -5231,7 +5231,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (coll == null || coll.size() <= 1)
             return;
 
-        if (coll instanceof SortedSet)
+        if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();

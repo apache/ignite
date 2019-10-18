@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -679,7 +680,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
             return null;
         };
 
-        Map<K, V> vals = Arrays.stream(entries).collect(Collectors.toMap(T2::get1, T2::get2));
+        Map<K, V> vals = Arrays.stream(entries).collect(Collectors.toMap(T2::get1, T2::get2, (a, b) -> a, TreeMap::new));
 
         Stream<Runnable> ops = Stream.of(
             () -> cache.putAll(vals),
