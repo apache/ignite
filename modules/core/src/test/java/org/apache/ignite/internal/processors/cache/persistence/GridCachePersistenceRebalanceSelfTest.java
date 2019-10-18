@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -59,7 +60,6 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED;
 
 /**
@@ -309,13 +309,17 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
     @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
-    //@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD,)
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
-    public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testPersistenceRebalanceMultipleCachesThreeNodesSequence() throws Exception {
+        List<ClusterNode> blt = new ArrayList<>();
+
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
-        ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
 
         loadData(ignite0, CACHE1, TEST_SIZE);
         loadData(ignite0, CACHE2, TEST_SIZE);
@@ -324,21 +328,72 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         IgniteEx ignite1 = startGrid(1);
 
+        blt.add(ignite1.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
         awaitPartitionMapExchange();
 
-//        U.sleep(4_000);
-//
         IgniteEx ignite2 = startGrid(2);
-//
+
+        blt.add(ignite2.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
         awaitPartitionMapExchange();
-//
-        U.sleep(1_000);
-//
-        U.sleep(1_000);
-//
+
+        U.sleep(2_000);
+
         verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
         verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
-//
+
+        verifyLocalCache(ignite0.cachex(CACHE1), ignite2.cachex(CACHE1));
+        verifyLocalCache(ignite0.cachex(CACHE2), ignite2.cachex(CACHE2));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
+        List<ClusterNode> blt = new ArrayList<>();
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        loadData(ignite0, CACHE1, TEST_SIZE);
+        loadData(ignite0, CACHE2, TEST_SIZE);
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        blt.add(ignite1.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(300);
+
+        IgniteEx ignite2 = startGrid(2);
+
+        blt.add(ignite2.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        U.sleep(2_000);
+
+        verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
+        verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
+
         verifyLocalCache(ignite0.cachex(CACHE1), ignite2.cachex(CACHE1));
         verifyLocalCache(ignite0.cachex(CACHE2), ignite2.cachex(CACHE2));
     }
@@ -455,8 +510,11 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         buf.append(verifyLocalCacheContent(expCache, actCache));
         buf.append(verifyLocalCacheContent(actCache, expCache));
 
-        for (GridDhtLocalPartition actPart : actCache.context().topology().localPartitions()) {
-            GridDhtLocalPartition expPart = expCache.context().topology().localPartition(actPart.id());
+        for (GridDhtLocalPartition actPart : expCache.context().topology().currentLocalPartitions()) {
+            GridDhtLocalPartition expPart = actCache.context().topology().localPartition(actPart.id());
+
+            if (actPart.state() != expPart.state())
+                buf.append("\n").append(expCache.context().localNodeId()).append(" vs ").append(actCache.context().localNodeId()).append(" state mismatch p=").append(actPart.id()).append(" exp=").append(expPart).append(" act=").append(actPart);
 
             long expCntr = expPart.updateCounter();
             long actCntr = actPart.updateCounter();

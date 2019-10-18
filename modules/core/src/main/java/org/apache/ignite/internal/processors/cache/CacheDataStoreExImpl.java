@@ -98,7 +98,7 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
         assert readOnly || cctx.database().checkpointLockIsHeldByThread() : "Changing mode required checkpoint write lock";
 
         if (this.readOnly.compareAndSet(!readOnly, readOnly))
-            log.info("Changing data store mode to " + (readOnly ? "READ-REMOVE" : "FULL") + " [p=" + partId() + "]");
+            log.info("Changing data store mode to " + (readOnly ? "READ-ONLY" : "FULL") + " [p=" + partId() + "]");
     }
 
     /** {@inheritDoc} */

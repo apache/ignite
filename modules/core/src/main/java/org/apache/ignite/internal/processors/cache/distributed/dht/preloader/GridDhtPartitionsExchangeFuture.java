@@ -521,22 +521,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param cntrSince Partition update counter since history supplying is requested.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+    public @Nullable UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
-    @Nullable public UUID partitionFileSupplier(int grpId, int partId) {
+    /**
+     * Retreives the node which reserved history for file rebalancing.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @return ID of history supplier node or null if it doesn't exist.
+     */
+    public @Nullable UUID partitionFileSupplier(int grpId, int partId) {
         return partHistSuppliers.getFileSupplier(grpId, partId);
-//        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : partHistSuppliers.map.entrySet()) {
-//            UUID supplierNode = e.getKey();
-//
-//            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
-//
-//            if (historyCounter != null && historyCounter <= cntrSince)
-//                return supplierNode;
-//        }
-//
-//        return partHistSuppliers.getSupplier(grpId, partId);
     }
 
     /**
@@ -3171,8 +3168,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 Long minCntr = minCntrs.get(p);
 
-//                log.info("minCntr = " + minCntr + ", cache=" + cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName() + " p=" + p + " node=" + e.getKey());
-
                 if (minCntr == null || minCntr > cntr)
                     minCntrs.put(p, cntr);
 
@@ -3241,22 +3236,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
 
-//            //
-//            if (minCntr == 0) {
-//                // file rebalancing - supplier should have history from maxCntr!
-//
-//            }
-
-            if (minCntr == maxCntr) {
-//                log.info(cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName() + " p=" + p + " skip maxCntr="+maxCntr);
-
+            if (minCntr == maxCntr)
                 continue;
-            }
 
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
-
-//                log.info("crd localHist cntr: " + localHistCntr);
 
                 if (localHistCntr != null) {
                     // todo crd node should always have history for max counter - this is redundant
@@ -3285,6 +3269,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (histCntr != null) {
                     // todo merge conditions (with else)
                     if (minCntr == 0 && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        // For file rebalancing we need to reserve historyfrom current update counter.
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
 
                         haveHistory.add(p);

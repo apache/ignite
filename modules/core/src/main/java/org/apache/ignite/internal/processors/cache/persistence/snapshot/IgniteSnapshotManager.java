@@ -723,7 +723,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param rmtNodeId The remote node to connect to.
      * @return Snapshot name.
-     * @throws IgniteCheckedException If initialiation fails.
+     * @throws IgniteCheckedException If initialization fails.
      */
     public String createRemoteSnapshot(UUID rmtNodeId, Map<Integer, Set<Integer>> parts) throws IgniteCheckedException {
         String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();

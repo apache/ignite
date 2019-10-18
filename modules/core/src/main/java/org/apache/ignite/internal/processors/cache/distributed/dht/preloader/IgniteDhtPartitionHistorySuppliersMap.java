@@ -52,7 +52,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param cntrSince Partition update counter since history supplying is requested.
      * @return Supplier UUID.
      */
-    @Nullable public synchronized UUID getSupplier(int grpId, int partId, long cntrSince) {
+    public synchronized @Nullable UUID getSupplier(int grpId, int partId, long cntrSince) {
         if (map == null || cntrSince == 0)
             return null;
 
@@ -68,7 +68,12 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         return null;
     }
 
-    @Nullable public synchronized UUID getFileSupplier(int grpId, int partId) {
+    /**
+     * @param grpId Group ID.
+     * @param partId Partition ID.
+     * @return Supplier UUID.
+     */
+    public synchronized @Nullable UUID getFileSupplier(int grpId, int partId) {
         if (map == null)
             return null;
 
@@ -77,6 +82,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
 
             Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
 
+            // todo In case of several nodes should return random node.
             if (historyCounter != null)
                 return supplierNode;
         }
@@ -88,7 +94,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.
      */
-    @Nullable public synchronized Map<T2<Integer, Integer>, Long> getReservations(UUID nodeId) {
+    public synchronized @Nullable Map<T2<Integer, Integer>, Long> getReservations(UUID nodeId) {
         if (map == null)
             return null;
 
