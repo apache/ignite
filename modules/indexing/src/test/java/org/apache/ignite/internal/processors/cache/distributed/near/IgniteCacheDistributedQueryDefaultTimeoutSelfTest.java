@@ -94,8 +94,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).removeAll();
+        G.ignite().cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** */
@@ -164,7 +163,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
                     fail("Query not canceled");
             }
             catch (CacheException ex) {
-                log().error("Got expected exception", ex);
+                error("Got expected exception", ex);
 
                 assertNotNull("Must throw correct exception", X.cause(ex, QueryCancelledException.class));
             }

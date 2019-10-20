@@ -72,8 +72,7 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (Ignite g : G.allGrids())
-            g.cache(DEFAULT_CACHE_NAME).removeAll();
+        G.ignite().cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -128,7 +127,8 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
             qry.setTimeout(timeoutUnits, timeUnit);
 
             cursor = cache.query(qry);
-        } else {
+        }
+        else {
             cursor = cache.query(qry);
 
             ignite.scheduler().runLocal(new Runnable() {
@@ -138,7 +138,7 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
             }, timeoutUnits, timeUnit);
         }
 
-        try(QueryCursor<List<?>> ignored = cursor) {
+        try (QueryCursor<List<?>> ignored = cursor) {
             cursor.iterator();
 
             fail("Expecting timeout");
