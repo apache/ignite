@@ -52,10 +52,12 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        this.mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
+        if (ctx.query().getIndexing() instanceof IgniteH2Indexing) {
+            mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        sysViewReg.forEach(this::register);
-        sysViewReg.addSystemViewCreationListener(this::register);
+            sysViewReg.forEach(this::register);
+            sysViewReg.addSystemViewCreationListener(this::register);
+        }
     }
 
     /**

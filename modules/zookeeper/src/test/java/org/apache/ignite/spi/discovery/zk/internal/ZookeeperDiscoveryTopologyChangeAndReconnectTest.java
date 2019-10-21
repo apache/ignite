@@ -75,15 +75,8 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
-        if (indexingDisabled) {
+        if (indexingDisabled)
             GridQueryProcessor.idxCls = DummyQueryIndexing.class;
-
-            cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi() {
-                @Override protected void register(SystemView<?> sysView) {
-                    // No-op.
-                }
-            });
-        }
 
         return cfg;
     }
@@ -93,6 +86,8 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         super.afterTest();
 
         indexingDisabled = false;
+
+        GridQueryProcessor.idxCls = null;
     }
 
     /**
