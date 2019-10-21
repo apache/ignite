@@ -149,7 +149,7 @@ import org.junit.runners.Suite;
     GridCachePartitionedTxMultiNodeSelfTest.class,
     GridCacheReplicatedTxMultiNodeBasicTest.class,
 
-    SqlPartOfComplexPkLookupTest.class
+    SqlPartOfComplexPkLookupTest.class,
 
     SqlDataTypesCoverageTests.class
 })
