@@ -1062,9 +1062,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
         finally {
-            cleanup(ctx);
             if (needCleanupAffinity)
                 cleanup(cache.configuration(), cache.configuration().getAffinity(), false);
+
+            cleanup(ctx);
         }
     }
 
