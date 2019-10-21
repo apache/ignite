@@ -39,6 +39,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,8 +48,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
@@ -55,7 +58,6 @@ import org.apache.zookeeper.ZooKeeper;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -64,11 +66,33 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** {@code True} if indexing disabled. */
+    private boolean indexingDisabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        if (indexingDisabled) {
+            GridQueryProcessor.idxCls = DummyQueryIndexing.class;
+
+            cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi() {
+                @Override protected void register(SystemView<?> sysView) {
+                    // No-op.
+                }
+            });
+        }
+
+        return cfg;
     }
-    
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        indexingDisabled = false;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -564,8 +588,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_SQL_DISABLE_SYSTEM_VIEWS, value = "true")
     public void testDuplicatedNodeId() throws Exception {
+        indexingDisabled = true;
+
         UUID nodeId0 = nodeId = UUID.randomUUID();
 
         startGrid(0);
