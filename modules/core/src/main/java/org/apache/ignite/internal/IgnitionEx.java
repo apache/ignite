@@ -1752,13 +1752,6 @@ public class IgnitionEx {
                 }
             };
 
-            UncaughtExceptionHandler excHnd = new UncaughtExceptionHandler() {
-                @Override public void uncaughtException(Thread t, Throwable e) {
-                    if (grid != null)
-                        grid.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                }
-            };
-
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
                 cfg.getIgniteInstanceName(),
@@ -1997,7 +1990,7 @@ public class IgnitionEx {
                 DFLT_THREAD_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<>(),
                 GridIoPolicy.UNDEFINED,
-                excHnd);
+                oomeHnd);
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
@@ -2005,7 +1998,7 @@ public class IgnitionEx {
                 cfg.getRebalanceThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "rebalance-striped",
-                excHnd,
+                oomeHnd,
                 true,
                 DFLT_THREAD_KEEP_ALIVE_TIME);
 
