@@ -285,25 +285,12 @@ public class BinaryFieldImpl implements BinaryFieldEx {
             BinaryType expType = ctx.metadata(typeId);
             BinaryType actualType = obj.type();
 
-            String actualTypeName = null;
-
-            Exception actualTypeNameEx = null;
-
-            try {
-                actualTypeName = actualType.typeName();
-            }
-            catch (BinaryObjectException e) {
-                actualTypeNameEx = new BinaryObjectException("Failed to get actual binary type name.", e);
-            }
-
-            throw new BinaryObjectException(
-                "Failed to get field because type ID of passed object differs from type ID this " +
-                    BinaryField.class.getSimpleName() + " belongs to [expected=[typeId=" + typeId + ", typeName=" +
-                    (nonNull(expType) ? expType.typeName() : null) + "], actual=[typeId=" + actualType.typeId() +
-                    ", typeName=" + actualTypeName + "], fieldId=" + fieldId + ", fieldName=" + fieldName +
-                    ", fieldType=" + (nonNull(expType) ? expType.fieldTypeName(fieldName) : null) + ']',
-                actualTypeNameEx
-            );
+            throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
+                " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=[typeId=" + typeId +
+                ", typeName=" + (nonNull(expType) ? expType.typeName() : null) + "], actual=[typeId=" +
+                actualType.typeId() + ", typeName=" + actualType.typeName() + "], fieldId=" + fieldId +
+                ", fieldName=" + fieldName + ", fieldType=" +
+                (nonNull(expType) ? expType.fieldTypeName(fieldName) : null) + ']');
         }
 
         int schemaId = obj.schemaId();
