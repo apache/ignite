@@ -89,7 +89,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         indexingDisabled = false;
     }
 
