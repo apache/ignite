@@ -357,7 +357,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
 
-            res.add(new IgniteBiTuple<>(row.key(), row.value()));
+            res.add(new IgniteBiTuple<>(row.key(), marshaller.unmarshal(row.value(), getClass().getClassLoader())));
         }
 
         return res;
