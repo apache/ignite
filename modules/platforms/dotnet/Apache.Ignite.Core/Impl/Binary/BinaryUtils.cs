@@ -621,7 +621,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                             throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
 
-                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                        // ReSharper disable once ShiftExpressionRealShiftCountIsZero (reviewed - readability)
+                        res[charArrCnt++] = (char)(
+                            ((c & 0x0F) << 12) |
                             ((c2 & 0x3F) << 6) |
                             ((c3 & 0x3F) << 0));
 
