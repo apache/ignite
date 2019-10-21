@@ -48,8 +48,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
