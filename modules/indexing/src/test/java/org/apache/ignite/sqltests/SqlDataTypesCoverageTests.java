@@ -85,7 +85,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23065")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12311")
     @Test
     public void testTinyIntDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.TINYINT,
@@ -100,7 +100,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23065")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12311")
     @Test
     public void testSmallIntDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.SMALLINT,
@@ -185,7 +185,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23410")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12312")
     @Test
     public void testTimeDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.TIME,
@@ -198,7 +198,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-17353")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8552")
     @Test
     public void testDateDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.DATE,
@@ -261,7 +261,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-23401")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12313")
     @SuppressWarnings("ZeroLengthArrayAllocation")
     @Test
     public void testBinaryDataType() throws Exception {
