@@ -423,7 +423,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                WorkDirectory = TestUtils.GetTempDirectoryName()
+                WorkDirectory = PathUtils.GetTempDirectoryName()
             };
 
             using (Ignition.Start(cfg))
@@ -855,7 +855,7 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = TestUtils.GetTempDirectoryName(),
+                        SwapPath = PathUtils.GetTempDirectoryName(),
                         CheckpointPageBufferSize = 28 * 1024 * 1024
                     },
                     DataRegionConfigurations = new[]
@@ -872,7 +872,7 @@ namespace Apache.Ignite.Core.Tests
                             PersistenceEnabled = false,
                             MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
                             MetricsSubIntervalCount = 7,
-                            SwapPath = TestUtils.GetTempDirectoryName()
+                            SwapPath = PathUtils.GetTempDirectoryName()
                         }
                     }
                 },

@@ -85,7 +85,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -252,7 +252,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridRestProcessor restProc;
+    private IgniteRestProcessor restProc;
 
     /** */
     @GridToStringInclude
@@ -660,8 +660,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
             affProc = (GridAffinityProcessor)comp;
-        else if (comp instanceof GridRestProcessor)
-            restProc = (GridRestProcessor)comp;
+        else if (comp instanceof IgniteRestProcessor)
+            restProc = (IgniteRestProcessor)comp;
         else if (comp instanceof DataStreamProcessor)
             dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
@@ -910,7 +910,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridRestProcessor rest() {
+    @Override public IgniteRestProcessor rest() {
         return restProc;
     }
 

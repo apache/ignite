@@ -72,7 +72,7 @@ public class MessageCodeGenerator {
     public static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
+    public static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = Message.class;

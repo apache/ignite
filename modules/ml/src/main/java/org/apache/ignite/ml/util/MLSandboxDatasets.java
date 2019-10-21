@@ -65,7 +65,10 @@ public enum MLSandboxDatasets {
     FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ","),
 
     /** A dataset with discrete and continious features. */
-    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ",");
+    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ","),
+
+    /** A dataset with categorical features and labels. */
+    MUSHROOMS("modules/ml/src/main/resources/datasets/mushrooms.csv", true, ",");
 
     /** Filename. */
     private final String filename;
