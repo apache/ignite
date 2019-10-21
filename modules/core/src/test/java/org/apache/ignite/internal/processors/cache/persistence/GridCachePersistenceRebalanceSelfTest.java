@@ -360,6 +360,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
+        int entriesCnt = 400_000;
+
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
@@ -368,8 +370,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        loadData(ignite0, CACHE1, TEST_SIZE);
-        loadData(ignite0, CACHE2, TEST_SIZE);
+        loadData(ignite0, CACHE1, entriesCnt);
+        loadData(ignite0, CACHE2, entriesCnt);
 
         forceCheckpoint(ignite0);
 
@@ -379,7 +381,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(300);
+        U.sleep(100);
 
         IgniteEx ignite2 = startGrid(2);
 

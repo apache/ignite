@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.io.GridFileUtils;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -262,7 +261,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         for (int p : backupParts) {
             GridDhtLocalPartition part = cctx.topology().localPartition(p);
 
-            futs[n++] = preloader.restorePartition(cctx.groupId(), part.id(), partFiles.get(part.id()), new GridFinishedFuture());
+            futs[n++] = preloader.restorePartition(cctx.groupId(), part.id(), partFiles.get(part.id()));
         }
 
         forceCheckpoint(node1);
@@ -493,7 +492,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         // Restore partitions.
         for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
             IgniteInternalFuture<T2<Long, Long>> restoreFut =
-                preloader.restorePartition(cctx.groupId(), part.id(), partFiles[part.id()], new GridFinishedFuture());
+                preloader.restorePartition(cctx.groupId(), part.id(), partFiles[part.id()]);
 
             forceCheckpoint(node1);
 
