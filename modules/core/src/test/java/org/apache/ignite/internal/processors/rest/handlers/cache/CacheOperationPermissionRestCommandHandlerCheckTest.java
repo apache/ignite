@@ -102,7 +102,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
                 .appendCachePermissions(CREATE_CACHE_NAME, CACHE_CREATE)
                 .appendCachePermissions(FORBIDDEN_CACHE_NAME, EMPTY_PERM)
                 .appendSystemPermissions(JOIN_AS_SERVER)
-                .build()));
+                .build(),true));
 
         return cfg;
     }
