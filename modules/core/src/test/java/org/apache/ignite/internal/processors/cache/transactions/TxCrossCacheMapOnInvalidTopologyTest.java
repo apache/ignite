@@ -99,7 +99,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setOnheapCacheEnabled(false);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         return ccfg;

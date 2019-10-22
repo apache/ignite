@@ -261,7 +261,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             assertNotNull(part);
 
-            // Prevent eviction.
+            // Wait for eviction. Same could be achieved by calling awaitPartitionMapExchange(true, true, null, true);
             part.reserve();
 
             startGrid(2);
@@ -276,6 +276,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             CountDownLatch l2 = new CountDownLatch(1);
 
             // Create race between processing of final supply message and partition clearing.
+            // Evicted partition will be recreated using supplied factory.
             top.partitionFactory((ctx, grp, id) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, false) :
                 new GridDhtLocalPartition(ctx, grp, id, false) {
                     @Override public void beforeApplyBatch(boolean last) {
