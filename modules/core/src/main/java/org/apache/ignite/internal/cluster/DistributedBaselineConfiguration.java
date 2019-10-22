@@ -106,8 +106,10 @@ public class DistributedBaselineConfiguration {
                 }
 
                 @Override public void onReadyToWrite() {
-                    setDefaultValue(baselineAutoAdjustEnabled, dfltEnabled, log);
-                    setDefaultValue(baselineAutoAdjustTimeout, dfltTimeout, log);
+                    if (isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE)) {
+                        setDefaultValue(baselineAutoAdjustEnabled, dfltEnabled, log);
+                        setDefaultValue(baselineAutoAdjustTimeout, dfltTimeout, log);
+                    }
                 }
             }
         );
@@ -151,7 +153,7 @@ public class DistributedBaselineConfiguration {
      * Called when cluster performing activation.
      */
     public void onActivate() throws IgniteCheckedException {
-        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+        if (!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
             return;
 
         if (log.isInfoEnabled())
@@ -174,7 +176,7 @@ public class DistributedBaselineConfiguration {
      */
     public GridFutureAdapter<?> updateBaselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled)
         throws IgniteCheckedException {
-        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+        if (!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
             return finishFuture();
 
         return this.baselineAutoAdjustEnabled.propagateAsync(!baselineAutoAdjustEnabled, baselineAutoAdjustEnabled);
@@ -195,7 +197,7 @@ public class DistributedBaselineConfiguration {
      */
     public GridFutureAdapter<?> updateBaselineAutoAdjustTimeoutAsync(
         long baselineAutoAdjustTimeout) throws IgniteCheckedException {
-        if(!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
+        if (!isFeatureEnabled(IGNITE_BASELINE_AUTO_ADJUST_FEATURE))
             return finishFuture();
 
         return this.baselineAutoAdjustTimeout.propagateAsync(baselineAutoAdjustTimeout);

@@ -63,7 +63,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private Map<Class<?>, Set<String>> blockCls = new HashMap<>();
 
     /** */
-    private IgniteBiPredicate<ClusterNode, Message> blockP;
+    private volatile IgniteBiPredicate<ClusterNode, Message> blockP;
 
     /** */
     private volatile IgniteBiInClosure<ClusterNode, Message> c;
