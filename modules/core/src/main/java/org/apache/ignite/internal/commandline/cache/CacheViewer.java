@@ -285,6 +285,7 @@ public class CacheViewer implements Command<CacheViewer.Arguments> {
         params.put("Eviction Policy Factory", evictCfg.getPolicy());
         params.put("Eviction Policy Max Size", evictCfg.getPolicyMaxSize());
         params.put("Eviction Filter", evictCfg.getFilter());
+        params.put("Eviction Filter Factory", evictCfg.getFilterFactory());
 
         params.put("Near Cache Enabled", nearCfg.isNearEnabled());
         params.put("Near Start Size", nearCfg.getNearStartSize());
