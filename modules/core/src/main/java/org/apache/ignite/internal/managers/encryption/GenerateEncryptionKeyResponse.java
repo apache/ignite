@@ -41,8 +41,8 @@ public class GenerateEncryptionKeyResponse implements Message {
     @GridDirectCollection(byte[].class)
     private Collection<byte[]> encKeys;
 
-    /** Master key id that encrypted group encryption keys. */
-    private String masterKeyId;
+    /** Master key digest that encrypted group encryption keys. */
+    private byte[] masterKeyDigest;
 
     /** */
     public GenerateEncryptionKeyResponse() {
@@ -51,12 +51,12 @@ public class GenerateEncryptionKeyResponse implements Message {
     /**
      * @param id Request id.
      * @param encKeys Encryption keys.
-     * @param masterKeyId Master key id that encrypted group encryption keys.
+     * @param masterKeyDigest Master key digest that encrypted group encryption keys.
      */
-    public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys,  String masterKeyId) {
+    public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys, byte[] masterKeyDigest) {
         this.id = id;
         this.encKeys = encKeys;
-        this.masterKeyId = masterKeyId;
+        this.masterKeyDigest = masterKeyDigest;
     }
 
     /**
@@ -74,10 +74,10 @@ public class GenerateEncryptionKeyResponse implements Message {
     }
 
     /**
-     * @return Master key id that encrypted group encryption keys.
+     * @return Master key digest that encrypted group encryption keys.
      */
-    public String masterKeyId() {
-        return masterKeyId;
+    public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /** {@inheritDoc} */
@@ -105,7 +105,7 @@ public class GenerateEncryptionKeyResponse implements Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeString("masterKeyId", masterKeyId))
+                if (!writer.writeByteArray("masterKeyDigest", masterKeyDigest))
                     return false;
 
                 writer.incrementState();
@@ -139,7 +139,7 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                masterKeyId = reader.readString("masterKeyId");
+                masterKeyDigest = reader.readByteArray("masterKeyDigest");
 
                 if (!reader.isLastRead())
                     return false;

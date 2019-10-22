@@ -65,18 +65,14 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testRecoveryKeysOnClusterRestartWithClient() throws Exception {
+    public void testRecoveryKeysOnClusterRestart() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
-
-        String clientName = "client";
-
-        IgniteEx client = startGrid(getConfiguration(clientName).setClientMode(true));
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
         assertTrue(checkMasterKeyId(MASTER_KEY_ID));
 
-        client.encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2);
 
         assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
 
@@ -85,8 +81,6 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         stopAllGrids();
 
         startTestGrids(false);
-
-        startGrid(getConfiguration(clientName).setClientMode(true));
 
         assertTrue(checkMasterKeyId(MASTER_KEY_ID_2));
 
@@ -192,7 +186,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         commSpi.waitForBlocked();
 
-        client.encryption().changeMasterKey(MASTER_KEY_ID_2);
+        srv.encryption().changeMasterKey(MASTER_KEY_ID_2);
 
         commSpi.stopBlock();
 

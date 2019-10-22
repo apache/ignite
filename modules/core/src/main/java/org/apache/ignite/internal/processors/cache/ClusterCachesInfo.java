@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -963,7 +964,8 @@ public class ClusterCachesInfo {
         GridEncryptionManager encMgr = ctx.encryption();
 
         if (ccfg.isEncryptionEnabled() && (encMgr.isMasterKeyChangeInProgress() ||
-            !F.eq(encMgr.getMasterKeyId(), req.masterKeyId()))) {
+            (encMgr.lastChangedMasterKeyDigest() != null &&
+                !Arrays.equals(encMgr.lastChangedMasterKeyDigest(), req.masterKeyDigest())))) {
             U.warn(log, "Ignore cache start request during the master key change process.");
 
             IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +

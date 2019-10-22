@@ -3443,8 +3443,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "dynamicStartCache"));
         }
 
-        GridPlainClosure2<Collection<byte[]>, String, IgniteInternalFuture<Boolean>> startCacheClsr =
-            (grpKeys, masterKeyId) -> {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
+            (grpKeys, masterKeyDigest) -> {
             assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
 
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
@@ -3459,7 +3459,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyId : null);
+                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3492,21 +3492,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param after Closure to execute after encryption keys would be generated.
      */
     private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
-        GridPlainClosure2<Collection<byte[]>, String, IgniteInternalFuture<Boolean>> after) {
-        IgniteInternalFuture<T2<Collection<byte[]>, String>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
+        IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 
-        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, String>>>() {
-            @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, String>> fut) {
+        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, byte[]>>>() {
+            @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> fut) {
                 try {
                     Collection<byte[]> grpKeys = fut.result().get1();
-                    String masterKeyId = fut.result().get2();
+                    byte[] masterKeyDigest = fut.result().get2();
 
                     if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
                         res.onDone(false, fut.error());
 
-                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyId);
+                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
 
                     dynStartCacheFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -3604,8 +3604,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             });
         }
 
-        GridPlainClosure2<Collection<byte[]>, String, IgniteInternalFuture<Boolean>> startCacheClsr =
-            (grpKeys, masterKeyId) -> {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
+            (grpKeys, masterKeyDigest) -> {
             List<DynamicCacheChangeRequest> srvReqs = null;
             Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
@@ -3626,7 +3626,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     disabledAfterStart,
                     ccfg.queryEntities(),
                     ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyId : null);
+                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -4943,6 +4943,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -4959,7 +4960,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
-        @Nullable String masterKeyId
+        @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -4971,7 +4972,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.disabledAfterStart(disabledAfterStart);
 
-        req.masterKeyId(masterKeyId);
+        req.masterKeyDigest(masterKeyDigest);
 
         req.encryptionKey(encKey);
 

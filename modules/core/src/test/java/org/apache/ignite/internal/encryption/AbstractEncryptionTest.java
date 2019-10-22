@@ -254,7 +254,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     /** @return {@code True} if all nodes have the provided master key id. */
     protected boolean checkMasterKeyId(String masterKeyId) {
         for (Ignite grid : G.allGrids())
-            if (!masterKeyId.equals(grid.encryption().getMasterKeyId()))
+            if (!((IgniteEx)grid).context().clientNode() && !masterKeyId.equals(grid.encryption().getMasterKeyId()))
                 return false;
 
         return true;

@@ -54,7 +54,7 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
 
     /** @throws Exception If failed. */
     @Test
-    public void testRejectMasterKeyRotationWithKeyConsistencyProblems() throws Exception {
+    public void testRejectMasterKeyChangeWithKeyConsistencyProblems() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         simulateOtherDigest.set(true);
