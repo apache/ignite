@@ -70,10 +70,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected final GridCacheQueryBean qry;
 
     /** */
-    protected int limit;
-
-    /** */
-    protected AtomicInteger total = new AtomicInteger();
+    private int limitCnt;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
@@ -123,7 +120,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
-        limit = query().query().limit();
+        limitCnt = query().query().limit();
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -334,11 +331,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
 
-        if(limit <= 0 || total.addAndGet(col.size()) <= limit) {
+        if(limitCnt <= 0 || limitCnt >= col.size()) {
             queue.add((Collection<R>)col);
             cnt.addAndGet(col.size());
+            limitCnt -= col.size();
         } else {
-            int toAdd = col.size() - total.get() + limit;
+            int toAdd = limitCnt;
             queue.add(new ArrayList(col).subList(0, toAdd));
             cnt.addAndGet(toAdd);
         }
