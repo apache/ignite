@@ -261,7 +261,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         for (int p : backupParts) {
             GridDhtLocalPartition part = cctx.topology().localPartition(p);
 
-            futs[n++] = preloader.restorePartition(cctx.groupId(), part.id(), partFiles.get(part.id()));
+            futs[n++] = preloader.restorePartition(cctx.groupId(), part.id(), partFiles.get(part.id()), null);
         }
 
         forceCheckpoint(node1);
@@ -492,7 +492,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         // Restore partitions.
         for (GridDhtLocalPartition part : cctx.topology().localPartitions()) {
             IgniteInternalFuture<T2<Long, Long>> restoreFut =
-                preloader.restorePartition(cctx.groupId(), part.id(), partFiles[part.id()]);
+                preloader.restorePartition(cctx.groupId(), part.id(), partFiles[part.id()], null);
 
             forceCheckpoint(node1);
 

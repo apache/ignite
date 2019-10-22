@@ -52,7 +52,8 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
      * @param partCnt Maximum possible partition count.
      */
     public void addHistorical(int partId, long from, long to, int partCnt) {
-        assert !hasFull(partId);
+        assert !hasFull(partId) : partId;
+        assert from != 0 && from <= to : "from=" + from + " to=" + to;
 
         if (historical == null)
             historical = new CachePartitionPartialCountersMap(partCnt);

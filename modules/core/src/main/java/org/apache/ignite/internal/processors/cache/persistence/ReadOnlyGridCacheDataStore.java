@@ -102,7 +102,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public long initialUpdateCounter() {
-        return cntr.initial();
+        return 0;
     }
 
     /** {@inheritDoc} */
