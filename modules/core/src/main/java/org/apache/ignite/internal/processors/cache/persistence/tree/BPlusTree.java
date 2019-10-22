@@ -5759,6 +5759,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** Current page id. */
         private long curPageId = 0L;
 
+        /** Forward page id. */
+        private long fwdPageId = 0L;
+
         /** Last row to get back to if current page turns out removed. */
         private L lastRow = null;
 
@@ -5825,18 +5828,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * Continues scanning the leaf pages of the tree.
          *
-         * @param pageId Page id to start with.
+         * @param startPage Page id to start with.
          * @return {@code true} if there is a row(s) to remove.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean next0(long pageId) throws IgniteCheckedException {
+        private boolean next0(long startPage) throws IgniteCheckedException {
             for (;;) {
+                long pageId = startPage;
+
                 if (pageId == 0L && lastRow != null) {
                     ReinitHelper reinit = new ReinitHelper(lastRow);
 
                     doFind(reinit);
 
                     pageId = reinit.pageId();
+
+                    fwdPageId = reinit.fwdId;
                 }
 
                 long page = acquirePage(pageId);
@@ -5844,14 +5851,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     long pageAddr = readLock(pageId, page);
 
                     if (pageAddr == 0L) { // this page is deleted. Find from root using lastRow.
-                        pageId = 0L;
+                        startPage = 0L;
 
                         continue;
                     }
 
                     try {
+                        BPlusIO<L> io = io(pageAddr);
+
+                        if (fwdPageId != 0L && fwdPageId != io.getForward(pageAddr)) {
+                            startPage = 0L;
+
+                            continue;
+                        }
+
                         for (;;) {
-                            BPlusIO<L> io = io(pageAddr);
+                            io = io(pageAddr);
 
                             assert io.isLeaf();
 
@@ -5868,7 +5883,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             for (int idx = 0; idx < cnt; idx++) {
                                 if (clo.apply(BPlusTree.this, io, pageAddr, idx)) {
                                     lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
                                     curPageId = pageId;
+                                    fwdPageId = nextPageId;
 
                                     return true;
                                 }
@@ -5949,6 +5966,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 try {
                     BPlusIO<L> io = io(pageAddr);
+
+                    if (fwdPageId != io.getForward(pageAddr)) {
+                        curPageId = 0L;
+
+                        return; // Retry.
+                    }
 
                     assert io.isLeaf();
 
