@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearE
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessorActiveTxTest;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessorActiveTxTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
