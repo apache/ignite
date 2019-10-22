@@ -57,6 +57,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** */
+    private static final int NO_LIMIT = -1;
+
     /** Logger. */
     protected static IgniteLogger log;
 
@@ -70,10 +73,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected final GridCacheQueryBean qry;
 
     /** */
-    private int limit;
-
-    /** */
-    private int total;
+    private int capacity;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
@@ -121,7 +121,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
-        limit = query().query().limit();
+
+        final int limit = query().query().limit();
+
+        capacity = limit > 0 ? limit : NO_LIMIT;
 
         long timeout = qry.query().timeout();
 
@@ -334,7 +337,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private void enqueue(Collection<R> col) {
         assert Thread.holdsLock(this);
 
-        int toAdd = limit > 0 ? Math.min(limit - total, col.size()) : col.size();
+        int toAdd = capacity == NO_LIMIT  ? col.size() : Math.min(capacity, col.size());
 
         if (toAdd == 0)
             return;
@@ -345,7 +348,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             queue.add(col);
 
         cnt.addAndGet(toAdd);
-        total += toAdd;
+
+        if (capacity != NO_LIMIT)
+            capacity -= toAdd;
     }
 
     /**
