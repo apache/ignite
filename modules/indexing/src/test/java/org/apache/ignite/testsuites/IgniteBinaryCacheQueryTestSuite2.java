@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageS
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.internal.processors.query.oom.LocalQueryMemoryTrackerSelfTest;
 import org.apache.ignite.internal.processors.query.oom.LocalQueryMemoryTrackerWithQueryParallelismSelfTest;
+import org.apache.ignite.internal.processors.query.oom.QueryMemoryManagerSelfTest;
 import org.apache.ignite.internal.processors.query.oom.QueryMemoryTrackerSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -161,8 +162,8 @@ import org.junit.runners.Suite;
     SqlStatisticsUserQueriesFastTest.class,
     SqlStatisticsUserQueriesLongTest.class,
 
-
     QueryMemoryTrackerSelfTest.class,
+    QueryMemoryManagerSelfTest.class,
 
     DmlBatchSizeDeadlockTest.class,
 

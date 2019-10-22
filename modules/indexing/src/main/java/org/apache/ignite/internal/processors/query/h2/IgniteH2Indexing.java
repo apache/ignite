@@ -2099,8 +2099,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
-
-        memoryManager = new QueryMemoryManager(ctx, 0); //TODO: GG-18629: Get global_memory_quota value from configuration.
+        memoryManager = new QueryMemoryManager(ctx);
 
         mapQryExec = new GridMapQueryExecutor();
         rdcQryExec = new GridReduceQueryExecutor();
@@ -2315,18 +2314,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Stopping cache query index...");
 
-        mapQryExec.stop();
+        if (mapQryExec != null)
+            mapQryExec.stop();
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
-        runningQryMgr.stop();
-        schemaMgr.stop();
-        longRunningQryMgr.stop();
-        connMgr.stop();
+        if (runningQryMgr != null)
+            runningQryMgr.stop();
 
-        cmdProc.stop();
+        if (schemaMgr != null)
+            schemaMgr.stop();
 
-        memoryManager.close();
+        if (longRunningQryMgr != null)
+            longRunningQryMgr.stop();
+
+        if (connMgr != null)
+            connMgr.stop();
+
+        if (connMgr != null)
+            cmdProc.stop();
+
+        U.closeQuiet(memoryManager);
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");

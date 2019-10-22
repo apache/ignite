@@ -483,6 +483,10 @@ public class H2Utils {
     public static void resetSession(Connection conn) {
         Session s = session(conn);
 
+        // TODO: GG-19120: remove this check.
+        if (s == null) // Connection has been closed concurrently.
+            return;
+
         U.closeQuiet(s.queryMemoryTracker());
         s.setQueryContext(null);
     }
