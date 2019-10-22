@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
-import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -94,7 +93,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     protected int gridCnt = 2;
 
     /** */
-    protected EvictionFilter<?, ?> filter;
+    protected Factory evictFilterFactory;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -130,8 +129,8 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
         if (mode == PARTITIONED)
             cc.setBackups(1);
 
-        if (filter != null)
-            cc.setEvictionFilter(filter);
+        if (evictFilterFactory != null)
+            cc.setEvictionFilterFactory(evictFilterFactory);
 
         c.setCacheConfiguration(cc);
 
@@ -144,7 +143,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        filter = null;
+        evictFilterFactory = null;
     }
 
     /**
