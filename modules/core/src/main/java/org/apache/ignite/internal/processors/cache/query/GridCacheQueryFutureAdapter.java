@@ -340,13 +340,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         int toAdd = capacity == NO_LIMIT  ? col.size() : Math.min(capacity, col.size());
 
-        if (toAdd == 0)
-            return;
-
         if (toAdd < col.size())
             queue.add(new ArrayList<>(col).subList(0, toAdd));
         else
             queue.add(col);
+
+        if (toAdd == 0) // Allow empty collection pass to queue.
+            return;
 
         cnt.addAndGet(toAdd);
 
