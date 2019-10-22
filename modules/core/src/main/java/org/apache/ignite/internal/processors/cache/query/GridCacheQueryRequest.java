@@ -81,6 +81,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     private String clause;
 
     /** */
+    private int limit;
+
+    /** */
     private String clsName;
 
     /** */
@@ -257,6 +260,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         GridCacheQueryType type,
         boolean fields,
         String clause,
+        int limit,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
         @Nullable Integer part,
@@ -284,6 +288,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.type = type;
         this.fields = fields;
         this.clause = clause;
+        this.limit = limit;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
         this.part = part == null ? -1 : part;
@@ -430,6 +435,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public boolean fields() {
         return fields;
+    }
+
+    /**
+     * @return Query limit.
+     */
+    public int limit() {
+        return limit;
     }
 
     /**
@@ -676,24 +688,30 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeInt("taskHash", taskHash))
+                if (!writer.writeInt("limit", limit))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeByteArray("transBytes", transBytes))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 25:
+                if (!writer.writeByteArray("transBytes", transBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 26:
                 if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
@@ -860,7 +878,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 22:
-                taskHash = reader.readInt("taskHash");
+                limit = reader.readInt("limit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -868,7 +886,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 23:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                taskHash = reader.readInt("taskHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -876,7 +894,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 24:
-                transBytes = reader.readByteArray("transBytes");
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -884,6 +902,14 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 25:
+                transBytes = reader.readByteArray("transBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 26:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -907,7 +933,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 26;
+        return 27;
     }
 
     /** {@inheritDoc} */

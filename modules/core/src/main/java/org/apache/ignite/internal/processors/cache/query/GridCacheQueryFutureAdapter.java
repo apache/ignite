@@ -69,6 +69,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected final GridCacheQueryBean qry;
 
+    /** */
+    private int limit;
+
+    /** */
+    private int total;
+
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
 
@@ -115,6 +121,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
+        limit = query().query().limit();
 
         long timeout = qry.query().timeout();
 
@@ -324,12 +331,21 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @param col Collection.
      */
-    protected void enqueue(Collection<?> col) {
+    private void enqueue(Collection<R> col) {
         assert Thread.holdsLock(this);
 
-        queue.add((Collection<R>)col);
+        int toAdd = limit > 0 ? Math.min(limit - total, col.size()) : col.size();
 
-        cnt.addAndGet(col.size());
+        if (toAdd == 0)
+            return;
+
+        if (toAdd < col.size())
+            queue.add(new ArrayList<>(col).subList(0, toAdd));
+        else
+            queue.add(col);
+
+        cnt.addAndGet(toAdd);
+        total += toAdd;
     }
 
     /**
@@ -337,7 +353,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @return If dedup flag is {@code true} deduplicated collection (considering keys),
      *      otherwise passed in collection without any modifications.
      */
-    private Collection<?> dedupIfRequired(Collection<?> col) {
+    private Collection<?> dedupIfRequired(Collection<Object> col) {
         if (!qry.query().enableDedup())
             return col;
 
@@ -398,7 +414,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
                 synchronized (this) {
-                    enqueue(data);
+                    enqueue((Collection<R>)data);
 
                     if (onPage(nodeId, finished)) {
                         onDone(/* data */);

@@ -479,15 +479,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
-        String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
+    @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(
+        String schemaName,
+        String cacheName,
+        String qry,
+        String typeName,
+        IndexingQueryFilter filters,
+        int limit)
+        throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
             Long qryId = runningQueryManager().register(qry, TEXT, schemaName, true, null);
 
             try {
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters);
+                return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
             }
             finally {
                 runningQueryManager().unregister(qryId, false);
