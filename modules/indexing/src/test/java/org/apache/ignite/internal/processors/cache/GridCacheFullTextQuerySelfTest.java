@@ -62,22 +62,6 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /** Limitation to query response size. */
     private static final int QUERY_LIMIT = 5;
 
-    /**
-     * Container for expected values and all available entries.
-     */
-    private static final class TestPair {
-        /** */
-        public final Set<Integer> expected;
-
-        /** */
-        public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
-
-        /** */
-        public TestPair(Set<Integer> exp) {
-            this.expected = new HashSet<>(exp);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -217,7 +201,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     /**
      * Clear cache with check.
      */
-    private static void clearCache(IgniteEx ignite) {
+    private void clearCache(IgniteEx ignite) {
         IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
         cache.clear();
@@ -232,7 +216,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static Set<Integer> populateCache(IgniteEx ignite, boolean loc, int cnt,
+    private Set<Integer> populateCache(IgniteEx ignite, boolean loc, int cnt,
         IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
 
@@ -263,8 +247,8 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static void validateQueryResults(IgniteEx ignite, TextQuery qry, Set<Integer> exp,
-        boolean keepBinary) throws IgniteCheckedException {
+    private void validateQueryResults(IgniteEx ignite, TextQuery qry, Set<Integer> exp, boolean keepBinary)
+        throws IgniteCheckedException {
         IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
         if (keepBinary) {
@@ -310,8 +294,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param testPair  pair containing expected and all entries.
      * @throws IgniteCheckedException if key check failed.
      */
-    private static void assertResult(IgniteEx ignite, TextQuery qry,
-        TestPair testPair) throws IgniteCheckedException {
+    private void assertResult(IgniteEx ignite, TextQuery qry, TestPair testPair) throws IgniteCheckedException {
         if (qry.getLimit() > 0){
             assertTrue(testPair.all.size() <= QUERY_LIMIT);
         } else {
@@ -327,7 +310,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param exp List of expected values.
      * @return Altered expected values list.
      */
-    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpectedWithBinary(Set<Integer> exp,
+    private @NotNull GridCacheFullTextQuerySelfTest.TestPair processExpectedWithBinary(Set<Integer> exp,
         QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor) {
         TestPair testPair = new TestPair(exp);
 
@@ -351,7 +334,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param exp List of expected values.
      * @return Altered expected values list.
      */
-    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpected(Set<Integer> exp,
+    private @NotNull GridCacheFullTextQuerySelfTest.TestPair processExpected(Set<Integer> exp,
         QueryCursor<Cache.Entry<Integer, Person>> cursor) {
         TestPair testPair = new TestPair(exp);
 
@@ -372,9 +355,9 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static void checkForMissedKeys(IgniteEx ignite, Collection<Integer> exp,
-        List<Cache.Entry<Integer, ?>> all) throws IgniteCheckedException {
-        if (exp.size() == 0)
+    private void checkForMissedKeys(IgniteEx ignite, Collection<Integer> exp, List<Cache.Entry<Integer, ?>> all)
+        throws IgniteCheckedException {
+        if (exp.isEmpty())
             return;
 
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
@@ -416,14 +399,15 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
     public static class Person implements Serializable {
         /** */
         @QueryTextField
-        String name;
+        final String name;
 
         /** */
         @QuerySqlField(index = true)
-        int age;
+        final int age;
 
         /** */
-        @QuerySqlField final Date birthday;
+        @QuerySqlField
+        final Date birthday;
 
         /**
          * Constructor
@@ -436,6 +420,27 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
             cal.add(Calendar.YEAR, -age);
 
             birthday = cal.getTime();
+        }
+    }
+
+
+    /**
+     * Container for expected values and all available entries.
+     */
+    private static final class TestPair {
+        /** */
+        public final Set<Integer> expected;
+
+        /** */
+        public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+
+        /**
+         * Constructor.
+         *
+         * @param exp Expected data.
+         */
+        TestPair(Set<Integer> exp) {
+            this.expected = new HashSet<>(exp);
         }
     }
 }
