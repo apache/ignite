@@ -5768,6 +5768,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** Row to remove starting "from root". */
         private L removeRow = null;
 
+        /** Indexes of removed elements. For use with delta records. */
+        private int[] idxs;
+
         /**
          * Constructor.
          *
@@ -5979,7 +5982,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                     assert cnt > 0 : cnt; // Empty leaf is nonsensical.
 
-                    dirty = modifyPage(pageId, page, null, io, pageAddr, cnt);
+                    dirty = modifyPage(pageId, page, io, pageAddr, cnt);
                 }
                 finally {
                     writeUnlock(pageId, page, pageAddr, null, dirty);
@@ -5993,40 +5996,38 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * Does actual modifications on the page.
          *
+         * @param pageId Page id.
+         * @param page Page pointer.
          * @param io Page IO.
          * @param pageAddr Page address.
          * @param cnt Item count.
          * @return {@code true} if page was modified.
          */
-        private boolean modifyPage(long pageId, long page, Boolean walPlc, BPlusIO<L> io, long pageAddr, int cnt)
+        private boolean modifyPage(long pageId, long page, BPlusIO<L> io, long pageAddr, int cnt)
             throws IgniteCheckedException {
             int write = -1;
             int read = -1;
-            int idx = 0;
-            boolean dirty = false;
-
-            boolean h = false;
-
-            int[] idxs = null;
             int idxsCnt = 0;
 
-            while (idx < cnt) {
-                h = clo.apply(BPlusTree.this, io, pageAddr, idx);
+            boolean dirty = false;
+            boolean del = false;
 
-                if (h) {
-                    if (walPlc != Boolean.TRUE && (idx != cnt - 1)) {
-                        if (idxs == null)
-                            idxs = new int[cnt - idx];
+            if (idxs == null || idxs.length < cnt)
+                idxs = new int[cnt];
 
+            for (int idx = 0; idx < cnt; idx++) {
+                del = clo.apply(BPlusTree.this, io, pageAddr, idx);
+
+                if (del) {
+                    if (idx != cnt - 1)
                         idxs[idxsCnt++] = idx;
-                    }
 
                     if (write < 0)
                         write = idx;
                     else if (read >= 0) {
                         int nb = idx - read;
 
-                        assert read != write: "write=" + write + ", read=" + read + ", cnt=" + cnt;
+                        assert read != write : "write=" + write + ", read=" + read + ", cnt=" + cnt;
 
                         io.copyItems(pageAddr, pageAddr, read, write, nb, false);
 
@@ -6039,15 +6040,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 }
                 else if (write >=0 && read < 0)
                     read = idx;
-
-                idx++;
             }
 
             if (read < 0)
                 read = cnt - 1;
 
             if (write >= 0 && read > write) {
-                int nb = idx - read;
+                int nb = cnt - read;
 
                 io.copyItems(pageAddr, pageAddr, read, write, nb, false);
 
@@ -6063,11 +6062,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
                 io.setCount(pageAddr, cnt);
 
-                if (needWalDeltaRecord(pageId, page, walPlc))
+                if (needWalDeltaRecord(pageId, page, null))
                     wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt));
             }
 
-            if (h) // The rightmost row is eligible for removal.
+            if (del) // The rightmost row is eligible for removal.
                 removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
 
             return dirty;

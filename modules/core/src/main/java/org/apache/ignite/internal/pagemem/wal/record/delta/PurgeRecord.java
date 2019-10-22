@@ -39,9 +39,9 @@ public class PurgeRecord extends PageDeltaRecord {
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param items Indexes of items to remove on the page.
+     * @param items Indexes of items to remove from the page.
      * @param itemsCnt Number of used elements in {@code items} array.
-     * @param cnt Resulting count of items that should remain on the page.
+     * @param cnt Count of items that should remain on the page.
      */
     public PurgeRecord(int grpId, long pageId, int[] items, int itemsCnt, int cnt) {
         super(grpId, pageId);
@@ -61,7 +61,7 @@ public class PurgeRecord extends PageDeltaRecord {
 
         assert cnt0 == cnt + itemsCnt : "unexpected count: cnt0=" + cnt0 + ", cnt=" + cnt + ", itemsCnt=" + itemsCnt;
 
-        for (int i = 0; i < itemsCnt; ++i) {
+        for (int i = 0; i < itemsCnt; i++) {
             int idx = items[i];
 
             io.copyItems(pageAddr, pageAddr, idx + 1, idx, cnt0 - idx, false);

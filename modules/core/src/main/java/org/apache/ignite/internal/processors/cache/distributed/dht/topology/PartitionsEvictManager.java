@@ -171,9 +171,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         ExclusivePurgeFuture fut = new ExclusivePurgeFuture(grpEvictionCtx, parts);
 
         synchronized (mux) {
-            if (grpEvictionCtx.exclPurgeFut != null)
+            if (grpEvictionCtx.exclPurgeFut != null) {
                 throw new IgniteCheckedException("Only one exclusive purge can be scheduled for the same cache group." +
                     " [grpId=" + grp.groupId() + "]");
+            }
 
             Set<Integer> res = new HashSet<>();
 
@@ -182,10 +183,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
             res.retainAll(fut.partIds);
 
-            if (!res.isEmpty())
+            if (!res.isEmpty()) {
                 throw new IgniteCheckedException("Can't schedule exclusive purge for a partition " +
                     "due to scheduled regular clear for the same partition. [grpId=" + grp.groupId() +
                     ", partIds=" + Arrays.toString(U.toIntArray(res)) + "]");
+            }
 
             grpEvictionCtx.exclPurgeFut = fut;
 
@@ -631,13 +633,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         CLEAR_TOMBSTONES,
 
         /** */
-        CLEAR_ROWCACHE,
+        PURGE_ROWCACHE,
 
         /** */
-        CLEAR_ONHEAP_ENTRIES,
+        PURGE_ONHEAP_ENTRIES,
 
         /** */
-        INDEX_PURGE;
+        PURGE_INDEX;
 
         /** */
         private static TaskType[] VALS = values();
@@ -1035,7 +1037,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             List<AbstractEvictionTask> idxTasks = new ArrayList<>();
 
             for (GridDhtLocalPartition p : parts) {
-                ClearOnheapEntriesTask task = new ClearOnheapEntriesTask(grpEvictionCtx, p);
+                PurgeOnheapEntriesTask task = new PurgeOnheapEntriesTask(grpEvictionCtx, p);
 
                 tasks.add(task);
 
@@ -1052,7 +1054,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 GridQueryRowCacheCleaner rowCacheCleaner = idx.rowCacheCleaner(grp.groupId());
 
                 if (rowCacheCleaner != null) {
-                    RowCacheCleanerTask task = new RowCacheCleanerTask(grpEvictionCtx, rowCacheCleaner, partIds);
+                    RowCachePurgeTask task = new RowCachePurgeTask(grpEvictionCtx, rowCacheCleaner, partIds);
 
                     tasks.add(task);
 
@@ -1153,7 +1155,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param fut Future internal to the worker.
          */
         IndexPurgeTask(GroupEvictionContext grpEvictionCtx, Runnable runnable, IgniteInternalFuture<?> fut) {
-            super(null, grpEvictionCtx, TaskType.INDEX_PURGE);
+            super(null, grpEvictionCtx, TaskType.PURGE_INDEX);
 
             this.runnable = runnable;
 
@@ -1183,7 +1185,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      * Removes links belonging to certain partitions from H2RowCache.
      */
-    private class RowCacheCleanerTask extends AbstractEvictionTask {
+    private class RowCachePurgeTask extends AbstractEvictionTask {
         /** Row cache cleaner. */
         GridQueryRowCacheCleaner cleaner;
 
@@ -1196,8 +1198,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param cleaner Row cache cleaner.
          * @param parts Partitions.
          */
-        RowCacheCleanerTask(GroupEvictionContext grpEvictionCtx, GridQueryRowCacheCleaner cleaner, Set<Integer> parts) {
-            super(null, grpEvictionCtx, TaskType.CLEAR_ROWCACHE);
+        RowCachePurgeTask(GroupEvictionContext grpEvictionCtx, GridQueryRowCacheCleaner cleaner, Set<Integer> parts) {
+            super(null, grpEvictionCtx, TaskType.PURGE_ROWCACHE);
 
             this.cleaner = cleaner;
             this.parts = parts;
@@ -1219,7 +1221,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      * Performs per-partition actions in scope of exclusive partition set purge.
      */
-    private class ClearOnheapEntriesTask extends AbstractEvictionTask {
+    private class PurgeOnheapEntriesTask extends AbstractEvictionTask {
         /** Partition. */
         private final GridDhtLocalPartition part;
 
@@ -1228,8 +1230,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          * @param grpEvictionCtx Group eviction context.
          * @param part Partition.
          */
-        ClearOnheapEntriesTask(GroupEvictionContext grpEvictionCtx, GridDhtLocalPartition part) {
-            super(part, grpEvictionCtx, TaskType.CLEAR_ONHEAP_ENTRIES);
+        PurgeOnheapEntriesTask(GroupEvictionContext grpEvictionCtx, GridDhtLocalPartition part) {
+            super(part, grpEvictionCtx, TaskType.PURGE_ONHEAP_ENTRIES);
 
             this.part = part;
         }

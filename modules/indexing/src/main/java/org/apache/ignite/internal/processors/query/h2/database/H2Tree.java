@@ -689,8 +689,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param shouldStop Allows to check stop condition.
      */
     public void purge(Set<Integer> parts, IgniteCallable<Boolean> shouldStop) throws IgniteCheckedException {
-        assert !F.isEmpty(parts) : "empty parts";
-        assert shouldStop != null : "shouldStop is null";
+        assert !F.isEmpty(parts) : "Empty parts";
+        assert shouldStop != null;
 
         TreeRowClosure<H2Row, H2Row> rowClo = (tree, io, pageAddr, idx) -> {
             long link = ((H2RowLinkIO)io).getLink(pageAddr,idx);

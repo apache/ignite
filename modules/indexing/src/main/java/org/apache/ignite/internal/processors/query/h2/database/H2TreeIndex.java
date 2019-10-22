@@ -897,20 +897,15 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param shouldStop Allows to check stop condition.
      */
     public void purge(Set<Integer> parts, IgniteCallable<Boolean> shouldStop) throws IgniteCheckedException {
-        if (F.isEmpty(parts))
-            return;
+        assert !F.isEmpty(parts) : "Empty parts";
 
-        if (segments.length == 1)
-            segments[0].purge(parts, shouldStop);
-        else {
-            for (int seg = 0; seg < segments.length; seg++) {
-                // Check that the segment covers at least one partition from the set.
-                for (Integer part : parts) {
-                    if (part % segments.length == seg) {
-                        segments[seg].purge(parts, shouldStop);
+        for (int seg = 0; seg < segments.length; seg++) {
+            // Check that the segment covers at least one partition from the set.
+            for (Integer part : parts) {
+                if (part % segments.length == seg) {
+                    segments[seg].purge(parts, shouldStop);
 
-                        break;
-                    }
+                    break;
                 }
             }
         }
