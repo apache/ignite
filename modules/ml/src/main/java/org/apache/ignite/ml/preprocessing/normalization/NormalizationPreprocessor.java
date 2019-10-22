@@ -70,6 +70,8 @@ public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>
 
         double pNorm = Math.pow(foldMap(res.features(), Functions.PLUS, Functions.pow(p), 0d), 1.0 / p);
 
+        if(pNorm == 0) pNorm = 1;
+
         for (int i = 0; i < res.size(); i++)
             res.set(i, res.get(i) / pNorm);
 

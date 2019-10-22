@@ -31,8 +31,8 @@ public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
 
     /** */
     public TestSslSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        boolean checkSslCerts, TestSecurityData... clientData) {
-        super(login, pwd, perms, clientData);
+        boolean globalAuth, boolean checkSslCerts, TestSecurityData... clientData) {
+        super(login, pwd, perms, globalAuth, clientData);
 
         this.checkSslCerts = checkSslCerts;
     }
@@ -42,6 +42,7 @@ public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
         return new TestSslSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms),
             Arrays.asList(clientData),
+            globalAuth,
             checkSslCerts);
     }
 }

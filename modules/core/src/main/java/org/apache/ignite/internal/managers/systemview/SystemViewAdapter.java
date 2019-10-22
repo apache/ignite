@@ -20,36 +20,23 @@ package org.apache.ignite.internal.managers.systemview;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * System view backed by {@code data} {@link Collection}.
  */
-public class SystemViewAdapter<R, D> implements SystemView<R> {
+public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /** Data backed by this view. */
-    private final Collection<D> data;
+    private Collection<D> data;
+
+    /** Data supplier for the view. */
+    private Supplier<Collection<D>> dataSupplier;
 
     /** Row function. */
     private final Function<D, R> rowFunc;
-
-    /** Name of the view. */
-    private final String name;
-
-    /** Description of the view. */
-    private final String desc;
-
-    /** Class of the row */
-    private final Class<R> rowCls;
-
-    /**
-     * Row attribute walker.
-     *
-     * @see "org.apache.ignite.codegen.MonitoringRowAttributeWalkerGenerator"
-     */
-    private final SystemViewRowAttributeWalker<R> walker;
 
     /**
      * @param name Name.
@@ -61,55 +48,56 @@ public class SystemViewAdapter<R, D> implements SystemView<R> {
      */
     public SystemViewAdapter(String name, String desc, Class<R> rowCls,
         SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        A.notNull(rowCls, "rowCls");
-        A.notNull(walker, "walker");
+        super(name, desc, rowCls, walker);
 
-        this.name = name;
-        this.desc = desc;
-        this.rowCls = rowCls;
-        this.walker = walker;
+        A.notNull(data, "data");
+        A.notNull(rowCls, "rowCls");
 
         this.data = data;
         this.rowFunc = rowFunc;
     }
 
+    /**
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param walker Walker.
+     * @param dataSupplier Data supplier.
+     * @param rowFunc Row function.
+     */
+    public SystemViewAdapter(String name, String desc, Class<R> rowCls,
+        SystemViewRowAttributeWalker<R> walker, Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
+        super(name, desc, rowCls, walker);
+
+        A.notNull(dataSupplier, "dataSupplier");
+        A.notNull(rowCls, "rowCls");
+
+        this.dataSupplier = dataSupplier;
+        this.rowFunc = rowFunc;
+    }
+
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        Iterator<D> data = this.data.iterator();
+        Iterator<D> dataIter;
+
+        if (data != null)
+            dataIter = data.iterator();
+        else
+            dataIter = dataSupplier.get().iterator();
 
         return new Iterator<R>() {
             @Override public boolean hasNext() {
-                return data.hasNext();
+                return dataIter.hasNext();
             }
 
             @Override public R next() {
-                return rowFunc.apply(data.next());
+                return rowFunc.apply(dataIter.next());
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public SystemViewRowAttributeWalker<R> walker() {
-        return walker;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<R> rowClass() {
-        return rowCls;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String description() {
-        return desc;
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
-        return data.size();
+        return data == null ? dataSupplier.get().size() : data.size();
     }
 }

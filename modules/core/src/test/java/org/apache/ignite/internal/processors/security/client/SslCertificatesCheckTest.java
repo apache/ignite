@@ -97,7 +97,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         cfg.setActiveOnStart(false);
 
         cfg.setPluginProviders(new TestSslSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL,
-            true, clientData()));
+            globalAuth, true, clientData()));
 
         if (!failServer) {
             SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();

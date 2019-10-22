@@ -38,6 +38,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -54,6 +55,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -77,6 +79,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
     /** Cache with enabled indexes. */
     private static final String INDEXED_CACHE = "indexed";
+
+    /** Cache with enabled indexes. */
+    private static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-memory";
+
+    /** In memory region. */
+    private static final String IN_MEMORY_REGION = "in-memory-region";
 
     /** */
     protected boolean explicitTx;
@@ -106,6 +114,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
+        CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
+            .setDataRegionName(IN_MEMORY_REGION);
+
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
@@ -120,19 +131,21 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         qryEntity.setIndexes(Collections.singleton(qryIdx));
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
+        ccfg3.setQueryEntities(Collections.singleton(qryEntity));
 
         List<CacheConfiguration> cacheCfgs = new ArrayList<>();
         cacheCfgs.add(ccfg1);
         cacheCfgs.add(ccfg2);
+        cacheCfgs.add(ccfg3);
 
         if (filteredCacheEnabled && !gridName.endsWith("0")) {
-            CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
+            CacheConfiguration ccfg4 = cacheConfiguration(FILTERED_CACHE)
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setNodeFilter(new CoordinatorNodeFilter());
 
-            cacheCfgs.add(ccfg3);
+            cacheCfgs.add(ccfg4);
         }
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
@@ -146,6 +159,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
+                .setMaxSize(512 * 1024 * 1024)
+            ).setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(IN_MEMORY_REGION)
                 .setMaxSize(512 * 1024 * 1024)
             );
 
@@ -663,6 +679,60 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
 
             assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
+        }
+    }
+
+    /**
+     * Test rebalancing of in-memory cache on the node with mixed data region configurations.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancingWithMixedDataRegionConfigurations() throws Exception {
+        int entriesCount = 10_000;
+
+        Ignite ignite0 = startGrids(2);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, TestValue> cachePds = ignite0.cache(INDEXED_CACHE);
+        IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
+
+        for (int i = 0; i < entriesCount / 2; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        forceCheckpoint();
+
+        stopGrid(1);
+
+        for (int i = entriesCount / 2; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        IgniteEx ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalCache<Integer, TestValue> cachePds1 = ignite1.cachex(INDEXED_CACHE);
+        IgniteInternalCache<Integer, TestValue> cacheInMem1 = ignite1.cachex(INDEXED_CACHE_IN_MEMORY);
+
+        CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
+
+        assertEquals(entriesCount, cachePds1.localSize(peekAll));
+        assertEquals(entriesCount, cacheInMem1.localSize(peekAll));
+
+        for (int i = 0; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            assertEquals(value, cachePds1.localPeek(i, peekAll));
+            assertEquals(value, cacheInMem1.localPeek(i, peekAll));
         }
     }
 

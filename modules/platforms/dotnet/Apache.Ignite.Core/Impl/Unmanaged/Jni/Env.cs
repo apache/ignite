@@ -160,6 +160,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
+        /// Gets the env ptr.
+        /// </summary>
+        public IntPtr EnvPtr
+        {
+            get { return _envPtr; }
+        }
+
+        /// <summary>
         /// Calls the static void method.
         /// </summary>
         public void CallStaticVoidMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)

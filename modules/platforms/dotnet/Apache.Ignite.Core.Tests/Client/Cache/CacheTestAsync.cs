@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Cache;
     using NUnit.Framework;
 
@@ -30,6 +33,23 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         protected override ICacheClient<TK, TV> GetClientCache<TK, TV>(string cacheName = CacheName)
         {
             return new CacheClientAsyncWrapper<TK, TV>(base.GetClientCache<TK, TV>(cacheName));
+        }
+
+        /// <summary>
+        /// Tests that async continuations are executed on a ThreadPool thread, not on response handler thread.
+        /// </summary>
+        [Test]
+        public void TestAsyncContinuationIsExecutedOnThreadPool()
+        {
+            var cache = base.GetClientCache<int>();
+            var task = cache.PutAsync(1, 1).ContinueWith(_ =>
+            {
+                Thread.CurrentThread.Abort();
+            }, TaskContinuationOptions.ExecuteSynchronously);
+
+            Assert.Throws<AggregateException>(() => task.Wait());
+
+            Assert.AreEqual(1, cache.GetAsync(1).Result);
         }
     }
 }

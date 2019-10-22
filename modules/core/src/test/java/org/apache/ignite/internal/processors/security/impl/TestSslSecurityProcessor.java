@@ -36,8 +36,8 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
      * Constructor.
      */
     public TestSslSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
-        Collection<TestSecurityData> predefinedAuthData, boolean checkSslCerts) {
-        super(ctx, nodeSecData, predefinedAuthData);
+        Collection<TestSecurityData> predefinedAuthData, boolean globalAuth, boolean checkSslCerts) {
+        super(ctx, nodeSecData, predefinedAuthData, globalAuth);
 
         this.checkSslCerts = checkSslCerts;
     }

@@ -1485,4 +1485,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
         return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
     }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
+    }
 }
