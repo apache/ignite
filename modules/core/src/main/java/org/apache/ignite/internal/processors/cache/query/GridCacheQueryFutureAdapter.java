@@ -105,6 +105,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected GridCacheQueryFutureAdapter() {
         qry = null;
         keys = null;
+        capacity = NO_LIMIT;
     }
 
     /**
@@ -122,7 +123,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         startTime = U.currentTimeMillis();
 
-        final int limit = query().query().limit();
+        final int limit = qry.query().limit();
 
         capacity = limit > 0 ? limit : NO_LIMIT;
 
