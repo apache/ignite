@@ -44,7 +44,11 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
     private Integer plcMaxSize;
 
     /** Eviction filter to specify which entries should not be evicted. */
+    @Deprecated
     private String filter;
+
+    /** Eviction filter factory to specify which entries should not be evicted. */
+    private String filterFactory;
 
     /**
      * Default constructor.
@@ -63,6 +67,7 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
         plc = compactClass(evictionPlc);
         plcMaxSize = evictionPolicyMaxSize(evictionPlc);
         filter = compactClass(ccfg.getEvictionFilter());
+        filterFactory = compactClass(ccfg.getEvictionFilterFactory());
     }
 
     /**
@@ -80,10 +85,21 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Eviction filter to specify which entries should not be evicted.
+     * @return Eviction filter to specify which entries should not be evicted or {@code null}.
+     *
+     * @deprecated Use {@link #getFilterFactory()} instead.
      */
+    @Deprecated
     @Nullable public String getFilter() {
         return filter;
+    }
+
+    /**
+     * @return Eviction filter factory to specify which entries should not be evicted or {@code null}
+     * or if {@link #getFilter()} should be used instead.
+     */
+    @Nullable public String getFilterFactory() {
+        return filterFactory;
     }
 
     /** {@inheritDoc} */
@@ -91,6 +107,7 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
         U.writeString(out, plc);
         out.writeObject(plcMaxSize);
         U.writeString(out, filter);
+        U.writeString(out, filterFactory);
     }
 
     /** {@inheritDoc} */
@@ -98,6 +115,7 @@ public class VisorCacheEvictionConfiguration extends VisorDataTransferObject {
         plc = U.readString(in);
         plcMaxSize = (Integer)in.readObject();
         filter = U.readString(in);
+        filterFactory = U.readString(in);
     }
 
     /** {@inheritDoc} */
