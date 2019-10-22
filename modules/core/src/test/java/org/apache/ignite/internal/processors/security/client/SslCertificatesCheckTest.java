@@ -94,7 +94,9 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
+
         cfg.setActiveOnStart(false);
+        cfg.setSslCertsTransmissionEnabled(true);
 
         cfg.setPluginProviders(new TestSslSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL,
             globalAuth, true, clientData()));

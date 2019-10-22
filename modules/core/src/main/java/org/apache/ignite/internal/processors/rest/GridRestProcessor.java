@@ -805,8 +805,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-        authCtx.nodeAttributes(req.sslCerts() == null ? Collections.emptyMap() :
-            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, req.sslCerts()));
+        authCtx.nodeAttributes(req.sslCerts() != null && ctx.config().isSslCertsTransmissionEnabled() ?
+            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, req.sslCerts()) :
+            Collections.emptyMap());
         authCtx.address(req.address());
 
         SecurityCredentials creds = credentials(req);

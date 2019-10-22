@@ -6776,7 +6776,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
-                                if (sock instanceof SSLSocket) {
+                                if (sock instanceof SSLSocket &&
+                                    spi.ignite().configuration().isSslCertsTransmissionEnabled()) {
                                     HashMap<String, Object> attrs = new HashMap<>(req.node().getAttributes());
 
                                     attrs.put(ATTR_SECURITY_CERTIFICATES, ((SSLSocket) sock).getSession()
