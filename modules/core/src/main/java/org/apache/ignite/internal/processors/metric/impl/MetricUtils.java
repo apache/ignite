@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.Map;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -83,6 +84,14 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
+    }
+
+    /**
+     * @param cacheGrpName Cache group name.
+     * @return Cache group metrics registry name.
+     */
+    public static String cacheGroupMetricsRegistryName(String cacheGrpName) {
+        return metricName(CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX, cacheGrpName);
     }
 
     /**

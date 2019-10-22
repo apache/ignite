@@ -15,9 +15,19 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains exceptions for kNN algorithms.
- */
+package org.apache.ignite.ml.math.exceptions.math;
 
-package org.apache.ignite.ml.math.exceptions.knn;
+/**
+ * Exception to be thrown when a non-singular matrix is expected.
+ */
+public class SingularMatrixException extends MathIllegalArgumentException {
+    /** */
+    public SingularMatrixException() {
+        super("Regular (or non-singular) matrix expected.");
+    }
+
+    /** */
+    public SingularMatrixException(String format, Object... args) {
+        super(format, args);
+    }
+}

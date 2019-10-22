@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions.knn;
+package org.apache.ignite.ml.math.exceptions.datastructures;
 
 import org.apache.ignite.IgniteException;
 
 /**
- * Shows empty filename.
+ * This exception is used to indicate error with empty file.
  */
 public class EmptyFileException extends IgniteException {
     /** */
@@ -32,6 +32,6 @@ public class EmptyFileException extends IgniteException {
      * @param filename Name of the file without content.
      */
     public EmptyFileException(String filename) {
-        super("Empty file with filename " +  filename);
+        super("The file with filename " +  filename + " is empty.");
     }
 }

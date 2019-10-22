@@ -72,7 +72,7 @@ public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
                 while (grps.hasNext()) {
                     MetricRegistry mreg = grps.next();
 
-                    if (!filter.test(mreg))
+                    if (filter != null && !filter.test(mreg))
                         continue;
 
                     curr = mreg.iterator();
