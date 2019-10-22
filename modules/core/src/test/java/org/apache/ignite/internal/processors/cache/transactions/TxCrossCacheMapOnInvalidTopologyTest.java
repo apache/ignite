@@ -51,7 +51,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -100,7 +99,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setOnheapCacheEnabled(false);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         return ccfg;
@@ -109,7 +107,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
     /**
      *
      */
-    @Test
     public void testCrossCacheTxMapOnInvalidTopologyPessimistic() throws Exception {
         doTestCrossCacheTxMapOnInvalidTopology(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -117,7 +114,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
     /**
      *
      */
-    @Test
     public void testCrossCacheTxMapOnInvalidTopologyOptimistic() throws Exception {
         doTestCrossCacheTxMapOnInvalidTopology(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -125,7 +121,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
     /**
      *
      */
-    @Test
     public void testCrossCacheTxMapOnInvalidTopologyOptimisticSerializable() throws Exception {
         doTestCrossCacheTxMapOnInvalidTopology(OPTIMISTIC, SERIALIZABLE);
     }
