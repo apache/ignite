@@ -520,7 +520,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param query Filter.
+     * @param query Query.
      * @param grp Optional cluster group.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.

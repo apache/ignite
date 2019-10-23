@@ -87,7 +87,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param type Type.
      * @param txt Search string.
-     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
+     * @param limit Limits response records count. If 0 or less, considered to be no limit.
      */
     public TextQuery(String type, String txt, int limit) {
         setType(type);
@@ -111,7 +111,7 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param type Type.
      * @param txt Search string.
-     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
+     * @param limit Limits response records count. If 0 or less, considered to be no limit.
      */
     public TextQuery(Class<?> type, String txt, int limit) {
         setType(type);
@@ -185,11 +185,12 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Sets limit to response records count.
      *
-     * @param limit If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
+     * @param limit If 0 or less, considered to be no limit.
      * @return {@code this} For chaining.
      */
     public TextQuery<K, V> setLimit(int limit) {
         this.limit = limit;
+
         return this;
     }
 

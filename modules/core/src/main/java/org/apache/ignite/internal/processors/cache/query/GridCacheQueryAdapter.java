@@ -234,6 +234,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param clsName Class name.
      * @param clause Clause.
+     * @param limit Response limit. Set to -1 for no limits.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
@@ -394,13 +395,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return this;
     }
 
+    /**
+     * @return Response limit. Returns -1 for no limits.
+     **/
     public int limit() {
         return limit;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public CacheQuery<T> limit(int limit) {
+    @Override public CacheQuery<T> limit(int limit) {
         this.limit = limit;
 
         return this;

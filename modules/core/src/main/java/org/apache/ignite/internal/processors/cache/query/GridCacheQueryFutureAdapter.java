@@ -70,7 +70,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected final GridCacheQueryBean qry;
 
     /** */
-    private int limitCnt;
+    private int capacity;
+
+    /** */
+    private boolean limitReached;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
@@ -120,7 +123,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
-        limitCnt = query().query().limit();
+        capacity = query().query().limit();
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -330,15 +333,18 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
-
-        if(limitCnt <= 0 || limitCnt >= col.size()) {
-            queue.add((Collection<R>)col);
-            cnt.addAndGet(col.size());
-            limitCnt -= col.size();
-        } else {
-            int toAdd = limitCnt;
-            queue.add(new ArrayList(col).subList(0, toAdd));
-            cnt.addAndGet(toAdd);
+        if(!limitReached){
+            if(capacity <= 0 || capacity >= col.size()) {
+                queue.add((Collection<R>)col);
+                cnt.addAndGet(col.size());
+                capacity -= col.size();
+            } else {
+                int toAdd = capacity;
+                queue.add(new ArrayList(col).subList(0, toAdd));
+                cnt.addAndGet(toAdd);
+                capacity = 0;
+                limitReached = true;
+            }
         }
     }
 
