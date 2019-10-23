@@ -94,9 +94,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) {
-        if (!PERMS.containsKey(ctx.credentials()))
-            return null;
-
         if (ctx.credentials() == null || ctx.credentials().getLogin() == null)
             return null;
 
