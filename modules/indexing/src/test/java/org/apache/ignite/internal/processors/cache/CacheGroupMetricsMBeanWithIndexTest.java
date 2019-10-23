@@ -223,4 +223,135 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
             GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000)
         );
     }
+
+    /**
+     * Test number of partitions need to finished indexes rebuilding.
+     * <p>Case:
+     * <ul>
+     *     <li>Start cluster, load data with indexes</li>
+     *     <li>Kill single node, delete index.bin, start node.</li>
+     *     <li>Make sure that index rebuild count is in range of total new index size and 0 and decreasing</li>
+     *     <li>Wait until rebuild finished, assert that no index errors</li>
+     * </ul>
+     * </p>
+     */
+    @Test
+    public void testIndexRebuildCountPartitionsLeftInCluster() throws Exception {
+        pds = true;
+
+        Ignite ignite = startGrid(0);
+
+        startGrid(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
+
+        for (int i = 0; i < 100_000; i++) {
+            Long id = (long)i;
+
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                .setField(KEY_NAME, id)
+                .setField(COLUMN1_NAME, i / 2)
+                .setField(COLUMN2_NAME, "str" + Integer.toHexString(i));
+
+            cache1.put(id, o.build());
+        }
+
+        String consistentId = ignite.cluster().localNode().consistentId().toString();
+
+        stopGrid(0);
+
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        IOFileFilter filter = FileFilterUtils.nameFileFilter("index.bin");
+
+        Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
+
+        for (File indexBin : idxBinFiles)
+            if (indexBin.getAbsolutePath().contains(consistentId))
+                U.delete(indexBin);
+
+        startGrid(0);
+
+        CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, GROUP_NAME);
+
+        assertTrue("Timeout wait start rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0, 30_000));
+
+        assertTrue("Timeout wait finished rebuild index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000));
+    }
+
+    /**
+     * Test number of partitions need to finished create indexes.
+     * <p>Case:
+     * <ul>
+     *     <li>Start cluster, load data with indexes</li>
+     *     <li>Kill single node, create new index, start node.</li>
+     *     <li>Make sure that index rebuild count is in range of total new index size and 0 and decreasing</li>
+     *     <li>Wait until rebuild finished, assert that no index errors</li>
+     * </ul>
+     * </p>
+     */
+    @Test
+    public void testIndexCreateCountPartitionsLeftInCluster() throws Exception {
+        pds = true;
+
+        Ignite ignite = startGrid(0);
+
+        startGrid(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
+
+        String addColSql = "ALTER TABLE " + TABLE + " ADD COLUMN " + COLUMN3_NAME + " BIGINT";
+
+        cache1.query(new SqlFieldsQuery(addColSql)).getAll();
+
+        for (int i = 0; i < 100_000; i++) {
+            Long id = (long)i;
+
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                .setField(KEY_NAME, id)
+                .setField(COLUMN1_NAME, i / 2)
+                .setField(COLUMN2_NAME, "str" + Integer.toHexString(i))
+                .setField(COLUMN3_NAME, id * 10);
+
+            cache1.put(id, o.build());
+        }
+
+        stopGrid(1);
+
+        GridTestUtils.runAsync(() -> {
+            String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
+
+            cache1.query(new SqlFieldsQuery(createIdxSql)).getAll();
+
+            String selectIdxSql = "select * from information_schema.indexes where index_name='" + INDEX_NAME + "'";
+
+            List<List<?>> all = cache1.query(new SqlFieldsQuery(selectIdxSql)).getAll();
+
+            assertEquals("Index not found", 1, all.size());
+        });
+
+        final CacheGroupMetricsMXBean mxBean0Grp = mxBean(0, GROUP_NAME);
+
+        assertTrue("Timeout wait start build index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp.getIndexBuildCountPartitionsLeft() > 0, 30_000));
+
+        assertTrue("Timeout wait finished build index",
+            GridTestUtils.waitForCondition(() -> mxBean0Grp.getIndexBuildCountPartitionsLeft() == 0, 30_000));
+
+        startGrid(1);
+
+        final CacheGroupMetricsMXBean mxBean1Grp = mxBean(1, GROUP_NAME);
+
+        assertTrue("Timeout wait start build index",
+            GridTestUtils.waitForCondition(() -> mxBean1Grp.getIndexBuildCountPartitionsLeft() > 0, 30_000));
+
+        assertTrue("Timeout wait finished build index",
+            GridTestUtils.waitForCondition(() -> mxBean1Grp.getIndexBuildCountPartitionsLeft() == 0, 30_000));
+    }
 }
