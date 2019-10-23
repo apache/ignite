@@ -62,6 +62,9 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     /** */
     private final String idxName;
 
+    /** */
+    private IoStatisticsHolder statCache;
+
     /**
      * @param type Type of statistics.
      * @param cacheName Cache name.
@@ -72,7 +75,9 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         IoStatisticsType type,
         String cacheName,
         String idxName,
-        GridMetricManager mmgr) {
+        GridMetricManager mmgr,
+        IoStatisticsHolder statCache
+    ) {
         assert cacheName != null && idxName != null;
 
         this.cacheName = cacheName;
@@ -88,6 +93,8 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, null);
         physicalReadLeafCtr = mreg.longAdderMetric(PHYSICAL_READS_LEAF, null);
         physicalReadInnerCtr = mreg.longAdderMetric(PHYSICAL_READS_INNER, null);
+
+        this.statCache = statCache;
     }
 
     /** {@inheritDoc} */
@@ -108,8 +115,12 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
                 IoStatisticsQueryHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
-        }
 
+            default:
+                statCache.trackLogicalRead(pageAddr);
+
+                break;
+        }
     }
 
     /** {@inheritDoc} */
@@ -130,6 +141,11 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
                 physicalReadLeafCtr.increment();
 
                 IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
+
+                break;
+
+            default:
+                statCache.trackPhysicalAndLogicalRead(pageAddr);
 
                 break;
         }

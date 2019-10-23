@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_INNER;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
+import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMxBeanCacheGroupsTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;

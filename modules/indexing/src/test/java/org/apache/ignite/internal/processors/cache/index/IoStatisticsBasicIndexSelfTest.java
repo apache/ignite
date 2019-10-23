@@ -400,7 +400,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
             .collect(Collectors.toSet());
     }
 
-    /** @return Stream of MetricGroup for specified {@link statType}. */
+    /** @return Stream of MetricGroup for specified {@code statType}. */
     private Stream<MetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
         GridMetricManager mmgr = ignite.context().metric();
 

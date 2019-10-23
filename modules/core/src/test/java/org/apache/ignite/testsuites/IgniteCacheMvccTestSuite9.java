@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest;
+import org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMxBeanCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
@@ -90,6 +92,8 @@ public class IgniteCacheMvccTestSuite9 {
         // IO statistics.
         ignoredTests.add(IoStatisticsCacheSelfTest.class);
         ignoredTests.add(IoStatisticsCachePersistenceSelfTest.class);
+        ignoredTests.add(IoStatisticsMetricsLocalMXBeanImplSelfTest.class);
+        ignoredTests.add(IoStatisticsMetricsLocalMxBeanCacheGroupsTest.class);
 
         return new ArrayList<>(IgniteCacheTestSuite9.suite(ignoredTests));
     }
