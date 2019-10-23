@@ -734,6 +734,7 @@ public class WebConsoleConfigurationSelfTest {
         // cacheCfgProps.add("offHeapMaxMemory");
         cacheCfgProps.add("evictionPolicyFactory");
         cacheCfgProps.add("evictionFilter");
+        cacheCfgProps.add("evictionFilterFactory");
         // Removed since 2.0.
         // cacheCfgProps.add("startSize");
         // cacheCfgProps.add("swapEnabled");
