@@ -232,6 +232,10 @@ import org.junit.runners.Suite;
 
     JdbcThinPreparedStatementLeakTest.class,
     JdbcThinTransactionsLeaksMvccTest.class,
+
+    // Data types coverage.
+    JdbcThinCacheToJdbcDataTypesCoverageTest.class,
+    JdbcThinJdbcToCacheDataTypesCoverageTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
 }
