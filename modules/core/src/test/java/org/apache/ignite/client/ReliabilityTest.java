@@ -199,6 +199,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
      * Test that client works properly with servers txId intersection.
      */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
         int CLUSTER_SIZE = 2;
 
@@ -243,14 +244,11 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             // same transaction id as we started in this thread.
             barrier.await(1, TimeUnit.SECONDS);
 
-            try {
+            GridTestUtils.assertThrows(null, () -> {
                 cache.put(0, 0);
 
-                fail("Exception expected");
-            }
-            catch (ClientException expected) {
-                // No-op.
-            }
+                return null;
+            }, ClientException.class, "Transaction context has been lost due to connection errors");
 
             tx.close();
 
