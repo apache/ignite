@@ -43,6 +43,7 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
@@ -57,16 +58,16 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     public static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
 
     /** Cache name for tests. */
-    protected static final String CACHE_NAME = "TEST_CACHE";
+    public static final String CACHE_NAME = "TEST_CACHE";
 
     /** Create cache name. */
-    protected static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
+    public static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
 
     /** Forbidden cache. */
-    protected static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
+    public static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
 
     /** New cache. */
-    protected static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
+    public static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
 
     /** Handler. */
     private GridRestCommandHandler hnd;
@@ -98,11 +99,11 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         )
             .setAuthenticationEnabled(true)
             .setPluginProviders(new TestSecurityPluginProvider("login", "password", SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
+                .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_READ, CACHE_PUT, CACHE_REMOVE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_CACHE_NAME, CACHE_CREATE)
                 .appendCachePermissions(FORBIDDEN_CACHE_NAME, EMPTY_PERM)
                 .appendSystemPermissions(JOIN_AS_SERVER)
-                .build(),true));
+                .build(), true));
 
         return cfg;
     }
@@ -139,7 +140,8 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         // This won't fail since defaultAllowAll is true.
         handle(new GridRestCacheRequest().cacheName(NEW_TEST_CACHE).command(GridRestCommand.DESTROY_CACHE)).get().getResponse();
 
-        assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
+        handle(new GridRestCacheRequest().cacheName(CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse();
+
         assertThrowsWithCause(()->handle(new GridRestCacheRequest().cacheName(CREATE_CACHE_NAME).command(GridRestCommand.DESTROY_CACHE)).get().getResponse(), IgniteCheckedException.class);
 
     }

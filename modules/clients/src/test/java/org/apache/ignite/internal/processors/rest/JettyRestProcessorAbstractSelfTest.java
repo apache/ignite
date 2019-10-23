@@ -158,6 +158,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
+    /** Test cache name. */
+    protected final String TEST_CACHE_ACCESS = "test_typed_access";
+
     /** */
     private static boolean memoryMetricsEnabled;
 
@@ -2331,7 +2334,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> typedCache() {
-        return grid(0).cache("test_typed_access");
+        return grid(0).cache(TEST_CACHE_ACCESS);
     }
 
     /**
@@ -2342,7 +2345,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     private void putTypedValue(String type, String k, String v, int status) throws Exception {
-        String ret = content("test_typed_access", GridRestCommand.CACHE_PUT,
+        String ret = content(TEST_CACHE_ACCESS, GridRestCommand.CACHE_PUT,
             "keyType", type,
             "valueType", type,
             "key", k,
@@ -2527,7 +2530,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     private void getTypedValue(String keyType, String k, String exp) throws Exception {
-        String ret = content("test_typed_access", GridRestCommand.CACHE_GET,
+        String ret = content(TEST_CACHE_ACCESS, GridRestCommand.CACHE_GET,
             "keyType", keyType,
             "key", k
         );
@@ -2704,7 +2707,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * Init cache.
      */
     protected void initCache() {
-        CacheConfiguration typedCache = new CacheConfiguration<>("test_typed_access");
+        CacheConfiguration typedCache = new CacheConfiguration<>(TEST_CACHE_ACCESS);
         ignite(0).getOrCreateCache(typedCache);
 
         CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");

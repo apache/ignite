@@ -843,12 +843,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         String name = null;
 
         switch (req.command()) {
-            case DESTROY_CACHE:
-                perm = SecurityPermission.CACHE_DESTROY;
-                name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
             case CACHE_GET:
             case CACHE_CONTAINS_KEY:
             case CACHE_CONTAINS_KEYS:
@@ -908,6 +902,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
+            case DESTROY_CACHE:
             case GET_OR_CREATE_CACHE:
                 perm = SecurityPermission.ADMIN_CACHE;
                 name = ((GridRestCacheRequest)req).cacheName();
