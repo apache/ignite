@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -177,7 +175,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = generateTestData(size, from).iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> d = it.next();
 
-            metaStorage.putData(d.getKey(), d.getValue());
+            metaStorage.write(d.getKey(), d.getValue());
 
             res.put(d.getKey(), d.getValue());
         }
@@ -319,7 +317,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             try {
                 for (Map.Entry<String, byte[]> v : testData.entrySet())
-                    metaStorage.putData(v.getKey(), v.getValue());
+                    metaStorage.write(v.getKey(), v.getValue());
             }
             finally {
                 db.checkpointReadUnlock();
