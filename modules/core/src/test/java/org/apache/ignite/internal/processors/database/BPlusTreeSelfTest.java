@@ -2702,10 +2702,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info(t.printTree());
 
-        GridCursor<Void> cur = t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
-
-        while (cur.next())
-            cur.get();
+        t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 0);
 
         log.info(t.printTree());
 
@@ -2719,10 +2716,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertEquals(5L, t.findOne(5L).longValue());
         assertEquals(7L, t.findOne(7L).longValue());
 
-        cur = t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 1);
-
-        while (cur.next())
-            cur.get();
+        t.purge((tree, io, pageAddr, idx) -> io.getLookupRow(tree, pageAddr, idx) % 2 == 1);
 
         log.info(t.printTree());
 
@@ -2743,20 +2737,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info(t.printTree());
 
-        GridCursor<Void> cursor = t.purge((tree, io, pageAddr, idx) -> true);
-
-        while (cursor.next())
-            cursor.get();
+        t.purge((tree, io, pageAddr, idx) -> true);
 
         for (int k = 0; k < 26; k++)
             t.putx((long)k);
 
         log.info("height=" + t.rootLevel());
 
-        cursor = t.purge((tree, io, pageAddr, idx) -> true);
-
-        while (cursor.next())
-            cursor.get();
+        t.purge((tree, io, pageAddr, idx) -> true);
 
         log.info(t.printTree());
 
@@ -2782,10 +2770,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         log.info("height=" + t.rootLevel());
 
-        GridCursor<Void> cursor = t.purge(clo);
-
-        while (cursor.next())
-            cursor.get();
+        t.purge(clo);
 
         for (long k = 0L; k < CNT; k++) {
             Long res = t.findOne(k);
@@ -2871,10 +2856,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         BPlusTree.TreeRowClosure<Long, Long> clo = (tree, io, pageAddr, idx) ->
             io.getLookupRow(tree, pageAddr, idx) % 2 == 0;
 
-        GridCursor<Void> cur = t.purge(clo);
-
-        while (cur.next())
-            cur.get();
+        t.purge(clo);
 
         fut.get(getTestTimeout());
 
@@ -2985,12 +2967,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             return lastKey.get() % MAX_PER_PAGE == 3;
         };
 
-        while (cnt.get() < 100 && !t.isEmpty()) {
-            GridCursor<Void> cur = t.purge(clo);
-
-            while (cur.next())
-                cur.get();
-        }
+        while (cnt.get() < 100 && !t.isEmpty())
+            t.purge(clo);
 
         stop.set(true);
 
@@ -3052,10 +3030,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             try {
                 bar.await(getTestTimeout(), MILLISECONDS);
 
-                GridCursor<Void> cur = t.purge(clo);
-
-                while (cur.next())
-                    cur.get();
+                t.purge(clo);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -3192,6 +3167,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assert io.canGetRow() : io;
 
             return io.getLookupRow(this, pageAddr, idx);
+        }
+
+        /**
+         * Purge the tree.
+         *
+         * @param clo Row filter.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void purge(TreeRowClosure<Long, Long> clo) throws IgniteCheckedException {
+            visitLeaves(clo, new PurgePageHandler(clo));
         }
 
         /**

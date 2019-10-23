@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -706,24 +705,19 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             if (shouldStop.call())
                 return;
 
-            GridCursor<Void> cur = purge(rowClo);
-
-            while (cur.next()) {
-                if (shouldStop.call())
-                    return;
-
-                cctx.shared().database().checkpointReadLock();
-
-                try {
-                    cur.get(); // Reuse cursor interface for now.
+            visitLeaves(rowClo, new PurgePageHandler(rowClo) {
+                @Override public void onBefore() {
+                    cctx.shared().database().checkpointReadLock();
                 }
-                catch (IgniteCheckedException e) {
-                    throw U.convertException(e);
+                @Override public void onAfter() throws IgniteCheckedException {
+                    try {
+                        super.onAfter();
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
                 }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-                }
-            }
+            });
         }
         catch (IgniteCheckedException e) {
             throw e;
