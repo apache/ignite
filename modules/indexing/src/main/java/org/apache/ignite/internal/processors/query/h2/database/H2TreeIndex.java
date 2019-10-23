@@ -33,8 +33,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -273,11 +273,20 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-        IoStatisticsHolder stats = new IoStatisticsHolderIndex(
+        IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
             SORTED_INDEX,
             cctx.name(),
             idxName,
-            cctx.kernalContext().metric());
+            cctx.kernalContext().metric(),
+            cctx.group().statisticsHolderData()
+        );
+
+        cctx.kernalContext().ioStats().onIndexRegistered(
+            IoStatisticsType.SORTED_INDEX,
+            cctx.name(),
+            idxName,
+            stats
+        );
 
         for (int i = 0; i < segments.length; i++) {
             db.checkpointReadLock();

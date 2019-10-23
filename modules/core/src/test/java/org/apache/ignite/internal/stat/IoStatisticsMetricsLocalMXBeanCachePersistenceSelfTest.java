@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metric;
+package org.apache.ignite.internal.stat;
 
 /**
  * Tests for cache IO statistics for persistence mode.
  */
-public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
+public class IoStatisticsMetricsLocalMXBeanCachePersistenceSelfTest extends IoStatisticsMetricsLocalMXBeanCacheSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean persist() {
         return true;

@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Test of local node IO statistics MX bean.
  */
 @RunWith(Parameterized.class)
-public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstractTest {
+public class IoStatisticsMetricsLocalMxBeanCacheGroupsTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_1_NAME = "cache1";
 
@@ -67,21 +67,24 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public static final String CACHE_2_NAME = "cache2";
 
     /** */
+    public static final String CACHE_GROUP_NAME = "cacheGroup";
+
+    /** */
     @Parameterized.Parameter
-    public CacheAtomicityMode atomicity1;
+    public CacheAtomicityMode atomicity;
 
     /** */
     @Parameterized.Parameter(1)
-    public CacheAtomicityMode atomicity2;
+    public boolean persistent;
 
     /** */
-    @Parameterized.Parameters(name = "Cache 1 = {0}, Cache 2 = {1}")
+    @Parameterized.Parameters(name = "Cache Atomicity = {0}, persistent = {1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.TRANSACTIONAL},
-            new Object[] {CacheAtomicityMode.ATOMIC, CacheAtomicityMode.ATOMIC},
-            new Object[] {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC},
-            new Object[] {CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL}
+            new Object[] {CacheAtomicityMode.TRANSACTIONAL, true},
+            new Object[] {CacheAtomicityMode.ATOMIC, true},
+            new Object[] {CacheAtomicityMode.TRANSACTIONAL, false},
+            new Object[] {CacheAtomicityMode.ATOMIC, false}
         );
     }
 
@@ -98,18 +101,6 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
             .setPersistenceEnabled(true).setMaxSize(256 * 1024 * 1024).setName("persistent"));
 
         cfg.setDataStorageConfiguration(dsCfg);
-
-        final CacheConfiguration cCfg1 = new CacheConfiguration()
-            .setName(CACHE_1_NAME)
-            .setDataRegionName("default")
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(1));
-
-        final CacheConfiguration cCfg2 = new CacheConfiguration()
-            .setName(CACHE_2_NAME)
-            .setDataRegionName("persistent")
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(1));
-
-        cfg.setCacheConfiguration(cCfg1, cCfg2);
 
         return cfg;
     }
@@ -141,92 +132,97 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     public void testExistingCachesMetrics() {
         IgniteEx ignite = ignite(0);
 
-        MetricRegistry pkCache1 = ignite.context().metric()
-            .registry(metricName(HASH_INDEX.metricGroupName(), CACHE_1_NAME, HASH_PK_IDX_NAME));
-        MetricRegistry pkCache2 = ignite.context().metric()
-            .registry(metricName(HASH_INDEX.metricGroupName(), CACHE_2_NAME, HASH_PK_IDX_NAME));
-        MetricRegistry cache1 = ignite.context().metric()
-            .registry(metricName(CACHE_GROUP.metricGroupName(), CACHE_1_NAME));
-        MetricRegistry cache2 = ignite.context().metric()
-            .registry(metricName(CACHE_GROUP.metricGroupName(), CACHE_2_NAME));
+        final CacheConfiguration cCfg1 = new CacheConfiguration()
+            .setName(CACHE_1_NAME)
+            .setDataRegionName(persistent ? "persistent" : "default")
+            .setGroupName(CACHE_GROUP_NAME)
+            .setAtomicityMode(atomicity)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(1));
 
-        resetAllIoMetrics(ignite);
+        final CacheConfiguration cCfg2 = new CacheConfiguration()
+            .setName(CACHE_2_NAME)
+            .setDataRegionName(persistent ? "persistent" : "default")
+            .setGroupName(CACHE_GROUP_NAME)
+            .setAtomicityMode(atomicity)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(1));
 
-        // Check that in initial state all metrics are zero.
-        assertEquals(0, pkCache1.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(0, pkCache1.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(0, pkCache1.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(0, pkCache1.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(0, cache1.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(0, cache1.<LongMetric>findMetric(PHYSICAL_READS).value());
+        try {
+            ignite(0).getOrCreateCaches(Arrays.asList(cCfg1, cCfg2));
 
-        assertEquals(0, pkCache2.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(0, cache2.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(0, cache2.<LongMetric>findMetric(PHYSICAL_READS).value());
+            MetricRegistry pk = ignite.context().metric()
+                .registry(metricName(HASH_INDEX.metricGroupName(), CACHE_GROUP_NAME, HASH_PK_IDX_NAME));
+            MetricRegistry grp = ignite.context().metric()
+                .registry(metricName(CACHE_GROUP.metricGroupName(), CACHE_GROUP_NAME));
 
-        int cnt = 500;
+            resetAllIoMetrics(ignite);
 
-        populateCaches(0, cnt);
+            // Check that in initial state all metrics are zero.
+            assertEquals(0, pk.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+            assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+            assertEquals(0, pk.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+            assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+            assertEquals(0, grp.<LongMetric>findMetric(LOGICAL_READS).value());
+            assertEquals(0, grp.<LongMetric>findMetric(PHYSICAL_READS).value());
 
-        resetAllIoMetrics(ignite);
+            int cnt = 180;
 
-        readCaches(0, cnt);
+            populateCaches(0, cnt);
 
-        // 1 of the reads got resolved from the inner page.
-        // Each data page is touched twice - one during index traversal and second
-        assertEquals(cnt - 1,     pkCache1.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(0,           pkCache1.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(cnt,         pkCache1.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(0,           pkCache1.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(2 * cnt,     cache1.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(0,           cache1.<LongMetric>findMetric(PHYSICAL_READS).value());
+            resetAllIoMetrics(ignite);
 
-        // 1 of the reads got resolved from the inner page.
-        assertEquals(cnt - 1,     pkCache2.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(0,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(cnt,         pkCache2.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(0,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(2 * cnt,     cache2.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(0,           cache2.<LongMetric>findMetric(PHYSICAL_READS).value());
+            readCaches(0, cnt);
 
-        // Force physical reads
-        ignite.cluster().active(false);
-        ignite.cluster().active(true);
+            // 1 of the reads got resolved from the inner page.
+            // Each data page is touched twice - one during index traversal and second
+            assertEquals(2 * cnt - 1, pk.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+            assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+            assertEquals(2 * cnt, pk.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+            assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+            assertEquals(4 * cnt, grp.<LongMetric>findMetric(LOGICAL_READS).value());
+            assertEquals(0, grp.<LongMetric>findMetric(PHYSICAL_READS).value());
 
-        resetAllIoMetrics(ignite);
+            if (persistent) {
+                // Force physical reads
+                ignite.cluster().active(false);
+                ignite.cluster().active(true);
 
-        assertEquals(0, pkCache2.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(0, pkCache2.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(0, cache2.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(0, cache2.<LongMetric>findMetric(PHYSICAL_READS).value());
+                resetAllIoMetrics(ignite);
 
-        readCaches(0, cnt);
+                assertEquals(0, pk.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+                assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+                assertEquals(0, pk.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+                assertEquals(0, pk.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+                assertEquals(0, grp.<LongMetric>findMetric(LOGICAL_READS).value());
+                assertEquals(0, grp.<LongMetric>findMetric(PHYSICAL_READS).value());
 
-        // We had a split, so now we have 2 leaf pages and 1 inner page read from disk.
-        // For sure should overflow 2 data pages.
-        assertEquals(cnt - 1,     pkCache2.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(2,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(cnt,         pkCache2.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(1,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(2 * cnt,     cache2.<LongMetric>findMetric(LOGICAL_READS).value());
+                readCaches(0, cnt);
 
-        long physReads = cache2.<LongMetric>findMetric(PHYSICAL_READS).value();
-        assertTrue(physReads > 2);
+                // We had a split, so now we have 2 leaf pages and 1 inner page read from disk.
+                // For sure should overflow 2 data pages.
+                assertEquals(2 * cnt - 1, pk.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+                assertEquals(2, pk.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+                assertEquals(2 * cnt, pk.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+                assertEquals(1, pk.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+                assertEquals(4 * cnt, grp.<LongMetric>findMetric(LOGICAL_READS).value());
 
-        // Check that metrics are further increasing for logical reads and stay the same for physical reads.
-        readCaches(0, cnt);
+                long physReads = grp.<LongMetric>findMetric(PHYSICAL_READS).value();
+                assertTrue(physReads > 2);
 
-        assertEquals(2 * (cnt - 1),     pkCache2.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-        assertEquals(2,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-        assertEquals(2 * cnt,         pkCache2.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-        assertEquals(1,           pkCache2.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        assertEquals(2 * 2 * cnt,     cache2.<LongMetric>findMetric(LOGICAL_READS).value());
-        assertEquals(physReads, cache2.<LongMetric>findMetric(PHYSICAL_READS).value());
+                // Check that metrics are further increasing for logical reads and stay the same for physical reads.
+                readCaches(0, cnt);
+
+                assertEquals(2 * (2 * cnt - 1), pk.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+                assertEquals(2, pk.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+                assertEquals(2 * 2 * cnt, pk.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+                assertEquals(1, pk.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+                assertEquals(2 * 4 * cnt, grp.<LongMetric>findMetric(LOGICAL_READS).value());
+                assertEquals(physReads, grp.<LongMetric>findMetric(PHYSICAL_READS).value());
+            }
+        }
+        finally {
+            ignite(0).destroyCache(CACHE_1_NAME);
+            ignite(0).destroyCache(CACHE_2_NAME);
+        }
     }
 
     /**

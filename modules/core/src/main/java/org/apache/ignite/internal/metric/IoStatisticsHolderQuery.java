@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -68,6 +70,31 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public long physicalReads() {
         return physicalReadCtr.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> logicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(2);
+
+        res.put(LOGICAL_READS, logicalReads());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> physicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(2);
+
+        res.put(PHYSICAL_READS, physicalReads());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetStatistics() {
+        logicalReadCtr.reset();
+
+        physicalReadCtr.reset();
     }
 
     /**

@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -717,6 +718,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
+
+    /**
+     * @return IO statistic manager.
+     */
+    public IoStatisticsManager ioStats();
 
     /**
      * @return Default uncaught exception handler used by thread pools.

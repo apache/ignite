@@ -47,7 +47,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
-import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
+import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMxBeanCacheGroupsTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
@@ -400,7 +400,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
             .collect(Collectors.toSet());
     }
 
-    /** @return Stream of MetricGroup for specified {@link statType}. */
+    /** @return Stream of MetricGroup for specified {@code statType}. */
     private Stream<MetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
         GridMetricManager mmgr = ignite.context().metric();
 

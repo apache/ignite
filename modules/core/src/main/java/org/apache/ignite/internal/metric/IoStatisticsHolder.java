@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.Map;
+
 /**
  * Holder of IO statistics.
  */
@@ -43,4 +45,19 @@ public interface IoStatisticsHolder {
      * @return Number of physical reads.
      */
     public long physicalReads();
+
+    /**
+     * @return Logical reads statistics per page types.
+     */
+    public Map<String, Long> logicalReadsMap();
+
+    /**
+     * @return Physical reads statistics per page types.
+     */
+    public Map<String, Long> physicalReadsMap();
+
+    /**
+     * Reset statistics. All counters will be reset to 0.
+     */
+    public void resetStatistics();
 }

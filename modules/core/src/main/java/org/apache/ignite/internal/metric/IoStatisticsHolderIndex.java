@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -62,6 +64,9 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     /** */
     private final String idxName;
 
+    /** */
+    private IoStatisticsHolder statCache;
+
     /**
      * @param type Type of statistics.
      * @param cacheName Cache name.
@@ -72,7 +77,9 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         IoStatisticsType type,
         String cacheName,
         String idxName,
-        GridMetricManager mmgr) {
+        GridMetricManager mmgr,
+        IoStatisticsHolder statCache
+    ) {
         assert cacheName != null && idxName != null;
 
         this.cacheName = cacheName;
@@ -88,6 +95,8 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         logicalReadInnerCtr = mreg.longAdderMetric(LOGICAL_READS_INNER, null);
         physicalReadLeafCtr = mreg.longAdderMetric(PHYSICAL_READS_LEAF, null);
         physicalReadInnerCtr = mreg.longAdderMetric(PHYSICAL_READS_INNER, null);
+
+        this.statCache = statCache;
     }
 
     /** {@inheritDoc} */
@@ -108,8 +117,12 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
                 IoStatisticsQueryHelper.trackLogicalReadQuery(pageAddr);
 
                 break;
-        }
 
+            default:
+                statCache.trackLogicalRead(pageAddr);
+
+                break;
+        }
     }
 
     /** {@inheritDoc} */
@@ -132,6 +145,11 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
                 IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
 
                 break;
+
+            default:
+                statCache.trackPhysicalAndLogicalRead(pageAddr);
+
+                break;
         }
     }
 
@@ -143,6 +161,34 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public long physicalReads() {
         return physicalReadLeafCtr.value() + physicalReadInnerCtr.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> logicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(3);
+
+        res.put(LOGICAL_READS_LEAF, logicalReadLeafCtr.value());
+        res.put(LOGICAL_READS_INNER, logicalReadInnerCtr.value());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> physicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(3);
+
+        res.put(PHYSICAL_READS_LEAF, physicalReadLeafCtr.value());
+        res.put(PHYSICAL_READS_INNER, physicalReadInnerCtr.value());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetStatistics() {
+        logicalReadLeafCtr.reset();
+        logicalReadInnerCtr.reset();
+        physicalReadLeafCtr.reset();
+        physicalReadInnerCtr.reset();
     }
 
     /** {@inheritDoc} */

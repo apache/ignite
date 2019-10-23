@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metric;
+package org.apache.ignite.internal.stat;
 
-import com.google.common.collect.Sets;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import com.google.common.collect.Sets;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,26 +27,17 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMxBeanCacheGroupsTest.resetAllIoMetrics;
-import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
-import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
  */
-public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
+public class IoStatisticsMetricsLocalMXBeanCacheSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final String ATOMIC_CACHE_NAME = "ATOMIC_CACHE";
 
@@ -138,7 +127,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         ignite = (IgniteEx)startGrid();
 
         if (persist())
-            ignite.active(true);
+            ignite.cluster().active(true);
     }
 
     /** {@inheritDoc} */
@@ -154,14 +143,14 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        resetAllIoMetrics(ignite);
+        ignite.context().ioStats().reset();
     }
 
     /**
      * Test statistics for TRANSACTIONAL cache.
      */
     @Test
-    public void testTransactonalCache() throws Exception {
+    public void testTransactonalCache() {
         cacheTest(TRANSACTIONAL_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 3 + RECORD_COUNT * 2, RECORD_COUNT * 2);
     }
 
@@ -169,7 +158,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * Test statistics for MVCC cache.
      */
     @Test
-    public void testMvccCache() throws Exception {
+    public void testMvccCache() {
         cacheTest(MVCC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 14, RECORD_COUNT * 3);
     }
 
@@ -177,7 +166,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * Test statistics for ATOMIC cache.
      */
     @Test
-    public void testAtomicCache() throws Exception {
+    public void testAtomicCache() {
         cacheTest(ATOMIC_CACHE_NAME, RECORD_COUNT, RECORD_COUNT * 2 + RECORD_COUNT, RECORD_COUNT);
     }
 
@@ -185,19 +174,19 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * Test statistics for three caches in the same time.
      */
     @Test
-    public void testForThreeCaches() throws Exception {
+    public void testForThreeCaches() {
         prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
-        assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         Stream.of(ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME).forEach((cacheName) -> {
-            long logicalReads = logicalReads(mmgr, CACHE_GROUP, cacheName);
+            long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName, null);
 
-            assertTrue(logicalReads > RECORD_COUNT);
+            Assert.assertTrue(logicalReads > RECORD_COUNT);
         });
     }
 
@@ -205,16 +194,16 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * Test statistics for two caches in the same cache group.
      */
     @Test
-    public void testCacheGroupCaches() throws Exception {
+    public void testCacheGroupCaches() {
         prepareData(RECORD_COUNT, CACHE1_IN_GROUP_NAME, CACHE2_IN_GROUP_NAME);
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
-        assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        long logicalReads = logicalReads(mmgr, CACHE_GROUP, CACHE_GROUP_NAME);
+        long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, CACHE_GROUP_NAME, null);
 
         assertEquals(RECORD_COUNT * 6, logicalReads);
     }
@@ -225,45 +214,24 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @param dataPageReads How many data page reads operation expected.
      * @param idxPageReadsCnt How many index page reads scan expected.
      */
-    protected void cacheTest(String cacheName, int rowCnt, int dataPageReads, int idxPageReadsCnt) throws Exception {
+    protected void cacheTest(String cacheName, int rowCnt, int dataPageReads, int idxPageReadsCnt) {
         prepareData(rowCnt, cacheName);
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IoStatisticsManager ioStatMgr = ignite.context().ioStats();
 
-        Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
+        Set<String> statisticCacheNames = ioStatMgr.deriveStatisticNames(IoStatisticsType.CACHE_GROUP);
 
-        assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
+        Assert.assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        assertTrue(statisticCacheNames.contains(cacheName));
+        Assert.assertTrue(statisticCacheNames.contains(cacheName));
 
-        long logicalReadsCache = logicalReads(mmgr, CACHE_GROUP, cacheName);
+        long logicalReadsCache = ioStatMgr.logicalReads(IoStatisticsType.CACHE_GROUP, cacheName, null);
 
-        assertEquals(dataPageReads, logicalReadsCache);
+        Assert.assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = logicalReads(mmgr, HASH_INDEX, metricName(cacheName, HASH_PK_IDX_NAME));
+        long logicalReadsIdx = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, cacheName, HASH_PK_IDX_NAME);
 
-        assertEquals(idxPageReadsCnt, logicalReadsIdx);
-
-    }
-
-    /**
-     * Extract all tracked names for given statistics type.
-     *
-     * @param statType Type of statistics which tracked names need to extract.
-     * @return Set of present names for given statType
-     */
-    public Set<String> deriveStatisticNames(IoStatisticsType statType) {
-        assert statType != null;
-
-        GridMetricManager mmgr = ignite.context().metric();
-
-        Stream<MetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
-                .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
-
-        return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
-            .filter(m -> m.name().endsWith("name"))
-            .map(Metric::getAsString)
-            .collect(Collectors.toSet());
+        Assert.assertEquals(idxPageReadsCnt, logicalReadsIdx);
     }
 
     /**
@@ -272,11 +240,10 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @param cacheNames Names of caches to populate.
      * @param cnt Number of entries to put.
      */
-    private void prepareData(int cnt, String... cacheNames) throws Exception {
+    private void prepareData(int cnt, String... cacheNames) {
         //Need to initialize partition and data memory pages
         for (String cacheName : cacheNames) {
-
-            IgniteCache cache = ignite.cache(cacheName);
+            IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
             for (int i = 0; i < cnt; i++) {
                 cache.put(i, i);
@@ -285,11 +252,10 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        resetAllIoMetrics(ignite);
+        ignite.context().ioStats().reset();
 
         for (String cacheName : cacheNames) {
-
-            IgniteCache cache = ignite.cache(cacheName);
+            IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
             for (int i = 0; i < cnt; i++)
                 cache.put(i, i);
@@ -297,24 +263,5 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         }
 
         // Overall - 6 data page reads per record.
-    }
-
-    /**
-     * @param mmgr Metric manager.
-     * @param type Staticstics type.
-     * @param id Metric set id.
-     * @return Logical reads count.
-     */
-    public static long logicalReads(GridMetricManager mmgr, IoStatisticsType type, String id) {
-        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
-
-        if (type == CACHE_GROUP)
-            return mreg.<LongMetric>findMetric(LOGICAL_READS).value();
-        else {
-            long leaf = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
-            long inner = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
-
-            return leaf + inner;
-        }
     }
 }

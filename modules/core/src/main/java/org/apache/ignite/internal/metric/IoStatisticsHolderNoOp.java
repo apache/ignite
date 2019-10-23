@@ -16,6 +16,9 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * No Operation IO statistics holder. Use in case statistics shouldn't be gathered.
  */
@@ -46,5 +49,21 @@ public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public long physicalReads() {
         return 0;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> logicalReadsMap() {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> physicalReadsMap() {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetStatistics() {
+        // No-op.
     }
 }

@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -101,6 +103,30 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public long physicalReads() {
         return physicalReadCtr.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> logicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(2);
+
+        res.put(LOGICAL_READS, logicalReads());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Long> physicalReadsMap() {
+        Map<String, Long> res = new HashMap<>(2);
+
+        res.put(PHYSICAL_READS, physicalReads());
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetStatistics() {
+        logicalReadCtr.reset();
+        physicalReadCtr.reset();
     }
 
     /**

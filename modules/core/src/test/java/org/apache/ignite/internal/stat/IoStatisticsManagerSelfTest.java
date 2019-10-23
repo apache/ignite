@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metric;
+package org.apache.ignite.internal.stat;
 
-import com.google.common.collect.Iterators;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -24,36 +24,25 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMxBeanCacheGroupsTest.resetAllIoMetrics;
-import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
-import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Tests for IO statistic manager.
  */
-public class IoStatisticsSelfTest extends GridCommonAbstractTest {
+public class IoStatisticsManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECORD_COUNT = 5000;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         cleanPersistenceDir();
     }
 
@@ -75,38 +64,32 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public void testEmptyIOStat() throws Exception {
         IgniteEx ign = prepareIgnite(true);
 
-        GridMetricManager mmgr = ign.context().metric();
+        IoStatisticsManager ioStatMgr = ign.context().ioStats();
 
-        checkEmptyStat(mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
+        Map<IoStatisticsHolderKey, IoStatisticsHolder> stat = ioStatMgr.statistics(IoStatisticsType.CACHE_GROUP);
 
-        checkEmptyStat(mmgr.registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
-            HASH_INDEX);
+        checkEmptyStat(stat, DEFAULT_CACHE_NAME, null);
+
+        stat = ioStatMgr.statistics(IoStatisticsType.HASH_INDEX);
+
+        checkEmptyStat(stat, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
     }
 
     /**
-     * @param mreg Metric registry.
+     * @param stat Statistics map.
+     * @param name Name of statistics.
+     * @param subName Subname of statistics.
      */
-    private void checkEmptyStat(MetricRegistry mreg, IoStatisticsType type) {
-        assertNotNull(mreg);
+    private void checkEmptyStat(Map<IoStatisticsHolderKey, IoStatisticsHolder> stat, String name, String subName) {
+        assertEquals(1, stat.size());
 
-        if (type == CACHE_GROUP) {
-            assertEquals(5, Iterators.size(mreg.iterator()));
+        IoStatisticsHolder cacheIoStatHolder = stat.get(new IoStatisticsHolderKey(name, subName));
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).value());
+        assertNotNull(cacheIoStatHolder);
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).value());
-        }
-        else {
-            assertEquals(7, Iterators.size(mreg.iterator()));
+        assertEquals(0, cacheIoStatHolder.logicalReads());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
-
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
-
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
-
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
-        }
+        assertEquals(0, cacheIoStatHolder.physicalReads());
     }
 
     /**
@@ -136,42 +119,59 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
-        IgniteEx grid = prepareData(isPersistent);
+        IoStatisticsManager ioStatMgr = prepareData(isPersistent);
 
-        GridMetricManager mmgr = grid.context().metric();
-
-        long physicalReadsCnt = physicalReads(mmgr, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
+        long physicalReadsCnt = ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt > 0);
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        Long logicalReads = ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         Assert.assertNotNull(logicalReads);
 
         Assert.assertEquals(RECORD_COUNT, logicalReads.longValue());
+
+        // We expect pages to be rotated with disk.
+        for (int i = 0; i < RECORD_COUNT; i++)
+            ignite(0).cache(DEFAULT_CACHE_NAME).get("KEY-" + i);
+
+        if (isPersistent) {
+            // Check that physical reads grows, but not infinitely.
+            assertTrue(physicalReadsCnt < ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME, null));
+
+            // There should be no more than 3 page rotations per read (data page, index level 1 page and index level 2 page).
+            assertTrue(physicalReadsCnt + 3 * RECORD_COUNT > ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME, null));
+        }
+        else
+            assertEquals(0, (long)ioStatMgr.physicalReads(IoStatisticsType.CACHE_GROUP, DEFAULT_CACHE_NAME, null));
+
+        assertTrue(logicalReads < (long)ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        assertTrue(logicalReads + 3 * RECORD_COUNT > ioStatMgr.logicalReads(IoStatisticsType.HASH_INDEX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
     }
 
     /**
      * Prepare Ignite instance and fill cache.
      *
      * @param isPersistent {@code true} in case persistence should be enable.
-     * @return Ignite instance.
+     * @return IO statistic manager.
      * @throws Exception In case of failure.
      */
-    @NotNull private IgniteEx prepareData(boolean isPersistent) throws Exception {
-        IgniteEx grid = prepareIgnite(isPersistent);
+    private IoStatisticsManager prepareData(boolean isPersistent) throws Exception {
+        IgniteEx ign = prepareIgnite(isPersistent);
 
-        IgniteCache cache = grid.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IoStatisticsManager ioStatMgr = ign.context().ioStats();
 
-        resetAllIoMetrics(grid);
+        IgniteCache<Object, Object> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        ioStatMgr.reset();
 
         for (int i = 0; i < RECORD_COUNT; i++)
-            cache.put("KEY-" + i, "VAL-" + i);
+            cache.put("KEY-" + i, "VALUE-" + i);
 
-        return grid;
+        return ioStatMgr;
     }
 
     /**
@@ -182,7 +182,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     private IgniteConfiguration getConfiguration(boolean isPersist) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         if (isPersist) {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
@@ -213,35 +213,5 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         ignite.createCache(new CacheConfiguration<String, String>(DEFAULT_CACHE_NAME));
 
         return ignite;
-    }
-
-    /**
-     * @param statType Type of statistics which need to take.
-     * @param name name of statistics which need to take, e.g. cache name
-     * @param subName subName of statistics which need to take, e.g. index name.
-     * @return Number of physical reads since last reset statistics.
-     */
-    public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
-        String fullName = subName == null ? name : metricName(name, subName);
-
-        MetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
-
-        if (mreg == null)
-            return null;
-
-        switch (statType) {
-            case CACHE_GROUP:
-                return mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
-
-            case HASH_INDEX:
-            case SORTED_INDEX:
-                long leaf = mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value();
-                long inner = mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value();
-
-                return leaf + inner;
-
-            default:
-                return null;
-        }
     }
 }
