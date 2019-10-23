@@ -152,6 +152,7 @@
     <Compile Include="Client\Cache\TestKey.cs" />
     <Compile Include="Client\Cache\TestKeyWithAffinity.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\Cluster\ClientClusterTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
