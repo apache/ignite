@@ -243,20 +243,15 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     *
-     * @return {@code True} If baseLine changed, {@code False} if not.
+     * @return Previous "active" flag value during transition.
      */
-    public boolean baselineChanged() {
-        BaselineTopology prevBLT = previousBaselineTopology();
-        BaselineTopology curBLT = baselineTopology();
+    public boolean previouslyActive() {
+        assert transitionReqId != null;
 
-        if (prevBLT == null && curBLT != null)
-            return true;
+        if (prevState != null)
+            return prevState.active;
 
-        if (prevBLT!= null && curBLT != null)
-            return !prevBLT.equals(curBLT);
-
-        return false;
+        return !active;
     }
 
     /**
