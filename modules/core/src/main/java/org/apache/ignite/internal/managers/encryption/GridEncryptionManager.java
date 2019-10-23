@@ -78,7 +78,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
-import static org.apache.ignite.internal.GridTopic.TOPIC_MASTER_KEY_ID;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MASTER_KEY_DIGEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -282,8 +281,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (discoLsnr != null)
                 ctx.event().removeDiscoveryEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-            ctx.io().removeMessageListener(TOPIC_MASTER_KEY_ID);
-
             cancelFutures("Kernal stopped.");
         }
     }
@@ -296,6 +293,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             disconnected = true;
 
             pendingMasterKey = null;
+
+            lastChangedMasterKeyDigest = null;
 
             cancelFutures("Client node was disconnected from topology (operation result is unknown).");
         }
@@ -354,8 +353,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return res;
 
         if (isMasterKeyChangeInProgress()) {
-            // Prevents new nodes join to avoid inconsistency of the master key. Clients and daemons are not allowed
-            // because may have configured caches.
+            // Prevents new nodes join to avoid inconsistency of the master key.
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Master key change in progress! Node join is rejected. [node=" + node.id() + "]",
                 "Master key change in progress! Node join is rejected.");
@@ -944,7 +942,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             forceWriteAllKeysToMetaStore = true;
         } catch (IgniteSpiException e) {
-            log.warning("Unable to apply group keys from WAL record [masterKeyId=" + rec.getMasterKeyId() + ']');
+            log.warning("Unable to apply group keys from WAL record [masterKeyId=" + rec.getMasterKeyId() + ']', e);
         }
     }
 
@@ -1063,9 +1061,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 if (msg.hasError() || ctx.clientNode())
                     return;
 
-                String curMasterKeyId = getSpi().getMasterKeyId();
-
                 synchronized (masterKeyChangeMux) {
+                    String curMasterKeyId = getSpi().getMasterKeyId();
+
                     try {
                         String newKeyId = decryptKeyId(msg.encKeyId());
 
