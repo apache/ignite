@@ -50,8 +50,8 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
     /** Request id. */
     private final UUID reqId;
 
-    /** Encrypted master key id. */
-    private final byte[] encKeyId;
+    /** Encrypted master key name. */
+    private final byte[] encKeyName;
 
     /** Master key digest. */
     private byte[] digest;
@@ -65,11 +65,11 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
     /**
      * Constructor for request.
      *
-     * @param encKeyId Encrypted master key id.
+     * @param encKeyName Encrypted master key name.
      */
-    public MasterKeyChangeMessage(byte[] encKeyId) {
+    public MasterKeyChangeMessage(byte[] encKeyName) {
         reqId = UUID.randomUUID();
-        this.encKeyId = encKeyId;
+        this.encKeyName = encKeyName;
         isInit = true;
     }
 
@@ -80,7 +80,7 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
      */
     private MasterKeyChangeMessage(MasterKeyChangeMessage req) {
         reqId = req.reqId;
-        encKeyId = req.encKeyId;
+        encKeyName = req.encKeyName;
         digest = req.digest;
         err = req.err;
         isInit = false;
@@ -117,9 +117,9 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
         return reqId;
     }
 
-    /** @return Master key id. */
-    public byte[] encKeyId() {
-        return encKeyId;
+    /** @return Master key name. */
+    public byte[] encKeyName() {
+        return encKeyName;
     }
 
     /** @return Master key digest. */

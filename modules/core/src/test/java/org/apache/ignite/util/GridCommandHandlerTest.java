@@ -108,7 +108,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_ID_2;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -1807,19 +1807,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Object res = h.getLastOperationResult();
 
-        assertEquals(ignite.encryption().getMasterKeyId(), res);
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_ID_2));
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
 
-        assertEquals(MASTER_KEY_ID_2, ignite.encryption().getMasterKeyId());
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
 
         res = h.getLastOperationResult();
 
-        assertEquals(MASTER_KEY_ID_2, res);
+        assertEquals(MASTER_KEY_NAME_2, res);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-            execute("--encryption", "change_master_key", "non-existing-master-key-id"));
+            execute("--encryption", "change_master_key", "non-existing-master-key-name"));
     }
 }

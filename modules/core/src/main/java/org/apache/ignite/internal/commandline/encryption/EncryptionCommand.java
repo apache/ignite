@@ -82,9 +82,9 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
                 break;
 
             case CHANGE_MASTER_KEY:
-                String masterKeyId = argIter.nextArg("Expected master key id.");
+                String masterKeyName = argIter.nextArg("Expected master key name.");
 
-                encryptionArgs = new VisorEncryptionArgs(CHANGE_MASTER_KEY, masterKeyId);
+                encryptionArgs = new VisorEncryptionArgs(CHANGE_MASTER_KEY, masterKeyName);
 
                 break;
 
@@ -101,8 +101,8 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print current master key id:", ENCRYPTION, GET_MASTER_KEY.toString());
-        Command.usage(logger, "Change master key id:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyId");
+        Command.usage(logger, "Print current master key name:", ENCRYPTION, GET_MASTER_KEY.toString());
+        Command.usage(logger, "Change master key name:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
     }
 
     /** {@inheritDoc} */

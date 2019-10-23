@@ -91,12 +91,12 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
     }
 
     /** {@inheritDoc} */
-    @Override public String getMasterKeyId() {
+    @Override public String getMasterKeyName() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void setMasterKeyId(String masterKeyId) {
+    @Override public void setMasterKeyName(String masterKeyName) {
         throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 

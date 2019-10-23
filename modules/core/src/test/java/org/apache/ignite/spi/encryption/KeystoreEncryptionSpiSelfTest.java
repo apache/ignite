@@ -29,7 +29,7 @@ import org.junit.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
-import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_ID_2;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -78,7 +78,7 @@ public class KeystoreEncryptionSpiSelfTest {
         GridTestUtils.assertThrowsWithCause(() -> {
             EncryptionSpi encSpi = spi();
 
-            encSpi.setMasterKeyId("Unknown key");
+            encSpi.setMasterKeyName("Unknown key");
 
             return null;
         }, IgniteException.class);
@@ -117,7 +117,7 @@ public class KeystoreEncryptionSpiSelfTest {
 
         byte[] digest = encSpi.masterKeyDigest();
 
-        encSpi.setMasterKeyId(MASTER_KEY_ID_2);
+        encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
 
         byte[] digest2 = encSpi.masterKeyDigest();
 
@@ -137,7 +137,7 @@ public class KeystoreEncryptionSpiSelfTest {
 
         checkKeyEncryptDecrypt(encSpi, k);
 
-        encSpi.setMasterKeyId(MASTER_KEY_ID_2);
+        encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
 
         checkKeyEncryptDecrypt(encSpi, k);
     }

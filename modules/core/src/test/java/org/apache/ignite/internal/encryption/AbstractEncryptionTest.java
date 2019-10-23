@@ -71,10 +71,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
     public static final String KEYSTORE_PASSWORD = "love_sex_god";
 
     /** */
-    public static final String MASTER_KEY_ID = DEFAULT_MASTER_KEY_NAME;
-
-    /** */
-    public static final String MASTER_KEY_ID_2 = "ignite.master.key2";
+    public static final String MASTER_KEY_NAME_2 = "ignite.master.key2";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -251,10 +248,13 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
         return keyStoreFile;
     }
 
-    /** @return {@code True} if all nodes have the provided master key id. */
-    protected boolean checkMasterKeyId(String masterKeyId) {
+    /**
+     * @param name Master key name.
+     * @return {@code True} if all nodes have the provided master key name.
+     */
+    protected boolean checkMasterKeyName(String name) {
         for (Ignite grid : G.allGrids())
-            if (!((IgniteEx)grid).context().clientNode() && !masterKeyId.equals(grid.encryption().getMasterKeyId()))
+            if (!((IgniteEx)grid).context().clientNode() && !name.equals(grid.encryption().getMasterKeyName()))
                 return false;
 
         return true;

@@ -35,12 +35,12 @@ public class EncryptionMXBeanImpl implements EncryptionMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public String getMasterKeyId() {
-        return encryptionMgr.getMasterKeyId();
+    @Override public String getMasterKeyName() {
+        return encryptionMgr.getMasterKeyName();
     }
 
     /** {@inheritDoc} */
-    @Override public void changeMasterKey(String masterKeyId) {
-        encryptionMgr.changeMasterKey(masterKeyId);
+    @Override public void changeMasterKey(String masterKeyName) {
+        encryptionMgr.changeMasterKey(masterKeyName);
     }
 }

@@ -59,12 +59,12 @@ public class VisorEncryptionTask extends VisorOneNodeTask<VisorEncryptionArgs, V
 
             switch (arg.getCmd()) {
                 case GET_MASTER_KEY:
-                    String masterKeyId = ignite.encryption().getMasterKeyId();
+                    String masterKeyName = ignite.encryption().getMasterKeyName();
 
-                    return new VisorEncryptionTaskResult(masterKeyId);
+                    return new VisorEncryptionTaskResult(masterKeyName);
 
                 case CHANGE_MASTER_KEY:
-                    ignite.encryption().changeMasterKey(arg.getMasterKeyId());
+                    ignite.encryption().changeMasterKey(arg.getMasterKeyName());
 
                     return new VisorEncryptionTaskResult("Master key changed.");
 

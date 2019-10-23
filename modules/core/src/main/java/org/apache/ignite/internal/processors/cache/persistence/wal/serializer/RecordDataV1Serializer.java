@@ -1163,13 +1163,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case MASTER_KEY_CHANGE_RECORD:
-                int keyIdLen = in.readInt();
+                int keyNameLen = in.readInt();
 
-                byte[] keyIdBytes = new byte[keyIdLen];
+                byte[] keyNameBytes = new byte[keyNameLen];
 
-                in.readFully(keyIdBytes);
+                in.readFully(keyNameBytes);
 
-                String masterKeyId = new String(keyIdBytes);
+                String masterKeyName = new String(keyNameBytes);
 
                 int keysCnt = in.readInt();
 
@@ -1187,7 +1187,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     grpKeys.put(grpId, grpKey);
                 }
 
-                res = new MasterKeyChangeRecord(masterKeyId, grpKeys);
+                res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
 
                 break;
 
@@ -1759,7 +1759,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case MASTER_KEY_CHANGE_RECORD:
                 MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
 
-                byte[] keyIdBytes = mkChangeRec.getMasterKeyId().getBytes();
+                byte[] keyIdBytes = mkChangeRec.getMasterKeyName().getBytes();
 
                 buf.putInt(keyIdBytes.length);
                 buf.put(keyIdBytes);

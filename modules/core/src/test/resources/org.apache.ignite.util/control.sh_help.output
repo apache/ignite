@@ -59,11 +59,11 @@ This utility can do the following commands:
   Disable read-only mode on active cluster:
     control.(sh|bat) --read-only-off [--yes]
 
-  Print current master key id:
+  Print current master key name:
     control.(sh|bat) --encryption get_master_key
 
-  Change master key id:
-    control.(sh|bat) --encryption change_master_key newMasterKeyId
+  Change master key name:
+    control.(sh|bat) --encryption change_master_key newMasterKeyName
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

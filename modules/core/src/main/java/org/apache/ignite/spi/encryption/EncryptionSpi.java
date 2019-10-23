@@ -113,20 +113,20 @@ public interface EncryptionSpi extends IgniteSpi {
     int blockSize();
 
     /**
-     * Gets current master key id.
+     * Gets current master key name.
      *
-     * @return Master key id.
+     * @return Master key name.
      *
-     * @see #setMasterKeyId(String)
+     * @see #setMasterKeyName(String)
      */
-    String getMasterKeyId();
+    String getMasterKeyName();
 
     /**
-     * Sets master key id that will be used for keys encryption in {@link #encryptKey(Serializable)} and {@link
+     * Sets master key Name that will be used for keys encryption in {@link #encryptKey(Serializable)} and {@link
      * #decryptKey(byte[])} methods and in the {@link #masterKeyDigest()} method.
      *
-     * @param masterKeyId Master key id.
+     * @param masterKeyName Master key name.
      * @throws IgniteSpiException In case of error.
      */
-    void setMasterKeyId(String masterKeyId) throws IgniteSpiException;
+    void setMasterKeyName(String masterKeyName) throws IgniteSpiException;
 }

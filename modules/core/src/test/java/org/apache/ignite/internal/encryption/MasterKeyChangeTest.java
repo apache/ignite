@@ -41,9 +41,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_ID_TO_CHANGE_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
+import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -70,11 +71,11 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
+        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
 
@@ -82,7 +83,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         startTestGrids(false);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID_2));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         checkEncryptedCaches(grid(GRID_0), grid(GRID_1));
     }
@@ -94,27 +95,27 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         stopGrid(GRID_1);
 
-        grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        assertEquals(MASTER_KEY_ID_2, grids.get1().encryption().getMasterKeyId());
+        assertEquals(MASTER_KEY_NAME_2, grids.get1().encryption().getMasterKeyName());
 
-        System.setProperty(IGNITE_MASTER_KEY_ID_TO_CHANGE_ON_STARTUP, MASTER_KEY_ID_2);
+        System.setProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP, MASTER_KEY_NAME_2);
 
         try {
             IgniteEx ignite = startGrid(GRID_1);
 
             grids.set2(ignite);
 
-            assertTrue(checkMasterKeyId(MASTER_KEY_ID_2));
+            assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
             checkEncryptedCaches(grids.get1(), grids.get2());
         }
         finally {
-            System.clearProperty(IGNITE_MASTER_KEY_ID_TO_CHANGE_ON_STARTUP);
+            System.clearProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP);
         }
     }
 
@@ -125,7 +126,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -143,7 +144,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2));
+        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
 
         latch.await();
 
@@ -154,7 +155,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             grids.get1().getOrCreateCache(new CacheConfiguration<>("newCache").setEncryptionEnabled(true));
         }, IgniteCheckedException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
+        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -186,13 +187,13 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         commSpi.waitForBlocked();
 
-        srv.encryption().changeMasterKey(MASTER_KEY_ID_2);
+        srv.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         commSpi.stopBlock();
 
         assertThrowsWithCause(() -> cacheStartFut.get(), IgniteCheckedException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
+        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
 
         srv.cache(cacheName);
     }
@@ -204,7 +205,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch startLatch = new CountDownLatch(1);
@@ -222,7 +223,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2));
+        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
 
         latch.await();
 
@@ -230,7 +231,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         startLatch.countDown();
 
-        assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
+        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -242,7 +243,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch sendLatch = new CountDownLatch(1);
@@ -260,7 +261,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2));
+        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
 
         latch.await();
 
@@ -269,9 +270,10 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
                 sendLatch.countDown();
         });
 
-        assertThrowsWithCause(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_ID), IgniteException.class);
+        assertThrowsWithCause(() -> grids.get1().encryption().changeMasterKey(DEFAULT_MASTER_KEY_NAME),
+            IgniteException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyId(MASTER_KEY_ID_2), 10_000));
+        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -283,19 +285,19 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertFalse(grid0.cluster().active());
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        assertThrowsWithCause(() -> grid0.encryption().changeMasterKey(MASTER_KEY_ID_2), IgniteException.class);
+        assertThrowsWithCause(() -> grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         grid0.cluster().active(true);
 
         grid0.cluster().readOnly(true);
 
-        grid0.encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID_2));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
     }
 
     /** @throws Exception If failed. */
@@ -314,7 +316,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteCache<Long, String> cache1 = grids.get2().createCache(ccfg);
 
-        assertEquals(MASTER_KEY_ID, grid0.encryption().getMasterKeyId());
+        assertEquals(DEFAULT_MASTER_KEY_NAME, grid0.encryption().getMasterKeyName());
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid0.context()
             .cache().context().database();
@@ -340,7 +342,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         // Put some data before master key change.
         waitForCondition(() -> cnt.get() >= 20, 10_000);
 
-        grid0.encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         MetaStorage metaStorage = grid0.context().cache().context().database().metaStorage();
 
@@ -369,7 +371,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         IgniteEx grid = startGrid(GRID_0);
 
-        assertEquals(MASTER_KEY_ID_2, grid(GRID_0).encryption().getMasterKeyId());
+        assertEquals(MASTER_KEY_NAME_2, grid(GRID_0).encryption().getMasterKeyName());
 
         IgniteCache<Long, String> cache0 = grid.cache(cacheName());
 

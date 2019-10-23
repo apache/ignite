@@ -26,6 +26,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.junit.Test;
 
+import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -59,33 +60,33 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
 
         simulateOtherDigest.set(true);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         assertThrowsAnyCause(log, () -> {
-            grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2);
+            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
             return null;
         }, IgniteException.class, "Master key digest consistency check failed");
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         simulateOtherDigest.set(false);
 
         simulateSetMasterKeyError.set(true);
 
         assertThrowsAnyCause(log, () -> {
-            grids.get1().encryption().changeMasterKey(MASTER_KEY_ID_2);
+            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
             return null;
         }, IgniteSpiException.class, "Test error.");
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID));
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         simulateSetMasterKeyError.set(false);
 
-        grids.get2().encryption().changeMasterKey(MASTER_KEY_ID_2);
+        grids.get2().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        assertTrue(checkMasterKeyId(MASTER_KEY_ID_2));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
     }
 
     /** {@inheritDoc} */
@@ -114,11 +115,12 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void setMasterKeyId(String masterKeyId) {
-            if (simulateSetMasterKeyError.get() && ignite.name().equals(GRID_1) && masterKeyId.equals(MASTER_KEY_ID_2))
+        @Override public void setMasterKeyName(String masterKeyName) {
+            if (simulateSetMasterKeyError.get()
+                && ignite.name().equals(GRID_1) && masterKeyName.equals(MASTER_KEY_NAME_2))
                 throw new IgniteSpiException("Test error.");
 
-            super.setMasterKeyId(masterKeyId);
+            super.setMasterKeyName(masterKeyName);
         }
     }
 }

@@ -39,20 +39,20 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  * Group key encrypts data of cache group caches. Each group key is encrypted by a master key. Encrypted group key and
  * encrypted data are written to disk.
  * <p>
- * Ignite provides ability to change master key. Master keys is identified by a master key id (see {@link
- * EncryptionSpi#getMasterKeyId()}). Follow operations are available for master keys:
+ * Ignite provides ability to change master key. Master keys is identified by a master key name (see {@link
+ * EncryptionSpi#getMasterKeyName()}). Follow operations are available for master keys:
  * <ul>
- * <li>Method {@link #getMasterKeyId()} gets current master key id in the cluster.</li>
+ * <li>Method {@link #getMasterKeyName()} gets current master key name in the cluster.</li>
  * <li>Method {@link #changeMasterKey(String)} ()} starts master key change process.</li>
  * </ul>
  */
 public interface IgniteEncryption {
     /**
-     * Gets current master key id.
+     * Gets current master key name.
      *
-     * @return Master key id.
+     * @return Master key name.
      */
-    public String getMasterKeyId();
+    public String getMasterKeyName();
 
     /**
      * Starts master key change process.
@@ -63,10 +63,10 @@ public interface IgniteEncryption {
      * node join during the key change process will be rejected.
      * <p>
      * If some node was unavailable during a master key change process it won't be able to join to cluster with old the
-     * master key id. Node should re-encrypt group keys during the startup and recovery process. Set up valid master key
-     * id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_ID_TO_CHANGE_ON_STARTUP}.
+     * master key name. Node should re-encrypt group keys during the startup and recovery process. Set up valid master
+     * key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP}.
      *
      * @throws IgniteException If the change master key process failed.
      */
-    public void changeMasterKey(String masterKeyId);
+    public void changeMasterKey(String masterKeyName);
 }

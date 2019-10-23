@@ -34,8 +34,8 @@ public class VisorEncryptionArgs extends IgniteDataTransferObject {
     /** Encryption subcommand. */
     private EncryptionSubcommand cmd;
 
-    /** Master key id. */
-    private String masterKeyId;
+    /** Master key name. */
+    private String masterKeyName;
 
     /** */
     public VisorEncryptionArgs() {
@@ -51,11 +51,11 @@ public class VisorEncryptionArgs extends IgniteDataTransferObject {
 
     /**
      * @param cmd Encryption subcommand.
-     * @param masterKeyId Master key id.
+     * @param masterKeyName Master key name.
      */
-    public VisorEncryptionArgs(EncryptionSubcommand cmd, String masterKeyId) {
+    public VisorEncryptionArgs(EncryptionSubcommand cmd, String masterKeyName) {
         this.cmd = cmd;
-        this.masterKeyId = masterKeyId;
+        this.masterKeyName = masterKeyName;
     }
 
     /** @return Encryption subcommand. */
@@ -63,16 +63,16 @@ public class VisorEncryptionArgs extends IgniteDataTransferObject {
         return cmd;
     }
 
-    /** @return Master key id. */
-    public String getMasterKeyId() {
-        return masterKeyId;
+    /** @return Master key name. */
+    public String getMasterKeyName() {
+        return masterKeyName;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(cmd);
 
-        U.writeString(out, masterKeyId);
+        U.writeString(out, masterKeyName);
     }
 
     /** {@inheritDoc} */
@@ -80,6 +80,6 @@ public class VisorEncryptionArgs extends IgniteDataTransferObject {
         throws IOException, ClassNotFoundException {
         cmd = (EncryptionSubcommand)in.readObject();
 
-        masterKeyId = U.readString(in);
+        masterKeyName = U.readString(in);
     }
 }

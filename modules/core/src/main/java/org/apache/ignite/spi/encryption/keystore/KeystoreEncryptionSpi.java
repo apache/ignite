@@ -113,7 +113,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      */
     private int keySize = DEFAULT_KEY_SIZE;
 
-    /** Tuple of the master key id and the master key. */
+    /** Tuple of the master key name and the master key. */
     private volatile T2<String, KeystoreEncryptionKey> masterKey = new T2<>(DEFAULT_MASTER_KEY_NAME, null);
 
     /** Logger. */
@@ -142,7 +142,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        setMasterKey(getMasterKeyId());
+        loadMasterKey(getMasterKeyName());
     }
 
     /** {@inheritDoc} */
@@ -303,19 +303,19 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /** {@inheritDoc} */
-    @Override public String getMasterKeyId() {
+    @Override public String getMasterKeyName() {
         return masterKey.get1();
     }
 
     /** {@inheritDoc} */
-    @Override public void setMasterKeyId(String masterKeyId) {
+    @Override public void setMasterKeyName(String masterKeyName) {
         if (!started()) {
-            masterKey.set1(masterKeyId);
+            masterKey.set1(masterKeyName);
 
             return;
         }
 
-        setMasterKey(masterKeyId);
+        loadMasterKey(masterKeyName);
     }
 
     /**
@@ -466,35 +466,11 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /**
-     * Gets master key name.
-     *
-     * @return Master key name.
-     * @deprecated Use {@link #getMasterKeyId()} instead.
-     */
-    @Deprecated
-    public String getMasterKeyName() {
-        return masterKey.get1();
-    }
-
-    /**
-     * Sets master key name to use on SPI's start.
+     * Loads master key.
      *
      * @param masterKeyName Master key name.
-     * @deprecated Use {@link #setMasterKeyId(String)} instead.
      */
-    @Deprecated
-    public void setMasterKeyName(String masterKeyName) {
-        assert !started() : "Spi already started";
-
-        masterKey.set1(masterKeyName);
-    }
-
-    /**
-     * Sets master key.
-     *
-     * @param masterKeyId Master key id.
-     */
-    private void setMasterKey(String masterKeyId) {
+    private void loadMasterKey(String masterKeyName) {
         assertParameter(!F.isEmpty(keyStorePath), "KeyStorePath shouldn't be empty");
         assertParameter(keyStorePwd != null && keyStorePwd.length > 0,
             "KeyStorePassword shouldn't be empty");
@@ -509,11 +485,11 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
             if (log != null)
                 log.info("Successfully load keyStore [path=" + keyStorePath + "]");
 
-            Key key = ks.getKey(masterKeyId, keyStorePwd);
+            Key key = ks.getKey(masterKeyName, keyStorePwd);
 
-            assertParameter(key != null, "No such master key found [masterKeyId="+ masterKeyId + ']');
+            assertParameter(key != null, "No such master key found [masterKeyName="+ masterKeyName + ']');
 
-            masterKey = new T2<>(masterKeyId, new KeystoreEncryptionKey(key, null));
+            masterKey = new T2<>(masterKeyName, new KeystoreEncryptionKey(key, null));
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);

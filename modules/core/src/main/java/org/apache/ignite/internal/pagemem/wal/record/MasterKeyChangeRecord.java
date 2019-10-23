@@ -26,25 +26,25 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  */
 public class MasterKeyChangeRecord extends WALRecord {
     /** */
-    private final String masterKeyId;
+    private final String masterKeyName;
 
     /** */
     private final Map<Integer, byte[]> grpKeys;
 
     /**
-     * @param masterKeyId Master key id.
+     * @param masterKeyName Master key name.
      * @param grpKeys Encrypted cache keys.
      */
-    public MasterKeyChangeRecord(String masterKeyId, Map<Integer, byte[]> grpKeys) {
-        this.masterKeyId = masterKeyId;
+    public MasterKeyChangeRecord(String masterKeyName, Map<Integer, byte[]> grpKeys) {
+        this.masterKeyName = masterKeyName;
         this.grpKeys = grpKeys;
     }
 
     /**
-     * @return Master key id.
+     * @return Master key name.
      */
-    public String getMasterKeyId() {
-        return masterKeyId;
+    public String getMasterKeyName() {
+        return masterKeyName;
     }
 
     /**
@@ -63,7 +63,7 @@ public class MasterKeyChangeRecord extends WALRecord {
      * @return Record's data size.
      */
     public int dataSize() {
-        int size = /*Master key id length*/4 + masterKeyId.length() + /*Group keys map size*/4;
+        int size = /*Master key name length*/4 + masterKeyName.length() + /*Group keys map size*/4;
 
         for (Map.Entry<Integer, byte[]> entry : grpKeys.entrySet())
             size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;

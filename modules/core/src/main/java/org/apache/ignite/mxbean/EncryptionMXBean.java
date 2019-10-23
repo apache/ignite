@@ -25,22 +25,22 @@ import org.apache.ignite.IgniteEncryption;
 @MXBeanDescription("MBean that provides access to encryption features.")
 public interface EncryptionMXBean {
     /**
-     * Gets current master key id.
+     * Gets current master key name.
      *
-     * @return Master key id.
+     * @return Master key name.
      *
-     * @see IgniteEncryption#getMasterKeyId()
+     * @see IgniteEncryption#getMasterKeyName()
      */
-    @MXBeanDescription("Current master key id.")
-    public String getMasterKeyId();
+    @MXBeanDescription("Current master key name.")
+    public String getMasterKeyName();
 
     /**
      * Starts master key change process.
      *
-     * @param masterKeyId Master key id.
+     * @param masterKeyName Master key name.
      *
      * @see IgniteEncryption#changeMasterKey(String)
      */
-    @MXBeanDescription("Change master key id.")
-    public void changeMasterKey(String masterKeyId);
+    @MXBeanDescription("Change master key name.")
+    public void changeMasterKey(String masterKeyName);
 }

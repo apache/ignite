@@ -27,6 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.junit.Test;
 
+import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+
 /**
  * Tests {@link EncryptionMXBean}
  */
@@ -40,13 +42,13 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
         EncryptionMXBean mBean = getMBean();
 
-        assertEquals(MASTER_KEY_ID, ignite.encryption().getMasterKeyId());
-        assertEquals(MASTER_KEY_ID, mBean.getMasterKeyId());
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+        assertEquals(DEFAULT_MASTER_KEY_NAME, mBean.getMasterKeyName());
 
-        mBean.changeMasterKey(MASTER_KEY_ID_2);
+        mBean.changeMasterKey(MASTER_KEY_NAME_2);
 
-        assertEquals(MASTER_KEY_ID_2, ignite.encryption().getMasterKeyId());
-        assertEquals(MASTER_KEY_ID_2, mBean.getMasterKeyId());
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
+        assertEquals(MASTER_KEY_NAME_2, mBean.getMasterKeyName());
     }
 
     /** {@inheritDoc} */

@@ -478,7 +478,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Master key id that encrypted the group encryption key.
+     * @return Master key name that encrypted the group encryption key.
      */
     @Nullable public byte[] masterKeyDigest() {
         return masterKeyDigest;
