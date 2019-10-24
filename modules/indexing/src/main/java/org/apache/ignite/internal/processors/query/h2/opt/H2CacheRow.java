@@ -243,6 +243,11 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public void cacheId(int cacheId) {
+        row.cacheId(cacheId);
+    }
+
+    /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return row.mvccCoordinatorVersion();
     }

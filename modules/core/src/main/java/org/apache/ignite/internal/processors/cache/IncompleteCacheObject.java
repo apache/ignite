@@ -42,6 +42,8 @@ public class IncompleteCacheObject extends IncompleteObject<CacheObject> {
         if (buf.remaining() >= HEAD_LEN) {
             data = new byte[buf.getInt()];
             type = buf.get();
+
+            headerReady();
         }
         // We cannot fully read head to initialize data buffer.
         // Start partial read of header.
@@ -67,11 +69,28 @@ public class IncompleteCacheObject extends IncompleteObject<CacheObject> {
 
                 data = new byte[headBuf.getInt()];
                 type = headBuf.get();
+
+                headerReady();
             }
         }
 
         if (data != null)
             super.readData(buf);
+    }
+
+    /**
+     * Invoke when object header is ready.
+     */
+    private void headerReady() {
+        if (type == CacheObject.TOMBSTONE)
+            object(TombstoneCacheObject.INSTANCE);
+    }
+
+    /**
+     * @return Size of already read data.
+     */
+    public int dataOffset() {
+        return off;
     }
 
     /**

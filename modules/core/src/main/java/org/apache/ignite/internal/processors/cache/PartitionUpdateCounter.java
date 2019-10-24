@@ -34,9 +34,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * Restores update counter state.
      *
      * @param initUpdCntr LWM.
-     * @param cntrUpdData Counter updates raw data.
+     * @param updCntrGapsData Updates counters gaps raw data.
      */
-    public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
+    public void init(long initUpdCntr, @Nullable byte[] updCntrGapsData);
 
     /**
      * @deprecated TODO LWM should be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396

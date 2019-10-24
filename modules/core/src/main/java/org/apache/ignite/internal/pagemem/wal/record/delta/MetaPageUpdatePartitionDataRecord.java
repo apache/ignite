@@ -45,7 +45,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     private int allocatedIdxCandidate;
 
     /** */
-    private long cntrsPageId;
+    private long cacheSizesPageId;
 
     /**
      * @param grpId Cache group ID.
@@ -58,9 +58,10 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         long updateCntr,
         long globalRmvId,
         int partSize,
-        long cntrsPageId,
+        long cacheSizesPageId,
         byte state,
-        int allocatedIdxCandidate) {
+        int allocatedIdxCandidate
+    ) {
         super(grpId, pageId);
 
         this.updateCntr = updateCntr;
@@ -68,7 +69,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         this.partSize = partSize;
         this.state = state;
         this.allocatedIdxCandidate = allocatedIdxCandidate;
-        this.cntrsPageId = cntrsPageId;
+        this.cacheSizesPageId = cacheSizesPageId;
     }
 
     /**
@@ -80,7 +81,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         this.updateCntr = in.readLong();
         this.globalRmvId = in.readLong();
         this.partSize = in.readInt();
-        this.cntrsPageId = in.readLong();
+        this.cacheSizesPageId = in.readLong();
         this.state = in.readByte();
         this.allocatedIdxCandidate = in.readInt();
     }
@@ -109,8 +110,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
     /**
      * @return Partition size.
      */
-    public long countersPageId() {
-        return cntrsPageId;
+    public long cacheSizesPageId() {
+        return cacheSizesPageId;
     }
 
     /**
@@ -127,7 +128,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setUpdateCounter(pageAddr, updateCntr);
         io.setGlobalRemoveId(pageAddr, globalRmvId);
         io.setSize(pageAddr, partSize);
-        io.setCountersPageId(pageAddr, cntrsPageId);
+        io.setSizesPageId(pageAddr, cacheSizesPageId);
         io.setPartitionState(pageAddr, state);
         io.setCandidatePageCount(pageAddr, allocatedIdxCandidate);
     }
@@ -149,7 +150,7 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         buf.putLong(updateCounter());
         buf.putLong(globalRemoveId());
         buf.putInt(partitionSize());
-        buf.putLong(countersPageId());
+        buf.putLong(cacheSizesPageId());
         buf.put(state());
         buf.putInt(allocatedIndexCandidate());
     }

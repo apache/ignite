@@ -51,6 +51,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CR
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.TOMBSTONES;
 
 /**
  * Cache data row adapter.
@@ -351,9 +352,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         buf.position(off);
         buf.limit(off + payloadSize);
 
-        boolean keyOnly = rowData == RowData.KEY_ONLY;
-
-        incomplete = readFragment(sharedCtx, coctx, buf, keyOnly, readCacheId, incomplete, skipVer);
+        incomplete = readFragment(sharedCtx, coctx, buf, rowData, readCacheId, incomplete, skipVer);
 
         if (incomplete != null)
             incomplete.setNextLink(nextLink);
@@ -379,7 +378,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
      * @param buf Buffer.
-     * @param keyOnly {@code true} If need to read only key object.
+     * @param rowData Required row data.
      * @param readCacheId {@code true} If need to read cache ID.
      * @param incomplete Incomplete object.
      * @param skipVer Whether version read should be skipped.
@@ -390,11 +389,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
         ByteBuffer buf,
-        boolean keyOnly,
+        RowData rowData,
         boolean readCacheId,
         IncompleteObject<?> incomplete,
         boolean skipVer
     ) throws IgniteCheckedException {
+        boolean tombstones = rowData == TOMBSTONES;
+
         if (readCacheId && cacheId == 0) {
             incomplete = readIncompleteCacheId(buf, incomplete);
 
@@ -416,6 +417,12 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read key.
         if (key == null) {
+            if (tombstones && sharedCtx.database().isTombstone(buf, key, (IncompleteCacheObject)incomplete) == Boolean.FALSE) {
+                verReady = true;
+
+                return null;
+            }
+
             incomplete = readIncompleteKey(coctx, buf, (IncompleteCacheObject)incomplete);
 
             if (key == null) {
@@ -423,7 +430,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 return incomplete; // Need to finish reading the key.
             }
 
-            if (keyOnly)
+            if (rowData == RowData.KEY_ONLY)
                 return null; // Key is ready - we are done!
 
             incomplete = null;
@@ -442,6 +449,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
         // Read value.
         if (val == null) {
+            if (tombstones && sharedCtx.database().isTombstone(buf, key, (IncompleteCacheObject)incomplete) == Boolean.FALSE) {
+                key = null;
+                verReady = true;
+
+                return null;
+            }
+
             incomplete = readIncompleteValue(coctx, buf, (IncompleteCacheObject)incomplete);
 
             if (val == null) {
@@ -450,6 +464,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
             }
 
             incomplete = null;
+        }
+
+        if (tombstones && !sharedCtx.database().isTombstone(this)) {
+            key = null;
+            val = null;
+            verReady = true;
+
+            return null;
         }
 
         // Read version.
@@ -498,6 +520,14 @@ public class CacheDataRowAdapter implements CacheDataRow {
         int len = PageUtils.getInt(addr, off);
         off += 4;
 
+        boolean tombstones = rowData == RowData.TOMBSTONES;
+
+        if (tombstones && !sharedCtx.database().isTombstone(addr + off + len + 1)) {
+            verReady = true; // Mark as ready, no need to read any data.
+
+            return;
+        }
+
         if (rowData != RowData.NO_KEY && rowData != RowData.NO_KEY_WITH_HINTS) {
             byte type = PageUtils.getByte(addr, off);
             off++;
@@ -519,10 +549,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte type = PageUtils.getByte(addr, off);
         off++;
 
-        byte[] bytes = PageUtils.getBytes(addr, off, len);
-        off += len;
+        if (!tombstones) {
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
 
-        val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+            val = coctx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+        }
+
+        off += len;
 
         int verLen;
 
@@ -821,6 +854,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject value() {
         assert val != null : "Value is not ready: " + this;
 
@@ -936,7 +974,10 @@ public class CacheDataRowAdapter implements CacheDataRow {
         FULL_WITH_HINTS,
 
         /** Force instant hints actualization for update operation with history (to avoid races with vacuum). */
-        NO_KEY_WITH_HINTS
+        NO_KEY_WITH_HINTS,
+
+        /** Do not read row data for non-tombstone entries. */
+        TOMBSTONES
     }
 
     /** {@inheritDoc} */

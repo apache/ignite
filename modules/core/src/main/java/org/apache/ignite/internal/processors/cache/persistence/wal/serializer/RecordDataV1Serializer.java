@@ -70,6 +70,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV3;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -374,6 +375,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
                     + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
 
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
+                return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
+                    + /*allocatedIdxCandidate*/ 4 + /*link*/ 8 + /*tombstones cnt*/ 8;
+
             case MEMORY_RECOVERY:
                 return 8;
 
@@ -606,6 +611,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
                 res = new MetaPageUpdatePartitionDataRecordV2(in);
+
+                break;
+
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
+                res = new MetaPageUpdatePartitionDataRecordV3(in);
 
                 break;
 
@@ -1228,6 +1238,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V3:
                 ((MetaPageUpdatePartitionDataRecord)rec).toBytes(buf);
 
                 break;

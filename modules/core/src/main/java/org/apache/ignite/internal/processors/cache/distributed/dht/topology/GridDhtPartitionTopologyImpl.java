@@ -712,9 +712,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     updateLocal(p, state, updateSeq, topVer);
 
-                    // Restart cleaning.
-                    if (state == RENTING)
+                    if (state == RENTING) // Restart cleaning.
                         locPart.clearAsync();
+                    else if (state == OWNING && locPart.hasTombstones())
+                        locPart.clearTombstonesAsync();  // Restart tombstones cleaning.
                 }
             }
         }

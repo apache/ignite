@@ -28,11 +28,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition meta page delta record.
- * Contains reference to update counters gaps.
+ * Contains information about tombstones count.
  */
-public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartitionDataRecord {
-    /** */
-    private long gapsLink;
+public class MetaPageUpdatePartitionDataRecordV3 extends MetaPageUpdatePartitionDataRecordV2 {
+    /** Tombstones count. */
+    private long tombstonesCnt;
 
     /**
      * @param grpId Group id.
@@ -40,65 +40,68 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
      * @param updateCntr Update counter.
      * @param globalRmvId Global remove id.
      * @param partSize Partition size.
-     * @param cntrsPageId Cntrs page id.
+     * @param cacheSizesPageId Cache sizes page id.
      * @param state State.
      * @param allocatedIdxCandidate Allocated index candidate.
-     * @param gapsLink Link.
+     * @param gapsLink Gaps link.
+     * @param tombstonesCnt Tombstones count.
      */
-    public MetaPageUpdatePartitionDataRecordV2(
+    public MetaPageUpdatePartitionDataRecordV3(
         int grpId,
         long pageId,
         long updateCntr,
         long globalRmvId,
         int partSize,
-        long cntrsPageId,
+        long cacheSizesPageId,
         byte state,
         int allocatedIdxCandidate,
-        long gapsLink
+        long gapsLink,
+        long tombstonesCnt
     ) {
-        super(grpId, pageId, updateCntr, globalRmvId, partSize, cntrsPageId, state, allocatedIdxCandidate);
-        this.gapsLink = gapsLink;
+        super(grpId, pageId, updateCntr, globalRmvId, partSize, cacheSizesPageId, state, allocatedIdxCandidate, gapsLink);
+        this.tombstonesCnt = tombstonesCnt;
     }
 
     /**
-     * @param in Input.
+     * @param in In.
      */
-    public MetaPageUpdatePartitionDataRecordV2(DataInput in) throws IOException {
+    public MetaPageUpdatePartitionDataRecordV3(DataInput in) throws IOException {
         super(in);
 
-        this.gapsLink = in.readLong();
+        this.tombstonesCnt = in.readLong();
+    }
+
+    /**
+     * @return Tombstones count.
+     */
+    public long tombstonesCount() {
+        return tombstonesCnt;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         super.applyDelta(pageMem, pageAddr);
 
-        PagePartitionMetaIOV2 io = (PagePartitionMetaIOV2)PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+        PagePartitionMetaIOV2 io = (PagePartitionMetaIOV2) PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setGapsLink(pageAddr, gapsLink);
-    }
-
-    /**
-     *
-     */
-    public long gapsLink() {
-        return gapsLink;
+        io.setTombstonesCount(pageAddr, tombstonesCnt);
     }
 
     /** {@inheritDoc} */
     @Override public void toBytes(ByteBuffer buf) {
         super.toBytes(buf);
 
-        buf.putLong(gapsLink());
+        buf.putLong(tombstonesCnt);
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2;
+        return RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V3;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdatePartitionDataRecordV2.class, this, "partId", PageIdUtils.partId(pageId()), "super", super.toString());
+        return S.toString(MetaPageUpdatePartitionDataRecordV2.class, this, "partId", PageIdUtils.partId(pageId()),
+            "super", super.toString());
     }
 }

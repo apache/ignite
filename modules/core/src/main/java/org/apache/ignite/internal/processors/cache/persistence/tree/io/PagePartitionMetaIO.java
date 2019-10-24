@@ -57,7 +57,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
         setUpdateCounter(pageAddr, 0);
         setGlobalRemoveId(pageAddr, 0);
         setPartitionState(pageAddr, (byte)-1);
-        setCountersPageId(pageAddr, 0);
+        setSizesPageId(pageAddr, 0);
     }
 
     /**
@@ -151,22 +151,22 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
-     * Returns partition counters page identifier, page with caches in cache group sizes.
+     * Returns page identifier related to page with logical cache sizes in cache group.
      *
      * @param pageAddr Partition metadata page address.
      * @return Next meta partial page ID or {@code 0} if it does not exist.
      */
-    public long getCountersPageId(long pageAddr) {
+    public long getCacheSizesPageId(long pageAddr) {
         return PageUtils.getLong(pageAddr, NEXT_PART_META_PAGE_OFF);
     }
 
     /**
-     * Sets new reference to partition counters page (logical cache sizes).
+     * Sets new reference to page with logical cache sizes in cache group.
      *
      * @param pageAddr Partition metadata page address.
      * @param cntrsPageId New cache sizes page ID.
      */
-    public void setCountersPageId(long pageAddr, long cntrsPageId) {
+    public void setSizesPageId(long pageAddr, long cntrsPageId) {
         PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
     }
 
@@ -226,6 +226,23 @@ public class PagePartitionMetaIO extends PageMetaIO {
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
+    public long getTombstonesCount(long pageAddr) {
+        throw new UnsupportedOperationException("Tombstones count is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param tombstonesCount Tombstones count.
+     */
+    public boolean setTombstonesCount(long pageAddr, long tombstonesCount) {
+        throw new UnsupportedOperationException("Tombstones count is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
     /** {@inheritDoc} */
     @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         super.printPage(pageAddr, pageSize, sb);
@@ -236,7 +253,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
             .a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr))
             .a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr))
             .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
-            .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
+            .a(",\n\tcacheSizesPageId=").a(getCacheSizesPageId(pageAddr))
             .a("\n]");
     }
 }

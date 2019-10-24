@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -286,6 +288,8 @@ public class CacheGroupContext {
                 (IoStatisticsHolderIndex)statHolderIdx
             );
         }
+
+        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -1319,6 +1323,21 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
+    }
+
+    /**
+     * @return {@code True} if need create temporary tombstones entries for removed data.
+     */
+    public boolean supportsTombstone() {
+        return !mvccEnabled && !isLocal();
+    }
+
+    /**
+     * @param part Partition.
+     * @return {@code True} if need create tombstone for remove in given partition.
+     */
+    public boolean shouldCreateTombstone(@Nullable GridDhtLocalPartition part) {
+        return part != null && supportsTombstone() && part.state() == GridDhtPartitionState.MOVING;
     }
 
     /**

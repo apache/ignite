@@ -6712,9 +6712,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache(DEFAULT_CACHE_NAME).context();
 
-                GridCacheEntryEx entry = ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+                if (ctx.isNear())
+                    ctx = ctx.near().dht().context();
 
-                if (ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
+                GridCacheEntryEx entry = ctx.cache().peekEx(key);
+
+                if (ctx.deferredDelete() && ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(((IgniteKernal)ignite).localNode())) {
                     assertNotNull(entry);
                     assertTrue(entry.deleted());
                 }
