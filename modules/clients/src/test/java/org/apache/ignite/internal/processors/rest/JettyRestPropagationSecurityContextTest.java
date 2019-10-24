@@ -31,11 +31,13 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.query.VisorQueryTask;
 import org.apache.ignite.internal.visor.query.VisorQueryTaskArg;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-import static org.apache.ignite.configuration.WALMode.NONE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -45,21 +47,10 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class JettyRestPropagationSecurityContextTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
-
         super.beforeTestsStarted();
 
         // We need to activate cluster.
         grid(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -72,20 +63,19 @@ public class JettyRestPropagationSecurityContextTest extends JettyRestProcessorC
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
-                .setPersistenceEnabled(true))
-            .setWalMode(NONE);
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        SecurityPermissionSet sysTaskAllow = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendCachePermissions("*", CACHE_READ)
+            .appendTaskPermissions("org.apache.ignite.internal.visor.query.VisorQueryTask", TASK_EXECUTE)
+            .appendTaskPermissions("org.apache.ignite.internal.visor.compute.VisorGatewayTask", TASK_EXECUTE)
+            .build();
 
         cfg.setDataStorageConfiguration(dsCfg)
-           .setAuthenticationEnabled(true)
+            .setAuthenticationEnabled(true)
             .setPluginProviders(new TestSecurityPluginProvider("server", "server", ALLOW_ALL, false,
-                new TestSecurityData("client", "client", SecurityPermissionSetBuilder.create()
-                    .defaultAllowAll(false)
-                    .appendTaskPermissions("org.apache.ignite.internal.visor.query.VisorQueryTask", TASK_EXECUTE)
-                    .appendTaskPermissions("org.apache.ignite.internal.visor.compute.VisorGatewayTask", TASK_EXECUTE)
-                    .build()
-                )));
+                new TestSecurityData("client", "client", sysTaskAllow)));
 
         return cfg;
     }
@@ -94,17 +84,20 @@ public class JettyRestPropagationSecurityContextTest extends JettyRestProcessorC
      *
      */
     @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void restClientShouldPropagateSecurityContext() throws Exception {
         IgniteEx node1 = grid(0);
 
         TestSecurityProcessor secPrc = U.field(node1.context().security(), "secPrc");
         List<TestSecurityProcessor.AuthorizeRecord> records = secPrc.getAuthorizeRecords();
+
         records.clear();
+
+        String qry = URLEncoder.encode("select * from pie", StandardCharsets.UTF_8.name());
 
         Map<String, String> pie = new JettyRestProcessorAbstractSelfTest.VisorGatewayArgument(VisorQueryTask.class)
             .forNode(node1.localNode())
-            .argument(VisorQueryTaskArg.class, "pie", URLEncoder.encode("select * from pie", StandardCharsets.UTF_8.name()),
-                false, false, false, false, 1);
+            .argument(VisorQueryTaskArg.class, "pie", qry, false, false, false, false, 1);
 
         pie.put("user", "client");
         pie.put("password", "client");

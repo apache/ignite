@@ -370,7 +370,7 @@ public class VisorQueryUtils {
 
             try(OperationSecurityContext ctx = ignite.context().security().withContext(initCtx)) {
                 if (log.isDebugEnabled())
-                    log.debug("Operation started with subject: " + ignite.context().security().securityContext().subject());
+                    log.debug("Operation started with context: " + ignite.context().security().securityContext());
 
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.getQueryText());
 
