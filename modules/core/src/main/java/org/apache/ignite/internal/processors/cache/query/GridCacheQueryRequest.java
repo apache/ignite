@@ -237,7 +237,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param type Query type.
      * @param fields {@code true} if query returns fields.
      * @param clause Query clause.
-     * @param limit Response limit. Set to -1 for no limits.
+     * @param limit Response limit. Set to 0 for no limits.
      * @param clsName Query class name.
      * @param keyValFilter Key-value filter.
      * @param part Partition.
