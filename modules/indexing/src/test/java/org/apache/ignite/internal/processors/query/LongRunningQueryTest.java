@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -44,6 +45,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
     /** Local query mode. */
     private boolean local;
+
+    /** Lazy query mode. */
+    private boolean lazy;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -81,6 +85,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testLongDistributed() {
         local = false;
+        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
@@ -92,9 +97,32 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     @Test
     public void testLongLocal() {
         local = true;
+        lazy = false;
 
         checkLongRunning();
         checkFastQueries();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBigResultSetLocal() throws Exception {
+        local = true;
+        lazy = true;
+
+        checkBigResultSet();
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBigResultDistributed() throws Exception {
+        local = false;
+        lazy = true;
+
+        checkBigResultSet();
     }
 
     /**
@@ -136,6 +164,27 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     */
+    private void checkBigResultSet() throws Exception {
+        ListeningTestLogger testLog = testLog();
+
+        LogListener lsnr = LogListener
+            .matches("Query produced big result set")
+            .build();
+
+        testLog.registerListener(lsnr);
+
+        try(FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
+            Iterator it = cur.iterator();
+
+            while (it.hasNext())
+                it.next();
+        }
+
+        assertTrue(lsnr.check(1_000));
+    }
+
+    /**
      * @param sql SQL query.
      * @param args Query parameters.
      */
@@ -153,6 +202,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             .setMaxMemory(-1)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
+            .setLazy(lazy)
             .setSchema("TEST")
             .setArgs(args), false);
     }
@@ -188,6 +238,11 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
             "log", testLog);
+
+        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).mapQueryExecutor(),
+            "log", testLog);
+
+        GridTestUtils.setFieldValue(grid().context().query().getIndexing(), "log", testLog);
 
         return testLog;
     }
