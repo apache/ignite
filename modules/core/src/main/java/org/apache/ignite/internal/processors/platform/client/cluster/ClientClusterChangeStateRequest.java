@@ -33,7 +33,7 @@ public class ClientClusterChangeStateRequest extends ClientRequest {
     /**
      * Constructor.
      *
-     * @param reader Reader/
+     * @param reader Reader.
      */
     public ClientClusterChangeStateRequest(BinaryRawReader reader) {
         super(reader);
@@ -41,8 +41,7 @@ public class ClientClusterChangeStateRequest extends ClientRequest {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public ClientResponse process(ClientConnectionContext ctx) {
+    @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteCluster cluster = ctx.kernalContext().grid().cluster();
         cluster.active(isActive);
         return new ClientResponse(requestId());
