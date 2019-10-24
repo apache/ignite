@@ -16,6 +16,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 /**
  *
  */
@@ -24,5 +27,12 @@ public class GridCacheAtomicClientInvalidPartitionHandlingSelfTest
     /** {@inheritDoc} */
     @Override protected boolean testClientNode() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-25184")
+    @Override public void testPrimaryFullAsync() throws Exception {
+        super.testPrimaryFullAsync();
     }
 }

@@ -68,7 +68,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -262,7 +261,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test primary-backup partitions consistency while restarting backup nodes under load with changing BLT.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-24303")
     public void testPartitionConsistencyWithBackupRestart_ChangeBLT() throws Exception {
         backups = 2;
 
@@ -305,7 +303,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 try {
                     waitForTopology(SERVER_NODES);
 
-                    resetBaselineTopology();
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
 
                     awaitPartitionMapExchange();
 
@@ -313,9 +312,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
                     startGrid(name);
 
-                    resetBaselineTopology();
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
 
                     awaitPartitionMapExchange();
+                }
+                catch (IllegalStateException e) {
+                    // No-op.
                 }
                 catch (Exception e) {
                     fail(X.getFullStackTrace(e));
