@@ -26,4 +26,9 @@ public class GridCacheAtomicClientInvalidPartitionHandlingSelfTest
     @Override protected boolean testClientNode() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testPrimaryFullAsync() throws Exception {
+        // TODO https://ggsystems.atlassian.net/browse/GG-25184
+    }
 }

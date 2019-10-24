@@ -35,10 +35,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Tests locking of thread of candidates (see GG-17364)
+ * Tests locking of thread of candidates.
  */
 public class CacheLockCandidatesThreadTest extends GridCommonAbstractTest {
-
     /** */
     private static final String DEFAULT_CACHE_NAME = "default";
 
@@ -88,7 +87,7 @@ public class CacheLockCandidatesThreadTest extends GridCommonAbstractTest {
 
             cache.put(triggerKey, "val");
 
-            IgniteInternalFuture<Object> future = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Lock lock = cache.lock(triggerKey);
                     try {
@@ -124,7 +123,7 @@ public class CacheLockCandidatesThreadTest extends GridCommonAbstractTest {
 
             unlock.countDown();
 
-            future.get();
+            fut.get();
             f.get();
         }
         finally {

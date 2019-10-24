@@ -259,9 +259,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test primary-backup partitions consistency while restarting backup nodes under load with changing BLT.
      */
     public void testPartitionConsistencyWithBackupRestart_ChangeBLT() throws Exception {
-        if (true) // TODO https://ggsystems.atlassian.net/browse/GG-24303
-            return;
-
         backups = 2;
 
         final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
@@ -303,7 +300,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 try {
                     waitForTopology(SERVER_NODES);
 
-                    resetBaselineTopology();
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
 
                     awaitPartitionMapExchange();
 
@@ -311,9 +309,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
                     startGrid(name);
 
-                    resetBaselineTopology();
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
 
                     awaitPartitionMapExchange();
+                }
+                catch (IllegalStateException e) {
+                    // No-op.
                 }
                 catch (Exception e) {
                     fail(X.getFullStackTrace(e));
