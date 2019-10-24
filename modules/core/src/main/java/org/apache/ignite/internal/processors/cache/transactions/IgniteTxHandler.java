@@ -1806,7 +1806,7 @@ public class IgniteTxHandler {
                             }
                         }
                         catch (GridDhtInvalidPartitionException e) {
-                            tx.addInvalidPartition(cacheCtx, e.partition());
+                            tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
 
                             tx.clearEntry(entry.txKey());
                         }
@@ -1815,7 +1815,7 @@ public class IgniteTxHandler {
                         }
                     }
                     else
-                        tx.addInvalidPartition(cacheCtx, part);
+                        tx.addInvalidPartition(cacheCtx.cacheId(), part);
 
                     idx++;
                 }
