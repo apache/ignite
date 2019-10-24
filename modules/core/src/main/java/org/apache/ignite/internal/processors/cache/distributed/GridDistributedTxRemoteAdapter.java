@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -278,11 +279,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
+     * @param pendingVers Pending versions.
+     *
+     * @throws GridDhtInvalidPartitionException If partition was invalidated.
      */
     @Override public void doneRemote(GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers) {
+        Collection<GridCacheVersion> pendingVers
+    ) throws GridDhtInvalidPartitionException {
         Map<IgniteTxKey, IgniteTxEntry> readMap = txState.readMap();
 
         if (readMap != null && !readMap.isEmpty()) {
@@ -319,12 +324,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param committedVers Completed versions relative to base version.
      * @param rolledbackVers Rolled back versions relative to base version.
      * @param pendingVers Pending versions.
+     *
+     * @throws GridDhtInvalidPartitionException If entry partition was invalidated.
      */
     private void doneRemote(IgniteTxEntry txEntry,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers) {
+        Collection<GridCacheVersion> pendingVers
+    ) throws GridDhtInvalidPartitionException {
         while (true) {
             GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
 
@@ -464,7 +472,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
+                        try {
+                            txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
+                        }
+                        catch (GridDhtInvalidPartitionException e) {
+                            break;
+                        }
                     }
                 }
             }
@@ -525,7 +538,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             GridDhtLocalPartition locPart =
                                     cacheCtx.group().topology().localPartition(txEntry.cached().partition());
 
-                            if (!near() && locPart != null ) {
+                            if (!near()) {
+                                if (locPart == null)
+                                    continue;
+
                                 if (!reservedParts.contains(locPart) && locPart.reserve()) {
                                     assert locPart.state() != EVICTED && locPart.reservations() > 0 : locPart;
 

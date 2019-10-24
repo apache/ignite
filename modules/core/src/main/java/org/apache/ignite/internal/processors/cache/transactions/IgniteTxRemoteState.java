@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
 /**
  *
  */
@@ -34,6 +36,7 @@ public interface IgniteTxRemoteState extends IgniteTxState {
     /**
      * @param cacheId Cache id.
      * @param part Partition number.
+     * @param ver Lock version.
      */
-    public void invalidPartition(int cacheId, int part);
+    public void invalidPartition(int cacheId, int part, GridCacheVersion ver);
 }

@@ -121,8 +121,7 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * @return Remote candidate only if it's first in the list and is marked
-     *      as <tt>'used'</tt>.
+     * @return Remote candidate only if it's first in the list and is marked as <tt>'used'</tt>.
      */
     @Nullable private GridCacheMvccCandidate remoteOwner() {
         if (rmts != null) {
