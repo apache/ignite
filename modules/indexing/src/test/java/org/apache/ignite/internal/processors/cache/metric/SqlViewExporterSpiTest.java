@@ -72,7 +72,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /** */
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
-    private static IgniteEx ignite;
+    private static IgniteEx ignite0;
+
+    /** */
+    private static IgniteEx ignite1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -85,7 +88,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         SqlViewMetricExporterSpi sqlSpi = new SqlViewMetricExporterSpi();
 
-        sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
+        if (igniteInstanceName.endsWith("1"))
+            sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
 
@@ -96,17 +100,18 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 
-        ignite = startGrid(0);
+        ignite0 = startGrid(0);
+        ignite1 = startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite0.cluster().active(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Collection<String> caches = ignite.cacheNames();
+        Collection<String> caches = ignite0.cacheNames();
 
         for (String cache : caches)
-            ignite.destroyCache(cache);
+            ignite0.destroyCache(cache);
     }
 
     /** {@inheritDoc} */
@@ -118,8 +123,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testDataRegionJmxMetrics() throws Exception {
-        List<List<?>> res = execute(ignite,
+    public void testEmptyFilter() throws Exception {
+        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.METRICS");
+
+        assertNotNull(res);
+        assertFalse(res.isEmpty());
+    }
+
+    /** */
+    @Test
+    public void testDataRegionMetrics() throws Exception {
+        List<List<?>> res = execute(ignite0,
             "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM SYS.METRICS");
 
         Set<String> names = new HashSet<>();
@@ -137,10 +151,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite);
+        createAdditionalMetrics(ignite1);
 
-        List<List<?>> res = execute(ignite,
-            "SELECT name, value, description FROM SYS.METRICS WHERE name LIKE 'other.prefix%'");
+        List<List<?>> res = execute(ignite1,
+            "SELECT name, value, description FROM SYS.METRICS " +
+                "WHERE name LIKE 'other.prefix%' OR name LIKE '" + FILTERED_PREFIX + "%'");
 
         Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(asList(
             t("other.prefix.test", "42"),
@@ -162,11 +177,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         Set<String> cacheNames = new HashSet<>(asList("cache-1", "cache-2"));
 
         for (String name : cacheNames)
-            ignite.createCache(name);
+            ignite0.createCache(name);
 
-        List<List<?>> caches = execute(ignite, "SELECT CACHE_NAME FROM SYS.CACHES");
+        List<List<?>> caches = execute(ignite0, "SELECT CACHE_NAME FROM SYS.CACHES");
 
-        assertEquals(ignite.context().cache().cacheDescriptors().size(), caches.size());
+        assertEquals(ignite0.context().cache().cacheDescriptors().size(), caches.size());
 
         for (List<?> row : caches)
             cacheNames.remove(row.get(0));
@@ -180,11 +195,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         Set<String> grpNames = new HashSet<>(asList("grp-1", "grp-2"));
 
         for (String grpName : grpNames)
-            ignite.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
+            ignite0.createCache(new CacheConfiguration<>("cache-" + grpName).setGroupName(grpName));
 
-        List<List<?>> grps = execute(ignite, "SELECT CACHE_GROUP_NAME FROM SYS.CACHE_GROUPS");
+        List<List<?>> grps = execute(ignite0, "SELECT CACHE_GROUP_NAME FROM SYS.CACHE_GROUPS");
 
-        assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
+        assertEquals(ignite0.context().cache().cacheGroupDescriptors().size(), grps.size());
 
         for (List<?> row : grps)
             grpNames.remove(row.get(0));
@@ -198,7 +213,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         CyclicBarrier barrier = new CyclicBarrier(6);
 
         for (int i = 0; i < 5; i++) {
-            ignite.compute().broadcastAsync(() -> {
+            ignite0.compute().broadcastAsync(() -> {
                 try {
                     barrier.await();
                     barrier.await();
@@ -211,7 +226,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         barrier.await();
 
-        List<List<?>> tasks = execute(ignite,
+        List<List<?>> tasks = execute(ignite0,
             "SELECT " +
             "  INTERNAL, " +
             "  AFFINITY_CACHE_NAME, " +
@@ -231,7 +246,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(-1, t.get(2));
         assertTrue(t.get(3).toString().startsWith(getClass().getName()));
         assertTrue(t.get(4).toString().startsWith(getClass().getName()));
-        assertEquals(ignite.localNode().id(), t.get(5));
+        assertEquals(ignite0.localNode().id(), t.get(5));
         assertEquals("0", t.get(6));
 
         barrier.await();
@@ -246,9 +261,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         srvcCfg.setMaxPerNodeCount(1);
         srvcCfg.setService(new DummyService());
 
-        ignite.services().deploy(srvcCfg);
+        ignite0.services().deploy(srvcCfg);
 
-        List<List<?>> srvs = execute(ignite,
+        List<List<?>> srvs = execute(ignite0,
             "SELECT " +
                 "  NAME, " +
                 "  SERVICE_ID, " +
@@ -262,7 +277,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 "  ORIGIN_NODE_ID " +
                 "FROM SYS.SERVICES");
 
-        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
+        assertEquals(ignite0.context().service().serviceDescriptors().size(), srvs.size());
 
         List<?> sysView = srvs.iterator().next();
 
@@ -274,16 +289,16 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testClientsConnections() throws Exception {
-        String host = ignite.configuration().getClientConnectorConfiguration().getHost();
+        String host = ignite0.configuration().getClientConnectorConfiguration().getHost();
 
         if (host == null)
-            host = ignite.configuration().getLocalHost();
+            host = ignite0.configuration().getLocalHost();
 
-        int port = ignite.configuration().getClientConnectorConfiguration().getPort();
+        int port = ignite0.configuration().getClientConnectorConfiguration().getPort();
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
             try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
-                List<List<?>> conns = execute(ignite, "SELECT * FROM SYS.CLIENT_CONNECTIONS");
+                List<List<?>> conns = execute(ignite0, "SELECT * FROM SYS.CLIENT_CONNECTIONS");
 
                 assertEquals(2, conns.size());
             }
@@ -293,10 +308,10 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testTransactions() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>("c")
+        IgniteCache<Integer, Integer> cache = ignite0.createCache(new CacheConfiguration<Integer, Integer>("c")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        assertTrue(execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.TRANSACTIONS").isEmpty());
 
         CountDownLatch latch1 = new CountDownLatch(10);
         CountDownLatch latch2 = new CountDownLatch(1);
@@ -304,7 +319,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         AtomicInteger cntr = new AtomicInteger();
 
         GridTestUtils.runMultiThreadedAsync(() -> {
-            try (Transaction tx = ignite.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = ignite0.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
                 cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
 
@@ -317,7 +332,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }, 5, "xxx");
 
         GridTestUtils.runMultiThreadedAsync(() -> {
-            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+            try (Transaction tx = ignite0.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                 cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
                 cache.put(cntr.incrementAndGet(), cntr.incrementAndGet());
 
@@ -331,13 +346,13 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         latch1.await(5, TimeUnit.SECONDS);
 
-        List<List<?>> txs = execute(ignite, "SELECT * FROM SYS.TRANSACTIONS");
+        List<List<?>> txs = execute(ignite0, "SELECT * FROM SYS.TRANSACTIONS");
 
         assertEquals(10, txs.size());
 
         latch2.countDown();
 
-        boolean res = waitForCondition(() -> execute(ignite, "SELECT * FROM SYS.TRANSACTIONS").isEmpty(), 5_000);
+        boolean res = waitForCondition(() -> execute(ignite0, "SELECT * FROM SYS.TRANSACTIONS").isEmpty(), 5_000);
 
         assertTrue(res);
     }
@@ -394,7 +409,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         Set<String> actViews = new HashSet<>();
 
-        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEWS");
+        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEWS");
 
         for (List<?> row : res)
             actViews.add(row.get(0).toString());
@@ -405,11 +420,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testTable() throws Exception {
-        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLES").isEmpty());
 
-        execute(ignite, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR)");
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR)");
 
-        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.TABLES");
+        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.TABLES");
 
         assertEquals(1, res.size());
 
@@ -428,31 +443,31 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("java.lang.Long", tbl.get(7)); // KEY_TYPE_NAME
         assertNotNull(tbl.get(8)); // VALUE_TYPE_NAME
 
-        execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
+        execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR)");
 
-        assertEquals(2, execute(ignite, "SELECT * FROM SYS.TABLES").size());
+        assertEquals(2, execute(ignite0, "SELECT * FROM SYS.TABLES").size());
 
-        execute(ignite, "DROP TABLE T1");
-        execute(ignite, "DROP TABLE T2");
+        execute(ignite0, "DROP TABLE T1");
+        execute(ignite0, "DROP TABLE T2");
 
-        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLES").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLES").isEmpty());
     }
 
     /** */
     @Test
     public void testTableColumns() throws Exception {
-        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
 
-        execute(ignite, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
 
-        Set<?> actCols = execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS")
+        Set<?> actCols = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS")
             .stream()
             .map(l -> l.get(0))
             .collect(Collectors.toSet());
 
         assertEquals(new HashSet<>(asList("ID", "NAME", "_KEY", "_VAL")), actCols);
 
-        execute(ignite, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
+        execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
 
         List<List<?>> expRes = asList(
             asList("ID", "T1", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
@@ -465,20 +480,20 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             asList("_VAL", "T2", "PUBLIC", false, false, null, true, false, -1, -1, null)
         );
 
-        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS ORDER BY TABLE_NAME, COLUMN_NAME");
+        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS ORDER BY TABLE_NAME, COLUMN_NAME");
 
         assertEquals(expRes, res);
 
-        execute(ignite, "DROP TABLE T1");
-        execute(ignite, "DROP TABLE T2");
+        execute(ignite0, "DROP TABLE T1");
+        execute(ignite0, "DROP TABLE T2");
 
-        assertTrue(execute(ignite, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
     }
 
     /** */
     @Test
     public void testViewColumns() throws Exception {
-        execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS");
+        execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS");
 
         List<List<?>> expRes = asList(
             asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, 19L, 0, Long.class.getName()),
@@ -494,7 +509,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 String.class.getName())
         );
 
-        List<List<?>> res = execute(ignite, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");
+        List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");
 
         assertEquals(expRes, res);
     }
@@ -502,31 +517,29 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try(IgniteEx remoteNode = startGrid(1)) {
-            IgniteCache<Integer, Integer> cache = ignite.createCache("cache-1");
+        IgniteCache<Integer, Integer> cache = ignite0.createCache("cache-1");
 
-            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
 
-            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
-                .setInitialQuery(new ScanQuery<>())
-                .setPageSize(100)
-                .setTimeInterval(1000)
-                .setLocalListener(evts -> {
-                    // No-op.
-                })
-                .setRemoteFilterFactory(() -> evt -> true)
-            )) {
-                for (int i=0; i<100; i++)
-                    cache.put(i, i);
+        try (QueryCursor qry = cache.query(new ContinuousQuery<>()
+            .setInitialQuery(new ScanQuery<>())
+            .setPageSize(100)
+            .setTimeInterval(1000)
+            .setLocalListener(evts -> {
+                // No-op.
+            })
+            .setRemoteFilterFactory(() -> evt -> true)
+        )) {
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
 
-                checkContinuouQueryView(ignite, true);
-                checkContinuouQueryView(remoteNode, false);
-            }
-
-            assertTrue(execute(ignite, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-            assertTrue(execute(remoteNode, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+            checkContinuouQueryView(ignite0, true);
+            checkContinuouQueryView(ignite1, false);
         }
+
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
     }
 
     /** */
@@ -550,7 +563,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals("cache-1", cq.get(0));
         assertEquals(100, cq.get(1));
         assertEquals(1000L, cq.get(2));
-        assertEquals(ignite.localNode().id(), cq.get(3));
+        assertEquals(ignite0.localNode().id(), cq.get(3));
 
         if (loc)
             assertTrue(cq.get(4).toString().startsWith(getClass().getName()));

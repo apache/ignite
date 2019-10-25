@@ -595,7 +595,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "NODE_ORDER, ADDRESSES, HOSTNAMES FROM " + systemSchemaName() + ".NODES");
 
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
-            Integer.class, String.class, String.class);
+            Long.class, String.class, String.class);
 
         assertEquals(3, resAll.size());
 
@@ -608,7 +608,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(nodeId0, resSrv.get(0).get(0));
 
-        assertEquals(1, resSrv.get(0).get(1));
+        assertEquals(1L, resSrv.get(0).get(1));
 
         List<List<?>> resCli = execSql(
             "SELECT NODE_ID, NODE_ORDER FROM " + systemSchemaName() + ".NODES WHERE IS_CLIENT = TRUE");
@@ -617,7 +617,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(nodeId(1), resCli.get(0).get(0));
 
-        assertEquals(2, resCli.get(0).get(1));
+        assertEquals(2L, resCli.get(0).get(1));
 
         List<List<?>> resDaemon = execSql(
             "SELECT NODE_ID, NODE_ORDER FROM " + systemSchemaName() + ".NODES WHERE IS_DAEMON = TRUE");
@@ -626,7 +626,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(nodeId(2), resDaemon.get(0).get(0));
 
-        assertEquals(3, resDaemon.get(0).get(1));
+        assertEquals(3L, resDaemon.get(0).get(1));
 
         // Check index on ID column.
         assertEquals(0, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = '-'").size());

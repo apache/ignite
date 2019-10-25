@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.math;
 
 import org.apache.ignite.IgniteException;
 
 /**
- * This exception is used to indicate any error condition accessing matrix elements by invalid row index.
+ * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
  */
-public class RowIndexException extends IgniteException {
+public class IndexException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param idx Index value that caused this exception.
      */
-    public RowIndexException(int idx) {
-        super("Invalid (out of bound) row index: " + idx);
+    public IndexException(int idx) {
+        super("Invalid (out of bound) index: " + idx);
     }
 }
