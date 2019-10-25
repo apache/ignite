@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
@@ -62,6 +63,7 @@ public class SecurityTestSuite extends TestSuite {
         suite.addTestSuite(DataStreamerRemoteSecurityContextCheckTest.class);
         suite.addTestSuite(CacheLoadRemoteSecurityContextCheckTest.class);
         suite.addTestSuite(ThinClientPermissionCheckTest.class);
+        suite.addTestSuite(IgniteSecurityProcessorTest.class);
 
         return suite;
     }
