@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -75,6 +79,12 @@ public class CheckpointMetricsTracker {
 
     /** */
     private long walCpRecordFsyncEnd;
+
+    /** */
+    private long splitAndSortCpPagesStart;
+
+    /** */
+    private long splitAndSortCpPagesEnd;
 
     /** */
     private long listenersExecEnd;
@@ -166,6 +176,20 @@ public class CheckpointMetricsTracker {
     /**
      *
      */
+    public void onSplitAndSortCpPagesStart() {
+        splitAndSortCpPagesStart = System.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
+    public void onSplitAndSortCpPagesEnd() {
+        splitAndSortCpPagesEnd = System.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
     public void onWalCpRecordFsyncEnd() {
         walCpRecordFsyncEnd = System.currentTimeMillis();
     }
@@ -231,6 +255,22 @@ public class CheckpointMetricsTracker {
      */
     public long walCpRecordFsyncDuration() {
         return walCpRecordFsyncEnd - walCpRecordFsyncStart;
+    }
+
+    /**
+     * @return Duration of checkpoint entry buffer writing to file.
+     *
+     * @see GridCacheDatabaseSharedManager#writeCheckpointEntry(ByteBuffer, CheckpointEntry, CheckpointEntryType)
+     */
+    public long writeCheckpointEntryDuration() {
+        return splitAndSortCpPagesStart - walCpRecordFsyncEnd;
+    }
+
+    /**
+     * @return Duration of splitting and sorting checkpoint pages.
+     */
+    public long splitAndSortCpPagesDuration() {
+        return splitAndSortCpPagesEnd - splitAndSortCpPagesStart;
     }
 
     /**

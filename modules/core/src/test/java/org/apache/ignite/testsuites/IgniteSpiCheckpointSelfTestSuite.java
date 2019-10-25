@@ -22,6 +22,7 @@ import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSecondCacheSelfTest;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpiStartStopSelfTest;
+import org.apache.ignite.spi.checkpoint.cache.CheckCheckpointStartLoggingTest;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiCustomConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpiDefaultConfigSelfTest;
@@ -47,6 +48,7 @@ public class IgniteSpiCheckpointSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(CacheCheckpointSpiSelfTest.class));
         suite.addTest(new TestSuite(CacheCheckpointSpiStartStopSelfTest.class));
         suite.addTest(new TestSuite(CacheCheckpointSpiSecondCacheSelfTest.class));
+        suite.addTest(new TestSuite(CheckCheckpointStartLoggingTest.class));
 
         // JDBC.
         suite.addTest(new TestSuite(JdbcCheckpointSpiConfigSelfTest.class));
