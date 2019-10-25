@@ -58,12 +58,4 @@ public class JettyRestProcessorSecurityCachePermissionSelfTest extends JettyRest
         assertTrue(content(FORBIDDEN_CACHE_NAME, GridRestCommand.DESTROY_CACHE).startsWith("{\"successStatus\":1," +
             "\"error\":\"Failed to handle request: [req=DESTROY_CACHE, err=Authorization failed [perm=CACHE_DESTROY, name=FORBIDDEN_TEST_CACHE"));
     }
-
-    /**
-     * This test will be fail becouse req.authorizationContext not defined
-     * in method UserActionCommandHandler#handleAsync provided ctx.security().enabled() == true.
-     */
-    @Override public void testAddUpdateRemoveUser() throws Exception {
-        // No-op.
-    }
 }

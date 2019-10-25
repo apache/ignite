@@ -288,7 +288,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
                 }
             }
-            else {
+            if (authenticationEnabled) {
                 AuthorizationContext authCtx0 = ses.authCtx;
 
                 try {
