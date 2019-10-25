@@ -1828,10 +1828,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * Visits leaf pages and applies page handler to the pages with filtered rows.
      *
      * @param rowClo Row filter.
      * @param hnd Page handler.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void visitLeaves(TreeRowClosure<L, T> rowClo, VisitorPageHandler hnd)
         throws IgniteCheckedException {
@@ -5957,7 +5958,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     *
+     * Removes filtered rows from the leaf pages.
+     * The only and the rightmost rows are deleted starting from "root", using regular remove.
      */
     public class PurgePageHandler extends VisitorPageHandler {
         /** Accumulates indexes of rows for the delta wal record. */
