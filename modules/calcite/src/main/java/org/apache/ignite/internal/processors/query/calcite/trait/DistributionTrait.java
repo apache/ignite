@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Util;
 
 /**
  *
  */
-public interface IgniteDistribution extends RelTrait {
-    public enum DistributionType {
+public interface DistributionTrait extends RelTrait {
+    enum DistributionType {
         HASH("hash"),
         RANDOM("random"),
         BROADCAST("broadcast"),
@@ -46,25 +45,22 @@ public interface IgniteDistribution extends RelTrait {
         }
     }
 
-    IgniteDistribution ANY = new IgniteDistributionImpl(DistributionType.ANY, ImmutableIntList.of());
+    DistributionTrait ANY = IgniteDistributions.single();
 
     DistributionType type();
 
     @Override default RelTraitDef getTraitDef() {
-        return IgniteDistributionTraitDef.INSTANCE;
+        return DistributionTraitDef.INSTANCE;
     }
 
     @Override default boolean satisfies(RelTrait trait) {
         if (trait == this)
             return true;
 
-        if (!(trait instanceof IgniteDistribution))
+        if (!(trait instanceof DistributionTrait))
             return false;
 
-        IgniteDistribution other = (IgniteDistribution) trait;
-
-        if (!Util.startsWith(other.sources(), sources()))
-            return false;
+        DistributionTrait other = (DistributionTrait) trait;
 
         if (other.type() == DistributionType.ANY)
             return true;
@@ -79,9 +75,4 @@ public interface IgniteDistribution extends RelTrait {
      * @return Hash distribution columns ordinals or empty list otherwise.
      */
     ImmutableIntList keys();
-
-    /**
-     * @return Sources (indexes of sorted by node order nodes list for particular topology).
-     */
-    ImmutableIntList sources();
 }

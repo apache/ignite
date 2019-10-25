@@ -23,10 +23,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 
 public final class IgniteLogicalTableScan extends TableScan implements IgniteRel {
-  public IgniteLogicalTableScan(RelOptCluster cluster, RelTraitSet traitSet,
-      RelOptTable table) {
+  public IgniteLogicalTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
     super(cluster, traitSet, table);
   }
 
@@ -34,5 +35,9 @@ public final class IgniteLogicalTableScan extends TableScan implements IgniteRel
     assert inputs.isEmpty();
 
     return this;
+  }
+
+  public SourceDistribution tableDistribution() {
+     return getTable().unwrap(IgniteTable.class).tableDistribution(getCluster().getPlanner().getContext());
   }
 }

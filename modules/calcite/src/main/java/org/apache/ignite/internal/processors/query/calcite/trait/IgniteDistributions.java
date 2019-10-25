@@ -19,26 +19,31 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.util.List;
 import org.apache.calcite.util.ImmutableIntList;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution.DistributionType.HASH;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution.DistributionType.RANDOM;
-import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution.DistributionType.SINGLE;
+import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait.DistributionType.HASH;
 
 /**
  *
  */
 public class IgniteDistributions {
     /** */
-    private static final IgniteDistributionTraitDef traitDef = IgniteDistributionTraitDef.INSTANCE;
+    private static final DistributionTraitDef traitDef = DistributionTraitDef.INSTANCE;
+    private static final DistributionTrait SINGLE = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.SINGLE, ImmutableIntList.of()));
+    private static final DistributionTrait RANDOM = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.RANDOM, ImmutableIntList.of()));
+    private static final DistributionTrait ANY    = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.ANY, ImmutableIntList.of()));
 
-    public static IgniteDistribution random(List<Integer> sources) {
-        return traitDef.canonize(new IgniteDistributionImpl(RANDOM, ImmutableIntList.of(), ImmutableIntList.copyOf(sources)));
+    public static DistributionTrait any() {
+        return ANY;
     }
 
-    public static IgniteDistribution hash(List<Integer> keys, List<Integer> sources) {
-        return traitDef.canonize(new IgniteDistributionImpl(HASH, ImmutableIntList.copyOf(keys), ImmutableIntList.copyOf(sources)));
+    public static DistributionTrait random() {
+        return RANDOM;
     }
 
-    public static IgniteDistribution single(List<Integer> sources) {
-        return traitDef.canonize(new IgniteDistributionImpl(SINGLE, ImmutableIntList.of(), ImmutableIntList.copyOf(sources)));
+    public static DistributionTrait single() {
+        return SINGLE;
+    }
+
+    public static DistributionTrait hash(List<Integer> keys) {
+        return traitDef.canonize(new DistributionTraitImpl(HASH, ImmutableIntList.copyOf(keys)));
     }
 }

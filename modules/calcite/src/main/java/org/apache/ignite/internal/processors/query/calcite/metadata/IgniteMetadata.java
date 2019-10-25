@@ -25,7 +25,8 @@ import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
@@ -35,18 +36,31 @@ public class IgniteMetadata {
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
-                DefaultRelMetadataProvider.INSTANCE,
-                IgniteMdDistribution.SOURCE));
+                IgniteMdDistribution.SOURCE,
+                IgniteMdSourceDistribution.SOURCE,
+                DefaultRelMetadataProvider.INSTANCE));
 
-    public interface Distribution extends Metadata {
-        MetadataDef<Distribution> DEF = MetadataDef.of(Distribution.class, Distribution.Handler.class, IgniteMethod.DISTRIBUTION.method());
+    public interface TraitDistribution extends Metadata {
+        MetadataDef<TraitDistribution> DEF = MetadataDef.of(TraitDistribution.class, TraitDistribution.Handler.class, IgniteMethod.DISTRIBUTION.method());
 
         /** Determines how the rows are distributed. */
-        IgniteDistribution distribution();
+        DistributionTrait distribution();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<Distribution> {
-            IgniteDistribution distribution(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<TraitDistribution> {
+            DistributionTrait distribution(RelNode r, RelMetadataQuery mq);
+        }
+    }
+
+    public interface TaskDistribution extends Metadata {
+        MetadataDef<TaskDistribution> DEF = MetadataDef.of(TaskDistribution.class, TaskDistribution.Handler.class, IgniteMethod.TASK_DISTRIBUTION.method());
+
+        /** Determines how the rows are distributed. */
+        SourceDistribution distribution();
+
+        /** Handler API. */
+        interface Handler extends MetadataHandler<TaskDistribution> {
+            SourceDistribution distribution(RelNode r, RelMetadataQuery mq);
         }
     }
 }

@@ -23,20 +23,13 @@ import org.apache.calcite.util.ImmutableIntList;
 /**
  *
  */
-public class IgniteDistributionImpl implements IgniteDistribution {
+public class DistributionTraitImpl implements DistributionTrait {
     private final DistributionType type;
     private final ImmutableIntList keys;
 
-    private ImmutableIntList sources;
-
-    public IgniteDistributionImpl(DistributionType type, ImmutableIntList keys) {
-        this(type, keys, ImmutableIntList.of());
-    }
-
-    public IgniteDistributionImpl(DistributionType type, ImmutableIntList keys, ImmutableIntList sources) {
+    public DistributionTraitImpl(DistributionType type, ImmutableIntList keys) {
         this.type = type;
         this.keys = keys;
-        this.sources = sources;
     }
 
     @Override public DistributionType type() {
@@ -47,32 +40,26 @@ public class IgniteDistributionImpl implements IgniteDistribution {
         return keys;
     }
 
-    @Override public ImmutableIntList sources() {
-        return sources;
-    }
-
     @Override public void register(RelOptPlanner planner) {}
 
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
 
-        if (o instanceof IgniteDistribution) {
-            IgniteDistribution that = (IgniteDistribution) o;
+        if (o instanceof DistributionTrait) {
+            DistributionTrait that = (DistributionTrait) o;
 
-            return type == that.type()
-                && keys.equals(that.keys())
-                && sources.equals(that.sources());
+            return type == that.type() && keys.equals(that.keys());
         }
 
         return false;
     }
 
     @Override public int hashCode() {
-        return Objects.hash(type, keys, sources);
+        return Objects.hash(type, keys);
     }
 
     @Override public String toString() {
-        return type + (type == DistributionType.HASH ? keys.toString()  : "") + sources;
+        return type + (type == DistributionType.HASH ? keys.toString()  : "");
     }
 }

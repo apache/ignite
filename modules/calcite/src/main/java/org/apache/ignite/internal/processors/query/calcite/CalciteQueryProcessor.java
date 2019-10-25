@@ -33,6 +33,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -40,13 +41,14 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.DistributedEx
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryExecution;
-import org.apache.ignite.internal.processors.query.calcite.schema.CalciteSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.calcite.schema.CalciteSchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.contextParameter;
 
 /**
  *
@@ -62,7 +64,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     private IgniteLogger log;
 
     /** */
-    private GridKernalContext ctx;
+    private GridKernalContext kernalContext;
 
     public CalciteQueryProcessor() {
         config = Frameworks.newConfigBuilder()
@@ -94,12 +96,12 @@ public class CalciteQueryProcessor implements QueryEngine {
 
     /** {@inheritDoc} */
     @Override public void start(@NotNull GridKernalContext ctx) {
-        this.ctx = ctx;
+        kernalContext = ctx;
 
         GridInternalSubscriptionProcessor prc = ctx.internalSubscriptionProcessor();
 
         if (prc != null) // Stubbed context doesn't have such processor
-            prc.registerSchemaChangeListener(new CalciteSchemaChangeListener(schemaHolder));
+            prc.registerSchemaChangeListener(schemaHolder);
     }
 
     /** {@inheritDoc} */
@@ -122,7 +124,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     }
 
     public GridKernalContext context() {
-        return ctx;
+        return kernalContext;
     }
 
     /** */
@@ -136,10 +138,6 @@ public class CalciteQueryProcessor implements QueryEngine {
         return new IgnitePlanner(cfg);
     }
 
-    private QueryExecution prepare(Context ctx) {
-        return new DistributedExecution(ctx);
-    }
-
     /**
      * @param ctx External context.
      * @param query Query string.
@@ -147,16 +145,19 @@ public class CalciteQueryProcessor implements QueryEngine {
      * @return Query execution context.
      */
     Context context(@NotNull Context ctx, String query, Object[] params) { // Package private visibility for tests.
-        return Contexts.chain(
-            config.getContext(),
-            Contexts.of(schemaHolder.schema(), new Query(query, params)),
-            ctx);
+        return Contexts.chain(ctx,
+            Contexts.of(
+                new Query(query, params),
+                contextParameter(ctx, SchemaPlus.class, schemaHolder::schema),
+                contextParameter(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)),
+            config.getContext());
     }
 
-    /**
-     * @return Schema provider.
-     */
-    CalciteSchemaHolder schemaHolder() { // Package private visibility for tests.
-        return schemaHolder;
+    private QueryExecution prepare(Context ctx) {
+        return new DistributedExecution(ctx);
+    }
+
+    private AffinityTopologyVersion readyAffinityVersion() {
+        return kernalContext.cache().context().exchange().readyAffinityVersion();
     }
 }

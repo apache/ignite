@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.Distribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.TaskDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.TraitDistribution;
 
 /**
  *
  */
 public enum IgniteMethod {
-    DISTRIBUTION(Distribution.class, "distribution");
+    DISTRIBUTION(TraitDistribution.class, "distribution"),
+    TASK_DISTRIBUTION(TaskDistribution.class, "distribution");
 
     private final Method method;
 

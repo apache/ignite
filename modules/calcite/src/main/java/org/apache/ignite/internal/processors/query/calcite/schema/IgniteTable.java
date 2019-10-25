@@ -17,39 +17,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.function.Function;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.exchange.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class IgniteTable extends AbstractTable implements TranslatableTable {
     private final String tableName;
     private final String cacheName;
-    private final Function<RelDataTypeFactory, RelDataType> rowType;
-    private final Statistic statistic;
+    private final RowType rowType;
 
-
-    public IgniteTable(String tableName, String cacheName,
-        Function<RelDataTypeFactory, RelDataType> rowType, @Nullable Statistic statistic) {
+    public IgniteTable(String tableName, String cacheName, RowType rowType) {
         this.tableName = tableName;
         this.cacheName = cacheName;
         this.rowType = rowType;
-
-        this.statistic = statistic == null ? Statistics.UNKNOWN : statistic;
     }
 
     /**
@@ -67,21 +63,29 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     }
 
     /** {@inheritDoc} */
-    @Override public Statistic getStatistic() {
-        return statistic;
-    }
-
-    /** {@inheritDoc} */
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return rowType.apply(typeFactory);
+        return rowType.asRelDataType(typeFactory);
     }
 
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
-                .replaceIf(IgniteDistributionTraitDef.INSTANCE, () -> IgniteDistributions.hash(ImmutableIntList.of(0), ImmutableIntList.of()));
+        RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.LOGICAL_CONVENTION)
+                .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteDistributions.hash(rowType.distributionKeys()));
         return new IgniteLogicalTableScan(cluster, traitSet, relOptTable);
+    }
+
+    public SourceDistribution tableDistribution(Context context) {
+        SourceDistribution res = new SourceDistribution();
+
+        res.localInputs = new GridIntList();
+        res.localInputs.add(CU.cacheId(cacheName));
+
+        DistributionRegistry registry = context.unwrap(DistributionRegistry.class);
+        AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
+
+        res.partitionMapping = registry.partitionMapping(CU.cacheId(cacheName), topVer);
+
+        return res;
     }
 }

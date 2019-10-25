@@ -25,20 +25,20 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 /**
  *
  */
-public class IgniteDistributionTraitDef extends RelTraitDef<IgniteDistribution> {
+public class DistributionTraitDef extends RelTraitDef<DistributionTrait> {
     /** */
-    public static final IgniteDistributionTraitDef INSTANCE = new IgniteDistributionTraitDef();
+    public static final DistributionTraitDef INSTANCE = new DistributionTraitDef();
 
-    @Override public Class<IgniteDistribution> getTraitClass() {
-        return IgniteDistribution.class;
+    @Override public Class<DistributionTrait> getTraitClass() {
+        return DistributionTrait.class;
     }
 
     @Override public String getSimpleName() {
         return "distr";
     }
 
-    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution targetDist, boolean allowInfiniteCostConverters) {
-        IgniteDistribution srcDist = rel.getTraitSet().getTrait(INSTANCE);
+    @Override public RelNode convert(RelOptPlanner planner, RelNode rel, DistributionTrait targetDist, boolean allowInfiniteCostConverters) {
+        DistributionTrait srcDist = rel.getTraitSet().getTrait(INSTANCE);
 
         // Source and Target have the same trait.
         if (srcDist.equals(targetDist))
@@ -59,11 +59,11 @@ public class IgniteDistributionTraitDef extends RelTraitDef<IgniteDistribution> 
         }
     }
 
-    @Override public boolean canConvert(RelOptPlanner planner, IgniteDistribution fromTrait, IgniteDistribution toTrait) {
+    @Override public boolean canConvert(RelOptPlanner planner, DistributionTrait fromTrait, DistributionTrait toTrait) {
         return true;
     }
 
-    @Override public IgniteDistribution getDefault() {
-        return IgniteDistribution.ANY;
+    @Override public DistributionTrait getDefault() {
+        return DistributionTrait.ANY;
     }
 }

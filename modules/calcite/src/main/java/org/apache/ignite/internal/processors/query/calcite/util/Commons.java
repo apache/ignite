@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -34,12 +35,12 @@ import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -51,19 +52,33 @@ public final class Commons {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
     }
 
+    public static <T> @Nullable T contextParameter(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
+        T param = ctx.unwrap(paramType);
+
+        if (param != null)
+            return param;
+
+        return paramSrc.get();
+    }
+
     /** */
-    public static Function<RelDataTypeFactory, RelDataType> rowTypeFunction(GridQueryTypeDescriptor desc) {
-        return (f) -> {
-            RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(f);
+    public static RowType rowType(GridQueryTypeDescriptor desc) {
+        RowType.Builder b = RowType.builder();
 
-            builder.add(QueryUtils.KEY_FIELD_NAME, f.createJavaType(desc.keyClass()));
-            builder.add(QueryUtils.VAL_FIELD_NAME, f.createJavaType(desc.valueClass()));
+        Map<String, Class<?>> fields = desc.fields();
 
-            for (Map.Entry<String, Class<?>> prop : desc.fields().entrySet()) {
-                builder.add(prop.getKey(), f.createJavaType(prop.getValue()));
-            }
-            return builder.build();
-        };
+        b.key(desc.keyClass()).val(desc.valueClass());
+
+        for (Map.Entry<String, Class<?>> entry : fields.entrySet()) {
+            GridQueryProperty prop = desc.property(entry.getKey());
+
+            if (prop.key())
+                b.keyField(prop.name(), prop.type(), Objects.equals(desc.affinityKey(), prop.name()));
+            else
+                b.field(prop.name(), prop.type());
+        }
+
+        return b.build();
     }
 
     public static RelOptRuleOperand any(Class<? extends RelNode> first, RelTrait trait){

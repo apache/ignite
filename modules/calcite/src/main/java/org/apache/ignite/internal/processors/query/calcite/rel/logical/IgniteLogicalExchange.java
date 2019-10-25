@@ -26,8 +26,8 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 /**
  *
@@ -51,12 +51,12 @@ public final class IgniteLogicalExchange extends SingleRel implements IgniteRel 
             Util.nLogN(rowCount) * bytesPerRow, rowCount, 0);
     }
 
-    public IgniteDistribution sourceDistribution() {
-        return getInput().getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
+    public DistributionTrait sourceDistribution() {
+        return getInput().getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
-    public IgniteDistribution targetDistribution() {
-        return getTraitSet().getTrait(IgniteDistributionTraitDef.INSTANCE);
+    public DistributionTrait targetDistribution() {
+        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {

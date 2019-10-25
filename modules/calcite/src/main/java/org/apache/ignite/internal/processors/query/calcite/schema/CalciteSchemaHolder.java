@@ -17,23 +17,52 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
  *
  */
-public class CalciteSchemaHolder implements SchemaProvider {
+public class CalciteSchemaHolder implements SchemaChangeListener {
+    private final Map<String, IgniteSchema> schemas = new HashMap<>();
     private volatile SchemaPlus schema;
 
-    @Override public SchemaPlus schema() {
-        return Objects.requireNonNull(schema);
-    }
-
-    /**
-     * @param schema Calcite schema.
-     */
     public void schema(SchemaPlus schema) {
         this.schema = schema;
+    }
+
+    public SchemaPlus schema() {
+        return schema;
+    }
+
+    @Override public synchronized void onSchemaCreate(String schemaName) {
+        schemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
+        rebuild();
+    }
+
+    @Override public synchronized void onSchemaDrop(String schemaName) {
+        schemas.remove(schemaName);
+        rebuild();
+    }
+
+    @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeCreate(typeDescriptor, cacheInfo);
+        rebuild();
+    }
+
+    @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeDrop(typeDescriptor, cacheInfo);
+        rebuild();
+    }
+
+    private void rebuild() {
+        SchemaPlus schema = Frameworks.createRootSchema(false);
+        schemas.forEach(schema::add);
+        schema(schema);
     }
 }

@@ -25,11 +25,10 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -37,16 +36,14 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  *
@@ -55,6 +52,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     private static CalciteQueryProcessor proc;
+    private static SchemaPlus schema;
 
     @BeforeClass
     public static void setupClass() {
@@ -65,60 +63,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("Developer", new IgniteTable("Developer", "Developer", (f) -> {
-            RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(f);
+        publicSchema.addTable("Developer", new IgniteTable("Developer", "Developer",
+            RowType.builder()
+                .keyField("id", Integer.class, true)
+                .field("name", String.class)
+                .field("projectId", Integer.class)
+                .field("cityId", Integer.class)
+                .build()));
 
-            builder.add(KEY_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add(VAL_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add("id", f.createJavaType(Integer.class));
-            builder.add("name", f.createJavaType(String.class));
-            builder.add("projectId", f.createJavaType(Integer.class));
-            builder.add("cityId", f.createJavaType(Integer.class));
+        publicSchema.addTable("Project", new IgniteTable("Project", "Project",
+            RowType.builder()
+                .keyField("id", Integer.class, true)
+                .field("name", String.class)
+                .field("ver", Integer.class)
+                .build()));
 
-            return builder.build();
-        }, null));
+        publicSchema.addTable("Country", new IgniteTable("Country", "Country",
+            RowType.builder()
+                .keyField("id", Integer.class, true)
+                .field("name", String.class)
+                .field("countryCode", Integer.class)
+                .build()));
 
-        publicSchema.addTable("Project", new IgniteTable("Project", "Project", (f) -> {
-            RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(f);
+        publicSchema.addTable("City", new IgniteTable("City", "City",
+            RowType.builder()
+                .keyField("id", Integer.class, true)
+                .field("name", String.class)
+                .field("countryId", Integer.class)
+                .build()));
 
-            builder.add(KEY_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add(VAL_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add("id", f.createJavaType(Integer.class));
-            builder.add("name", f.createJavaType(String.class));
-            builder.add("ver", f.createJavaType(Integer.class));
-
-            return builder.build();
-        }, null));
-
-        publicSchema.addTable("Country", new IgniteTable("Country", "Country", (f) -> {
-            RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(f);
-
-            builder.add(KEY_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add(VAL_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add("id", f.createJavaType(Integer.class));
-            builder.add("name", f.createJavaType(String.class));
-            builder.add("countryCode", f.createJavaType(Integer.class));
-
-            return builder.build();
-        }, null));
-
-        publicSchema.addTable("City", new IgniteTable("City", "City", (f) -> {
-            RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(f);
-
-            builder.add(KEY_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add(VAL_FIELD_NAME, f.createJavaType(Integer.class));
-            builder.add("id", f.createJavaType(Integer.class));
-            builder.add("name", f.createJavaType(String.class));
-            builder.add("countryId", f.createJavaType(Integer.class));
-
-            return builder.build();
-        }, null));
-
-        SchemaPlus schema = Frameworks.createRootSchema(false);
+        schema = Frameworks.createRootSchema(false);
 
         schema.add("PUBLIC", publicSchema);
-
-        proc.schemaHolder().schema(schema);
     }
 
     @Test
@@ -130,12 +106,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.empty(), sql, new Object[]{2});
+        Context ctx = proc.context(Contexts.of(schema, AffinityTopologyVersion.NONE), sql, new Object[]{2});
 
         assertNotNull(ctx);
 
         RelTraitDef[] traitDefs = {
-            IgniteDistributionTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
@@ -164,7 +140,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteRel.LOGICAL_CONVENTION)
-                .replace(IgniteDistributions.single(ImmutableIntList.of()))
+                .replace(IgniteDistributions.single())
                 .simplify();
 
             rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
