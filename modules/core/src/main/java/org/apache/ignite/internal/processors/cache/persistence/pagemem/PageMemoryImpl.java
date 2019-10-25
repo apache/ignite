@@ -1253,7 +1253,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     relPtr = refreshOutdatedPage(
                         seg,
                         fullId.groupId(),
-                        PageIdUtils.effectivePageId(fullId.pageId()),
+                        fullId.effectivePageId(),
                         true
                     );
 
@@ -1413,7 +1413,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private long resolveRelativePointer(Segment seg, FullPageId fullId, int reqVer) {
         return seg.loadedPages.get(
             fullId.groupId(),
-            PageIdUtils.effectivePageId(fullId.pageId()),
+            fullId.effectivePageId(),
             reqVer,
             INVALID_REL_PTR,
             OUTDATED_REL_PTR
@@ -1543,7 +1543,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     public boolean hasLoadedPage(FullPageId fullPageId) {
         int grpId = fullPageId.groupId();
-        long pageId = PageIdUtils.effectivePageId(fullPageId.pageId());
+        long pageId = fullPageId.effectivePageId();
         int partId = PageIdUtils.partId(pageId);
 
         Segment seg = segment(grpId, pageId);
@@ -2517,7 +2517,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 loadedPages.remove(
                     fullPageId.groupId(),
-                    PageIdUtils.effectivePageId(fullPageId.pageId())
+                    fullPageId.effectivePageId()
                 );
 
                 return relRmvAddr;
@@ -2590,7 +2590,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (preparePageRemoval(fullPageId, absEvictAddr, saveDirtyPage)) {
                     loadedPages.remove(
                         fullPageId.groupId(),
-                        PageIdUtils.effectivePageId(fullPageId.pageId())
+                        fullPageId.effectivePageId()
                     );
 
                     return addr;
