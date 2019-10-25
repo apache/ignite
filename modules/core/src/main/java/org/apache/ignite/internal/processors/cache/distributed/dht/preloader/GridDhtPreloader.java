@@ -224,22 +224,22 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     continue;
 
                 // If partition is currently rented prevent destroy and start clearing process.
-                if (part.state() == RENTING) {
-                    if (part.reserve()) {
-                        part.moving();
+//                if (part.state() == RENTING) {
+//                    if (part.reserve()) {
+//                        part.moving();
+//
+//                        part.clearAsync();
+//
+//                        part.release();
+//                    }
+//                }
 
-                        part.clearAsync();
-
-                        part.release();
-                    }
-                }
-
-                // If partition was destroyed recreate it.
-                if (part.state() == EVICTED) {
-                    part.awaitDestroy();
-
-                    part = top.localPartition(p, topVer, true);
-                }
+//                // If partition was destroyed recreate it.
+//                if (part.state() == EVICTED) {
+//                    part.awaitDestroy();
+//
+//                    part = top.localPartition(p, topVer, true);
+//                }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
 
