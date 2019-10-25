@@ -6051,7 +6051,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt));
             }
 
-            // The rightmost row is eligible for removal?
+            // Is the rightmost row eligible for removal?
             removeRow = del ? io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1) : null;
 
             return removeRow;

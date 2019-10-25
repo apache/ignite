@@ -31,10 +31,10 @@ public class PurgeRecord extends PageDeltaRecord {
     private int[] items;
 
     /** Number of used elements in items array. */
-    private int itemsCnt;
+    private short itemsCnt;
 
-    /** Resulting count of items that should remain on the page. */
-    private int cnt;
+    /** Count of items that should remain on the page. */
+    private short cnt;
 
     /**
      * @param grpId Cache group ID.
@@ -46,11 +46,13 @@ public class PurgeRecord extends PageDeltaRecord {
     public PurgeRecord(int grpId, long pageId, int[] items, int itemsCnt, int cnt) {
         super(grpId, pageId);
 
+        assert itemsCnt >= Short.MIN_VALUE && itemsCnt <= Short.MAX_VALUE;
+        assert cnt >= Short.MIN_VALUE && cnt <= Short.MAX_VALUE;
         assert itemsCnt > 0 && itemsCnt <= items.length;
 
         this.items = items;
-        this.itemsCnt = itemsCnt;
-        this.cnt = cnt;
+        this.itemsCnt = (short)itemsCnt;
+        this.cnt = (short)cnt;
     }
 
     /** {@inheritDoc} */
@@ -59,7 +61,10 @@ public class PurgeRecord extends PageDeltaRecord {
 
         int cnt0 = io.getCount(pageAddr);
 
-        assert cnt0 == cnt + itemsCnt : "unexpected count: cnt0=" + cnt0 + ", cnt=" + cnt + ", itemsCnt=" + itemsCnt;
+        if (cnt0 != cnt + itemsCnt) {
+            throw new DeltaApplicationException("Count is wrong [expCnt=" +
+                (cnt + itemsCnt) + ", actual=" + cnt0 + ']');
+        }
 
         for (int i = 0; i < itemsCnt; i++) {
             int idx = items[i];
