@@ -149,8 +149,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Handler for all Redis requests. */
     private GridRedisNioListener redisLsnr;
 
-    /** Client SSL enabled. */
-    private final boolean sslEnabled;
+    /** Client SSL authorization enabled flag. */
+    private final boolean sslClientAuth;
 
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
@@ -172,7 +172,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
         ConnectorConfiguration connCfg = ctx.config().getConnectorConfiguration();
 
-        sslEnabled = connCfg.isSslEnabled() && connCfg.isSslClientAuth() && ctx.config().getSslContextFactory() != null;
+        sslClientAuth = connCfg.isSslEnabled() && connCfg.isSslClientAuth() && ctx.config().getSslContextFactory() != null;
     }
 
     /**
@@ -423,7 +423,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             GridSslMeta meta = ses.meta(SSL_META.ordinal());
 
-            if (sslEnabled && meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
+            if (sslClientAuth && meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
                 try {
                     restReq.sslCerts(meta.sslEngine().getSession().getPeerCertificates());
                 } catch (SSLPeerUnverifiedException e) {
