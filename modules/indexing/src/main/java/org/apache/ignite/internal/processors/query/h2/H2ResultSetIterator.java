@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -65,11 +66,18 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
     /** */
     private boolean hasRow;
 
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+
     /**
      * @param data Data array.
+     * @param log Logger.
+     * @param h2 Indexing H2.
+     * @param qryInfo Query info.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, IgniteLogger log, IgniteH2Indexing h2,
+        H2QueryInfo qryInfo) throws IgniteCheckedException {
         this.data = data;
 
         try {
@@ -89,6 +97,12 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
         }
         else
             row = null;
+
+        assert log != null;
+        assert h2 != null;
+        assert qryInfo != null;
+
+        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
     }
 
     /**
@@ -124,6 +138,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
                 for (int c = 0; c < row.length; c++)
                     row[c] = data.getObject(c + 1);
             }
+
+            fetchSizeInterceptor.checkOnFetchNext();
 
             return true;
         }
@@ -167,6 +183,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             return;
 
         try {
+            fetchSizeInterceptor.checkOnClose();
+
             data.close();
         }
         catch (SQLException e) {

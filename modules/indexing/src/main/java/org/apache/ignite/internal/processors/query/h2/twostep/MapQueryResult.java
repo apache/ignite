@@ -30,8 +30,10 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2QueryFetchSizeInterceptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -130,8 +132,8 @@ class MapQueryResult {
     }
 
     /** */
-    void openResult(@NotNull ResultSet rs) {
-        res = new Result(rs);
+    void openResult(@NotNull ResultSet rs, MapH2QueryInfo qryInfo) {
+        res = new Result(rs, qryInfo);
     }
 
     /**
@@ -241,6 +243,8 @@ class MapQueryResult {
                 }
 
                 rows.add(res.res.currentRow());
+
+                res.fetchSizeInterceptor.checkOnFetchNext();
             }
 
             if (detachedConn == null && res.res.hasNext())
@@ -334,12 +338,15 @@ class MapQueryResult {
         /** */
         private final int rowCnt;
 
+        /** */
+        private final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+
         /**
          * Constructor.
          *
          * @param rs H2 result set.
          */
-        Result(@NotNull ResultSet rs) {
+        Result(@NotNull ResultSet rs, MapH2QueryInfo qryInfo) {
             this.rs = rs;
 
             try {
@@ -351,10 +358,14 @@ class MapQueryResult {
 
             rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
             cols = res.getVisibleColumnCount();
+
+            fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
         }
 
         /** */
         void close() {
+            fetchSizeInterceptor.checkOnClose();
+
             U.close(rs, log);
         }
     }
