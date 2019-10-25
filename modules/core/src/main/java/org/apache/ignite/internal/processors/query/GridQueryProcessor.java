@@ -2752,17 +2752,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (QueryField col : cols) {
             try {
-                props.add(new QueryBinaryProperty(
-                    ctx,
-                    col.name(),
-                    null,
-                    Class.forName(col.typeName()),
-                    false,
-                    null,
-                    !col.isNullable(),
-                    null,
-                    col.precision(),
-                    col.scale()));
+                QueryBinaryProperty queryBinaryProperty = 
+                        QueryUtils.buildBinaryProperty(
+                            ctx,
+                            col.name(),
+                            Class.forName(col.typeName()),
+                            d.aliases(),
+                            false,
+                            !col.isNullable(),
+                            null,
+                            col.precision(),
+                            col.scale());
+                
+                props.add(queryBinaryProperty);
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
