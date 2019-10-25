@@ -46,11 +46,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * DHT cache preloader.
@@ -222,24 +220,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 // Do not rebalance OWNING or LOST partitions.
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
-
-                // If partition is currently rented prevent destroy and start clearing process.
-//                if (part.state() == RENTING) {
-//                    if (part.reserve()) {
-//                        part.moving();
-//
-//                        part.clearAsync();
-//
-//                        part.release();
-//                    }
-//                }
-
-//                // If partition was destroyed recreate it.
-//                if (part.state() == EVICTED) {
-//                    part.awaitDestroy();
-//
-//                    part = top.localPartition(p, topVer, true);
-//                }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
 
