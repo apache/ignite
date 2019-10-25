@@ -41,6 +41,8 @@ export default class PageSignIn implements ng.IPostLink {
 
     serverError: string = null;
 
+    isLoading = false;
+
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils, private el: JQLite) {}
@@ -62,12 +64,16 @@ export default class PageSignIn implements ng.IPostLink {
     }
 
     signin() {
+        this.isLoading = true;
+
         this.IgniteFormUtils.triggerValidation(this.form);
 
         this.setServerError(null);
 
-        if (!this.canSubmitForm(this.form))
+        if (!this.canSubmitForm(this.form)) {
+            this.isLoading = false;
             return;
+        }
 
         return this.Auth.signin(this.data.email, this.data.password, this.activationToken).catch((res) => {
             this.IgniteMessages.showError(null, res.data.errorMessage ? res.data.errorMessage : res.data);
@@ -75,6 +81,8 @@ export default class PageSignIn implements ng.IPostLink {
             this.setServerError(res.data);
 
             this.IgniteFormUtils.triggerValidation(this.form);
+
+            this.isLoading = false;
         });
     }
 }

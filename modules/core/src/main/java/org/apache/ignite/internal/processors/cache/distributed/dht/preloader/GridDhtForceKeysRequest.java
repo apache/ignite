@@ -37,8 +37,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Force keys request. This message is sent by node while preloading to force
- * another node to put given keys into the next batch of transmitting entries.
+ * Force keys request. This message is sent by node while preloading to force another node to put given keys into the
+ * next batch of transmitting entries.
  */
 public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
@@ -121,8 +121,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         return topVer;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

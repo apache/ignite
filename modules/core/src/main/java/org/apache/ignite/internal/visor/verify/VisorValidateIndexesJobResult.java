@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -37,12 +38,15 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @GridToStringInclude
     private Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
+    @GridToStringInclude
     private Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
+    @GridToStringInclude
     private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /**

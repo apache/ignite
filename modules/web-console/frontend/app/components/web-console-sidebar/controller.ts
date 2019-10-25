@@ -18,12 +18,15 @@
 import {AppStore, selectSidebarOpened} from '../../store';
 
 export default class WebConsoleSidebar {
-    static $inject = ['$rootScope', 'Store']
+    static $inject = ['$rootScope', 'Store'];
+
     constructor(
         private $rootScope: ng.IRootScopeService,
         private store: AppStore
     ) {}
-    sidebarOpened$ = this.store.state$.pipe(selectSidebarOpened())
+
+    sidebarOpened$ = this.store.state$.pipe(selectSidebarOpened());
+
     get showNavigation(): boolean {
         return !!this.$rootScope.user;
     }

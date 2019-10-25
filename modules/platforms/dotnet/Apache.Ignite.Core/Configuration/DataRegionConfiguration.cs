@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Defines custom data region configuration for Apache Ignite page memory
@@ -75,6 +76,11 @@ namespace Apache.Ignite.Core.Configuration
         public static readonly TimeSpan DefaultMetricsRateTimeInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>
+        /// Default value for <see cref="LazyMemoryAllocation"/>.
+        /// </summary>
+        public const bool DefaultLazyMemoryAllocation = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DataRegionConfiguration"/> class.
         /// </summary>
         public DataRegionConfiguration()
@@ -86,13 +92,15 @@ namespace Apache.Ignite.Core.Configuration
             MaxSize = DefaultMaxSize;
             MetricsSubIntervalCount = DefaultMetricsSubIntervalCount;
             MetricsRateTimeInterval = DefaultMetricsRateTimeInterval;
+            LazyMemoryAllocation = DefaultLazyMemoryAllocation;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataRegionConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal DataRegionConfiguration(IBinaryRawReader reader)
+        /// <param name="srvVer">Server version.</param>
+        internal DataRegionConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             Name = reader.ReadString();
             PersistenceEnabled = reader.ReadBoolean();
@@ -106,12 +114,19 @@ namespace Apache.Ignite.Core.Configuration
             MetricsSubIntervalCount = reader.ReadInt();
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
             CheckpointPageBufferSize = reader.ReadLong();
+
+            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
+            {
+                LazyMemoryAllocation = reader.ReadBoolean();
+            }
         }
 
         /// <summary>
         /// Writes this instance to a writer.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        /// <param name="writer">The writer.</param>
+        /// <param name="srvVer">Server version.</param>
+        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             writer.WriteString(Name);
             writer.WriteBoolean(PersistenceEnabled);
@@ -125,6 +140,11 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(MetricsSubIntervalCount);
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
             writer.WriteLong(CheckpointPageBufferSize);
+
+            if (srvVer.CompareTo(ClientSocket.Ver130) >= 0)
+            {
+                writer.WriteBoolean(LazyMemoryAllocation);
+            }
         }
 
         /// <summary>
@@ -218,5 +238,11 @@ namespace Apache.Ignite.Core.Configuration
         /// Default is <c>0</c>: Ignite will choose buffer size automatically.
         /// </summary>
         public long CheckpointPageBufferSize { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the lazy memory allocation flag.
+        /// </summary>
+        [DefaultValue(DefaultLazyMemoryAllocation)]
+        public bool LazyMemoryAllocation { get; set; }
     }
 }

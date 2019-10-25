@@ -17,17 +17,50 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryUsage;
+import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadMXBean;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
+
+import static org.apache.ignite.internal.managers.communication.GridIoManager.COMM_METRICS;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.OUTBOUND_MSG_QUEUE_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_BYTES_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.RCVD_MSGS_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_BYTES_CNT;
+import static org.apache.ignite.internal.managers.communication.GridIoManager.SENT_MSG_CNT;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager.LAST_DATA_VER;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PEAK_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TOTAL_STARTED_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.UP_TIME;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TOTAL_EXEC_TASKS;
 
 /**
- * Cluster metrics proxy
+ * Cluster metrics proxy.
  */
 public class ClusterMetricsImpl implements ClusterMetrics {
+    /** */
+    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+
     /** Job metrics. */
     private volatile GridJobMetrics jobMetrics;
 
@@ -40,21 +73,174 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
-    /** VM Metrics. */
-    private final GridLocalMetrics vmMetrics;
-
     /** Node start time. */
     private final long nodeStartTime;
 
+    /** Total executed tasks metric. */
+    private final LongMetric execTasks;
+
+    /** GC CPU load. */
+    private final DoubleMetric gcCpuLoad;
+
+    /** CPU load. */
+    private final DoubleMetric cpuLoad;
+
+    /** Up time. */
+    private final LongMetric upTime;
+
+    /** Available processors count. */
+    private final int availableProcessors;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getInit()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric heapInit;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getUsed()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric heapUsed;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getCommitted()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric heapCommitted;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getMax()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric heapMax;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getInit()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric nonHeapInit;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getUsed()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric nonHeapUsed;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getCommitted()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric nonHeapCommitted;
+
+    /**
+     * Metric reflecting heap {@link MemoryUsage#getMax()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric nonHeapMax;
+
+    /**
+     * Metric reflecting {@link ThreadMXBean#getThreadCount()}.
+     *
+     * @see GridMetricManager
+     */
+    private final IntMetric threadCnt;
+
+    /** Last data version metric. */
+    private final LongMetric lastDataVer;
+
+    /** Sent messages count metric. */
+    private final IntMetric sentMsgsCnt;
+
+    /** Sent bytes count metric. */
+    private final LongMetric sentBytesCnt;
+
+    /** Received messages count metric. */
+    private final IntMetric rcvdMsgsCnt;
+
+    /** Received bytes count metric. */
+    private final LongMetric rcvdBytesCnt;
+
+    /** Outbound message queue size metric. */
+    private final IntMetric outboundMsgCnt;
+
+    /**
+     * Metric reflecting {@link ThreadMXBean#getPeakThreadCount()}.
+     *
+     * @see GridMetricManager
+     */
+    private final IntMetric peakThreadCnt;
+
+    /**
+     * Metric reflecting {@link ThreadMXBean#getTotalStartedThreadCount()}.
+     *
+     * @see GridMetricManager
+     */
+    private final LongMetric totalStartedThreadCnt;
+
+    /**
+     * Metric reflecting {@link ThreadMXBean#getDaemonThreadCount()}}.
+     *
+     * @see GridMetricManager
+     */
+    private final IntMetric daemonThreadCnt;
+
+    /** Current PME duration in milliseconds. */
+    private final LongMetric pmeDuration;
+
     /**
      * @param ctx Kernel context.
-     * @param vmMetrics VM metrics.
-     * @param nodeStartTime Node start time;
+     * @param nodeStartTime Node start time.
      */
-    public ClusterMetricsImpl(GridKernalContext ctx, GridLocalMetrics vmMetrics, long nodeStartTime) {
+    public ClusterMetricsImpl(GridKernalContext ctx, long nodeStartTime) {
         this.ctx = ctx;
-        this.vmMetrics = vmMetrics;
         this.nodeStartTime = nodeStartTime;
+
+        MetricRegistry mreg = ctx.metric().registry(SYS_METRICS);
+
+        gcCpuLoad = mreg.findMetric(GC_CPU_LOAD);
+        cpuLoad = mreg.findMetric(CPU_LOAD);
+        upTime = mreg.findMetric(UP_TIME);
+
+        threadCnt = mreg.findMetric(THREAD_CNT);
+        peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
+        totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
+        daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
+        execTasks = mreg.findMetric(TOTAL_EXEC_TASKS);
+
+        availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+
+        heapInit = mreg.findMetric(metricName("memory", "heap", "init"));
+        heapUsed = mreg.findMetric(metricName("memory", "heap", "used"));
+        heapCommitted = mreg.findMetric(metricName("memory", "heap", "committed"));
+        heapMax = mreg.findMetric(metricName("memory", "heap", "max"));
+
+        nonHeapInit = mreg.findMetric(metricName("memory", "nonheap", "init"));
+        nonHeapUsed = mreg.findMetric(metricName("memory", "nonheap", "used"));
+        nonHeapCommitted = mreg.findMetric(metricName("memory", "nonheap", "committed"));
+        nonHeapMax = mreg.findMetric(metricName("memory", "nonheap", "max"));
+
+        MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
+
+        pmeDuration = pmeReg.findMetric(PME_DURATION);
+
+        lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric(LAST_DATA_VER);
+
+        MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
+
+        sentMsgsCnt = ioReg.findMetric(SENT_MSG_CNT);
+        sentBytesCnt = ioReg.findMetric(SENT_BYTES_CNT);
+        rcvdMsgsCnt = ioReg.findMetric(RCVD_MSGS_CNT);
+        rcvdBytesCnt = ioReg.findMetric(RCVD_BYTES_CNT);
+        outboundMsgCnt = ioReg.findMetric(OUTBOUND_MSG_QUEUE_CNT);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +360,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTotalExecutedTasks() {
-        return ctx.task().getTotalExecutedTasks();
+        return (int)execTasks.value();
     }
 
     /** {@inheritDoc} */
@@ -204,12 +390,12 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTotalCpus() {
-        return vmMetrics.getAvailableProcessors();
+        return availableProcessors;
     }
 
     /** {@inheritDoc} */
     @Override public double getCurrentCpuLoad() {
-        return vmMetrics.getCurrentCpuLoad();
+        return cpuLoad.value();
     }
 
     /** {@inheritDoc} */
@@ -219,44 +405,44 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public double getCurrentGcCpuLoad() {
-        return vmMetrics.getCurrentGcCpuLoad();
+        return gcCpuLoad.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryInitialized() {
-        return vmMetrics.getHeapMemoryInitialized();
+        return heapInit.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryUsed() {
-        return vmMetrics.getHeapMemoryUsed();
+        return heapUsed.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryCommitted() {
-        return vmMetrics.getHeapMemoryCommitted();
+        return heapCommitted.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryMaximum() {
-        return vmMetrics.getHeapMemoryMaximum();
+        return heapMax.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapMemoryTotal() {
-        return vmMetrics.getHeapMemoryMaximum();
+        return heapMax.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryInitialized() {
-        return vmMetrics.getNonHeapMemoryInitialized();
+        return nonHeapInit.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryUsed() {
         Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-        long nonHeapUsed = vmMetrics.getNonHeapMemoryUsed();
+        long nonHeapUsed = this.nonHeapUsed.value();
 
         for (GridCacheAdapter<?, ?> cache : caches)
             if (cache.context().statisticsEnabled() && cache.context().started()
@@ -268,27 +454,27 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryCommitted() {
-        return vmMetrics.getNonHeapMemoryCommitted();
+        return nonHeapCommitted.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryMaximum() {
-        return vmMetrics.getNonHeapMemoryMaximum();
+        return nonHeapMax.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getNonHeapMemoryTotal() {
-        return vmMetrics.getNonHeapMemoryMaximum();
+        return nonHeapMax.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getUpTime() {
-        return vmMetrics.getUptime();
+        return upTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getStartTime() {
-        return vmMetrics.getStartTime();
+        return rt.getStartTime();
     }
 
     /** {@inheritDoc} */
@@ -298,57 +484,62 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getCurrentThreadCount() {
-        return vmMetrics.getThreadCount();
+        return threadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumThreadCount() {
-        return vmMetrics.getPeakThreadCount();
+        return peakThreadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalStartedThreadCount() {
-        return vmMetrics.getTotalStartedThreadCount();
+        return totalStartedThreadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentDaemonThreadCount() {
-        return vmMetrics.getDaemonThreadCount();
+        return daemonThreadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getLastDataVersion() {
-        return ctx.cache().lastDataVersion();
+        return lastDataVer.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return ctx.io().getSentMessagesCount();
+        return sentMsgsCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return ctx.io().getSentBytesCount();
+        return sentBytesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return ctx.io().getReceivedMessagesCount();
+        return rcvdMsgsCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return ctx.io().getReceivedBytesCount();
+        return rcvdBytesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        return ctx.io().getOutboundMessagesQueueSize();
+        return outboundMsgCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentPmeDuration() {
+        return pmeDuration.value();
     }
 
     /**

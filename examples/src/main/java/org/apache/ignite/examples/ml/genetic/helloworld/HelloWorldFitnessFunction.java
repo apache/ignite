@@ -24,22 +24,19 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
 /**
  * This example demonstrates how to create a {@link IFitnessFunction}.
  * <p>
- * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
- * to calculate the value of an individual solution relative to other solutions.
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want to
+ * calculate the value of an individual solution relative to other solutions.
  * <p>
  * To do this, we increase fitness score by '1' for each character that is in correct position.</p>
  * <p>
- * For our solution, genetic algorithm will continue until we achieve a fitness score of '11', as 'HELLO WORLD'
- * contains 11 characters.</p>
+ * For our solution, genetic algorithm will continue until we achieve a fitness score of '11', as 'HELLO WORLD' contains
+ * 11 characters.</p>
  */
 public class HelloWorldFitnessFunction implements IFitnessFunction {
     /**
-     * Calculate fitness.
-     *
-     * @param genes List of Genes.
-     * @return Fitness value.
+     * {@inheritDoc}
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         double matches = 0;
 
         for (int i = 0; i < genes.size(); i++) {

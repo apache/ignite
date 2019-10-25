@@ -115,7 +115,6 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
             }
         }, IOException.class, null);
 
-
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 parser.decode(ses, rawPacket(MEMCACHE_REQ_FLAG, (byte)0x01, opaque, key.getBytes(), val.getBytes(), null));

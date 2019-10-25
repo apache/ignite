@@ -20,4 +20,5 @@
  * Contains long-running process tasks that encapsulates the logic of starting, pinging and stopping a long-running
  * process.
  */
+
 package org.apache.ignite.tensorflow.core.longrunning.task;

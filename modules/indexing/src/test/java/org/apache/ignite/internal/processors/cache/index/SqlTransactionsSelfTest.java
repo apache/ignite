@@ -59,13 +59,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
             "atomicity=transactional_snapshot\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that BEGIN opens a transaction.
      */
@@ -167,8 +160,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     execute(node(), sql);
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
@@ -177,8 +170,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     node().cache("ints").query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);

@@ -35,7 +35,6 @@ public class PersonComplexKey implements Serializable {
     /** Value for city id. */
     private int cityId;
 
-
     /**
      * Empty constructor.
      */

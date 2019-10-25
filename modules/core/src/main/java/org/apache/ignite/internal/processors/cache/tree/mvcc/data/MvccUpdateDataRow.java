@@ -81,6 +81,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** */
     private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
+
     /**
      * During mvcc transaction processing conflicting row version could be met in storage.
      * Not all such cases should lead to transaction abort.
@@ -300,13 +301,13 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         long rowCntr = row.mvccCounter();
 
         // with hint bits
-        int rowOpCntr = (row.mvccTxState() << MVCC_HINTS_BIT_OFF) | (row.mvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
+        int rowOpCntr = row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF);
 
         long rowNewCrd = row.newMvccCoordinatorVersion();
         long rowNewCntr = row.newMvccCounter();
 
         // with hint bits
-        int rowNewOpCntr = (row.newMvccTxState() << MVCC_HINTS_BIT_OFF) | (row.newMvccOperationCounter() & ~MVCC_OP_COUNTER_MASK);
+        int rowNewOpCntr = row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF);
 
         // Search for youngest committed by another transaction row.
         if (!isFlagsSet(LAST_COMMITTED_FOUND)) {
@@ -456,7 +457,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & MVCC_OP_COUNTER_MASK, rowLink));
         }
         else {
             // Row obsoleted by current operation, all rows created or updated with current tx.
@@ -467,7 +468,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 if (histRows == null)
                     histRows = new ArrayList<>();
 
-                histRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_OP_COUNTER_MASK, rowLink));
+                histRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & MVCC_OP_COUNTER_MASK, rowLink));
             }
 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.

@@ -29,8 +29,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.junit.Test;
+
+import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS;
 
 /**
  * Tests for Zookeeper SPI discovery.
@@ -128,15 +131,9 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, value = "1")
     public void testConcurrentStartStop2_EventsThrottle() throws Exception {
-        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, "1");
-
-        try {
-            concurrentStartStop(5);
-        }
-        finally {
-            System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS);
-        }
+        concurrentStartStop(5);
     }
 
     /**

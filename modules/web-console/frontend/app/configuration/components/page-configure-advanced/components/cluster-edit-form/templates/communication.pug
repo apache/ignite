@@ -1,0 +1,318 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'communication'
+-var model = '$ctrl.clonedCluster'
+-var communication = model + '.communication'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Communication
+    panel-description
+        | Configuration of communication with other nodes by TCP/IP.
+        | Provide basic plumbing to send and receive grid messages and is utilized for all distributed grid operations.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/network-config" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Timeout:',
+                    model: `${model}.networkTimeout`,
+                    name: '"commNetworkTimeout"',
+                    placeholder: '5000',
+                    min: '1',
+                    tip: 'Maximum timeout in milliseconds for network requests'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Send retry delay:',
+                    model: `${model}.networkSendRetryDelay`,
+                    name: '"networkSendRetryDelay"',
+                    placeholder: '1000',
+                    min: '1',
+                    tip: 'Interval in milliseconds between message send retries'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Send retry count:',
+                    model: `${model}.networkSendRetryCount`,
+                    name: '"networkSendRetryCount"',
+                    placeholder: '3',
+                    min: '1',
+                    tip: 'Message send retries count'
+                })
+            .pc-form-grid-col-30(ng-if='$ctrl.available("2.8.0")')
+                +form-field__number({
+                    label: 'Compression level:',
+                    model: `${model}.networkCompressionLevel`,
+                    name: '"networkCompressionLevel"',
+                    placeholder: '1',
+                    min: '0',
+                    max: '9',
+                    tip: 'Compression level of internal network messages'
+                })
+            .pc-form-grid-col-30(ng-if='$ctrl.available(["1.0.0", "2.3.0"])')
+                +form-field__number({
+                    label: 'Discovery startup delay:',
+                    model: `${model}.discoveryStartupDelay`,
+                    name: '"discoveryStartupDelay"',
+                    placeholder: '60000',
+                    min: '1',
+                    tip: 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__java-class({
+                    label: 'Failure resolver:',
+                    model: `${model}.communicationFailureResolver`,
+                    name: '"communicationFailureResolver"',
+                    tip: 'Communication failure resovler'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Communication listener:',
+                    model: `${communication}.listener`,
+                    name: '"comListener"',
+                    tip: 'Listener of communication events'
+                })
+            .pc-form-grid-col-30
+                +form-field__ip-address({
+                    label: 'Local IP address:',
+                    model: `${communication}.localAddress`,
+                    name: '"comLocalAddress"',
+                    enabled: 'true',
+                    placeholder: '0.0.0.0',
+                    tip: 'Local host address for socket binding<br/>\
+                         If not specified use all available addres on local host'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Local port:',
+                    model: `${communication}.localPort`,
+                    name: '"comLocalPort"',
+                    placeholder: '47100',
+                    min: '1024',
+                    max: '65535',
+                    tip: 'Local port for socket binding'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Local port range:',
+                    model: `${communication}.localPortRange`,
+                    name: '"comLocalPortRange"',
+                    placeholder: '100',
+                    min: '1',
+                    tip: 'Local port range for local host ports'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Shared memory port:',
+                    model: `${communication}.sharedMemoryPort`,
+                    name: '"sharedMemoryPort"',
+                    placeholder: '{{ ::$ctrl.Clusters.sharedMemoryPort.default }}',
+                    min: '{{ ::$ctrl.Clusters.sharedMemoryPort.min }}',
+                    max: '{{ ::$ctrl.Clusters.sharedMemoryPort.max }}',
+                    tip: `Local port to accept shared memory connections<br/>If set to <b>-1</b> shared memory communication will be disabled`
+                })(
+                    pc-not-in-collection='::$ctrl.Clusters.sharedMemoryPort.invalidValues'
+                )
+                    +form-field__error({ error: 'notInCollection', message: 'Shared memory port should be more than "{{ ::$ctrl.Clusters.sharedMemoryPort.invalidValues[0] }}" or equal to "{{ ::$ctrl.Clusters.sharedMemoryPort.min }}"' })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Idle connection timeout:',
+                    model: `${communication}.idleConnectionTimeout`,
+                    name: '"idleConnectionTimeout"',
+                    placeholder: '30000',
+                    min: '1',
+                    tip: 'Maximum idle connection timeout upon which a connection to client will be closed'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Connect timeout:',
+                    model: `${communication}.connectTimeout`,
+                    name: '"connectTimeout"',
+                    placeholder: '5000',
+                    min: '0',
+                    tip: 'Connect timeout used when establishing connection with remote nodes'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Max. connect timeout:',
+                    model: `${communication}.maxConnectTimeout`,
+                    name: '"maxConnectTimeout"',
+                    placeholder: '600000',
+                    min: '0',
+                    tip: 'Maximum connect timeout'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Reconnect count:',
+                    model: `${communication}.reconnectCount`,
+                    name: '"comReconnectCount"',
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'Maximum number of reconnect attempts used when establishing connection with remote nodes'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket send buffer:',
+                    model: `${communication}.socketSendBuffer`,
+                    name: '"socketSendBuffer"',
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'Send buffer size for sockets created or accepted by this SPI'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket receive buffer:',
+                    model: `${communication}.socketReceiveBuffer`,
+                    name: '"socketReceiveBuffer"',
+                    placeholder: '32768',
+                    min: '0',
+                    tip: 'Receive buffer size for sockets created or accepted by this SPI'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Slow client queue limit:',
+                    model: `${communication}.slowClientQueueLimit`,
+                    name: '"slowClientQueueLimit"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Slow client queue limit'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Ack send threshold:',
+                    model: `${communication}.ackSendThreshold`,
+                    name: '"ackSendThreshold"',
+                    placeholder: '{{ ::$ctrl.Clusters.ackSendThreshold.default }}',
+                    min: '{{ ::$ctrl.Clusters.ackSendThreshold.min }}',
+                    tip: 'Number of received messages per connection to node after which acknowledgment message is sent'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Message queue limit:',
+                    model: `${communication}.messageQueueLimit`,
+                    name: '"messageQueueLimit"',
+                    placeholder: '{{ ::$ctrl.Clusters.messageQueueLimit.default }}',
+                    min: '{{ ::$ctrl.Clusters.messageQueueLimit.min }}',
+                    tip: 'Message queue limit for incoming and outgoing messages'
+                })
+            .pc-form-grid-col-30
+                //- allowInvalid: true prevents from infinite digest loop when old value was 0 and becomes less than allowed minimum
+                +form-field__number({
+                    label: 'Unacknowledged messages:',
+                    model: `${communication}.unacknowledgedMessagesBufferSize`,
+                    name: '"unacknowledgedMessagesBufferSize"',
+                    placeholder: '{{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.default }}',
+                    min: `{{ $ctrl.Clusters.unacknowledgedMessagesBufferSize.min(
+                        ${communication}.unacknowledgedMessagesBufferSize,
+                        ${communication}.messageQueueLimit,
+                        ${communication}.ackSendThreshold
+                    ) }}`,
+                    tip: `Maximum number of stored unacknowledged messages per connection to node<br/>
+                    If specified non zero value it should be
+                    <ul>
+                        <li>At least ack send threshold * {{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.validRatio }}</li>
+                        <li>At least message queue limit * {{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.validRatio }}</li>
+                    </ul>`
+                })(
+                    ng-model-options=`{
+                        allowInvalid: true
+                    }`
+                )
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket write timeout:',
+                    model: `${communication}.socketWriteTimeout`,
+                    name: '"socketWriteTimeout"',
+                    placeholder: '2000',
+                    min: '0',
+                    tip: 'Socket write timeout'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Selectors count:',
+                    model: `${communication}.selectorsCount`,
+                    name: '"selectorsCount"',
+                    placeholder: 'min(4, availableProcessors)',
+                    min: '1',
+                    tip: 'Count of selectors te be used in TCP server'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Selectors spins:',
+                    model: `${communication}.selectorSpins`,
+                    name: '"selectorSpins"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Defines how many non-blocking selector.selectNow() should be made before falling into selector.select(long) in NIO server'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Connections per node:',
+                    model: `${communication}.connectionsPerNode`,
+                    name: '"connectionsPerNode"',
+                    placeholder: '1',
+                    min: '1',
+                    tip: 'Number of connections to each remote node'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Address resolver:',
+                    model: `${communication}.addressResolver`,
+                    name: '"comAddressResolver"',
+                    tip: 'Provides resolution between external and internal addresses'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Direct buffer',
+                    model: `${communication}.directBuffer`,
+                    name: '"directBuffer"',
+                    tip: 'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
+                          Otherwise, SPI will use ByteBuffer.allocate(int) call'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Direct send buffer',
+                    model: `${communication}.directSendBuffer`,
+                    name: '"directSendBuffer"',
+                    tip: 'Flag defining whether direct send buffer should be used'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${communication}.tcpNoDelay`,
+                    name: '"tcpNoDelay"',
+                    tip: 'Value for TCP_NODELAY socket option'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Use paired connections',
+                    model: `${communication}.usePairedConnections`,
+                    name: '"usePairedConnections"',
+                    tip: 'Maintain connection for outgoing and incoming messages separately'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                +form-field__checkbox({
+                    label: 'Filter reachable addresses',
+                    model: `${communication}.filterReachableAddresses`,
+                    name: '"filterReachableAddresses"',
+                    tip: 'Filter for reachable addresses on creating tcp client'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterCommunication')

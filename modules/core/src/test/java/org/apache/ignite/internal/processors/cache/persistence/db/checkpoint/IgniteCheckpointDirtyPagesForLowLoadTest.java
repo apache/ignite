@@ -45,8 +45,10 @@ import org.junit.Test;
 public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstractTest {
     /** Caches in group. */
     private static final int CACHES_IN_GRP = 1;
+
     /** Groups. */
     private static final int GROUPS = 1;
+
     /** Parts. */
     private static final int PARTS = 1024;
 
@@ -146,7 +148,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                     db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                    long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                    long msPassed = U.millisSinceNanos(start);
 
                     log.error("Timeout during waiting for checkpoint to start:" +
                         " [" + msPassed + "] but checkpoint is not running");
@@ -197,7 +199,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
         long start = System.currentTimeMillis();
 
         while (currCpPages == 0) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            LockSupport.parkNanos(U.millisToNanos(1));
             currCpPages = db.currentCheckpointPagesCount();
 
             if (currCpPages == 0 && ((System.currentTimeMillis() - start) > timeout))

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector.impl;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Spliterator;
@@ -118,11 +119,6 @@ public class DelegatingVector implements Vector {
     /** {@inheritDoc} */
     @Override public double maxValue() {
         return dlg.maxValue();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return dlg.isSequentialAccess();
     }
 
     /** {@inheritDoc} */
@@ -226,6 +222,16 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int idx) {
+        return dlg.getRaw(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRawX(int idx) {
+        return dlg.getRawX(idx);
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         return dlg.like(crd);
     }
@@ -288,6 +294,16 @@ public class DelegatingVector implements Vector {
     /** {@inheritDoc} */
     @Override public Vector setX(int idx, double val) {
         return dlg.setX(idx, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector setRaw(int idx, Serializable val) {
+        return dlg.setRaw(idx, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector setRawX(int idx, Serializable val) {
+        return dlg.setRawX(idx, val);
     }
 
     /** {@inheritDoc} */
@@ -358,13 +374,13 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return dlg.isRandomAccess();
+    @Override public boolean isDistributed() {
+        return dlg.isDistributed();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return dlg.isDistributed();
+    @Override public boolean isNumeric() {
+        return dlg.isNumeric();
     }
 
     /** {@inheritDoc} */

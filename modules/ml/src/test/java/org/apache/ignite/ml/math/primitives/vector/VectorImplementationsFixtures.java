@@ -79,7 +79,7 @@ class VectorImplementationsFixtures {
     private static class SparseLocalVectorFixture extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
-            super("SparseLocalVector", SparseVector::new, "access mode",
+            super("SparseLocalVector", (x,y) -> new SparseVector(x), "access mode",
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
     }
@@ -158,10 +158,13 @@ class VectorImplementationsFixtures {
     private static class VectorSizesExtraIterator<T> extends VectorSizesIterator {
         /** */
         private final T[] extras;
+
         /** */
         private int extraIdx = 0;
+
         /** */
         private final BiFunction<Integer, T, Vector> ctor;
+
         /** */
         private final String extraParamName;
 
@@ -215,8 +218,8 @@ class VectorImplementationsFixtures {
             return (size, delta) -> ctor.apply(size + delta, extras[extraIdx]);
         }
 
-        /** */
-        void selfTest() {
+        /** {@inheritDoc} */
+        @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;

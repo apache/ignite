@@ -22,8 +22,8 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
@@ -32,28 +32,23 @@ import org.apache.ignite.ml.tree.data.DecisionTreeData;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
+ * @param <CO> Typer of COordinate for vectorizer.
  */
-public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializable>
+public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, FeatureMatrixWithLabelsOnHeapData> {
     /** Serial version uid. */
     private static final long serialVersionUID = 6273736987424171813L;
 
-    /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Function that extracts labels from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Function that extracts features and labels from an {@code upstream} data. */
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of decision tree data builder.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
-     * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param preprocessor Function that extracts features with labels from an {@code upstream} data.
      */
-    public FeatureMatrixWithLabelsOnHeapDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+    public FeatureMatrixWithLabelsOnHeapDataBuilder(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -69,9 +64,9 @@ public class FeatureMatrixWithLabelsOnHeapDataBuilder<K, V, C extends Serializab
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            features[ptr] = featureExtractor.apply(entry.getKey(), entry.getValue()).asArray();
-
-            labels[ptr] = lbExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<Double> labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
+            features[ptr] = labeledVector.features().asArray();
+            labels[ptr] = labeledVector.label();
 
             ptr++;
         }

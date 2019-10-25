@@ -283,7 +283,6 @@ class ServiceDeploymentTask {
     /**
      * @param depActions Services deployment actions.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
         srvcProc.updateDeployedServices(depActions);
 
@@ -852,8 +851,10 @@ class ServiceDeploymentTask {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceDeploymentTask.class, this,
-            "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
-            "crdId", crdId);
+        synchronized (initCrdMux) {
+            return S.toString(ServiceDeploymentTask.class, this,
+                    "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
+                    "crdId", crdId);
+        }
     }
 }

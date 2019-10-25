@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.JMX;
 import javax.management.MBeanServer;
@@ -33,11 +32,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -49,7 +48,6 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -60,6 +58,17 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
+        cfg.setFailureDetectionTimeout(2000);
+        cfg.setClientFailureDetectionTimeout(2000);
+
+        return cfg;
+    }
+
     /**
      * Test reproduces failure in case of client resolution failure
      * {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi#createTcpClient} from server side, further
@@ -391,60 +400,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_1() throws Exception {
-        reconnectServersRestart(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_2() throws Exception {
-        reconnectServersRestart(3);
-    }
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReconnectServersRestart_3() throws Exception {
-        startGrid(0);
-
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(10, 10);
-
-        stopGrid(getTestIgniteInstanceName(0), true, false);
-
-        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
-
-        final AtomicInteger idx = new AtomicInteger();
-
-        info("Restart nodes.");
-
-        // Test concurrent start when there are disconnected nodes from previous cluster.
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int threadIdx = idx.getAndIncrement();
-
-                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
-
-                startGrid(threadIdx);
-
-                return null;
-            }
-        }, 10, "start-node");
-
-        waitForTopology(20);
-
-        evts.clear();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testStartNoZk() throws Exception {
         stopZkCluster();
@@ -477,59 +432,5 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         finally {
             zkCluster.start();
         }
-    }
-
-    /**
-     * @param srvs Number of server nodes in test.
-     * @throws Exception If failed.
-     */
-    private void reconnectServersRestart(int srvs) throws Exception {
-        startGridsMultiThreaded(srvs);
-
-        helper.clientMode(true);
-
-        final int CLIENTS = 10;
-
-        startGridsMultiThreaded(srvs, CLIENTS);
-
-        helper.clientMode(false);
-
-        long stopTime = System.currentTimeMillis() + 30_000;
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        final int NODES = srvs + CLIENTS;
-
-        int iter = 0;
-
-        while (System.currentTimeMillis() < stopTime) {
-            int restarts = rnd.nextInt(10) + 1;
-
-            info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
-
-            for (int i = 0; i < restarts; i++) {
-                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                    @Override public void apply(Integer threadIdx) {
-                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                    }
-                }, srvs, "stop-server");
-
-                startGridsMultiThreaded(0, srvs);
-            }
-
-            final Ignite srv = ignite(0);
-
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return srv.cluster().nodes().size() == NODES;
-                }
-            }, 30_000));
-
-            waitForTopology(NODES);
-
-            awaitPartitionMapExchange();
-        }
-
-        evts.clear();
     }
 }

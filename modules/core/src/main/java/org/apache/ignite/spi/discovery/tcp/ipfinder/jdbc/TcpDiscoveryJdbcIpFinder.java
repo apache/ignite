@@ -99,11 +99,11 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Constructor.
      */
     public TcpDiscoveryJdbcIpFinder() {
-		this(new BasicJdbcIpFinderDialect());
+        this(new BasicJdbcIpFinderDialect());
     }
 
-	public TcpDiscoveryJdbcIpFinder(JdbcIpFinderDialect jdbcDialect) {
-		setShared(true);
+    public TcpDiscoveryJdbcIpFinder(JdbcIpFinderDialect jdbcDialect) {
+        setShared(true);
 
         this.addrTableName = jdbcDialect.tableName();
         this.getAddrsQry = "select hostname, port from " + addrTableName;
@@ -111,7 +111,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
         this.unregAddrQry = "delete from " + addrTableName + " where hostname = ? and port = ?";
         this.createAddrsTableQry = "create table " + addrTableName + " (hostname VARCHAR(1024), port INT)";
         this.chkQry = "select count(*) from " + addrTableName;
-	}
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {

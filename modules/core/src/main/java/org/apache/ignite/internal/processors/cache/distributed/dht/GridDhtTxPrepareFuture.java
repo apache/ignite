@@ -71,11 +71,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -534,9 +535,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
+
+                onError(e);
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+                // Entry was unlocked by concurrent rollback.
+                onError(tx.rollbackException());
             }
             finally {
                 cctx.database().checkpointReadUnlock();
@@ -701,7 +705,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
 
             if (forceKeysFut == null || (forceKeysFut.isDone() && forceKeysFut.error() == null))
-                prepare0();
+                try {
+                    prepare0();
+                }
+                catch (IgniteTxRollbackCheckedException e) {
+                    onError(e);
+                }
             else {
                 forceKeysFut.listen(new CI1<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> f) {
@@ -1201,7 +1210,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            assert false : "Got removed exception on entry with dht local candidate: " + entries;
+            // Entry was unlocked by concurrent rollback.
+            onError(tx.rollbackException());
         }
 
         return null;
@@ -1254,7 +1264,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      *
      */
-    private void prepare0() {
+    private void prepare0() throws IgniteTxRollbackCheckedException {
+        boolean error = false;
+
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1294,10 +1306,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
+            TxCounters counters = tx.txCounters(true);
+
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
-                    map(tx.entry(write.txKey()));
+                for (IgniteTxEntry write : req.writes()) {
+                    IgniteTxEntry entry = tx.entry(write.txKey());
+
+                    assert entry != null && entry.cached() != null : entry;
+
+                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    if (!entry.cached().isLocal() && entry.op() != NOOP &&
+                        !(entry.op() == TRANSFORM &&
+                            (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
+                                entry.entryProcessorCalculatedValue().get1() == NOOP)))
+                        counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
+
+                    map(entry);
+                }
             }
 
             if (!F.isEmpty(req.reads())) {
@@ -1309,6 +1335,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
+                if (!tx.txState().mvccEnabled()) {
+                    /** For MVCC counters are assigned on enlisting. */
+                    /** See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
+                    tx.calculatePartitionUpdateCounters();
+                }
+
                 recheckOnePhaseCommit();
 
                 if (tx.onePhaseCommit())
@@ -1317,8 +1349,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 sendPrepareRequests();
             }
         }
+        catch (Throwable t) {
+            error = true;
+
+            throw t;
+        }
         finally {
-            markInitialized();
+            if (!error) // Prevent marking future as initialized on error.
+                markInitialized();
         }
     }
 
@@ -1423,8 +1461,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     break;
                 }
-                catch (GridCacheEntryRemovedException ignore) {
-                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                catch (GridCacheEntryRemovedException e) {
+                    log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                        "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                    // Entry was unlocked by concurrent rollback.
+                    onError(tx.rollbackException());
                 }
 
                 idx++;
@@ -1445,8 +1487,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         break;
                     }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                    catch (GridCacheEntryRemovedException e) {
+                        log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                            "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                        // Entry was unlocked by concurrent rollback.
+                        onError(tx.rollbackException());
                     }
                 }
             }
@@ -1521,8 +1567,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             }
 
                             break;
-                        } catch (GridCacheEntryRemovedException ignore) {
-                            assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            log.error("Got removed exception on entry with dht local candidate. Transaction will be " +
+                                "rolled back. Entry: " + entry + " tx: " + CU.txDump(tx), e);
+
+                            // Entry was unlocked by concurrent rollback.
+                            onError(tx.rollbackException());
                         }
                     }
                 }
@@ -1590,7 +1641,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
 
                 assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
-                    "localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;
+                    "cacheId=" + cacheCtx.cacheId() + ", localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;
 
                 if (log.isDebugEnabled())
                     log.debug("Mapping entry to DHT nodes [nodes=" + U.toShortString(dhtNodes) +
@@ -1977,8 +2028,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onError(tx.timeoutException());
         }
 
         /** {@inheritDoc} */

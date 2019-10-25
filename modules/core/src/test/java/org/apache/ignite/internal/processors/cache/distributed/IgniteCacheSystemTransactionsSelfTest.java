@@ -56,13 +56,6 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (String cacheName : new String[] {DEFAULT_CACHE_NAME, CU.UTILITY_CACHE_NAME}) {
             IgniteKernal kernal = (IgniteKernal)ignite(0);

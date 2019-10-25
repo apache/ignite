@@ -35,12 +35,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -163,11 +163,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
             IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() {
                     return cache0.query(qry);
                 }
-            }, IgniteSQLException.class, "Duplicate key");
+            }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT");
 
             tx.rollback();
         }
@@ -698,10 +698,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             }
         }, 2, "tx-thread");
 
-        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
-
-        assertNotNull("Exception has not been thrown.", ex0);
-        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
+        MvccFeatureChecker.assertMvccWriteConflict(ex.get());
     }
 
     /**

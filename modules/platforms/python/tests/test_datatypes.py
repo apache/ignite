@@ -132,3 +132,45 @@ def test_put_get_data(client, cache, value, value_hint):
     result = cache_get(client, cache, 'my_key')
     assert result.status == 0
     assert result.value == value
+
+
+@pytest.mark.parametrize(
+    'uuid_string',
+    [
+        'd57babad-7bc1-4c82-9f9c-e72841b92a85',
+        '5946c0c0-2b76-479d-8694-a2e64a3968da',
+        'a521723d-ad5d-46a6-94ad-300f850ef704',
+    ]
+)
+def test_uuid_representation(client, uuid_string):
+    """ Test if textual UUID representation is correct. """
+    uuid_value = uuid.UUID(uuid_string)
+
+    # initial cleanup
+    client.sql("DROP TABLE test_uuid_repr IF EXISTS")
+    # create table with UUID field
+    client.sql(
+        "CREATE TABLE test_uuid_repr (id INTEGER PRIMARY KEY, uuid_field UUID)"
+    )
+    # use uuid.UUID class to insert data
+    client.sql(
+        "INSERT INTO test_uuid_repr(id, uuid_field) VALUES (?, ?)",
+        query_args=[1, uuid_value]
+    )
+    # use hex string to retrieve data
+    result = client.sql(
+        "SELECT * FROM test_uuid_repr WHERE uuid_field='{}'".format(
+            uuid_string
+        )
+    )
+
+    # finalize query
+    result = list(result)
+
+    # final cleanup
+    client.sql("DROP TABLE test_uuid_repr IF EXISTS")
+
+    # if a line was retrieved, our test was successful
+    assert len(result) == 1
+    # doublecheck
+    assert result[0][1] == uuid_value

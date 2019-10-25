@@ -921,7 +921,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Craate entry.
+        /// Create entry.
         /// </summary>
         /// <param name="val">Value.</param>
         /// <returns>Entry.</returns>
@@ -945,13 +945,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
         {
-            if (!e.HasOldValue)
-                return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
-
-            if (e.Value.Equals(e.OldValue))
-                return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
-
-            return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+            switch (e.EventType)
+            {
+                case CacheEntryEventType.Created:
+                    return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
+                case CacheEntryEventType.Updated:
+                    return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+                default:
+                    return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
+            }
         }
 
         /// <summary>

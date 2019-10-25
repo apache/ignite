@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Job metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetrics {
     /** */
     private int maxActiveJobs;

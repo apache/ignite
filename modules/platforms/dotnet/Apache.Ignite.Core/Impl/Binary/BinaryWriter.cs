@@ -69,6 +69,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Invoked when binary object writing finishes.
+        /// </summary>
+        internal event Action<BinaryObjectHeader, object> OnObjectWritten;
+
+        /// <summary>
         /// Write named boolean value.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
@@ -1261,13 +1266,18 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var len = _stream.Position - pos;
 
-                    var hashCode = BinaryArrayEqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
-                            dataEnd - pos - BinaryObjectHeader.Size);
+                var hashCode = BinaryArrayEqualityComparer.GetHashCode(Stream, pos + BinaryObjectHeader.Size,
+                    dataEnd - pos - BinaryObjectHeader.Size);
 
-                    var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryTypeId.Unregistered,
-                        hashCode, len, schemaId, schemaOffset, flags);
+                var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryTypeId.Unregistered,
+                    hashCode, len, schemaId, schemaOffset, flags);
 
                 BinaryObjectHeader.Write(header, _stream, pos);
+
+                if (OnObjectWritten != null)
+                {
+                    OnObjectWritten(header, obj);
+                }
 
                 Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
             }

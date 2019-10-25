@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Collections;
 import java.util.Map;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -41,7 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.reconnectClientNode;
 
 /**
@@ -469,17 +467,18 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
 
         node1 = start(1, KeyClass.class, ValueClass.class, KeyClass2.class, ValueClass2.class);
         assertTypes(node1, ValueClass.class, ValueClass2.class);
-        assertTypes(node2, ValueClass.class);
 
         assertCacheStarted(CACHE_NAME, node1);
 
         reconnFut.get();
 
-        assertTypes(node2, ValueClass.class, ValueClass2.class);
         assertCacheNotStarted(CACHE_NAME, node2);
 
         node2.cache(CACHE_NAME);
+
         assertCacheStarted(CACHE_NAME, node2);
+
+        assertTypes(node2, ValueClass.class, ValueClass2.class);
     }
 
     /**
@@ -487,7 +486,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testClientReconnect() throws Exception {
         final IgniteEx node1 = start(1, KeyClass.class, ValueClass.class);
@@ -539,12 +537,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @param nodes Node to check cache.
      * @param cacheName Cache name.
-     * @throws AssertionFailedError If failed.
+     * @throws AssertionError If failed.
      */
-    private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
-        for (IgniteEx node : nodes) {
+    private void assertCacheStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
+        for (IgniteEx node : nodes)
             assertTrue(isCacheStarted(cacheName, node));
-        }
     }
 
     /**
@@ -552,12 +549,11 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
      *
      * @param nodes Node to check cache.
      * @param cacheName Cache name.
-     * @throws AssertionFailedError If failed.
+     * @throws AssertionError If failed.
      */
-    private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionFailedError {
-        for (IgniteEx node : nodes) {
+    private void assertCacheNotStarted(String cacheName, IgniteEx... nodes) throws AssertionError {
+        for (IgniteEx node : nodes)
             assertFalse(isCacheStarted(cacheName, node));
-        }
     }
 
     /**

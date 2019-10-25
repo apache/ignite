@@ -36,6 +36,11 @@ public class LocalModelDescriptorStorage implements ModelDescriptorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(String mdlId, ModelDescriptor mdl) {
+        return models.putIfAbsent(mdlId, mdl) == null;
+    }
+
+    /** {@inheritDoc} */
     @Override public ModelDescriptor get(String name) {
         return models.get(name);
     }

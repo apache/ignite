@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -91,7 +90,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     /**
      * Tests that SQL queries involving actual network IO are executed in dedicated pool.
      * @throws Exception If failed.
-     * @see GridCacheTwoStepQuery#isLocal()
      */
     @Test
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {

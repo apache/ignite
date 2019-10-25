@@ -347,7 +347,7 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
 
                                     cb(null, activeTokens);
 
-                                    return this.onConnect(sock, accounts, activeTokens, disableDemo);
+                                    return this.onConnect(sock, accounts, activeTokens, !disableDemo);
                                 })
                                 // TODO IGNITE-1379 send error to web master.
                                 .catch(() => cb(`Invalid token(s): ${tokens.join(',')}. Please reload agent archive or check settings`));
@@ -368,7 +368,16 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
             if (_.isEmpty(socks))
                 return Promise.reject(new Error('Failed to find connected agent for this account'));
 
-            if (demo || _.isNil(clusterId))
+            if (demo) {
+                const sock = _.find(socks, (sock) => sock.demo.enabled);
+
+                if (sock)
+                    return Promise.resolve(sock);
+
+                return Promise.reject(new Error('Demo mode disabled by administrator'));
+            }
+
+            if (_.isNil(clusterId))
                 return Promise.resolve(_.head(socks));
 
             const sock = _.find(socks, (agentSock) => _.get(agentSock, 'cluster.id') === clusterId);

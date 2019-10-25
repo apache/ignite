@@ -56,8 +56,6 @@ public class CreateTableWithDateKeySelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
         initCache = null;
     }

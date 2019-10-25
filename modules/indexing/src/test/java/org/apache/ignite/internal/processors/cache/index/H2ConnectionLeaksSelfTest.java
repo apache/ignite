@@ -191,7 +191,7 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
                 Map<Thread, ?> conns = perThreadConnections(i);
 
                 for(Thread t : conns.keySet())
-                    log.error("+++ Connection is not closed for thread: " + t.getName());
+                    log.error("Connection is not closed for thread: " + t.getName());
             }
 
             fail("H2 JDBC connections leak detected. See the log above.");

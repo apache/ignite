@@ -50,15 +50,9 @@ public class ExplainSelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        try {
-            stopAllGrids();
-        }
-        finally {
-            ignite = null;
-            cache = null;
-
-            super.afterTestsStopped();
-        }
+        ignite = null;
+        cache = null;
+        super.afterTestsStopped();
     }
 
     /**

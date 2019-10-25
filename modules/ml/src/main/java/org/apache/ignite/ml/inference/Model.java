@@ -33,5 +33,5 @@ public interface Model<I, O> extends AutoCloseable {
     public O predict(I input);
 
     /** {@inheritDoc} */
-    public void close();
+    @Override public void close();
 }

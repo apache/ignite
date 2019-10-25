@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
@@ -26,7 +25,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Decision tree node class.
  */
-public class TreeNode implements IgniteModel<Vector, Double>, Serializable {
+public class TreeNode implements IgniteModel<Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -8546263332508653661L;
 
@@ -83,7 +82,7 @@ public class TreeNode implements IgniteModel<Vector, Double>, Serializable {
     }
 
     /** {@inheritDoc} */
-    public Double predict(Vector features) {
+    @Override public Double predict(Vector features) {
         assert type != Type.UNKNOWN;
 
         if (type == Type.LEAF)
@@ -166,33 +165,45 @@ public class TreeNode implements IgniteModel<Vector, Double>, Serializable {
     }
 
     /** */
+    public double getVal() {
+        return val;
+    }
+
+    /** */
     public void setImpurity(double impurity) {
         this.impurity = impurity;
     }
 
     /**
-     * @return impurity in current node.
+     * @return Impurity in current node.
      */
     public double getImpurity() {
         return impurity;
     }
 
     /**
-     * @return depth of current node.
+     * @return Depth of current node.
      */
     public int getDepth() {
         return depth;
     }
 
     /**
-     * @return right subtree.
+     * @return Feature id.
+     */
+    public int getFeatureId() {
+        return featureId;
+    }
+
+    /**
+     * @return Right subtree.
      */
     public TreeNode getLeft() {
         return left;
     }
 
     /**
-     * @return left subtree.
+     * @return Left subtree.
      */
     public TreeNode getRight() {
         return right;

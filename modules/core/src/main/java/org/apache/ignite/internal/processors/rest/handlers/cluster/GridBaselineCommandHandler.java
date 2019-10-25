@@ -71,7 +71,6 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
         assert SUPPORTED_COMMANDS.contains(req.command());
         assert req instanceof GridRestBaselineRequest : "Invalid type of baseline request.";
 
-
         if (log.isDebugEnabled())
             log.debug("Handling baseline REST request: " + req);
 

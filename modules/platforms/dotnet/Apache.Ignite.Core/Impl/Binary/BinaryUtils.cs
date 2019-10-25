@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
-        /** Bindig flags for static search. */
+        /** Binding flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** System marshaller. */
@@ -410,6 +410,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Convert Java ticks to DateTime.
+        /// </summary>
+        /// <param name="javaTicks">Ticks.</param>
+        /// <returns>Resulting DateTime.</returns>
+        public static DateTime JavaTicksToDateTime(long javaTicks)
+        {
+            return new DateTime(JavaDateTicks + javaTicks * 1000, DateTimeKind.Utc);
+        }
+
+        /// <summary>
+        /// Convert DateTime struct to Java ticks
+        /// <param name="dateTime">DateTime to convert</param>
+        /// </summary>
+        /// <returns>Ticks count</returns>
+        public static long DateTimeToJavaTicks(DateTime dateTime)
+        {
+            return (dateTime.Ticks - JavaDateTicks) / 1000;
+        }
+
+        /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>
@@ -601,7 +621,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                             throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
 
-                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                        // ReSharper disable once ShiftExpressionRealShiftCountIsZero (reviewed - readability)
+                        res[charArrCnt++] = (char)(
+                            ((c & 0x0F) << 12) |
                             ((c2 & 0x3F) << 6) |
                             ((c3 & 0x3F) << 0));
 

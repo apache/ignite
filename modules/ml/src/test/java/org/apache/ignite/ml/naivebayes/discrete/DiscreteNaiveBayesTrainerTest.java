@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +42,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
@@ -78,7 +79,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         data.put(11, new double[] {2, 1, .45, 748, LABEL_2});
     }
 
-    /** */
+    /** Trainer under test. */
     private DiscreteNaiveBayesTrainer trainer;
 
     /** Initialization {@code DiscreteNaiveBayesTrainer}. */
@@ -87,21 +88,20 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(binarizedDatathresholds);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectLabelProbalities() {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double[] expectedProbabilities = {6. / binarizedData.size(), 7. / binarizedData.size()};
         Assert.assertArrayEquals(expectedProbabilities, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
@@ -110,14 +110,13 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
@@ -127,14 +126,13 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertArrayEquals(priorProbabilities, model.getClsProbabilities(), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectPriorProbabilities() {
         double[][][] expectedPriorProbabilites = new double[][][] {
@@ -144,8 +142,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
@@ -154,7 +151,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         }
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectPriorProbabilitiesWithDefferentThresholds() {
         double[][][] expectedPriorProbabilites = new double[][][] {
@@ -174,8 +171,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(thresholds)
             .fit(
                 new LocalDatasetBuilder<>(data, parts),
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-                (k, v) -> v[v.length - 1]
+                new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
             );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {

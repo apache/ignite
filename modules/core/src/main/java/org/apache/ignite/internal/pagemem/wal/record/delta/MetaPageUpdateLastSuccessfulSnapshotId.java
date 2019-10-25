@@ -23,11 +23,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaI
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * @deprecated Will be removed at 3.0. See IGNITE-11139.
  */
+@Deprecated
 public class MetaPageUpdateLastSuccessfulSnapshotId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulSnapshotId;
+
     /** Last successful snapshot tag. */
     private final long lastSuccessfulSnapshotTag;
 

@@ -18,4 +18,5 @@
 /**
  * Contains tests for socket streamer.
  */
+
 package org.apache.ignite.stream.socket;

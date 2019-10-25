@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -60,11 +61,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /**
@@ -82,6 +83,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         CacheConfiguration ccfg2 = cacheConfiguration().setName(CACHE2);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

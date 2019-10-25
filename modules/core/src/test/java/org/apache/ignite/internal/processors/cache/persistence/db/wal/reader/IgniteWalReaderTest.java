@@ -1625,6 +1625,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     private static class Organization {
         /** Key. */
         private final int key;
+
         /** Name. */
         private final String name;
 

@@ -31,9 +31,8 @@ import java.util.UUID;
  * can have multiple instances of {@code GridClient} running in the same VM. For
  * information on how to start or stop Grid please refer to {@link GridClientFactory} class.
  * <p>
- * Use following methods to get access to remote cache functionality:
+ * Use the following method to get access to remote cache functionality:
  * <ul>
- * <li>{@link #data()}</li>
  * <li>{@link #data(String)}</li>
  * </ul>
  * Use following methods to get access to remote compute functionality:
@@ -61,14 +60,6 @@ public interface GridClient extends AutoCloseable {
      * @return Generated client id.
      */
     public UUID id();
-
-    /**
-     * Gets a data projection for a default grid cache with {@code null} name.
-     *
-     * @return Data projection for grid cache with {@code null} name.
-     * @throws GridClientException If client was closed.
-     */
-    public GridClientData data() throws GridClientException;
 
     /**
      * Gets a data projection for grid cache with name <tt>cacheName</tt>. If
@@ -153,4 +144,11 @@ public interface GridClient extends AutoCloseable {
      * {@code try-with-resources} statement.
      */
     @Override public void close();
+
+    /**
+     * If client was not connected topology, throw last error encountered.
+     *
+     * @throws GridClientException If client was not connected
+     */
+    public void throwLastError() throws GridClientException;
 }

@@ -243,12 +243,11 @@ if %MAJOR_JAVA_VER% GEQ 9 if %MAJOR_JAVA_VER% LSS 11 (
     --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED ^
     --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED ^
     --illegal-access=permit ^
-    --add-modules=java.transaction ^
     --add-modules=java.xml.bind ^
     %JVM_OPTS%
 )
 
-if %MAJOR_JAVA_VER% == 11 (
+if %MAJOR_JAVA_VER% GEQ 11 (
     set JVM_OPTS= ^
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED ^
     --add-exports=java.base/sun.nio.ch=ALL-UNNAMED ^

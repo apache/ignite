@@ -13,4 +13,5 @@
  * For more information please refer to the project page:
  * http://www.mindrot.org/projects/jBCrypt
  */
+
 package org.mindrot;

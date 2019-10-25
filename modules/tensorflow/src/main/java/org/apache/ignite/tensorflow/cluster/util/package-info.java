@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Util components that are used in TensorFlow cluster package.
  */
+
 package org.apache.ignite.tensorflow.cluster.util;

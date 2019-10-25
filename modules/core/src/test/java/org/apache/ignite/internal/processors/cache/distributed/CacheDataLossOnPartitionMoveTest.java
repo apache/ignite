@@ -47,6 +47,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
@@ -97,6 +98,20 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
     /**
      * @param name Name.
      */
@@ -127,7 +142,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
             ignite.cluster().active(true);
 
             List<Integer> toCp = movingKeysAfterJoin(ignite, DEFAULT_CACHE_NAME, 1,
-                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP));
+                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP), null);
 
             int blockPartId = ignite.affinity(DEFAULT_CACHE_NAME).partition(toCp.get(0));
 

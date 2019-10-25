@@ -729,7 +729,7 @@ class CacheEntry {
      * @param {*} key - key corresponding to this entry.
      * @param {*} value - value associated with the key.
      *
-     * @return {CacheEntry} - new CacheEntry instance     
+     * @return {CacheEntry} - new CacheEntry instance
      */
     constructor(key, value) {
         this._key = key;

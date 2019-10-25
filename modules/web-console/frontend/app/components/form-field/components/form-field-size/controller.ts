@@ -18,22 +18,33 @@
 import get from 'lodash/get';
 import {IInputErrorNotifier} from '../../../../types';
 
-export default class PCFormFieldSizeController implements IInputErrorNotifier {
+interface ISizeTypeOption {
+    label: string,
+    value: number
+}
+
+type ISizeType = Array<ISizeTypeOption>;
+
+interface ISizeTypes {
+    [name: string]: ISizeType
+}
+
+export default class PCFormFieldSizeController<T> implements IInputErrorNotifier {
     ngModel: ng.INgModelController;
     min?: number;
     max?: number;
     onScaleChange: ng.ICompiledExpression;
     innerForm: ng.IFormController;
-    inputElement?: HTMLInputElement;
     autofocus?: boolean;
     id = Math.random();
-    sizesMenu?: ig.config.formFieldSize.ISizeTypes[keyof ig.config.formFieldSize.ISizeTypes];
-    private _sizeScale: ig.config.formFieldSize.ISizeTypeOption;
+    inputElement?: HTMLInputElement;
+    sizesMenu?: Array<ISizeTypeOption>;
+    private _sizeScale: ISizeTypeOption;
     value: number;
 
     static $inject = ['$element', '$attrs'];
 
-    static sizeTypes: ig.config.formFieldSize.ISizeTypes = {
+    static sizeTypes: ISizeTypes = {
         bytes: [
             {label: 'Kb', value: 1024},
             {label: 'Mb', value: 1024 * 1024},
@@ -92,7 +103,7 @@ export default class PCFormFieldSizeController implements IInputErrorNotifier {
         if ('min' in changes) this.ngModel.$validate();
     }
 
-    set sizeScale(value: ig.config.formFieldSize.ISizeTypeOption) {
+    set sizeScale(value: ISizeTypeOption) {
         this._sizeScale = value;
         if (this.onScaleChange) this.onScaleChange({$event: this.sizeScale});
         if (this.ngModel) this.assignValue(this.ngModel.$viewValue);

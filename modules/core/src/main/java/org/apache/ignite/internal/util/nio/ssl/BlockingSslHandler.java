@@ -68,7 +68,7 @@ public class BlockingSslHandler {
     /** Input buffer from which SSL engine will decrypt data. */
     private ByteBuffer inNetBuf;
 
-    /** Empty buffer used in handshake procedure.  */
+    /** Empty buffer used in handshake procedure. */
     private ByteBuffer handshakeBuf = ByteBuffer.allocate(0);
 
     /** Application buffer. */
@@ -119,7 +119,7 @@ public class BlockingSslHandler {
     /**
      *
      */
-    public ByteBuffer inputBuffer(){
+    public ByteBuffer inputBuffer() {
         return inNetBuf;
     }
 
@@ -223,8 +223,8 @@ public class BlockingSslHandler {
      * Encrypts data to be written to the network.
      *
      * @param src data to encrypt.
-     * @throws SSLException on errors.
      * @return Output buffer with encrypted data.
+     * @throws SSLException on errors.
      */
     public ByteBuffer encrypt(ByteBuffer src) throws SSLException {
         assert handshakeFinished;
@@ -335,12 +335,41 @@ public class BlockingSslHandler {
 
         SSLEngineResult res = unwrap0();
 
+        res = postHandshakeIfNeded(res);
+
         // prepare to be written again
         inNetBuf.compact();
 
         checkStatus(res);
 
         renegotiateIfNeeded(res);
+    }
+
+    /**
+     * Does post-handshake logic described <a href="https://tools.ietf.org/html/rfc8446#section-4.6">here</a> if nedded.
+     *
+     * @param res Response.
+     */
+    private SSLEngineResult postHandshakeIfNeded(SSLEngineResult res) throws SSLException, IgniteCheckedException {
+        while (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK) {
+            if (!inNetBuf.hasRemaining()) {
+                inNetBuf.clear();
+
+                readFromNet();
+
+                inNetBuf.flip();
+            }
+
+            res = unwrap0();
+
+            handshakeStatus = res.getHandshakeStatus();
+
+            if (log.isDebugEnabled())
+                log.debug("Unrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                    handshakeStatus + ']');
+        }
+
+        return res;
     }
 
     /**
@@ -364,7 +393,6 @@ public class BlockingSslHandler {
         return sslEngine.getHandshakeStatus();
     }
 
-
     /**
      * Unwraps handshake data and processes it.
      *
@@ -373,7 +401,7 @@ public class BlockingSslHandler {
      * @throws GridNioException If failed to pass event to the next filter.
      */
     private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        if(!inNetBuf.hasRemaining())
+        if (!inNetBuf.hasRemaining())
             readFromNet();
 
         // Flip input buffer so we can read the collected data.
@@ -400,7 +428,7 @@ public class BlockingSslHandler {
         else if (res.getStatus() == BUFFER_UNDERFLOW) {
             inNetBuf.compact();
 
-            if(inNetBuf.capacity() == inNetBuf.limit())
+            if (inNetBuf.capacity() == inNetBuf.limit())
                 inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
 
             readFromNet();
@@ -511,7 +539,7 @@ public class BlockingSslHandler {
      */
     private void writeNetBuffer() throws IgniteCheckedException {
         try {
-            ch.write(outNetBuf);
+            U.writeFully(ch, outNetBuf);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to write byte to socket.", e);

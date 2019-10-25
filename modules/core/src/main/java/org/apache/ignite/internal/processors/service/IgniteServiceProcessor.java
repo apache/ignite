@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -104,6 +106,12 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 @SkipDaemon
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends ServiceProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
+    public static final String SVCS_VIEW = "services";
+
+    /** */
+    public static final String SVCS_VIEW_DESC = "Services";
+
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
 
@@ -184,6 +192,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
+            ServiceView.class,
+            registeredServices.values(),
+            ServiceView::new);
     }
 
     /** {@inheritDoc} */
@@ -538,7 +551,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param dfltNodeFilter Default NodeFilter.
      * @return Configurations to deploy.
      */
-    @SuppressWarnings("deprecation")
     private PreparedConfigurations<IgniteUuid> prepareServiceConfigurations(Collection<ServiceConfiguration> cfgs,
         IgnitePredicate<ClusterNode> dfltNodeFilter) {
         List<ServiceConfiguration> cfgsCp = new ArrayList<>(cfgs.size());
@@ -604,7 +616,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private SecurityException checkPermissions(String name, SecurityPermission perm) {
         try {
-            ctx.security().authorize(name, perm, null);
+            ctx.security().authorize(name, perm);
 
             return null;
         }
@@ -858,7 +870,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
@@ -929,7 +941,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
         long timeout)
         throws IgniteException {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -969,7 +981,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
@@ -1238,12 +1250,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @return Copy of service.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("deprecation")
     private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
+            LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
+
+            GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
+
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service srvc = U.unmarshal(marsh, bytes, U.resolveClassLoader(null, ctx.config()));
+            Service srvc = U.unmarshal(marsh, bytes,
+                U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
             ctx.resource().inject(srvc);
 

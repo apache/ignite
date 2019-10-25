@@ -423,12 +423,22 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         /**
          * Account states before transaction.
          */
-        AccountState before1, before2;
+        AccountState before1;
+
+        /**
+         * Account states before transaction.
+         */
+        AccountState before2;
 
         /**
          * Account states after transaction.
          */
-        AccountState after1, after2;
+        AccountState after1;
+
+        /**
+         * Account states after transaction.
+         */
+        AccountState after2;
 
         /**
          * Transferred coins between accounts during this transaction.

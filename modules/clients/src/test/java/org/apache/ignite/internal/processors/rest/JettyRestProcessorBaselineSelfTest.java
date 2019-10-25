@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
@@ -41,6 +42,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
         super.beforeTestsStarted();
@@ -74,6 +77,13 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
         cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**

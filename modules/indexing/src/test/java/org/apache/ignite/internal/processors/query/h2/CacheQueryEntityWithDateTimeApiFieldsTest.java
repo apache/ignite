@@ -35,7 +35,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 /**
  * Tests queries against entities with Java 8 Date and Time API fields.
@@ -49,13 +52,13 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
     private static final long DAYS_BEFORE_NOW = 10;
 
     /** {@link LocalTime} instance. */
-    private static final LocalTime SAMPLE_TIME = LocalTime.now().minusHours(10);
+    private static final LocalTime SAMPLE_TIME = LocalTime.now().minusHours(10).withNano(1);
 
     /** {@link LocalDate} instance. */
     private static final LocalDate SAMPLE_DATE = LocalDate.now().minusDays(DAYS_BEFORE_NOW);
 
     /** {@link LocalDateTime} instance. */
-    private static final LocalDateTime SAMPLE_DATE_TIME = LocalDateTime.of(SAMPLE_DATE, LocalTime.MIDNIGHT);
+    private static final LocalDateTime SAMPLE_DATE_TIME = LocalDateTime.of(SAMPLE_DATE, LocalTime.MIDNIGHT.withNano(1));
 
     /** Cache. */
     private IgniteCache<Long, EntityWithDateTimeFields> cache;
@@ -119,6 +122,29 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
             "insert into EntityWithDateTimeFields(_key, id, locTime, locDate, locDateTime) values(?, ?, ?, ?, ?)"
+        ).setArgs(
+            entity.getId(), entity.getId(), entity.getLocalTime(), entity.getLocalDate(), entity.getLocalDateTime()
+        );
+
+        List<List<?>> qryResults = cache.query(qry).getAll();
+
+        assertEquals(1, qryResults.size());
+        assertEquals(1L, qryResults.get(0).get(0));
+        assertEquals(1, cache.size());
+        assertEquals(entity, cache.get(entity.getId()));
+    }
+
+    /**
+     * Tests MERGE statement.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMergeEntityFields() throws Exception {
+        assertEquals(1, cache.size());
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "merge into EntityWithDateTimeFields(_key, id, locTime, locDate, locDateTime) values(?, ?, ?, ?, ?)"
         ).setArgs(
             entity.getId(), entity.getId(), entity.getLocalTime(), entity.getLocalDate(), entity.getLocalDateTime()
         );
@@ -212,10 +238,36 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
      * Tests updating of all Date and Time fields.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12009")
     public void testUpdateAllFields() {
         EntityWithDateTimeFields expEntity = new EntityWithDateTimeFields(entity);
 
         expEntity.setLocalTime(expEntity.getLocalTime().plusHours(1));
+        expEntity.setLocalDate(expEntity.getLocalDate().plusDays(1));
+        expEntity.setLocalDateTime(LocalDateTime.of(expEntity.getLocalDate(), expEntity.getLocalTime()));
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(
+            "update EntityWithDateTimeFields set locTime = ?, locDate = ?, locDateTime = ? where id = ?"
+        ).setArgs(expEntity.getLocalTime(), expEntity.getLocalDate(), expEntity.getLocalDateTime(), entity.getId());
+
+        List<List<?>> qryResults = cache.query(qry).getAll();
+
+        assertEquals(1, qryResults.size());
+        assertEquals(1L, qryResults.get(0).get(0));
+        assertEquals(expEntity, cache.get(expEntity.getId()));
+    }
+
+    /**
+     * Tests updating of all Date and Time fields.
+     * <p>
+     * Trim precision of {@link LocalDateTime} to milliseconds.
+     * Nanosecond precision test -- {@link #testUpdateAllFields}.
+     */
+    @Test
+    public void testUpdateAllFieldsMillisTimePrecision() {
+        EntityWithDateTimeFields expEntity = new EntityWithDateTimeFields(entity);
+
+        expEntity.setLocalTime(expEntity.getLocalTime().plusHours(1).withNano(0).plus(123, MILLIS));
         expEntity.setLocalDate(expEntity.getLocalDate().plusDays(1));
         expEntity.setLocalDateTime(LocalDateTime.of(expEntity.getLocalDate(), expEntity.getLocalTime()));
 

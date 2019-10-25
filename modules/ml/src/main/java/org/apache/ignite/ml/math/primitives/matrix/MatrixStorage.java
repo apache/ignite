@@ -72,4 +72,9 @@ public interface MatrixStorage extends Externalizable, StorageOpsMetrics, Destro
     public default double[] data() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override default boolean isNumeric() {
+        return true;
+    }
 }

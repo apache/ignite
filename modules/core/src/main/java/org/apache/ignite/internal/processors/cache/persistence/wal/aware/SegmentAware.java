@@ -29,12 +29,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.
 public class SegmentAware {
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
+
     /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
+
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
+
     /** Storage of actual information about current index of compressed segments. */
     private final SegmentCompressStorage segmentCompressStorage;
+
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 

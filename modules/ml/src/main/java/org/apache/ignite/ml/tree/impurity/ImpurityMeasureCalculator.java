@@ -52,7 +52,6 @@ public abstract class ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> im
      */
     public abstract StepFunction<T>[] calculate(DecisionTreeData data, TreeFilter filter, int depth);
 
-
     /**
      * Returns columns count in current dataset.
      *

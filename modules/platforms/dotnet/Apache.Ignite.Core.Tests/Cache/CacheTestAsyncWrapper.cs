@@ -78,6 +78,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public bool IsReadRepair
+        {
+            get { return _cache.IsReadRepair; }
+        }
+
+        /** <inheritDoc /> */
         public bool IsAllowAtomicOpsInTx {
             get { return _cache.IsAllowAtomicOpsInTx; }
         }
@@ -104,6 +110,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
             return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithReadRepair()
+        {
+            return _cache.WithReadRepair().WrapAsync();
         }
 
         /** <inheritDoc /> */
@@ -452,6 +464,42 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public long GetSizeLong(params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(modes).GetResult();
+        }
+
+        /** <inheritDoc /> */
+        public long GetSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(partition, modes).GetResult();
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(params CachePeekMode[] modes)
+        {
+            return _cache.GetLocalSizeLong(modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetLocalSizeLong(partition, modes);
+        }
+
+        /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
             return _cache.Query(qry);
@@ -593,6 +641,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void ResetQueryMetrics()
         {
             _cache.ResetQueryMetrics();
+        }
+
+        public void PreloadPartition(int partition)
+        {
+            _cache.PreloadPartitionAsync(partition).WaitResult();
+        }
+
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return _cache.PreloadPartitionAsync(partition);
+        }
+
+        public bool LocalPreloadPartition(int partition)
+        {
+            return _cache.LocalPreloadPartition(partition);
         }
     }
 

@@ -56,7 +56,6 @@ public class GridNioDelimitedBufferSelfTest {
             for (int j = 0; j < len; j++)
                 sb.append((char)(rnd.nextInt(26) + 'a'));
 
-
             strs.add(sb.toString());
         }
 

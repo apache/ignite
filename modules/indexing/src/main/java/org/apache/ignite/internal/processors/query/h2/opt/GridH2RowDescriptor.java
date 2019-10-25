@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
+import org.h2.result.SearchRow;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -88,6 +89,15 @@ public class GridH2RowDescriptor {
     }
 
     /**
+     * Gets table descriptor.
+     *
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor(){
+        return tbl;
+    }
+
+    /**
      * Update metadata of this row descriptor according to current state of type descriptor.
      */
     @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
@@ -140,7 +150,6 @@ public class GridH2RowDescriptor {
     public GridQueryTypeDescriptor type() {
         return type;
     }
-
 
     /**
      * Gets cache context info for this row descriptor.
@@ -349,7 +358,7 @@ public class GridH2RowDescriptor {
      * @param row Source row.
      * @return Result.
      */
-    public org.h2.result.SearchRow prepareProxyIndexRow(org.h2.result.SearchRow row) {
+    public SearchRow prepareProxyIndexRow(SearchRow row) {
         if (row == null)
             return null;
 

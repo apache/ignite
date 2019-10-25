@@ -19,7 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-import org.apache.ignite.ml.math.exceptions.IndexException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -361,11 +361,6 @@ public class AbstractVectorTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
@@ -403,11 +398,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */
@@ -435,11 +425,6 @@ public class AbstractVectorTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
             @Override public Vector copy() {
                 return getAbstractVector(this.getStorage());
             }
@@ -472,11 +457,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */

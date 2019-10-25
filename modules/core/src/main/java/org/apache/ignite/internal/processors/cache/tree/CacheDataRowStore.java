@@ -50,9 +50,6 @@ public class CacheDataRowStore extends RowStore {
     /** */
     private final int partId;
 
-    /** */
-    private final CacheGroupContext grp;
-
     /**
      * @param grp Cache group.
      * @param freeList Free list.
@@ -62,7 +59,6 @@ public class CacheDataRowStore extends RowStore {
         super(grp, freeList);
 
         this.partId = partId;
-        this.grp = grp;
     }
 
     /**
@@ -102,7 +98,7 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
-        MvccDataRow dataRow = new MvccDataRow(
+        MvccDataRow row = new MvccDataRow(
             grp,
             hash,
             link,
@@ -114,7 +110,7 @@ public class CacheDataRowStore extends RowStore {
             SKIP_VER.get()
         );
 
-        return initDataRow(dataRow, cacheId);
+        return initDataRow(row, cacheId);
     }
 
     /**

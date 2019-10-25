@@ -29,17 +29,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.Whitebox;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertSame;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
 
@@ -54,10 +54,15 @@ public class GridAffinityAssignmentV2Test {
     protected IgniteProductVersion ver = new IgniteProductVersion();
 
     private ClusterNode clusterNode1 = node(metrics, ver, "1");
+
     private ClusterNode clusterNode2 = node(metrics, ver, "2");
+
     private ClusterNode clusterNode3 = node(metrics, ver, "3");
+
     private ClusterNode clusterNode4 = node(metrics, ver, "4");
+
     private ClusterNode clusterNode5 = node(metrics, ver, "5");
+
     private ClusterNode clusterNode6 = node(metrics, ver, "6");
 
     private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
@@ -149,7 +154,7 @@ public class GridAffinityAssignmentV2Test {
 
         Set<Integer> unwrapped = (Set<Integer>)Whitebox.getInternalState(
             gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
-            "c"
+            "delegate"
         );
 
         if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
@@ -243,7 +248,6 @@ public class GridAffinityAssignmentV2Test {
 
         assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
     }
-
 
     /**
      *

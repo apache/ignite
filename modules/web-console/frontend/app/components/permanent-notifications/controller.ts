@@ -16,12 +16,14 @@
  */
 
 export default class PermanentNotifications {
-    static $inject = ['UserNotifications', '$rootScope', '$window']
+    static $inject = ['UserNotifications', '$rootScope', '$window'];
+
     constructor(
         private UserNotifications: unknown,
         private $rootScope: ng.IRootScopeService,
         private $window: ng.IWindowService
     ) {}
+
     closeDemo() {
         this.$window.close();
     }

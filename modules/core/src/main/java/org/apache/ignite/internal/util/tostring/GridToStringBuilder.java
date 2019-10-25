@@ -38,6 +38,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1052,17 +1053,46 @@ public class GridToStringBuilder {
                 else
                     first = false;
 
-                String name = fd.getName();
+                buf.a(fd.getName()).a('=');
 
-                Field field = cls.getDeclaredField(name);
+                switch (fd.type()) {
+                    case GridToStringFieldDescriptor.FIELD_TYPE_OBJECT:
+                        toString(buf, fd.fieldClass(), GridUnsafe.getObjectField(obj, fd.offset()));
 
-                field.setAccessible(true);
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_BYTE:
+                        buf.a(GridUnsafe.getByteField(obj, fd.offset()));
 
-                buf.a(name).a('=');
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_BOOLEAN:
+                        buf.a(GridUnsafe.getBooleanField(obj, fd.offset()));
 
-                Class<?> fieldType = field.getType();
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_CHAR:
+                        buf.a(GridUnsafe.getCharField(obj, fd.offset()));
 
-                toString(buf, fieldType, field.get(obj));
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_SHORT:
+                        buf.a(GridUnsafe.getShortField(obj, fd.offset()));
+
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_INT:
+                        buf.a(GridUnsafe.getIntField(obj, fd.offset()));
+
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_FLOAT:
+                        buf.a(GridUnsafe.getFloatField(obj, fd.offset()));
+
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_LONG:
+                        buf.a(GridUnsafe.getLongField(obj, fd.offset()));
+
+                        break;
+                    case GridToStringFieldDescriptor.FIELD_TYPE_DOUBLE:
+                        buf.a(GridUnsafe.getDoubleField(obj, fd.offset()));
+
+                        break;
+                }
             }
 
             appendVals(buf, first, addNames, addVals, addSens, addLen);
@@ -1695,7 +1725,8 @@ public class GridToStringBuilder {
                     add = notSens || INCLUDE_SENSITIVE;
                 }
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
-                    !f.getType().isAnnotationPresent(GridToStringExclude.class)) {
+                    !type.isAnnotationPresent(GridToStringExclude.class)
+                ) {
                     if (
                         // Include only private non-static
                         Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
@@ -1724,7 +1755,7 @@ public class GridToStringBuilder {
                 }
 
                 if (add) {
-                    GridToStringFieldDescriptor fd = new GridToStringFieldDescriptor(f.getName());
+                    GridToStringFieldDescriptor fd = new GridToStringFieldDescriptor(f);
 
                     // Get order, if any.
                     final GridToStringOrder annOrder = f.getAnnotation(GridToStringOrder.class);

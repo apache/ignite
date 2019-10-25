@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Dispatcher of distributed properties.
  *
@@ -37,17 +35,15 @@ public interface DistributedPropertyDispatcher {
      * Create and attach new long property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    public DistributedLongProperty registerLong(String name, Long initVal);
+    public DistributedLongProperty registerLong(String name);
 
     /**
      * Create and attach new boolean property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    public DistributedBooleanProperty registerBoolean(String name, Boolean initVal);
+    public DistributedBooleanProperty registerBoolean(String name);
 }

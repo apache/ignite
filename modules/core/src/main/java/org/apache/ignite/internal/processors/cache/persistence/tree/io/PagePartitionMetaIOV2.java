@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -30,6 +29,15 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     /** */
     private static final int PENDING_TREE_ROOT_OFF = PagePartitionMetaIO.END_OF_PARTITION_PAGE_META;
+
+    /** */
+    private static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
+
+    /** */
+    private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
+
+    /** */
+    private static final int TOMBSTONES_COUNT = GAPS_LINK + 8;
 
     /**
      * @param ver Version.
@@ -43,6 +51,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         super.initNewPage(pageAddr, pageId, pageSize);
 
         setPendingTreeRoot(pageAddr, 0L);
+        setPartitionMetaStoreReuseListRoot(pageAddr, 0L);
+        setGapsLink(pageAddr, 0);
     }
 
     /** {@inheritDoc} */
@@ -51,12 +61,63 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void setPendingTreeRoot(long pageAddr, long treeRoot) {
-        PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, treeRoot);
+    @Override public void setPendingTreeRoot(long pageAddr, long listRoot) {
+        PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, listRoot);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    @Override public long getPartitionMetaStoreReuseListRoot(long pageAddr) {
+        return PageUtils.getLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param listRoot List root.
+     */
+    @Override public void setPartitionMetaStoreReuseListRoot(long pageAddr, long listRoot) {
+        PageUtils.putLong(pageAddr, PART_META_REUSE_LIST_ROOT_OFF, listRoot);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Partition size.
+     */
+    public long getGapsLink(long pageAddr) {
+        return PageUtils.getLong(pageAddr, GAPS_LINK);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param link Link.
+     */
+    public boolean setGapsLink(long pageAddr, long link) {
+        if (getGapsLink(pageAddr) == link)
+            return false;
+
+        PageUtils.putLong(pageAddr, GAPS_LINK, link);
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+    @Override public long getTombstonesCount(long pageAddr) {
+        return PageUtils.getLong(pageAddr, TOMBSTONES_COUNT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean setTombstonesCount(long pageAddr, long tombstonesCnt) {
+        if (getTombstonesCount(pageAddr) == tombstonesCnt)
+            return false;
+
+        PageUtils.putLong(pageAddr, TOMBSTONES_COUNT, tombstonesCnt);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) {
         byte state = getPartitionState(pageAddr);
 
         sb.a("PagePartitionMeta[\n\ttreeRoot=").a(getReuseListRoot(pageAddr));
@@ -71,7 +132,9 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         sb.a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr));
         sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
         sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
-        sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
+        sb.a(",\n\tcacheSizesPageId=").a(getCacheSizesPageId(pageAddr));
+        sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
+        sb.a(",\n\ttombstonesCount=").a(getTombstonesCount(pageAddr));
         sb.a("\n]");
     }
 
@@ -86,5 +149,8 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
         PageIO.setVersion(pageAddr, getVersion());
         setPendingTreeRoot(pageAddr, 0);
+        setPartitionMetaStoreReuseListRoot(pageAddr, 0);
+        setGapsLink(pageAddr, 0);
+        setTombstonesCount(pageAddr, 0);
     }
 }

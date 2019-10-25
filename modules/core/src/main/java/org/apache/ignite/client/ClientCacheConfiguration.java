@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Cache configuration. */
@@ -61,10 +62,10 @@ public final class ClientCacheConfiguration implements Serializable {
     private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
 
     /** @serial Rebalance batch size. */
-    private int rebalanceBatchSize = CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+    private int rebalanceBatchSize = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
     /** @serial Rebalance batches prefetch count. */
-    private long rebalanceBatchesPrefetchCnt = CacheConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** @serial Rebalance delay. */
     private long rebalanceDelay = 0;
@@ -76,10 +77,10 @@ public final class ClientCacheConfiguration implements Serializable {
     private int rebalanceOrder = 0;
 
     /** @serial Rebalance throttle. */
-    private long rebalanceThrottle = CacheConfiguration.DFLT_REBALANCE_THROTTLE;
+    private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
     /** @serial @serial Rebalance timeout. */
-    private long rebalanceTimeout = CacheConfiguration.DFLT_REBALANCE_TIMEOUT;
+    private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
     /** @serial Write synchronization mode. */
     private CacheWriteSynchronizationMode writeSynchronizationMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -439,7 +440,6 @@ public final class ClientCacheConfiguration implements Serializable {
         return this;
     }
 
-
     /**
      * @return Copy on read.
      */
@@ -615,7 +615,6 @@ public final class ClientCacheConfiguration implements Serializable {
 
         return this;
     }
-
 
     /**
      * @return Cache key configuration.

@@ -1,0 +1,184 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'clientConnector'
+-var model = '$ctrl.clonedCluster'
+-var connectionModel = `${model}.clientConnectorConfiguration`
+-var connectionEnabled = `${connectionModel}.enabled`
+-var sslEnabled = `${connectionEnabled} && ${connectionModel}.sslEnabled`
+-var sslFactoryEnabled = `${sslEnabled} && !${connectionModel}.useIgniteSslContextFactory`
+
+panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Client connector configuration
+    panel-content.pca-form-row(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: connectionEnabled,
+                    name: '"ClientConnectorEnabled"',
+                    tip: 'Flag indicating whether to configure client connector configuration'
+                })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Host:',
+                    model: `${connectionModel}.host`,
+                    name: '"ClientConnectorHost"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'localhost'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Port:',
+                    model: `${connectionModel}.port`,
+                    name: '"ClientConnectorPort"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '10800',
+                    min: '1025'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Port range:',
+                    model: `${connectionModel}.portRange`,
+                    name: '"ClientConnectorPortRange"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '100',
+                    min: '0'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket send buffer size:',
+                    model: `${connectionModel}.socketSendBufferSize`,
+                    name: '"ClientConnectorSocketSendBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket send buffer size<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Socket receive buffer size:',
+                    model: `${connectionModel}.socketReceiveBufferSize`,
+                    name: '"ClientConnectorSocketReceiveBufferSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Socket receive buffer size<br/>\
+                          When set to <b>0</b>, operation system default will be used'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Max connection cursors:',
+                    model: `${connectionModel}.maxOpenCursorsPerConnection`,
+                    name: '"ClientConnectorMaxOpenCursorsPerConnection"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '128',
+                    min: '0',
+                    tip: 'Max number of opened cursors per connection'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Pool size:',
+                    model: `${connectionModel}.threadPoolSize`,
+                    name: '"ClientConnectorThreadPoolSize"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing SQL requests'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'TCP_NODELAY option',
+                    model: `${connectionModel}.tcpNoDelay`,
+                    name: '"ClientConnectorTcpNoDelay"',
+                    disabled: `!${connectionEnabled}`
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +form-field__number({
+                    label: 'Idle timeout:',
+                    model: `${connectionModel}.idleTimeout`,
+                    name: '"ClientConnectorIdleTimeout"',
+                    disabled: `!(${connectionEnabled})`,
+                    placeholder: '0',
+                    min: '-1',
+                    tip: 'Idle timeout for client connections<br/>\
+                         Zero or negative means no timeout'
+                })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.5.0")')
+                +form-field__checkbox({
+                    label: 'Enable SSL',
+                    model: `${connectionModel}.sslEnabled`,
+                    name: '"ClientConnectorSslEnabled"',
+                    disabled: `!${connectionEnabled}`,
+                    tip: 'Enable secure socket layer on client connector'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enable SSL client auth',
+                    model: `${connectionModel}.sslClientAuth`,
+                    name: '"ClientConnectorSslClientAuth"',
+                    disabled: `!(${sslEnabled})`,
+                    tip: 'Flag indicating whether or not SSL client authentication is required'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Use Ignite SSL',
+                    model: `${connectionModel}.useIgniteSslContextFactory`,
+                    name: '"ClientConnectorUseIgniteSslContextFactory"',
+                    disabled: `!(${sslEnabled})`,
+                    tip: 'Use SSL factory Ignite configuration'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__java-class({
+                    label:'SSL factory:',
+                    model: `${connectionModel}.sslContextFactory`,
+                    name: '"ClientConnectorSslContextFactory"',
+                    disabled: `!(${sslFactoryEnabled})`,
+                    required: sslFactoryEnabled,
+                    tip: 'If SSL factory specified then replication will be performed through secure SSL channel created with this factory<br/>\
+                          If not present <b>isUseIgniteSslContextFactory()</b> flag will be evaluated<br/>\
+                          If set to <b>true</b> and <b>IgniteConfiguration#getSslContextFactory()</b> exists, then Ignite SSL context factory will be used to establish secure connection'
+                })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.4.0")')
+                +form-field__checkbox({
+                    label: 'JDBC Enabled',
+                    model: `${connectionModel}.jdbcEnabled`,
+                    name: '"ClientConnectorJdbcEnabled"',
+                    disabled: `!${connectionEnabled}`,
+                    tip: 'Access through JDBC is enabled'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'ODBC Enabled',
+                    model: `${connectionModel}.odbcEnabled`,
+                    name: '"ClientConnectorOdbcEnabled"',
+                    disabled: `!${connectionEnabled}`,
+                    tip: 'Access through ODBC is enabled'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__checkbox({
+                    label: 'Thin client enabled',
+                    model: `${connectionModel}.thinClientEnabled`,
+                    name: '"ClientConnectorThinCliEnabled"',
+                    disabled: `!${connectionEnabled}`,
+                    tip: 'Access through thin client is enabled'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterClientConnector')

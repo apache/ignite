@@ -30,4 +30,26 @@ public interface GridClientClusterState {
      * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
      */
     public boolean active() throws GridClientException;
+
+    /**
+     * @return {@code True} if the cluster is in read-only mode and {@code false} otherwise.
+     * @throws GridClientException If request current cluster read-only mode failed.
+     */
+    public boolean readOnly() throws GridClientException;
+
+    /**
+     * Enable or disable Ignite grid read-only mode.
+     *
+     * @param readOnly If {@code True} enable read-only mode. If {@code false} disable read-only mode.
+     * @throws GridClientException If change of read-only mode is failed.
+     */
+    public void readOnly(boolean readOnly) throws GridClientException;
+
+    /**
+     * Get the cluster name.
+     *
+     * @return The name of the cluster.
+     * @throws GridClientException If the request to get the cluster name failed.
+     * */
+    String clusterName() throws GridClientException;
 }

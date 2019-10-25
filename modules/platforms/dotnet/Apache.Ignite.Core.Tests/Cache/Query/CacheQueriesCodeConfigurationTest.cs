@@ -85,7 +85,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache[1] = new QueryPerson("Arnold", 10);
                 cache[2] = new QueryPerson("John", 20);
 
+#pragma warning disable 618
                 using (var cursor = cache.Query(new SqlQuery(typeof (QueryPerson), "age > ? and birthday < ?",
+#pragma warning restore 618
                     10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
@@ -176,6 +178,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 cache[2] = new AttributeQueryPerson("John", 20);
 
+#pragma warning disable 618
                 using (var cursor = cache.Query(new SqlQuery(typeof(AttributeQueryPerson),
                     "age > ? and age < ? and birthday > ? and birthday < ?", 10, 30,
                     DateTime.UtcNow.AddYears(-21), DateTime.UtcNow.AddYears(-19))))
@@ -197,6 +200,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
+#pragma warning restore 618
 
                 using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Ar*")))
                 {

@@ -109,6 +109,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 
@@ -231,7 +233,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
                 CacheMetrics snapshot = ig.cache(CACHE1).metrics();
 
                 return snapshot.getRebalancedKeys() > snapshot.getEstimatedRebalancingKeys()
-                    && res.getRebalance().get(ignite.cluster().localNode().id()) == 1.0
+                    && Double.compare(res.getRebalance().get(ignite.cluster().localNode().id()), 1.0) == 0
                     && snapshot.getRebalancingPartitionsCount() == 0;
             }
         }, 5000);
@@ -347,7 +349,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
             }
-        }, timeLeft + 10_000L);
+        }, timeLeft + 12_000L);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +
@@ -362,7 +364,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         long diff = finishTime - currTime;
 
-        assertTrue("Expected less than 10000, but actual: " + diff, Math.abs(diff) < 10_000L);
+        assertTrue("Expected less than 12000, but actual: " + diff, Math.abs(diff) < 12_000L);
     }
 
     /**

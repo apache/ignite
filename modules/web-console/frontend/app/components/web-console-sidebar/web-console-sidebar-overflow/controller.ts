@@ -18,13 +18,18 @@
 import ResizeObserver from 'resize-observer-polyfill';
 
 export default class WebCOnsoleSidebarOverflow {
-    static $inject = ['$element', 'gridUtil', '$window']
+    static $inject = ['$element', 'gridUtil', '$window'];
+
     constructor(private el: JQLite, private gridUtil: {getScrollbarWidth(): number}, private $win: ng.IWindowService) {}
-    scrollEl!: JQLite
-    resizeObserver: ResizeObserver
+
+    scrollEl!: JQLite;
+
+    resizeObserver: ResizeObserver;
+
     $onInit() {
         this.el.css('--scrollbar-width', this.gridUtil.getScrollbarWidth());
     }
+
     $postLink() {
         this.scrollEl[0].addEventListener('scroll', this.onScroll, {passive: true});
         this.resizeObserver = new ResizeObserver(() => this.applyStyles(this.scrollEl[0]));

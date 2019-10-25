@@ -176,6 +176,18 @@ public enum GridRestCommand {
     /** */
     CLUSTER_CURRENT_STATE("currentstate"),
 
+    /** Current cluster name. */
+    CLUSTER_NAME("clustername"),
+
+    /** */
+    CLUSTER_CURRENT_READ_ONLY_MODE("currentreadonlymode"),
+
+    /** */
+    CLUSTER_READ_ONLY_ENABLE("readonlyenable"),
+
+    /** */
+    CLUSTER_READ_ONLY_DISABLE("readonlydisable"),
+
     /** */
     BASELINE_CURRENT_STATE("baseline"),
 
@@ -198,7 +210,13 @@ public enum GridRestCommand {
     REMOVE_USER("removeuser"),
 
     /** */
-    UPDATE_USER("updateuser");
+    UPDATE_USER("updateuser"),
+
+    /** Data region metrics. */
+    DATA_REGION_METRICS("dataregion"),
+
+    /** Data storage metrics. */
+    DATA_STORAGE_METRICS("datastorage");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();

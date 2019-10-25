@@ -98,9 +98,6 @@ copy "$(ProjectDir)..\..\..\..\project\vs\$(Platform)\$(Configuration)\ignite.th
     <ClInclude Include="..\..\..\include\ignite\examples\organization.h" />
     <ClInclude Include="..\..\..\include\ignite\examples\person.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\config\thin_client_put_get_example.xml" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

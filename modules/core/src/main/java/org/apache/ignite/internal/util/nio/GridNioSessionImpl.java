@@ -175,7 +175,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override  @Nullable public InetSocketAddress remoteAddress() {
+    @Override @Nullable public InetSocketAddress remoteAddress() {
         return rmtAddr;
     }
 

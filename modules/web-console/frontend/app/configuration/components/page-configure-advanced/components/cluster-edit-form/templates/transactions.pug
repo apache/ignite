@@ -1,0 +1,124 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'transactions'
+-var model = '$ctrl.clonedCluster.transactionConfiguration'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Transactions
+    panel-description
+        | Settings for transactions.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/transactions" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Concurrency:',
+                    model: `${model}.defaultTxConcurrency`,
+                    name: '"defaultTxConcurrency"',
+                    placeholder: 'PESSIMISTIC',
+                    options: '[\
+                        {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
+                        {value: "PESSIMISTIC", label: "PESSIMISTIC"}\
+                    ]',
+                    tip: 'Cache transaction concurrency to use when one is not explicitly specified\
+                        <ul>\
+                            <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
+                            <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Isolation:',
+                    model: `${model}.defaultTxIsolation`,
+                    name: '"defaultTxIsolation"',
+                    placeholder: 'REPEATABLE_READ',
+                    options: '[\
+                        {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
+                        {value: "REPEATABLE_READ", label: "REPEATABLE_READ"},\
+                        {value: "SERIALIZABLE", label: "SERIALIZABLE"}\
+                    ]',
+                    tip: 'Default transaction isolation\
+                        <ul>\
+                            <li>READ_COMMITTED - Always a committed value will be provided for read operations</li>\
+                            <li>REPEATABLE_READ - If a value was read once within transaction, then all consecutive reads will provide the same in-transaction value</li>\
+                            <li>SERIALIZABLE - All transactions occur in a completely isolated fashion, as if all transactions in the system had executed serially, one after the other.</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Default timeout:',
+                    model: `${model}.defaultTxTimeout`,
+                    name: '"defaultTxTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Default transaction timeout'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Pessimistic log cleanup delay:',
+                    model: `${model}.pessimisticTxLogLinger`,
+                    name: '"pessimisticTxLogLinger"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Pessimistic log size:',
+                    model: `${model}.pessimisticTxLogSize`,
+                    name: '"pessimisticTxLogSize"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes'
+                })
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Manager factory:',
+                    model: `${model}.txManagerFactory`,
+                    name: '"txManagerFactory"',
+                    tip: 'Class name of transaction manager factory for integration with JEE app servers'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__number({
+                    label: 'Partition map exchange timeout:',
+                    model: `${model}.txTimeoutOnPartitionMapExchange`,
+                    name: '"txTimeoutOnPartitionMapExchange"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Transaction timeout for partition map synchronization in milliseconds'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__number({
+                    label: 'Deadlock timeout:',
+                    model: `${model}.deadlockTimeout`,
+                    name: '"deadlockTimeout"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Timeout before starting deadlock detection for caches configured with TRANSACTIONAL_SNAPSHOT atomicity mode in milliseconds'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Use JTA synchronization',
+                    model: `${model}.useJtaSynchronization`,
+                    name: '"useJtaSynchronization"',
+                    tip: 'Use lightweight JTA synchronization callback to enlist into JTA transaction instead of creating a separate XA resource'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterTransactions')

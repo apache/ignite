@@ -34,7 +34,8 @@ import org.junit.runners.Suite;
     ThreadedModelBuilderTest.class,
     DirectorySerializerTest.class,
     DefaultModelStorageTest.class,
-    IgniteDistributedModelBuilderTest.class
+    IgniteDistributedModelBuilderTest.class,
+    IgniteModelStorageUtilTest.class
 })
 public class InferenceTestSuite {
 }

@@ -42,6 +42,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     /** */
     private static IgniteCache<Object, Object> cache;
+
     /** */
     private static final CacheEntryProcessor<Object, Object, Object> testEntryProcessor = (entry, arguments) -> null;
 
@@ -53,13 +54,6 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
 
         cache = ign.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** */

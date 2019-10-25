@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
 
 /**
  * Thin client response.
@@ -64,15 +67,48 @@ public class ClientResponse extends ClientListenerResponse {
     }
 
     /**
-     * Encodes the response data.
+     * Encodes the response data. Used when response result depends on the specific affinity version.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     * @param affinityVer Affinity version.
      */
-    public void encode(BinaryRawWriterEx writer) {
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer,
+        ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
+
+        ClientListenerProtocolVersion ver = ctx.currentVersion();
+
+        assert ver != null;
+
+        if (ver.compareTo(VER_1_4_0) >= 0) {
+            boolean error = status() != ClientStatus.SUCCESS;
+
+            short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());
+
+            writer.writeShort(flags);
+
+            if (affinityVer.isChanged())
+                affinityVer.write(writer);
+
+            // If no return flag is set, no additional data is written to a payload.
+            if (!error)
+                return;
+        }
+
         writer.writeInt(status());
 
         if (status() != ClientStatus.SUCCESS) {
             writer.writeString(error());
         }
+    }
+
+    /**
+     * Encodes the response data.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     */
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 
     /**

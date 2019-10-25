@@ -142,9 +142,4 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean mvccEnabled() {
-        return entry != null && entry.context().mvccEnabled();
-    }
 }

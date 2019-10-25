@@ -171,10 +171,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
             boolean first = (nodeId != null);
 
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if (!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
-
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
 
@@ -473,21 +469,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @throws IgniteCheckedException if failed to send.
      */
     private void sendRequest(GridCacheMessage req, UUID nodeId) throws IgniteCheckedException {
-        IgniteInternalFuture<?> txSync = cctx.tm().awaitFinishAckAsync(nodeId, tx.threadId());
-
-        if (txSync == null || txSync.isDone())
-            cctx.io().send(nodeId, req, cctx.ioPolicy());
-        else
-            txSync.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> future) {
-                    try {
-                        cctx.io().send(nodeId, req, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        GridNearTxEnlistFuture.this.onDone(e);
-                    }
-                }
-            });
+        cctx.io().send(nodeId, req, cctx.ioPolicy());
     }
 
     /**
@@ -567,13 +549,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            processFailure(topEx, null);
-
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
-
+            onDone(topEx);
         }
 
         if (log.isDebugEnabled())
@@ -598,14 +574,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
-        if (err != null)
-            processFailure(err, null);
-
-        if (ex != null) {
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
+        if (err != null) {
+            onDone(err);
 
             return false;
         }
@@ -625,7 +595,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         tx.hasRemoteLocks(true);
 
-        return true;
+        return !isDone();
     }
 
     /** {@inheritDoc} */

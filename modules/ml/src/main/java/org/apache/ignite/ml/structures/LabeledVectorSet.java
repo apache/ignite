@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.structures;
 
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.datastructures.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.NoDataException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -94,7 +94,6 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     public LabeledVectorSet(Row[] data, int colSize) {
         super(data, colSize);
     }
-
 
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.

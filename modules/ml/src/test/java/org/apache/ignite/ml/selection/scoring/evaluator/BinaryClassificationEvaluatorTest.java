@@ -19,21 +19,24 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link BinaryClassificationEvaluator}.
+ * Tests for {@link Evaluator}.
  */
 public class BinaryClassificationEvaluatorTest extends TrainerTest {
     /**
@@ -46,21 +49,18 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer().withK(3);
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
-        NNClassificationModel mdl = trainer.fit(
-            cacheMock,
-            parts,
-            featureExtractor,
-            lbExtractor
-        ).withK(3);
+        KNNClassificationModel mdl = trainer.fit(
+            cacheMock, parts,
+            vectorizer
+        );
 
-        double score = BinaryClassificationEvaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
+        double score = Evaluator.evaluate(cacheMock, mdl, vectorizer, MetricName.ACCURACY);
 
-        assertEquals(0.9839357429718876, score, 1e-12);
+        assertEquals(0.9919839679358717, score, 1e-12);
     }
 
     /**
@@ -73,24 +73,21 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
         for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
             cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
 
-        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer().withK(3);
 
-        IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-        IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
-
-        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>(new SHA256UniformMapper<>(new Random(100)))
             .split(0.75);
 
-        NNClassificationModel mdl = trainer.fit(
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
+        KNNClassificationModel mdl = trainer.fit(
             cacheMock,
             split.getTrainFilter(),
             parts,
-            featureExtractor,
-            lbExtractor
-        ).withK(3);
+            vectorizer
+        );
 
-        double score = BinaryClassificationEvaluator.evaluate(cacheMock, mdl, featureExtractor, lbExtractor, new Accuracy<>());
-
-        assertEquals(0.9, score, 1);
+        double score = Evaluator.evaluate(cacheMock, split.getTestFilter(), mdl, vectorizer, MetricName.ACCURACY);
+        assertEquals(0.9769230769230769, score, 1e-12);
     }
 }

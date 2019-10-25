@@ -56,6 +56,11 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
                     user.activated = false;
 
+                    if (settings.activation.enabled) {
+                        user.activationToken = utilsService.randomString(settings.tokenLength);
+                        user.activationSentAt = new Date();
+                    }
+
                     if (settings.server.disableSignup && !user.admin && !createdByAdmin)
                         throw new errors.ServerErrorException('Sign-up is not allowed. Ask your Web Console administrator to create account for you.');
 
@@ -80,20 +85,15 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                 })
                 .then((registered) => {
                     if (settings.activation.enabled) {
-                        registered.activationToken = utilsService.randomString(settings.tokenLength);
-                        registered.activationSentAt = new Date();
+                        mailsService.sendActivationLink(host, registered);
 
-                        if (!createdByAdmin) {
-                            return registered.save()
-                                .then(() => {
-                                    mailsService.emailUserActivation(host, registered);
+                        if (createdByAdmin)
+                            return registered;
 
-                                    throw new errors.MissingConfirmRegistrationException(registered.email);
-                                });
-                        }
+                        throw new errors.MissingConfirmRegistrationException(registered.email);
                     }
 
-                    mailsService.emailUserSignUp(host, registered, createdByAdmin);
+                    mailsService.sendWelcomeLetter(host, registered, createdByAdmin);
 
                     return registered;
                 });
@@ -234,17 +234,17 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                 .then((user) => {
                     return spacesService.spaceIds(userId)
                         .then((spaceIds) => Promise.all([
-                            mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Igfs.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Notebook.remove({space: {$in: spaceIds}}).exec(),
-                            mongo.Space.remove({owner: userId}).exec()
+                            mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Notebook.deleteMany({space: {$in: spaceIds}}).exec(),
+                            mongo.Space.deleteOne({owner: userId}).exec()
                         ]))
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);
                 })
-                .then((user) => mailsService.emailUserDeletion(host, user));
+                .then((user) => mailsService.sendAccountDeleted(host, user));
         }
 
         /**

@@ -68,10 +68,9 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
     /**
      * @param data Data array.
-     * @param forUpdate Whether is result is one of {@code SELECT FOR UPDATE} query.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, boolean forUpdate) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
         this.data = data;
 
         try {
@@ -83,9 +82,7 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
         if (data != null) {
             try {
-                int colsCnt = data.getMetaData().getColumnCount();
-
-                row = new Object[forUpdate ? colsCnt - 1 : colsCnt];
+                row = new Object[data.getMetaData().getColumnCount()];
             }
             catch (SQLException e) {
                 throw new IgniteCheckedException(e);

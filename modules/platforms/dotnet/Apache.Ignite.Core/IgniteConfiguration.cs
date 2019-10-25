@@ -216,15 +216,6 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
-        /** */
-        private bool? _initBaselineAutoAdjustEnabled;
-
-        /** Initial value of time which we would wait before the actual topology change since last discovery event. */
-        private long? _initBaselineAutoAdjustTimeout;
-
-        /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-        private long? _initBaselineAutoAdjustMaxTimeout;
-
         /** SQL query history size. */
         private int? _sqlQueryHistorySize;
 
@@ -262,21 +253,6 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="MvccVacuumThreadCount"/> property.
         /// </summary>
         public const int DefaultMvccVacuumThreadCount = 2;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustEnabled"/> property.
-        /// </summary>
-        public const bool DefaultInitBaselineAutoAdjustEnabled = false;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustTimeout"/> property.
-        /// </summary>
-        public const long DefaultInitBaselineAutoAdjustTimeout = 0;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
-        /// </summary>
-        public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
 
         /// <summary>
         /// Default value for <see cref="SqlQueryHistorySize"/> property.
@@ -365,13 +341,10 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
-            writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
-            writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
-            writer.WriteLongNullable(_initBaselineAutoAdjustMaxTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
 
             if (SqlSchemas == null)
-                writer.WriteInt(-1);
+                writer.WriteInt(0);
             else
             {
                 writer.WriteInt(SqlSchemas.Count);
@@ -514,7 +487,7 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
-                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
                 writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
@@ -601,7 +574,7 @@ namespace Apache.Ignite.Core
             if (DataStorageConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DataStorageConfiguration.Write(writer);
+                DataStorageConfiguration.Write(writer, srvVer);
             }
             else
             {
@@ -644,6 +617,20 @@ namespace Apache.Ignite.Core
                     writer.WriteByte(2);
 
                     failHnd.Write(writer);
+                }
+            }
+
+            if (ExecutorConfiguration == null)
+            {
+                writer.WriteInt(0);
+            }
+            else
+            {
+                writer.WriteInt(ExecutorConfiguration.Count);
+                foreach (var exec in ExecutorConfiguration)
+                {
+                    writer.WriteString(exec.Name);
+                    writer.WriteInt(exec.Size);
                 }
             }
 
@@ -759,16 +746,11 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
-            _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
-            _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
-            _initBaselineAutoAdjustMaxTimeout = r.ReadLongNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
-            if (sqlSchemasCnt == -1)
-                SqlSchemas = null;
-            else
+            if (sqlSchemasCnt > 0)
             {
                 SqlSchemas = new List<string>(sqlSchemasCnt);
 
@@ -893,13 +875,13 @@ namespace Apache.Ignite.Core
             // Data storage.
             if (r.ReadBoolean())
             {
-                DataStorageConfiguration = new DataStorageConfiguration(r);
+                DataStorageConfiguration = new DataStorageConfiguration(r, srvVer);
             }
 
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
 
-            //Failure handler.
+            // Failure handler.
             if (r.ReadBoolean())
             {
                 switch (r.ReadByte())
@@ -928,6 +910,22 @@ namespace Apache.Ignite.Core
             else
             {
                 FailureHandler = null;
+            }
+
+            // Executor configuration.
+            var count = r.ReadInt();
+            if (count >= 0)
+            {
+                ExecutorConfiguration = new List<ExecutorConfiguration>(count);
+
+                for (var i = 0; i < count; i++)
+                {
+                    ExecutorConfiguration.Add(new ExecutorConfiguration
+                    {
+                        Name = r.ReadString(),
+                        Size = r.ReadInt()
+                    });
+                }
             }
         }
 
@@ -1710,33 +1708,9 @@ namespace Apache.Ignite.Core
         public ICollection<string> SqlSchemas { get; set; }
 
         /// <summary>
-        /// Initial value of manual baseline control or auto adjusting baseline.
+        /// Gets or sets custom executor configuration for compute tasks.
         /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustEnabled)]
-        public bool InitBaselineAutoAdjustEnabled
-        {
-            get { return _initBaselineAutoAdjustEnabled ?? DefaultInitBaselineAutoAdjustEnabled; }
-            set { _initBaselineAutoAdjustEnabled = value; }
-        }
-
-        /// <summary>
-        /// Initial value of time which we would wait before the actual topology change since last discovery event.
-        /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustTimeout)]
-        public long InitBaselineAutoAdjustTimeout
-        {
-            get { return _initBaselineAutoAdjustTimeout ?? DefaultInitBaselineAutoAdjustTimeout; }
-            set { _initBaselineAutoAdjustTimeout = value; }
-        }
-
-        /// <summary>
-        /// Initial value of time which we would wait from the first discovery event in the chain(node join/exit).
-        /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustMaxTimeout)]
-        public long InitBaselineAutoAdjustMaxTimeout
-        {
-            get { return _initBaselineAutoAdjustMaxTimeout ?? DefaultInitBaselineAutoAdjustMaxTimeout; }
-            set { _initBaselineAutoAdjustMaxTimeout = value; }
-        }
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ExecutorConfiguration> ExecutorConfiguration { get; set; }
     }
 }

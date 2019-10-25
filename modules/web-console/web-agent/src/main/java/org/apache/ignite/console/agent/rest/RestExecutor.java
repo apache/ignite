@@ -115,7 +115,10 @@ public class RestExecutor implements AutoCloseable {
         );
 
         if (sslSocketFactory != null) {
-            builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            if (trustMgr != null)
+                builder.sslSocketFactory(sslSocketFactory, trustMgr);
+            else
+                builder.sslSocketFactory(sslSocketFactory);
 
             if (!F.isEmpty(cipherSuites))
                 builder.connectionSpecs(sslConnectionSpec(cipherSuites));

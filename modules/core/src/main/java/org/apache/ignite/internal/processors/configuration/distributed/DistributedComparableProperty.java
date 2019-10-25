@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
 
 /**
  * Implementation of {@link DistributedProperty} for {@link Comparable}.
@@ -27,8 +26,8 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
 public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends DistributedProperty<T> {
 
     /** {@inheritDoc} */
-    DistributedComparableProperty(String name, T initVal) {
-        super(name, initVal);
+    DistributedComparableProperty(String name) {
+        super(name);
     }
 
     /** */

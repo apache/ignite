@@ -96,11 +96,6 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *
      */

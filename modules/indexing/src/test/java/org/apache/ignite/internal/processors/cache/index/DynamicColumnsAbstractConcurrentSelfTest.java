@@ -39,6 +39,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,8 +58,10 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
@@ -639,6 +642,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     @Test
     public void testQueryConsistencyMultithreaded() throws Exception {
+        final int KEY_COUNT = 5000;
+
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
         ignitionStart(serverConfiguration(2));
@@ -650,7 +655,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         run(cli, createSql);
 
-        put(cli, 0, 5000);
+        put(cli, 0, KEY_COUNT);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -698,17 +703,24 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         IgniteInternalFuture qryFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stopped.get()) {
-                    Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
+                    try {
+                        Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME).withKeepBinary();
+                        IgniteCache<BinaryObject, BinaryObject> cache = node.cache(CACHE_NAME).withKeepBinary();
 
-                    String valTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME)
-                        .iterator().next().valueTypeName();
+                        String valTypeName = ((IgniteEx)node).context().query().types(CACHE_NAME)
+                            .iterator().next().valueTypeName();
 
-                    List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
-                        new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
+                        List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
+                            new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
 
-                    assertEquals(5000, res.size());
+                        assertEquals(KEY_COUNT, res.size());
+                    }
+                    catch (Exception e) {
+                        // Swallow retry exceptions.
+                        if (X.cause(e, QueryRetryException.class) == null)
+                            throw e;
+                    }
                 }
 
                 return null;
@@ -793,7 +805,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         // Check index create.
         reconnectClientNode(srv, cli, restartCache, dynamicCache, new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 addCols(srv, schemaName, cols).get();
 
                 dropCols(srv, schemaName, "NAME").get();
@@ -1214,19 +1226,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             cfg.setUserAttributes(Collections.singletonMap(ATTR_FILTERED, true));
 
         return cfg;
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        @SuppressWarnings("UnnecessaryInterfaceModifier")
-        public void run() throws Exception;
     }
 
     /**

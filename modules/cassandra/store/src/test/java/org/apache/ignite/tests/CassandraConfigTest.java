@@ -22,7 +22,7 @@ import org.apache.ignite.cache.store.cassandra.persistence.KeyPersistenceSetting
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Simple test for DDL generator.

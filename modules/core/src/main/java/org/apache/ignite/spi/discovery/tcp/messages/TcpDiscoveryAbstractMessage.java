@@ -54,6 +54,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     protected static final int FORCE_FAIL_FLAG_POS = 8;
 
+    /** */
+    protected static final int COMPRESS_DATA_PACKET = 9;
+
     /** Sender of the message (transient). */
     private transient UUID sndNodeId;
 

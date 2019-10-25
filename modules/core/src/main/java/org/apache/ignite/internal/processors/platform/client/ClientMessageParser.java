@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetSizeRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheLocalPeekRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheNodePartitionsRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
@@ -68,6 +68,8 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
 /**
  * Thin client message parser.
@@ -168,8 +170,11 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /* Cache service info. */
 
-    /** */
+    /** Deprecated since 1.3.0. Replaced by OP_CACHE_PARTITIONS. */
     private static final short OP_CACHE_NODE_PARTITIONS = 1100;
+
+    /** */
+    private static final short OP_CACHE_PARTITIONS = 1101;
 
     /* Query operations. */
     /** */
@@ -203,26 +208,35 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_BINARY_TYPE_PUT = 3003;
 
+    /** Start new transaction. */
+    private static final short OP_TX_START = 4000;
+
+    /** Commit transaction. */
+    private static final short OP_TX_END = 4001;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
-    
+
+    /** Client connection context */
+    private final ClientConnectionContext ctx;
+
     /** Client version */
     private final ClientListenerProtocolVersion ver;
 
     /**
      * Ctor.
      *
-     * @param ctx Kernal context.
-     * @param ver Client version.
+     * @param ctx Client connection context.
      */
-    ClientMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
+    ClientMessageParser(ClientConnectionContext ctx, ClientListenerProtocolVersion ver) {
         assert ctx != null;
         assert ver != null;
 
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-        marsh = cacheObjProc.marshaller();
-        
+        this.ctx = ctx;
         this.ver = ver;
+
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+        marsh = cacheObjProc.marshaller();
     }
 
     /** {@inheritDoc} */
@@ -347,6 +361,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_NODE_PARTITIONS:
                 return new ClientCacheNodePartitionsRequest(reader);
 
+            case OP_CACHE_PARTITIONS:
+                return new ClientCachePartitionsRequest(reader);
+
             case OP_CACHE_GET_NAMES:
                 return new ClientCacheGetNamesRequest(reader);
 
@@ -370,6 +387,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
+
+            case OP_TX_START:
+                return new ClientTxStartRequest(reader);
+
+            case OP_TX_END:
+                return new ClientTxEndRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
@@ -384,7 +407,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        ((ClientResponse)resp).encode(writer);
+        ((ClientResponse)resp).encode(ctx, writer);
 
         return outStream.arrayCopy();
     }

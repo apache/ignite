@@ -320,8 +320,4 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 }

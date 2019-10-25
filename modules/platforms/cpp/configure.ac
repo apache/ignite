@@ -105,6 +105,8 @@ AC_CONFIG_FILES([ \
     common/Makefile \
     binary/include/Makefile \
     binary/Makefile \
+    network/include/Makefile \
+    network/Makefile \
     odbc/include/Makefile \
     odbc/Makefile \
     odbc-test/include/Makefile \

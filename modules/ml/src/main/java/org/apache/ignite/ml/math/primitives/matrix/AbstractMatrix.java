@@ -28,9 +28,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
-import org.apache.ignite.ml.math.exceptions.RowIndexException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.ColumnIndexException;
+import org.apache.ignite.ml.math.exceptions.math.RowIndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -52,15 +52,19 @@ public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     /** */
     private static final double Z95 = 1.959964;
+
     /** */
     private static final double Z80 = 1.281552;
+
     /** */
     private static final int MAX_SAMPLES = 500;
+
     /** */
     private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
+
     /** Cached maximum element. */
     private Element maxElm = null;
 
@@ -251,18 +255,8 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */
@@ -917,5 +911,35 @@ public abstract class AbstractMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Matrix [rows=" + rowSize() + ", cols=" + columnSize() + "]";
+    }
+
+    /** {@inheritDoc} */
+    @Override public double determinant() {
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.determinant();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        if (rowSize() != columnSize())
+            throw new CardinalityException(rowSize(), columnSize());
+
+        //TODO: IGNITE-11192, use nd4j
+        try (LUDecomposition dec = new LUDecomposition(this)) {
+            return dec.solve(likeIdentity());
+        }
+    }
+
+    /** */
+    protected Matrix likeIdentity() {
+        int n = rowSize();
+        Matrix res = like(n, n);
+
+        for (int i = 0; i < n; i++)
+            res.setX(i, i, 1.0);
+
+        return res;
     }
 }

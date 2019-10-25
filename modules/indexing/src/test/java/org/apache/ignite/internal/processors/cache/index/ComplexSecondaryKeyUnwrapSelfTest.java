@@ -41,13 +41,6 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Test secondary index with complex PK. Columns for secondary and PK indexes are intersect.
      */
@@ -223,12 +216,15 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
         /** */
         @QuerySqlField()
         private String name;
+
         /** */
         @QuerySqlField()
         private String company;
+
         /** */
         @QuerySqlField()
         private String city;
+
         /** */
         @QuerySqlField()
         private int age;

@@ -26,8 +26,8 @@ import org.apache.ignite.ml.util.generators.standard.RingsDataStream;
 import org.apache.ignite.ml.util.generators.standard.TwoSeparableClassesDataStream;
 
 /**
- * Examples of using standard dataset generators. Standard dataset generator represents a
- * toy datasets that can be used for algorithms testing.
+ * Examples of using standard dataset generators. Standard dataset generator represents a toy datasets that can be used
+ * for algorithms testing.
  */
 public class StandardGeneratorsExample {
     /**
@@ -71,5 +71,6 @@ public class StandardGeneratorsExample {
         RegressionDataStream regression = RegressionDataStream.twoDimensional(
             x -> Math.abs(x * x - 10), -10, 10);
         Tracer.showRegressionDatasetInHtml("|x^2 - 10|", regression, 1000, 0);
+        System.out.flush();
     }
 }

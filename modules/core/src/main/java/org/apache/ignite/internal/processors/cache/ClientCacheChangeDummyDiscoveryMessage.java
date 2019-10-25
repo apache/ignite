@@ -52,9 +52,11 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
      * @param startReqs Caches start requests.
      * @param cachesToClose Cache to close.
      */
-    public ClientCacheChangeDummyDiscoveryMessage(UUID reqId,
+    public ClientCacheChangeDummyDiscoveryMessage(
+        UUID reqId,
         @Nullable Map<String, DynamicCacheChangeRequest> startReqs,
-        @Nullable Set<String> cachesToClose) {
+        @Nullable Set<String> cachesToClose
+    ) {
         assert reqId != null;
         assert startReqs != null ^ cachesToClose != null;
 

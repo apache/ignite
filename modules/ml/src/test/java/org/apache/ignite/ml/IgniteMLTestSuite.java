@@ -30,11 +30,14 @@ import org.apache.ignite.ml.multiclass.MultiClassTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.pipeline.PipelineTestSuite;
 import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
+import org.apache.ignite.ml.recommendation.RecommendationTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.selection.SelectionTestSuite;
 import org.apache.ignite.ml.structures.StructuresTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
+import org.apache.ignite.ml.tree.randomforest.RandomForestTreeTestSuite;
+import org.apache.ignite.ml.util.UtilTestSuite;
 import org.apache.ignite.ml.util.generators.DataStreamGeneratorTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -59,6 +62,9 @@ import org.junit.runners.Suite;
     CommonTestSuite.class,
     MultiClassTestSuite.class,
     DataStreamGeneratorTestSuite.class,
+    UtilTestSuite.class,
+    RandomForestTreeTestSuite.class,
+    RecommendationTestSuite.class,
 
     /** JUnit 3 tests. */
     DecisionTreeTestSuite.class,

@@ -179,7 +179,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
     /**
      * @param topic Topic.
+     * @deprecated Obsolete (Kept to solve compatibility issues).
      */
+    @Deprecated
     void topic(Object topic) {
         this.topic = topic;
     }
@@ -218,8 +220,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         return this;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

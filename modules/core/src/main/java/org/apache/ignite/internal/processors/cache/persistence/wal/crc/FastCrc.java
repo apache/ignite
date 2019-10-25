@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.crc;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
 
 /**
  * This CRC calculation implementation workf much faster then {@link PureJavaCrc32}
@@ -81,6 +86,26 @@ public final class FastCrc {
     }
 
     /**
+     * @param file A file to calculate checksum over it.
+     * @return CRC32 checksum.
+     * @throws IOException If fails.
+     */
+    public static int calcCrc(File file) throws IOException {
+        assert !file.isDirectory() : "CRC32 can't be calculated over directories";
+
+        CRC32 algo = new CRC32();
+
+        try (InputStream in = new CheckedInputStream(new FileInputStream(file), algo)) {
+            byte[] buf = new byte[1024];
+
+            while (in.read(buf) != -1)
+                ;
+        }
+
+        return ~(int)algo.getValue();
+    }
+
+    /**
      * @param crcAlgo CRC algorithm.
      * @param buf Input buffer.
      * @param len Buffer length.
@@ -96,6 +121,6 @@ public final class FastCrc {
 
         buf.limit(initLimit);
 
-        return (int)crcAlgo.getValue() ^ 0xFFFFFFFF;
+        return ~(int)crcAlgo.getValue();
     }
 }

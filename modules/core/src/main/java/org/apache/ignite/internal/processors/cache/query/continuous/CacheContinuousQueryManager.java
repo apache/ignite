@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -69,13 +68,11 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -130,9 +127,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /** Ordered topic prefix. */
     private String topicPrefix;
-
-    /** ReadWriteLock to control the continuous query setup - this is to prevent the race between cache update and listener setup */
-    private final StripedCompositeReadWriteLock listenerLock = new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors()) ;
 
     /** Cancelable future task for backup cleaner */
     private GridTimeoutProcessor.CancelableTask cancelableTask;
@@ -200,16 +194,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                     log.debug("Failed to stop JCache entry listener: " + e.getMessage());
             }
         }
-    }
-
-    /**
-     * Obtain the listener read lock, which must be held if any component need to
-     * read the list listener (generally caller to updateListener).
-     *
-     * @return Read lock for the listener update
-     */
-    public Lock getListenerReadLock() {
-        return listenerLock.readLock();
     }
 
     /**
@@ -545,8 +529,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         if (rmtTransFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
-                    assert locTransLsnr != null;
-
                     return new CacheContinuousQueryHandlerV3(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
@@ -563,8 +545,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         else if (rmtFilterFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
-                    assert locLsnr != null;
-
                     return new CacheContinuousQueryHandlerV2(
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
@@ -581,7 +561,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         else {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
-                    assert locLsnr != null;
                     assert locTransLsnr == null;
 
                     return new CacheContinuousQueryHandler(
@@ -860,7 +839,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     cctx.kernalContext().cache().jcache(cctx.name()),
                                     cctx, entry);
 
-                                if (hnd.getEventFilter() != null && !hnd.getEventFilter().evaluate(next))
+                                if (!hnd.filter(next))
                                     next = null;
                             }
                         }
@@ -956,25 +935,25 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 intLsnrCnt.incrementAndGet();
         }
         else {
-            listenerLock.writeLock().lock();
+            cctx.group().listenerLock().writeLock().lock();
 
             try {
-                if (lsnrCnt.get() == 0) {
-                    if (cctx.group().sharedGroup() && !cctx.isLocal())
-                        cctx.group().addCacheWithContinuousQuery(cctx);
-                }
-
                 added = lsnrs.putIfAbsent(lsnrId, lsnr) == null;
 
-                if (added)
+                if (added) {
                     lsnrCnt.incrementAndGet();
+
+                    lsnr.onRegister();
+
+                    if (lsnrCnt.get() == 1) {
+                        if (cctx.group().sharedGroup() && !cctx.isLocal())
+                            cctx.group().addCacheWithContinuousQuery(cctx);
+                    }
+                }
             }
             finally {
-                listenerLock.writeLock().unlock();
+                cctx.group().listenerLock().writeLock().unlock();
             }
-
-            if (added)
-                lsnr.onExecution();
         }
 
         return added ? GridContinuousHandler.RegisterStatus.REGISTERED
@@ -996,7 +975,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             }
         }
         else {
-            listenerLock.writeLock().lock();
+            cctx.group().listenerLock().writeLock().lock();
 
             try {
                 if ((lsnr = lsnrs.remove(id)) != null) {
@@ -1007,7 +986,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 }
             }
             finally {
-                listenerLock.writeLock().unlock();
+                cctx.group().listenerLock().writeLock().unlock();
             }
 
             if (lsnr != null)
@@ -1229,13 +1208,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             return evts;
         }
 
-        /**
-         * @return {@code True} if listener should be executed in non-system thread.
-         */
-        protected boolean async() {
-            return U.hasAnnotation(impl, IgniteAsyncCallback.class);
-        }
-
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
             if (impl instanceof Closeable)
@@ -1300,13 +1272,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             impl = (CacheEntryEventFilter)in.readObject();
             types = in.readByte();
-        }
-
-        /**
-         * @return {@code True} if filter should be executed in non-system thread.
-         */
-        protected boolean async() {
-            return U.hasAnnotation(impl, IgniteAsyncCallback.class);
         }
 
         /**

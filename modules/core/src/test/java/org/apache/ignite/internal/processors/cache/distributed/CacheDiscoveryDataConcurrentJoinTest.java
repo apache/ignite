@@ -202,6 +202,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
 
         return ccfg;
     }
+
     /**
      * @param node Node.
      * @param cacheName Cache name.
