@@ -554,7 +554,12 @@ public class IgniteConfiguration {
     /** User authentication enabled. */
     private boolean authEnabled;
 
-    /** SSL certificates transmission flag. */
+    /**
+     * SSL certificates transmission flag.
+     *
+     * If {@code true}, then node attributes of node join messages will contain SSL certificates,
+     * with which new node trying to connect to the cluster.
+     */
     private boolean sslCertsTransmissionEnabled;
 
     /** Failure handler. */
@@ -3393,6 +3398,9 @@ public class IgniteConfiguration {
     /**
      * Returns {@code true} if SSL certificates transmission is enabled for cluster. Otherwise returns {@code false}.
      * Default value is false; transmission is disabled.
+     *
+     * If enabled, then node attributes of node join messages will contain SSL certificates,
+     * with which new node trying to connect to the cluster.
      *
      * @return {@code true} if SSL certificates transmission is enabled for cluster. Otherwise returns {@code false}.
      */
