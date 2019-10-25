@@ -52,7 +52,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2PrimaryScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -312,6 +311,131 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSelectionIsNotAffectedByCreationOrderScenario1() throws Exception {
+        checkRightIndexChosen("IDX1", "IDX2",
+            "CREATE INDEX IDX1  on TEST_TBL_NAME (FIRST_NAME, LAST_NAME)",
+            "CREATE INDEX IDX2 on TEST_TBL_NAME (LAST_NAME, FIRST_NAME)",
+            "SELECT * FROM TEST_TBL_NAME WHERE LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3);");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSelectionIsNotAffectedByCreationOrderScenario2() throws Exception {
+        checkRightIndexChosen("IDX1", "IDX2",
+            "CREATE INDEX IDX1 on TEST_TBL_NAME (LAST_NAME, FIRST_NAME)",
+            "CREATE INDEX IDX2 on TEST_TBL_NAME (FIRST_NAME, LAST_NAME)",
+            "SELECT * FROM TEST_TBL_NAME WHERE LAST_NAME >= 2 and FIRST_NAME = 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSelectionIsNotAffectedByCreationOrderScenario3() throws Exception {
+        checkRightIndexChosen("IDX1", "IDX2",
+            "CREATE INDEX IDX1 on TEST_TBL_NAME (FIRST_NAME)",
+            "CREATE INDEX IDX2 on TEST_TBL_NAME (LAST_NAME, FIRST_NAME)",
+            "SELECT * FROM TEST_TBL_NAME WHERE LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSelectionIsNotAffectedByCreationOrderScenario4() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-25338");
+        checkRightIndexChosen("IDX1", "IDX2",
+            "CREATE INDEX IDX1 on TEST_TBL_NAME (LAST_NAME, ADDRESS)",
+            "CREATE INDEX IDX2 on TEST_TBL_NAME (LAST_NAME, FIRST_NAME)",
+            "SELECT * FROM TEST_TBL_NAME WHERE LAST_NAME = 2 and FIRST_NAME >= 1 and FIRST_NAME <= 5 and ADDRESS in (1, 2, 3)");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIndexSelectionIsNotAffectedByCreationOrderScenario5() throws Exception {
+        checkRightIndexChosen("IDX1", "IDX2",
+            "CREATE INDEX IDX1 on TEST_TBL_NAME (LAST_NAME, FIRST_NAME)",
+            "CREATE INDEX IDX2 on TEST_TBL_NAME (LAST_NAME, ADDRESS)",
+            "SELECT * FROM TEST_TBL_NAME WHERE LAST_NAME = 2 and ADDRESS >= 1");
+    }
+
+    /**
+     * Checks index creation does not affect used index.
+     *
+     * @param wrongIdx1Name Wrong index name.
+     * @param properIdx2Name Proper index name.
+     * @param idx1Cmd Index 1 (wrong) creation command.
+     * @param idx2Cmd Index 1 (proper) creation command.
+     * @param qry Query to test index selection.
+     * @throws Exception If failed.
+     */
+    private void checkRightIndexChosen(String wrongIdx1Name,
+        String properIdx2Name,
+        String idx1Cmd,
+        String idx2Cmd,
+        String qry)
+        throws Exception {
+        inlineSize = 10;
+
+        wrongIdx1Name = wrongIdx1Name.toUpperCase();
+        properIdx2Name = properIdx2Name.toUpperCase();
+
+        // Check preconditions are correct.
+        assertTrue(idx1Cmd, idx1Cmd.toUpperCase().contains(wrongIdx1Name));
+        assertTrue(idx2Cmd, idx2Cmd.toUpperCase().contains(properIdx2Name));
+
+        // Empty grid is started.
+        IgniteEx ig0 = startGrids(gridCount());
+
+        GridQueryProcessor qryProc = ig0.context().query();
+
+        // SQL Table with fields FIRST_NAME, LAST_NAME, ADDRESS, LANG is created.
+        // Some initial data is populated to the table.
+        populateTable(qryProc, "TEST_TBL_NAME", 2, "FIRST_NAME", "LAST_NAME",
+            "ADDRESS", "LANG");
+
+        // Create index idx2.
+        qryProc.querySqlFields(new SqlFieldsQuery(idx2Cmd), true).getAll();
+
+        // Create index idx1.
+        qryProc.querySqlFields(new SqlFieldsQuery(idx1Cmd), true).getAll();
+
+        // Execute EXPLAIN SELECT sql.
+        String plan = qryProc.querySqlFields(new SqlFieldsQuery("explain " + qry), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        // Ensure proper idx2 is used in execution plan.
+        assertTrue("plan=" + plan, plan.contains(properIdx2Name));
+        assertFalse("plan=" + plan, plan.contains(wrongIdx1Name));
+
+        // Drop indices idx1 and idx2.
+        qryProc.querySqlFields(new SqlFieldsQuery("DROP INDEX " + wrongIdx1Name), true).getAll();
+        qryProc.querySqlFields(new SqlFieldsQuery("DROP INDEX " + properIdx2Name), true).getAll();
+
+        // Create index idx1.
+        qryProc.querySqlFields(new SqlFieldsQuery(idx1Cmd), true).getAll();
+
+        // Create index idx2.
+        qryProc.querySqlFields(new SqlFieldsQuery(idx2Cmd), true).getAll();
+
+        // Execute EXPLAIN SELECT sql.
+        plan = qryProc.querySqlFields(new SqlFieldsQuery("explain " + qry), true)
+            .getAll().get(0).get(0).toString().toUpperCase();
+
+        // Ensure proper idx2 is used in execution plan.
+        assertTrue("plan=" + plan, plan.contains(properIdx2Name));
+        assertFalse("plan=" + plan, plan.contains(wrongIdx1Name));
+
+        // Tables and indices are dropped.
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** */
     public void testNoIndexesNoPersistence() throws Exception {
         int[] inlineSizes = {0, 10, 20, 50, 100};
 
@@ -391,7 +515,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testDynamicIdxOnStaticCacheWithIdxWithoutPersistence() throws Exception {
         runDynamicIdxOnStaticCacheWithIdx(false);
     }
@@ -401,7 +524,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testDynamicIdxOnStaticCacheWithIdxWithPersistence() throws Exception {
         runDynamicIdxOnStaticCacheWithIdx(true);
     }
@@ -467,7 +589,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testEqualFieldsDynamicIndexesWithoutPersistence() throws Exception {
         runEqualFieldsDynamicIndexes(false);
     }
@@ -477,7 +598,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testEqualFieldsDynamicIndexesWithPersistence() throws Exception {
         runEqualFieldsDynamicIndexes(true);
     }
@@ -636,7 +756,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /**
      *  Checks index usage for full coverage.
      */
-    @Test
     public void testAllTableFieldsCoveredByIdx() throws Exception {
         inlineSize = 10;
 
@@ -670,7 +789,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      *  Checks index usage for partial coverage.
      *  Last field not participate in any index.
      */
-    @Test
     public void testPartialTableFieldsCoveredByIdx() throws Exception {
         inlineSize = 10;
 
@@ -716,7 +834,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /**
      * Tests different fields sequence in indexes.
      */
-    @Test
     public void testCreateIdxWithDifferentIdxFldsSeq() throws Exception {
         inlineSize = 10;
 
@@ -754,7 +871,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /**
      * Tests IN with EQUALS index usage .
      */
-    @Test
     public void testInWithEqualsIdxUsage() throws Exception {
         inlineSize = 10;
 
@@ -829,7 +945,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * Tests different fields sequence in indexes.
      * Last field not participate in any index.
      */
-    @Test
     public void testIndexWithDifferentFldsReqPartialFldsInIdx() throws Exception {
         inlineSize = 10;
 
@@ -853,7 +968,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
      * Tests different fields sequence in indexes.
      * All fields covered by indexes.
      */
-    @Test
     public void testIndexWithDifferentFldsReqAllFldsInIdx() throws Exception {
         inlineSize = 10;
 
