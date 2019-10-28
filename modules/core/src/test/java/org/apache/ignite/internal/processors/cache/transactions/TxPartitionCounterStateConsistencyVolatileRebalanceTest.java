@@ -20,10 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  * Test partitions consistency in various scenarios when all rebalance is in-memory.
