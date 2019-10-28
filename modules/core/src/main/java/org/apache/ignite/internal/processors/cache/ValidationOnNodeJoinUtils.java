@@ -391,7 +391,7 @@ public class ValidationOnNodeJoinUtils {
         if (ctx.query().moduleEnabled()) {
             String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
 
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+            if (F.eq(schema, QueryUtils.sysSchemaName())) {
                 if (cc.getSqlSchema() == null) {
                     // Conflict on cache name.
                     throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +

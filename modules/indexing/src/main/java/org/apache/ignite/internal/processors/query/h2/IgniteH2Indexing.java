@@ -1847,10 +1847,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         if ((allTypes || types.contains(TableType.VIEW.name()))
-            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            && matches(QueryUtils.sysSchemaName(), schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
                 .filter(t -> matches(t.getTableName(), tblNamePtrn))
-                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
+                .map(v -> new TableInformation(QueryUtils.sysSchemaName(), v.getTableName(), TableType.VIEW.name()))
                 .forEach(infos::add);
         }
 
@@ -1894,7 +1894,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ).forEach(infos::add);
 
         // Gather information about system views.
-        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+        if (matches(QueryUtils.sysSchemaName(), schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
                 .filter(v -> matches(v.getTableName(), tblNamePtrn))
                 .flatMap(
@@ -1903,7 +1903,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
                                 c.getColumnId() + 1,
-                                QueryUtils.SCHEMA_SYS,
+                                QueryUtils.sysSchemaName(),
                                 view.getTableName(),
                                 c.getName(),
                                 IgniteUtils.classForName(

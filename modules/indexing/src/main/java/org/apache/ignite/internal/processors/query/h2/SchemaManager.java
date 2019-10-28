@@ -172,7 +172,7 @@ public class SchemaManager {
      */
     private void createSystemViews() throws IgniteCheckedException {
         for (SqlSystemView view : systemViews(ctx))
-            createSystemView(QueryUtils.SCHEMA_SYS, view);
+            createSystemView(QueryUtils.sysSchemaName(), view);
     }
 
     /**

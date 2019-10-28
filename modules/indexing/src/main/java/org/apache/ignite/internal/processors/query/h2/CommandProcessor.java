@@ -898,7 +898,7 @@ public class CommandProcessor {
      * @param schemaName Schema name.
      */
     private static void isDdlOnSchemaSupported(String schemaName) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
+        if (F.eq(QueryUtils.sysSchemaName(), schemaName))
             throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }

@@ -104,7 +104,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      * @return System schema name.
      */
     protected String systemSchemaName() {
-        return "SYS";
+        return "IGNITE";
     }
 
     /**

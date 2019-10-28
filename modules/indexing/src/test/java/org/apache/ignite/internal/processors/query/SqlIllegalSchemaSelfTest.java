@@ -48,7 +48,9 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     public void testBadCacheName() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
-        cfg.setCacheConfiguration(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
+        final String invalidCache = QueryUtils.sysSchemaName();
+
+        cfg.setCacheConfiguration(new CacheConfiguration().setName(invalidCache));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -57,8 +59,8 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name derived from cache name is reserved (please set explicit SQL " +
-            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [cacheName=SYS, " +
-            "schemaName=null]");
+            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [cacheName="
+            + invalidCache + ", " + "schemaName=null]");
     }
 
     /**
@@ -66,16 +68,18 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadCacheNameDynamic() throws Exception {
+        final String invalidCache = QueryUtils.sysSchemaName();
+
         doubleConsumerAccept(
             (node)->{
                 try {
-                    node.getOrCreateCache(new CacheConfiguration().setName(QueryUtils.SCHEMA_SYS));
+                    node.getOrCreateCache(new CacheConfiguration().setName(invalidCache));
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
                         "SQL schema name derived from cache name is reserved (please set explicit SQL " +
                             "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
-                            "cacheName=SYS, schemaName=null]"));
+                            "cacheName=" + invalidCache + ", schemaName=null]"));
 
                     return;
                 }
@@ -96,8 +100,9 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     public void testBadSchemaLower() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
-        cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")
-            .setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase()));
+        final String invalidSchema = QueryUtils.sysSchemaName().toLowerCase();
+
+        cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE").setSqlSchema(invalidSchema));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -106,7 +111,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=sys]");
+            "schemaName=" + invalidSchema + "]");
     }
 
     /**
@@ -114,16 +119,19 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaLowerDynamic() throws Exception {
+        final String invalidSchema = QueryUtils.sysSchemaName().toLowerCase();
+
         doubleConsumerAccept(
             (node) -> {
                 try {
                     node.getOrCreateCache(
-                        new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toLowerCase())
+                        new CacheConfiguration().setName("CACHE").setSqlSchema(invalidSchema)
                     );
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=sys]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName="
+                            + invalidSchema + "]"));
 
                     return;
                 }
@@ -144,8 +152,10 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     public void testBadSchemaUpper() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
+        final String invalidSchema = QueryUtils.sysSchemaName().toUpperCase();
+
         cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")
-            .setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase()));
+            .setSqlSchema(invalidSchema));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -154,7 +164,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=SYS]");
+            "schemaName=" + invalidSchema + "]");
     }
 
     /**
@@ -162,16 +172,19 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaUpperDynamic() throws Exception {
+        final String invalidSchema = QueryUtils.sysSchemaName().toUpperCase();
+
         doubleConsumerAccept(
             (node) -> {
                 try {
                     node.getOrCreateCache(
-                        new CacheConfiguration().setName("CACHE").setSqlSchema(QueryUtils.SCHEMA_SYS.toUpperCase())
+                        new CacheConfiguration().setName("CACHE").setSqlSchema(invalidSchema)
                     );
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=SYS]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName="
+                            + invalidSchema + "]"));
 
                     return;
                 }
@@ -192,8 +205,10 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     public void testBadSchemaQuoted() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
+        final String invalidSchema = QueryUtils.sysSchemaName().toUpperCase();
+
         cfg.setCacheConfiguration(new CacheConfiguration().setName("CACHE")
-            .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\""));
+            .setSqlSchema("\"" + invalidSchema + "\""));
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -202,7 +217,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=\"SYS\"]");
+            "schemaName=\"" + invalidSchema + "\"]");
     }
 
     /**
@@ -210,17 +225,20 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testBadSchemaQuotedDynamic() throws Exception {
+        final String invalidSchema = QueryUtils.sysSchemaName().toUpperCase();
+
         doubleConsumerAccept(
             (node) -> {
                 try {
                     node.getOrCreateCache(
                         new CacheConfiguration().setName("CACHE")
-                            .setSqlSchema("\"" + QueryUtils.SCHEMA_SYS.toUpperCase() + "\"")
+                            .setSqlSchema("\"" + invalidSchema + "\"")
                     );
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"SYS\"]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\""
+                            + invalidSchema + "\"]"));
 
                     return;
                 }

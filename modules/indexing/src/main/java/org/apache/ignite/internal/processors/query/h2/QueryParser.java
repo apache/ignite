@@ -592,7 +592,7 @@ public class QueryParser {
      * @return Statement.
      */
     private QueryParserResultDml prepareDmlStatement(QueryDescriptor planKey, Prepared prepared) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, planKey.schemaName()))
+        if (F.eq(QueryUtils.sysSchemaName(), planKey.schemaName()))
             throw new IgniteSQLException("DML statements are not supported on " + planKey.schemaName() + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 

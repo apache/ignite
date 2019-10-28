@@ -1034,7 +1034,7 @@ public class H2Utils {
         // Check for joins between system views and normal tables.
         if (!F.isEmpty(tbls)) {
             for (QueryTable tbl : tbls) {
-                if (QueryUtils.SCHEMA_SYS.equals(tbl.schema())) {
+                if (QueryUtils.sysSchemaName().equals(tbl.schema())) {
                     if (!F.isEmpty(cacheIds)) {
                         throw new IgniteSQLException("Normal tables and system views cannot be used in the same query.",
                             IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
