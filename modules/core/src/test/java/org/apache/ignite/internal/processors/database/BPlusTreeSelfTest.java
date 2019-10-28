@@ -146,11 +146,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** Tracking of locks holding. */
     private PageLockTrackerManager lockTrackerManager;
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
-    }
-
     /**
      * Check that we do not keep any locks at the moment.
      */
