@@ -40,15 +40,10 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
         // Not applicable for volatile mode.
     }
 
+    /** {@inheritDoc} */
     @Ignore
     @Override public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
         // Not applicable for volatile mode.
-    }
-
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, value = "1000")
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
-        super.testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared();
     }
 
     /** {@inheritDoc} */
