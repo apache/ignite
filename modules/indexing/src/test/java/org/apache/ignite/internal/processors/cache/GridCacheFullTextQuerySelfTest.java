@@ -26,6 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -61,6 +65,9 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
     /** Limitation to query response size */
     private static final int QUERY_LIMIT = 5;
+
+    /** Concurrent threads number */
+    private static final int N_THREADS = 20;
 
     /**
      * Container for expected values and all available entries
@@ -174,7 +181,50 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryLimited() throws Exception {
-        checkTextQuery(null, QUERY_LIMIT, false, true);
+        checkTextQuery(null, QUERY_LIMIT, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryLimitedConcurrent() throws Exception {
+        final IgniteEx ignite = grid(0);
+
+        final String clause = "1*";
+
+        // 1. Populate cache with data, calculating expected count in parallel.
+        Set<Integer> exp = populateCache(ignite, false, MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
+
+        ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
+
+        IntStream.range(0, N_THREADS).forEach((i) -> executor.submit(textQueryTask(ignite, clause, exp)));
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+
+        clearCache(ignite);
+    }
+
+    /**
+     * Creates Runnable for TextQuery
+     *
+     * @param ignite Ignite insance.
+     * @param clause Query clause.
+     * @param exp Expected results for validation.
+     * @return TextQuery and validation wrapped into Runnable functional interface.
+     */
+
+    @NotNull private Runnable textQueryTask(IgniteEx ignite, String clause, Set<Integer> exp) {
+        return () -> {
+            try {
+                TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(false);
+                validateQueryResults(ignite, qry, exp, false);
+            }
+            catch (Exception e) {
+                fail(e.getMessage());
+            }
+        };
     }
 
     /**
@@ -305,14 +355,15 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @param ignite Ignite context.
      * @param qry Initial text query.
-     * @param testPair  pair containing expected and all entries.
+     * @param testPair pair containing expected and all entries.
      * @throws IgniteCheckedException if key check failed.
      */
     private static void assertResult(IgniteEx ignite, TextQuery qry,
         TestPair testPair) throws IgniteCheckedException {
-        if (qry.getLimit() > 0){
+        if (qry.getLimit() > 0) {
             assertTrue(testPair.all.size() <= QUERY_LIMIT);
-        } else {
+        }
+        else {
             checkForMissedKeys(ignite, testPair.expected, testPair.all);
         }
     }
