@@ -202,7 +202,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
         CacheDataStore store = new GridCacheDataStore(p, exists);
-        CacheDataStore readOnlyStore = new ReadOnlyGridCacheDataStore(grp, ctx, store, grp.groupId());
+        CacheDataStore readOnlyStore = new ReadOnlyGridCacheDataStore(grp, ctx, store, p);
 
         return new CacheDataStoreExImpl(grp.shared(), store, readOnlyStore, log);
     }
@@ -302,6 +302,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean beforeDestroy,
         boolean gatherStats
     ) throws IgniteCheckedException {
+        assert store instanceof CacheDataStoreEx : store.getClass().getName();
+
         if (store instanceof CacheDataStoreEx && ((CacheDataStoreEx)store).readOnly())
             return;
 
@@ -2104,9 +2106,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     CacheDataStore delegate0 = init0(false);
 
                     assert delegate0 != null;
-
-                    // todo initialize properly or don't remove them
-                    partDataStores.put(partId, this);
                 }
             }
             catch (IgniteCheckedException e) {

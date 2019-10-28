@@ -107,13 +107,13 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(8 * 1024L * 1024 * 1024)
+                    .setMaxSize(4 * 1024L * 1024 * 1024)
                     .setPersistenceEnabled(true))
                 .setDataRegionConfigurations(new DataRegionConfiguration()
-                    .setMaxSize(4*1024*1024*1024L)
+                    .setMaxSize(4 * 1024 * 1024 * 1024L)
                     .setPersistenceEnabled(true)
                     .setName("someRegion"))
                 .setWalMode(WALMode.LOG_ONLY)
@@ -121,6 +121,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 //                .setWalSegmentSize(4 * 1024 * 1024)
 //                .setMaxWalArchiveSize(32 * 1024 * 1024 * 1024L))
             .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME).setDataRegionName("someRegion"), cacheConfig(CACHE1), cacheConfig(CACHE2));
+            //.setCacheConfiguration(cacheConfig(CACHE1));
+
+//        if (getTestIgniteInstanceIndex(igniteInstanceName) == 2)
+//            cfg.setGridLogger(new NullLogger());
+
+        return cfg;
     }
 
     private CacheConfiguration cacheConfig(String name) {
@@ -381,7 +387,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(100);
+        U.sleep(80);
 
         IgniteEx ignite2 = startGrid(2);
 

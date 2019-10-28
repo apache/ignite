@@ -66,6 +66,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 
@@ -122,6 +123,44 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         stopAllGrids();
 
 //        cleanPersistenceDir();
+    }
+
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
+    public void checkEvictingReadonlyPartition() throws Exception {
+        IgniteEx node0 = startGrid(1);
+
+        node0.cluster().active(true);
+
+        IgniteInternalCache<Integer, Integer> cache = node0.cachex(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 10_000; i++)
+            cache.put(i, i);
+
+        node0.context().cache().context().database().checkpointReadLock();
+
+        try {
+            for (GridDhtLocalPartition part : cache.context().topology().currentLocalPartitions())
+                part.dataStore().readOnly(true);
+        } finally {
+            node0.context().cache().context().database().checkpointReadUnlock();
+        }
+
+        GridDhtLocalPartition part = cache.context().topology().localPartition(3);
+
+        assert part != null;
+
+        part.moving();
+
+        IgniteInternalFuture<?> fut = part.rent(false);
+
+        fut.get();
+
+        forceCheckpoint();
+
+        assertEquals(EVICTED, part.state());
+
+        // file should truncated
     }
 
     @Test

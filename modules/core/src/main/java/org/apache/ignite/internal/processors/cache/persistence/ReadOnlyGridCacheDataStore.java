@@ -69,14 +69,21 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     /** */
     private volatile PartitionUpdateCounter cntr;
 
+    private final CacheGroupContext grp;
+
+    private final int partId;
+
     /** todo remove unused args */
     public ReadOnlyGridCacheDataStore(
         CacheGroupContext grp,
         GridCacheSharedContext ctx,
         CacheDataStore delegate,
-        int grpId
+        int partId
     ) {
         this.delegate = delegate;
+
+        this.grp = grp;
+        this.partId = partId;
 
         try {
             rowStore = new NoopRowStore(grp, new NoopFreeList(grp.dataRegion(), ctx.kernalContext()));
@@ -107,11 +114,17 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void resetUpdateCounter() {
+        if (cntr == null)
+            reinit();
+
         cntr.reset();
     }
 
     /** {@inheritDoc} */
     @Override public long getAndIncrementUpdateCounter(long delta) {
+        if (cntr == null)
+            reinit();
+
         return cntr.reserve(delta);//delegate.getAndIncrementUpdateCounter(delta);
     }
 
@@ -122,6 +135,9 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long val) {
+        if (cntr == null)
+            reinit();
+
         try {
             cntr.update(val);
         }
@@ -132,11 +148,17 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public boolean updateCounter(long start, long delta) {
+        if (cntr == null)
+            reinit();
+
         return cntr.update(start, delta);
     }
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
+        if (cntr == null)
+            reinit();
+
         return cntr.finalizeUpdateCounters();
     }
 
@@ -147,7 +169,8 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return delegate.isEmpty();
+        // todo required for evictions
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -172,7 +195,8 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public boolean init() {
-        return delegate.init();
+        // return delegate.init();
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -182,11 +206,17 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public @Nullable PartitionUpdateCounter partUpdateCounter() {
+        if (cntr == null)
+            reinit();
+
         return cntr;
     }
 
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
+        if (cntr == null)
+            reinit();
+
         return cntr.reserve(delta);
     }
 
@@ -503,7 +533,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
         /** {@inheritDoc} */
         @Override public void saveMetadata(IoStatisticsHolder statHolder) throws IgniteCheckedException {
-            super.saveMetadata(statHolder);
+            //super.saveMetadata(statHolder);
         }
     }
 }

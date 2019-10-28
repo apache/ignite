@@ -2291,6 +2291,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            if (cctx.filePreloader() != null)
+                cctx.filePreloader().onExchangeDone(exchangeId());
+
             // todo reserve only moving partitions (not all)
             // todo reserve only those partitions that will be supplied from current node
 //            if (cctx.filePreloader() != null) {

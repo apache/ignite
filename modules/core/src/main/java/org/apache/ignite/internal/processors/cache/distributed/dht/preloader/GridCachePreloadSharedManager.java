@@ -48,7 +48,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheDataStoreEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -72,8 +71,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
  * todo naming
@@ -134,6 +133,18 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    // todo the result assignment should be equal to generate assignments
+    public void onExchangeDone(GridDhtPartitionExchangeId exchId) {
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (!grp.dataRegion().config().isPersistenceEnabled() || CU.isUtilityCache(grp.cacheOrGroupName()))
+                continue;
+
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+                if (part.state() == MOVING)
+                    part.readOnly(true);
         }
     }
 
@@ -365,7 +376,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             log.debug("Moving downloaded partition file: " + partFile + " --> " + dest + "  (size=" + partFile.length() + ")");
 
         try {
-            Files.move(partFile.toPath(), dest.toPath(), REPLACE_EXISTING);
+            Files.move(partFile.toPath(), dest.toPath());
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to move file [source=" + partFile + ", target=" + dest + "]", e);
@@ -398,6 +409,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             PartitionUpdateCounter minCntr = part.dataStore().partUpdateCounter();
 
             assert minCntr != null;
+            assert minCntr.get() != 0 : "grpId=" + grpId + ", p=" + partId + ", fullSize=" + part.dataStore().fullSize();
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -521,8 +533,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 file.delete();
 
                 return;
-                // todo how cancel current download
-                //throw new IgniteException("Cancel partitions download due to stale rebalancing future.");
+//                // todo how cancel current download
+//                throw new IgniteException("Cancel partitions download due to stale rebalancing future.");
             }
 
             try {
@@ -737,39 +749,39 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
                         futMap.clear();
 
-                        cctx.database().checkpointReadLock();
-
-                        try {
-                            for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
-                                int grpId = e.getKey();
-
-                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                                if (grp == null)
-                                    continue;
-
-                                for (int partId : e.getValue()) {
-                                    if (grp != null) {
-                                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-                                        CacheDataStoreEx store = part.dataStore();
-
-                                        if (!cctx.pageStore().exists(grpId, partId)) {
-                                            cctx.pageStore().ensure(grpId, partId);
-
-                                            store.reinit();
-
-                                            log.info(">xxx> init grp=" + grpId + " p=" + partId);
-                                        }
-
-                                        if (store.readOnly())
-                                            store.readOnly(false);
-                                    }
-                                }
-                            }
-                        } finally {
-                            cctx.database().checkpointReadUnlock();
-                        }
+//                        cctx.database().checkpointReadLock();
+//
+//                        try {
+//                            for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
+//                                int grpId = e.getKey();
+//
+//                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+//
+//                                if (grp == null)
+//                                    continue;
+//
+//                                for (int partId : e.getValue()) {
+//                                    if (grp != null) {
+//                                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+//
+//                                        CacheDataStoreEx store = part.dataStore();
+//
+//                                        if (!cctx.pageStore().exists(grpId, partId)) {
+//                                            cctx.pageStore().ensure(grpId, partId);
+//
+//                                            store.reinit();
+//
+//                                            log.info(">xxx> init grp=" + grpId + " p=" + partId);
+//                                        }
+//
+//                                        if (store.readOnly())
+//                                            store.readOnly(false);
+//                                    }
+//                                }
+//                            }
+//                        } finally {
+//                            cctx.database().checkpointReadUnlock();
+//                        }
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -821,40 +833,52 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
          * Switch all rebalanced partitions to read-only mode and start evicting.
          */
         private void clearPartitions() {
-            IgniteInternalFuture<Void> switchFut = cpLsnr.schedule(() -> {
-                for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
+//            IgniteInternalFuture<Void> switchFut = cpLsnr.schedule(() -> {
+//                for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
+//                    CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
+//
+//                    if (log.isDebugEnabled())
+//                        log.debug("switch partitions [cache=" + grp.cacheOrGroupName() + "]");
+//
+//                    for (Integer partId : e.getValue()) {
+//                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+//
+//                        // todo reinit just set update counter from delegate
+//                        part.dataStore().store(true).reinit();
+//
+//                        if (part.readOnly())
+//                            continue;
+//
+//                        part.readOnly(true);
+//                    }
+//                }
+//            });
 
-                    if (log.isDebugEnabled())
-                        log.debug("switch partitions [cache=" + grp.cacheOrGroupName() + "]");
+            for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
+                CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
 
-                    for (Integer partId : e.getValue()) {
-                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+                for (Integer partId : e.getValue()) {
+                    assert grp.topology().localPartition(partId).dataStore().readOnly();
 
-                        // todo reinit just set update counter from delegate
-                        part.dataStore().store(true).reinit();
-
-                        if (part.readOnly())
-                            continue;
-
-                        part.readOnly(true);
-                    }
+                    grp.topology().localPartition(partId).dataStore().store(true).reinit();
                 }
-            });
-
-            try {
-                if (!switchFut.isDone())
-                    cctx.database().wakeupForCheckpoint(String.format(REBALANCE_CP_REASON, allPartsMap.keySet()));
-
-                switchFut.get();
             }
-            catch (IgniteCheckedException e) {
-                log.error(e.getMessage(), e);
 
-                onDone(e);
 
-                return;
-            }
+
+//            try {
+//                if (!switchFut.isDone())
+//                    cctx.database().wakeupForCheckpoint(String.format(REBALANCE_CP_REASON, allPartsMap.keySet()));
+//
+//                switchFut.get();
+//            }
+//            catch (IgniteCheckedException e) {
+//                log.error(e.getMessage(), e);
+//
+//                onDone(e);
+//
+//                return;
+//            }
 
             if (isDone()) {
                 if (log.isDebugEnabled())
@@ -884,17 +908,17 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         try {
                             if (isDone()) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Cacncel pagemem invalidation grp=" + grpId + ", p=" + partId);
+                                    log.debug("Cacncel pagemem invalidation grp=" + grpId + ", p=" + partId + ", rebalance canceled topVer="+this.topVer.topologyVersion() + "." + topVer.minorTopologyVersion());
 
                                 return;
                             }
 
-                            if (log.isDebugEnabled())
-                                log.debug("Invalidate grp=" + grpId + ", p=" + partId);
-
-                            int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
-
-                            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
+//                            if (log.isDebugEnabled())
+//                                log.debug("Invalidate grp=" + grpId + ", p=" + partId);
+//
+//                            int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
+//
+//                            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
                             PageMemCleanupTask task = regions.get(grp.dataRegion().config().getName());
 
@@ -964,25 +988,55 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 if (evictedCnt == parts.size()) {
                     DataRegion region = cctx.database().dataRegion(name);
 
-                    PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+                    cctx.database().checkpointReadLock();
+                    cancelLock.lock();
 
-                    if (log.isDebugEnabled())
-                        log.debug("Clearing region: " + name);
+                    try {
+                        if (isCancelled())
+                            return;
 
-                    memEx.clearAsync(
+                        for (long partGrp : parts) {
+                            int grpId = (int)(partGrp >> 32);
+                            int partId = (int)partGrp;
+
+                            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                            int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
+
+                            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Truncated grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId);
+                        }
+
+                        PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+
+                        if (log.isDebugEnabled())
+                            log.debug("Clearing region: " + name);
+
+                        memEx.clearAsync(
                             (grp, pageId) -> {
-                                if (isCancelled())
-                                    return false;
+//                                if (isCancelled())
+//                                    return false;
 
                                 return parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId));
                             }, true)
-                        .listen(c1 -> {
-                            // todo misleading should be reformulate
-                            if (log.isDebugEnabled())
-                                log.debug("Off heap region cleared [node=" + cctx.localNodeId() + ", region=" + name + "]");
+                            .listen(c1 -> {
+                                // todo misleading should be reformulate
+                                if (log.isDebugEnabled())
+                                    log.debug("Off heap region cleared [node=" + cctx.localNodeId() + ", region=" + name + "]");
 
-                            onDone();
-                        });
+                                onDone();
+                            });
+
+                        log.info("Await pagemem cleanup");
+
+                        get();
+                    } finally {
+                        cancelLock.unlock();
+
+                        cctx.database().checkpointReadUnlock();
+                    }
                 }
             }
         }
