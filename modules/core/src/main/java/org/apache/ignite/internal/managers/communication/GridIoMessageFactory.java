@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeResult;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -1169,6 +1170,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 176:
                 msg = TombstoneCacheObject.INSTANCE;
+
+                break;
+
+            case 177:
+                msg = new MasterKeyChangeSingleNodeResult();
 
                 break;
 

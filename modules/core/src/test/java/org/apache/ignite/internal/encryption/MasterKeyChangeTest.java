@@ -31,13 +31,13 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeMessage;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -73,9 +73,9 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
-        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
 
@@ -99,7 +99,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         stopGrid(GRID_1);
 
-        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         assertEquals(MASTER_KEY_NAME_2, grids.get1().encryption().getMasterKeyName());
 
@@ -131,20 +131,18 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch startLatch = new CountDownLatch(1);
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeMessage.class, (topVer, snd, msg) -> {
-            if (msg.isInit()) {
-                latch.countDown();
+        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
+            latch.countDown();
 
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+            try {
+                startLatch.await();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
+        IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         latch.await();
 
@@ -155,7 +153,9 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             grids.get1().getOrCreateCache(new CacheConfiguration<>("newCache").setEncryptionEnabled(true));
         }, IgniteCheckedException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
+        fut.get();
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -187,13 +187,15 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         commSpi.waitForBlocked();
 
-        srv.encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        IgniteFuture<Void> fut = srv.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         commSpi.stopBlock();
 
         assertThrowsWithCause(() -> cacheStartFut.get(), IgniteCheckedException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
+        fut.get();
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         srv.cache(cacheName);
     }
@@ -210,20 +212,18 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch startLatch = new CountDownLatch(1);
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeMessage.class, (topVer, snd, msg) -> {
-            if (msg.isInit()) {
-                latch.countDown();
+        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
+            latch.countDown();
 
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+            try {
+                startLatch.await();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
+        IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         latch.await();
 
@@ -231,7 +231,9 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         startLatch.countDown();
 
-        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
+        fut.get();
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -248,32 +250,31 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         CountDownLatch latch = new CountDownLatch(1);
         CountDownLatch sendLatch = new CountDownLatch(1);
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeMessage.class, (topVer, snd, msg) -> {
-            if (msg.isInit()) {
-                latch.countDown();
+        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
+            latch.countDown();
 
-                try {
-                    sendLatch.await();
-                }
-                catch (InterruptedException ignored) {
-                    // No-op.
-                }
+            try {
+                sendLatch.await();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
             }
         });
 
-        GridTestUtils.runAsync(() -> grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2));
+        IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         latch.await();
 
-        grids.get1().context().discovery().setCustomEventListener(MasterKeyChangeMessage.class, (topVer, snd, msg) -> {
-            if (msg.isInit())
-                sendLatch.countDown();
+        grids.get1().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
+            sendLatch.countDown();
         });
 
         assertThrowsWithCause(() -> grids.get1().encryption().changeMasterKey(DEFAULT_MASTER_KEY_NAME),
             IgniteException.class);
 
-        assertTrue(waitForCondition(() -> checkMasterKeyName(MASTER_KEY_NAME_2), 10_000));
+        fut.get();
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
@@ -295,7 +296,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         grid0.cluster().readOnly(true);
 
-        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
     }
@@ -342,7 +343,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         // Put some data before master key change.
         waitForCondition(() -> cnt.get() >= 20, 10_000);
 
-        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         MetaStorage metaStorage = grid0.context().cache().context().database().metaStorage();
 

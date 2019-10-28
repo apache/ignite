@@ -310,7 +310,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     /** {@inheritDoc} */
     @Override public void setMasterKeyName(String masterKeyName) {
         if (!started()) {
-            masterKey.set1(masterKeyName);
+            masterKey = new T2<>(masterKeyName, null);
 
             return;
         }

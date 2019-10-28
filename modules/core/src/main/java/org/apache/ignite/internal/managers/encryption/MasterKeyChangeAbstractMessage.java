@@ -18,29 +18,18 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Master key change message.
- * <p>
- * The master key change process consists of two phases:
- * <ul>
- *  <li>1. The initial phase is needed to check the consistency of the master key on all nodes. If an error occurs
- *  exception will be attached to the message and the process will be canceled.</li>
- *  <li>2. On the action phase, each node re-encrypts group keys and writes it to WAL and MetaStorage if possible.</li>
- * </ul>
- * <p>
- * For details, see {@code MasterKeyChangeListener}.
+ *
  */
-public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
+abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,36 +43,17 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
     private final byte[] encKeyName;
 
     /** Master key digest. */
-    private byte[] digest;
-
-    /** Initial phase flag. */
-    private final boolean isInit;
-
-    /** Tuple of a node id and an error that caused this change to be rejected. */
-    private T2<UUID, IgniteException> err;
+    private final byte[] digest;
 
     /**
-     * Constructor for request.
-     *
+     * @param reqId Request id.
      * @param encKeyName Encrypted master key name.
+     * @param digest Master key digest.
      */
-    public MasterKeyChangeMessage(byte[] encKeyName) {
-        reqId = UUID.randomUUID();
+    protected MasterKeyChangeAbstractMessage(UUID reqId, byte[] encKeyName, byte[] digest) {
+        this.reqId = reqId;
         this.encKeyName = encKeyName;
-        isInit = true;
-    }
-
-    /**
-     * Constructor for response.
-     *
-     * @param req Request message.
-     */
-    private MasterKeyChangeMessage(MasterKeyChangeMessage req) {
-        reqId = req.reqId;
-        encKeyName = req.encKeyName;
-        digest = req.digest;
-        err = req.err;
-        isInit = false;
+        this.digest = digest;
     }
 
     /** {@inheritDoc} */
@@ -92,13 +62,13 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-        return isInit() ? new MasterKeyChangeMessage(this) : null;
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -127,41 +97,8 @@ public class MasterKeyChangeMessage implements DiscoveryCustomMessage {
         return digest;
     }
 
-    /** Sets master key digest. */
-    public void digest(byte[] digest) {
-        this.digest = digest;
-    }
-
-    /** @return Tuple of a node id and an error that caused this change to be rejected. */
-    public T2<UUID, IgniteException> error() {
-        return err;
-    }
-
-    /** @return {@code True} if error was reported during init. */
-    public boolean hasError() {
-        return err != null;
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param err Error caused this change to be rejected.
-     */
-    public void markRejected(UUID nodeId, IgniteException err) {
-        if (!hasError())
-            this.err = new T2<>(nodeId, err);
-    }
-
-    /**
-     * Gets init flag.
-     *
-     * @return Init flag.
-     */
-    public boolean isInit() {
-        return isInit;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MasterKeyChangeMessage.class, this);
+        return S.toString(MasterKeyChangeAbstractMessage.class, this);
     }
 }

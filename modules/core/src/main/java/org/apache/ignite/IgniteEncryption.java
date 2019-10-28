@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
@@ -66,7 +67,8 @@ public interface IgniteEncryption {
      * master key name. Node should re-encrypt group keys during the startup and recovery process. Set up valid master
      * key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP}.
      *
+     * @return Future for this operation.
      * @throws IgniteException If the change master key process failed.
      */
-    public void changeMasterKey(String masterKeyName);
+    public IgniteFuture<Void> changeMasterKey(String masterKeyName);
 }
