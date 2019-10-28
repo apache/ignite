@@ -358,6 +358,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxQueryFirstEnlistRequest.class, this);
+        return S.toString(GridDhtTxQueryFirstEnlistRequest.class, this, super.toString());
     }
 }

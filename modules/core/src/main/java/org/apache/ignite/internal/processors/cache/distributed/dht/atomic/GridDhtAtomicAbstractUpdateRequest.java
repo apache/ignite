@@ -669,6 +669,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             appendFlag(flags, "resNoDelay");
 
         return S.toString(GridDhtAtomicAbstractUpdateRequest.class, this,
-            "flags", flags.toString());
+            "flags", flags.toString(),
+            "super", super.toString());
     }
 }

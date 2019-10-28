@@ -611,6 +611,6 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxQueryEnlistRequest.class, this);
+        return S.toString(GridNearTxQueryEnlistRequest.class, this, super.toString());
     }
 }

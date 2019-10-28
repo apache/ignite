@@ -149,7 +149,7 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxLocksResponse.class, this);
+        return S.toString(TxLocksResponse.class, this, super.toString());
     }
 
     /** {@inheritDoc} */

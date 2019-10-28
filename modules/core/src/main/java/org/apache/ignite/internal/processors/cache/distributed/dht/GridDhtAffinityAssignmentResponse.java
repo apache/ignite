@@ -365,6 +365,6 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheGroupIdMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAffinityAssignmentResponse.class, this);
+        return S.toString(GridDhtAffinityAssignmentResponse.class, this, super.toString());
     }
 }

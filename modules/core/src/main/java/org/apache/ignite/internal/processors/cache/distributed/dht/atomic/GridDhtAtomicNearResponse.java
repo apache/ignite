@@ -309,6 +309,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
             appendFlag(flags, "hasRes");
 
         return S.toString(GridDhtAtomicNearResponse.class, this,
-            "flags", flags.toString());
+            "flags", flags.toString(),
+            "super", super.toString());
     }
 }

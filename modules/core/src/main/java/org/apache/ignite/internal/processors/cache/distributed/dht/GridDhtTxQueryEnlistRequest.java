@@ -403,6 +403,6 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements G
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxQueryEnlistRequest.class, this);
+        return S.toString(GridDhtTxQueryEnlistRequest.class, this, super.toString());
     }
 }

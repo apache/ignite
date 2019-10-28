@@ -148,7 +148,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
      * @return Key count.
      */
     private int keyCount() {
-        return keys.size();
+        return keys != null ? keys.size() : 0;
     }
 
     /** {@inheritDoc} */

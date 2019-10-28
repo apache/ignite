@@ -234,6 +234,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridToStringBuilder.toString(GridDistributedTxFinishResponse.class, this);
+        return GridToStringBuilder.toString(GridDistributedTxFinishResponse.class, this, super.toString());
     }
 }
