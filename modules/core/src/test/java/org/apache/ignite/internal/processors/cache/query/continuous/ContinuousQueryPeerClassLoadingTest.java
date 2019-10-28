@@ -78,6 +78,7 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteFilterFactoryFromClientToServer() throws Exception {
         check("server1", "client", "server2");
     }
