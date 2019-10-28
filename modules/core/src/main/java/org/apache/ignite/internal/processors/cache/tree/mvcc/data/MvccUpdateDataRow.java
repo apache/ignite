@@ -220,6 +220,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** {@inheritDoc} */
     @Override public int visit(BPlusTree<CacheSearchRow, CacheDataRow> tree,
         BPlusIO<CacheSearchRow> io,
+        long pageId,
+        long page,
         long pageAddr,
         int idx,
         IgniteWriteAheadLogManager wal)

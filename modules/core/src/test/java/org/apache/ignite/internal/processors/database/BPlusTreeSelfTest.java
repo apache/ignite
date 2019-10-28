@@ -3176,7 +3176,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         public void purge(TreeRowClosure<Long, Long> clo) throws IgniteCheckedException {
-            visitLeaves(clo, new PurgePageHandler(clo));
+            if (isEmpty())
+                return;
+
+            visit(findFirst(), findLast(), new PurgeVisitor(clo));
         }
 
         /**

@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -691,6 +690,9 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         assert !F.isEmpty(parts) : "Empty parts";
         assert shouldStop != null;
 
+        if (isEmpty())
+            return;
+
         TreeRowClosure<H2Row, H2Row> rowClo = (tree, io, pageAddr, idx) -> {
             long link = ((H2RowLinkIO)io).getLink(pageAddr,idx);
 
@@ -702,13 +704,21 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
         try {
-            if (shouldStop.call())
-                return;
-
-            visitLeaves(rowClo, new PurgePageHandler(rowClo) {
-                @Override public void onBefore() {
+            visit(findFirst(), findLast(), new PurgeVisitor(rowClo) {
+                @Override public void onBefore() throws IgniteCheckedException {
                     cctx.shared().database().checkpointReadLock();
+
+                    try {
+                        if (shouldStop.call())
+                            state |= STOP;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    super.onBefore();
                 }
+
                 @Override public void onAfter() throws IgniteCheckedException {
                     try {
                         super.onAfter();
@@ -718,15 +728,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
                     }
                 }
             });
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            if (e.getCause() instanceof NodeStoppingException)
-                throw (NodeStoppingException)e.getCause();
-
-            throw U.cast(e);
         }
         finally {
             InlineIndexHelper.clearCurrentInlineIndexes();

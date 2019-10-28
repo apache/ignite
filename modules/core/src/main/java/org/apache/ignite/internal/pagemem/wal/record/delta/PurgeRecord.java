@@ -66,13 +66,7 @@ public class PurgeRecord extends PageDeltaRecord {
                 (cnt + itemsCnt) + ", actual=" + cnt0 + ']');
         }
 
-        for (int i = 0; i < itemsCnt; i++) {
-            int idx = items[i];
-
-            io.copyItems(pageAddr, pageAddr, idx + 1, idx, cnt0 - idx, false);
-        }
-
-        io.setCount(pageAddr, cnt);
+        io.purge(pageAddr, items, itemsCnt);
     }
 
     /** {@inheritDoc} */
