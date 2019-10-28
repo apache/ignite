@@ -27,20 +27,16 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 
 /**
-  * Example application demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
-  */
+ * Example application demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
+ */
 object IgniteDataFrameJoinExample extends App {
-    /**
-      * Ignite config file.
-      */
+    /** Ignite config file. */
     private val CONFIG = "examples/config/example-ignite.xml"
 
-    /**
-      * Test cache name.
-      */
+    /** Test cache name. */
     private val CACHE_NAME = "testCache"
 
-    //Starting Ignite server node.
+    // Starting Ignite server node.
     val ignite = setupServerAndData
 
     closeAfter(ignite) { ignite ⇒
@@ -56,7 +52,6 @@ object IgniteDataFrameJoinExample extends App {
         Logger.getLogger("org.apache.ignite").setLevel(Level.INFO)
 
         // Executing examples.
-
         sparkDSLJoinExample
         nativeSparkSqlJoinExample
     }
@@ -97,7 +92,7 @@ object IgniteDataFrameJoinExample extends App {
         joinResult.show()
     }
 
-    /**
+     /**
       * Examples of usage Ignite DataFrame implementation.
       * Registration of Ignite DataFrame for following usage.
       * Selecting data by Spark SQL query.
@@ -131,7 +126,16 @@ object IgniteDataFrameJoinExample extends App {
         cities.createOrReplaceTempView("city")
 
         // Selecting data from Ignite throw Spark SQL Engine.
-        val joinResult = spark.sql("SELECT person.name AS person, age, city.name AS city, country FROM person JOIN city ON person.city_id = city.id")
+        val joinResult = spark.sql("""
+                                     | SELECT
+                                     |   person.name AS person,
+                                     |   age,
+                                     |   city.name AS city,
+                                     |   country
+                                     | FROM
+                                     |   person JOIN
+                                     |   city ON person.city_id = city.id
+                                   """.stripMargin);
 
         joinResult.explain(true)
         joinResult.printSchema()
@@ -139,15 +143,15 @@ object IgniteDataFrameJoinExample extends App {
     }
 
     def setupServerAndData: Ignite = {
-        //Starting Ignite.
+        // Starting Ignite.
         val ignite = Ignition.start(CONFIG)
 
-        //Creating first test cache.
+        // Creating first test cache.
         val ccfg = new CacheConfiguration[JLong, JString](CACHE_NAME).setSqlSchema("PUBLIC")
 
         val cache = ignite.getOrCreateCache(ccfg)
 
-        //Creating SQL tables.
+        // Creating SQL tables.
         cache.query(new SqlFieldsQuery(
             "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR, country VARCHAR) WITH \"template=replicated\"")).getAll
 
@@ -157,7 +161,7 @@ object IgniteDataFrameJoinExample extends App {
 
         cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll
 
-        //Inserting some data to tables.
+        // Inserting some data to tables.
         var qry = new SqlFieldsQuery("INSERT INTO city (id, name, country) VALUES (?, ?, ?)")
 
         cache.query(qry.setArgs(1L.asInstanceOf[JLong], "Forest Hill", "USA")).getAll

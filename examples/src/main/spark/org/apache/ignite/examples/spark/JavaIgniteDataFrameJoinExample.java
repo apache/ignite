@@ -33,14 +33,10 @@ import org.apache.spark.sql.SparkSession;
  * Example application demonstrates the join operations between two dataframes or Spark tables with data saved in Ignite caches.
  */
 public class JavaIgniteDataFrameJoinExample {
-    /**
-     * Ignite config file.
-     */
+    /** Ignite config file. */
     private static final String CONFIG = "examples/config/example-ignite.xml";
 
-    /**
-     * Test cache name.
-     */
+    /** Test cache name. */
     private static final String CACHE_NAME = "testCache";
 
     /** */
