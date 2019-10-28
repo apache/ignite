@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -1427,6 +1428,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !cctx.kernalContext().clientNode();
 
+        if (cctx.filePreloader() != null) {
+            cctx.exchange().exchangerBlockingSectionBegin();
+
+            try {
+                cctx.filePreloader().onTopologyChanged(this);
+            }
+            finally {
+                cctx.exchange().exchangerBlockingSectionEnd();
+            }
+        }
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
@@ -2291,8 +2303,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
-            if (cctx.filePreloader() != null)
-                cctx.filePreloader().onExchangeDone(exchangeId());
+
 
             // todo reserve only moving partitions (not all)
             // todo reserve only those partitions that will be supplied from current node
@@ -2334,6 +2345,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 //            }
 
             cctx.database().releaseHistoryForExchange();
+
+            if (cctx.filePreloader() != null)
+                cctx.filePreloader().onExchangeDone(this);
 
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
@@ -3223,13 +3237,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
-//        log.info("partHistReserved0=" + partHistReserved0.size());
-
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
 
-        log.info("localReserved: " + localReserved);
-
         Set<Integer> haveHistory = new HashSet<>();
+
+        // todo
+        Collection<ClusterNode> nodes =
+            F.concat(false, cctx.localNode(), F.viewReadOnly(msgs.keySet(), v -> cctx.discovery().node(v)));
+
+        CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
+
+        boolean fileRebalanceRequired = cctx.filePreloader().fileRebalanceRequired(grp, nodes);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3246,9 +3264,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long localHistCntr = localReserved.get(p);
 
                 if (localHistCntr != null) {
-                    // todo crd node should always have history for max counter - this is redundant
-                    // todo if minCntr is zero - check that file rebalancing is supported and partition is ig enough, otherwise - do regular  preloading
-                    if (minCntr == 0 && localHistCntr <= maxCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    // todo   crd node should always have history for max counter - this is redundant
+                    // todo   if minCntr is zero - check that file rebalancing is supported and partition is big enough,
+                    // todo   otherwise - do regular  preloading
+                    if (fileRebalanceRequired && minCntr == 0 && localHistCntr <= maxCntr &&
+                        maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
                         haveHistory.add(p);

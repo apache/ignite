@@ -3358,7 +3358,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assignsCancelled |= assigns.cancelled();
 
                                 if (cctx.filePreloader() != null &&
-                                    cctx.filePreloader().FileRebalanceSupported(grp, assigns))
+                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns))
                                     continue;
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,

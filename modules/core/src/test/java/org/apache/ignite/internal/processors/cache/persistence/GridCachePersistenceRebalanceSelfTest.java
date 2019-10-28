@@ -60,6 +60,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED;
 
 /**
@@ -246,6 +247,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
     public void testPersistenceRebalanceUnderConstantLoad() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -316,6 +318,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
     public void testPersistenceRebalanceMultipleCachesThreeNodesSequence() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
@@ -363,6 +366,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
     public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
