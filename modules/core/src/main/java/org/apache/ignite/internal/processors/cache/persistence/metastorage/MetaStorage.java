@@ -377,9 +377,8 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null;
 
-        byte[] data = marshaller.marshal(val);
-
-        writeRaw(key, data);
+        if (!readOnly)
+            writeRaw(key, marshaller.marshal(val));
     }
 
     /** {@inheritDoc} */
@@ -390,11 +389,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** {@inheritDoc} */
     @Override public void writeRaw(String key, byte[] data) throws IgniteCheckedException {
         if (!readOnly) {
-            WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
-
-            wal.flush(ptr, false);
+            WALPointer ptr;
 
             synchronized (this) {
+                ptr = wal.log(new MetastoreDataRecord(key, data));
+
                 MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
 
                 if (oldRow != null) {
@@ -406,6 +405,8 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 tree.rowStore().addRow(row);
                 tree.put(row);
             }
+
+            wal.flush(ptr, false);
         }
     }
 
