@@ -267,6 +267,8 @@ class DmsDataWriterWorker extends GridWorker {
 
         metastorage.iterate(COMMON_KEY_PREFIX, (key, val) -> allKeys.add(key), false);
 
+        allKeys.remove(cleanupGuardKey());
+
         for (String key : allKeys)
             metastorage.remove(key);
 
