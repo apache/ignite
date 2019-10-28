@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -37,7 +38,7 @@ public class SecurityUtils {
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
+    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return DFLT_SERIALIZE_VERSION;
         }
@@ -100,6 +101,8 @@ public class SecurityUtils {
      * @return Node's security context.
      */
     public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        A.notNull(node, "node");
+
         byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
         byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
 
@@ -107,7 +110,7 @@ public class SecurityUtils {
             throw new SecurityException("Security context isn't certain.");
 
         try {
-            return U.unmarshal(marsh, subjBytesV2 != null ? subjBytesV2 : subjBytes , ldr);
+            return U.unmarshal(marsh, subjBytesV2 != null ? subjBytesV2 : subjBytes, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new SecurityException("Failed to get security context.", e);
