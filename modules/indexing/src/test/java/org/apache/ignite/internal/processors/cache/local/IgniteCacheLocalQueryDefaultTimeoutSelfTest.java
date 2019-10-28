@@ -72,7 +72,7 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        G.ignite().cache(DEFAULT_CACHE_NAME).removeAll();
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -98,7 +98,7 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
      * Tests query execution with default query timeout.
      */
     @Test
-    public void testQueryZeroTimeout() {
+    public void testQueryDefaultTimeout() {
         testQuery(false, 1, TimeUnit.MILLISECONDS);
     }
 

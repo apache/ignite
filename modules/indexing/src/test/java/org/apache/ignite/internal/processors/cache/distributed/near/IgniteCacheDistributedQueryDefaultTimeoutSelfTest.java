@@ -94,7 +94,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        G.ignite().cache(DEFAULT_CACHE_NAME).removeAll();
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** */
