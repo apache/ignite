@@ -1888,31 +1888,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws StorageException If exception occurred in the archiver thread.
          */
         private long nextAbsoluteSegmentIndex() throws StorageException, IgniteInterruptedCheckedException {
-            synchronized (this) {
-                if (cleanErr != null)
-                    throw cleanErr;
+            if (cleanErr != null)
+                throw cleanErr;
 
-                try {
-                    long nextIdx = segmentAware.nextAbsoluteSegmentIndex();
+            try {
+                long nextIdx = segmentAware.nextAbsoluteSegmentIndex();
 
+                synchronized (this) {
                     // Wait for formatter so that we do not open an empty file in DEFAULT mode.
                     while (nextIdx % dsCfg.getWalSegments() > formatted && cleanErr == null)
                         wait();
-
-                    if (cleanErr != null)
-                        throw cleanErr;
-
-                    return nextIdx;
                 }
-                catch (IgniteInterruptedCheckedException e) {
-                    if (cleanErr != null)
-                        throw cleanErr;
 
-                    throw e;
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteInterruptedCheckedException(e);
-                }
+                if (cleanErr != null)
+                    throw cleanErr;
+
+                return nextIdx;
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                if (cleanErr != null)
+                    throw cleanErr;
+
+                throw e;
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 
