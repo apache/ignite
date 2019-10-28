@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.ml.math.exceptions;
+package org.apache.ignite.ml.math.exceptions.math;
 
 /**
  * This class is based on the corresponding class from Apache Common Math lib.

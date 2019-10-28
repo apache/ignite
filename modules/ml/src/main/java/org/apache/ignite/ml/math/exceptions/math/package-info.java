@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.exceptions;
-
-import org.apache.ignite.IgniteException;
-
 /**
- * Indicates an invalid, i.e. out of bound, index on matrix or vector operations.
+ * <!-- Package description. -->
+ * Contains exceptions for distributed code algebra.
  */
-public class IndexException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
 
-    /**
-     * @param idx Index value that caused this exception.
-     */
-    public IndexException(int idx) {
-        super("Invalid (out of bound) index: " + idx);
-    }
-}
+package org.apache.ignite.ml.math.exceptions.math;

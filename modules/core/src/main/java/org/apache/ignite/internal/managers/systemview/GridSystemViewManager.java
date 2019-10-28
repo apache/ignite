@@ -28,12 +28,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
@@ -43,6 +45,7 @@ import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
@@ -84,6 +87,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(ClientConnectionView.class, new ClientConnectionViewWalker());
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
+        registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -112,7 +116,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <R, D> void registerView(String name, String desc, Class<R> rowCls, Collection<D> data,
         Function<D, R> rowFunc) {
-        doRegister(name, new SystemViewAdapter<>(name,
+        registerView0(name, new SystemViewAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
@@ -135,7 +139,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <C, R, D> void registerInnerCollectionView(String name, String desc, Class<R> rowCls,
         Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
@@ -159,7 +163,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      */
     public <C, R, D> void registerInnerArrayView(String name, String desc, Class<R> rowCls, Collection<C> container,
         Function<C, D[]> dataExtractor, BiFunction<C, D, R> rowFunc) {
-        doRegister(name, new SystemViewInnerCollectionsAdapter<>(name,
+        registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             rowCls,
             (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
@@ -169,12 +173,33 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers view and notifies listeners.
+     * Registers view which exports {@link Collection} content provided by specified {@code Supplier}.
      *
-     * @param name Name
+     * @param name Name.
+     * @param desc Description.
+     * @param rowCls Row class.
+     * @param dataSupplier Data supplier.
+     * @param rowFunc value to row function.
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerView(String name, String desc, Class<R> rowCls, Supplier<Collection<D>> dataSupplier,
+        Function<D, R> rowFunc) {
+        registerView0(name, new SystemViewAdapter<>(name,
+            desc,
+            rowCls,
+            (SystemViewRowAttributeWalker<R>)walkers.get(rowCls),
+            dataSupplier,
+            rowFunc));
+    }
+
+    /**
+     * Registers view.
+     *
+     * @param name Name.
      * @param sysView System view.
      */
-    private void doRegister(String name, SystemView sysView) {
+    private void registerView0(String name, SystemView sysView) {
         SystemView<?> old = systemViews.putIfAbsent(name, sysView);
 
         assert old == null;
