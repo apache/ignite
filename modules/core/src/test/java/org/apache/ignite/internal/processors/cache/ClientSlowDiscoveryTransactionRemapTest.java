@@ -207,23 +207,29 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     private static interface TestTransaction<K, V> {
         /** Possible operations. */
         static int POSSIBLE_OPERATIONS = 5;
+
         /**
          * @param key Key.
+         * @return Value.
          */
         V get(K key);
+
         /**
          * @param key Key.
          * @param val Value.
          */
         void put(K key, V val);
+
         /**
          * @param key Key.
          */
         void remove(K key);
+
         /**
          * @param map Map.
          */
         void putAll(Map<K, V> map);
+
         /**
          * @param keys Keys.
          */
@@ -359,7 +365,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Before
     public void before() throws Exception {
         clientMode = true;
@@ -386,6 +392,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         startGrid(2);
     }
 
+    /** */
     @After
     public void after() throws Exception {
         // Stop client nodes.
@@ -393,9 +400,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         stopGrid(2);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testTransactionRemap() throws Exception {
         TestTransactionEngine engine = new TestTransactionEngine<>(clnt.cache(CACHE_NAME));
@@ -425,9 +430,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
         engine.consistencyCheck();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testTransactionRemapWithTimeout() throws Exception {
         TestTransactionEngine engine = new TestTransactionEngine<>(clnt.cache(CACHE_NAME));
