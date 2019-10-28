@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exchange;
+package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  *
  */
-public interface DistributionRegistry {
-    Map<ClusterNode, int[]> partitionMapping(int cacheId, AffinityTopologyVersion topVer);
+public interface PartitionsDistributionRegistry {
+    PartitionsDistribution partitionsDistribution(int cacheId, AffinityTopologyVersion topVer);
 }

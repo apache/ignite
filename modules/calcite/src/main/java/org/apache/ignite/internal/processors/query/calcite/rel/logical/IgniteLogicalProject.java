@@ -26,6 +26,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 
 public final class IgniteLogicalProject extends Project implements IgniteRel {
   public IgniteLogicalProject(
@@ -48,5 +49,9 @@ public final class IgniteLogicalProject extends Project implements IgniteRel {
         .replace(IgniteMdDistribution.project(project.getCluster().getMetadataQuery(), input, project.getProjects()));
 
     return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
+  }
+
+  @Override public <T> T accept(IgniteVisitor<T> visitor) {
+    return visitor.visitProject(this);
   }
 }

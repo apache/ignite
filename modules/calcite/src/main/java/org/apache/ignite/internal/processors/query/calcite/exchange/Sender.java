@@ -21,6 +21,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 
 /**
  *
@@ -33,7 +34,11 @@ public class Sender extends SingleRel implements IgniteRel {
      * @param traits Trait set.
      * @param input Input relational expression
      */
-    protected Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    public Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
+    }
+
+    @Override public <T> T accept(IgniteVisitor<T> visitor) {
+        return visitor.visitSender(this);
     }
 }

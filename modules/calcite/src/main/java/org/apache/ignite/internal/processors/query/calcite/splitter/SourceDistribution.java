@@ -17,8 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import java.util.List;
-import java.util.Map;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
 import org.apache.ignite.internal.util.GridIntList;
 
@@ -26,7 +24,7 @@ import org.apache.ignite.internal.util.GridIntList;
  *
  */
 public class SourceDistribution {
-    public Map<ClusterNode, int[]> partitionMapping; // partition filter for unstable topology
+    public PartitionsDistribution partitionMapping; // partitions mapping.
     public List<Receiver> remoteInputs; // remote inputs to notify particular senders about final task distribution
     public GridIntList localInputs; // involved caches, used for partitions reservation
 }

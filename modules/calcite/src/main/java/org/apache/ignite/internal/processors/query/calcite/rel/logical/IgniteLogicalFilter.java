@@ -28,6 +28,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 
 public final class IgniteLogicalFilter extends Filter implements IgniteRel {
   private final Set<CorrelationId> variablesSet;
@@ -58,5 +59,9 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
         .replace(IgniteMdDistribution.filter(filter.getCluster().getMetadataQuery(), input, filter.getCondition()));
 
     return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
+  }
+
+  @Override public <T> T accept(IgniteVisitor<T> visitor) {
+    return visitor.visitFilter(this);
   }
 }

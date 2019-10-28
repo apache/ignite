@@ -32,7 +32,5 @@ public interface IgniteRel extends RelNode {
         }
     };
 
-    default void visit(IgniteVisitor visitor) {
-        visitor.visit(this);
-    }
+    <T> T accept(IgniteVisitor<T> visitor);
 }

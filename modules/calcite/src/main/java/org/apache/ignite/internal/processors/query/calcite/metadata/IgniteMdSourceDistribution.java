@@ -16,12 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelNode;
@@ -31,65 +26,77 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.TaskDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.SourceDistributionMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistribution;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class IgniteMdSourceDistribution implements MetadataHandler<TaskDistribution> {
+public class IgniteMdSourceDistribution implements MetadataHandler<SourceDistributionMetadata> {
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(IgniteMethod.TASK_DISTRIBUTION.method(), new IgniteMdSourceDistribution());
+        ReflectiveRelMetadataProvider.reflectiveSource(IgniteMethod.SOURCE_DISTRIBUTION.method(), new IgniteMdSourceDistribution());
 
-    @Override public MetadataDef<TaskDistribution> getDef() {
-        return TaskDistribution.DEF;
+    @Override public MetadataDef<SourceDistributionMetadata> getDef() {
+        return SourceDistributionMetadata.DEF;
     }
 
-    public SourceDistribution distribution(RelNode rel, RelMetadataQuery mq) {
+    public SourceDistribution getSourceDistribution(RelNode rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
-    public SourceDistribution distribution(RelSubset rel, RelMetadataQuery mq) {
+    public SourceDistribution getSourceDistribution(RelSubset rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
-    public SourceDistribution distribution(SingleRel rel, RelMetadataQuery mq) {
-        return distribution_(rel.getInput(), mq);
+    public SourceDistribution getSourceDistribution(SingleRel rel, RelMetadataQuery mq) {
+        return distribution(rel.getInput(), mq);
     }
 
-    public SourceDistribution distribution(BiRel rel, RelMetadataQuery mq) {
-        return merge(distribution_(rel.getLeft(), mq), distribution_(rel.getRight(), mq));
+    public SourceDistribution getSourceDistribution(BiRel rel, RelMetadataQuery mq) {
+        mq = RelMetadataQueryEx.wrap(mq);
+
+        return merge(distribution(rel.getLeft(), mq), distribution(rel.getRight(), mq));
     }
 
-    public SourceDistribution distribution(Receiver rel, RelMetadataQuery mq) {
+    public SourceDistribution getSourceDistribution(Receiver rel, RelMetadataQuery mq) {
         SourceDistribution res = new SourceDistribution();
 
-        res.remoteInputs.add(rel);
+        res.remoteInputs = F.asList(rel);
 
         return res;
     }
 
-    public SourceDistribution distribution(IgniteLogicalTableScan rel, RelMetadataQuery mq) {
+    public SourceDistribution getSourceDistribution(IgniteLogicalTableScan rel, RelMetadataQuery mq) {
         return rel.tableDistribution();
     }
 
-    public static SourceDistribution distribution_(RelNode rel, RelMetadataQuery mq) {
-        return rel.metadata(TaskDistribution.class, mq).distribution();
+    public static SourceDistribution distribution(RelNode rel, RelMetadataQuery mq) {
+        return RelMetadataQueryEx.wrap(mq).getSourceDistribution(rel);
     }
 
     private static SourceDistribution merge(SourceDistribution left, SourceDistribution right) {
         SourceDistribution res = new SourceDistribution();
 
-        res.remoteInputs = merge(left.remoteInputs, right.remoteInputs);
         res.partitionMapping = merge(left.partitionMapping, right.partitionMapping);
+        res.remoteInputs = merge(left.remoteInputs, right.remoteInputs);
         res.localInputs = merge(left.localInputs, right.localInputs);
 
         return res;
+    }
+
+    private static PartitionsDistribution merge(PartitionsDistribution left, PartitionsDistribution right) {
+        if (left == null)
+            return right;
+        if (right == null)
+            return left;
+
+        return left.mergeWith(right);
     }
 
     private static <T> List<T> merge(List<T> left, List<T> right) {
@@ -110,46 +117,5 @@ public class IgniteMdSourceDistribution implements MetadataHandler<TaskDistribut
             left.addAll(right);
 
         return left;
-    }
-
-    private static Map<ClusterNode, int[]> merge(Map<ClusterNode, int[]> left, Map<ClusterNode, int[]> right) {
-        if (left == null)
-            return right;
-
-        if (right == null)
-            return left;
-
-        Map<ClusterNode, int[]> res = new HashMap<>(Math.min(left.size(), right.size()));
-
-        Set<ClusterNode> keys = new HashSet<>(left.keySet());
-
-        keys.retainAll(right.keySet());
-
-        for (ClusterNode node : keys) {
-            int[] leftParts  = left.get(node);
-            int[] rightParts = right.get(node);
-
-            int[] nodeParts = new int[Math.min(leftParts.length, rightParts.length)];
-
-            int i = 0, j = 0, k = 0;
-
-            while (i < leftParts.length && j < rightParts.length) {
-                if (leftParts[i] < rightParts[j])
-                    i++;
-                else if (rightParts[j] < leftParts[i])
-                    j++;
-                else {
-                    nodeParts[k++] = leftParts[i];
-
-                    i++;
-                    j++;
-                }
-            }
-
-            if (k > 0)
-                res.put(node, k < nodeParts.length ? Arrays.copyOf(nodeParts, k) : nodeParts);
-        }
-
-        return res;
     }
 }

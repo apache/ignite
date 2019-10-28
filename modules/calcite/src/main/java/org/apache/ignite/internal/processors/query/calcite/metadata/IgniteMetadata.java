@@ -40,27 +40,27 @@ public class IgniteMetadata {
                 IgniteMdSourceDistribution.SOURCE,
                 DefaultRelMetadataProvider.INSTANCE));
 
-    public interface TraitDistribution extends Metadata {
-        MetadataDef<TraitDistribution> DEF = MetadataDef.of(TraitDistribution.class, TraitDistribution.Handler.class, IgniteMethod.DISTRIBUTION.method());
+    public interface DistributionTraitMetadata extends Metadata {
+        MetadataDef<DistributionTraitMetadata> DEF = MetadataDef.of(DistributionTraitMetadata.class, DistributionTraitMetadata.Handler.class, IgniteMethod.DISTRIBUTION_TRAIT.method());
 
         /** Determines how the rows are distributed. */
-        DistributionTrait distribution();
+        DistributionTrait getDistributionTrait();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<TraitDistribution> {
-            DistributionTrait distribution(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<DistributionTraitMetadata> {
+            DistributionTrait getDistributionTrait(RelNode r, RelMetadataQuery mq);
         }
     }
 
-    public interface TaskDistribution extends Metadata {
-        MetadataDef<TaskDistribution> DEF = MetadataDef.of(TaskDistribution.class, TaskDistribution.Handler.class, IgniteMethod.TASK_DISTRIBUTION.method());
+    public interface SourceDistributionMetadata extends Metadata {
+        MetadataDef<SourceDistributionMetadata> DEF = MetadataDef.of(SourceDistributionMetadata.class, SourceDistributionMetadata.Handler.class, IgniteMethod.SOURCE_DISTRIBUTION.method());
 
         /** Determines how the rows are distributed. */
-        SourceDistribution distribution();
+        SourceDistribution getSourceDistribution();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<TaskDistribution> {
-            SourceDistribution distribution(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<SourceDistributionMetadata> {
+            SourceDistribution getSourceDistribution(RelNode r, RelMetadataQuery mq);
         }
     }
 }

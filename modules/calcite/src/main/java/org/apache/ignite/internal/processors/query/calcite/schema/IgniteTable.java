@@ -27,9 +27,9 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.exchange.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -78,13 +78,16 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     public SourceDistribution tableDistribution(Context context) {
         SourceDistribution res = new SourceDistribution();
 
-        res.localInputs = new GridIntList();
-        res.localInputs.add(CU.cacheId(cacheName));
+        GridIntList localInputs = new GridIntList();
 
-        DistributionRegistry registry = context.unwrap(DistributionRegistry.class);
+        localInputs.add(CU.cacheId(cacheName));
+
+        res.localInputs = localInputs;
+
+        PartitionsDistributionRegistry registry = context.unwrap(PartitionsDistributionRegistry.class);
         AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
 
-        res.partitionMapping = registry.partitionMapping(CU.cacheId(cacheName), topVer);
+        res.partitionMapping = registry.partitionsDistribution(CU.cacheId(cacheName), topVer);
 
         return res;
     }

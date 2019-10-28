@@ -17,9 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+
 /**
  *
  */
-public interface IgniteVisitor {
-    public void visit(IgniteRel rel);
+public interface IgniteVisitor<T> {
+    T visitExchange(IgniteLogicalExchange exchange);
+
+    T visitFilter(IgniteLogicalFilter filter);
+
+    T visitJoin(IgniteLogicalJoin join);
+
+    T visitProject(IgniteLogicalProject project);
+
+    T visitTableScan(IgniteLogicalTableScan tableScan);
+
+    T visitReceiver(Receiver receiver);
+
+    T visitSender(Sender sender);
 }

@@ -28,5 +28,14 @@ public class SplitTask {
     public SplitTask(RelNode root, SourceDistribution distribution) {
         this.distribution = distribution;
         this.root = root;
+
+        init();
+    }
+
+    private void init() {
+        PartitionsDistribution mapping = distribution.partitionMapping;
+
+        if (mapping != null && mapping.excessive)
+            distribution.partitionMapping = mapping.deduplicate();
     }
 }

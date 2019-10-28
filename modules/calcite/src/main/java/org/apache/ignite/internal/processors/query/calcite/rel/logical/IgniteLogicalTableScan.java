@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 
@@ -39,5 +40,9 @@ public final class IgniteLogicalTableScan extends TableScan implements IgniteRel
 
   public SourceDistribution tableDistribution() {
      return getTable().unwrap(IgniteTable.class).tableDistribution(getCluster().getPlanner().getContext());
+  }
+
+  @Override public <T> T accept(IgniteVisitor<T> visitor) {
+    return visitor.visitTableScan(this);
   }
 }

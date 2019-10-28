@@ -145,12 +145,11 @@ public class CalciteQueryProcessor implements QueryEngine {
      * @return Query execution context.
      */
     Context context(@NotNull Context ctx, String query, Object[] params) { // Package private visibility for tests.
-        return Contexts.chain(ctx,
+        return Contexts.chain(ctx, config.getContext(),
             Contexts.of(
                 new Query(query, params),
                 contextParameter(ctx, SchemaPlus.class, schemaHolder::schema),
-                contextParameter(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)),
-            config.getContext());
+                contextParameter(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)));
     }
 
     private QueryExecution prepare(Context ctx) {

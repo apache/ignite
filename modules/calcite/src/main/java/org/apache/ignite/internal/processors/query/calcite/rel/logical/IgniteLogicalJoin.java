@@ -26,6 +26,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 
 public final class IgniteLogicalJoin extends Join implements IgniteRel {
   private final boolean semiJoinDone;
@@ -57,5 +58,9 @@ public final class IgniteLogicalJoin extends Join implements IgniteRel {
 
   @Override public boolean isSemiJoinDone() {
     return semiJoinDone;
+  }
+
+  @Override public <T> T accept(IgniteVisitor<T> visitor) {
+    return visitor.visitJoin(this);
   }
 }
