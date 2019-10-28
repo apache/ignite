@@ -38,6 +38,7 @@ public class SparkModelParserTest {
     LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
         .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
+    /** Expected exception. */
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 

@@ -33,6 +33,7 @@ public class DistributionMixtureTest {
     /** */
     private DistributionMixture<Constant> mixture;
 
+    /** */
     @Before
     public void setUp() throws Exception {
         mixture = new DistributionMixture<Constant>(

@@ -204,6 +204,7 @@ public class DataStreamGeneratorTest {
 
     /** */
     private static class UpstreamTransformerForTest implements UpstreamTransformer {
+        /** {@inheritDoc} */
         @Override public Stream<UpstreamEntry> transform(
             Stream<UpstreamEntry> upstream) {
             return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
