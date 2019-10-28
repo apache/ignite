@@ -242,6 +242,7 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     private static class NamedClosure<K, V> implements IgniteInClosure<TestTransaction<K, V>> {
         /** Closure. */
         private final IgniteInClosure<TestTransaction<K, V>> c;
+
         /** Name. */
         private final String name;
 
@@ -271,8 +272,10 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     private static class TestTransactionEngine<K, V> implements TestTransaction<K, V> {
         /** Removed. */
         private final Object RMV = new Object();
+
         /** Cache. */
         private final IgniteCache<K, V> cache;
+
         /** Map to consistency check. */
         private final Map<K, Object> map;
 
