@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.EntryProcess
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
@@ -46,6 +47,7 @@ import org.junit.runners.Suite;
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
+    ComputeTaskCancelRemoteSecurityContextCheckTest.class,
     ExecutorServiceRemoteSecurityContextCheckTest.class,
     ScanQueryRemoteSecurityContextCheckTest.class,
     EntryProcessorRemoteSecurityContextCheckTest.class,
