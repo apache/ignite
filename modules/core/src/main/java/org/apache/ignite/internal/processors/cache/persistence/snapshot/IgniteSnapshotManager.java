@@ -1026,7 +1026,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         }
         catch (IOException e) {
-            throw new IgniteException(e);
+            log.error("Snapshot directory doesn't exist [snpName=" + sctx.snpName + ", dir=" + snapshotWorkDir() + ']');
         }
     }
 
