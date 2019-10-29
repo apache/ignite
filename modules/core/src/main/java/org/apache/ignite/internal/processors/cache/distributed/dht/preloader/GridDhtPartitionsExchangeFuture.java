@@ -3274,19 +3274,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
-
-        boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
-
-        Set<UUID> joinedNodes = new HashSet<>();
-
-        for (DiscoveryEvent evt : events().events()) {
-            if (evt.type() == EVT_NODE_JOINED)
-                joinedNodes.add(evt.eventNode().id());
-        }
-
         Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(
-            ownersByUpdCounters, haveHistory, joinedNodes, skipResetOwners, this);
+            ownersByUpdCounters, haveHistory, this);
 
         for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
             UUID nodeId = e.getKey();
