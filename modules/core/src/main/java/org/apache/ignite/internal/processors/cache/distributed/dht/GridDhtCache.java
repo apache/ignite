@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -78,14 +77,11 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        CacheMetricsImpl m = new CacheMetricsImpl(ctx);
+        assert metrics != null : "Cache metrics instance isn't initialized.";
 
-        m.delegate(ctx.dht().near().metrics0());
-
-        metrics = m;
+        metrics.delegate(ctx.dht().near().metrics0());
 
         ctx.dr().resetMetrics();
-
 
         super.start();
     }
