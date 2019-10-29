@@ -305,8 +305,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
                         allocationMap.prepareForSnapshot();
 
-                        assert !allocationMap.isEmpty() : "Partitions statistics has not been gathered: " + sctx0;
-
                         for (GroupPartitionId pair : sctx0.parts) {
                             PagesAllocationRange allocRange = allocationMap.get(pair);
 
