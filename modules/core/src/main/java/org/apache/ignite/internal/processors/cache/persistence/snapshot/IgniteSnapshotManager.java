@@ -67,6 +67,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
@@ -729,7 +730,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             if (snpLsnr != null) {
                 snpLsnr.onException(fut.firstEvent().eventNode().id(),
                     e.getKey().get2(),
-                    new IgniteCheckedException("Requesting snapshot from remote node has been stopped due to topology changed " +
+                    new ClusterTopologyCheckedException("Requesting snapshot from remote node has been stopped due to topology changed " +
                         "[snpName" + e.getKey().get1() + ", rmtNodeId=" + e.getKey().get2() + ']'));
             }
         }
