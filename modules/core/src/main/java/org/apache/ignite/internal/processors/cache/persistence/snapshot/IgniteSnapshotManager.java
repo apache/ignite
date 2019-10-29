@@ -279,6 +279,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
+        cctx.exchange().registerExchangeAwareComponent(this);
+
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
                 for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
@@ -667,6 +669,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             cctx.kernalContext().io().removeMessageListener(DFLT_RMT_SNAPSHOT_TOPIC);
             cctx.kernalContext().io().removeTransmissionHandler(DFLT_RMT_SNAPSHOT_TOPIC);
+
+            cctx.exchange().unregisterExchangeAwareComponent(this);
         }
         finally {
             busyLock.unblock();
