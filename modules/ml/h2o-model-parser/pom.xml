@@ -22,7 +22,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
+    <properties>
+        <h2o.version>3.26.0.8</h2o.version>
+    </properties>
 
     <parent>
         <artifactId>ignite-parent</artifactId>
@@ -69,7 +74,7 @@
         <dependency>
             <groupId>ai.h2o</groupId>
             <artifactId>h2o-genmodel</artifactId>
-            <version>3.26.0.6</version>
+            <version>${h2o.version}</version>
         </dependency>
     </dependencies>
 </project>
