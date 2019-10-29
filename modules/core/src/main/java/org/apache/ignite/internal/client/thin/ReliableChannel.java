@@ -251,7 +251,8 @@ final class ReliableChannel implements AutoCloseable {
                                 ch = hld.getOrCreateChannel();
 
                                 return ch.service(ClientOperation.CACHE_PARTITIONS,
-                                    affinityCtx::writePartitionsUpdateRequest, affinityCtx::readPartitionsUpdateResponse);
+                                    affinityCtx::writePartitionsUpdateRequest,
+                                    affinityCtx::readPartitionsUpdateResponse);
                             }
                             catch (ClientConnectionException ignore) {
                                 onChannelFailure(hld, ch);
@@ -362,8 +363,11 @@ final class ReliableChannel implements AutoCloseable {
                     scheduledChannelsReinit.set(false);
 
                     for (ClientChannelHolder hld : channels) {
+                        if (scheduledChannelsReinit.get())
+                            return; // New reinit task scheduled.
+
                         try {
-                            hld.getOrCreateChannel();
+                            hld.getOrCreateChannel(true);
                         }
                         catch (Exception ignore) {
                             // No-op.
@@ -395,22 +399,60 @@ final class ReliableChannel implements AutoCloseable {
         /** Channel. */
         private volatile ClientChannel ch;
 
+        /** Timestamps of reconnect retries. */
+        private final long[] reconnectRetries;
+
         /**
          * @param chCfg Channel config.
          */
         private ClientChannelHolder(ClientChannelConfiguration chCfg) {
             this.chCfg = chCfg;
+
+            reconnectRetries = chCfg.getReconnectThrottlingRetries() > 0 ?
+                new long[chCfg.getReconnectThrottlingRetries()] : null;
+        }
+
+        /**
+         * @return Whether reconnect throttling should be applied.
+         */
+        private boolean applyReconnectionThrottling() {
+            if (reconnectRetries == null || chCfg.getReconnectThrottlingPeriod() == 0L)
+                return false;
+
+            long ts = System.currentTimeMillis();
+
+            for (int i = 0; i < reconnectRetries.length; i++) {
+                if (ts - reconnectRetries[i] >= chCfg.getReconnectThrottlingPeriod()) {
+                    reconnectRetries[i] = ts;
+
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /**
          * Get or create channel.
          */
         private synchronized ClientChannel getOrCreateChannel() {
+            return getOrCreateChannel(false);
+        }
+
+        /**
+         * Get or create channel.
+         */
+        private synchronized ClientChannel getOrCreateChannel(boolean ignoreThrottling) {
             if (ch == null) {
+                if (!ignoreThrottling && applyReconnectionThrottling())
+                    throw new ClientConnectionException("Reconnect is not allowed due to applied throttling");
+
                 ch = chFactory.apply(chCfg);
 
                 if (ch.serverNodeId() != null) {
                     ch.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+
+                    nodeChannels.values().remove(this);
 
                     nodeChannels.putIfAbsent(ch.serverNodeId(), this);
                 }
@@ -423,12 +465,7 @@ final class ReliableChannel implements AutoCloseable {
          * Close channel.
          */
         private synchronized void closeChannel() {
-            if (ch != null) {
-                if (ch.serverNodeId() != null)
-                    nodeChannels.remove(ch.serverNodeId(), this);
-
-                U.closeQuiet(ch);
-            }
+            U.closeQuiet(ch);
 
             ch = null;
         }

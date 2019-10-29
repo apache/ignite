@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.junit.Test;
 
 /**
@@ -100,6 +106,53 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
 
         // Test affinity awareness after node join.
         testAffinityAwareness(true);
+    }
+
+    /**
+     * Test connection restore to affinity nodes.
+     */
+    @Test
+    public void testConnectionLoss() throws Exception {
+        startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        initClient(getClientConfiguration(0, 1), 0, 1);
+
+        // Test affinity awareness before connection to node lost.
+        testAffinityAwareness(true);
+
+        // Choose node to disconnect (not default node).
+        int disconnectNodeIdx = dfltCh == channels[0] ? 1 : 0;
+
+        // Drop all thin connections from the node.
+        ObjectName mbeanName = U.makeMBeanName(grid(disconnectNodeIdx).name(), "Clients",
+            ClientListenerProcessor.class.getSimpleName());
+
+        MBeanServerInvocationHandler.newProxyInstance(ManagementFactory.getPlatformMBeanServer(), mbeanName,
+            ClientProcessorMXBean.class, true).dropAllConnections();
+
+        channels[disconnectNodeIdx] = null;
+
+        // Send request to disconnected node.
+        ClientCache<Object, Object> cache = client.cache(PART_CACHE_NAME);
+
+        Integer key = primaryKey(grid(disconnectNodeIdx).cache(PART_CACHE_NAME));
+
+        assertNotNull("Not found key for node " + disconnectNodeIdx, key);
+
+        cache.put(key, 0);
+
+        // Request goes to default channel, since affinity node is disconnected.
+        assertOpOnChannel(dfltCh, ClientOperation.CACHE_PUT);
+
+        cache.put(key, 0);
+
+        // Connection to disconnected node should be restored after retry.
+        assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
+
+        // Test affinity awareness.
+        testAffinityAwareness(false);
     }
 
     /**

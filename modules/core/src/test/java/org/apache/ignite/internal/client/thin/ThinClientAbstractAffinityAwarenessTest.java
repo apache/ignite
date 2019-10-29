@@ -28,8 +28,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.client.ClientAuthorizationException;
-import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -48,7 +47,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
  */
 public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
-    private static final long WAIT_TIMEOUT = 1_000L;
+    private static final long WAIT_TIMEOUT = 5_000L;
 
     /** Replicated cache name. */
     protected static final String REPL_CACHE_NAME = "replicated_cache";
@@ -155,7 +154,22 @@ public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommon
      * @param chIdxs Channels to wait for initialization.
      */
     protected void initClient(ClientConfiguration clientCfg, int... chIdxs) throws IgniteInterruptedCheckedException {
-        client = new TcpIgniteClient(TestTcpClientChannel::new, clientCfg);
+        client = new TcpIgniteClient(cfg -> {
+            try {
+                log.info("Establishing connection to " + cfg.getAddress());
+
+                TcpClientChannel ch = new TestTcpClientChannel(cfg);
+
+                log.info("Channel initialized: " + ch);
+
+                return ch;
+            }
+            catch (Exception e) {
+                log.warning("Failed to initialize channel: " + e.getMessage());
+
+                throw e;
+            }
+        }, clientCfg);
 
         awaitChannelsInit(chIdxs);
 
@@ -269,9 +283,6 @@ public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommon
      * Test TCP client channel.
      */
     protected class TestTcpClientChannel extends TcpClientChannel {
-        /** Closed. */
-        private volatile boolean closed;
-
         /** Channel configuration. */
         private final ClientChannelConfiguration cfg;
 
@@ -283,12 +294,17 @@ public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommon
 
             this.cfg = cfg;
 
-            channels[cfg.getAddress().getPort() - DFLT_PORT] = this;
+            int chIdx = cfg.getAddress().getPort() - DFLT_PORT;
+
+            channels[chIdx] = this;
+
+            addTopologyChangeListener(ch -> log.info("Topology change detected [ch=" + ch + ", topVer=" +
+                ch.serverTopologyVersion() + ']'));
         }
 
         /** {@inheritDoc} */
         @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
-            Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+            Function<PayloadInputChannel, T> payloadReader) throws ClientException {
             T res = super.service(op, payloadWriter, payloadReader);
 
             // Store all operations except binary type registration in queue to check later.
@@ -296,13 +312,6 @@ public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommon
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-            super.close();
-
-            closed = true;
         }
 
         /** {@inheritDoc} */

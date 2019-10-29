@@ -37,6 +37,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Affinity mapping (partition to nodes) for each cache.
  */
 public class ClientCacheAffinityMapping {
+    /** CacheAffinityInfo for caches with not applicable affinity awareness. */
+    private static final CacheAffinityInfo NOT_APPLICABLE_CACHE_AFFINITY_INFO =
+        new CacheAffinityInfo(null, null);
+
     /** Topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -78,7 +82,7 @@ public class ClientCacheAffinityMapping {
     public UUID affinityNode(IgniteBinary binary, int cacheId, Object key) {
         CacheAffinityInfo affinityInfo = cacheAffinity.get(cacheId);
 
-        if (affinityInfo == null || affinityInfo.keyCfg == null || affinityInfo.partMapping == null)
+        if (affinityInfo == null || affinityInfo == NOT_APPLICABLE_CACHE_AFFINITY_INFO)
             return null;
 
         Object binaryKey = binary.toBinary(key);
@@ -144,7 +148,8 @@ public class ClientCacheAffinityMapping {
             long topVer = in.readLong();
             int minorTopVer = in.readInt();
 
-            ClientCacheAffinityMapping aff = new ClientCacheAffinityMapping(new AffinityTopologyVersion(topVer, minorTopVer));
+            ClientCacheAffinityMapping aff = new ClientCacheAffinityMapping(
+                new AffinityTopologyVersion(topVer, minorTopVer));
 
             int mappingsCnt = in.readInt();
 
@@ -166,7 +171,7 @@ public class ClientCacheAffinityMapping {
                 }
                 else { // Affinity awareness is not applicable for this caches.
                     for (int j = 0; j < cachesCnt; j++)
-                        aff.cacheAffinity.put(in.readInt(), new CacheAffinityInfo(null, null));
+                        aff.cacheAffinity.put(in.readInt(), NOT_APPLICABLE_CACHE_AFFINITY_INFO);
                 }
             }
 

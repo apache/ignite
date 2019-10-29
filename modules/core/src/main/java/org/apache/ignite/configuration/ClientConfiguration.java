@@ -102,6 +102,16 @@ public final class ClientConfiguration implements Serializable {
     private boolean affinityAwarenessEnabled;
 
     /**
+     * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
+     * attempts to reconnect will be made within {@code reconnectThrottlingPeriod} in case of connection loss.
+     * Throttling is disabled if either {@code reconnectThrottlingRetries} or {@code reconnectThrottlingPeriod} is 0.
+     */
+    private long reconnectThrottlingPeriod = 30_000L;
+
+    /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
+    private int reconnectThrottlingRetries = 3;
+
+    /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
@@ -439,6 +449,42 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setAffinityAwarenessEnabled(boolean affinityAwarenessEnabled) {
         this.affinityAwarenessEnabled = affinityAwarenessEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling period.
+     */
+    public long getReconnectThrottlingPeriod() {
+        return reconnectThrottlingPeriod;
+    }
+
+    /**
+     * Sets reconnect throttling period.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingPeriod(long reconnectThrottlingPeriod) {
+        this.reconnectThrottlingPeriod = reconnectThrottlingPeriod;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling retries.
+     */
+    public int getReconnectThrottlingRetries() {
+        return reconnectThrottlingRetries;
+    }
+
+    /**
+     * Sets reconnect throttling retries.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
+        this.reconnectThrottlingRetries = reconnectThrottlingRetries;
 
         return this;
     }

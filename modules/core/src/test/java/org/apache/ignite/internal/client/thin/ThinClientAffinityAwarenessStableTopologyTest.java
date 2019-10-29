@@ -77,7 +77,8 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with annotated affinity mapped key.
+     * Test affinity awareness for all applicable operation types for partitioned cache with annotated affinity
+     * mapped key.
      */
     @Test
     public void testPartitionedCacheAnnotatedAffinityKey() {

@@ -82,6 +82,12 @@ final class ClientChannelConfiguration {
     /** Password. */
     private final String userPwd;
 
+    /** Reconnect period (for throttling). */
+    private final long reconnectThrottlingPeriod;
+
+    /** Reconnect retries within period (for throttling). */
+    private final int reconnectThrottlingRetries;
+
     /**
      * Constructor.
      */
@@ -103,6 +109,8 @@ final class ClientChannelConfiguration {
         this.sslCtxFactory = cfg.getSslContextFactory();
         this.userName = cfg.getUserName();
         this.userPwd = cfg.getUserPassword();
+        this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
+        this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
         this.addr = addr;
     }
 
@@ -230,5 +238,19 @@ final class ClientChannelConfiguration {
      */
     public String getUserPassword() {
         return userPwd;
+    }
+
+    /**
+     * @return Reconnect period (for throttling).
+     */
+    public long getReconnectThrottlingPeriod() {
+        return reconnectThrottlingPeriod;
+    }
+
+    /**
+     * @return Reconnect retries within period (for throttling).
+     */
+    public int getReconnectThrottlingRetries() {
+        return reconnectThrottlingRetries;
     }
 }
