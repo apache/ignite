@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Externalizable;
@@ -16,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class SnapshotRequestMessage implements Message {
+public class RequestSnapshotMessage implements Message {
     /** Snapshot request message type (value is {@code 177}). */
     public static final short TYPE_CODE = 177;
 
@@ -33,7 +51,7 @@ public class SnapshotRequestMessage implements Message {
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public SnapshotRequestMessage() {
+    public RequestSnapshotMessage() {
         // No-op.
     }
 
@@ -41,7 +59,7 @@ public class SnapshotRequestMessage implements Message {
      * @param snpName Unique snapshot message name.
      * @param parts Map of requested partitions to be snapshotted.
      */
-    public SnapshotRequestMessage(
+    public RequestSnapshotMessage(
         String snpName,
         Map<Integer, GridIntList> parts
     ) {
@@ -123,7 +141,7 @@ public class SnapshotRequestMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(SnapshotRequestMessage.class);
+        return reader.afterMessageRead(RequestSnapshotMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -143,6 +161,6 @@ public class SnapshotRequestMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotRequestMessage.class, this);
+        return S.toString(RequestSnapshotMessage.class, this);
     }
 }
