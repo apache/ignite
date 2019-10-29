@@ -40,11 +40,11 @@ public class FitnessJob extends ComputeJobAdapter {
 
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Ignite logger */
     @LoggerResource
-    private IgniteLogger log = null;
+    private IgniteLogger log;
 
     /** IFitnessFunction */
     private IFitnessFunction fitnessFuncton;

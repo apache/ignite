@@ -157,10 +157,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     public double label(int idx) {
         LabeledVector labeledVector = data[idx];
 
-        if(labeledVector!=null)
-            return (double)labeledVector.label();
-        else
-            return Double.NaN;
+        return labeledVector != null ? (double)labeledVector.label() : Double.NaN;
     }
 
     /**

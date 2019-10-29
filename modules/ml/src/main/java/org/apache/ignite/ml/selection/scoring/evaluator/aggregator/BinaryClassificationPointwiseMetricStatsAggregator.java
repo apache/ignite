@@ -137,8 +137,8 @@ public class BinaryClassificationPointwiseMetricStatsAggregator<L extends Serial
      * {@inheritDoc}
      */
     @Override public void initByContext(BinaryClassificationEvaluationContext<L> context) {
-        this.falseLabel = context.getFirstClassLbl();
-        this.truthLabel = context.getSecondClassLbl();
+        this.falseLabel = context.getFirstClsLbl();
+        this.truthLabel = context.getSecondClsLbl();
     }
 
     /**
