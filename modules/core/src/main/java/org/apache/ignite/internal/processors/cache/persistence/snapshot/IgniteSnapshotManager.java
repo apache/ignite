@@ -559,6 +559,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         "[snpName=" + snpName + ", grpId=" + grpId + ", partId=" + partId + ']');
                 }
 
+                // todo this should be inverted\hided to snapshot transmission
                 pageStore.beginRecover();
 
                 // No snapshot delta pages received. Finalize recovery.
@@ -714,12 +715,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        Iterator<Map.Entry<T2<UUID, String>, SnapshotTransmission>> iter0 = reqSnps.entrySet().iterator();
+        Iterator<Map.Entry<T2<UUID, String>, SnapshotTransmission>> rqIter = reqSnps.entrySet().iterator();
 
-        while (iter0.hasNext()) {
-            Map.Entry<T2<UUID, String>, SnapshotTransmission> e = iter0.next();
+        while (rqIter.hasNext()) {
+            Map.Entry<T2<UUID, String>, SnapshotTransmission> e = rqIter.next();
 
-            iter0.remove();
+            rqIter.remove();
 
             e.getValue().stopped = true;
 
@@ -731,6 +732,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     new ClusterTopologyCheckedException("Requesting snapshot from remote node has been stopped due to topology changed " +
                         "[snpName" + e.getKey().get1() + ", rmtNodeId=" + e.getKey().get2() + ']'));
             }
+        }
+
+        Iterator<LocalSnapshotContext> snpIter = localSnpCtxs.values().iterator();
+
+        while (snpIter.hasNext()) {
+            LocalSnapshotContext sctx = snpIter.next();
+
+            snpIter.remove();
+
+            sctx.snpFut.onDone(new ClusterTopologyCheckedException("Snapshot interrupted due to topology changed"));
+
+            closeSnapshotResources(sctx);
         }
     }
 
