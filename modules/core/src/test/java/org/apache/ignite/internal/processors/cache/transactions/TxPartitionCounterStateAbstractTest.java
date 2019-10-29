@@ -119,6 +119,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setActiveOnStart(false);
+        cfg.setAutoActivationEnabled(false);
 
         cfg.setConsistentId("node" + igniteInstanceName);
         cfg.setFailureHandler(new StopNodeFailureHandler());
