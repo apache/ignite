@@ -38,6 +38,9 @@ public final class LongRunningQueryManager {
      */
     private static final long DFLT_FETCHED_SIZE_THRESHOLD = 100_000;
 
+    /** Message about the long execution of the query. */
+    public static final String LONG_QUERY_EXEC_MSG = "Query execution is too long";
+
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
     private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
 
@@ -137,7 +140,7 @@ public final class LongRunningQueryManager {
             H2QueryInfo qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
-                qinfo.printLogMessage(log, "Query execution is too long", null);
+                qinfo.printLogMessage(log, LONG_QUERY_EXEC_MSG, null);
 
                 if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);
