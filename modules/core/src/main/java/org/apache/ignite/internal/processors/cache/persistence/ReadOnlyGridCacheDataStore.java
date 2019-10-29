@@ -114,16 +114,14 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void resetUpdateCounter() {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         cntr.reset();
     }
 
     /** {@inheritDoc} */
     @Override public long getAndIncrementUpdateCounter(long delta) {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         return cntr.reserve(delta);//delegate.getAndIncrementUpdateCounter(delta);
     }
@@ -135,8 +133,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long val) {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         try {
             cntr.update(val);
@@ -148,16 +145,14 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public boolean updateCounter(long start, long delta) {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         return cntr.update(start, delta);
     }
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         return cntr.finalizeUpdateCounters();
     }
@@ -206,16 +201,14 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public @Nullable PartitionUpdateCounter partUpdateCounter() {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         return cntr;
     }
 
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-        if (cntr == null)
-            reinit();
+        assert cntr != null;
 
         return cntr.reserve(delta);
     }

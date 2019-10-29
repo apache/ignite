@@ -79,7 +79,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
     private volatile String snapName;
 
     /** */
-    public String snapShotName() {
+    public String snapshotName() {
         return snapName;
     }
 
@@ -156,7 +156,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
     public void onPartitionRestored(int grpId, int partId, long min, long max) {
         Set<Integer> parts = remaining.get(grpId);
 
-        assert parts != null : "Invalid group identifier: " + grpId;
+        assert parts != null : "Unexpected group identifier: " + grpId;
 
         remainingHist.computeIfAbsent(grpId, v -> new ConcurrentSkipListSet<>())
             .add(new HistoryDesc(partId, min, max));

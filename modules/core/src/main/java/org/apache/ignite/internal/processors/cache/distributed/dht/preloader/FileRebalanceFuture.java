@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     /** */
-    private final Map<T2<Integer, UUID>, FileRebalanceNodeFuture> futMap = new HashMap<>();
+    private final Map<T2<Integer, UUID>, FileRebalanceNodeFuture> futs = new HashMap<>();
 
     /** */
     private final GridCachePreloadSharedManager.CheckpointListener cpLsnr;
@@ -113,6 +113,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         try {
             for (Map.Entry<Integer, GridDhtPreloaderAssignments> entry : assignments.entrySet()) {
                 int grpId = entry.getKey();
+
                 GridDhtPreloaderAssignments assigns = entry.getValue();
 
                 Set<UUID> nodes = allGroupsMap.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>());
@@ -155,7 +156,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public synchronized void add(int order, FileRebalanceNodeFuture fut) {
         T2<Integer, UUID> k = new T2<>(order, fut.node().id());
 
-        futMap.put(k, fut);
+        futs.put(k, fut);
     }
 
     // todo add/get should be consistent (ORDER or GROUP_ID arg)
@@ -164,7 +165,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
         T2<Integer, UUID> k = new T2<>(order, nodeId);
 
-        return futMap.get(k);
+        return futs.get(k);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +175,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-        if (cancel) {
+        if (cancel || err != null) {
             cancelLock.lock();
 
             try {
@@ -192,46 +193,12 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                             fut.cancel();
                     }
 
-                    for (FileRebalanceNodeFuture fut : futMap.values()) {
+                    for (FileRebalanceNodeFuture fut : futs.values()) {
                         if (!cctx.filePreloader().staleFuture(fut))
                             fut.cancel();
                     }
 
-                    futMap.clear();
-
-//                        cctx.database().checkpointReadLock();
-//
-//                        try {
-//                            for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
-//                                int grpId = e.getKey();
-//
-//                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-//
-//                                if (grp == null)
-//                                    continue;
-//
-//                                for (int partId : e.getValue()) {
-//                                    if (grp != null) {
-//                                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-//
-//                                        CacheDataStoreEx store = part.dataStore();
-//
-//                                        if (!cctx.pageStore().exists(grpId, partId)) {
-//                                            cctx.pageStore().ensure(grpId, partId);
-//
-//                                            store.reinit();
-//
-//                                            log.info(">xxx> init grp=" + grpId + " p=" + partId);
-//                                        }
-//
-//                                        if (store.readOnly())
-//                                            store.readOnly(false);
-//                                    }
-//                                }
-//                            }
-//                        } finally {
-//                            cctx.database().checkpointReadUnlock();
-//                        }
+                    futs.clear();
                 }
             }
             catch (IgniteCheckedException e) {
@@ -271,11 +238,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             return;
         }
 
-        GridFutureAdapter<Boolean> rmvdFut = futMap.remove(new T2<>(fut.order(), fut.nodeId()));
+        GridFutureAdapter<Boolean> rmvdFut = futs.remove(new T2<>(fut.order(), fut.nodeId()));
 
         assert rmvdFut != null && rmvdFut.isDone() : rmvdFut;
 
-        if (futMap.isEmpty())
+        if (futs.isEmpty())
             onDone(true);
     }
 
@@ -283,51 +250,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      * Switch all rebalanced partitions to read-only mode and start evicting.
      */
     public void clearPartitions() {
-//            IgniteInternalFuture<Void> switchFut = cpLsnr.schedule(() -> {
-//                for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
-//                    CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-//
-//                    if (log.isDebugEnabled())
-//                        log.debug("switch partitions [cache=" + grp.cacheOrGroupName() + "]");
-//
-//                    for (Integer partId : e.getValue()) {
-//                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-//
-//                        // todo reinit just set update counter from delegate
-//                        part.dataStore().store(true).reinit();
-//
-//                        if (part.readOnly())
-//                            continue;
-//
-//                        part.readOnly(true);
-//                    }
-//                }
-//            });
-
-        for (Map.Entry<Integer, Set<Integer>> e : allPartsMap.entrySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-
-            for (Integer partId : e.getValue()) {
-                assert grp.topology().localPartition(partId).dataStore().readOnly();
-
-                grp.topology().localPartition(partId).dataStore().store(true).reinit();
-            }
-        }
-
-//            try {
-//                if (!switchFut.isDone())
-//                    cctx.database().wakeupForCheckpoint(String.format(REBALANCE_CP_REASON, allPartsMap.keySet()));
-//
-//                switchFut.get();
-//            }
-//            catch (IgniteCheckedException e) {
-//                log.error(e.getMessage(), e);
-//
-//                onDone(e);
-//
-//                return;
-//            }
-
         if (isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Cacncelling clear and invalidation");
@@ -341,7 +263,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             if (log.isDebugEnabled())
-                log.debug("Clearing partitions [cache=" + grp.cacheOrGroupName() + "]");
+                log.debug("Clearing partitions [grp=" + grp.cacheOrGroupName() + "]");
 
             for (Integer partId : e.getValue()) {
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
@@ -351,22 +273,15 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 part.onClearFinished(c -> {
                     cancelLock.lock();
 
-//                        cctx.database().checkpointReadLock();
-
                     try {
                         if (isDone()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Cacncel pagemem invalidation grp=" + grpId + ", p=" + partId + ", rebalance canceled topVer="+this.topVer.topologyVersion() + "." + topVer.minorTopologyVersion());
+                            if (log.isDebugEnabled()) {
+                                log.debug("Page memory cleanup canceled [grp=" + grp.cacheOrGroupName() +
+                                    ", p=" + partId + ", topVer=" + topVer + "]");
+                            }
 
                             return;
                         }
-
-//                            if (log.isDebugEnabled())
-//                                log.debug("Invalidate grp=" + grpId + ", p=" + partId);
-//
-//                            int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
-//
-//                            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
                         FileRebalanceFuture.PageMemCleanupTask task = regions.get(grp.dataRegion().config().getName());
 
@@ -376,7 +291,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                         onDone(ex);
                     }
                     finally {
-//                            cctx.database().checkpointReadUnlock();
                         cancelLock.unlock();
                     }
                 });
@@ -399,7 +313,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             throw new IgniteCheckedException("The cleaning task has been canceled.");
 
         if (!fut.isDone() && log.isDebugEnabled())
-            log.debug("Wait cleanup [cache=" + grp + "]");
+            log.debug("Wait cleanup [grp=" + grp + "]");
 
         fut.get();
     }
@@ -431,7 +345,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             assert evictedCnt <= parts.size();
 
             if (log.isDebugEnabled())
-                log.debug("Partition cleared [cleared=" + evictedCnt + ", remaining=" + (parts.size() - evictedCnt) + "]");
+                log.debug("Partition cleared [remain=" + (parts.size() - evictedCnt) + "]");
 
             if (evictedCnt == parts.size()) {
                 DataRegion region = cctx.database().dataRegion(name);
@@ -454,13 +368,13 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                         ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
                         if (log.isDebugEnabled())
-                            log.debug("Truncated grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId);
+                            log.debug("Parition truncated [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]");
                     }
 
                     PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
                     if (log.isDebugEnabled())
-                        log.debug("Clearing region: " + name);
+                        log.debug("Cleaning up region " + name);
 
                     memEx.clearAsync(
                         (grp, pageId) -> {
@@ -477,9 +391,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                             onDone();
                         });
 
-                    log.info("Await pagemem cleanup");
+                    if (!isDone()) {
+                        log.info("Wait for cleanup region " + region);
 
-                    get();
+                        get();
+                    }
                 } finally {
                     cancelLock.unlock();
 
