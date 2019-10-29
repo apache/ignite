@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.h2o;
+package org.apache.ignite.examples.ml.inference.h2o;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
