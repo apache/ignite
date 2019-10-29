@@ -35,7 +35,7 @@ public class DistributionMixtureTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         mixture = new DistributionMixture<Constant>(
             VectorUtils.of(0.3, 0.3, 0.4),
             Arrays.asList(new Constant(0.5), new Constant(1.0), new Constant(0.))

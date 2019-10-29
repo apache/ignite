@@ -188,12 +188,8 @@ public class DataStreamGeneratorTest {
 
     /** */
     private List<LabeledVector> reduce(List<LabeledVector> l, List<LabeledVector> r) {
-        if (l == null) {
-            if (r == null)
-                return Collections.emptyList();
-            else
-                return r;
-        }
+        if (l == null)
+            return r == null ? Collections.emptyList() : r;
         else {
             List<LabeledVector> res = new ArrayList<>();
             res.addAll(l);

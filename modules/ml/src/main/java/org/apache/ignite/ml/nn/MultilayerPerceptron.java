@@ -48,17 +48,17 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     /**
      * This MLP architecture.
      */
-    protected MLPArchitecture architecture;
+    private MLPArchitecture architecture;
 
     /**
      * List containing layers parameters.
      */
-    protected List<MLPLayer> layers;
+    private List<MLPLayer> layers;
 
     /**
      * MLP which is 'below' this MLP (i.e. below output goes to this MLP as input).
      */
-    protected MultilayerPerceptron below;
+    private MultilayerPerceptron below;
 
     /**
      * Construct MLP from given architecture and parameters initializer.
@@ -112,7 +112,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
      * @param above MLP to be above.
      * @param below MLP to be below.
      */
-    protected MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
+    private MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
         this.layers = above.layers;
         this.architecture = above.architecture;
         this.below = below;
@@ -338,7 +338,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     }
 
     /** Count of layers in below MLP. */
-    protected int belowLayersCount() {
+    private int belowLayersCount() {
         return below != null ? below.layersCount() : 0;
     }
 
@@ -407,7 +407,7 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
      * @param layersParams List of layers parameters.
      * @return This MLP parameters as vector.
      */
-    protected Vector paramsAsVector(List<MLPLayer> layersParams) {
+    private Vector paramsAsVector(List<MLPLayer> layersParams) {
         int off = 0;
         Vector res = new DenseVector(architecture().parametersCount());
 

@@ -56,9 +56,7 @@ public class BalancedAccuracy<L extends Serializable> extends BinaryClassificati
      */
     @Override public BalancedAccuracy<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int n = aggr.getTrueNegative() + aggr.getFalsePositive();
-        ;
         int p = aggr.getTruePositive() + aggr.getFalseNegative();
-        ;
         val = n == 0 && p == 0 ? 1 : ((double)aggr.getTruePositive() / p + (double)aggr.getTrueNegative() / n) / 2;
         return this;
     }

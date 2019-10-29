@@ -50,8 +50,6 @@ public class SparkModelParserTest {
      */
     @Test
     public void failOnNullDirectory() {
-        URL url = getClass().getClassLoader().getResource(SPARK_MDL_PATH);
-
         try {
             SparkModelParser.parse(
                 "incorrectPath", SupportedSparkModels.LINEAR_REGRESSION

@@ -72,7 +72,7 @@ public class KNNRegressionExample {
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer);
+                KNNRegressionModel knnMdl = trainer.fit(ignite, dataCache, vectorizer);
 
                 double rmse = Evaluator.evaluate(
                     dataCache,

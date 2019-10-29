@@ -42,8 +42,8 @@ public class KnapsackFitnessFunction implements IFitnessFunction {
         int badSolution = 1;
 
         for (Gene gene : genes) {
-            weight = weight + ((Item)(gene.getVal())).getWeight();
-            val = val + ((Item)(gene.getVal())).getVal();
+            weight += ((Item)(gene.getVal())).getWeight();
+            val += ((Item)(gene.getVal())).getVal();
 
             double maximumWeight = 20;
             if (duplicates.contains(gene.id()) || (weight > maximumWeight)) {
