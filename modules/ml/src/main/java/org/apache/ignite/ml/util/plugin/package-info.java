@@ -16,6 +16,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Opencensus based implementation of MetricExporterSpi.
+ * Contains Ignite plugins system integration classes.
  */
-package org.apache.ignite.spi.metric.opencensus;
+package org.apache.ignite.ml.util.plugin;

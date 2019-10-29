@@ -16,6 +16,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains Opencensus based implementation of MetricExporterSpi.
+ * Contains bootstrap aggregation (bagging) trainer allowing to combine some other trainers and
+ * return a bagged version of them.
  */
-package org.apache.ignite.spi.metric.opencensus;
+package org.apache.ignite.ml.composition.bagging;
