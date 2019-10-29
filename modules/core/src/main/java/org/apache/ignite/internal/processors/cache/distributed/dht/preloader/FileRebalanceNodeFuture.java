@@ -275,10 +275,10 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
      */
     public void requestPartitions() {
         try {
-            if (log.isInfoEnabled())
-                log.info("Start partitions preloading [from=" + node.id() + ", fut=" + this + ']');
-
             snapName = cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
+
+            if (log.isInfoEnabled())
+                log.info("Start partitions preloading [from=" + node.id() + ", snapshot=" + snapName + ", fut=" + this + ']');
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to create remote snapshot [from=" + node.id() + ", assigns=" + assigns + "]", e);

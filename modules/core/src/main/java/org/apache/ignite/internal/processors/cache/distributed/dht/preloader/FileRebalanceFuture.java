@@ -285,6 +285,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                         FileRebalanceFuture.PageMemCleanupTask task = regions.get(grp.dataRegion().config().getName());
 
+                        if (log.isDebugEnabled())
+                            log.debug("OnPartitionCleared [topVer=" + topVer + "]");
+
                         task.onPartitionCleared();
                     }
                     catch (IgniteCheckedException ex) {

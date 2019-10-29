@@ -270,7 +270,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             rebFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
                     if (fut0.isCancelled()) {
-                        log.info("File rebalance canceled");
+                        log.info("File rebalance canceled [topVer=" + topVer + "]");
 
                         return;
                     }
@@ -651,14 +651,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("Snapshot canceled (topology changed): " + snpName);
 
-                fileRebalanceFut.cancel();
+//                fileRebalanceFut.cancel();
 
                 return;
             }
 
-            log.error("Unable to create remote snapshot " + snpName, t);
+            log.error("Unable to create remote snapshot: " + snpName, t);
 
-            fileRebalanceFut.onDone(t);
+//            fileRebalanceFut.onDone(t);
         }
     }
 }
