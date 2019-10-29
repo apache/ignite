@@ -144,6 +144,8 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
             return true;
         }
         catch (SQLException e) {
+            close();
+
             if (e.getCause() instanceof IgniteSQLException)
                 throw (IgniteSQLException)e.getCause();
 

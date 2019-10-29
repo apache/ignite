@@ -398,8 +398,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                         // Can't advance further at the moment.
                         peek = cur;
 
-                        it.beforeDetach();
-
                         break;
                     }
 
@@ -505,8 +503,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                         else {
                             GridDhtCacheEntry entry0 = entry;
                             List<ClusterNode> backups0 = backups;
-
-                            it.beforeDetach();
 
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {

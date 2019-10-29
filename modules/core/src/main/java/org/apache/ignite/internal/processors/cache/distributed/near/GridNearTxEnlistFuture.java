@@ -238,8 +238,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
                     peek = cur;
 
-                    it.beforeDetach();
-
                     flush = true;
 
                     break;

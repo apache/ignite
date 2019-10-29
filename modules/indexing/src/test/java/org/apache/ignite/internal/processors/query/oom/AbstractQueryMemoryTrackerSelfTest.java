@@ -516,7 +516,11 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
                 return null;
             }, CacheException.class, "SQL query run out of memory: Global quota exceeded.");
 
-            assertEquals(34, localResults.size());
+            if (isLocal())
+                assertEquals(18, localResults.size());
+            else
+                assertEquals(34, localResults.size());
+
             assertEquals(18, cursors.size());
 
             long globallyReserved = h2.memoryManager().memoryReserved();

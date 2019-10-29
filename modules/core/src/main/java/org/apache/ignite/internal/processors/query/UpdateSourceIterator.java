@@ -29,13 +29,6 @@ public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
      */
     public EnlistOperation operation();
 
-    /**
-     * Callback method which should be called before moving iteration into another thread.
-     */
-    public default void beforeDetach() {
-        // No-op.
-    }
-
     /** {@inheritDoc} */
     @Override default void close() throws IgniteCheckedException {
         // No-op.

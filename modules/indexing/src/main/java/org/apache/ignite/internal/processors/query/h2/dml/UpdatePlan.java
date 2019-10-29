@@ -34,8 +34,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
-import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -490,13 +488,13 @@ public final class UpdatePlan {
     public UpdateSourceIterator<?> iteratorForTransaction(ConnectionManager connMgr, QueryCursor<List<?>> cur) {
         switch (mode) {
             case MERGE:
-                return new InsertIterator(connMgr, cur, this, EnlistOperation.UPSERT);
+                return new InsertIterator(cur, this, EnlistOperation.UPSERT);
             case INSERT:
-                return new InsertIterator(connMgr, cur, this, EnlistOperation.INSERT);
+                return new InsertIterator(cur, this, EnlistOperation.INSERT);
             case UPDATE:
-                return new UpdateIterator(connMgr, cur, this, EnlistOperation.UPDATE);
+                return new UpdateIterator(cur, this, EnlistOperation.UPDATE);
             case DELETE:
-                return new DeleteIterator(connMgr, cur, this, EnlistOperation.DELETE);
+                return new DeleteIterator(cur, this, EnlistOperation.DELETE);
 
             default:
                 throw new IllegalArgumentException(String.valueOf(mode));
@@ -606,9 +604,6 @@ public final class UpdatePlan {
     private abstract static class AbstractIterator extends GridCloseableIteratorAdapterEx<Object>
         implements UpdateSourceIterator<Object> {
         /** */
-        private final ConnectionManager connMgr;
-
-        /** */
         private final QueryCursor<List<?>> cur;
 
         /** */
@@ -620,18 +615,13 @@ public final class UpdatePlan {
         /** */
         private final EnlistOperation op;
 
-        /** */
-        private volatile ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn;
-
         /**
-         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private AbstractIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+        private AbstractIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
             EnlistOperation op) {
-            this.connMgr = connMgr;
             this.cur = cur;
             this.plan = plan;
             this.op = op;
@@ -645,21 +635,8 @@ public final class UpdatePlan {
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeDetach() {
-            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn = connMgr.detachThreadConnection();
-
-            if (isClosed())
-                conn0.recycle();
-        }
-
-        /** {@inheritDoc} */
         @Override protected void onClose() {
             cur.close();
-
-            ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn0 = conn;
-
-            if (conn0 != null)
-                conn0.recycle();
         }
 
         /** {@inheritDoc} */
@@ -682,14 +659,13 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private UpdateIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+        private UpdateIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
             EnlistOperation op) {
-            super(connMgr, cur, plan, op);
+            super( cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -706,14 +682,13 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private DeleteIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+        private DeleteIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
             EnlistOperation op) {
-            super(connMgr, cur, plan, op);
+            super(cur, plan, op);
         }
 
         /** {@inheritDoc} */
@@ -728,14 +703,13 @@ public final class UpdatePlan {
         private static final long serialVersionUID = -4949035950470324961L;
 
         /**
-         * @param connMgr Connection manager.
          * @param cur Query cursor.
          * @param plan Update plan.
          * @param op Operation.
          */
-        private InsertIterator(ConnectionManager connMgr, QueryCursor<List<?>> cur, UpdatePlan plan,
+        private InsertIterator(QueryCursor<List<?>> cur, UpdatePlan plan,
             EnlistOperation op) {
-            super(connMgr, cur, plan, op);
+            super(cur, plan, op);
         }
 
         /** {@inheritDoc} */
