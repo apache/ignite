@@ -115,7 +115,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
 
                 System.out.println(">>> Perform training...");
                 DecisionTreeNode mdl = trainer.fit(
-                    new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                    new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIC_TRAIN"),
                     new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
                         .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
                         .labeled("survived")
