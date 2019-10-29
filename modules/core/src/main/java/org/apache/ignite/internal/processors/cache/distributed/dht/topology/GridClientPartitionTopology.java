@@ -1164,12 +1164,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public Map<UUID, Set<Integer>> resetOwners(
         Map<Integer, Set<UUID>> ownersByUpdCounters,
-        Set<Integer> haveHistory,
-        Set<UUID> joinedNodes,
-        boolean skipResetOwners,
+        Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut
     ) {
-        Map<UUID, Set<Integer>> result = new HashMap<>();
+        Map<UUID, Set<Integer>> res = new HashMap<>();
 
         lock.writeLock().lock();
 
@@ -1193,19 +1191,19 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                         partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
-                        result.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
-                        result.get(remoteNodeId).add(part);
+                        res.computeIfAbsent(remoteNodeId, n -> new HashSet<>());
+                        res.get(remoteNodeId).add(part);
                     }
                 }
             }
 
-            for (Map.Entry<UUID, Set<Integer>> entry : result.entrySet()) {
+            for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
                 UUID nodeId = entry.getKey();
                 Set<Integer> partsToRebalance = entry.getValue();
 
                 if (!partsToRebalance.isEmpty()) {
                     Set<Integer> historical = partsToRebalance.stream()
-                        .filter(haveHistory::contains)
+                        .filter(haveHist::contains)
                         .collect(Collectors.toSet());
 
                     // Filter out partitions having WAL history.
@@ -1227,7 +1225,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             lock.writeLock().unlock();
         }
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */

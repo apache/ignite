@@ -72,6 +72,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ExchangeType.ALL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -1504,8 +1505,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 updateSeq.setIfGreater(newPart.updateSequence());
                         }
                         else {
-                            // If for some nodes current partition has a newer map,
-                            // then we keep the newer value.
+                            // If for some nodes current partition has a newer map, then we keep the newer value.
                             partMap.put(part.nodeId(), part);
                         }
                     }
@@ -2243,11 +2243,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public Map<UUID, Set<Integer>> resetOwners(
         Map<Integer, Set<UUID>> ownersByUpdCounters,
-        Set<Integer> haveHistory,
-        Set<UUID> joinedNodes,
-        boolean skipResetOwners,
+        Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut) {
-        Map<UUID, Set<Integer>> result = new HashMap<>();
+        Map<UUID, Set<Integer>> res = new HashMap<>();
+
+        List<DiscoveryEvent> evts = exchFut.events().events();
+
+        Set<UUID> joinedNodes = U.newHashSet(evts.size());
+
+        for (DiscoveryEvent evt : evts) {
+            if (evt.type() == EVT_NODE_JOINED)
+                joinedNodes.add(evt.eventNode().id());
+        }
 
         ctx.database().checkpointReadLock();
 
@@ -2269,10 +2276,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (locPart == null || locPart.state() != OWNING)
                         continue;
 
-                    if ((joinedNodes.contains(locNodeId) || !skipResetOwners) && !newOwners.contains(locNodeId)) {
-                        rebalancePartition(part, !haveHistory.contains(part), exchFut);
+                    // Partition state should be mutated only on joining nodes if they are exists for the exchange.
+                    if (joinedNodes.isEmpty() && !newOwners.contains(locNodeId)) {
+                        rebalancePartition(part, !haveHist.contains(part), exchFut);
 
-                        result.computeIfAbsent(locNodeId, n -> new HashSet<>()).add(part);
+                        res.computeIfAbsent(locNodeId, n -> new HashSet<>()).add(part);
                     }
                 }
 
@@ -2284,7 +2292,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     for (Map.Entry<UUID, GridDhtPartitionMap> remotes : node2part.entrySet()) {
                         UUID remoteNodeId = remotes.getKey();
 
-                        if (!joinedNodes.contains(remoteNodeId) && skipResetOwners)
+                        if (!joinedNodes.isEmpty() && !joinedNodes.contains(remoteNodeId))
                             continue;
 
                         GridDhtPartitionMap partMap = remotes.getValue();
@@ -2302,12 +2310,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (partMap.nodeId().equals(locNodeId))
                                 updateSeq.setIfGreater(partMap.updateSequence());
 
-                            result.computeIfAbsent(remoteNodeId, n -> new HashSet<>()).add(part);
+                            res.computeIfAbsent(remoteNodeId, n -> new HashSet<>()).add(part);
                         }
                     }
                 }
 
-                for (Map.Entry<UUID, Set<Integer>> entry : result.entrySet()) {
+                for (Map.Entry<UUID, Set<Integer>> entry : res.entrySet()) {
                     UUID nodeId = entry.getKey();
                     Set<Integer> rebalancedParts = entry.getValue();
 
@@ -2315,7 +2323,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (!rebalancedParts.isEmpty()) {
                         Set<Integer> historical = rebalancedParts.stream()
-                            .filter(haveHistory::contains)
+                            .filter(haveHist::contains)
                             .collect(Collectors.toSet());
 
                         // Filter out partitions having WAL history.
@@ -2351,7 +2359,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             ctx.database().checkpointReadUnlock();
         }
 
-        return result;
+        return res;
     }
 
     /**
