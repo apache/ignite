@@ -164,7 +164,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + 30_000;
 
         Random r = new Random();
 
@@ -189,7 +189,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, client, primaryKeys, cache, stop).get();
+        doRandomUpdates(r, client, primaryKeys, cache, stop).get(30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
@@ -216,7 +216,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + 30_000;
 
         long seed = System.nanoTime();
 
@@ -253,7 +253,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get();
+        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
@@ -280,7 +280,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + GridTestUtils.SF.applyLB(2 * 60_000, 30_000);
+        long stop = U.currentTimeMillis() + 30_000;
 
         long seed = System.nanoTime();
 
@@ -329,7 +329,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         }, 1, "node-restarter");
 
         // Wait with timeout to avoid hanging suite.
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(stop + 30_000);
+        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
