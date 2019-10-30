@@ -260,11 +260,6 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
     }
@@ -700,7 +695,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res;
 
-        res = isDistributed() ? MatrixUtil.likeVector(this, rowSize()) : new DenseVector(rowSize());
+        res = new DenseVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));

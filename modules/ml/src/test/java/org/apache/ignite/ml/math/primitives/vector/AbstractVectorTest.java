@@ -399,11 +399,6 @@ public class AbstractVectorTest {
             @Override public Vector viewPart(int off, int len) {
                 return null;
             }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
-            }
         };
     }
 
@@ -457,11 +452,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isDistributed() {
-                return false;
             }
         };
     }

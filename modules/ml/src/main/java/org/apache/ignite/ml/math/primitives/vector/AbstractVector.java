@@ -683,11 +683,6 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isNumeric() {
         return sto.isNumeric();
     }
