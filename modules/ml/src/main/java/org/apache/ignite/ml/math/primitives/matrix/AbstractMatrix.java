@@ -28,9 +28,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Blas;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.ColumnIndexException;
-import org.apache.ignite.ml.math.exceptions.RowIndexException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.ColumnIndexException;
+import org.apache.ignite.ml.math.exceptions.math.RowIndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -66,7 +66,7 @@ public abstract class AbstractMatrix implements Matrix {
     private Element minElm;
 
     /** Cached maximum element. */
-    private Element maxElm = null;
+    private Element maxElm;
 
     /** Matrix storage implementation. */
     private MatrixStorage sto;
@@ -700,10 +700,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res;
 
-        if (isDistributed())
-            res = MatrixUtil.likeVector(this, rowSize());
-        else
-            res = new DenseVector(rowSize());
+        res = isDistributed() ? MatrixUtil.likeVector(this, rowSize()) : new DenseVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));

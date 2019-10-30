@@ -35,7 +35,7 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
     /**
      * Number of examples in dataset.
      */
-    private long n = 0;
+    private long n;
 
     /**
      * Absolute error.

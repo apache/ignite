@@ -152,6 +152,7 @@
     <Compile Include="Client\Cache\TestKey.cs" />
     <Compile Include="Client\Cache\TestKeyWithAffinity.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\Cluster\ClientClusterTests.cs" />
     <Compile Include="Client\EndpointTest.cs" />
     <Compile Include="Client\RawSecureSocketTest.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
@@ -206,10 +207,12 @@
     <Compile Include="Collections\ReadOnlyDictionaryTest.cs" />
     <Compile Include="Common\IgniteGuidTest.cs" />
     <Compile Include="Deployment\RuntimeDependencyFunc.cs" />
+    <Compile Include="DisposeAction.cs" />
     <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
+    <Compile Include="PathUtils.cs" />
     <Compile Include="Process\ListDataReader.cs" />
     <Compile Include="Log\ConcurrentMemoryTarget.cs" />
     <Compile Include="Log\DefaultLoggerTest.cs" />
@@ -336,6 +339,8 @@
     <Compile Include="Services\ServiceProxyTest.cs" />
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
+    <Compile Include="Unmanaged\JniThreadDetachTest.cs" />
+    <Compile Include="Unmanaged\UnmanagedThreadTest.cs" />
     <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -533,7 +538,6 @@
     <None Include="packages.config" />
     <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe;$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />

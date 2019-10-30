@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -261,6 +263,8 @@ public class CacheGroupContext {
             statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
             statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
         }
+
+        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -773,6 +777,13 @@ public class CacheGroupContext {
      * @return Group name if it is specified, otherwise cache name.
      */
     public String cacheOrGroupName() {
+        return cacheOrGroupName(ccfg);
+    }
+
+    /**
+     * @return Group name if it is specified, otherwise cache name.
+     */
+    public static String cacheOrGroupName(CacheConfiguration<?, ?> ccfg) {
         return ccfg.getGroupName() != null ? ccfg.getGroupName() : ccfg.getName();
     }
 
@@ -1289,6 +1300,21 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
+    }
+
+    /**
+     * @return {@code True} if need create temporary tombstones entries for removed data.
+     */
+    public boolean supportsTombstone() {
+        return !mvccEnabled && !isLocal();
+    }
+
+    /**
+     * @param part Partition.
+     * @return {@code True} if need create tombstone for remove in given partition.
+     */
+    public boolean shouldCreateTombstone(@Nullable GridDhtLocalPartition part) {
+        return part != null && supportsTombstone() && part.state() == GridDhtPartitionState.MOVING;
     }
 
     /**

@@ -155,8 +155,7 @@ public class GDBLearningStrategy {
             WeightedPredictionsAggregator aggregator = (WeightedPredictionsAggregator)mdlToUpdate.getPredictionsAggregator();
             meanLbVal = aggregator.getBias();
             compositionWeights = new double[models.size() + cntOfIterations];
-            for (int i = 0; i < models.size(); i++)
-                compositionWeights[i] = aggregator.getWeights()[i];
+            System.arraycopy(aggregator.getWeights(), 0, compositionWeights, 0, models.size());
         }
         else
             compositionWeights = new double[cntOfIterations];

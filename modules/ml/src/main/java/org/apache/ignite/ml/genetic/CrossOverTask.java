@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
 public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAConfiguration */
     private GAConfiguration cfg;
@@ -113,7 +113,7 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
             CrossOverJob job = new CrossOverJob(key1, key2, this.cfg.getCrossOverRate());
             map.put(job, clusterNode);
-            k = k + 2;
+            k += 2;
         }
         return map;
     }
