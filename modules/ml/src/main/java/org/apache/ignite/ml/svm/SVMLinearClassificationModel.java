@@ -32,7 +32,7 @@ public final class SVMLinearClassificationModel implements IgniteModel<Vector, D
     private static final long serialVersionUID = -996984622291440226L;
 
     /** Output label format. '0' and '1' for false value and raw distances from the separating hyperplane otherwise. */
-    private boolean isKeepingRawLabels = false;
+    private boolean isKeepingRawLabels;
 
     /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
     private double threshold = 0.5;

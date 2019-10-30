@@ -66,7 +66,7 @@ public abstract class AbstractMatrix implements Matrix {
     private Element minElm;
 
     /** Cached maximum element. */
-    private Element maxElm = null;
+    private Element maxElm;
 
     /** Matrix storage implementation. */
     private MatrixStorage sto;
@@ -700,10 +700,7 @@ public abstract class AbstractMatrix implements Matrix {
 
         Vector res;
 
-        if (isDistributed())
-            res = MatrixUtil.likeVector(this, rowSize());
-        else
-            res = new DenseVector(rowSize());
+        res = isDistributed() ? MatrixUtil.likeVector(this, rowSize()) : new DenseVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));

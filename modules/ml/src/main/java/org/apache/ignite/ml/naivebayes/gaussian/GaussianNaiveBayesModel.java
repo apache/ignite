@@ -77,16 +77,14 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
         for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(classProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[max]) {
+            if (probapilityPowers[i] > probapilityPowers[max])
                 max = i;
-            }
         }
         return labels[max];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
+    @Override public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[classProbabilities.length];
 
         for (int i = 0; i < classProbabilities.length; i++) {

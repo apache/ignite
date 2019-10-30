@@ -52,6 +52,7 @@ import static java.util.Arrays.asList;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class CompoundNaiveBayesExample {
+    /** Run example. */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Compound Naive Bayes classification model over partitioned dataset usage example started.");

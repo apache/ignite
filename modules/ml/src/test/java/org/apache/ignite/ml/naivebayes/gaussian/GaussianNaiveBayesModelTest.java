@@ -26,7 +26,6 @@ import org.junit.Test;
  * Tests for {@link GaussianNaiveBayesModel}.
  */
 public class GaussianNaiveBayesModelTest {
-
     /** Test. */
     @Test
     public void testPredictWithTwoClasses() {
