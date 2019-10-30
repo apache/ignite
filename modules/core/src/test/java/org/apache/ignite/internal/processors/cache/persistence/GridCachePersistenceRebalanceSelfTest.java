@@ -46,6 +46,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -62,6 +64,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FA
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALANCE_ENABLED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
@@ -69,7 +73,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERSISTENCE_REBALA
 @RunWith(Parameterized.class)
 public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHE_PART_COUNT = 16;
+//    private static final int CACHE_PART_COUNT = 16;
 
     /** */
     private static final int TEST_SIZE = GridTestUtils.SF.applyLB(100_000, 10_000);
@@ -82,6 +86,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
     @Parameterized.Parameter
     public CacheAtomicityMode cacheAtomicityMode;
+
+    private CacheMode cacheMode = REPLICATED;
+
+    private int parts = 16;
+
+    private int backups = 0;
 
     /** */
     @Before
@@ -131,12 +141,13 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     }
 
     private CacheConfiguration cacheConfig(String name) {
-        return new CacheConfiguration(name).setCacheMode(CacheMode.REPLICATED)
+        return new CacheConfiguration(name).setCacheMode(cacheMode)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setAtomicityMode(cacheAtomicityMode)
             //.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
 //                .setBackups(1)
-            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PART_COUNT));
+            .setAffinity(new RendezvousAffinityFunction(false, parts))
+            .setBackups(backups);
 //            .setCommunicationSpi(new TestRecordingCommunicationSpi()
     }
 
@@ -367,6 +378,65 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
+    public void testPersistenceRebalanceMultipleCachesThreeNodesSequencePartitioned() throws Exception {
+        cacheMode = PARTITIONED;
+        parts = 16;
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        loadData(ignite0, CACHE1, TEST_SIZE);
+        loadData(ignite0, CACHE2, TEST_SIZE);
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        blt.add(ignite1.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange(true, true, null, true);
+
+        IgniteEx ignite2 = startGrid(2);
+
+        blt.add(ignite2.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        U.sleep(2_000);
+
+        IgniteCache<Object, Object> cache1 = grid(1).cache(CACHE1);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(CACHE2);
+
+        for (int i = 0; i < TEST_SIZE; i++) {
+            assertEquals(generateValue(i, CACHE1), cache1.get(i));
+            assertEquals(generateValue(i, CACHE2), cache2.get(i));
+        }
+
+//        verifyLocalCache(ignite0.cachex(CACHE1), ignite1.cachex(CACHE1));
+//        verifyLocalCache(ignite0.cachex(CACHE2), ignite1.cachex(CACHE2));
+//
+//        verifyLocalCache(ignite0.cachex(CACHE1), ignite2.cachex(CACHE1));
+//        verifyLocalCache(ignite0.cachex(CACHE2), ignite2.cachex(CACHE2));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
     public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
@@ -504,9 +574,13 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 if ((i + 1) % (size / 10) == 0)
                     log.info("Prepared " + (i + 1) * 100 / (size) + "% entries.");
 
-                streamer.addData(i, i + name.hashCode());
+                streamer.addData(i, generateValue(i, name));
             }
         }
+    }
+
+    private int generateValue(int num, String str) {
+        return num + str.hashCode();
     }
 
     /**

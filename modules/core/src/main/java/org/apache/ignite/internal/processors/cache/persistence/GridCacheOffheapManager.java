@@ -879,14 +879,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         final int currAllocatedPageCnt,
         final long partSize
     ) {
-        if (part != null) {
-            boolean reserved = part.reserve();
-
-            if (!reserved)
-                return false;
-        }
-        else
-            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
+//        if (part != null) {
+//            boolean reserved = part.reserve();
+//
+//            if (!reserved)
+//                return false;
+//        }
+//        else
+//            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
 
         assert PageIO.getPageId(metaPageAddr) != 0;
 

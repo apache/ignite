@@ -32,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -124,59 +123,54 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     // todo the result assignment should be equal to generate assignments
+    // todo logic duplication should be eliminated
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
-        try {
-            assert exchFut != null;
+        assert exchFut != null;
 
-            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+        GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
-            if (cctx.exchange().hasPendingExchange()) {
-                if (log.isDebugEnabled())
-                    log.debug("Skipping rebalancing initializa exchange worker has pending exchange: " + exchId);
+        if (cctx.exchange().hasPendingExchange()) {
+            if (log.isDebugEnabled())
+                log.debug("Skipping rebalancing initialization exchange worker has pending exchange: " + exchId);
 
-                return;
-            }
+            return;
+        }
 
-            AffinityTopologyVersion topVer = exchFut.topologyVersion();
+        AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.dataRegion().config().isPersistenceEnabled() || CU.isUtilityCache(grp.cacheOrGroupName()))
-                    continue;
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (!grp.dataRegion().config().isPersistenceEnabled() || CU.isUtilityCache(grp.cacheOrGroupName()))
+                continue;
 
-                int partitions = grp.affinity().partitions();
+            int partitions = grp.affinity().partitions();
 
-                AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
+            AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
 
-                assert aff != null;
+            assert aff != null;
 
-                for (int p = 0; p < partitions; p++) {
-                    if (aff.get(p).contains(cctx.localNode())) {
-                        GridDhtLocalPartition part = grp.topology().localPartition(p);
+            for (int p = 0; p < partitions; p++) {
+                if (aff.get(p).contains(cctx.localNode())) {
+                    GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                        if (part.state() == OWNING)
-                            continue;
+                    if (part.state() == OWNING)
+                        continue;
 
-                        assert part.state() == MOVING : "Unexpected state [cache=" + grp.cacheOrGroupName() +
-                            ", p=" + p + "state=" + part.state() + "]";
+                    assert part.state() == MOVING : "Unexpected state [cache=" + grp.cacheOrGroupName() +
+                        ", p=" + p + ", state=" + part.state() + "]";
 
-                        // Should have partition file supplier to start file rebalance.
-                        if (exchFut.partitionFileSupplier(grp.groupId(), p) != null) {
-                            part.readOnly(true);
-                            part.dataStore().reinit();
-                        }
+                    // Should have partition file supplier to start file rebalance.
+                    if (exchFut.partitionFileSupplier(grp.groupId(), p) != null)
+                        part.readOnly(true);
 //                        else
 //                            part.readOnly(false);
-                    }
                 }
             }
-        } catch (Throwable t) {
-            t.printStackTrace();
         }
     }
 
     public void onTopologyChanged(GridDhtPartitionsExchangeFuture exchFut) {
-        if (log.isInfoEnabled())
-            log.info("Topology changed - canceling file rebalance.");
+        if (log.isDebugEnabled())
+            log.debug("Topology changed - canceling file rebalance.");
 
         fileRebalanceFut.cancel();
     }
@@ -220,8 +214,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, assignsMap, topVer, cctx, log);
 
-            FileRebalanceNodeFuture rqFut = null;
-            Runnable rq = NO_OP;
+            FileRebalanceNodeFuture lastFut = null;
 
             if (log.isInfoEnabled())
                 log.info("Prepare the chain to demand assignments: " + nodeOrderAssignsMap);
@@ -232,36 +225,31 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 int order = entry.getKey();
 
                 for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> assignEntry : descNodeMap.entrySet()) {
-                    FileRebalanceNodeFuture fut = new FileRebalanceNodeFuture(cctx, fileRebalanceFut, log, assignEntry.getKey(),
-                        order, rebalanceId, assignEntry.getValue(), topVer);
+                    FileRebalanceNodeFuture fut = new FileRebalanceNodeFuture(cctx, fileRebalanceFut, log,
+                        assignEntry.getKey(), order, rebalanceId, assignEntry.getValue(), topVer);
 
+                    // todo seeems we don't need to track all futures through map, we should track only last
                     rebFut.add(order, fut);
 
-                    final Runnable nextRq0 = rq;
-                    final FileRebalanceNodeFuture rqFut0 = rqFut;
+                    if (lastFut != null) {
+                        final FileRebalanceNodeFuture lastFut0 = lastFut;
 
-//                }
-//                    else {
-
-                    if (rqFut0 != null) {
-                        // xxxxFut = xxxFut; // The first seen rebalance node.
                         fut.listen(f -> {
                             try {
                                 if (log.isDebugEnabled())
                                     log.debug("Running next task, last future result is " + f.get());
 
                                 if (f.get()) // Not cancelled.
-                                    nextRq0.run();
+                                    lastFut0.requestPartitions();
                                 // todo check how this chain is cancelling
                             }
                             catch (IgniteCheckedException e) {
-                                rqFut0.onDone(e);
+                                lastFut0.onDone(e);
                             }
                         });
                     }
 
-                    rq = fut::requestPartitions;
-                    rqFut = fut;
+                    lastFut = fut;
                 }
             }
 
@@ -280,7 +268,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 }
             });
 
-            return rq;
+            return lastFut::requestPartitions;
         }
         finally {
             lock.writeLock().unlock();
@@ -378,6 +366,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         if (grp.mvccEnabled())
             return false;
 
+        if (grp.hasAtomicCaches())
+            return false;
+
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
         if (globalSizes != null && !globalSizes.isEmpty()) {
@@ -396,17 +387,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 return false;
         }
 
-        if (!presistenceRebalanceEnabled ||
-            !grp.persistenceEnabled() ||
-            !IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE))
-            return false;
-
-//        for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-//            if (msg.partitions().hasHistorical())
-//                return false;
-//        }
-
-        return true;
+        return presistenceRebalanceEnabled &&
+            grp.persistenceEnabled() &&
+            IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
 
     /**
@@ -543,10 +526,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             }));
         }
 
-//        public <R> IgniteInternalFuture<R> schedule(final Callable<R> task) {
-//            return schedule(new CheckpointTask<>(task));
-//        }
-
         private <R> IgniteInternalFuture<R> schedule(CheckpointTask<R> task) {
             queue.offer(task);
 
@@ -590,29 +569,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("Cancel partitions download due to stale rebalancing future [current snapshot=" + snpName + ", fut=" + fut);
 
-                // todo
                 file.delete();
 
                 return;
-//                // todo how cancel current download
-//                throw new IgniteException("Cancel partitions download due to stale rebalancing future.");
             }
 
             try {
                 fileRebalanceFut.awaitCleanupIfNeeded(grpId);
 
                 IgniteInternalFuture<T2<Long, Long>> restoreFut = restorePartition(grpId, partId, file, fut);
-
-                // todo
-                if (topologyChanged(fut)) {
-                    log.info("Cancel partitions download due to topology changes.");
-
-                    file.delete();
-
-                    fut.cancel();
-
-                    throw new IgniteException("Cancel partitions download due to topology changes.");
-                }
 
                 restoreFut.listen(f -> {
                     try {

@@ -97,8 +97,12 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     @Override public void readOnly(boolean readOnly) {
         //assert readOnly : "Changing mode required checkpoint write lock";
 
-        if (this.readOnly.compareAndSet(!readOnly, readOnly))
+        if (this.readOnly.compareAndSet(!readOnly, readOnly)) {
             log.info("Changing data store mode to " + (readOnly ? "READ-ONLY" : "FULL") + " [p=" + partId() + "]");
+
+            if (readOnly)
+                readOnlyStore.reinit();
+        }
     }
 
     /** {@inheritDoc} */

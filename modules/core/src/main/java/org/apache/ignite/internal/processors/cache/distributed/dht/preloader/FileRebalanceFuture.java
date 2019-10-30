@@ -184,7 +184,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                         return true;
 
                     if (log.isInfoEnabled())
-                        log.info("Cancel file rebalancing.");
+                        log.info("Canceling file rebalancing.");
 
                     cpLsnr.cancelAll();
 
@@ -252,7 +252,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public void clearPartitions() {
         if (isDone()) {
             if (log.isDebugEnabled())
-                log.debug("Cacncelling clear and invalidation");
+                log.debug("Cancelling clear and invalidation");
 
             return;
         }
