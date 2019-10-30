@@ -218,8 +218,6 @@ public class GridNearTxQueryResultsEnlistFuture extends GridNearTxQueryAbstractE
 
                     peek = cur;
 
-                    it.beforeDetach();
-
                     flush = true;
 
                     break;

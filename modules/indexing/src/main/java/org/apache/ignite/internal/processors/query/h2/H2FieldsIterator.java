@@ -34,25 +34,25 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private transient MvccQueryTracker mvccTracker;
 
-    /** Detached connection. */
-    private final ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+    /** Connection. */
+    private final H2PooledConnection conn;
 
     /**
      * @param data Data.
      * @param mvccTracker Mvcc tracker.
-     * @param detachedConn Detached connection.
+     * @param conn Connection.
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker,
-        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
+        H2PooledConnection conn,
         IgniteLogger log, IgniteH2Indexing h2, H2QueryInfo qryInfo)
         throws IgniteCheckedException {
         super(data, log, h2, qryInfo);
 
-        assert detachedConn != null;
+        assert conn != null;
 
         this.mvccTracker = mvccTracker;
-        this.detachedConn = detachedConn;
+        this.conn = conn;
     }
 
     /** {@inheritDoc} */
@@ -70,9 +70,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
-            H2Utils.resetSession(detachedConn.object().connection());
-
-            detachedConn.recycle();
+            conn.close();
 
             if (mvccTracker != null)
                 mvccTracker.onDone();

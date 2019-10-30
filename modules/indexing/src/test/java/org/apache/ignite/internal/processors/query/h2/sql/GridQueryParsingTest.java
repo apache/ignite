@@ -39,12 +39,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
-import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
 import org.h2.table.Column;
 import org.h2.value.Value;
@@ -1021,16 +1020,10 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((IgniteEx)ignite).context();
+    private H2PooledConnection connection() throws Exception {
+        IgniteH2Indexing idx = (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
 
-        GridQueryProcessor qryProcessor = ctx.query();
-
-        IgniteH2Indexing idx = U.field(qryProcessor, "idx");
-
-        String schemaName = idx.schema(DEFAULT_CACHE_NAME);
-
-        return (JdbcConnection)idx.connections().connectionForThread().connection(schemaName);
+        return idx.connections().connection(idx.schema(DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -1038,15 +1031,12 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      */
     @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
+        try (H2PooledConnection conn = connection()) {
+            Session ses = H2Utils.session(conn);
 
-        ses.setQueryContext(QueryContext.parseContext(null, true));
+            ses.setQueryContext(QueryContext.parseContext(null, true));
 
-        try {
             return (T)ses.prepare(sql);
-        }
-        finally {
-            ses.setQueryContext(null);
         }
     }
 

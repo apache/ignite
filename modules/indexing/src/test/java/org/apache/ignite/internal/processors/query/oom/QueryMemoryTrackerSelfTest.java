@@ -221,7 +221,7 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
             assertEquals(IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY, sqlEx.statusCode());
             assertEquals(IgniteQueryErrorCode.codeToSqlState(IgniteQueryErrorCode.QUERY_OUT_OF_MEMORY), sqlEx.sqlState());
 
-            assertEquals(61, localResults.size());
+            assertEquals(42, localResults.size());
             assertEquals(21, cursors.size());
 
             IgniteH2Indexing h2 = (IgniteH2Indexing)grid(1).context().query().getIndexing();

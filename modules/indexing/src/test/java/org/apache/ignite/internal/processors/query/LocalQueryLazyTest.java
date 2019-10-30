@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.result.LazyResult;
@@ -57,6 +58,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
                 .setKeyFieldName("id")
                 .setValueFieldName("val")
             ))
+            .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction(false, 10)));
 
         for (long i = 0; i < KEY_CNT; ++i)
@@ -93,12 +95,42 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test use valid query context for local lazy queries.
+     * @throws Exception On error.
+     */
+    @Test
+    public void testDuplicates() throws Exception {
+        IgniteEx g0 = grid();
+        IgniteEx g1 = startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        int r0 = sql(g0, "SELECT * FROM test").getAll().size();
+        int r1 = sql(g1, "SELECT * FROM test").getAll().size();
+
+        // Check that primary partitions are scanned on each node.
+        assertTrue(r0 < KEY_CNT);
+        assertTrue(r1 < KEY_CNT);
+        assertEquals(KEY_CNT, r0 + r1);
+    }
+
+    /**
      * @param sql SQL query.
      * @param args Query parameters.
      * @return Results cursor.
      */
     private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
-        return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
+        return sql(grid(), sql, args);
+    }
+
+    /**
+     * @param ign Node.
+     * @param sql SQL query.
+     * @param args Query parameters.
+     * @return Results cursor.
+     */
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(true)
             .setLazy(true)
             .setSchema("TEST")

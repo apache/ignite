@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
@@ -380,17 +380,17 @@ public class GridMapQueryExecutor {
             boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             for (GridCacheSqlQuery qry : qrys) {
-                H2ConnectionWrapper connWrp = h2.connections().connectionForThread();
+                H2PooledConnection conn = h2.connections().connection(schemaName);
 
                 H2Utils.setupConnection(
-                    connWrp.connection(schemaName),
+                    conn,
                     qctx,
                     distributedJoins,
                     enforceJoinOrder,
                     lazy
                 );
 
-                MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, connWrp, log);
+                MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, conn, log);
 
                 qryResults.addResult(qryIdx, res);
 
@@ -405,7 +405,7 @@ public class GridMapQueryExecutor {
                         PreparedStatement stmt;
 
                         try {
-                            stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
+                            stmt = conn.prepareStatement(sql);
                         }
                         catch (SQLException e) {
                             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -417,7 +417,7 @@ public class GridMapQueryExecutor {
 
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,
-                            connWrp.connection(),
+                            conn,
                             sql,
                             params0,
                             timeout,
@@ -443,8 +443,11 @@ public class GridMapQueryExecutor {
 
                         assert rs instanceof JdbcResultSet : rs.getClass();
 
-                        if (qryResults.cancelled())
+                        if (qryResults.cancelled()) {
+                            rs.close();
+
                             throw new QueryCancelledException();
+                        }
 
                         res.openResult(rs, qryInfo);
 
