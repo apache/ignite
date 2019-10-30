@@ -408,7 +408,7 @@ final class ReliableChannel implements AutoCloseable {
         private ClientChannelHolder(ClientChannelConfiguration chCfg) {
             this.chCfg = chCfg;
 
-            reconnectRetries = chCfg.getReconnectThrottlingRetries() > 0 ?
+            reconnectRetries = chCfg.getReconnectThrottlingRetries() > 0 && chCfg.getReconnectThrottlingPeriod() > 0L ?
                 new long[chCfg.getReconnectThrottlingRetries()] : null;
         }
 
@@ -416,7 +416,7 @@ final class ReliableChannel implements AutoCloseable {
          * @return Whether reconnect throttling should be applied.
          */
         private boolean applyReconnectionThrottling() {
-            if (reconnectRetries == null || chCfg.getReconnectThrottlingPeriod() == 0L)
+            if (reconnectRetries == null)
                 return false;
 
             long ts = System.currentTimeMillis();
