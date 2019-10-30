@@ -34,7 +34,6 @@ public class H2OMojoModelParser implements ModelParser<NamedVector, Double, H2OM
     /** */
     private static final long serialVersionUID = -170352744966205716L;
 
-
     /** {@inheritDoc} */
     @Override public H2OMojoModel parse(byte[] mojoBytes) {
         try (InputStream mojoInputStream = new ByteArrayInputStream(mojoBytes)) {
@@ -78,5 +77,4 @@ public class H2OMojoModelParser implements ModelParser<NamedVector, Double, H2OM
             }
         }
     }
-
 }

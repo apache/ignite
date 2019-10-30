@@ -17,6 +17,12 @@
 
 package org.apache.ignite.examples.ml.inference.h2o;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -28,13 +34,6 @@ import org.apache.ignite.ml.inference.reader.ModelReader;
 import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.h2o.H2OMojoModelParser;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.HashMap;
-import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * This example demonstrates how to import H2O MOJO model and use imported model for distributed inference in Apache
@@ -50,7 +49,6 @@ public class H2OMojoModelParserExample {
      * Test data.
      */
     private static final String DATA_RES = "examples/src/main/resources/datasets/agaricus-test-data.txt";
-
 
     /**
      * Parser.
