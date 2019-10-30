@@ -40,7 +40,6 @@ import org.apache.ignite.ml.math.functions.IntIntToDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
-import org.apache.ignite.ml.math.util.MatrixUtil;
 
 /**
  * This class provides a helper implementation of the {@link Matrix}
