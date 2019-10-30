@@ -64,6 +64,6 @@ public class DistributionTraitDef extends RelTraitDef<DistributionTrait> {
     }
 
     @Override public DistributionTrait getDefault() {
-        return DistributionTrait.ANY;
+        return IgniteDistributions.any();
     }
 }

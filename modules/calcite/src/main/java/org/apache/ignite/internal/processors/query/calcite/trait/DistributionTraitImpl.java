@@ -26,14 +26,20 @@ import org.apache.calcite.util.ImmutableIntList;
 public class DistributionTraitImpl implements DistributionTrait {
     private final DistributionType type;
     private final ImmutableIntList keys;
+    private final DistributionFunctionFactory functionFactory;
 
-    public DistributionTraitImpl(DistributionType type, ImmutableIntList keys) {
+    public DistributionTraitImpl(DistributionType type, ImmutableIntList keys, DistributionFunctionFactory functionFactory) {
         this.type = type;
         this.keys = keys;
+        this.functionFactory = functionFactory;
     }
 
     @Override public DistributionType type() {
         return type;
+    }
+
+    @Override public DistributionFunctionFactory functionFactory() {
+        return functionFactory;
     }
 
     @Override public ImmutableIntList keys() {

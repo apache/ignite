@@ -16,15 +16,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import java.util.ArrayList;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSourceDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalExchange;
@@ -36,35 +34,26 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 /**
  *
  */
-public class TaskSplitter implements IgniteVisitor<IgniteRel> {
-    /** */
-    private List<IgniteRel> roots;
+public class Splitter implements IgniteVisitor<IgniteRel> {
+    private ImmutableList.Builder<Fragment> b;
 
-    public List<SplitTask> go(IgniteRel root) {
-        roots = new ArrayList<>();
+    public QueryPlan go(IgniteRel root) {
+        b = ImmutableList.builder();
 
-        roots.add(root.accept(this));
-
-        ArrayList<SplitTask> splitTasks = new ArrayList<>(roots.size());
-
-        RelMetadataQuery mq = RelMetadataQueryEx.instance();
-
-        for (IgniteRel igniteRel : roots) {
-            splitTasks.add(new SplitTask(igniteRel, IgniteMdSourceDistribution.distribution(igniteRel, mq)));
-        }
-
-        return splitTasks;
+        return new QueryPlan(b.add(new Fragment(root.accept(this))).build());
     }
 
     @Override public IgniteRel visitExchange(IgniteLogicalExchange exchange) {
         RelOptCluster cluster = exchange.getCluster();
-        RelNode input = exchange.getInput();
+        RelTraitSet traitSet = exchange.getTraitSet();
 
-        Sender sender = new Sender(cluster, input.getTraitSet(), visitChildren(input));
+        IgniteRel input = visitChildren(exchange.getInput());
 
-        roots.add(sender);
+        Sender sender = new Sender(cluster, traitSet, input);
 
-        return new Receiver(cluster, exchange.getTraitSet(), sender);
+        b.add(new Fragment(sender));
+
+        return new Receiver(cluster, traitSet, sender);
     }
 
     @Override public IgniteRel visitFilter(IgniteLogicalFilter filter) {

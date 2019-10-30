@@ -21,13 +21,17 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
+import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 
 /**
  *
  */
 public class Receiver extends SingleRel implements IgniteRel {
+    private SourceDistribution sourceDistribution;
+
     /**
      * @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
@@ -49,5 +53,15 @@ public class Receiver extends SingleRel implements IgniteRel {
 
     @Override public <T> T accept(IgniteVisitor<T> visitor) {
         return visitor.visitReceiver(this);
+    }
+
+    public void init(SourceDistribution targetDistribution, RelMetadataQueryEx mq) {
+        getInput().init(targetDistribution);
+
+        sourceDistribution = getInput().sourceDistribution(mq);
+    }
+
+    public SourceDistribution sourceDistribution() {
+        return sourceDistribution;
     }
 }

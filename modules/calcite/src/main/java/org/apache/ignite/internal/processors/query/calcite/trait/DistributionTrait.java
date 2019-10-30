@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Objects;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
@@ -45,9 +46,9 @@ public interface DistributionTrait extends RelTrait {
         }
     }
 
-    DistributionTrait ANY = IgniteDistributions.single();
-
     DistributionType type();
+
+    DistributionFunctionFactory functionFactory();
 
     @Override default RelTraitDef getTraitDef() {
         return DistributionTraitDef.INSTANCE;
@@ -66,7 +67,8 @@ public interface DistributionTrait extends RelTrait {
             return true;
 
         if (type() == other.type())
-            return type() != DistributionType.HASH || keys().equals(other.keys());
+            return type() != DistributionType.HASH
+                || (Objects.equals(keys(), other.keys()) && Objects.equals(functionFactory(), other.functionFactory()));
 
         return other.type() == DistributionType.RANDOM && type() == DistributionType.HASH;
     }

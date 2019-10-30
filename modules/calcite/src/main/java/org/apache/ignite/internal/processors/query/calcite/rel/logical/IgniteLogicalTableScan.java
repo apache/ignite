@@ -39,7 +39,8 @@ public final class IgniteLogicalTableScan extends TableScan implements IgniteRel
   }
 
   public SourceDistribution tableDistribution() {
-     return getTable().unwrap(IgniteTable.class).tableDistribution(getCluster().getPlanner().getContext());
+     return getTable().unwrap(IgniteTable.class)
+         .sourceDistribution(getCluster().getPlanner().getContext());
   }
 
   @Override public <T> T accept(IgniteVisitor<T> visitor) {

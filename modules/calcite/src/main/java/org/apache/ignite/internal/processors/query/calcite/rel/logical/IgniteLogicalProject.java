@@ -21,12 +21,13 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteLogicalProject extends Project implements IgniteRel {
   public IgniteLogicalProject(
@@ -43,10 +44,10 @@ public final class IgniteLogicalProject extends Project implements IgniteRel {
     return new IgniteLogicalProject(getCluster(), traitSet, input, projects, rowType);
   }
 
-  public static IgniteLogicalProject create(LogicalProject project, RelNode input) {
+  public static IgniteLogicalProject create(Project project, RelNode input) {
     RelTraitSet traits = project.getTraitSet()
         .replace(IgniteRel.LOGICAL_CONVENTION)
-        .replace(IgniteMdDistribution.project(project.getCluster().getMetadataQuery(), input, project.getProjects()));
+        .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(RelMetadataQueryEx.instance(), input, project.getProjects()));
 
     return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
   }

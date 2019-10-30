@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.GridIntList;
@@ -71,23 +72,26 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
         RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.LOGICAL_CONVENTION)
-                .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteDistributions.hash(rowType.distributionKeys()));
+                .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(cluster.getPlanner().getContext()));
         return new IgniteLogicalTableScan(cluster, traitSet, relOptTable);
     }
 
-    public SourceDistribution tableDistribution(Context context) {
+    public DistributionTrait distributionTrait(Context context) {
+        return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.noOpFunction()); // TODO
+    }
+
+    public SourceDistribution sourceDistribution(Context context) {
+        int cacheId = CU.cacheId(cacheName);
+
         SourceDistribution res = new SourceDistribution();
 
         GridIntList localInputs = new GridIntList();
-
-        localInputs.add(CU.cacheId(cacheName));
-
+        localInputs.add(cacheId);
         res.localInputs = localInputs;
 
         PartitionsDistributionRegistry registry = context.unwrap(PartitionsDistributionRegistry.class);
         AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
-
-        res.partitionMapping = registry.partitionsDistribution(CU.cacheId(cacheName), topVer);
+        res.partitionMapping = registry.get(cacheId, topVer);
 
         return res;
     }

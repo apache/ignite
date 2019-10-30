@@ -48,7 +48,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.contextParameter;
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.provided;
 
 /**
  *
@@ -148,8 +148,8 @@ public class CalciteQueryProcessor implements QueryEngine {
         return Contexts.chain(ctx, config.getContext(),
             Contexts.of(
                 new Query(query, params),
-                contextParameter(ctx, SchemaPlus.class, schemaHolder::schema),
-                contextParameter(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)));
+                provided(ctx, SchemaPlus.class, schemaHolder::schema),
+                provided(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)));
     }
 
     private QueryExecution prepare(Context ctx) {

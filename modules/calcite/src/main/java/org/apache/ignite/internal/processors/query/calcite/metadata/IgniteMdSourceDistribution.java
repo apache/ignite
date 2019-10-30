@@ -27,6 +27,7 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.SourceDistributionMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistribution;
@@ -56,6 +57,10 @@ public class IgniteMdSourceDistribution implements MetadataHandler<SourceDistrib
 
     public SourceDistribution getSourceDistribution(SingleRel rel, RelMetadataQuery mq) {
         return distribution(rel.getInput(), mq);
+    }
+
+    public SourceDistribution getSourceDistribution(Sender rel, RelMetadataQuery mq) {
+        return rel.sourceDistribution(mq);
     }
 
     public SourceDistribution getSourceDistribution(BiRel rel, RelMetadataQuery mq) {

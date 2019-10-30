@@ -16,13 +16,22 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.Context;
 
 /**
  *
  */
-public interface PartitionsDistributionRegistry {
-    PartitionsDistribution get(int cacheId, AffinityTopologyVersion topVer);
-    PartitionsDistribution random(AffinityTopologyVersion topVer);
-    PartitionsDistribution single();
+public class QueryPlan {
+    private final ImmutableList<Fragment> fragments;
+
+    public QueryPlan(ImmutableList<Fragment> fragments) {
+        this.fragments = fragments;
+    }
+
+    public void init(Context ctx) {
+        for (Fragment fragment : fragments) {
+            fragment.init(ctx);
+        }
+    }
 }

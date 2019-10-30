@@ -31,7 +31,6 @@ import org.apache.calcite.plan.RelOptNode;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
-import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
@@ -52,11 +51,11 @@ public final class Commons {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
     }
 
-    public static <T> @Nullable T contextParameter(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
+    public static <T> @Nullable T provided(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
         T param = ctx.unwrap(paramType);
 
         if (param != null)
-            return param;
+            return null; // Provided by parent context.
 
         return paramSrc.get();
     }
@@ -81,24 +80,8 @@ public final class Commons {
         return b.build();
     }
 
-    public static RelOptRuleOperand any(Class<? extends RelNode> first, RelTrait trait){
-        return RelOptRule.operand(first, trait, RelOptRule.any());
-    }
-
-    public static RelOptRuleOperand any(Class<? extends RelNode> first){
-        return RelOptRule.operand(first, RelOptRule.any());
-    }
-
     public static RelOptRuleOperand any(Class<? extends RelNode> first, Class<? extends RelNode> second) {
         return RelOptRule.operand(first, RelOptRule.operand(second, RelOptRule.any()));
-    }
-
-    public static RelOptRuleOperand some(Class<? extends RelNode> rel, RelOptRuleOperand first, RelOptRuleOperand... rest){
-        return RelOptRule.operand(rel, RelOptRule.some(first, rest));
-    }
-
-    public static RelOptRuleOperand some(Class<? extends RelNode> rel, RelTrait trait, RelOptRuleOperand first, RelOptRuleOperand... rest){
-        return RelOptRule.operand(rel, trait, RelOptRule.some(first, rest));
     }
 
     public static <T extends RelNode> RelOp<T, Boolean> transformSubset(RelOptRuleCall call, RelNode input, BiFunction<T, RelNode, RelNode> transformFun) {

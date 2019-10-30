@@ -42,7 +42,7 @@ public class PartitionsDistribution {
 
         int i = 0, j = 0, k = 0;
 
-        while (i < nodes0.length && j < other.nodes.length) {
+        while (i < nodes.length && j < other.nodes.length) {
             if (nodes[i] < other.nodes[j])
                 i++;
             else if (other.nodes[j] < nodes[i])

@@ -22,12 +22,12 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 /**
@@ -52,19 +52,16 @@ public final class IgniteLogicalExchange extends SingleRel implements IgniteRel 
             Util.nLogN(rowCount) * bytesPerRow, rowCount, 0);
     }
 
-    public DistributionTrait sourceDistribution() {
-        return getInput().getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-    }
-
-    public DistributionTrait targetDistribution() {
-        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-    }
-
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteLogicalExchange(getCluster(), traitSet, sole(inputs));
     }
 
     @Override public <T> T accept(IgniteVisitor<T> visitor) {
         return visitor.visitExchange(this);
+    }
+
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw)
+            .item("distribution", getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
     }
 }

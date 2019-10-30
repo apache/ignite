@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 
-import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -40,13 +39,12 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
 import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistribution;
 import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SplitTask;
-import org.apache.ignite.internal.processors.query.calcite.splitter.TaskSplitter;
+import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,7 +52,7 @@ import org.junit.Test;
 /**
  *
  */
-@WithSystemProperty(key = "calcite.debug", value = "true")
+//@WithSystemProperty(key = "calcite.debug", value = "true")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     private static CalciteQueryProcessor proc;
@@ -62,6 +60,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     private static PartitionsDistribution developerDistribution;
     private static PartitionsDistribution projectDistribution;
+    private static PartitionsDistribution randomDistribution;
+    private static PartitionsDistribution singleDistribution;
+    private static PartitionsDistributionRegistry registry;
 
     @BeforeClass
     public static void setupClass() {
@@ -80,12 +81,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 .field("cityId", Integer.class)
                 .build()));
 
-        developerDistribution = new PartitionsDistribution();
-
-        developerDistribution.parts = 5;
-        developerDistribution.nodes = new int[]{0,1,2};
-        developerDistribution.nodeParts = new int[][]{{1,2},{3,4},{5}};
-
         publicSchema.addTable("Project", new IgniteTable("Project", "Project",
             RowType.builder()
                 .keyField("id", Integer.class, true)
@@ -93,12 +88,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 .field("ver", Integer.class)
                 .build()));
 
-        projectDistribution = new PartitionsDistribution();
 
-        projectDistribution.excessive = true;
-        projectDistribution.parts = 5;
-        projectDistribution.nodes = new int[]{0,1,2};
-        projectDistribution.nodeParts = new int[][]{{1,2,3,5},{2,3,4},{1,4,5}};
 
         publicSchema.addTable("Country", new IgniteTable("Country", "Country",
             RowType.builder()
@@ -117,6 +107,48 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         schema = Frameworks.createRootSchema(false);
 
         schema.add("PUBLIC", publicSchema);
+
+        developerDistribution = new PartitionsDistribution();
+
+        developerDistribution.parts = 5;
+        developerDistribution.nodes = new int[]{0,1,2};
+        developerDistribution.nodeParts = new int[][]{{1,2},{3,4},{5}};
+
+        projectDistribution = new PartitionsDistribution();
+
+        projectDistribution.excessive = true;
+        projectDistribution.parts = 5;
+        projectDistribution.nodes = new int[]{0,1,2};
+        projectDistribution.nodeParts = new int[][]{{1,2,3,5},{2,3,4},{1,4,5}};
+
+        randomDistribution = new PartitionsDistribution();
+        randomDistribution.parts = 3;
+        randomDistribution.nodes = new int[]{0,1,2};
+        randomDistribution.nodeParts = new int[][]{{1},{2},{3}};
+
+        singleDistribution = new PartitionsDistribution();
+        singleDistribution.parts = 1;
+        singleDistribution.nodes = new int[]{0};
+        singleDistribution.nodeParts = new int[][]{{1}};
+
+        registry = new PartitionsDistributionRegistry() {
+            @Override public PartitionsDistribution get(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return developerDistribution;
+                if (cacheId == CU.cacheId("Project"))
+                    return projectDistribution;
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+
+            @Override public PartitionsDistribution random(AffinityTopologyVersion topVer) {
+                return randomDistribution;
+            }
+
+            @Override public PartitionsDistribution single() {
+                return singleDistribution;
+            }
+        };
     }
 
     @Test
@@ -127,15 +159,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             ") p " +
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
-
-        PartitionsDistributionRegistry registry = (id, top) -> {
-            if (id == CU.cacheId("Developer"))
-                return developerDistribution;
-            if (id == CU.cacheId("Project"))
-                return projectDistribution;
-
-            throw new AssertionError("Unexpected cache id:" + id);
-        };
 
         Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
 
@@ -181,8 +204,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        List<SplitTask> fragments = new TaskSplitter().go((IgniteRel) relRoot.rel);
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
-        assertNotNull(fragments);
+        assertNotNull(plan);
+
+        plan.init(ctx);
+
+        assertNotNull(plan);
     }
 }

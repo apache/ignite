@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 
 /**
  *
  */
-public interface PartitionsDistributionRegistry {
-    PartitionsDistribution get(int cacheId, AffinityTopologyVersion topVer);
-    PartitionsDistribution random(AffinityTopologyVersion topVer);
-    PartitionsDistribution single();
+public interface DistributionFunctionFactory {
+    DistributionFunction create(SourceDistribution targetDistr, ImmutableIntList keys);
 }

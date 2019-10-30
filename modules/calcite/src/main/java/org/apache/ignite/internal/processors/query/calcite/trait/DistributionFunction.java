@@ -14,28 +14,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import org.apache.calcite.rel.RelNode;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  *
  */
-public class SplitTask {
-    public final SourceDistribution distribution;
-    public final RelNode root;
-
-    public SplitTask(RelNode root, SourceDistribution distribution) {
-        this.distribution = distribution;
-        this.root = root;
-
-        init();
-    }
-
-    private void init() {
-        PartitionsDistribution mapping = distribution.partitionMapping;
-
-        if (mapping != null && mapping.excessive)
-            distribution.partitionMapping = mapping.deduplicate();
-    }
+public interface DistributionFunction {
+    List<ClusterNode> destination(Object row);
 }

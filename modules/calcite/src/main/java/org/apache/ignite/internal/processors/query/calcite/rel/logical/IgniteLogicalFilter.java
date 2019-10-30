@@ -24,11 +24,12 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteLogicalFilter extends Filter implements IgniteRel {
   private final Set<CorrelationId> variablesSet;
@@ -53,10 +54,10 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
         .itemIf("variablesSet", variablesSet, !variablesSet.isEmpty());
   }
 
-  public static IgniteLogicalFilter create(LogicalFilter filter, RelNode input) {
+  public static IgniteLogicalFilter create(Filter filter, RelNode input) {
     RelTraitSet traits = filter.getTraitSet()
         .replace(IgniteRel.LOGICAL_CONVENTION)
-        .replace(IgniteMdDistribution.filter(filter.getCluster().getMetadataQuery(), input, filter.getCondition()));
+        .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.filter(RelMetadataQueryEx.instance(), input, filter.getCondition()));
 
     return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
   }

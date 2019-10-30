@@ -25,11 +25,12 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
  *
  */
 public class IgniteDistributions {
-    /** */
-    private static final DistributionTraitDef traitDef = DistributionTraitDef.INSTANCE;
-    private static final DistributionTrait SINGLE = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.SINGLE, ImmutableIntList.of()));
-    private static final DistributionTrait RANDOM = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.RANDOM, ImmutableIntList.of()));
-    private static final DistributionTrait ANY    = traitDef.canonize(new DistributionTraitImpl(DistributionTrait.DistributionType.ANY, ImmutableIntList.of()));
+    private static final DistributionFunctionFactory NO_OP_FACTORY = (t,k) -> null;
+
+    private static final DistributionTrait BROADCAST = new DistributionTraitImpl(DistributionTrait.DistributionType.BROADCAST, ImmutableIntList.of(), allTargetsFunction());
+    private static final DistributionTrait SINGLE = new DistributionTraitImpl(DistributionTrait.DistributionType.SINGLE, ImmutableIntList.of(), singleTargetFunction());
+    private static final DistributionTrait RANDOM = new DistributionTraitImpl(DistributionTrait.DistributionType.RANDOM, ImmutableIntList.of(), randomTargetFunction());
+    private static final DistributionTrait ANY    = new DistributionTraitImpl(DistributionTrait.DistributionType.ANY, ImmutableIntList.of(), noOpFunction());
 
     public static DistributionTrait any() {
         return ANY;
@@ -43,7 +44,27 @@ public class IgniteDistributions {
         return SINGLE;
     }
 
-    public static DistributionTrait hash(List<Integer> keys) {
-        return traitDef.canonize(new DistributionTraitImpl(HASH, ImmutableIntList.copyOf(keys)));
+    public static DistributionTrait broadcast() {
+        return BROADCAST;
+    }
+
+    public static DistributionTrait hash(List<Integer> keys, DistributionFunctionFactory factory) {
+        return new DistributionTraitImpl(HASH, ImmutableIntList.copyOf(keys), factory);
+    }
+
+    public static DistributionFunctionFactory noOpFunction() {
+        return NO_OP_FACTORY;
+    }
+
+    public static DistributionFunctionFactory singleTargetFunction() {
+        return noOpFunction(); // TODO
+    }
+
+    public static DistributionFunctionFactory allTargetsFunction() {
+        return noOpFunction(); // TODO
+    }
+
+    public static DistributionFunctionFactory randomTargetFunction() {
+        return noOpFunction(); // TODO
     }
 }

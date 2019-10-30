@@ -108,7 +108,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
                 newKeys.add(mapped);
             }
 
-            return IgniteDistributions.hash(newKeys);
+            return IgniteDistributions.hash(newKeys, trait.functionFactory());
         }
 
         return trait;
