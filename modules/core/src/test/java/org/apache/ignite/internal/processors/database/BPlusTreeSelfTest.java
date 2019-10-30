@@ -55,6 +55,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -84,6 +85,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_TYPE;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
 import static org.apache.ignite.internal.processors.database.BPlusTreeSelfTest.TestTree.threadId;
@@ -94,6 +96,7 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.REMOVE;
 /**
  */
 @WithSystemProperty(key = IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, value = "20000")
+@WithSystemProperty(key = IGNITE_PAGE_LOCK_TRACKER_TYPE, value = "1")
 public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final short LONG_INNER_IO = 30000;
