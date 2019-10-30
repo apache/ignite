@@ -432,7 +432,7 @@ public class GridNioServer<T> {
             }
         }
 
-        balancer = balancer0;
+        this.balancer = balancer0;
 
         this.mreg = mreg;
 
