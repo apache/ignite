@@ -97,11 +97,11 @@ public class IgniteTestResources {
         else
             log = rootLog.getLogger(getClass());
 
-        jmx = prepareMBeanServer();
+        this.jmx = prepareMBeanServer();
 
-        ctx = new GridTestKernalContext(log);
+        this.ctx = new GridTestKernalContext(log);
 
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -109,10 +109,10 @@ public class IgniteTestResources {
      */
     public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
         this.cfg = cfg;
-        log = rootLog.getLogger(getClass());
-        jmx = prepareMBeanServer();
-        ctx = new GridTestKernalContext(log, this.cfg);
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.log = rootLog.getLogger(getClass());
+        this.jmx = prepareMBeanServer();
+        this.ctx = new GridTestKernalContext(log, this.cfg);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -122,9 +122,9 @@ public class IgniteTestResources {
         assert jmx != null;
 
         this.jmx = jmx;
-        log = rootLog.getLogger(getClass());
-        ctx = new GridTestKernalContext(log);
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.log = rootLog.getLogger(getClass());
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -134,9 +134,9 @@ public class IgniteTestResources {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-        jmx = prepareMBeanServer();
-        ctx = new GridTestKernalContext(log);
-        rsrcProc = new GridResourceProcessor(ctx);
+        this.jmx = prepareMBeanServer();
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**

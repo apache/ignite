@@ -242,6 +242,9 @@ public class GridNioServer<T> {
     /** Sent bytes count metric. */
     @Nullable private final AtomicLongMetric sentBytesCntMetric;
 
+    /** Outbound messages queue size. */
+    @Nullable private final AtomicLongMetric outboundMessagesQueueSizeMetric;
+
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -438,6 +441,11 @@ public class GridNioServer<T> {
 
         sentBytesCntMetric = mreg == null ?
             null : mreg.longMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        );
     }
 
     /**
@@ -2900,13 +2908,10 @@ public class GridNioServer<T> {
      */
     @Deprecated
     public int outboundMessagesQueueSize() {
-        if (mreg == null)
+        if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
-        return (int) mreg.longMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        ).value();
+        return (int) outboundMessagesQueueSizeMetric.value();
     }
 
     /**
