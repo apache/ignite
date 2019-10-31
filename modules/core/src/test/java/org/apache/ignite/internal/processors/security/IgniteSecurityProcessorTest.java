@@ -34,7 +34,6 @@ public class IgniteSecurityProcessorTest extends TestCase {
     /**
      * Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case node ID is unknown.
      */
-    @Test(expected = IllegalStateException.class)
     public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() {
         GridKernalContext ctx = mock(GridKernalContext.class);
         when(ctx.config()).thenReturn(new IgniteConfiguration());
@@ -44,6 +43,12 @@ public class IgniteSecurityProcessorTest extends TestCase {
 
         IgniteSecurityProcessor ignSecPrc = new IgniteSecurityProcessor(ctx, secPrc);
 
-        ignSecPrc.withContext(UUID.randomUUID());
+        try {
+            ignSecPrc.withContext(UUID.randomUUID());
+
+            fail("Expected IllegalStateException.");
+        }
+        catch (IllegalStateException ignore) {
+        }
     }
 }
