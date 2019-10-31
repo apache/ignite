@@ -73,11 +73,16 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * Container for expected values and all available entries
      */
     private static final class TestPair {
-
+        /** */
         public final Set<Integer> expected;
 
+        /** */
         public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
+        /** Constructor
+         *
+         * @param exp expected values set.
+         * */
         public TestPair(Set<Integer> exp) {
             this.expected = new HashSet<>(exp);
         }
@@ -214,11 +219,10 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param exp Expected results for validation.
      * @return TextQuery and validation wrapped into Runnable functional interface.
      */
-
     @NotNull private Runnable textQueryTask(IgniteEx ignite, String clause, Set<Integer> exp) {
         return () -> {
             try {
-                TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(false);
+                TextQuery qry = new TextQuery<>(Person.class, clause);
                 validateQueryResults(ignite, qry, exp, false);
             }
             catch (Exception e) {
@@ -360,12 +364,10 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      */
     private static void assertResult(IgniteEx ignite, TextQuery qry,
         TestPair testPair) throws IgniteCheckedException {
-        if (qry.getLimit() > 0) {
+        if (qry.getLimit() > 0)
             assertTrue(testPair.all.size() <= QUERY_LIMIT);
-        }
-        else {
+        else
             checkForMissedKeys(ignite, testPair.expected, testPair.all);
-        }
     }
 
     /**

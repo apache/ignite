@@ -76,7 +76,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int keyCnt = 5000;
         final int logFreq = 50;
         final String txt = "Value";
-        final int limit = 1000;
+        final int limit = 0;
 
         final GridCacheAdapter<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 

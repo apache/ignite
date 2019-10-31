@@ -59,70 +59,46 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** Logger. */
     protected static IgniteLogger log;
 
-    /**
-     *
-     */
+    /** */
     private static final Object NULL = new Object();
 
     /** Cache context. */
     protected GridCacheContext<K, V> cctx;
 
-    /**
-     *
-     */
+    /** */
     protected final GridCacheQueryBean qry;
 
-    /**
-     *
-     */
+    /** */
     private int capacity;
 
-    /**
-     *
-     */
+    /** */
     private boolean limitDisabled;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
 
-    /**
-     *
-     */
+    /** */
     private final Queue<Collection<R>> queue = new LinkedList<>();
 
-    /**
-     *
-     */
+    /** */
     private final AtomicInteger cnt = new AtomicInteger();
 
-    /**
-     *
-     */
+    /** */
     private Iterator<R> iter;
 
-    /**
-     *
-     */
+    /** */
     private IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
-    /**
-     *
-     */
+    /** */
     private long startTime;
 
-    /**
-     *
-     */
+    /** */
     private long endTime;
 
-    /**
-     *
-     */
+    /** */
     protected boolean loc;
 
-    /**
-     *
-     */
+    /** */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
         keys = null;
@@ -354,7 +330,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      */
     protected void enqueue(Collection<?> col) {
-
         assert Thread.holdsLock(this);
 
         if (limitDisabled) {
