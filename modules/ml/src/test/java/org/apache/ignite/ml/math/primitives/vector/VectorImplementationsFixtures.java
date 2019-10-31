@@ -160,7 +160,7 @@ class VectorImplementationsFixtures {
         private final T[] extras;
 
         /** */
-        private int extraIdx = 0;
+        private int extraIdx;
 
         /** */
         private final BiFunction<Integer, T, Vector> ctor;
@@ -289,10 +289,10 @@ class VectorImplementationsFixtures {
         private final Consumer<String> ctxDescrConsumer;
 
         /** */
-        private int param1Idx = 0;
+        private int param1Idx;
 
         /** */
-        private int param2Idx = 0;
+        private int param2Idx;
 
         /** */
         TwoParamsIterator(String vectorKind, BiFunction<T, U, Vector> ctor,

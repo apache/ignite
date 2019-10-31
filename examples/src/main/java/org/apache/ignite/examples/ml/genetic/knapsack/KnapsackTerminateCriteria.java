@@ -85,7 +85,7 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     private double calculateTotalWeight(List<Gene> genes) {
         double totalWeight = 0;
         for (Gene gene : genes)
-            totalWeight = totalWeight + ((Item)gene.getVal()).getWeight();
+            totalWeight += ((Item)gene.getVal()).getWeight();
 
         return totalWeight;
     }
