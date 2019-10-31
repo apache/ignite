@@ -674,7 +674,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         populateTable(qryProc, TEST_TBL_NAME, 2, "FIRST_NAME", "LAST_NAME",
             "ADDRESS", "LANG");
 
-        String sqlIdx2 = String.format("create index \"%s\" on %s(ADDRESS, LANG)", idxName, TEST_TBL_NAME);
+        String sqlIdx2 = String.format("create index \"%s\" on %s(LANG)", idxName, TEST_TBL_NAME);
 
         qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
 
