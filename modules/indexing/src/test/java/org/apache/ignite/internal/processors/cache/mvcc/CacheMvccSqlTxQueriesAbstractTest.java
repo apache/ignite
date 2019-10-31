@@ -62,6 +62,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
@@ -75,10 +79,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
@@ -87,6 +93,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
@@ -95,6 +102,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
@@ -103,6 +111,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_SingleNode_Persistence() throws Exception {
         persistence = true;
 
@@ -112,6 +121,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSumSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL_SUM, DML);
@@ -120,6 +130,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSumSql_WithRemoves_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
@@ -128,6 +139,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSumSql_WithRemoves__ClientServer_Backups0() throws Exception {
         accountsTxReadAll(4, 2, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
@@ -136,6 +148,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSumSql_ClientServer_Backups2() throws Exception {
         accountsTxReadAll(4, 2, 2, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
@@ -144,6 +157,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
@@ -152,6 +166,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_SingleNode_Persistence() throws Exception {
         persistence = true;
 
@@ -161,6 +176,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_ClientServer_Backups0() throws Exception {
         accountsTxReadAll(4, 2, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
@@ -169,6 +185,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups0() throws Exception {
         accountsTxReadAll(4, 2, 0, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
@@ -177,6 +194,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups0_Persistence() throws Exception {
         persistence = true;
 
@@ -186,6 +204,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_ClientServer_Backups1() throws Exception {
         accountsTxReadAll(3, 0, 1, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
@@ -194,6 +213,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups1() throws Exception {
         accountsTxReadAll(4, 2, 1, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
@@ -202,6 +222,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups1_Persistence() throws Exception {
         persistence = true;
 
@@ -211,6 +232,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_ClientServer_Backups2() throws Exception {
         accountsTxReadAll(4, 2, 2, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
@@ -219,6 +241,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups2() throws Exception {
         accountsTxReadAll(4, 2, 2, 64,
             new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
@@ -227,9 +250,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccountsTxDmlSql_ClientServer_Backups2_Persistence() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
-
         persistence = true;
 
         testAccountsTxDmlSql_ClientServer_Backups2();
@@ -238,6 +260,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParsingErrorHasNoSideEffect() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, 4)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -285,6 +308,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -330,6 +354,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertStaticCacheImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -360,6 +385,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDeleteStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -406,6 +432,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFastDeleteStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -451,6 +478,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFastUpdateStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -496,6 +524,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFastDeleteObjectStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
@@ -540,6 +569,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFastUpdateObjectStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
@@ -584,6 +614,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDeleteStaticCacheImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -620,6 +651,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryUpdateStaticCache() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -661,6 +693,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryUpdateStaticCacheImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -697,6 +730,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDeadlockWithTxTimeout() throws Exception {
         checkQueryDeadlock(TimeoutMode.TX);
     }
@@ -704,6 +738,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDeadlockWithStmtTimeout() throws Exception {
         checkQueryDeadlock(TimeoutMode.STMT);
     }
@@ -787,6 +822,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryDeadlockImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -855,6 +891,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertClient() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -904,6 +941,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertClientImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -938,6 +976,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertSubquery() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
@@ -981,6 +1020,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertSubqueryImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
@@ -1019,6 +1059,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryUpdateSubquery() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
@@ -1062,6 +1103,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryUpdateSubqueryImplicit() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
@@ -1100,6 +1142,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10764")
+    @Test
     public void testQueryInsertMultithread() throws Exception {
         final int THREAD_CNT = 8;
         final int BATCH_SIZE = 1000;
@@ -1167,9 +1211,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
+    @Test
     public void testQueryInsertUpdateMultithread() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1276,6 +1320,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertVersionConflict() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1341,6 +1386,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertAndFastDeleteWithoutVersionConflict() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1371,6 +1417,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertAndFastUpdateWithoutVersionConflict() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1401,9 +1448,9 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9292")
+    @Test
     public void testInsertFastUpdateConcurrent() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9292");
-
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1434,6 +1481,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertRollback() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1474,6 +1522,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertUpdateSameKeys() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1515,6 +1564,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryInsertUpdateSameKeysInSameOperation() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1547,6 +1597,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPendingUpdates() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1615,6 +1666,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectProducesTransaction() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
@@ -1649,6 +1701,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRepeatableRead() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
@@ -1700,6 +1753,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFastInsertUpdateConcurrent() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1724,6 +1778,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
@@ -1794,6 +1849,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHints() throws Exception {
         persistence = true;
 

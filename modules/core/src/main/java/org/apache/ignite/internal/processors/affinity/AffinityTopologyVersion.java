@@ -112,6 +112,15 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
         return cmp;
     }
 
+    /**
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @return {@code True} if this topology version is within provided bounds (inclusive).
+     */
+    public boolean isBetween(AffinityTopologyVersion lower, AffinityTopologyVersion upper) {
+        return compareTo(lower) >= 0 && compareTo(upper) <= 0;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.

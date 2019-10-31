@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.runners.model.Statement;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -55,25 +56,38 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** */
-    protected VariationsTestsConfig testsCfg;
+    /** Dummy initial stub to just let people launch test classes not from suite. */
+    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 1, false);
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /**
-     * @param testsCfg Tests configuration.
-     */
-    public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
-        assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
-            + ", newTestCfg=" + testsCfg + "]";
+    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
+    private static VariationsTestsConfig testsCfgInjected;
 
-        this.testsCfg = testsCfg;
+    /**
+     * @param testsCfgInjected Tests configuration.
+     */
+    public static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
+        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * IMPL NOTE when this override was introduced, alternative was to replace multiple usages of instance member
+     * {@code testsCfg} splattered all over the project with those of static one {@code testsCfgInjected} - kind
+     * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
+     * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
+     */
+    @Override protected void runTestCase(Statement testRoutine) throws Throwable {
+        testsCfg = testsCfgInjected;
+
+        super.runTestCase(testRoutine);
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected boolean isSafeTopology() {
+    @Override protected boolean isSafeTopology() {
         return false;
     }
 
@@ -158,6 +172,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
+        assert testsCfg != null: "Tests should be run using test suite.";
+
         return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 

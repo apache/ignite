@@ -263,6 +263,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
 
+    /** Last listener future. */
+    private IgniteFuture<?> lastCustomEvtLsnrFut;
+
     /**
      * @param adapter Adapter.
      */
@@ -952,10 +955,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         timeout = threshold - U.currentTimeMillis();
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
 
-                        throw new IgniteSpiException("Thread has been interrupted.");
+                        throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
                 }
 
@@ -1959,15 +1962,15 @@ class ServerImpl extends TcpDiscoveryImpl {
             while (!isInterrupted()) {
                 Thread.sleep(spi.ipFinderCleanFreq);
 
-                if (!isLocalNodeCoordinator())
-                    continue;
-
                 if (spiStateCopy() != CONNECTED) {
                     if (log.isDebugEnabled())
                         log.debug("Stopping IP finder cleaner (SPI is not connected to topology).");
 
                     return;
                 }
+
+                if (!isLocalNodeCoordinator())
+                    continue;
 
                 if (spi.ipFinder.isShared())
                     cleanIpFinder();
@@ -2157,6 +2160,20 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
+    }
+
+    /**
+     * Wait for all the listeners from previous discovery message to be completed.
+     */
+    private void waitForLastCustomEventListenerFuture() {
+        if (lastCustomEvtLsnrFut != null) {
+            try {
+                lastCustomEvtLsnrFut.get();
+            }
+            finally {
+                lastCustomEvtLsnrFut = null;
+            }
+        }
     }
 
     /**
@@ -3210,16 +3227,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
-                            if (failure || forceSndPending) {
+                            if (failure || forceSndPending || newNextNode) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", failedNodes=" + failedNodes + ']');
 
                                 if (debugMode)
                                     debugLog(msg, "Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
-                                        ", forceSndPending=" + forceSndPending + ']');
+                                        ", forceSndPending=" + forceSndPending +
+                                        ", failedNodes=" + failedNodes + ']');
 
                                 for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
                                     long tstamp = U.currentTimeMillis();
@@ -4201,6 +4220,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
+
+            blockingSectionBegin();
+
+            try {
+                waitForLastCustomEventListenerFuture();
+            }
+            finally {
+                blockingSectionEnd();
+            }
 
             TcpDiscoveryNode node = msg.node();
 
@@ -5274,6 +5302,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (clientNodeIds.contains(clientNode.id()))
                                 clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
                             else {
+                                if (clientNode.clientAliveTime() == 0L)
+                                    clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
+
                                 boolean aliveCheck = clientNode.isClientAlive();
 
                                 if (!aliveCheck && isLocalNodeCoordinator()) {
@@ -5646,8 +5677,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                     hist,
                     msgObj);
 
-                if (waitForNotification || msgObj.isMutable())
-                    fut.get();
+                if (waitForNotification || msgObj.isMutable()) {
+                    blockingSectionBegin();
+
+                    try {
+                        fut.get();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+                }
+                else {
+                    lastCustomEvtLsnrFut = fut;
+                }
 
                 if (msgObj.isMutable()) {
                     try {
@@ -6292,6 +6334,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 continue;
                             }
                             else {
+                                TcpDiscoveryClientReconnectMessage msg0 = (TcpDiscoveryClientReconnectMessage)msg;
+
+                                // If message is received from previous node and node is connecting forward to next node.
+                                if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
+                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+
+                                    msgWorker.addMessage(msg);
+
+                                    continue;
+                                }
+
                                 spi.writeToSocket(msg, sock, RES_CONTINUE_JOIN, sockTimeout);
 
                                 break;

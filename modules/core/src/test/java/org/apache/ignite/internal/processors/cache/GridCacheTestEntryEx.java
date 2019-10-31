@@ -912,17 +912,20 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(boolean heap,
-        boolean offheap,
-        AffinityTopologyVersion topVer,
-        @Nullable IgniteCacheExpiryPolicy plc)
-    {
+    @Nullable @Override public CacheObject mvccPeek(boolean onheapOnly) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(
-        @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable @Override public CacheObject peek(boolean heap,
+        boolean offheap,
+        AffinityTopologyVersion topVer,
+        @Nullable IgniteCacheExpiryPolicy plc) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject peek()
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         return null;
     }
@@ -960,7 +963,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void touch(AffinityTopologyVersion topVer) {
-        context().evicts().touch(this, topVer);
+    @Override public void touch() {
+        context().evicts().touch(this);
     }
 }

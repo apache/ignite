@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -31,6 +32,7 @@ import java.util.UUID;
 /**
  * WAL state ack message (sent from participant node to coordinator).
  */
+@IgniteCodeGeneratingFail
 public class WalStateAckMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;

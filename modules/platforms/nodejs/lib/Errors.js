@@ -83,6 +83,18 @@ class IgniteClientError extends Error {
         }
         return new IgniteClientError(msg);
     }
+
+    /**
+     * EnumItem serialization/deserialization errors.
+     * @ignore
+     */
+    static enumSerializationError(serialize, message = null) {
+        let msg = serialize ? 'Enum item can not be serialized' : 'Enum item can not be deserialized';
+        if (message) {
+            msg = msg + ': ' + message;
+        }
+        return new IgniteClientError(msg);
+    }
 }
 
 /**

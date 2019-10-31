@@ -1,0 +1,1660 @@
+# Copyright 2004-2018 H2 Group. Multiple-Licensed under the MPL 2.0,
+# and the EPL 1.0 (http://h2database.com/html/license.html).
+# Initial Developer: H2 Group)
+"SECTION","TOPIC","SYNTAX","TEXT"
+"Commands (DML)","SELECT","
+SELECT [ TOP term ] [ DISTINCT | ALL ] selectExpression [,...]
+FROM tableExpression [,...] [ WHERE expression ]
+[ GROUP BY expression [,...] ] [ HAVING expression ]
+[ { UNION [ ALL ] | MINUS | EXCEPT | INTERSECT } select ]
+[ ORDER BY order [,...] ]
+[ { LIMIT expression [ OFFSET expression ] [ SAMPLE_SIZE rowCountInt ] }
+    | { [ OFFSET expression { ROW | ROWS } ]
+    [ { FETCH { FIRST | NEXT } expression { ROW | ROWS } ONLY } ] } ]
+[ FOR UPDATE ]
+","
+Selects data from a table or multiple tables."
+"Commands (DML)","INSERT","
+INSERT INTO tableName
+{ [ ( columnName [,...] ) ]
+    { VALUES { ( { DEFAULT | expression } [,...] ) } [,...]
+        | [ DIRECT ] [ SORTED ] select } } |
+    { SET { columnName = { DEFAULT | expression } } [,...] }
+","
+Inserts a new row / new rows into a table."
+"Commands (DML)","UPDATE","
+UPDATE tableName [ [ AS ] newTableAlias ] SET
+{ { columnName = { DEFAULT | expression } } [,...] } |
+    { ( columnName [,...] ) = ( select ) }
+[ WHERE expression ] [ ORDER BY order [,...] ] [ LIMIT expression ]
+","
+Updates data in a table."
+"Commands (DML)","DELETE","
+DELETE [ TOP term ] FROM tableName [ WHERE expression ] [ LIMIT term ]
+","
+Deletes rows form a table."
+"Commands (DML)","BACKUP","
+BACKUP TO fileNameString
+","
+Backs up the database files to a ."
+"Commands (DML)","CALL","
+CALL expression
+","
+Calculates a simple expression."
+"Commands (DML)","EXPLAIN","
+EXPLAIN { [ PLAN FOR ] | ANALYZE }
+{ select | insert | update | delete | merge }
+","
+Shows the execution plan for a statement."
+"Commands (DML)","MERGE","
+MERGE INTO tableName [ ( columnName [,...] ) ]
+[ KEY ( columnName [,...] ) ]
+{ VALUES { ( { DEFAULT | expression } [,...] ) } [,...] | select }
+","
+Updates existing rows, and insert rows that don't exist."
+"Commands (DML)","MERGE USING","
+MERGE INTO targetTableName [ [AS] targetAlias]
+USING { ( select ) | sourceTableName }[ [AS] sourceAlias ]
+ON ( expression )
+[ WHEN MATCHED THEN [ update ] [ delete] ]
+[ WHEN NOT MATCHED THEN insert ]
+","
+Updates or deletes existing rows, and insert rows that don't exist."
+"Commands (DML)","RUNSCRIPT","
+RUNSCRIPT FROM fileNameString scriptCompressionEncryption
+[ CHARSET charsetString ]
+","
+Runs a SQL script from a file."
+"Commands (DML)","SCRIPT","
+SCRIPT [ SIMPLE ] [ NODATA ] [ NOPASSWORDS ] [ NOSETTINGS ]
+[ DROP ] [ BLOCKSIZE blockSizeInt ]
+[ TO fileNameString scriptCompressionEncryption
+    [ CHARSET charsetString ] ]
+[ TABLE tableName [, ...] ]
+[ SCHEMA schemaName [, ...] ]
+","
+Creates a SQL script from the database."
+"Commands (DML)","SHOW","
+SHOW { SCHEMAS | TABLES [ FROM schemaName ] |
+    COLUMNS FROM tableName [ FROM schemaName ] }
+","
+Lists the schemas, tables, or the columns of a table."
+"Commands (DML)","WITH","
+WITH [ RECURSIVE ] { name [( columnName [,...] )] AS ( select ) [,...] }
+{ select | insert | update | merge | delete | createTable }
+","
+Can be used to create a recursive or non-recursive query (common table expression)."
+"Commands (DDL)","ALTER INDEX RENAME","
+ALTER INDEX [ IF EXISTS ] indexName RENAME TO newIndexName
+","
+Renames an index."
+"Commands (DDL)","ALTER SCHEMA RENAME","
+ALTER SCHEMA [ IF EXISTS ] schema RENAME TO newSchemaName
+","
+Renames a schema."
+"Commands (DDL)","ALTER SEQUENCE","
+ALTER SEQUENCE [ IF EXISTS ] sequenceName
+[ RESTART WITH long ]
+[ INCREMENT BY long ]
+[ MINVALUE long | NOMINVALUE | NO MINVALUE ]
+[ MAXVALUE long | NOMAXVALUE | NO MAXVALUE ]
+[ CYCLE long | NOCYCLE | NO CYCLE ]
+[ CACHE long | NOCACHE | NO CACHE ]
+","
+Changes the parameters of a sequence."
+"Commands (DDL)","ALTER TABLE ADD","
+ALTER TABLE [ IF EXISTS ] tableName ADD [ COLUMN ]
+{ [ IF NOT EXISTS ] columnName columnDefinition
+    | ( { columnName columnDefinition | constraint } [,...] ) }
+[ { { BEFORE | AFTER } columnName } | FIRST ]
+","
+Adds a new column to a table."
+"Commands (DDL)","ALTER TABLE ADD CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName ADD constraint [ CHECK | NOCHECK ]
+","
+Adds a constraint to a table."
+"Commands (DDL)","ALTER TABLE RENAME CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName RENAME oldConstraintName
+TO newConstraintName
+","
+Renames a constraint."
+"Commands (DDL)","ALTER TABLE ALTER COLUMN","
+ALTER TABLE [ IF EXISTS ] tableName ALTER COLUMN columnName
+{ { columnDefinition }
+    | { RENAME TO name }
+    | { RESTART WITH long }
+    | { SELECTIVITY int }
+    | { SET DEFAULT expression }
+    | { SET ON UPDATE expression }
+    | { SET NULL }
+    | { SET NOT NULL }
+    | { SET { VISIBLE | INVISIBLE } }
+    | { DROP { DEFAULT | ON UPDATE } } }
+","
+Changes the data type of a column, rename a column,
+change the identity value, or change the selectivity."
+"Commands (DDL)","ALTER TABLE DROP COLUMN","
+ALTER TABLE [ IF EXISTS ] tableName DROP COLUMN [ IF EXISTS ]
+columnName [,...] | ( columnName [,...] )
+","
+Removes column(s) from a table."
+"Commands (DDL)","ALTER TABLE DROP CONSTRAINT","
+ALTER TABLE [ IF EXISTS ] tableName DROP
+{ CONSTRAINT [ IF EXISTS ] constraintName | PRIMARY KEY }
+","
+Removes a constraint or a primary key from a table."
+"Commands (DDL)","ALTER TABLE SET","
+ALTER TABLE [ IF EXISTS ] tableName SET REFERENTIAL_INTEGRITY
+{ FALSE | TRUE } [ CHECK | NOCHECK ]
+","
+Disables or enables referential integrity checking for a table."
+"Commands (DDL)","ALTER TABLE RENAME","
+ALTER TABLE [ IF EXISTS ] tableName RENAME TO newName
+","
+Renames a table."
+"Commands (DDL)","ALTER USER ADMIN","
+ALTER USER userName ADMIN { TRUE | FALSE }
+","
+Switches the admin flag of a user on or off."
+"Commands (DDL)","ALTER USER RENAME","
+ALTER USER userName RENAME TO newUserName
+","
+Renames a user."
+"Commands (DDL)","ALTER USER SET PASSWORD","
+ALTER USER userName SET { PASSWORD string | SALT bytes HASH bytes }
+","
+Changes the password of a user."
+"Commands (DDL)","ALTER VIEW","
+ALTER VIEW [ IF EXISTS ] viewName RECOMPILE
+","
+Recompiles a view after the underlying tables have been changed or created."
+"Commands (DDL)","ANALYZE","
+ANALYZE [ TABLE tableName ] [ SAMPLE_SIZE rowCountInt ]
+","
+Updates the selectivity statistics of tables."
+"Commands (DDL)","COMMENT","
+COMMENT ON
+{ { COLUMN [ schemaName. ] tableName.columnName }
+    | { { TABLE | VIEW | CONSTANT | CONSTRAINT | ALIAS | INDEX | ROLE
+    | SCHEMA | SEQUENCE | TRIGGER | USER | DOMAIN } [ schemaName. ] objectName } }
+IS expression
+","
+Sets the comment of a database object."
+"Commands (DDL)","CREATE AGGREGATE","
+CREATE AGGREGATE [ IF NOT EXISTS ] newAggregateName FOR className
+","
+Creates a new user-defined aggregate function."
+"Commands (DDL)","CREATE ALIAS","
+CREATE ALIAS [ IF NOT EXISTS ] newFunctionAliasName [ DETERMINISTIC ]
+[ NOBUFFER ] { FOR classAndMethodName | AS sourceCodeString }
+","
+Creates a new function alias."
+"Commands (DDL)","CREATE CONSTANT","
+CREATE CONSTANT [ IF NOT EXISTS ] newConstantName VALUE expression
+","
+Creates a new constant."
+"Commands (DDL)","CREATE DOMAIN","
+CREATE DOMAIN [ IF NOT EXISTS ] newDomainName AS dataType
+[ DEFAULT expression ] [ [ NOT ] NULL ] [ SELECTIVITY selectivity ]
+[ CHECK condition ]
+","
+Creates a new data type (domain)."
+"Commands (DDL)","CREATE INDEX","
+CREATE
+{ [ UNIQUE ] [ HASH | SPATIAL] INDEX [ [ IF NOT EXISTS ] newIndexName ]
+    | PRIMARY KEY [ HASH ] }
+ON tableName ( indexColumn [,...] )
+","
+Creates a new index."
+"Commands (DDL)","CREATE LINKED TABLE","
+CREATE [ FORCE ] [ [ GLOBAL | LOCAL ] TEMPORARY ]
+LINKED TABLE [ IF NOT EXISTS ]
+name ( driverString, urlString, userString, passwordString,
+[ originalSchemaString, ] originalTableString ) [ EMIT UPDATES | READONLY ]
+","
+Creates a table link to an external table."
+"Commands (DDL)","CREATE ROLE","
+CREATE ROLE [ IF NOT EXISTS ] newRoleName
+","
+Creates a new role."
+"Commands (DDL)","CREATE SCHEMA","
+CREATE SCHEMA [ IF NOT EXISTS ] name
+[ AUTHORIZATION ownerUserName ]
+[ WITH tableEngineParamName [,...] ]
+","
+Creates a new schema."
+"Commands (DDL)","CREATE SEQUENCE","
+CREATE SEQUENCE [ IF NOT EXISTS ] newSequenceName
+[ START WITH long ]
+[ INCREMENT BY long ]
+[ MINVALUE long | NOMINVALUE | NO MINVALUE ]
+[ MAXVALUE long | NOMAXVALUE | NO MAXVALUE ]
+[ CYCLE long | NOCYCLE | NO CYCLE ]
+[ CACHE long | NOCACHE | NO CACHE ]
+","
+Creates a new sequence."
+"Commands (DDL)","CREATE TABLE","
+CREATE [ CACHED | MEMORY ] [ TEMP | [ GLOBAL | LOCAL ] TEMPORARY ]
+TABLE [ IF NOT EXISTS ] name
+[ ( { columnName columnDefinition | constraint } [,...] ) ]
+[ ENGINE tableEngineName ]
+[ WITH tableEngineParamName [,...] ]
+[ NOT PERSISTENT ] [ TRANSACTIONAL ]
+[ AS select ]","
+Creates a new table."
+"Commands (DDL)","CREATE TRIGGER","
+CREATE TRIGGER [ IF NOT EXISTS ] newTriggerName
+{ BEFORE | AFTER | INSTEAD OF }
+{ INSERT | UPDATE | DELETE | SELECT | ROLLBACK }
+[,...] ON tableName [ FOR EACH ROW ]
+[ QUEUE int ] [ NOWAIT ]
+{ CALL triggeredClassName | AS sourceCodeString }
+","
+Creates a new trigger."
+"Commands (DDL)","CREATE USER","
+CREATE USER [ IF NOT EXISTS ] newUserName
+{ PASSWORD string | SALT bytes HASH bytes } [ ADMIN ]
+","
+Creates a new user."
+"Commands (DDL)","CREATE VIEW","
+CREATE [ OR REPLACE ] [ FORCE ] VIEW [ IF NOT EXISTS ] newViewName
+[ ( columnName [,...] ) ] AS select
+","
+Creates a new view."
+"Commands (DDL)","DROP AGGREGATE","
+DROP AGGREGATE [ IF EXISTS ] aggregateName
+","
+Drops an existing user-defined aggregate function."
+"Commands (DDL)","DROP ALIAS","
+DROP ALIAS [ IF EXISTS ] existingFunctionAliasName
+","
+Drops an existing function alias."
+"Commands (DDL)","DROP ALL OBJECTS","
+DROP ALL OBJECTS [ DELETE FILES ]
+","
+Drops all existing views, tables, sequences, schemas, function aliases, roles,
+user-defined aggregate functions, domains, and users (except the current user)."
+"Commands (DDL)","DROP CONSTANT","
+DROP CONSTANT [ IF EXISTS ] constantName
+","
+Drops a constant."
+"Commands (DDL)","DROP DOMAIN","
+DROP DOMAIN [ IF EXISTS ] domainName
+","
+Drops a data type (domain)."
+"Commands (DDL)","DROP INDEX","
+DROP INDEX [ IF EXISTS ] indexName
+","
+Drops an index."
+"Commands (DDL)","DROP ROLE","
+DROP ROLE [ IF EXISTS ] roleName
+","
+Drops a role."
+"Commands (DDL)","DROP SCHEMA","
+DROP SCHEMA [ IF EXISTS ] schemaName [ RESTRICT | CASCADE ]
+","
+Drops a schema."
+"Commands (DDL)","DROP SEQUENCE","
+DROP SEQUENCE [ IF EXISTS ] sequenceName
+","
+Drops a sequence."
+"Commands (DDL)","DROP TABLE","
+DROP TABLE [ IF EXISTS ] tableName [,...] [ RESTRICT | CASCADE ]
+","
+Drops an existing table, or a list of tables."
+"Commands (DDL)","DROP TRIGGER","
+DROP TRIGGER [ IF EXISTS ] triggerName
+","
+Drops an existing trigger."
+"Commands (DDL)","DROP USER","
+DROP USER [ IF EXISTS ] userName
+","
+Drops a user."
+"Commands (DDL)","DROP VIEW","
+DROP VIEW [ IF EXISTS ] viewName [ RESTRICT | CASCADE ]
+","
+Drops an existing view."
+"Commands (DDL)","TRUNCATE TABLE","
+TRUNCATE TABLE tableName
+","
+Removes all rows from a table."
+"Commands (Other)","CHECKPOINT","
+CHECKPOINT
+","
+Flushes the data to disk."
+"Commands (Other)","CHECKPOINT SYNC","
+CHECKPOINT SYNC
+","
+Flushes the data to disk and and forces all system buffers be written
+to the underlying device."
+"Commands (Other)","COMMIT","
+COMMIT [ WORK ]
+","
+Commits a transaction."
+"Commands (Other)","COMMIT TRANSACTION","
+COMMIT TRANSACTION transactionName
+","
+Sets the resolution of an in-doubt transaction to 'commit'."
+"Commands (Other)","GRANT RIGHT","
+GRANT { SELECT | INSERT | UPDATE | DELETE | ALL } [,...] ON
+{ { SCHEMA schemaName } | { tableName [,...] } }
+TO { PUBLIC | userName | roleName }
+","
+Grants rights for a table to a user or role."
+"Commands (Other)","GRANT ALTER ANY SCHEMA","
+GRANT ALTER ANY SCHEMA TO userName
+","
+Grant schema altering rights to a user."
+"Commands (Other)","GRANT ROLE","
+GRANT roleName TO { PUBLIC | userName | roleName }
+","
+Grants a role to a user or role."
+"Commands (Other)","HELP","
+HELP [ anything [...] ]
+","
+Displays the help pages of SQL commands or keywords."
+"Commands (Other)","PREPARE COMMIT","
+PREPARE COMMIT newTransactionName
+","
+Prepares committing a transaction."
+"Commands (Other)","REVOKE RIGHT","
+REVOKE { SELECT | INSERT | UPDATE | DELETE | ALL } [,...] ON
+{ { SCHEMA schemaName } | { tableName [,...] } }
+FROM { PUBLIC | userName | roleName }
+","
+Removes rights for a table from a user or role."
+"Commands (Other)","REVOKE ROLE","
+REVOKE roleName FROM { PUBLIC | userName | roleName }
+","
+Removes a role from a user or role."
+"Commands (Other)","ROLLBACK","
+ROLLBACK [ TO SAVEPOINT savepointName ]
+","
+Rolls back a transaction."
+"Commands (Other)","ROLLBACK TRANSACTION","
+ROLLBACK TRANSACTION transactionName
+","
+Sets the resolution of an in-doubt transaction to 'rollback'."
+"Commands (Other)","SAVEPOINT","
+SAVEPOINT savepointName
+","
+Create a new savepoint."
+"Commands (Other)","SET @","
+SET @variableName [ = ] expression
+","
+Updates a user-defined variable."
+"Commands (Other)","SET ALLOW_LITERALS","
+SET ALLOW_LITERALS { NONE | ALL | NUMBERS }
+","
+This setting can help solve the SQL injection problem."
+"Commands (Other)","SET AUTOCOMMIT","
+SET AUTOCOMMIT { TRUE | ON | FALSE | OFF }
+","
+Switches auto commit on or off."
+"Commands (Other)","SET CACHE_SIZE","
+SET CACHE_SIZE int
+","
+Sets the size of the cache in KB (each KB being 1024 bytes) for the current database."
+"Commands (Other)","SET CLUSTER","
+SET CLUSTER serverListString
+","
+This command should not be used directly by an application, the statement is
+executed automatically by the system."
+"Commands (Other)","SET BINARY_COLLATION","
+SET BINARY_COLLATION
+{ UNSIGNED | SIGNED } ] }
+","
+Sets the collation used for comparing BINARY columns, the default is SIGNED
+for version 1."
+"Commands (Other)","SET BUILTIN_ALIAS_OVERRIDE","
+SET BUILTIN_ALIAS_OVERRIDE
+{ TRUE | FALSE } ] }
+","
+Allows the overriding of the builtin system date/time functions
+for unit testing purposes."
+"Commands (Other)","SET COLLATION","
+SET [ DATABASE ] COLLATION
+{ OFF | collationName
+    [ STRENGTH { PRIMARY | SECONDARY | TERTIARY | IDENTICAL } ] }
+","
+Sets the collation used for comparing strings."
+"Commands (Other)","SET COMPRESS_LOB","
+SET COMPRESS_LOB { NO | LZF | DEFLATE }
+","
+This feature is only available for the PageStore storage engine."
+"Commands (Other)","SET DATABASE_EVENT_LISTENER","
+SET DATABASE_EVENT_LISTENER classNameString
+","
+Sets the event listener class."
+"Commands (Other)","SET DB_CLOSE_DELAY","
+SET DB_CLOSE_DELAY int
+","
+Sets the delay for closing a database if all connections are closed."
+"Commands (Other)","SET DEFAULT_LOCK_TIMEOUT","
+SET DEFAULT LOCK_TIMEOUT int
+","
+Sets the default lock timeout (in milliseconds) in this database that is used
+for the new sessions."
+"Commands (Other)","SET DEFAULT_TABLE_TYPE","
+SET DEFAULT_TABLE_TYPE { MEMORY | CACHED }
+","
+Sets the default table storage type that is used when creating new tables."
+"Commands (Other)","SET EXCLUSIVE","
+SET EXCLUSIVE { 0 | 1 | 2 }
+","
+Switched the database to exclusive mode (1, 2) and back to normal mode (0)."
+"Commands (Other)","SET IGNORECASE","
+SET IGNORECASE { TRUE | FALSE }
+","
+If IGNORECASE is enabled, text columns in newly created tables will be
+case-insensitive."
+"Commands (Other)","SET JAVA_OBJECT_SERIALIZER","
+SET JAVA_OBJECT_SERIALIZER
+{ null | className }
+","
+Sets the object used to serialize and deserialize java objects being stored in column of type OTHER."
+"Commands (Other)","SET LAZY_QUERY_EXECUTION","
+SET LAZY_QUERY_EXECUTION int
+","
+Sets the lazy query execution mode."
+"Commands (Other)","SET LOG","
+SET LOG int
+","
+Sets the transaction log mode."
+"Commands (Other)","SET LOCK_MODE","
+SET LOCK_MODE int
+","
+Sets the lock mode."
+"Commands (Other)","SET LOCK_TIMEOUT","
+SET LOCK_TIMEOUT int
+","
+Sets the lock timeout (in milliseconds) for the current session."
+"Commands (Other)","SET MAX_LENGTH_INPLACE_LOB","
+SET MAX_LENGTH_INPLACE_LOB int
+","
+Sets the maximum size of an in-place LOB object."
+"Commands (Other)","SET MAX_LOG_SIZE","
+SET MAX_LOG_SIZE int
+","
+Sets the maximum size of the transaction log, in megabytes."
+"Commands (Other)","SET MAX_MEMORY_ROWS","
+SET MAX_MEMORY_ROWS int
+","
+The maximum number of rows in a result set that are kept in-memory."
+"Commands (Other)","SET MAX_MEMORY_UNDO","
+SET MAX_MEMORY_UNDO int
+","
+The maximum number of undo records per a session that are kept in-memory."
+"Commands (Other)","SET MAX_OPERATION_MEMORY","
+SET MAX_OPERATION_MEMORY int
+","
+Sets the maximum memory used for large operations (delete and insert), in bytes."
+"Commands (Other)","SET MODE","
+SET MODE { REGULAR | DB2 | DERBY | HSQLDB | MSSQLSERVER | MYSQL | ORACLE | POSTGRESQL }
+","
+Changes to another database compatibility mode."
+"Commands (Other)","SET MULTI_THREADED","
+SET MULTI_THREADED { 0 | 1 }
+","
+Enabled (1) or disabled (0) multi-threading inside the database engine."
+"Commands (Other)","SET OPTIMIZE_REUSE_RESULTS","
+SET OPTIMIZE_REUSE_RESULTS { 0 | 1 }
+","
+Enabled (1) or disabled (0) the result reuse optimization."
+"Commands (Other)","SET PASSWORD","
+SET PASSWORD string
+","
+Changes the password of the current user."
+"Commands (Other)","SET QUERY_STATISTICS","
+SET QUERY_STATISTICS { TRUE | FALSE }
+","
+Disabled or enables query statistics gathering for the whole database."
+"Commands (Other)","SET QUERY_STATISTICS_MAX_ENTRIES","
+SET QUERY_STATISTICS int
+","
+Set the maximum number of entries in query statistics meta-table."
+"Commands (Other)","SET QUERY_TIMEOUT","
+SET QUERY_TIMEOUT int
+","
+Set the query timeout of the current session to the given value."
+"Commands (Other)","SET REFERENTIAL_INTEGRITY","
+SET REFERENTIAL_INTEGRITY { TRUE | FALSE }
+","
+Disabled or enables referential integrity checking for the whole database."
+"Commands (Other)","SET RETENTION_TIME","
+SET RETENTION_TIME int
+","
+This property is only used when using the MVStore storage engine."
+"Commands (Other)","SET SALT HASH","
+SET SALT bytes HASH bytes
+","
+Sets the password salt and hash for the current user."
+"Commands (Other)","SET SCHEMA","
+SET SCHEMA schemaName
+","
+Changes the default schema of the current connection."
+"Commands (Other)","SET SCHEMA_SEARCH_PATH","
+SET SCHEMA_SEARCH_PATH schemaName [,...]
+","
+Changes the schema search path of the current connection."
+"Commands (Other)","SET THROTTLE","
+SET THROTTLE int
+","
+Sets the throttle for the current connection."
+"Commands (Other)","SET TRACE_LEVEL","
+SET { TRACE_LEVEL_FILE | TRACE_LEVEL_SYSTEM_OUT } int
+","
+Sets the trace level for file the file or system out stream."
+"Commands (Other)","SET TRACE_MAX_FILE_SIZE","
+SET TRACE_MAX_FILE_SIZE int
+","
+Sets the maximum trace file size."
+"Commands (Other)","SET UNDO_LOG","
+SET UNDO_LOG int
+","
+Enables (1) or disables (0) the per session undo log."
+"Commands (Other)","SET WRITE_DELAY","
+SET WRITE_DELAY int
+","
+Set the maximum delay between a commit and flushing the log, in milliseconds."
+"Commands (Other)","SHUTDOWN","
+SHUTDOWN [ IMMEDIATELY | COMPACT | DEFRAG ]
+","
+This statement closes all open connections to the database and closes the
+database."
+"Datetime fields","Datetime field","
+yearField | monthField | dayOfMonthField
+    | hourField | minuteField | secondField
+    | millisecondField | microsecondField | nanosecondField
+    | timezoneHourField | timezoneMinuteField
+    | dayOfWeekField | isoDayOfWeekField
+    | weekOfYearField | isoWeekOfYearField
+    | quarterField | dayOfYearField | epochField
+","
+Fields for EXTRACT, DATEADD, and DATEDIFF functions."
+"Datetime fields","Year field","
+YEAR | YYYY | YY | SQL_TSI_YEAR
+","
+Year."
+"Datetime fields","Month field","
+MONTH | MM | M | SQL_TSI_MONTH
+","
+Month (1-12)."
+"Datetime fields","Day of month field","
+DAY | DD | D | SQL_TSI_DAY
+","
+Day of month (1-31)."
+"Datetime fields","Hour field","
+HOUR | HH | SQL_TSI_HOUR
+","
+Hour (0-23)."
+"Datetime fields","Minute field","
+MINUTE | MI | N | SQL_TSI_MINUTE
+","
+Minute (0-59)."
+"Datetime fields","Second field","
+SECOND | SS | S | SQL_TSI_SECOND
+","
+Second (0-59)."
+"Datetime fields","Millisecond field","
+MILLISECOND | MS
+","
+Millisecond (0-999)."
+"Datetime fields","Microsecond field","
+MICROSECOND | MCS
+","
+Microsecond (0-999999)."
+"Datetime fields","Nanosecond field","
+NANOSECOND | NS
+","
+Nanosecond (0-999999999)."
+"Datetime fields","Timezone hour field","
+TIMEZONE_HOUR
+","
+Timezone hour (from -18 to +18)."
+"Datetime fields","Timezone minute field","
+TIMEZONE_MINUTE
+","
+Timezone minute (from -59 to +59)."
+"Datetime fields","Day of week field","
+DAY_OF_WEEK | DAYOFWEEK | DOW
+","
+Day of week (1-7)."
+"Datetime fields","ISO day of week field","
+ISO_DAY_OF_WEEK
+","
+ISO day of week (1-7)."
+"Datetime fields","Week of year field","
+WEEK | WW | W | SQL_TSI_WEEK
+","
+Week of year (1-53)."
+"Datetime fields","ISO week of year field","
+ISO_WEEK
+","
+ISO week of year (1-53)."
+"Datetime fields","Quarter field","
+QUARTER
+","
+Quarter (1-4)."
+"Datetime fields","Day of year field","
+DAYOFYEAR | DAY_OF_YEAR | DOY | DY
+","
+Day of year (1-366)."
+"Datetime fields","Epoch field","
+EPOCH
+","
+For TIMESTAMP values number of seconds since 1970-01-01 00:00:00 in local time zone."
+"Other Grammar","Alias","
+name
+","
+An alias is a name that is only valid in the context of the statement."
+"Other Grammar","And Condition","
+condition [ { AND condition } [...] ]
+","
+Value or condition."
+"Other Grammar","Array","
+( [ expression, [ expression [,...] ] ] )
+","
+An array of values."
+"Other Grammar","Boolean","
+TRUE | FALSE
+","
+A boolean value."
+"Other Grammar","Bytes","
+X'hex'
+","
+A binary value."
+"Other Grammar","Case","
+CASE expression { WHEN expression THEN expression } [...]
+[ ELSE expression ] END
+","
+Returns the first expression where the value is equal to the test expression."
+"Other Grammar","Case When","
+CASE { WHEN expression THEN expression} [...]
+[ ELSE expression ] END
+","
+Returns the first expression where the condition is true."
+"Other Grammar","Cipher","
+AES
+","
+Only the algorithm AES (""AES-128"") is supported currently."
+"Other Grammar","Column Definition","
+dataType [ VISIBLE | INVISIBLE ]
+[ { DEFAULT expression | AS computedColumnExpression } ]
+[ ON UPDATE expression ] [ [ NOT ] NULL ]
+[ { AUTO_INCREMENT | IDENTITY } [ ( startInt [, incrementInt ] ) ] ]
+[ SELECTIVITY selectivity ] [ COMMENT expression ]
+[ PRIMARY KEY [ HASH ] | UNIQUE ] [ CHECK condition ]
+","
+Default expressions are used if no explicit value was used when adding a row."
+"Other Grammar","Comments","
+-- anythingUntilEndOfLine | // anythingUntilEndOfLine | /* anythingUntilEndComment */
+","
+Comments can be used anywhere in a command and are ignored by the database."
+"Other Grammar","Compare","
+<> | <= | >= | = | < | > | != | &&
+","
+Comparison operator."
+"Other Grammar","Condition","
+operand [ conditionRightHandSide ] | NOT condition | EXISTS ( select )
+","
+Boolean value or condition."
+"Other Grammar","Condition Right Hand Side","
+compare { { { ALL | ANY | SOME } ( select ) } | operand }
+    | IS [ NOT ] NULL
+    | IS [ NOT ] [ DISTINCT FROM ] operand
+    | BETWEEN operand AND operand
+    | IN ( { select | expression [,...] } )
+    | [ NOT ] [ LIKE | ILIKE ] operand [ ESCAPE string ]
+    | [ NOT ] REGEXP operand
+","
+The right hand side of a condition."
+"Other Grammar","Constraint","
+[ constraintNameDefinition ]
+{ CHECK expression
+    | UNIQUE ( columnName [,...] )
+    | referentialConstraint
+    | PRIMARY KEY [ HASH ] ( columnName [,...] ) }
+","
+Defines a constraint."
+"Other Grammar","Constraint Name Definition","
+CONSTRAINT [ IF NOT EXISTS ] newConstraintName
+","
+Defines a constraint name."
+"Other Grammar","Csv Options","
+charsetString [, fieldSepString [, fieldDelimString [, escString [, nullString]]]]]
+    | optionString
+","
+Optional parameters for CSVREAD and CSVWRITE."
+"Other Grammar","Data Type","
+intType | booleanType | tinyintType | smallintType | bigintType | identityType
+    | decimalType | doubleType | realType | dateType | timeType | timestampType
+    | timestampWithTimeZoneType | binaryType | otherType | varcharType
+    | varcharIgnorecaseType | charType | blobType | clobType | uuidType
+    | arrayType | enumType
+","
+A data type definition."
+"Other Grammar","Date","
+DATE 'yyyy-MM-dd'
+","
+A date literal."
+"Other Grammar","Decimal","
+[ + | - ] { { number [ . number ] } | { . number } }
+[ E [ + | - ] expNumber [...] ] ]
+","
+A decimal number with fixed precision and scale."
+"Other Grammar","Digit","
+0-9
+","
+A digit."
+"Other Grammar","Dollar Quoted String","
+$$anythingExceptTwoDollarSigns$$
+","
+A string starts and ends with two dollar signs."
+"Other Grammar","Expression","
+andCondition [ { OR andCondition } [...] ]
+","
+Value or condition."
+"Other Grammar","Factor","
+term [ { { * | / | % } term } [...] ]
+","
+A value or a numeric factor."
+"Other Grammar","Hex","
+{ { digit | a-f | A-F } { digit | a-f | A-F } } [...]
+","
+The hexadecimal representation of a number or of bytes."
+"Other Grammar","Hex Number","
+[ + | - ] 0x hex
+","
+A number written in hexadecimal notation."
+"Other Grammar","Index Column","
+columnName [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+","
+Indexes this column in ascending or descending order."
+"Other Grammar","Int","
+[ + | - ] number
+","
+The maximum integer number is 2147483647, the minimum is -2147483648."
+"Other Grammar","Long","
+[ + | - ] number
+","
+Long numbers are between -9223372036854775808 and 9223372036854775807."
+"Other Grammar","Name","
+{ { A-Z|_ } [ { A-Z|_|0-9 } [...] ] } | quotedName
+","
+Names are not case sensitive."
+"Other Grammar","Null","
+NULL
+","
+NULL is a value without data type and means 'unknown value'."
+"Other Grammar","Number","
+digit [...]
+","
+The maximum length of the number depends on the data type used."
+"Other Grammar","Numeric","
+decimal | int | long | hexNumber
+","
+The data type of a numeric value is always the lowest possible for the given value."
+"Other Grammar","Operand","
+summand [ { || summand } [...] ]
+","
+A value or a concatenation of values."
+"Other Grammar","Order","
+{ int | expression } [ ASC | DESC ] [ NULLS { FIRST | LAST } ]
+","
+Sorts the result by the given column number, or by an expression."
+"Other Grammar","Quoted Name","
+""anythingExceptDoubleQuote""
+","
+Quoted names are case sensitive, and can contain spaces."
+"Other Grammar","Referential Constraint","
+FOREIGN KEY ( columnName [,...] )
+REFERENCES [ refTableName ] [ ( refColumnName [,...] ) ]
+[ ON DELETE referentialAction ] [ ON UPDATE referentialAction ]
+","
+Defines a referential constraint."
+"Other Grammar","Referential Action","
+CASCADE | RESTRICT | NO ACTION | SET { DEFAULT | NULL }
+","
+The action CASCADE will cause conflicting rows in the referencing (child) table to be deleted or updated."
+"Other Grammar","Script Compression Encryption","
+[ COMPRESSION { DEFLATE | LZF | ZIP | GZIP } ]
+[ CIPHER cipher PASSWORD string ]
+","
+The compression and encryption algorithm to use for script files."
+"Other Grammar","Select Expression","
+* | expression [ [ AS ] columnAlias ] | tableAlias.*
+","
+An expression in a SELECT statement."
+"Other Grammar","String","
+'anythingExceptSingleQuote'
+","
+A string starts and ends with a single quote."
+"Other Grammar","Summand","
+factor [ { { + | - } factor } [...] ]
+","
+A value or a numeric sum."
+"Other Grammar","Table Expression","
+{ [ schemaName. ] tableName | ( select ) | valuesExpression }
+[ [ AS ] newTableAlias [ ( columnName [,...] ) ] ]
+[ USE INDEX ([ indexName [,...] ]) ]
+[ { { LEFT | RIGHT } [ OUTER ] | [ INNER ] | CROSS | NATURAL }
+    JOIN tableExpression [ ON expression ] ]
+","
+Joins a table."
+"Other Grammar","Values Expression","
+VALUES { ( expression [,...] ) } [,...]
+","
+A list of rows that can be used like a table."
+"Other Grammar","Term","
+value
+    | columnName
+    | ?[ int ]
+    | NEXT VALUE FOR sequenceName
+    | function
+    | { - | + } term
+    | ( expression )
+    | select
+    | case
+    | caseWhen
+    | tableAlias.columnName
+    | userDefinedFunctionName
+","
+A value."
+"Other Grammar","Time","
+TIME [ WITHOUT TIME ZONE ] 'hh:mm:ss[.nnnnnnnnn]'
+","
+A time literal."
+"Other Grammar","Timestamp","
+TIMESTAMP [ WITHOUT TIME ZONE ] 'yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]'
+","
+A timestamp literal."
+"Other Grammar","Timestamp with time zone","
+TIMESTAMP WITH TIME ZONE 'yyyy-MM-dd hh:mm:ss[.nnnnnnnnn]
+[Z | { - | + } timeZoneOffsetString | timeZoneNameString ]'
+","
+A timestamp with time zone literal."
+"Other Grammar","Date and time","
+date | time | timestamp | timestampWithTimeZone
+","
+A literal value of any date-time data type."
+"Other Grammar","Value","
+string | dollarQuotedString | numeric | dateAndTime | boolean | bytes | array | null
+","
+A literal value of any data type, or null."
+"Data Types","INT Type","
+INT | INTEGER | MEDIUMINT | INT4 | SIGNED
+","
+Possible values: -2147483648 to 2147483647."
+"Data Types","BOOLEAN Type","
+BOOLEAN | BIT | BOOL
+","
+Possible values: TRUE and FALSE."
+"Data Types","TINYINT Type","
+TINYINT
+","
+Possible values are: -128 to 127."
+"Data Types","SMALLINT Type","
+SMALLINT | INT2 | YEAR
+","
+Possible values: -32768 to 32767."
+"Data Types","BIGINT Type","
+BIGINT | INT8
+","
+Possible values: -9223372036854775808 to 9223372036854775807."
+"Data Types","IDENTITY Type","
+IDENTITY
+","
+Auto-Increment value."
+"Data Types","DECIMAL Type","
+{ DECIMAL | NUMBER | DEC | NUMERIC } ( precisionInt [ , scaleInt ] )
+","
+Data type with fixed precision and scale."
+"Data Types","DOUBLE Type","
+{ DOUBLE [ PRECISION ] | FLOAT [ ( precisionInt ) ] | FLOAT8 }
+","
+A floating point number."
+"Data Types","REAL Type","
+{ REAL | FLOAT ( precisionInt ) | FLOAT4 }
+","
+A single precision floating point number."
+"Data Types","TIME Type","
+TIME [ ( precisionInt ) ] [ WITHOUT TIME ZONE ]
+","
+The time data type."
+"Data Types","DATE Type","
+DATE
+","
+The date data type."
+"Data Types","TIMESTAMP Type","
+{ TIMESTAMP [ ( precisionInt ) ] [ WITHOUT TIME ZONE ]
+    | DATETIME | SMALLDATETIME }
+","
+The timestamp data type."
+"Data Types","TIMESTAMP WITH TIME ZONE Type","
+TIMESTAMP [ ( precisionInt ) ] WITH TIME ZONE
+","
+The timestamp with time zone data type."
+"Data Types","BINARY Type","
+{ BINARY | VARBINARY | LONGVARBINARY | RAW | BYTEA }
+[ ( precisionInt ) ]
+","
+Represents a byte array."
+"Data Types","OTHER Type","
+OTHER
+","
+This type allows storing serialized Java objects."
+"Data Types","VARCHAR Type","
+{ VARCHAR | LONGVARCHAR | VARCHAR2 | NVARCHAR
+    | NVARCHAR2 | VARCHAR_CASESENSITIVE} [ ( precisionInt ) ]
+","
+A Unicode String."
+"Data Types","VARCHAR_IGNORECASE Type","
+VARCHAR_IGNORECASE [ ( precisionInt ) ]
+","
+Same as VARCHAR, but not case sensitive when comparing."
+"Data Types","CHAR Type","
+{ CHAR | CHARACTER | NCHAR } [ ( precisionInt ) ]
+","
+A Unicode String."
+"Data Types","BLOB Type","
+{ BLOB | TINYBLOB | MEDIUMBLOB | LONGBLOB | IMAGE | OID }
+[ ( precisionInt ) ]
+","
+Like BINARY, but intended for very large values such as files or images."
+"Data Types","CLOB Type","
+{ CLOB | TINYTEXT | TEXT | MEDIUMTEXT | LONGTEXT | NTEXT | NCLOB }
+[ ( precisionInt ) ]
+","
+CLOB is like VARCHAR, but intended for very large values."
+"Data Types","UUID Type","
+UUID
+","
+Universally unique identifier."
+"Data Types","ARRAY Type","
+ARRAY
+","
+An array of values."
+"Data Types","ENUM Type","
+{ ENUM (string [, ... ]) }
+","
+A type with enumerated values."
+"Data Types","GEOMETRY Type","
+GEOMETRY
+","
+A spatial geometry type, based on the ""org.locationtech.jts"" library."
+"Functions (Aggregate)","AVG","
+AVG ( [ DISTINCT ] { numeric } ) [ FILTER ( WHERE expression ) ]
+","
+The average (mean) value."
+"Functions (Aggregate)","BIT_AND","
+BIT_AND(expression) [ FILTER ( WHERE expression ) ]
+","
+The bitwise AND of all non-null values."
+"Functions (Aggregate)","BIT_OR","
+BIT_OR(expression) [ FILTER ( WHERE expression ) ]
+","
+The bitwise OR of all non-null values."
+"Functions (Aggregate)","BOOL_AND","
+BOOL_AND(boolean) [ FILTER ( WHERE expression ) ]
+","
+Returns true if all expressions are true."
+"Functions (Aggregate)","BOOL_OR","
+BOOL_OR(boolean) [ FILTER ( WHERE expression ) ]
+","
+Returns true if any expression is true."
+"Functions (Aggregate)","COUNT","
+COUNT( { * | { [ DISTINCT ] expression } } ) [ FILTER ( WHERE expression ) ]
+","
+The count of all row, or of the non-null values."
+"Functions (Aggregate)","GROUP_CONCAT","
+GROUP_CONCAT ( [ DISTINCT ] string
+[ ORDER BY { expression [ ASC | DESC ] } [,...] ]
+[ SEPARATOR expression ] ) [ FILTER ( WHERE expression ) ]
+","
+Concatenates strings with a separator."
+"Functions (Aggregate)","ARRAY_AGG","
+ARRAY_AGG ( [ DISTINCT ] string
+[ ORDER BY { expression [ ASC | DESC ] } [,...] ] )
+[ FILTER ( WHERE expression ) ]
+","
+Aggregate the value into an array."
+"Functions (Aggregate)","MAX","
+MAX(value) [ FILTER ( WHERE expression ) ]
+","
+The highest value."
+"Functions (Aggregate)","MIN","
+MIN(value) [ FILTER ( WHERE expression ) ]
+","
+The lowest value."
+"Functions (Aggregate)","SUM","
+SUM( [ DISTINCT ] { numeric } ) [ FILTER ( WHERE expression ) ]
+","
+The sum of all values."
+"Functions (Aggregate)","SELECTIVITY","
+SELECTIVITY(value) [ FILTER ( WHERE expression ) ]
+","
+Estimates the selectivity (0-100) of a value."
+"Functions (Aggregate)","STDDEV_POP","
+STDDEV_POP( [ DISTINCT ] numeric ) [ FILTER ( WHERE expression ) ]
+","
+The population standard deviation."
+"Functions (Aggregate)","STDDEV_SAMP","
+STDDEV_SAMP( [ DISTINCT ] numeric ) [ FILTER ( WHERE expression ) ]
+","
+The sample standard deviation."
+"Functions (Aggregate)","VAR_POP","
+VAR_POP( [ DISTINCT ] numeric ) [ FILTER ( WHERE expression ) ]
+","
+The population variance (square of the population standard deviation)."
+"Functions (Aggregate)","VAR_SAMP","
+VAR_SAMP( [ DISTINCT ] numeric ) [ FILTER ( WHERE expression ) ]
+","
+The sample variance (square of the sample standard deviation)."
+"Functions (Aggregate)","MEDIAN","
+MEDIAN( [ DISTINCT ] value ) [ FILTER ( WHERE expression ) ]
+","
+The value separating the higher half of a values from the lower half."
+"Functions (Numeric)","ABS","
+ABS ( { numeric } )
+","
+See also Java ""Math.abs""."
+"Functions (Numeric)","ACOS","
+ACOS(numeric)
+","
+Calculate the arc cosine."
+"Functions (Numeric)","ASIN","
+ASIN(numeric)
+","
+Calculate the arc sine."
+"Functions (Numeric)","ATAN","
+ATAN(numeric)
+","
+Calculate the arc tangent."
+"Functions (Numeric)","COS","
+COS(numeric)
+","
+Calculate the trigonometric cosine."
+"Functions (Numeric)","COSH","
+COSH(numeric)
+","
+Calculate the hyperbolic cosine."
+"Functions (Numeric)","COT","
+COT(numeric)
+","
+Calculate the trigonometric cotangent (""1/TAN(ANGLE)"")."
+"Functions (Numeric)","SIN","
+SIN(numeric)
+","
+Calculate the trigonometric sine."
+"Functions (Numeric)","SINH","
+SINH(numeric)
+","
+Calculate the hyperbolic sine."
+"Functions (Numeric)","TAN","
+TAN(numeric)
+","
+Calculate the trigonometric tangent."
+"Functions (Numeric)","TANH","
+TANH(numeric)
+","
+Calculate the hyperbolic tangent."
+"Functions (Numeric)","ATAN2","
+ATAN2(numeric, numeric)
+","
+Calculate the angle when converting the rectangular coordinates to polar coordinates."
+"Functions (Numeric)","BITAND","
+BITAND(long, long)
+","
+The bitwise AND operation."
+"Functions (Numeric)","BITGET","
+BITGET(long, int)
+","
+Returns true if and only if the first parameter has a bit set in the
+position specified by the second parameter."
+"Functions (Numeric)","BITOR","
+BITOR(long, long)
+","
+The bitwise OR operation."
+"Functions (Numeric)","BITXOR","
+BITXOR(long, long)
+","
+The bitwise XOR operation."
+"Functions (Numeric)","MOD","
+MOD(long, long)
+","
+The modulo operation."
+"Functions (Numeric)","CEILING","
+{ CEILING | CEIL } (numeric)
+","
+See also Java ""Math.ceil""."
+"Functions (Numeric)","DEGREES","
+DEGREES(numeric)
+","
+See also Java ""Math.toDegrees""."
+"Functions (Numeric)","EXP","
+EXP(numeric)
+","
+See also Java ""Math.exp""."
+"Functions (Numeric)","FLOOR","
+FLOOR(numeric)
+","
+See also Java ""Math.floor""."
+"Functions (Numeric)","LOG","
+{ LOG | LN } (numeric)
+","
+See also Java ""Math.log""."
+"Functions (Numeric)","LOG10","
+LOG10(numeric)
+","
+See also Java ""Math.log10""."
+"Functions (Numeric)","RADIANS","
+RADIANS(numeric)
+","
+See also Java ""Math.toRadians""."
+"Functions (Numeric)","SQRT","
+SQRT(numeric)
+","
+See also Java ""Math.sqrt""."
+"Functions (Numeric)","PI","
+PI()
+","
+See also Java ""Math.PI""."
+"Functions (Numeric)","POWER","
+POWER(numeric, numeric)
+","
+See also Java ""Math.pow""."
+"Functions (Numeric)","RAND","
+{ RAND | RANDOM } ( [ int ] )
+","
+Calling the function without parameter returns the next a pseudo random number."
+"Functions (Numeric)","RANDOM_UUID","
+{ RANDOM_UUID | UUID } ()
+","
+Returns a new UUID with 122 pseudo random bits."
+"Functions (Numeric)","ROUND","
+ROUND(numeric [, digitsInt])
+","
+Rounds to a number of digits, or to the nearest long if the number of digits if not set."
+"Functions (Numeric)","ROUNDMAGIC","
+ROUNDMAGIC(numeric)
+","
+This function rounds numbers in a good way, but it is slow."
+"Functions (Numeric)","SECURE_RAND","
+SECURE_RAND(int)
+","
+Generates a number of cryptographically secure random numbers."
+"Functions (Numeric)","SIGN","
+SIGN ( { numeric } )
+","
+Returns -1 if the value is smaller 0, 0 if zero, and otherwise 1."
+"Functions (Numeric)","ENCRYPT","
+ENCRYPT(algorithmString, keyBytes, dataBytes)
+","
+Encrypts data using a key."
+"Functions (Numeric)","DECRYPT","
+DECRYPT(algorithmString, keyBytes, dataBytes)
+","
+Decrypts data using a key."
+"Functions (Numeric)","HASH","
+HASH(algorithmString, dataBytes, iterationInt)
+","
+Calculate the hash value using an algorithm, and repeat this process for a number of iterations."
+"Functions (Numeric)","TRUNCATE","
+{ TRUNC | TRUNCATE } ( { {numeric, digitsInt}
+    | timestamp | timestampWithTimeZone | date | timestampString } )
+","
+Truncates to a number of digits (to the next value closer to 0)."
+"Functions (Numeric)","COMPRESS","
+COMPRESS(dataBytes [, algorithmString])
+","
+Compresses the data using the specified compression algorithm."
+"Functions (Numeric)","EXPAND","
+EXPAND(bytes)
+","
+Expands data that was compressed using the COMPRESS function."
+"Functions (Numeric)","ZERO","
+ZERO()
+","
+Returns the value 0."
+"Functions (String)","ASCII","
+ASCII(string)
+","
+Returns the ASCII value of the first character in the string."
+"Functions (String)","BIT_LENGTH","
+BIT_LENGTH(string)
+","
+Returns the number of bits in a string."
+"Functions (String)","LENGTH","
+{ LENGTH | CHAR_LENGTH | CHARACTER_LENGTH } ( string )
+","
+Returns the number of characters in a string."
+"Functions (String)","OCTET_LENGTH","
+OCTET_LENGTH(string)
+","
+Returns the number of bytes in a string."
+"Functions (String)","CHAR","
+{ CHAR | CHR } ( int )
+","
+Returns the character that represents the ASCII value."
+"Functions (String)","CONCAT","
+CONCAT(string, string [,...])
+","
+Combines strings."
+"Functions (String)","CONCAT_WS","
+CONCAT_WS(separatorString, string, string [,...])
+","
+Combines strings with separator."
+"Functions (String)","DIFFERENCE","
+DIFFERENCE(string, string)
+","
+Returns the difference between the sounds of two strings."
+"Functions (String)","HEXTORAW","
+HEXTORAW(string)
+","
+Converts a hex representation of a string to a string."
+"Functions (String)","RAWTOHEX","
+RAWTOHEX(string)
+","
+Converts a string to the hex representation."
+"Functions (String)","INSTR","
+INSTR(string, searchString, [, startInt])
+","
+Returns the location of a search string in a string."
+"Functions (String)","INSERT Function","
+INSERT(originalString, startInt, lengthInt, addString)
+","
+Inserts a additional string into the original string at a specified start position."
+"Functions (String)","LOWER","
+{ LOWER | LCASE } ( string )
+","
+Converts a string to lowercase."
+"Functions (String)","UPPER","
+{ UPPER | UCASE } ( string )
+","
+Converts a string to uppercase."
+"Functions (String)","LEFT","
+LEFT(string, int)
+","
+Returns the leftmost number of characters."
+"Functions (String)","RIGHT","
+RIGHT(string, int)
+","
+Returns the rightmost number of characters."
+"Functions (String)","LOCATE","
+LOCATE(searchString, string [, startInt])
+","
+Returns the location of a search string in a string."
+"Functions (String)","POSITION","
+POSITION(searchString, string)
+","
+Returns the location of a search string in a string."
+"Functions (String)","LPAD","
+LPAD(string, int[, paddingString])
+","
+Left pad the string to the specified length."
+"Functions (String)","RPAD","
+RPAD(string, int[, paddingString])
+","
+Right pad the string to the specified length."
+"Functions (String)","LTRIM","
+LTRIM(string)
+","
+Removes all leading spaces from a string."
+"Functions (String)","RTRIM","
+RTRIM(string)
+","
+Removes all trailing spaces from a string."
+"Functions (String)","TRIM","
+TRIM ( [ { LEADING | TRAILING | BOTH } [ string ] FROM ] string )
+","
+Removes all leading spaces, trailing spaces, or spaces at both ends, from a string."
+"Functions (String)","REGEXP_REPLACE","
+REGEXP_REPLACE(inputString, regexString, replacementString [, flagsString])
+","
+Replaces each substring that matches a regular expression."
+"Functions (String)","REGEXP_LIKE","
+REGEXP_LIKE(inputString, regexString [, flagsString])
+","
+Matches string to a regular expression."
+"Functions (String)","REPEAT","
+REPEAT(string, int)
+","
+Returns a string repeated some number of times."
+"Functions (String)","REPLACE","
+REPLACE(string, searchString [, replacementString])
+","
+Replaces all occurrences of a search string in a text with another string."
+"Functions (String)","SOUNDEX","
+SOUNDEX(string)
+","
+Returns a four character code representing the sound of a string."
+"Functions (String)","SPACE","
+SPACE(int)
+","
+Returns a string consisting of a number of spaces."
+"Functions (String)","STRINGDECODE","
+STRINGDECODE(string)
+","
+Converts a encoded string using the Java string literal encoding format."
+"Functions (String)","STRINGENCODE","
+STRINGENCODE(string)
+","
+Encodes special characters in a string using the Java string literal encoding format."
+"Functions (String)","STRINGTOUTF8","
+STRINGTOUTF8(string)
+","
+Encodes a string to a byte array using the UTF8 encoding format."
+"Functions (String)","SUBSTRING","
+{ SUBSTRING | SUBSTR } ( string, startInt [, lengthInt ] )
+","
+Returns a substring of a string starting at a position."
+"Functions (String)","UTF8TOSTRING","
+UTF8TOSTRING(bytes)
+","
+Decodes a byte array in the UTF8 format to a string."
+"Functions (String)","XMLATTR","
+XMLATTR(nameString, valueString)
+","
+Creates an XML attribute element of the form ""name=value""."
+"Functions (String)","XMLNODE","
+XMLNODE(elementString [, attributesString [, contentString [, indentBoolean]]])
+","
+Create an XML node element."
+"Functions (String)","XMLCOMMENT","
+XMLCOMMENT(commentString)
+","
+Creates an XML comment."
+"Functions (String)","XMLCDATA","
+XMLCDATA(valueString)
+","
+Creates an XML CDATA element."
+"Functions (String)","XMLSTARTDOC","
+XMLSTARTDOC()
+","
+Returns the XML declaration."
+"Functions (String)","XMLTEXT","
+XMLTEXT(valueString [, escapeNewlineBoolean])
+","
+Creates an XML text element."
+"Functions (String)","TO_CHAR","
+TO_CHAR(value [, formatString[, nlsParamString]])
+","
+Oracle-compatible TO_CHAR function that can format a timestamp, a number, or text."
+"Functions (String)","TRANSLATE","
+TRANSLATE(value, searchString, replacementString)
+","
+Oracle-compatible TRANSLATE function that replaces a sequence of characters in a string with another set of characters."
+"Functions (Time and Date)","CURRENT_DATE","
+{ CURRENT_DATE [ () ] | CURDATE() | SYSDATE | TODAY }
+","
+Returns the current date."
+"Functions (Time and Date)","CURRENT_TIME","
+{ CURRENT_TIME [ () ] | CURTIME() }
+","
+Returns the current time."
+"Functions (Time and Date)","CURRENT_TIMESTAMP","
+{ CURRENT_TIMESTAMP [ ( [ int ] ) ] | NOW( [ int ] ) }
+","
+Returns the current timestamp."
+"Functions (Time and Date)","DATEADD","
+{ DATEADD| TIMESTAMPADD } (datetimeField, addIntLong, dateAndTime)
+","
+Adds units to a date-time value."
+"Functions (Time and Date)","DATEDIFF","
+{ DATEDIFF | TIMESTAMPDIFF } (datetimeField, aDateAndTime, bDateAndTime)
+","
+Returns the the number of crossed unit boundaries between two date/time values."
+"Functions (Time and Date)","DAYNAME","
+DAYNAME(dateAndTime)
+","
+Returns the name of the day (in English)."
+"Functions (Time and Date)","DAY_OF_MONTH","
+DAY_OF_MONTH(dateAndTime)
+","
+Returns the day of the month (1-31)."
+"Functions (Time and Date)","DAY_OF_WEEK","
+DAY_OF_WEEK(dateAndTime)
+","
+Returns the day of the week (1 means Sunday)."
+"Functions (Time and Date)","ISO_DAY_OF_WEEK","
+ISO_DAY_OF_WEEK(dateAndTime)
+","
+Returns the ISO day of the week (1 means Monday)."
+"Functions (Time and Date)","DAY_OF_YEAR","
+DAY_OF_YEAR(dateAndTime)
+","
+Returns the day of the year (1-366)."
+"Functions (Time and Date)","EXTRACT","
+EXTRACT ( datetimeField FROM dateAndTime )
+","
+Returns a value of the specific time unit from a date/time value."
+"Functions (Time and Date)","FORMATDATETIME","
+FORMATDATETIME ( dateAndTime, formatString
+[ , localeString [ , timeZoneString ] ] )
+","
+Formats a date, time or timestamp as a string."
+"Functions (Time and Date)","HOUR","
+HOUR(dateAndTime)
+","
+Returns the hour (0-23) from a date/time value."
+"Functions (Time and Date)","MINUTE","
+MINUTE(dateAndTime)
+","
+Returns the minute (0-59) from a date/time value."
+"Functions (Time and Date)","MONTH","
+MONTH(dateAndTime)
+","
+Returns the month (1-12) from a date/time value."
+"Functions (Time and Date)","MONTHNAME","
+MONTHNAME(dateAndTime)
+","
+Returns the name of the month (in English)."
+"Functions (Time and Date)","PARSEDATETIME","
+PARSEDATETIME(string, formatString
+[, localeString [, timeZoneString]])
+","
+Parses a string and returns a timestamp."
+"Functions (Time and Date)","QUARTER","
+QUARTER(dateAndTime)
+","
+Returns the quarter (1-4) from a date/time value."
+"Functions (Time and Date)","SECOND","
+SECOND(dateAndTime)
+","
+Returns the second (0-59) from a date/time value."
+"Functions (Time and Date)","WEEK","
+WEEK(dateAndTime)
+","
+Returns the week (1-53) from a date/time value."
+"Functions (Time and Date)","ISO_WEEK","
+ISO_WEEK(dateAndTime)
+","
+Returns the ISO week (1-53) from a date/time value."
+"Functions (Time and Date)","YEAR","
+YEAR(dateAndTime)
+","
+Returns the year from a date/time value."
+"Functions (Time and Date)","ISO_YEAR","
+ISO_YEAR(dateAndTime)
+","
+Returns the ISO week year from a date/time value."
+"Functions (System)","ARRAY_GET","
+ARRAY_GET(arrayExpression, indexExpression)
+","
+Returns one element of an array."
+"Functions (System)","ARRAY_LENGTH","
+ARRAY_LENGTH(arrayExpression)
+","
+Returns the length of an array."
+"Functions (System)","ARRAY_CONTAINS","
+ARRAY_CONTAINS(arrayExpression, value)
+","
+Returns a boolean true if the array contains the value."
+"Functions (System)","AUTOCOMMIT","
+AUTOCOMMIT()
+","
+Returns true if auto commit is switched on for this session."
+"Functions (System)","CANCEL_SESSION","
+CANCEL_SESSION(sessionInt)
+","
+Cancels the currently executing statement of another session."
+"Functions (System)","CASEWHEN Function","
+CASEWHEN(boolean, aValue, bValue)
+","
+Returns 'a' if the boolean expression is true, otherwise 'b'."
+"Functions (System)","CAST","
+CAST(value AS dataType)
+","
+Converts a value to another data type."
+"Functions (System)","COALESCE","
+{ COALESCE | NVL } (aValue, bValue [,...])
+","
+Returns the first value that is not null."
+"Functions (System)","CONVERT","
+CONVERT(value, dataType)
+","
+Converts a value to another data type."
+"Functions (System)","CURRVAL","
+CURRVAL( [ schemaName, ] sequenceString )
+","
+Returns the current (last) value of the sequence, independent of the session."
+"Functions (System)","CSVREAD","
+CSVREAD(fileNameString [, columnsString [, csvOptions ] ] )
+","
+Returns the result set of reading the CSV (comma separated values) file."
+"Functions (System)","CSVWRITE","
+CSVWRITE ( fileNameString, queryString [, csvOptions [, lineSepString] ] )
+","
+Writes a CSV (comma separated values)."
+"Functions (System)","DATABASE","
+DATABASE()
+","
+Returns the name of the database."
+"Functions (System)","DATABASE_PATH","
+DATABASE_PATH()
+","
+Returns the directory of the database files and the database name, if it is file based."
+"Functions (System)","DECODE","
+DECODE(value, whenValue, thenValue [,...])
+","
+Returns the first matching value."
+"Functions (System)","DISK_SPACE_USED","
+DISK_SPACE_USED(tableNameString)
+","
+Returns the approximate amount of space used by the table specified."
+"Functions (System)","SIGNAL","
+SIGNAL(sqlStateString, messageString)
+","
+Throw an SQLException with the passed SQLState and reason."
+"Functions (System)","FILE_READ","
+FILE_READ(fileNameString [,encodingString])
+","
+Returns the contents of a file."
+"Functions (System)","FILE_WRITE","
+FILE_WRITE(blobValue, fileNameString)
+","
+Write the supplied parameter into a file."
+"Functions (System)","GREATEST","
+GREATEST(aValue, bValue [,...])
+","
+Returns the largest value that is not NULL, or NULL if all values are NULL."
+"Functions (System)","IDENTITY","
+IDENTITY()
+","
+Returns the last inserted identity value for this session."
+"Functions (System)","IFNULL","
+IFNULL(aValue, bValue)
+","
+Returns the value of 'a' if it is not null, otherwise 'b'."
+"Functions (System)","LEAST","
+LEAST(aValue, bValue [,...])
+","
+Returns the smallest value that is not NULL, or NULL if all values are NULL."
+"Functions (System)","LOCK_MODE","
+LOCK_MODE()
+","
+Returns the current lock mode."
+"Functions (System)","LOCK_TIMEOUT","
+LOCK_TIMEOUT()
+","
+Returns the lock timeout of the current session (in milliseconds)."
+"Functions (System)","LINK_SCHEMA","
+LINK_SCHEMA(targetSchemaString, driverString, urlString,
+userString, passwordString, sourceSchemaString)
+","
+Creates table links for all tables in a schema."
+"Functions (System)","MEMORY_FREE","
+MEMORY_FREE()
+","
+Returns the free memory in KB (where 1024 bytes is a KB)."
+"Functions (System)","MEMORY_USED","
+MEMORY_USED()
+","
+Returns the used memory in KB (where 1024 bytes is a KB)."
+"Functions (System)","NEXTVAL","
+NEXTVAL ( [ schemaName, ] sequenceString )
+","
+Returns the next value of the sequence."
+"Functions (System)","NULLIF","
+NULLIF(aValue, bValue)
+","
+Returns NULL if 'a' is equals to 'b', otherwise 'a'."
+"Functions (System)","NVL2","
+NVL2(testValue, aValue, bValue)
+","
+If the test value is null, then 'b' is returned."
+"Functions (System)","READONLY","
+READONLY()
+","
+Returns true if the database is read-only."
+"Functions (System)","ROWNUM","
+{ ROWNUM() } | { ROW_NUMBER() OVER() }
+","
+Returns the number of the current row."
+"Functions (System)","SCHEMA","
+SCHEMA()
+","
+Returns the name of the default schema for this session."
+"Functions (System)","SCOPE_IDENTITY","
+SCOPE_IDENTITY()
+","
+Returns the last inserted identity value for this session for the current scope
+(the current statement)."
+"Functions (System)","SESSION_ID","
+SESSION_ID()
+","
+Returns the unique session id number for the current database connection."
+"Functions (System)","SET","
+SET(@variableName, value)
+","
+Updates a variable with the given value."
+"Functions (System)","TABLE","
+{ TABLE | TABLE_DISTINCT } ( { name dataType = expression } [,...] )
+","
+Returns the result set."
+"Functions (System)","TRANSACTION_ID","
+TRANSACTION_ID()
+","
+Returns the current transaction id for this session."
+"Functions (System)","TRUNCATE_VALUE","
+TRUNCATE_VALUE(value, precisionInt, forceBoolean)
+","
+Truncate a value to the required precision."
+"Functions (System)","USER","
+{ USER | CURRENT_USER } ()
+","
+Returns the name of the current user of this session."
+"Functions (System)","H2VERSION","
+H2VERSION()
+","
+Returns the H2 version as a String."
+"System Tables","Information Schema","
+INFORMATION_SCHEMA
+","
+To get the list of system tables, execute the statement SELECT * FROM
+INFORMATION_SCHEMA."
+"System Tables","Range Table","
+SYSTEM_RANGE(start, end)
+","
+Contains all values from start to end (this is a dynamic table)."

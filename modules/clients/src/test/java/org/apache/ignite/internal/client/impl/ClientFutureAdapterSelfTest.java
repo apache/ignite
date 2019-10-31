@@ -24,14 +24,19 @@ import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientFutureTimeoutException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Grid client future implementation self test.
  */
+@RunWith(JUnit4.class)
 public class ClientFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * Test finished futures.
      */
+    @Test
     public void testFinished() {
         GridClientFutureAdapter<Integer> fut = new GridClientFutureAdapter<>();
 
@@ -50,6 +55,7 @@ public class ClientFutureAdapterSelfTest extends GridCommonAbstractTest {
      *
      * @throws org.apache.ignite.internal.client.GridClientException On any exception.
      */
+    @Test
     public void testChains() throws GridClientException {
         // Synchronous notifications.
         testChains(1, 100);

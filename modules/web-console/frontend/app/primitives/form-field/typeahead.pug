@@ -48,8 +48,8 @@ mixin form-field__typeahead({ label, model, name, disabled, required, placeholde
             ng-messages=`$input.$error`
             ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
         )
-            if block
-                block
-
             if required
                 +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
+
+            if block
+                block

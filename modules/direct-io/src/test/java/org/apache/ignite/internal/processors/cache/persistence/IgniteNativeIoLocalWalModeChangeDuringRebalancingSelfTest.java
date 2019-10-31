@@ -16,10 +16,16 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 /**
  * Version of test to be executed in Direct IO suite.
  * Contains reduced number of records, because Direct IO does not support tmpfs.
  */
+@RunWith(JUnit4.class)
 public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends LocalWalModeChangeDuringRebalancingSelfTest {
     /** {@inheritDoc} */
     @Override protected int getKeysCount() {
@@ -27,7 +33,11 @@ public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends L
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testWithExchangesMerge() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10752");
+
         super.testWithExchangesMerge();
     }
 }

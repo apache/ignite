@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTe
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Cache store test.
@@ -100,6 +102,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByResource() throws Exception {
         store.setHibernateConfigurationPath("/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
@@ -107,7 +110,10 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1757")
+    @Test
     @Override public void testSimpleMultithreading() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1757");
+        // No-op.
     }
 }

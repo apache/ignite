@@ -178,8 +178,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
             Thread curThread = Thread.currentThread();
 
             if (curThread instanceof IgniteThread)
-                writer.failIfUnregistered(((IgniteThread)curThread).executingEntryProcessor() &&
-                    ((IgniteThread)curThread).holdsTopLock());
+                writer.failIfUnregistered(((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata());
 
             writer.typeId(typeId);
 

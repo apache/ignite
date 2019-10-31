@@ -27,12 +27,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -41,10 +41,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test cache operations with daemon node.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Daemon flag. */
     protected boolean daemon;
 
@@ -60,12 +58,6 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDaemon(daemon);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         c.setConnectorConfiguration(null);
 
@@ -90,6 +82,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImplicit() throws Exception {
         try {
             startGridsMultiThreaded(3);
@@ -121,6 +114,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicit() throws Exception {
         try {
             startGridsMultiThreaded(3);
@@ -162,6 +156,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMapKeyToNode() throws Exception {
         try {
             // Start normal nodes.

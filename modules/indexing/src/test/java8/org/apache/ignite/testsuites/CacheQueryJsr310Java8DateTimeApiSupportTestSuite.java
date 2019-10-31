@@ -17,13 +17,17 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for JSR-310 Java 8 Date and Time API queries.
  */
-public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
@@ -31,7 +35,7 @@ public class CacheQueryJsr310Java8DateTimeApiSupportTestSuite extends TestSuite 
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("JSR-310 Java 8 Date and Time API Cache Queries Test Suite");
 
-        suite.addTestSuite(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheQueryEntityWithJsr310Java8DateTimeApiFieldsTest.class));
 
         return suite;
     }

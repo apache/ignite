@@ -45,12 +45,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Cache metrics test.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 500;
@@ -169,6 +173,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMetricsDisable() throws Exception {
         // Disable statistics.
         for (int i = 0; i < gridCount(); i++) {
@@ -262,6 +267,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMetricsSnapshot() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -271,6 +277,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndRemoveAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -288,6 +295,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAsyncValAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -315,6 +323,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -332,6 +341,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -356,6 +366,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -385,6 +396,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -406,6 +418,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -430,6 +443,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -458,6 +472,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAvgTime() throws Exception {
         final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -475,6 +490,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -491,6 +507,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -518,6 +535,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -543,6 +561,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutIfAbsentAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -568,6 +587,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -591,6 +611,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsReads() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -649,6 +670,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMissHitPercentage() throws Exception {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -683,6 +705,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMisses() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -725,6 +748,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMissesOnEmptyCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -763,6 +787,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoves() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -779,6 +804,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -816,6 +842,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxEvictions() throws Exception {
         if (grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAtomicityMode() != CacheAtomicityMode.ATOMIC)
             checkTtl(true);
@@ -824,6 +851,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonTxEvictions() throws Exception {
         if (grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             checkTtl(false);
@@ -1038,6 +1066,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvocationRemovesOnEmptyCache() throws IgniteCheckedException {
         testInvocationRemoves(true);
     }
@@ -1045,6 +1074,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvocationRemoves() throws IgniteCheckedException {
         testInvocationRemoves(false);
     }
@@ -1094,6 +1124,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testUpdateInvocationsOnEmptyCache() throws IgniteCheckedException {
         testUpdateInvocations(true);
     }
@@ -1101,6 +1132,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testUpdateInvocations() throws IgniteCheckedException {
         testUpdateInvocations(false);
     }
@@ -1150,6 +1182,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testReadOnlyInvocationsOnEmptyCache() throws IgniteCheckedException {
         testReadOnlyInvocations(true);
     }
@@ -1157,6 +1190,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testReadOnlyInvocations() throws IgniteCheckedException {
         testReadOnlyInvocations(false);
     }
@@ -1201,6 +1235,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1265,6 +1300,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAsyncAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1282,6 +1318,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAllAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1299,6 +1336,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAllAsyncAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1317,6 +1355,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAllMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -1336,6 +1375,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testInvokeAllAsyncMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

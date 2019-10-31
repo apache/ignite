@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheOsStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 
 import static org.apache.ignite.testframework.junits.GridAbstractTest.defaultCacheConfiguration;
@@ -88,8 +89,11 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             null,
             CacheType.USER,
             AffinityTopologyVersion.ZERO,
+            IgniteUuid.randomUuid(),
             true,
             true,
+            false,
+            false,
             new GridCacheEventManager(),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),

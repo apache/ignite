@@ -316,6 +316,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     private void record0(Event evt, Object... params) {
         assert evt != null;
 
+        if (ctx.recoveryMode())
+            return;
+
         if (!enterBusy())
             return;
 

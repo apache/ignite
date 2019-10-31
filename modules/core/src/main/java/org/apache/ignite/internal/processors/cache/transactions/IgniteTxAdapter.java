@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -37,8 +39,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -62,7 +62,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -73,6 +75,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
@@ -272,6 +276,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected ConsistentIdMapper consistentIdMapper;
 
     /** Mvcc tx update snapshot. */
+    @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
 
     /** Rollback finish future. */
@@ -279,7 +284,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private volatile IgniteInternalFuture rollbackFut;
 
     /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
     private volatile TxCounters txCounters;
+
+    /** Transaction from which this transaction was copied by(if it was). */
+    private GridNearTxLocal parentTx;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -397,6 +407,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @param parentTx Transaction from which this transaction was copied by.
+     */
+    public void setParentTx(GridNearTxLocal parentTx) {
+        this.parentTx = parentTx;
     }
 
     /**
@@ -761,6 +778,36 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
+    /**
+     * @param ex Root cause.
+     */
+    public final IgniteCheckedException heuristicException(Throwable ex) {
+        return new IgniteTxHeuristicCheckedException("Committing a transaction has produced runtime exception", ex);
+    }
+
+    /**
+     * @param log Log.
+     * @param commit Commit.
+     * @param e Exception.
+     */
+    public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
+        assert e != null : "Exception is expected";
+
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+
+        try {
+            // First try printing a full transaction. This is error prone.
+            U.error(log, String.format(fmt, commit, this,
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+        }
+        catch (Throwable e0) {
+            e.addSuppressed(e0);
+
+            U.error(log, String.format(fmt, commit, CU.txString(this),
+                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion xidVersion() {
         return xidVer;
@@ -1009,6 +1056,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public boolean state(TransactionState state) {
         return state(state, false);
+    }
+
+    /**
+     * Changing state for this transaction as well as chained(parent) transactions.
+     *
+     * @param state Transaction state.
+     * @return {@code True} if transition was valid, {@code false} otherwise.
+     */
+    public boolean chainState(TransactionState state) {
+        if (parentTx != null)
+            parentTx.state(state);
+
+        return state(state);
     }
 
     /** {@inheritDoc} */
@@ -1954,21 +2014,51 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
             Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+            Map<Integer, AtomicLong> deltas = entry.getValue();
 
-            assert !F.isEmpty(partDeltas);
+            assert !F.isEmpty(deltas);
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
+            // Need to reserve on backups only
+            boolean reserve = dht() && remote();
+
+            for (Map.Entry<Integer, AtomicLong> e : deltas.entrySet()) {
+                boolean invalid = false;
+                int p = e.getKey();
                 long delta = e.getValue().get();
 
-                GridDhtLocalPartition dhtPart = top.localPartition(p);
+                try {
+                    GridDhtLocalPartition part = top.localPartition(p);
 
-                assert dhtPart != null;
+                    if (!reserve || part != null && part.reserve()) {
+                        assert part != null;
 
-                dhtPart.dataStore().updateSize(cacheId, delta);
+                        try {
+                            if (part.state() != GridDhtPartitionState.RENTING)
+                                part.dataStore().updateSize(cacheId, delta);
+                            else
+                                invalid = true;
+                        }
+                        finally {
+                            if (reserve)
+                                part.release();
+                        }
+                    }
+                    else
+                        invalid = true;
+                }
+                catch (GridDhtInvalidPartitionException e1) {
+                    invalid = true;
+                }
+
+                if (invalid) {
+                    assert reserve;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Trying to apply size delta for invalid partition: " +
+                            "[cacheId=" + cacheId + ", part=" + p + "]");
+                }
             }
         }
     }
@@ -2202,6 +2292,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         /** {@inheritDoc} */
         @Override public void commitError(Throwable e) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String label() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import publicTemplate from '../../../views/public.pug';
+
 /**
  * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
  */
@@ -23,7 +25,14 @@ export function registerState($uiRouter) {
     const state = {
         name: 'forgotPassword',
         url: '/forgot-password',
-        component: 'pageForgotPassword',
+        views: {
+            '': {
+                template: publicTemplate
+            },
+            'page@forgotPassword': {
+                component: 'pageForgotPassword'
+            }
+        },
         unsaved: true,
         tfMetaTags: {
             title: 'Forgot Password'

@@ -57,22 +57,22 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests partition scan query fallback.
  */
+@RunWith(JUnit4.class)
 public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
     /** Keys count. */
     private static final int KEYS_CNT = 50 * RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
-
-    /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Backups. */
     private int backups;
@@ -101,10 +101,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
         cfg.setClientMode(clientMode);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-        discoSpi.setForceServerMode(true);
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setCommunicationSpi(commSpiFactory.create());
 
@@ -128,6 +125,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanLocal() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -155,6 +153,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanLocalExplicit() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -190,6 +189,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanLocalExplicitNoPart() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -215,6 +215,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testScanRemote() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         backups = 0;
@@ -244,6 +245,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanFallbackOnRebalancing() throws Exception {
         scanFallbackOnRebalancing(false);
     }
@@ -341,6 +343,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanFallbackOnRebalancingCursor1() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         clientMode = false;
@@ -408,6 +411,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanFallbackOnRebalancingCursor2() throws Exception {
         scanFallbackOnRebalancing(true);
     }

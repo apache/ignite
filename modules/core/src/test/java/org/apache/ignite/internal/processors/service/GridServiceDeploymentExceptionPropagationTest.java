@@ -23,11 +23,16 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** */
+@RunWith(JUnit4.class)
 public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("unused")
+    @Test
     public void testExceptionPropagation() throws Exception {
         try (Ignite srv = startGrid("server")) {
 

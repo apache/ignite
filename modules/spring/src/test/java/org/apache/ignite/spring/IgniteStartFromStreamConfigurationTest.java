@@ -25,16 +25,21 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Checks starts from Stream.
  */
+@RunWith(JUnit4.class)
 public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTest {
     /**
      * Tests starts from stream.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromStream() throws Exception {
         String cfg = "examples/config/example-cache.xml";
 

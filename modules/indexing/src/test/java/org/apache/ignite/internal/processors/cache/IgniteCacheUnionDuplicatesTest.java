@@ -26,12 +26,16 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /** */
     private static IgniteCache<Integer, Organization> pCache;
@@ -40,14 +44,14 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setCacheConfiguration(cacheConfiguration("orgCache", PARTITIONED, Integer.class, Organization.class));
+        cfg.setCacheConfiguration(cacheConfiguration("part", PARTITIONED, Integer.class, Organization.class));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void createCaches() {
-        pCache = ignite.cache("orgCache");
+        pCache = ignite.cache("part");
     }
 
     /** {@inheritDoc} */
@@ -73,6 +77,7 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnionDuplicateFilter() throws Exception {
         compareQueryRes0(pCache, "select name from \"part\".Organization " +
             "union " +
@@ -82,6 +87,8 @@ public class IgniteCacheUnionDuplicatesTest extends AbstractH2CompareQueryTest {
     /** {@inheritDoc} */
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();
+
+        st.executeUpdate("CREATE SCHEMA \"part\";");
 
         st.execute("create table \"part\".ORGANIZATION" +
             "  (_key int not null," +

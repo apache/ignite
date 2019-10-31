@@ -18,6 +18,8 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.commandline.OutputFormat;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +32,9 @@ public class CacheArguments {
 
     /** Caches. */
     private Set<String> caches;
+
+    /** Exclude caches or groups. */
+    private Set<String> excludeCaches;
 
     /** Partition id. */
     private int partId;
@@ -63,6 +68,39 @@ public class CacheArguments {
 
     /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
     private Set<String> userAttributes;
+
+    /** Output format. */
+    private OutputFormat outputFormat;
+
+    /** Full config flag. */
+    private boolean fullConfig;
+
+    /** Cache filter. */
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+
+    /**
+     * @return Gets filter of caches, which will by checked.
+     */
+    public CacheFilterEnum getCacheFilterEnum() {
+        return cacheFilterEnum;
+    }
+
+    /**
+     * @param cacheFilterEnum Cache filter.
+     */
+    public void setCacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = cacheFilterEnum;
+    }
+
+    /**
+     * @return Full config flag.
+     */
+    public boolean fullConfig(){ return fullConfig; }
+
+    /**
+     * @param fullConfig New full config flag.
+     */
+    public void fullConfig(boolean fullConfig) { this.fullConfig = fullConfig; }
 
     /**
      * @return Command.
@@ -104,6 +142,20 @@ public class CacheArguments {
      */
     public void caches(Set<String> caches) {
         this.caches = caches;
+    }
+
+    /**
+     * @return Exclude caches or groups.
+     */
+    public Set<String> excludeCaches() {
+        return excludeCaches;
+    }
+
+    /**
+     * @param excludeCaches Excluse caches or groups.
+     */
+    public void excludeCaches(Set<String> excludeCaches) {
+        this.excludeCaches = excludeCaches;
     }
 
     /**
@@ -245,4 +297,14 @@ public class CacheArguments {
     public void setUserAttributes(Set<String> userAttrs) {
         userAttributes = userAttrs;
     }
+
+    /**
+     * @return Output format.
+     */
+    public OutputFormat outputFormat() { return outputFormat; }
+
+    /**
+     * @param outputFormat New output format.
+     */
+    public void outputFormat(OutputFormat outputFormat) { this.outputFormat = outputFormat; }
 }

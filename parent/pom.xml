@@ -56,7 +56,7 @@
         <camel.version>2.22.0</camel.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.3</commons.beanutils.version>
-        <commons.codec.version>1.11</commons.codec.version>
+        <commons.codec.version>1.12</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <cron4j.version>2.2.5</cron4j.version>
@@ -69,27 +69,32 @@
         <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <h2.version>1.4.197</h2.version>
         <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>1.2</hamcrest.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
-        <jackson.version>2.9.6</jackson.version>
+        <jackson.version>2.9.9</jackson.version>
         <jackson1.version>1.9.13</jackson1.version>
+        <jaxb.api.version>2.1</jaxb.api.version>
+        <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
-        <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
-        <jetty.version>9.4.11.v20180605</jetty.version>
+        <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
+        <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
+        <jetty.version>9.4.18.v20190429</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
+        <jna.version>4.5.2</jna.version>
+        <jnr.posix.version>3.0.46</jnr.posix.version>
+        <jotm.version>2.2.3</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
-        <kafka.version>1.1.1</kafka.version>
+        <kafka.version>2.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
         <log4j.version>2.11.0</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
@@ -107,6 +112,7 @@
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
+        <scala.test.version>2.2.6</scala.test.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -201,23 +207,6 @@
             <email>vozerov at gridgain dot com</email>
         </developer>
     </developers>
-
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-                <checksumPolicy>ignore</checksumPolicy>
-            </snapshots>
-            <id>h2database.com</id>
-            <name>Snapshot repository on h2database.com</name>
-            <url>http://h2database.com/m2-repo</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -515,7 +504,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2018 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2019 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -607,7 +596,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.20.1</version>
+                <version>3.0.0-M3</version>
                 <configuration>
                     <forkCount>0</forkCount>
                 </configuration>
@@ -712,7 +701,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4</version>
+                <version>3.0.0-M2</version>
                 <configuration>
                     <rules>
                         <requireJavaVersion>
@@ -964,6 +953,10 @@
                                         <exclude>**/web-console/frontend/node_modules/**</exclude>
                                         <exclude>**/web-console/frontend/**/*.png</exclude>
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
+                                        <!-- H2 forked module. -->
+                                        <exclude>**/org/h2/**</exclude>
+                                        <exclude>src/test/tools/WEB-INF/console.html</exclude>
+                                        <exclude>src/test/tools/WEB-INF/web.xml</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                     </excludes>
@@ -988,7 +981,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.20.1</version>
+                        <version>3.0.0-M3</version>
                         <configuration>
                             <forkCount>1</forkCount>
                         </configuration>

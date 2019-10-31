@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheConfigurationSelfTest;
 import org.apache.ignite.cache.hibernate.HibernateL2CacheMultiJvmTest;
@@ -28,33 +29,35 @@ import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreNodeRestar
 import org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreSelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreFactorySelfTest;
 import org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListenerSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Hibernate integration tests.
  */
-public class IgniteHibernate5TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteHibernate5TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Hibernate5 Integration Test Suite");
 
         // Hibernate L2 cache.
-        suite.addTestSuite(HibernateL2CacheSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheTransactionalSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheTransactionalUseSyncSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheConfigurationSelfTest.class);
-        suite.addTestSuite(HibernateL2CacheStrategySelfTest.class);
-        suite.addTestSuite(HibernateL2CacheMultiJvmTest.class);
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheTransactionalSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheTransactionalUseSyncSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheConfigurationSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheStrategySelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(HibernateL2CacheMultiJvmTest.class));
 
-        suite.addTestSuite(CacheHibernateBlobStoreSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheHibernateBlobStoreSelfTest.class));
 
-        suite.addTestSuite(CacheHibernateBlobStoreNodeRestartTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheHibernateBlobStoreNodeRestartTest.class));
 
-        suite.addTestSuite(CacheHibernateStoreSessionListenerSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheHibernateStoreSessionListenerSelfTest.class));
 
-        suite.addTestSuite(CacheHibernateStoreFactorySelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheHibernateStoreFactorySelfTest.class));
 
         return suite;
     }

@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCURRENT_ASYNC_OPS;
@@ -33,6 +36,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCUR
 /**
  * Tests grid embedded future use cases.
  */
+@RunWith(JUnit4.class)
 public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * Test kernal context.
@@ -47,6 +51,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFutureChain() throws Exception {
         GridFutureAdapter<Integer> fut = new GridFutureAdapter<>();
 
@@ -70,6 +75,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     public void testFutureCompletesCorrectly() throws Exception {
         List<Throwable> list = Arrays.asList(
             null,

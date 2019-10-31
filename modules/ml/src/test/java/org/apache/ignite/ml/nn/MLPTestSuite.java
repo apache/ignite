@@ -17,19 +17,25 @@
 
 package org.apache.ignite.ml.nn;
 
+import junit.framework.JUnit4TestAdapter;
+import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for multilayer perceptrons.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MLPTest.class,
-    MLPTrainerTest.class,
-    MLPTrainerIntegrationTest.class,
-    LossFunctionsTest.class
-})
+@RunWith(AllTests.class)
 public class MLPTestSuite {
-    // No-op.
+    /** */
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite(MLPTestSuite.class.getSimpleName());
+
+        suite.addTest(new JUnit4TestAdapter(MLPTest.class));
+        suite.addTest(new JUnit4TestAdapter(MLPTrainerTest.class));
+        suite.addTest(new JUnit4TestAdapter(LossFunctionsTest.class));
+        suite.addTest(new JUnit4TestAdapter(MLPTrainerIntegrationTest.class));
+
+        return suite;
+    }
 }

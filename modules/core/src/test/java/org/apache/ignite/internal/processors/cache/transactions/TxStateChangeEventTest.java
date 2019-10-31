@@ -21,15 +21,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TransactionStateChangedEvent;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
@@ -41,6 +48,7 @@ import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
 /**
  * Tests transaction state change event.
  */
+@RunWith(JUnit4.class)
 public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /** Label. */
     private final String lb = "testLabel";
@@ -66,21 +74,23 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testLocal() throws Exception {
-        test(true);
+        check(true);
     }
 
     /**
      *
      */
+    @Test
     public void testRemote() throws Exception {
-        test(false);
+        check(false);
     }
 
     /**
      *
      */
-    private void test(boolean loc) throws Exception {
+    private void check(boolean loc) throws Exception {
         Ignite ignite = startGrids(5);
 
         final IgniteEvents evts = loc ? ignite.events() : grid(3).events();
@@ -104,27 +114,51 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 },
                 EVTS_TX);
 
-        IgniteCache cache = ignite.getOrCreateCache(defaultCacheConfiguration().setBackups(2));
+        IgniteTransactions txs = ignite.transactions();
 
-        // create & commit
-        try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
-            cache.put(1, 1);
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(getCacheConfig());
 
-            tx.commit();
+        checkCommit(txs, cache);
+
+        if (!MvccFeatureChecker.forcedMvcc())
+            checkSuspendResume(txs, cache);
+
+        checkRollback(txs, cache);
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration<Integer, Integer> getCacheConfig() {
+        return defaultCacheConfiguration().setBackups(2);
+    }
+
+    /**
+     * @param txs Transaction manager.
+     * @param cache Ignite cache.
+     */
+    private void checkRollback(IgniteTransactions txs, IgniteCache<Integer, Integer> cache) {
+        // create & rollback (pessimistic)
+        try (Transaction tx = txs.withLabel(lb).txStart(
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, timeout, 3)) {
+            cache.put(4, 5);
         }
 
         assertTrue(
             creation.get() &&
-                commit.get() &&
-                !rollback.get() &&
+                !commit.get() &&
+                rollback.get() &&
                 !suspend.get() &&
                 !resume.get());
+    }
 
-        clear();
-
+    /**
+     * @param txs Transaction manager.
+     * @param cache Ignite cache.
+     */
+    private void checkSuspendResume(IgniteTransactions txs,
+        IgniteCache<Integer, Integer> cache) throws IgniteInterruptedCheckedException {
         // create & suspend & resume & commit
-        try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
+        try (Transaction tx = txs.withLabel(lb).txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
             cache.put(2, 7);
 
@@ -145,19 +179,29 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 resume.get());
 
         clear();
+    }
 
-        // create & rollback (pessimistic)
-        try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
-            cache.put(4, 5);
+    /**
+     * @param txs Transaction manager.
+     * @param cache Ignite cache.
+     */
+    private void checkCommit(IgniteTransactions txs, IgniteCache<Integer, Integer> cache) {
+        // create & commit
+        try (Transaction tx = txs.withLabel(lb).txStart(
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, timeout, 3)) {
+            cache.put(1, 1);
+
+            tx.commit();
         }
 
         assertTrue(
             creation.get() &&
-                !commit.get() &&
-                rollback.get() &&
+                commit.get() &&
+                !rollback.get() &&
                 !suspend.get() &&
                 !resume.get());
+
+        clear();
     }
 
     /**

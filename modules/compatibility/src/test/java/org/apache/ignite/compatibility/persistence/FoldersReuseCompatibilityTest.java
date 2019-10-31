@@ -36,12 +36,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation and compatible startup of current ignite version
  */
+@RunWith(JUnit4.class)
 public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** Cache name for test. */
     private static final String CACHE_NAME = "dummy";
@@ -80,6 +84,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFoldersReuseCompatibility_2_2() throws Exception {
         runFoldersReuse("2.2.0");
     }
@@ -90,6 +95,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFoldersReuseCompatibility_2_1() throws Exception {
         runFoldersReuse("2.1.0");
     }

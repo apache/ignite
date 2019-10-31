@@ -27,10 +27,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxOriginatingNodeFailureAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests transaction consistency when originating node fails.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     IgniteTxOriginatingNodeFailureAbstractSelfTest {
     /** */
@@ -58,6 +62,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromPrimary() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -79,6 +84,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromBackup() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -100,6 +106,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFromNotColocated() throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -122,6 +129,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxAllNodes() throws Exception {
         List<ClusterNode> allNodes = new ArrayList<>(GRID_CNT);
 

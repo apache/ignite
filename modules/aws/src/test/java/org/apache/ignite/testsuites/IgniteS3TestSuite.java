@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
@@ -33,35 +34,37 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSE
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyObjectListingTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client.DummyS3ClientTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * S3 integration tests.
  */
-public class IgniteS3TestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteS3TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("S3 Integration Test Suite");
 
         // Checkpoint SPI.
-        suite.addTestSuite(S3CheckpointSpiConfigSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiStartStopSelfTest.class);
-        suite.addTestSuite(S3CheckpointManagerSelfTest.class);
-        suite.addTestSuite(S3SessionCheckpointSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiStartStopBucketEndpointSelfTest.class);
-        suite.addTestSuite(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiConfigSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointManagerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3SessionCheckpointSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopBucketEndpointSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class));
 
         // S3 IP finder.
-        suite.addTestSuite(DummyS3ClientTest.class);
-        suite.addTestSuite(DummyObjectListingTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class);
-        suite.addTestSuite(TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(DummyS3ClientTest.class));
+        suite.addTest(new JUnit4TestAdapter(DummyObjectListingTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class));
 
         return suite;
     }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -58,12 +59,15 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
+@RunWith(JUnit4.class)
 public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends CommunicationSpi>
     extends GridSpiAbstractTest<T> {
     /** */
@@ -125,7 +129,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         private final AtomicInteger cntr = new AtomicInteger();
 
         /** */
-        private final ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
+        private final GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
         /**
          * @param latch Latch.
@@ -160,6 +164,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoThreads() throws Exception {
         concurrentConnect(2, 10, ITERS, false, false);
     }
@@ -167,6 +172,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         int threads = Runtime.getRuntime().availableProcessors() * 5;
 
@@ -176,6 +182,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_10Connections() throws Exception {
         connectionsPerNode = 10;
 
@@ -185,6 +192,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_NoPairedConnections() throws Exception {
         pairedConnections = false;
 
@@ -194,6 +202,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_10ConnectionsNoPaired() throws Exception {
         pairedConnections = false;
         connectionsPerNode = 10;
@@ -204,6 +213,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithLoad() throws Exception {
         int threads = Runtime.getRuntime().availableProcessors() * 5;
 
@@ -213,6 +223,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomSleep() throws Exception {
         concurrentConnect(4, 1, ITERS, true, false);
     }

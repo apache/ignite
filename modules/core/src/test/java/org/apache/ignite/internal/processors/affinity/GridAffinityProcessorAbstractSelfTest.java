@@ -28,10 +28,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -39,15 +40,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests for {@link GridAffinityProcessor}.
  */
 @GridCommonTest(group = "Affinity Processor")
+@RunWith(JUnit4.class)
 public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. Should not be less than 2. */
     private static final int NODES_CNT = 3;
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Flag to start grid with cache. */
     private boolean withCache;
@@ -56,12 +55,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setForceServerMode(true);
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (withCache) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -107,7 +101,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
+    @Test
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 
@@ -159,6 +153,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testPerformance() throws Exception {
         IgniteKernal grid = (IgniteKernal)grid(0);
         GridAffinityProcessor aff = grid.context().affinity();

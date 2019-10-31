@@ -23,6 +23,15 @@ Configuration file:
     node-login
     node-password
     driver-folder
+    node-key-store
+    node-key-store-password
+    node-trust-store
+    node-trust-store-password
+    server-key-store
+    server-key-store-password
+    server-trust-store
+    server-trust-store-password
+    cipher-suites
 
   Example configuration file:
     tokens=1a2b3c4d5f,2j1s134d12
@@ -41,23 +50,44 @@ Ignite Web agent requirements:
 
 Options:
   -h, --help
-     Print this help message.
+    Print this help message
   -c, --config
-     Path to configuration file
+    Path to agent property file
+    Default value: default.properties
   -d, --driver-folder
-     Path to folder with JDBC drivers, default value: ./jdbc-drivers
+    Path to folder with JDBC drivers
+    Default value: ./jdbc-drivers
   -n, --node-uri
-     Comma-separated list of URIs for connect to Ignite REST server,
-     default value: http://localhost:8080
+    Comma-separated list of URIs for connect to Ignite node via REST
+    Default value: http://localhost:8080
   -nl, --node-login
-     User name that will be used to connect to secured cluster.
+    User name that will be used to connect to secured cluster
   -np, --node-password
-     Password that will be used to connect to secured cluster
+    Password that will be used to connect to secured cluster
   -s, --server-uri
-     URI for connect to Ignite Web Console via web-socket protocol,
-     default value: http://localhost:3000
+    URI for connect to Ignite Console via web-socket protocol
+    Default value: http://localhost:3000
   -t, --tokens
-     Comma-separated list of user's security tokens.
+     User's tokens separated by comma used to connect to Ignite Console.
+  -nks, --node-key-store
+    Path to key store that will be used to connect to cluster
+  -nksp, --node-key-store-password
+    Optional password for node key store
+  -nts, --node-trust-store
+    Path to trust store that will be used to connect to cluster
+  -ntsp, --node-trust-store-password
+    Optional password for node trust store
+  -sks, --server-key-store
+    Path to key store that will be used to connect to Web server
+  -sksp, --server-key-store-password
+    Optional password for server key store
+  -sts, --server-trust-store
+    Path to trust store that will be used to connect to Web server
+  -stsp, --server-trust-store-password
+    Optional password for server trust store
+  -cs, --cipher-suites
+     Optional comma-separated list of SSL cipher suites to be used to connect
+     to server and cluster
 
 How to build:
   To build from sources run following command in Ignite project root folder:
