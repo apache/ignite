@@ -17,6 +17,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -24,6 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -146,8 +148,16 @@ class BinaryMetadataFileStore {
 
             stopOnCriticalError = true;
 
-            for (GridFutureAdapter fut : writeOpFutures.values())
-                fut.onDone(e);
+            for (Map.Entry<OperationSyncKey, GridFutureAdapter> entry : writeOpFutures.entrySet()) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Cancelling future for write operation for" +
+                        " [typeId=" + entry.getKey().typeId +
+                        ", typeVer=" + entry.getKey().typeVer + ']'
+                    );
+
+                entry.getValue().onDone(entry);
+            }
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -216,29 +226,57 @@ class BinaryMetadataFileStore {
     }
 
     /**
-     *
+     * @param meta Binary metadata to be written.
+     * @param typeVer Type version.
      */
     void writeMetadataAsync(BinaryMetadata meta, int typeVer) {
         if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
+        if (log.isDebugEnabled())
+            log.debug(
+                "Submitting task for async write for" +
+                " [typeName=" + meta.typeName() +
+                ", typeId=" + meta.typeId() +
+                ", typeVersion=" + typeVer + ']'
+            );
+
         writer.submit(new WriteOperationTask(meta, typeVer));
     }
 
     /**
+     * {@code typeVer} parameter is always non-negative except one special case
+     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryType, boolean)} for context):
+     * if request for bin meta update arrives right at the moment when node is stopping
+     * {@link MetadataUpdateResult} of special type is generated: UPDATE_DISABLED.
      *
-     * @param typeId
-     * @param typeVer
-     * @throws IgniteCheckedException
+     * At this moment type version is unknown and blocking thread adds risk of deadlock so wait is skipped.
+     *
+     * @param typeId Type ID.
+     * @param typeVer Type version.
+     * @throws IgniteCheckedException If write operation failed.
      */
     void waitForWriteCompletion(int typeId, int typeVer) throws IgniteCheckedException {
-        if (typeVer < 0)
+        //special case, see javadoc
+        if (typeVer == -1) {
+            if (log.isDebugEnabled())
+                log.debug("No need to wait for " + typeId + ", negative typeVer was passed.");
+
             return;
+        }
 
         GridFutureAdapter fut = writeOpFutures.get(new OperationSyncKey(typeId, typeVer));
 
-        if (fut != null)
+        if (fut != null) {
+            if (log.isDebugEnabled())
+                log.debug(
+                    "Waiting for write completion of" +
+                    " [typeId=" + typeId +
+                    ", typeVer=" + typeVer + ']'
+                );
+
             fut.get();
+        }
     }
 
     /**
@@ -253,7 +291,9 @@ class BinaryMetadataFileStore {
             super(ctx.igniteInstanceName(), "binary-metadata-writer", BinaryMetadataFileStore.this.log, ctx.workersRegistry());
         }
 
-        /** */
+        /**
+         * @param task Write operation task.
+         */
         void submit(WriteOperationTask task) {
             if (isCancelled())
                 return;
@@ -280,8 +320,16 @@ class BinaryMetadataFileStore {
 
             IgniteCheckedException err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
-            for (GridFutureAdapter fut : writeOpFutures.values())
-                fut.onDone(err);
+            for (Map.Entry<OperationSyncKey, GridFutureAdapter> e : writeOpFutures.entrySet()) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Cancelling future for write operation for" +
+                        " [typeId=" + e.getKey().typeId +
+                        ", typeVer=" + e.getKey().typeVer + ']'
+                    );
+
+                e.getValue().onDone(err);
+            }
 
             writeOpFutures.clear();
         }
@@ -311,6 +359,13 @@ class BinaryMetadataFileStore {
             try {
                 task = queue.take();
 
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Starting write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']'
+                    );
+
                 writeMetadata(task.meta);
             }
             finally {
@@ -319,8 +374,26 @@ class BinaryMetadataFileStore {
 
             GridFutureAdapter fut = writeOpFutures.remove(new OperationSyncKey(task.meta.typeId(), task.typeVer));
 
-            if (fut != null)
+            if (fut != null) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Future for write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']' +
+                        " completed."
+                    );
+
                 fut.onDone();
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Future for write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']' +
+                        " not found."
+                    );
+            }
         }
     }
 
@@ -333,7 +406,10 @@ class BinaryMetadataFileStore {
         /** */
         private final int typeVer;
 
-        /** */
+        /**
+         * @param meta Metadata for binary type.
+         * @param ver Version of type.
+         */
         private WriteOperationTask(BinaryMetadata meta, int ver) {
             this.meta = meta;
             typeVer = ver;
@@ -350,7 +426,10 @@ class BinaryMetadataFileStore {
         /** */
         private final int typeVer;
 
-        /** */
+        /**
+         * @param typeId Type Id.
+         * @param typeVer Type version.
+         */
         private OperationSyncKey(int typeId, int typeVer) {
             this.typeId = typeId;
             this.typeVer = typeVer;
