@@ -78,7 +78,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 3;
 
     /** Number of created consumes per thread in multithreaded test. */
-    private static final int CONSUME_CNT = 500;
+    private static final int CONSUME_CNT = GridTestUtils.SF.applyLB(500, 200);
 
     /** Consume latch. */
     private static volatile CountDownLatch consumeLatch;
@@ -149,6 +149,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return GridTestUtils.SF.applyLB(15, 5) * 60 * 1000;
     }
 
     /**
@@ -1109,13 +1114,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             discoLatch = new CountDownLatch(GRID_CNT);
 
             for (int i = 0; i < GRID_CNT; i++) {
-                grid(0).events().localListen(new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
-                            discoLatch.countDown();
+                grid(0).events().localListen((IgnitePredicate<Event>)evt -> {
+                    if (nodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
+                        discoLatch.countDown();
 
-                        return true;
-                    }
+                    return true;
                 }, EVT_NODE_LEFT);
             }
 
@@ -1127,13 +1130,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             g.events().remoteListen(
                 1, 0, false,
                 null,
-                new P1<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        consumeLatch.countDown();
-                        consumeCnt.incrementAndGet();
+                (P1<Event>)evt -> {
+                    consumeLatch.countDown();
+                    consumeCnt.incrementAndGet();
 
-                        return true;
-                    }
+                    return true;
                 },
                 EVT_JOB_STARTED
             );
@@ -1181,14 +1182,14 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                                     @Override public boolean apply(UUID uuid, Event evt) {
                                         return true;
                                     }
-                                }, null, EVT_JOB_STARTED).get(9000);
+                                }, null, EVT_JOB_STARTED).get(10_000);
 
                                 started.add(consumeId);
 
                                 queue.add(F.t(idx, consumeId));
                             }
-                            catch (ClusterTopologyException ignored) {
-                                // No-op.
+                            catch (ClusterTopologyException e) {
+                                log.error("Failed during consume starter", e);
                             }
 
                             U.sleep(10);
@@ -1216,12 +1217,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                         try {
                             IgniteEvents evts = grid(idx).events();
 
-                            evts.stopRemoteListenAsync(consumeId).get(9000);
+                            evts.stopRemoteListenAsync(consumeId).get(10_000);
 
                             stopped.add(consumeId);
                         }
-                        catch (ClusterTopologyException ignored) {
-                            // No-op.
+                        catch (ClusterTopologyException e) {
+                            log.error("Failed during consume stopper", e);
                         }
                     }
 
@@ -1246,7 +1247,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                         int idx = rnd.nextInt(GRID_CNT);
 
                         try {
-                            grid(idx).compute().runAsync(F.noop()).get(3000);
+                            grid(idx).compute().runAsync(F.noop()).get(10_000);
                         }
                         catch (IgniteException ignored) {
                             // Ignore all job execution related errors.
@@ -1265,7 +1266,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 int idx = t.get1();
                 UUID consumeId = t.get2();
 
-                grid(idx).events().stopRemoteListenAsync(consumeId).get(3000);
+                grid(idx).events().stopRemoteListenAsync(consumeId).get(20_000);
 
                 stopped.add(consumeId);
             }
