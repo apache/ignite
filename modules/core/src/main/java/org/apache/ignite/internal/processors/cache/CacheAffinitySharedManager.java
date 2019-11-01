@@ -1462,9 +1462,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert fut.context().mergeExchanges();
         assert evts.hasServerLeft();
 
-        Map<Integer, Map<Integer, List<Long>>> res = onReassignmentEnforced(fut);
-
-        return CacheGroupAffinityMessage.createAffinityDiffMessages(res);
+        return onReassignmentEnforced(fut);
     }
 
     /**
@@ -1521,12 +1519,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return Computed difference with ideal affinity.
      */
     public Map<Integer, CacheGroupAffinityMessage> onCustomEventWithEnforcedAffinityReassignment(
-        final GridDhtPartitionsExchangeFuture fut) {
+        final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         assert DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(fut.firstEvent());
 
-        Map<Integer, Map<Integer, List<Long>>> res = onReassignmentEnforced(fut);
+        Map<Integer, CacheGroupAffinityMessage> result = onReassignmentEnforced(fut);
 
-        return CacheGroupAffinityMessage.createAffinityDiffMessages(res);
+        return result;
     }
 
     /**
@@ -1559,10 +1557,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        return initAffinityBasedOnPartitionsAvailability(evts.topologyVersion(),
+        Map<Integer, Map<Integer, List<Long>>> diff = initAffinityBasedOnPartitionsAvailability(evts.topologyVersion(),
             fut,
             NODE_TO_ORDER,
             true);
+
+        return CacheGroupAffinityMessage.createAffinityDiffMessages(diff);
     }
 
     /**
