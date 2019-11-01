@@ -686,7 +686,7 @@ public class SparkModelParser {
      * Load SVM model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLinearSVMModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {
@@ -722,7 +722,7 @@ public class SparkModelParser {
      * Load linear regression model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLinRegModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {
@@ -759,7 +759,7 @@ public class SparkModelParser {
      * Load logistic regression model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLogRegModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {

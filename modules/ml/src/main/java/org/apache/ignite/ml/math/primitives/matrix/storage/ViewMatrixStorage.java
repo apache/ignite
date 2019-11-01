@@ -147,11 +147,6 @@ public class ViewMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return dlg.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public double[] data() {
         return dlg.data();
     }

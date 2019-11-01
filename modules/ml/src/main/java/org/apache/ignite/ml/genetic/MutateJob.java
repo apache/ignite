@@ -38,7 +38,7 @@ public class MutateJob extends ComputeJobAdapter {
 
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Mutation Rate **/
     private double mutationRate;
