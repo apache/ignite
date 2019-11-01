@@ -98,7 +98,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
 
-    /** Limits returned records quantity*/
+    /** Limits returned records quantity. */
     private int limit;
 
     /** Transformer. */

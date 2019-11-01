@@ -26,10 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -46,6 +42,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -79,7 +76,8 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         /** */
         public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
 
-        /** Constructor
+        /**
+         * Constructor
          *
          * @param exp expected values set.
          * */
@@ -201,12 +199,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         // 1. Populate cache with data, calculating expected count in parallel.
         Set<Integer> exp = populateCache(ignite, false, MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
 
-        ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
-
-        IntStream.range(0, N_THREADS).forEach((i) -> executor.submit(textQueryTask(ignite, clause, exp)));
-
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.MINUTES);
+        GridTestUtils.runMultiThreaded(textQueryTask(ignite, clause, exp), N_THREADS, "text-query-test");
 
         clearCache(ignite);
     }
@@ -241,6 +234,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * @param clause Query clause.
+     * @param limit limits response size
      * @param loc local query flag.
      * @param keepBinary keep binary flag.
      */
