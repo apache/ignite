@@ -7551,6 +7551,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Ignore {@link RuntimeException}.
+     *
+     * @param runnable Runnable.
+     */
+    public static void ignoreRuntimeException(Runnable runnable) {
+        try {
+            runnable.run();
+        }
+        catch (RuntimeException ignore) {
+        }
+    }
+
+    /**
      * Unwraps closure exceptions.
      *
      * @param t Exception.
