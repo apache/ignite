@@ -529,7 +529,7 @@ public class GridAffinityAssignmentCache {
      * @param evt Event.
      * @param topVer Topology version.
      */
-    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+    public void duplicate(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
 
         GridAffinityAssignmentV2 aff = head.get();
@@ -568,7 +568,7 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @return Last calculated affinity version.
+     * @return Last initialized affinity version.
      */
     public AffinityTopologyVersion lastVersion() {
         return head.get().topologyVersion();

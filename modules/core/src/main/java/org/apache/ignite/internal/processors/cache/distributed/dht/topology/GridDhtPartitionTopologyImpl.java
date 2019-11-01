@@ -2253,8 +2253,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         ctx.database().checkpointReadLock();
 
         try {
-            Map<UUID, Set<Integer>> addToWaitGroups = new HashMap<>();
-
             lock.writeLock().lock();
 
             try {
@@ -2306,8 +2304,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     UUID nodeId = entry.getKey();
                     Set<Integer> rebalancedParts = entry.getValue();
 
-                    addToWaitGroups.put(nodeId, new HashSet<>(rebalancedParts));
-
                     if (!rebalancedParts.isEmpty()) {
                         Set<Integer> historical = rebalancedParts.stream()
                             .filter(haveHistory::contains)
@@ -2328,18 +2324,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
             finally {
                 lock.writeLock().unlock();
-            }
-
-            for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
-                // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
-                for (Integer part : entry.getValue()) {
-                    ctx.cache().context().affinity().addToWaitGroup(
-                        groupId(),
-                        part,
-                        entry.getKey(),
-                        topologyVersionFuture().initialVersion()
-                    );
-                }
             }
         }
         finally {

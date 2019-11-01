@@ -63,9 +63,9 @@ public class ExchangeContext {
      * @param fut Exchange future.
      */
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
-        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
+        int ver = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (protocolVer > 2 && fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted()) {
+        if (ver > 2 && fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted() && fut.wasRebalanced()) {
             baselineNodeLeft = true;
             merge = false;
 
@@ -79,10 +79,10 @@ public class ExchangeContext {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = protocolVer == 1;
+            fetchAffOnJoin = ver == 1;
 
             merge = !startCaches &&
-                protocolVer > 1 &&
+                ver > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
