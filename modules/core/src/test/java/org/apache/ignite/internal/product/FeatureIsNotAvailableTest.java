@@ -23,10 +23,7 @@ import org.junit.Test;
 /**
  * The test checks that indexing feature is not available in ignite core module.
  */
-public class IndexingFeatureIsNotAvailableTest extends GridCommonAbstractTest {
-    /** Value of expected INDEXING feature availability check. */
-    private static final boolean INDEXING_FEATURE_IS_NOT_AVAILABLE = false;
-
+public class FeatureIsNotAvailableTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
@@ -38,13 +35,16 @@ public class IndexingFeatureIsNotAvailableTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If fail.
      */
     @Test
-    public void testIndexingFeatureIsNotAvailable() throws Exception {
-        assertEquals(
-            INDEXING_FEATURE_IS_NOT_AVAILABLE,
-            IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.INDEXING)
-        );
+    public void testIndexingFeatureIsNotAvailable() {
+        assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.INDEXING));
+    }
+
+    /**
+     */
+    @Test
+    public void testTracingFeatureIsNotAvailable() {
+        assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.TRACING));
     }
 }

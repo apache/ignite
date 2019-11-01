@@ -103,7 +103,10 @@ public enum IgniteFeatures {
     WC_SCHEDULING_NOT_AVAILABLE(24),
 
     /** Support of DR-specific visor tasks used by control utility. */
-    DR_CONTROL_UTILITY(25);
+    DR_CONTROL_UTILITY(25),
+
+    /** */
+    TRACING(26);
 
     /**
      * Unique feature identifier.
@@ -207,6 +210,10 @@ public enum IgniteFeatures {
 
             // Add only when indexing is enabled.
             if (INDEXING == value && !ctx.query().moduleEnabled())
+                continue;
+
+            // Add only when tracing is enabled.
+            if (TRACING == value && !IgniteComponentType.TRACING.inClassPath())
                 continue;
 
             final int featureId = value.getFeatureId();
