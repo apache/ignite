@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rel.logical;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -22,19 +22,17 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
-public final class IgniteLogicalTableScan extends TableScan implements IgniteRel {
-  public IgniteLogicalTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
+public final class IgniteTableScan extends TableScan implements IgniteRel {
+  public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
     super(cluster, traitSet, table);
   }
 
   @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteLogicalTableScan(ctx.getCluster(), getTraitSet(), getTable());
+    return new IgniteTableScan(ctx.getCluster(), getTraitSet(), getTable());
   }
 
   @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {

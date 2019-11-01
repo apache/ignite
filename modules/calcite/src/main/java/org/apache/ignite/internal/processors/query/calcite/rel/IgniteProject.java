@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rel.logical;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -25,12 +25,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
-public final class IgniteLogicalProject extends Project implements IgniteRel {
-  public IgniteLogicalProject(
+public final class IgniteProject extends Project implements IgniteRel {
+  public IgniteProject(
       RelOptCluster cluster,
       RelTraitSet traitSet,
       RelNode input,
@@ -40,19 +38,19 @@ public final class IgniteLogicalProject extends Project implements IgniteRel {
   }
 
   @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteLogicalProject(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getProjects(), getRowType());
+    return new IgniteProject(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getProjects(), getRowType());
   }
 
-    @Override public IgniteLogicalProject copy(RelTraitSet traitSet, RelNode input,
+    @Override public IgniteProject copy(RelTraitSet traitSet, RelNode input,
       List<RexNode> projects, RelDataType rowType) {
-    return new IgniteLogicalProject(getCluster(), traitSet, input, projects, rowType);
+    return new IgniteProject(getCluster(), traitSet, input, projects, rowType);
   }
 
-  public static IgniteLogicalProject create(Project project, RelNode input) {
+  public static IgniteProject create(Project project, RelNode input) {
     RelTraitSet traits = project.getTraitSet()
         .replace(IgniteRel.LOGICAL_CONVENTION)
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(RelMetadataQueryEx.instance(), input, project.getProjects()));
 
-    return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
+    return new IgniteProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
   }
 }

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalExchange;
 
 /**
  *
@@ -51,7 +51,7 @@ public class DistributionTraitDef extends RelTraitDef<DistributionTrait> {
             case HASH:
             case BROADCAST:
             case SINGLE:
-                return new IgniteLogicalExchange(rel.getCluster(), rel.getTraitSet().replace(targetDist), rel);
+                return new IgniteExchange(rel.getCluster(), rel.getTraitSet().replace(targetDist), rel);
             case ANY:
                 return rel;
             default:

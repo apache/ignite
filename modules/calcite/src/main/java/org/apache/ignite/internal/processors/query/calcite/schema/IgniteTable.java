@@ -28,7 +28,7 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -73,7 +73,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         RelOptCluster cluster = context.getCluster();
         RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.LOGICAL_CONVENTION)
                 .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(cluster.getPlanner().getContext()));
-        return new IgniteLogicalTableScan(cluster, traitSet, relOptTable);
+        return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 
     public DistributionTrait distributionTrait(Context context) {

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rel.logical;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
@@ -25,13 +25,11 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
-public final class IgniteLogicalJoin extends Join implements IgniteRel {
+public final class IgniteHashJoin extends Join implements IgniteRel {
   private final boolean semiJoinDone;
 
-  public IgniteLogicalJoin(
+  public IgniteHashJoin(
       RelOptCluster cluster,
       RelTraitSet traitSet,
       RelNode left,
@@ -45,12 +43,12 @@ public final class IgniteLogicalJoin extends Join implements IgniteRel {
   }
 
   @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteLogicalJoin(ctx.getCluster(), getTraitSet(), ctx.clone(getLeft()), ctx.clone(getRight()), getCondition(), variablesSet, getJoinType(), semiJoinDone);
+    return new IgniteHashJoin(ctx.getCluster(), getTraitSet(), ctx.clone(getLeft()), ctx.clone(getRight()), getCondition(), variablesSet, getJoinType(), semiJoinDone);
   }
 
-  @Override public IgniteLogicalJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
+  @Override public IgniteHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-    return new IgniteLogicalJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
+    return new IgniteHashJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
   }
 
   @Override public RelWriter explainTerms(RelWriter pw) {

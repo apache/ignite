@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
-import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

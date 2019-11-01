@@ -35,13 +35,11 @@ public final class CloneContext {
         return cluster;
     }
 
-    public <T extends IgniteRel> T clone(RelNode src) {
-        try {
-            return (T) mapping.computeIfAbsent((IgniteRel) src, this::clone0);
-        }
-        catch (ClassCastException e) {
+    public <T extends RelNode> T clone(T src) {
+        if (!(src instanceof IgniteRel))
             throw new IllegalStateException("Unexpected node type: " + src.getClass());
-        }
+
+        return (T) mapping.computeIfAbsent((IgniteRel) src, this::clone0);
     }
 
     private IgniteRel clone0(IgniteRel src) {

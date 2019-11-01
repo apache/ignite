@@ -64,9 +64,6 @@ import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.rel.rules.UnionPullUpConstantsRule;
 import org.apache.calcite.rel.rules.UnionToDistinctRule;
 import org.apache.calcite.rel.rules.ValuesReduceRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteFilterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteJoinRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteProjectRule;
 
 /**
  *
@@ -161,7 +158,7 @@ public class IgniteRules {
     public static final List<RelOptRule> IGNITE_LOGICAL_RULES = ImmutableList.of(
         IgniteFilterRule.INSTANCE,
         IgniteProjectRule.INSTANCE,
-        IgniteJoinRule.INSTANCE);
+        IgniteHashJoinRule.INSTANCE);
 
     public static List<RelOptRule> logicalRules(Context ctx) {
         return ImmutableList.<RelOptRule>builder()

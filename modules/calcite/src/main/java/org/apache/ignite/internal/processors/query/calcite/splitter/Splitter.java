@@ -21,10 +21,10 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
-import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 
 /**
  *
@@ -43,8 +43,8 @@ public class Splitter extends RelShuttleImpl {
             throw new AssertionError("Unexpected node: " + rel);
         else if (rel instanceof Sender || rel instanceof Receiver)
             throw new AssertionError("An attempt to split an already split task.");
-        else if (rel instanceof IgniteLogicalExchange) {
-            IgniteLogicalExchange exchange = (IgniteLogicalExchange) rel;
+        else if (rel instanceof IgniteExchange) {
+            IgniteExchange exchange = (IgniteExchange) rel;
 
             RelOptCluster cluster = exchange.getCluster();
             RelTraitSet traitSet = exchange.getTraitSet();

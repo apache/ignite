@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.util.GridIntList;
 
 /**

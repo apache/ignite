@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rule.logical;
+package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -23,8 +23,8 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalFilter;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RelOp;
 
@@ -46,9 +46,9 @@ public class IgniteFilterRule extends RelOptRule {
 
         RelNode converted = convert(input, traitSet);
 
-        RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteLogicalFilter::create);
+        RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteFilter::create);
 
         if (!transformOp.go(filter))
-            call.transformTo(IgniteLogicalFilter.create(filter, converted));
+            call.transformTo(IgniteFilter.create(filter, converted));
     }
 }

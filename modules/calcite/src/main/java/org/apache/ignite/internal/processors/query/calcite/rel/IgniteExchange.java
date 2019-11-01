@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rel.logical;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
@@ -26,14 +26,12 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 /**
  *
  */
-public final class IgniteLogicalExchange extends SingleRel implements IgniteRel {
+public final class IgniteExchange extends SingleRel implements IgniteRel {
     /**
      * Creates a <code>SingleRel</code>.
      *
@@ -41,7 +39,7 @@ public final class IgniteLogicalExchange extends SingleRel implements IgniteRel 
      * @param traits Node traits.
      * @param input   Input relational expression
      */
-    public IgniteLogicalExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    public IgniteExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
     }
 
@@ -53,11 +51,11 @@ public final class IgniteLogicalExchange extends SingleRel implements IgniteRel 
     }
 
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteLogicalExchange(getCluster(), traitSet, sole(inputs));
+        return new IgniteExchange(getCluster(), traitSet, sole(inputs));
     }
 
     @Override public IgniteRel clone(CloneContext ctx) {
-        throw new UnsupportedOperationException();
+        return new IgniteExchange(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()));
     }
 
     @Override public RelWriter explainTerms(RelWriter pw) {

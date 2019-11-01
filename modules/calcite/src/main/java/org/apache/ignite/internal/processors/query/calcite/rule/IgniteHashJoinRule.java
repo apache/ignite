@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.rule.logical;
+package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -25,8 +25,8 @@ import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -34,10 +34,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /**
  *
  */
-public class IgniteJoinRule extends RelOptRule {
-    public static final RelOptRule INSTANCE = new IgniteJoinRule();
+public class IgniteHashJoinRule extends RelOptRule {
+    public static final RelOptRule INSTANCE = new IgniteHashJoinRule();
 
-    public IgniteJoinRule() {
+    public IgniteHashJoinRule() {
         super(Commons.any(LogicalJoin.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteJoinRule");
     }
 
@@ -61,7 +61,7 @@ public class IgniteJoinRule extends RelOptRule {
             .replace(IgniteRel.LOGICAL_CONVENTION)
             .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.join(mq, left, right, join.getCondition()));
 
-        call.transformTo(new IgniteLogicalJoin(join.getCluster(), traitSet, left, right,
+        call.transformTo(new IgniteHashJoin(join.getCluster(), traitSet, left, right,
             join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone()));
     }
 }

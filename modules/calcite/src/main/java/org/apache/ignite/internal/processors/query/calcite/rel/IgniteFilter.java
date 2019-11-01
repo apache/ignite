@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rel.logical;
+package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.Objects;
 import java.util.Set;
@@ -27,14 +27,12 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
-public final class IgniteLogicalFilter extends Filter implements IgniteRel {
+public final class IgniteFilter extends Filter implements IgniteRel {
   private final Set<CorrelationId> variablesSet;
 
-  public IgniteLogicalFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child,
+  public IgniteFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child,
       RexNode condition, Set<CorrelationId> variablesSet) {
     super(cluster, traitSet, child, condition);
     this.variablesSet = Objects.requireNonNull(variablesSet);
@@ -45,12 +43,12 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
   }
 
   @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteLogicalFilter(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getCondition(), variablesSet);
+    return new IgniteFilter(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getCondition(), variablesSet);
   }
 
-  @Override public IgniteLogicalFilter copy(RelTraitSet traitSet, RelNode input,
+  @Override public IgniteFilter copy(RelTraitSet traitSet, RelNode input,
       RexNode condition) {
-    return new IgniteLogicalFilter(getCluster(), traitSet, input, condition, variablesSet);
+    return new IgniteFilter(getCluster(), traitSet, input, condition, variablesSet);
   }
 
   @Override public RelWriter explainTerms(RelWriter pw) {
@@ -58,11 +56,11 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
         .itemIf("variablesSet", variablesSet, !variablesSet.isEmpty());
   }
 
-  public static IgniteLogicalFilter create(Filter filter, RelNode input) {
+  public static IgniteFilter create(Filter filter, RelNode input) {
     RelTraitSet traits = filter.getTraitSet()
         .replace(IgniteRel.LOGICAL_CONVENTION)
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.filter(RelMetadataQueryEx.instance(), input, filter.getCondition()));
 
-    return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
+    return new IgniteFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
   }
 }
