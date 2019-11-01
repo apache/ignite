@@ -60,6 +60,15 @@ public final class Commons {
         return paramSrc.get();
     }
 
+    public static <T> T contextParam(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
+        T param = ctx.unwrap(paramType);
+
+        if (param != null)
+            return param;
+
+        return paramSrc.get();
+    }
+
     /** */
     public static RowType rowType(GridQueryTypeDescriptor desc) {
         RowType.Builder b = RowType.builder();

@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.BiRel;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDi
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -72,7 +72,9 @@ public class IgniteMdSourceDistribution implements MetadataHandler<SourceDistrib
     public SourceDistribution getSourceDistribution(Receiver rel, RelMetadataQuery mq) {
         SourceDistribution res = new SourceDistribution();
 
-        res.remoteInputs = F.asList(rel);
+        ArrayList<Receiver> remoteInputs = new ArrayList<>();
+        remoteInputs.add(rel);
+        res.remoteInputs = remoteInputs;
 
         return res;
     }

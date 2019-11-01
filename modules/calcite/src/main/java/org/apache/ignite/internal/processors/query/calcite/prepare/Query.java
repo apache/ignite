@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,5 +50,24 @@ public class Query {
             }
         }
         return res;
+    }
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Query))
+            return false;
+
+        Query query = (Query) o;
+
+        if (!sql.equals(query.sql))
+            return false;
+        return Arrays.equals(params, query.params);
+    }
+
+    @Override public int hashCode() {
+        int result = sql.hashCode();
+        result = 31 * result + Arrays.hashCode(params);
+        return result;
     }
 }

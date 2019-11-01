@@ -25,8 +25,8 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 
 public final class IgniteLogicalJoin extends Join implements IgniteRel {
   private final boolean semiJoinDone;
@@ -44,6 +44,10 @@ public final class IgniteLogicalJoin extends Join implements IgniteRel {
     this.semiJoinDone = semiJoinDone;
   }
 
+  @Override public IgniteRel clone(CloneContext ctx) {
+    return new IgniteLogicalJoin(ctx.getCluster(), getTraitSet(), ctx.clone(getLeft()), ctx.clone(getRight()), getCondition(), variablesSet, getJoinType(), semiJoinDone);
+  }
+
   @Override public IgniteLogicalJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
     return new IgniteLogicalJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
@@ -58,9 +62,5 @@ public final class IgniteLogicalJoin extends Join implements IgniteRel {
 
   @Override public boolean isSemiJoinDone() {
     return semiJoinDone;
-  }
-
-  @Override public <T> T accept(IgniteVisitor<T> visitor) {
-    return visitor.visitJoin(this);
   }
 }

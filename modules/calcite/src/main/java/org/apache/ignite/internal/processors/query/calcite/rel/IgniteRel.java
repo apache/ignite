@@ -32,5 +32,5 @@ public interface IgniteRel extends RelNode {
         }
     };
 
-    <T> T accept(IgniteVisitor<T> visitor);
+    IgniteRel clone(CloneContext ctx);
 }

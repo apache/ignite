@@ -22,14 +22,19 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteLogicalTableScan extends TableScan implements IgniteRel {
   public IgniteLogicalTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
     super(cluster, traitSet, table);
+  }
+
+  @Override public IgniteRel clone(CloneContext ctx) {
+    return new IgniteLogicalTableScan(ctx.getCluster(), getTraitSet(), getTable());
   }
 
   @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -39,11 +44,7 @@ public final class IgniteLogicalTableScan extends TableScan implements IgniteRel
   }
 
   public SourceDistribution tableDistribution() {
-     return getTable().unwrap(IgniteTable.class)
-         .sourceDistribution(getCluster().getPlanner().getContext());
-  }
-
-  @Override public <T> T accept(IgniteVisitor<T> visitor) {
-    return visitor.visitTableScan(this);
+    boolean local = !getTraitSet().isEnabled(DistributionTraitDef.INSTANCE);
+    return getTable().unwrap(IgniteTable.class).sourceDistribution(getCluster().getPlanner().getContext(), local);
   }
 }

@@ -80,7 +80,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.noOpFunction()); // TODO
     }
 
-    public SourceDistribution sourceDistribution(Context context) {
+    public SourceDistribution sourceDistribution(Context context, boolean local) {
         int cacheId = CU.cacheId(cacheName);
 
         SourceDistribution res = new SourceDistribution();
@@ -89,9 +89,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         localInputs.add(cacheId);
         res.localInputs = localInputs;
 
-        PartitionsDistributionRegistry registry = context.unwrap(PartitionsDistributionRegistry.class);
-        AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
-        res.partitionMapping = registry.get(cacheId, topVer);
+        if (!local) {
+            PartitionsDistributionRegistry registry = context.unwrap(PartitionsDistributionRegistry.class);
+            AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
+            res.partitionMapping = registry.distributed(cacheId, topVer);
+        }
 
         return res;
     }

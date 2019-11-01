@@ -28,34 +28,38 @@ import org.apache.ignite.internal.util.typedef.F;
  *
  */
 public class Fragment {
-    public final RelNode root;
+    public final RelNode rel;
 
     public SourceDistribution distribution;
 
-    public Fragment(RelNode root) {
-        this.root = root;
+    public Fragment(RelNode rel) {
+        this.rel = rel;
     }
 
     public void init(Context ctx) {
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
 
-        distribution = mq.getSourceDistribution(root);
+        distribution = mq.getSourceDistribution(rel);
 
         PartitionsDistribution mapping = distribution.partitionMapping;
 
-        if (mapping == null)
-            distribution.partitionMapping = isRootFragment() ? registry(ctx).single() : registry(ctx).random(topologyVersion(ctx));
+        if (mapping == null) {
+            if (!isRoot())
+                distribution.partitionMapping = registry(ctx).random(topologyVersion(ctx));
+            else if (!F.isEmpty(distribution.remoteInputs))
+                distribution.partitionMapping = registry(ctx).single();
+        }
         else if (mapping.excessive)
             distribution.partitionMapping = mapping.deduplicate();
-        
+
         if (!F.isEmpty(distribution.remoteInputs)) {
             for (Receiver input : distribution.remoteInputs)
                 input.init(distribution, mq);
         }
     }
 
-    private boolean isRootFragment() {
-        return !(root instanceof Sender);
+    private boolean isRoot() {
+        return !(rel instanceof Sender);
     }
 
     private PartitionsDistributionRegistry registry(Context ctx) {

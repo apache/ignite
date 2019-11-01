@@ -50,7 +50,7 @@ public class PartitionsDistribution {
             else {
                 int[] mergedParts = merge(nodeParts[i], other.nodeParts[j]);
 
-                if (mergedParts.length > 0) {
+                if (mergedParts == ALL_PARTS || mergedParts.length > 0) {
                     if (nodes0 == null) {
                         int len = Math.min(nodes.length, other.nodes.length);
 

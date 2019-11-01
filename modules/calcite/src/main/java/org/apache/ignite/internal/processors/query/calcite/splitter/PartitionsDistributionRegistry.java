@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
  *
  */
 public interface PartitionsDistributionRegistry {
-    PartitionsDistribution get(int cacheId, AffinityTopologyVersion topVer);
-    PartitionsDistribution random(AffinityTopologyVersion topVer);
-    PartitionsDistribution single();
+    PartitionsDistribution single(); // returns local node with single partition
+    PartitionsDistribution random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
+    PartitionsDistribution distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
 }

@@ -23,8 +23,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -49,12 +49,12 @@ public class Sender extends SingleRel implements IgniteRel {
         super(cluster, traits, input);
     }
 
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new Sender(getCluster(), traitSet, sole(inputs));
+    @Override public IgniteRel clone(CloneContext ctx) {
+        return new Sender(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()));
     }
 
-    @Override public <T> T accept(IgniteVisitor<T> visitor) {
-        return visitor.visitSender(this);
+    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        return new Sender(getCluster(), traitSet, sole(inputs));
     }
 
     public void init(SourceDistribution targetDistribution) {

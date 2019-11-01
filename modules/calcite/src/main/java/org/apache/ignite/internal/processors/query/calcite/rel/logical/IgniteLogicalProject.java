@@ -25,8 +25,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteLogicalProject extends Project implements IgniteRel {
@@ -37,6 +37,10 @@ public final class IgniteLogicalProject extends Project implements IgniteRel {
       List<? extends RexNode> projects,
       RelDataType rowType) {
     super(cluster, traitSet, input, projects, rowType);
+  }
+
+  @Override public IgniteRel clone(CloneContext ctx) {
+    return new IgniteLogicalProject(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getProjects(), getRowType());
   }
 
     @Override public IgniteLogicalProject copy(RelTraitSet traitSet, RelNode input,
@@ -50,9 +54,5 @@ public final class IgniteLogicalProject extends Project implements IgniteRel {
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(RelMetadataQueryEx.instance(), input, project.getProjects()));
 
     return new IgniteLogicalProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
-  }
-
-  @Override public <T> T accept(IgniteVisitor<T> visitor) {
-    return visitor.visitProject(this);
   }
 }

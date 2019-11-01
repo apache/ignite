@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 
 /**
  *
@@ -33,5 +34,19 @@ public class QueryPlan {
         for (Fragment fragment : fragments) {
             fragment.init(ctx);
         }
+    }
+
+    public ImmutableList<Fragment> fragments() {
+        return fragments;
+    }
+
+    public QueryPlan clone(CloneContext ctx) {
+        ImmutableList.Builder<Fragment> b = ImmutableList.builder();
+
+        for (Fragment f : fragments) {
+            b.add(new Fragment(ctx.clone(f.rel)));
+        }
+
+        return new QueryPlan(b.build());
     }
 }

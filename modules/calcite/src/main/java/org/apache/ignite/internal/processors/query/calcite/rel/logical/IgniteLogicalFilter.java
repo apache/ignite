@@ -27,8 +27,8 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteLogicalFilter extends Filter implements IgniteRel {
@@ -42,6 +42,10 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
 
     @Override public Set<CorrelationId> getVariablesSet() {
     return variablesSet;
+  }
+
+  @Override public IgniteRel clone(CloneContext ctx) {
+    return new IgniteLogicalFilter(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getCondition(), variablesSet);
   }
 
   @Override public IgniteLogicalFilter copy(RelTraitSet traitSet, RelNode input,
@@ -60,9 +64,5 @@ public final class IgniteLogicalFilter extends Filter implements IgniteRel {
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.filter(RelMetadataQueryEx.instance(), input, filter.getCondition()));
 
     return new IgniteLogicalFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());
-  }
-
-  @Override public <T> T accept(IgniteVisitor<T> visitor) {
-    return visitor.visitFilter(this);
   }
 }

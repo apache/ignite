@@ -17,24 +17,19 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Sender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalProject;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 
 /**
  *
  */
-public class Splitter implements IgniteVisitor<IgniteRel> {
+public class Splitter extends RelShuttleImpl {
     private ImmutableList.Builder<Fragment> b;
 
     public QueryPlan go(IgniteRel root) {
@@ -43,53 +38,24 @@ public class Splitter implements IgniteVisitor<IgniteRel> {
         return new QueryPlan(b.add(new Fragment(root.accept(this))).build());
     }
 
-    @Override public IgniteRel visitExchange(IgniteLogicalExchange exchange) {
-        RelOptCluster cluster = exchange.getCluster();
-        RelTraitSet traitSet = exchange.getTraitSet();
+    @Override public RelNode visit(RelNode rel) {
+        if (!(rel instanceof IgniteRel))
+            throw new AssertionError("Unexpected node: " + rel);
+        else if (rel instanceof Sender || rel instanceof Receiver)
+            throw new AssertionError("An attempt to split an already split task.");
+        else if (rel instanceof IgniteLogicalExchange) {
+            IgniteLogicalExchange exchange = (IgniteLogicalExchange) rel;
 
-        IgniteRel input = visitChildren(exchange.getInput());
+            RelOptCluster cluster = exchange.getCluster();
+            RelTraitSet traitSet = exchange.getTraitSet();
 
-        Sender sender = new Sender(cluster, traitSet, input);
+            Sender sender = new Sender(cluster, traitSet, visit(exchange.getInput()));
 
-        b.add(new Fragment(sender));
+            b.add(new Fragment(sender));
 
-        return new Receiver(cluster, traitSet, sender);
-    }
-
-    @Override public IgniteRel visitFilter(IgniteLogicalFilter filter) {
-        return visitChildren(filter);
-    }
-
-    @Override public IgniteRel visitJoin(IgniteLogicalJoin join) {
-        return visitChildren(join);
-    }
-
-    @Override public IgniteRel visitProject(IgniteLogicalProject project) {
-        return visitChildren(project);
-    }
-
-    @Override public IgniteRel visitTableScan(IgniteLogicalTableScan tableScan) {
-        return tableScan;
-    }
-
-    @Override public IgniteRel visitReceiver(Receiver receiver) {
-        throw new AssertionError("An attempt to split an already split task.");
-    }
-
-    @Override public IgniteRel visitSender(Sender sender) {
-        throw new AssertionError("An attempt to split an already split task.");
-    }
-
-    private IgniteRel visitChildren(RelNode parent) {
-        List<RelNode> inputs = parent.getInputs();
-
-        for (int i = 0; i < inputs.size(); i++) {
-            IgniteRel input = (IgniteRel) inputs.get(i);
-            IgniteRel rel = input.accept(this);
-
-            if (rel != input)
-                parent.replaceInput(i, rel);
+            return new Receiver(cluster, traitSet, sender);
         }
-        return (IgniteRel) parent;
+
+        return super.visit(rel);
     }
 }
