@@ -4396,12 +4396,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
 
                     addTimeoutObject(new IgniteSpiTimeoutObject() {
+                        /** */
+                        private final long endTime = U.currentTimeMillis() + connTimeout;
+
                         @Override public IgniteUuid id() {
                             return IgniteUuid.randomUuid();
                         }
 
                         @Override public long endTime() {
-                            return U.currentTimeMillis() + connTimeout;
+                            return endTime;
                         }
 
                         @Override public void onTimeout() {

@@ -246,13 +246,16 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         forceFut.listen(c -> {
             try {
                 mainFut.onNodeGroupDone(grpId, nodeId(), true);
-
-                if (forceFut.get() && remaining.isEmpty())
+                // todo think
+//if (forceFut.get() &&
+                if (remaining.isEmpty())
                     onDone(true);
-                else
-                    cancel();
+
+                // todo think
+//                else
+//                    cancel();
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 onDone(e);
             }
         });
