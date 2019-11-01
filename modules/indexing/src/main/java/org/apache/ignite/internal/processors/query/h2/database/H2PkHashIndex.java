@@ -125,7 +125,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                     continue;
 
                 if (filter == null || filter.applyPartition(part))
-                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot, false));
+                    cursors.add(store.cursor(cctx.cacheId(), lowerObj, upperObj, null, mvccSnapshot));
             }
 
             return new H2PkHashIndexCursor(cursors.iterator());
@@ -206,7 +206,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
                 int part = store.partId();
 
                 if (partsFilter == null || partsFilter.applyPartition(part))
-                    cursors.add(store.cursor(cctx.cacheId(), false));
+                    cursors.add(store.cursor(cctx.cacheId()));
             }
 
             Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());

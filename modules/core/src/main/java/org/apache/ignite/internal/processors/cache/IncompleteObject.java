@@ -32,7 +32,7 @@ public class IncompleteObject<T> {
     private T obj;
 
     /** */
-    protected int off;
+    private int off;
 
     /**
      * @param data Data bytes.
