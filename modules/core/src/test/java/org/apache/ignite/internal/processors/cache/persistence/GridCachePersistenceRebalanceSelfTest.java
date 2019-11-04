@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
@@ -115,6 +116,16 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 600_000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60_000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -147,10 +158,6 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
             .setAffinity(new RendezvousAffinityFunction(false, parts))
             .setBackups(backups);
 //            .setCommunicationSpi(new TestRecordingCommunicationSpi()
-    }
-
-    @Override protected long getPartitionMapExchangeTimeout() {
-        return 60_000;
     }
 
     /** */
@@ -267,7 +274,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         AtomicLong cntr = new AtomicLong(TEST_SIZE);
 
-        ConstantLoader ldr = new ConstantLoader(ignite0.cache(DEFAULT_CACHE_NAME), cntr, true);
+        ConstantLoader ldr = new ConstantLoader(ignite0.cache(DEFAULT_CACHE_NAME), cntr, true, 8);
 
         IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, 8, "thread");
 
@@ -447,7 +454,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 loadData(ignite, CACHE1, TEST_SIZE);
                 loadData(ignite, CACHE2, TEST_SIZE);
 
-                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false);
+                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false, loadThreads);
 
                 ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, loadThreads, "thread");
             }
@@ -462,9 +469,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
             ldr.pause();
 
             // todo should check partitions
-            int diff = 100 * loadThreads;
-
-            for (long k = 0; k < cntr.get() - diff; k++) {
+            for (long k = 0; k < cntr.get(); k++) {
                 assertEquals("k=" + k, generateValue(k, CACHE1), cache1.get(k));
 
                 if (k < TEST_SIZE)
@@ -709,6 +714,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         /** */
         private final boolean enableRemove;
 
+        private final CyclicBarrier barrier;
+
         /** */
         private volatile boolean pause;
 
@@ -722,10 +729,11 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         private final IgniteCache<Long, Long> cache;
 
         /** */
-        public ConstantLoader(IgniteCache<Long, Long> cache, AtomicLong cntr, boolean enableRemove) {
+        public ConstantLoader(IgniteCache<Long, Long> cache, AtomicLong cntr, boolean enableRemove, int threadCnt) {
             this.cache = cache;
             this.cntr = cntr;
             this.enableRemove = enableRemove;
+            this.barrier = new CyclicBarrier(threadCnt);
         }
 
         /** {@inheritDoc} */
@@ -734,8 +742,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
             while (!stop && !Thread.currentThread().isInterrupted()) {
                 if (pause) {
-                    if (!paused)
+                    if (!paused) {
+                        U.awaitQuiet(barrier);
+
                         paused = true;
+                    }
+                        //paused = true;
 
                     try {
                         U.sleep(100);
