@@ -37,7 +37,7 @@
         <commons-beanutils.version>1.9.2</commons-beanutils.version>
         <cassandra-driver.version>3.2.0</cassandra-driver.version>
         <cassandra-all.version>3.11.3</cassandra-all.version>
-        <netty.version>4.1.27.Final</netty.version>
+        <netty.version>4.1.42.Final</netty.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
