@@ -36,7 +36,6 @@ import static org.junit.Assert.assertEquals;
 
 /** Integration tests for Compound naive Bayes algorithm with different datasets. */
 public class CompoundNaiveBayesTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 

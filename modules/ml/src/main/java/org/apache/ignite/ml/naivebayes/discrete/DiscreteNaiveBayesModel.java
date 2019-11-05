@@ -88,17 +88,15 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
         for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(clsProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
+            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex])
                 maxLabelIndex = i;
-            }
         }
 
         return labels[maxLabelIndex];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
+    @Override public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {
