@@ -36,7 +36,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * {@link #onAllReceived}
  * {@link #onActionMessage}
  * {@link #onAllServersLeft}
- * <p>
  *
  * @param <I> Type of initial message.
  * @param <R> Type of single nodes result message.
@@ -90,6 +89,8 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
             ClusterNode crd = coordinator();
 
             if (crd == null) {
+                proc.initFut.onDone();
+
                 onAllServersLeft(msg.requestId());
 
                 return;

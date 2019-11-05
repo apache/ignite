@@ -1,7 +1,7 @@
-package org.apache.ignite.internal.encryption;
+package org.apache.ignite.internal.util.distributed;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -15,10 +15,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.DistributedProcessActionMessage;
-import org.apache.ignite.internal.util.distributed.DistributedProcessInitialMessage;
-import org.apache.ignite.internal.util.distributed.DistributedProcessSingleNodeMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.G;
@@ -52,7 +48,7 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
     public void testCoordinatorChange() throws Exception {
         IgniteEx crd = startGrids(3);
 
-        ArrayList<TestDistributedProcess> processes = new ArrayList<>();
+        HashMap<UUID, TestDistributedProcess> processes = new HashMap<>();
 
         G.allGrids().forEach(ignite -> {
             TestDistributedProcess process = new TestDistributedProcess();
@@ -60,7 +56,7 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
             process.init(((IgniteEx)ignite).context(), TestRequest.class,
                 TestSingleNodeResult.class, GridTopic.TOPIC_MASTER_KEY_CHANGE, TestResult.class);
 
-            processes.add(process);
+            processes.put(((IgniteEx)ignite).localNode().id(), process);
         });
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
@@ -71,24 +67,25 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
 
         spi.waitForBlocked();
 
-        processes.forEach(process -> assertEquals(1, process.completed.getCount()));
+        processes.forEach((uuid, process) -> assertEquals(1, process.completed.getCount()));
 
         spi.stopBlock(false, null, false, true);
 
+        processes.remove(crd.localNode().id());
+
         stopGrid(0);
-        processes.remove(0);
 
         awaitPartitionMapExchange();
 
-        processes.forEach(process -> assertEquals(1, process.completed.getCount()));
+        processes.forEach((uuid, process) -> assertEquals(1, process.completed.getCount()));
 
         spi.waitForBlocked();
 
-        processes.forEach(process -> assertEquals(1, process.completed.getCount()));
+        processes.forEach((uuid, process) -> assertEquals(1, process.completed.getCount()));
 
         spi.stopBlock();
 
-        processes.forEach(process -> {
+        processes.forEach((uuid, process) -> {
             try {
                 process.completed.await();
             }
@@ -99,8 +96,9 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
     }
 
     /** Test implementation of {@link DistributedProcess}. */
-    private static class TestDistributedProcess extends DistributedProcess<TestRequest, TestSingleNodeResult, TestResult> {
-        CountDownLatch completed = new CountDownLatch(1);
+    private static class TestDistributedProcess extends DistributedProcess<TestRequest, TestSingleNodeResult,
+        TestResult> {
+        private final CountDownLatch completed = new CountDownLatch(1);
 
         /** {@inheritDoc} */
         @Override protected IgniteInternalFuture<TestSingleNodeResult> process(TestRequest msg,
