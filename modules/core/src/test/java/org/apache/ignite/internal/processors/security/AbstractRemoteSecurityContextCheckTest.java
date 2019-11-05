@@ -210,12 +210,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         public void checkResult() {
             registeredSubjects.forEach(t ->
                 assertEquals("Invalide security context on node " + t.get2(),
-                    t.get1(), expSecSubjId)
+                    expSecSubjId, t.get1())
             );
 
             expInvokes.forEach((key, value) ->
                 assertEquals("Node " + key + ". Execution of register: ",
-                    value.get2(), value.get1()));
+                    value.get1(), value.get2()));
 
             clear();
         }
