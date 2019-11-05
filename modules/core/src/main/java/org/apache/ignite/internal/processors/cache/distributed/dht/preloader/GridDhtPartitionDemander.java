@@ -1384,7 +1384,8 @@ public class GridDhtPartitionDemander {
                 if (updateState && grp.localWalEnabled()) {
                     boolean owned = grp.topology().own(grp.topology().localPartition(p));
 
-                    System.out.println(grp.cacheOrGroupName() + " own " + p + (owned ? "OWNED" : "MOVED"));
+                    if (log.isDebugEnabled())
+                        log.debug(grp.cacheOrGroupName() + " own p=" + p + ", owned=" + owned);
                 }
 
                 if (isDone())

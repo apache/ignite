@@ -523,6 +523,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return ID of history supplier node or null if it doesn't exist.
      */
     public @Nullable UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+        if (cntrSince == 0)
+            return null;
+
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
@@ -533,8 +536,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param partId Partition ID.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    public @Nullable UUID partitionFileSupplier(int grpId, int partId) {
-        return partHistSuppliers.getFileSupplier(grpId, partId);
+    public @Nullable UUID partitionFileSupplier(int grpId, int partId, long cntrSince) {
+        return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
     /**
@@ -2291,64 +2294,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
-//            log.info("partHistSuppliers " + partHistSuppliers.isEmpty());
-
             if (localReserved != null) {
-                log.info("localReserved: " + localReserved);
+                if (log.isDebugEnabled())
+                    log.debug("local reserved: " + localReserved);
 
                 for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
                     boolean success = cctx.database().reserveHistoryForPreloading(
                         e.getKey().get1(), e.getKey().get2(), e.getValue());
 
-                    // Since we reserved history for exchange we can't fail here
+                    // We can't fail here since history is reserved for exchange.
                     assert success;
-//                    if (!success) {
-//                        // TODO: how to handle?
-//                        err = new IgniteCheckedException("Could not reserve history");
-//                    }
+
+                    if (!success) {
+                        // TODO: how to handle?
+                        err = new IgniteCheckedException("Could not reserve history");
+                    }
                 }
             }
-
-
-
-            // todo reserve only moving partitions (not all)
-            // todo reserve only those partitions that will be supplied from current node
-//            if (cctx.filePreloader() != null) {
-//                for (CacheGroupContext ctx : cctx.cache().cacheGroups()) {
-//                    if (ctx.topology().hasMovingPartitions()) {
-//                        boolean reservedGrp = false;
-//
-//                        Set<ClusterNode> assigns = new HashSet<>();
-//
-//                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-//                            assigns.addAll(ctx.affinity().assignments(res).get(part.id()));
-//
-//                            if (reservedGrp = localReserved != null && localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
-//                                break;
-//                        }
-//
-//                        if (reservedGrp || !assigns.contains(cctx.localNode()) || !cctx.filePreloader().fileRebalanceRequired(ctx, assigns))
-//                            continue;
-//
-//                        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-//                            if (part.state() == GridDhtPartitionState.OWNING) {
-//                                if (localReserved != null && !localReserved.containsKey(new T2<>(ctx.groupId(), part.id())))
-//                                    continue;
-//
-//                                long cntr = part.updateCounter();
-//
-//                                // todo debug
-//                                if (log.isInfoEnabled())
-//                                    log.info("Reserve WAL history for file preloading [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr);
-//
-//                                boolean reserved = cctx.database().reserveHistoryForPreloading(ctx.groupId(), part.id(), cntr);
-//
-//                                assert reserved : "Unable to reserve history [cache=" + ctx.cacheOrGroupName() + ". p=" + part.id() + ", cntr=" + cntr + "]";
-//                            }
-//                        }
-//                    }
-//                }
-//            }
 
             cctx.database().releaseHistoryForExchange();
 

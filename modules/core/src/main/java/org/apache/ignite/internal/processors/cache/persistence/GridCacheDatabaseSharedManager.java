@@ -1844,7 +1844,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
-        log.info("Reserve history for preloading: " + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + " p=" + partId + ", cntr=" + cntr);
+        if (log.isDebugEnabled()) {
+            log.debug("Reserve history for preloading [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+        }
 
         CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
 

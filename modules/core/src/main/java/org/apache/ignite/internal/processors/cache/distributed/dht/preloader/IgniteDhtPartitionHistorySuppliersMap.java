@@ -53,7 +53,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @return Supplier UUID.
      */
     public synchronized @Nullable UUID getSupplier(int grpId, int partId, long cntrSince) {
-        if (map == null || cntrSince == 0)
+        if (map == null)
             return null;
 
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
@@ -68,27 +68,28 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         return null;
     }
 
-    /**
-     * @param grpId Group ID.
-     * @param partId Partition ID.
-     * @return Supplier UUID.
-     */
-    public synchronized @Nullable UUID getFileSupplier(int grpId, int partId) {
-        if (map == null)
-            return null;
-
-        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
-            UUID supplierNode = e.getKey();
-
-            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
-
-            // todo In case of several nodes should return random node.
-            if (historyCounter != null)
-                return supplierNode;
-        }
-
-        return null;
-    }
+//    /**
+//     * @param grpId Group ID.
+//     * @param partId Partition ID.
+//     * @param cntrSince
+//     * @return Supplier UUID.
+//     */
+//    public synchronized @Nullable UUID getFileSupplier(int grpId, int partId, long cntrSince) {
+//        if (map == null)
+//            return null;
+//
+//        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
+//            UUID supplierNode = e.getKey();
+//
+//            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+//
+//            // todo In case of several nodes should return random node.
+//            if (historyCounter != null && historyCounter <= cntrSince)
+//                return supplierNode;
+//        }
+//
+//        return null;
+//    }
 
     /**
      * @param nodeId Node ID to check.

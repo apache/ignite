@@ -155,11 +155,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                     if (part.state() == OWNING)
                         continue;
 
-                    assert part.state() == MOVING : "Unexpected state [cache=" + grp.cacheOrGroupName() +
+                    assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
                         ", p=" + p + ", state=" + part.state() + "]";
 
                     // Should have partition file supplier to start file rebalance.
-                    if (exchFut.partitionFileSupplier(grp.groupId(), p) != null)
+                    Long globalSize = grp.topology().globalPartSizes().get(p);
+
+                    assert globalSize != null;
+
+                    if (exchFut.partitionFileSupplier(grp.groupId(), p, globalSize) != null)
                         part.readOnly(true);
 //                        else
 //                            part.readOnly(false);
@@ -422,7 +426,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
                 cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
 
-            Files.move(src.toPath(), dest.toPath());
+            // todo change to "move" when issue with zero snapshot page will be catched and investiageted.
+            Files.copy(src.toPath(), dest.toPath());
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to move file [source=" + src +
