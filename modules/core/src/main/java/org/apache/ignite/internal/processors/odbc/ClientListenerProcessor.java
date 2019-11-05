@@ -52,16 +52,24 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
  * Client connector processor.
  */
 public class ClientListenerProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String CLI_CONN_VIEW = metricName("client", "connections");
+
+    /** */
+    public static final String CLI_CONN_VIEW_DESC = "Client connections";
+
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -191,6 +199,11 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
+
+                ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
+                    ClientConnectionView.class,
+                    srv.sessions(),
+                    ClientConnectionView::new);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);

@@ -120,6 +120,25 @@ object IgniteDataFrameSettings {
     /**
       * Config option for saving data frame.
       * Internally all SQL inserts are done through `IgniteDataStreamer`.
+      * This options sets `skipStore` property of streamer.
+      * If `true` then write-through behavior will be disabled for data streaming.
+      * If `false` then write-through behavior will be enabled for data streaming.
+      * Default value if `false`.
+      *
+      * @example {{{
+      *           val igniteDF = spark.write.format(IGNITE)
+      *               // other options ...
+      *               .option(OPTION_STREAMER_SKIP_STORE, true)
+      *               .save()
+      *          }}}
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#skipStore(boolean)]]
+      */
+    val OPTION_STREAMER_SKIP_STORE = "streamerSkipStore"
+
+    /**
+      * Config option for saving data frame.
+      * Internally all SQL inserts are done through `IgniteDataStreamer`.
       * This options sets `autoFlushFrequency` property of streamer.
       *
       * @example {{{

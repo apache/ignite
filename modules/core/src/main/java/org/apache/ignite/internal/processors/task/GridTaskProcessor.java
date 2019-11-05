@@ -80,6 +80,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -102,6 +103,12 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  * This class defines task processor.
  */
 public class GridTaskProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+    /** */
+    public static final String TASKS_VIEW = "tasks";
+
+    /** */
+    public static final String TASKS_VIEW_DESC = "Running compute tasks";
+
     /** Total executed tasks metric name. */
     public static final String TOTAL_EXEC_TASKS = "TotalExecutedTasks";
 
@@ -155,6 +162,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
 
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
+
+        ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
+            ComputeTaskView.class,
+            tasks.values(),
+            ComputeTaskView::new);
     }
 
     /** {@inheritDoc} */

@@ -31,18 +31,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.KeeperException;
@@ -60,6 +64,30 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  * Tests for Zookeeper SPI discovery.
  */
 public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperDiscoverySpiTestBase {
+    /** {@code True} if indexing disabled. */
+    private boolean indexingDisabled;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        if (indexingDisabled)
+            GridQueryProcessor.idxCls = DummyQueryIndexing.class;
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        indexingDisabled = false;
+
+        GridQueryProcessor.idxCls = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -556,31 +584,23 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testDuplicatedNodeId() throws Exception {
+        indexingDisabled = true;
+
         UUID nodeId0 = nodeId = UUID.randomUUID();
 
         startGrid(0);
 
         int failingNodeIdx = 100;
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             final int idx = failingNodeIdx++;
 
             nodeId = nodeId0;
 
             info("Start node with duplicated ID [iter=" + i + ", nodeId=" + nodeId + ']');
 
-            Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    startGrid(idx);
-
-                    return null;
-                }
-            }, IgniteCheckedException.class, null);
-
-            assertTrue(err instanceof IgniteCheckedException);
-
-            assertTrue(err.getMessage().contains("Failed to start processor:")
-                || err.getMessage().contains("Failed to start manager:"));
+            GridTestUtils.assertThrowsAnyCause(log,
+                () -> startGrid(idx), IgniteSpiException.class, "Node with the same ID already exists");
 
             nodeId = null;
 

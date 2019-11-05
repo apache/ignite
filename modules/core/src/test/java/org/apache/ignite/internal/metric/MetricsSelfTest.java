@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -32,6 +34,7 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
@@ -46,7 +49,9 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.Assert.assertArrayEquals;
 
 /** */
 public class MetricsSelfTest extends GridCommonAbstractTest {
@@ -333,6 +338,26 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(rateTimeInterval * 2, metric.rateTimeInterval());
     }
+
+    /** */
+    @Test
+    public void testHistogramNames() throws Exception {
+        HistogramMetric h = new HistogramMetric("test", null, new long[]{10, 50, 500});
+
+        Map<String, T2<long[], String[]>> cache = new HashMap<>();
+
+        String[] names = histogramBucketNames(h, cache);
+
+        assertArrayEquals(new String[] {
+            "test_0_10",
+            "test_10_50",
+            "test_50_500",
+            "test_500_inf"
+        }, names);
+
+        assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
+    }
+
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {

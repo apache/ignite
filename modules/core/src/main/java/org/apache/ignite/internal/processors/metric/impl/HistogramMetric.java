@@ -91,6 +91,11 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
         return res;
     }
 
+    /** @return Bounds of this histogram. */
+    public long[] bounds() {
+        return holder.bounds;
+    }
+
     /** {@inheritDoc} */
     @Override public Class<long[]> type() {
         return long[].class;

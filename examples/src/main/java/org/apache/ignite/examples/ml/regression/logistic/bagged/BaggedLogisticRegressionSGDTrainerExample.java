@@ -18,11 +18,9 @@
 package org.apache.ignite.examples.ml.regression.logistic.bagged;
 
 import java.io.IOException;
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.composition.bagging.BaggedModel;
 import org.apache.ignite.ml.composition.bagging.BaggedTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -33,27 +31,29 @@ import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
-import org.apache.ignite.ml.selection.cv.CrossValidation;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.trainers.TrainerTransformers;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * This example shows how bagging technique may be applied to arbitrary trainer.
- * As an example (a bit synthetic) logistic regression is considered.
+ * This example shows how bagging technique may be applied to arbitrary trainer. As an example (a bit synthetic)
+ * logistic regression is considered.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"></a>Iris dataset</a>).</p>
  * <p>
- * After that it trains bootstrapped (or bagged) version of logistic regression trainer. Bootstrapping is done
- * on both samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
+ * After that it trains bootstrapped (or bagged) version of logistic regression trainer. Bootstrapping is done on both
+ * samples and features (<a href="https://en.wikipedia.org/wiki/Bootstrap_aggregating"></a>Samples bagging</a>,
  * <a href="https://en.wikipedia.org/wiki/Random_subspace_method"></a>Features bagging</a>).</p>
  * <p>
  * Finally, this example applies cross-validation to resulted model and prints accuracy if each fold.</p>
  */
 public class BaggedLogisticRegressionSGDTrainerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
@@ -72,8 +72,8 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                         SimpleGDParameterUpdate.SUM_LOCAL,
                         SimpleGDParameterUpdate.AVG
                     ))
-                    .withMaxIterations(100000)
-                    .withLocIterations(100)
+                    .withMaxIterations(100)
+                    .withLocIterations(10)
                     .withBatchSize(10)
                     .withSeed(123L);
 
@@ -93,26 +93,24 @@ public class BaggedLogisticRegressionSGDTrainerExample {
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
                     .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                double[] score = new CrossValidation<BaggedModel, Double, Integer, Vector>()
-                    .withIgnite(ignite)
-                    .withUpstreamCache(dataCache)
-                    .withTrainer(baggedTrainer)
-                    .withMetric(new Accuracy<>())
-                    .withPreprocessor(vectorizer)
-                    .withAmountOfFolds(3)
-                    .isRunningOnPipeline(false)
-                    .scoreByFolds();
+                double accuracy = Evaluator.evaluate(dataCache,
+                    baggedTrainer.fit(ignite, dataCache, vectorizer),
+                    vectorizer,
+                    MetricName.ACCURACY
+                );
 
                 System.out.println(">>> ---------------------------------");
 
-                Arrays.stream(score).forEach(sc -> System.out.println("\n>>> Accuracy " + sc));
+                System.out.println("\n>>> Accuracy " + accuracy);
 
                 System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
-            } finally {
+            }
+            finally {
                 if (dataCache != null)
                     dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

@@ -80,6 +80,8 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

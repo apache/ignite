@@ -90,6 +90,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         c.setCacheConfiguration(cc);
 
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return c;
     }
 

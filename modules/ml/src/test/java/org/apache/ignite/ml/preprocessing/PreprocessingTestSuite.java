@@ -21,6 +21,7 @@ import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessorT
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainerTest;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainerTest;
 import org.apache.ignite.ml.preprocessing.encoding.FrequencyEncoderPreprocessorTest;
+import org.apache.ignite.ml.preprocessing.encoding.LabelEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.OneHotEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.encoding.StringEncoderPreprocessorTest;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerPreprocessorTest;
@@ -47,6 +48,7 @@ import org.junit.runners.Suite;
     OneHotEncoderPreprocessorTest.class,
     FrequencyEncoderPreprocessorTest.class,
     StringEncoderPreprocessorTest.class,
+    LabelEncoderPreprocessorTest.class,
     NormalizationTrainerTest.class,
     NormalizationPreprocessorTest.class
 

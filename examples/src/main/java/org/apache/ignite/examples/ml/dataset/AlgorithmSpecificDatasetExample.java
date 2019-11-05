@@ -67,7 +67,9 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
  */
 public class AlgorithmSpecificDatasetExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Algorithm Specific Dataset example started.");
@@ -76,9 +78,9 @@ public class AlgorithmSpecificDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1);
 
-                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] {lv.label()});
 
                 //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.
                 Preprocessor<Integer, Vector> preprocessor = new PatchedPreprocessor<>(func, vectorizer);
@@ -123,10 +125,12 @@ public class AlgorithmSpecificDatasetExample {
                 }
 
                 System.out.println(">>> Algorithm Specific Dataset example completed.");
-            } finally {
+            }
+            finally {
                 persons.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }
@@ -136,7 +140,9 @@ public class AlgorithmSpecificDatasetExample {
      */
     private static class AlgorithmSpecificDataset
         extends DatasetWrapper<AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> {
-        /** BLAS (Basic Linear Algebra Subprograms) instance. */
+        /**
+         * BLAS (Basic Linear Algebra Subprograms) instance.
+         */
         private static final BLAS blas = BLAS.getInstance();
 
         /**
@@ -149,7 +155,9 @@ public class AlgorithmSpecificDatasetExample {
             super(delegate);
         }
 
-        /** Calculate gradient. */
+        /**
+         * Calculate gradient.
+         */
         double[] gradient(double[] x) {
             return computeWithCtx((ctx, data, partIdx) -> {
                 double[] tmp = Arrays.copyOf(data.getLabels(), data.getRows());
@@ -172,7 +180,9 @@ public class AlgorithmSpecificDatasetExample {
             }, this::sum);
         }
 
-        /** Sum of two vectors. */
+        /**
+         * Sum of two vectors.
+         */
         public double[] sum(double[] a, double[] b) {
             if (a == null)
                 return b;
@@ -190,24 +200,34 @@ public class AlgorithmSpecificDatasetExample {
      * Algorithm specific partition context which keeps iteration number.
      */
     private static class AlgorithmSpecificPartitionContext implements Serializable {
-        /** */
+        /**
+         *
+         */
         private static final long serialVersionUID = 1887368924266684044L;
 
-        /** Iteration number. */
+        /**
+         * Iteration number.
+         */
         private int iteration;
 
-        /** */
+        /**
+         *
+         */
         int getIteration() {
             return iteration;
         }
 
-        /** */
+        /**
+         *
+         */
         void setIteration(int iteration) {
             this.iteration = iteration;
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
@@ -216,10 +236,10 @@ public class AlgorithmSpecificDatasetExample {
 
         IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
-        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
-        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
-        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
+        persons.put(1, new DenseVector(new Serializable[] {"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[] {"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[] {"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[] {"Karl", 24, 70000}));
 
         return persons;
     }

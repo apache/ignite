@@ -518,7 +518,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private long ComputeJobCancel(long jobPtr)
         {
-            Job(jobPtr).Cancel();
+            var job = Job(jobPtr);
+
+            // Job can be null: some jobs are destroyed in ComputeTaskComplete
+            if (job != null)
+            {
+                job.Cancel();
+            }
 
             return 0;
         }

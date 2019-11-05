@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
  * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
@@ -180,6 +181,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metric registry creation listeners. */
     private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
+    /** Metric registry remove listeners. */
+    private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
+
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
 
@@ -265,7 +269,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         return registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name, log);
 
-            notifyListeners(mreg, metricRegCreationLsnrs);
+            notifyListeners(mreg, metricRegCreationLsnrs, log);
 
             return mreg;
         });
@@ -281,29 +285,21 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         metricRegCreationLsnrs.add(lsnr);
     }
 
-    /**
-     * Removes group.
-     *
-     * @param grpName Group name.
-     */
-    public void remove(String grpName) {
-        registries.remove(grpName);
+    /** {@inheritDoc} */
+    @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+        metricRegRemoveLsnrs.add(lsnr);
     }
 
     /**
-     * @param t Consumed object.
-     * @param lsnrs Listeners.
-     * @param <T> Type of consumed object.
+     * Removes metric registry.
+     *
+     * @param regName Metric registry name.
      */
-    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
-        for (Consumer<T> lsnr : lsnrs) {
-            try {
-                lsnr.accept(t);
-            }
-            catch (Exception e) {
-                U.warn(log, "Metric listener error", e);
-            }
-        }
+    public void remove(String regName) {
+        MetricRegistry mreg = registries.remove(regName);
+
+        if (mreg != null)
+            notifyListeners(mreg, metricRegRemoveLsnrs, log);
     }
 
     /**
@@ -324,6 +320,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
+     * @param rebalanceExecSvc Rebalance executor service.
+     * @param rebalanceStripedExecSvc Rebalance striped executor service.
      * @param customExecSvcs Custom named executors.
      */
     public void registerThreadPools(
@@ -342,6 +340,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
+        ExecutorService rebalanceExecSvc,
+        IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
     ) {
         // Executors
@@ -357,6 +357,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         monitorExecutor("GridCallbackExecutor", callbackExecSvc);
         monitorExecutor("GridQueryExecutor", qryExecSvc);
         monitorExecutor("GridSchemaExecutor", schemaExecSvc);
+        monitorExecutor("GridRebalanceExecutor", rebalanceExecSvc);
+        monitorExecutor("GridRebalanceStripedExecutor", rebalanceStripedExecSvc);
 
         if (idxExecSvc != null)
             monitorExecutor("GridIndexingExecutor", idxExecSvc);
@@ -629,7 +631,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = GridMetricManager.this.registry(group);
+            MetricRegistry mreg = registry(group);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);

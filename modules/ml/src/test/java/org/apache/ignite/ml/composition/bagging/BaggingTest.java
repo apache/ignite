@@ -54,16 +54,16 @@ public class BaggingTest extends TrainerTest {
      * {@link BaggingTest#testNaiveBaggingLogRegression()}. This dependency is tested to ensure that it is
      * fully determined by provided seeds.
      */
-    private static Map<Integer, Vector> firstModelWeights;
+    private static Map<Integer, Vector> firstMdlWeights;
 
     static {
-        firstModelWeights = new HashMap<>();
+        firstMdlWeights = new HashMap<>();
 
-        firstModelWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
-        firstModelWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
-        firstModelWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
-        firstModelWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
-        firstModelWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
+        firstMdlWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
+        firstMdlWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
+        firstMdlWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
+        firstMdlWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
+        firstMdlWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
     }
 
     /**
@@ -116,7 +116,7 @@ public class BaggingTest extends TrainerTest {
         Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
             .model()).innerModel()).submodels().get(0)).innerModel()).weights();
 
-        TestUtils.assertEquals(firstModelWeights.get(parts), weights, 0.0);
+        TestUtils.assertEquals(firstMdlWeights.get(parts), weights, 0.0);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
@@ -183,13 +183,14 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteModel<Vector, Double> fit(
+        @Override public <K, V> IgniteModel<Vector, Double> fitWithInitializedDeployingContext(
             DatasetBuilder<K, V> datasetBuilder,
             Preprocessor<K, V> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
                 TestUtils.testEnvBuilder(),
                 (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
-                (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
+                (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize),
+                TestUtils.testEnvBuilder().buildForTrainer()
             );
 
             Long cnt = dataset.computeWithCtx(cntr, BaggingTest::plusOfNullables);
@@ -231,7 +232,7 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             // No-op
         }
     }
