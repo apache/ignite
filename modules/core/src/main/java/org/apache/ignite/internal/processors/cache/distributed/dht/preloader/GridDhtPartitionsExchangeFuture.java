@@ -1477,7 +1477,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         waitRecovery();
 
         if (exchCtx.localRecovery())
-            finalizePartitionCounters(exchangeId().eventNode().id());
+            finalizePartitionCounters();
 
         onDone(initialVersion());
     }
@@ -1617,7 +1617,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         changeWalModeIfNeeded();
 
         if (events().hasServerLeft())
-            finalizePartitionCounters(null);
+            finalizePartitionCounters();
 
         cctx.exchange().exchangerBlockingSectionBegin();
 
@@ -4023,14 +4023,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Removes gaps in the local update counters. Affects specified node's primary partitions in case node specified and
-     * all local partitins otherwise.
-     *
-     * Gaps in update counters are possible on backup node when primary failed to send update counter deltas to backup.
-     *
-     * @param nodeId Failed node id, {@code null} in case of merged failures.
+     * Removes gaps in the local update counters. Gaps in update counters are possible on backup node when primary
+     * failed to send update counter deltas to backup.
      */
-    private void finalizePartitionCounters(UUID nodeId) {
+    private void finalizePartitionCounters() {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
@@ -4043,8 +4039,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
 
                     // Failed node's primary partitions or just all local backups in case of possible exchange merge.
-                    Set<Integer> parts = nodeId != null ?
-                        grp.affinity().primaryPartitions(nodeId, topVer) :
+                    Set<Integer> parts = exchCtx.baselineNodeLeft() ?
+                        grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer) :
                         grp.topology().localPartitionMap().keySet();
 
                     grp.topology().finalizeUpdateCounters(parts);

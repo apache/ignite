@@ -320,10 +320,18 @@ public class GridAffinityAssignmentCache {
         else
             sorted = Collections.singletonList(ctx.discovery().localNode());
 
-        BaselineTopology blt = discoCache != null ? discoCache.state().baselineTopology() : null;
+        boolean hasBaseline = false;
+        boolean changedBaseline = false;
 
-        boolean hasBaseline = blt != null;
-        boolean changedBaseline = !Objects.equals(blt, baselineTopology);
+        BaselineTopology blt = null;
+
+        if (discoCache != null) {
+            blt = discoCache.state().baselineTopology();
+
+            hasBaseline = blt != null;
+
+            changedBaseline = !hasBaseline ? baselineTopology != null : !blt.equals(baselineTopology);
+        }
 
         IdealAffinityAssignment assignment;
 

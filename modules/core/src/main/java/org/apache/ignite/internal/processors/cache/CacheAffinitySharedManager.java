@@ -1528,7 +1528,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Calculates new affinity assignment.
+     * Calculates new affinity assignment on coordinator and creates affinity diff messages for other nodes.
      *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.

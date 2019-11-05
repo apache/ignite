@@ -542,7 +542,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
 
             return true;
-        }, 30000);
+        }, 10000);
 
         assertTrue("Failed to wait for new topology", success);
 
