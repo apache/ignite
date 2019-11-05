@@ -201,7 +201,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         keyValMap.putAll(sendData());
 
         // Checks all events are processed.
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(locLsnr);
 
