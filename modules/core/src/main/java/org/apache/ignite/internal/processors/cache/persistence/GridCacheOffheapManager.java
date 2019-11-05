@@ -1065,8 +1065,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
-            FileWALPointer startPtr = (FileWALPointer)database.checkpointHistory().searchPartitionCounter(
-                grp.groupId(), p, initCntr);
+            // todo For file rebalancing we starting searching from reserved pointer.
+            //      For regular historical rebalancing it may be more eefective to search pointer in checkpoint hostory
+            FileWALPointer startPtr = database.reservedWALPointer(grp.groupId(), p, initCntr);
 
             if (startPtr == null)
                 throw new IgniteCheckedException("Could not find start pointer for partition [part=" + p + ", partCntrSince=" + initCntr + "]");

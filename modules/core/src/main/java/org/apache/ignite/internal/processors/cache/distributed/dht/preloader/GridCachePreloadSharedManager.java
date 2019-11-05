@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -148,6 +149,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             assert aff != null;
 
+            CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
+
             for (int p = 0; p < partitions; p++) {
                 if (aff.get(p).contains(cctx.localNode())) {
                     GridDhtLocalPartition part = grp.topology().localPartition(p);
@@ -159,11 +162,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                         ", p=" + p + ", state=" + part.state() + "]";
 
                     // Should have partition file supplier to start file rebalance.
-                    Long globalSize = grp.topology().globalPartSizes().get(p);
+                    long cntr = cntrsMap.updateCounter(p);
 
-                    assert globalSize != null;
-
-                    if (exchFut.partitionFileSupplier(grp.groupId(), p, globalSize) != null)
+                    if (exchFut.partitionFileSupplier(grp.groupId(), p, cntr) != null)
                         part.readOnly(true);
 //                        else
 //                            part.readOnly(false);
