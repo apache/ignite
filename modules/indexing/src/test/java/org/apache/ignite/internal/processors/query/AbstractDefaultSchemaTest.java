@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -111,10 +112,10 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
         sql("SELECT * FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(1, 5).equals(res));
 
         sql("DELETE FROM " + tableName(withSchemaDecisionSup.get()) + " WHERE id = 1");
-        sql("SELECT COUNT(*) FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(0).equals(res));
+        sql("SELECT COUNT(*) FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(0L).equals(res));
 
         sql("SELECT COUNT(*) FROM " + QueryUtils.sysSchemaName() + ".TABLES WHERE schema_name = 'PUBLIC' " +
-            "AND table_name = \'" + TBL_NAME + "\'", res -> oneRowList(1).equals(res));
+            "AND table_name = \'" + TBL_NAME + "\'", res -> oneRowList(1L).equals(res));
 
         sql("DROP TABLE " + tableName(withSchemaDecisionSup.get()));
     }
@@ -134,6 +135,6 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
         List<List<?>> res = execSql(qry);
 
         if (validator != null)
-            validator.test(res);
+            Assert.assertTrue(validator.test(res));
     }
 }
