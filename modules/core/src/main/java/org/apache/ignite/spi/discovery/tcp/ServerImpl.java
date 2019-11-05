@@ -5979,7 +5979,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (nextMsg != null) {
                             try {
-                                System.out.println("MY SEND ACK MSG="+nextMsg.getClass().getSimpleName());
                                 TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
                                     getLocalNodeId(), nextMsg, U.marshal(spi.marshaller(), nextMsg));
 

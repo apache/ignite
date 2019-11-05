@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Abstract master key change message.
  */
 abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage {
     /** */
@@ -36,14 +36,14 @@ abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage 
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Request id. */
-    private final UUID reqId;
-
     /** Encrypted master key name. */
     private final byte[] encKeyName;
 
     /** Master key digest. */
     private final byte[] digest;
+
+    /** Request id. */
+    protected final UUID reqId;
 
     /**
      * @param reqId Request id.
@@ -82,11 +82,6 @@ abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage 
         throw new UnsupportedOperationException();
     }
 
-    /** @return Request id. */
-    public UUID requestId() {
-        return reqId;
-    }
-
     /** @return Master key name. */
     public byte[] encKeyName() {
         return encKeyName;
@@ -99,6 +94,6 @@ abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MasterKeyChangeAbstractMessage.class, this);
+        return S.toString(MasterKeyChangeAbstractMessage.class, this, "reqId", reqId);
     }
 }

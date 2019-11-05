@@ -18,39 +18,40 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.distributed.DistributedProcessInitialMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Master key change message.
- * <p>
- * The master key change process consists of two phases:
- * <ul>
- *  <li>1. The initial phase is needed to check the consistency of the master key on all nodes. If an error occurs
- *  exception will be attached to the message and the process will be canceled.</li>
- *  <li>2. On the action phase, each node re-encrypts group keys and writes it to WAL and MetaStorage if possible.</li>
- * </ul>
- * <p>
- * For details, see {@code MasterKeyChangeListener}.
+ * Master key change request message.
+ *
+ * @see GridEncryptionManager.MasterKeyChangeProcess
  */
-public class MasterKeyChangeRequest extends MasterKeyChangeAbstractMessage {
+public class MasterKeyChangeRequest extends MasterKeyChangeAbstractMessage implements DistributedProcessInitialMessage {
+    /** The initiator node id. */
+    private final UUID initNodeId;
+
     /**
      * @param encKeyName Encrypted master key name.
      * @param digest Master key digest.
      */
-    MasterKeyChangeRequest(byte[] encKeyName, byte[] digest) {
+    MasterKeyChangeRequest(byte[] encKeyName, byte[] digest, UUID initNodeId) {
         super(UUID.randomUUID(), encKeyName, digest);
+
+        this.initNodeId = initNodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID requestId() {
+        return reqId;
+    }
+
+    /** @return The initiator node id. */
+    public UUID initNodeId() {
+        return initNodeId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MasterKeyChangeRequest.class, this);
+        return S.toString(MasterKeyChangeRequest.class, this, "reqId", reqId);
     }
 }

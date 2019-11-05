@@ -63,7 +63,7 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         assertThrowsAnyCause(log, () -> {
-            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
             return null;
         }, IgniteException.class, "Master key digest consistency check failed");
@@ -75,16 +75,16 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         simulateSetMasterKeyError.set(true);
 
         assertThrowsAnyCause(log, () -> {
-            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+            grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
             return null;
-        }, IgniteSpiException.class, "Test error.");
+        }, IgniteException.class, "Test error.");
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
         simulateSetMasterKeyError.set(false);
 
-        grids.get2().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        grids.get2().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
     }

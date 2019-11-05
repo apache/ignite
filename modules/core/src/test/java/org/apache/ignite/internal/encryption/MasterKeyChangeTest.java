@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.encryption;
 
 import java.io.Serializable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
@@ -31,8 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeResult;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -108,11 +106,9 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         try {
             IgniteEx ignite = startGrid(GRID_1);
 
-            grids.set2(ignite);
-
             assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
-            checkEncryptedCaches(grids.get1(), grids.get2());
+            checkEncryptedCaches(grids.get1(), ignite);
         }
         finally {
             System.clearProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP);
@@ -128,30 +124,19 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        CountDownLatch latch = new CountDownLatch(1);
-        CountDownLatch startLatch = new CountDownLatch(1);
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
-            latch.countDown();
-
-            try {
-                startLatch.await();
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-        });
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        latch.await();
-
-        grids.get1().context().discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
-            (topVer, snd, msg) -> startLatch.countDown());
+        commSpi.waitForBlocked();
 
         assertThrowsWithCause(() -> {
             grids.get1().getOrCreateCache(new CacheConfiguration<>("newCache").setEncryptionEnabled(true));
         }, IgniteCheckedException.class);
+
+        commSpi.stopBlock();
 
         fut.get();
 
@@ -209,27 +194,17 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        CountDownLatch latch = new CountDownLatch(1);
-        CountDownLatch startLatch = new CountDownLatch(1);
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
-            latch.countDown();
-
-            try {
-                startLatch.await();
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-        });
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        latch.await();
+        commSpi.waitForBlocked();
 
         assertThrowsWithCause(() -> startGrid(3), IgniteCheckedException.class);
 
-        startLatch.countDown();
+        commSpi.stopBlock();
 
         fut.get();
 
@@ -247,30 +222,18 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        CountDownLatch latch = new CountDownLatch(1);
-        CountDownLatch sendLatch = new CountDownLatch(1);
+        TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        grids.get2().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
-            latch.countDown();
-
-            try {
-                sendLatch.await();
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-        });
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
-        latch.await();
+        commSpi.waitForBlocked();
 
-        grids.get1().context().discovery().setCustomEventListener(MasterKeyChangeRequest.class, (topVer, snd, msg) -> {
-            sendLatch.countDown();
-        });
-
-        assertThrowsWithCause(() -> grids.get1().encryption().changeMasterKey(DEFAULT_MASTER_KEY_NAME),
+        assertThrowsWithCause(() -> grids.get2().encryption().changeMasterKey(DEFAULT_MASTER_KEY_NAME).get(),
             IgniteException.class);
+
+        commSpi.stopBlock();
 
         fut.get();
 
@@ -288,7 +251,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 
-        assertThrowsWithCause(() -> grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
+        assertThrowsWithCause(() -> grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get(), IgniteException.class);
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 

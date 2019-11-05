@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,6 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -128,10 +129,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Synchronization mutex. */
     private final Object metaStorageMux = new Object();
 
-    /** Synchronization mutex for generate encryption keys and change master key name operations. */
+    /** Synchronization mutex for generate encryption keys and change master key operations. */
     private final Object opsMux = new Object();
 
-    /** Synchronization mutex for spi master key name change. */
+    /** Synchronization mutex for spi master key change. */
     private final Object masterKeyChangeMux = new Object();
 
     /** Disconnected flag. */
@@ -167,17 +168,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
-    /** Master key change futures. */
-    private final ConcurrentMap<UUID, MasterKeyChangeFuture> masterKeyChangeFuts = new ConcurrentHashMap<>();
+    /** Master key change future. */
+    private volatile MasterKeyChangeFuture masterKeyChangeFut;
 
     /** Pending master key request or {@code null} if there is no master key change process. */
     private volatile MasterKeyChangeRequest pendingMasterKey;
 
-    /** */
-    private final Set<UUID> remaining = new GridConcurrentHashSet<>();
-
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
+
+    /** */
+    private final MasterKeyChangeProcess masterKeyChangeProcess = new MasterKeyChangeProcess();
 
     /**
      * @param ctx Kernel context.
@@ -219,6 +220,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                         fut.onDone(null, e);
                     }
                 }
+
+                if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
+                    masterKeyChangeFut.onResult(leftNodeId);
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -263,37 +267,22 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        if (!ctx.clientNode())
-        ctx.io().addMessageListener(TOPIC_MASTER_KEY_CHANGE, (nodeId, msg0, plc) -> {
-            if (msg0 instanceof MasterKeyChangeSingleNodeResult) {
-                assert isCoordinator();
+        masterKeyChangeProcess.init(ctx, MasterKeyChangeRequest.class,
+            MasterKeyChangeSingleNodeResult.class, TOPIC_MASTER_KEY_CHANGE, MasterKeyChangeResult.class);
 
-                MasterKeyChangeSingleNodeResult msg = (MasterKeyChangeSingleNodeResult)msg0;
+        ctx.io().addMessageListener(TOPIC_MASTER_KEY_CHANGE, ioLsnr = (nodeId, msg0, plc) -> {
+            if (msg0 instanceof MasterKeyChangeSingleNodeAck) {
+                MasterKeyChangeSingleNodeAck msg = (MasterKeyChangeSingleNodeAck)msg0;
 
-                if (pendingMasterKey == null || remaining.isEmpty() ||
-                    !F.eq(pendingMasterKey.requestId(), msg.requestId()))
-                    return;
+                synchronized (opsMux) {
+                    if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
+                        F.eq(masterKeyChangeFut.id(), msg.requestId())) {
 
-                if (msg.hasError()) {
-                    remaining.clear();
-
-                    IgniteException err = new IgniteException("Master key change was rejected [nodeId=" +
-                        nodeId + ", error=" + msg.error() +']');
-
-                    sendMasterKeyChangeResult(pendingMasterKey, err);
-                }
-                else {
-                    boolean rmvd = remaining.remove(nodeId);
-
-                    if (rmvd && remaining.isEmpty())
-                        sendMasterKeyChangeResult(pendingMasterKey, null);
+                        masterKeyChangeFut.onResult(nodeId);
+                    }
                 }
             }
         });
-
-        ctx.discovery().setCustomEventListener(MasterKeyChangeRequest.class, new MasterKeyChangeRequestListener());
-
-        ctx.discovery().setCustomEventListener(MasterKeyChangeResult.class, new MasterKeyChangeResultListener());
     }
 
     /** {@inheritDoc} */
@@ -599,19 +588,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
 
-            MasterKeyChangeRequest msg = new MasterKeyChangeRequest(encryptKeyName(masterKeyName), digest);
-
-            MasterKeyChangeFuture fut = new MasterKeyChangeFuture(msg.requestId());
+            MasterKeyChangeRequest msg = new MasterKeyChangeRequest(encryptKeyName(masterKeyName), digest,
+                ctx.localNodeId());
 
             synchronized (opsMux) {
                 checkState();
 
-                masterKeyChangeFuts.put(fut.id(), fut);
+                if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
+                    throw new IgniteException("Master key change is in progress.");
 
-                ctx.grid().context().discovery().sendCustomEvent(msg);
+                masterKeyChangeFut = new MasterKeyChangeFuture(msg.requestId());
+
+                ctx.discovery().sendCustomEvent(msg);
             }
 
-            return new IgniteFutureImpl<>(fut);
+            return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -625,7 +616,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         checkMasterKeyChangeSupported();
 
-        return getSpi().getMasterKeyName();
+        synchronized (masterKeyChangeMux) {
+            return getSpi().getMasterKeyName();
+        }
     }
 
     /**
@@ -763,8 +756,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         String newMasterKeyName = IgniteSystemProperties.getString(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP);
 
         if (newMasterKeyName != null) {
-            log.info("System property " + IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP + " is set. Master key will " +
-                "be changed locally and group keys will be re-encrypted before join to cluster [masterKeyName=" +
+            log.info("System property " + IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP + " is set. Master key " +
+                "will be changed locally and group keys will be re-encrypted before join to cluster [masterKeyName=" +
                 newMasterKeyName + ']');
 
             changeMasterKeyAndReencryptGroupKeys(newMasterKeyName);
@@ -1055,8 +1048,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         for (GenerateEncryptionKeyFuture fut : genEncKeyFuts.values())
             fut.onDone(new IgniteFutureCancelledException(msg));
 
-        for (MasterKeyChangeFuture fut : masterKeyChangeFuts.values())
-            fut.onDone(new IgniteFutureCancelledException(msg));
+        if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
+            masterKeyChangeFut.onDone(new IgniteFutureCancelledException(msg));
     }
 
     /**
@@ -1090,37 +1083,52 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
     }
 
-    private void sendMasterKeyChangeResult(MasterKeyChangeRequest req, IgniteException err) {
-        MasterKeyChangeResult res = new MasterKeyChangeResult(req, err);
-
-        try {
-            ctx.discovery().sendCustomEvent(res);
-        }
-        catch (IgniteCheckedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    private final class MasterKeyChangeRequestListener implements CustomEventListener<MasterKeyChangeRequest> {
+    /**
+     * Master key change process.
+     * <ul>
+     *     <li>1. The initiator(a server node) sends the {@link MasterKeyChangeRequest} message.</li>
+     *     <li>2. Server nodes verify the master key and send the verification result in the
+     *     {@link MasterKeyChangeSingleNodeResult} message.</li>
+     *     <li>3. The coordinator checks the results and sends the action {@link MasterKeyChangeResult}
+     *     message.</li>
+     *     <li>4. The server nodes change the master key and send the {@link MasterKeyChangeSingleNodeAck} ack to the
+     *     initiator.</li>
+     *     <li>5. The initiator completes the master key change future when all acks received.</li>
+     * </ul>
+     */
+    private class MasterKeyChangeProcess extends
+        DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeSingleNodeResult, MasterKeyChangeResult> {
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-            MasterKeyChangeRequest msg) {
+        @Override protected IgniteInternalFuture<MasterKeyChangeSingleNodeResult> process(
+            MasterKeyChangeRequest msg, AffinityTopologyVersion topVer) {
             if (pendingMasterKey != null) {
                 if (isCoordinator()) {
                     IgniteException err = new IgniteException("Master key change was rejected due to previous " +
                         "change was not completed.");
 
-                    sendMasterKeyChangeResult(msg, err);
+                    MasterKeyChangeResult res = new MasterKeyChangeResult(msg, err);
+
+                    sendAction(res);
                 }
 
-                return;
+                return new GridFinishedFuture<>();
             }
 
             pendingMasterKey = msg;
 
             if (ctx.clientNode())
-                return;
+                return new GridFinishedFuture<>();
+
+            if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId())) {
+                Set<UUID> aliveSrvNodesIds = new HashSet<>();
+
+                for (ClusterNode node : ctx.discovery().serverNodes(topVer)) {
+                    if (ctx.discovery().alive(node))
+                        aliveSrvNodesIds.add(node.id());
+                }
+
+                masterKeyChangeFut.addRemaining(aliveSrvNodesIds);
+            }
 
             IgniteException err = null;
 
@@ -1148,53 +1156,43 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
 
-            if (isCoordinator()) {
-                assert remaining.isEmpty();
+            MasterKeyChangeSingleNodeResult res = new MasterKeyChangeSingleNodeResult(msg.requestId(),
+                err == null ? null : err.getMessage());
 
-                if (err == null) {
-                    for (ClusterNode node : ctx.discovery().serverNodes(topVer)) {
-                        if (ctx.discovery().alive(node) && !node.isLocal())
-                            remaining.add(node.id());
-                    }
-                }
+            return new GridFinishedFuture<>(res);
+        }
 
-                if (remaining.isEmpty())
-                    sendMasterKeyChangeResult(pendingMasterKey, err);
-            }
-            else {
-                MasterKeyChangeSingleNodeResult res = new MasterKeyChangeSingleNodeResult(msg.requestId(),
-                    err == null ? null : err.getMessage());
+        /** {@inheritDoc} */
+        @Override protected void onSingleResultRecieved(UUID nodeId, MasterKeyChangeSingleNodeResult msg) {
+            if (msg.hasError()) {
+                IgniteException err = new IgniteException("Master key change was rejected [nodeId=" +
+                    nodeId + ", error=" + msg.error() +']');
 
-                try {
-                    ctx.io().sendToGridTopic(coordinator(), TOPIC_MASTER_KEY_CHANGE, res, SYSTEM_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    e.printStackTrace();
-                }
+                MasterKeyChangeResult res = new MasterKeyChangeResult(pendingMasterKey, err);
+
+                sendAction(res);
             }
         }
-    }
 
-    /** */
-    private final class MasterKeyChangeResultListener implements CustomEventListener<MasterKeyChangeResult> {
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-            MasterKeyChangeResult msg) {
-            MasterKeyChangeFuture fut = masterKeyChangeFuts.get(msg.requestId());
+        @Override protected void onAllRecieved(Map<UUID, MasterKeyChangeSingleNodeResult> res) {
+            boolean hasErrors = res.values().stream().anyMatch(MasterKeyChangeSingleNodeResult::hasError);
 
-            if (msg.isAck()) {
-                if (fut != null)
-                    fut.onDone();
+            if (!hasErrors) {
+                MasterKeyChangeResult msg = new MasterKeyChangeResult(pendingMasterKey, null);
 
-                return;
+                sendAction(msg);
             }
+        }
 
+        /** {@inheritDoc} */
+        @Override protected void onActionMessage(MasterKeyChangeResult msg) {
             if (pendingMasterKey == null || !F.eq(pendingMasterKey.requestId(), msg.requestId()) ||
                 !Arrays.equals(pendingMasterKey.encKeyName(), msg.encKeyName()) ||
                 !Arrays.equals(pendingMasterKey.digest(), msg.digest())) {
                 if (msg.hasError()) {
-                    if (fut != null)
-                        fut.onDone(msg.error());
+                    if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId()))
+                        masterKeyChangeFut.onDone(msg.error());
                 }
                 else {
                     log.warning("Unknown master key change was rejected (possible cause is message's double " +
@@ -1204,6 +1202,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 return;
             }
 
+            UUID initNodeId = pendingMasterKey.initNodeId();
+
             pendingMasterKey = null;
 
             lastChangedMasterKeyDigest = msg.digest();
@@ -1211,20 +1211,30 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             boolean active = ctx.state().clusterState().active();
 
             if (msg.hasError() || !active) {
-                if (fut != null) {
+                if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId())) {
                     if (active)
-                        fut.onDone(msg.error());
+                        masterKeyChangeFut.onDone(msg.error());
                     else {
-                        fut.onDone(new IgniteException("Master key change was rejected (the cluster is " +
-                            "inactive)"));
+                        masterKeyChangeFut.onDone(new IgniteException("Master key change was rejected " +
+                            "(the cluster is inactive)"));
                     }
                 }
 
                 return;
             }
 
-            if (!ctx.clientNode())
+            if (!ctx.clientNode()) {
                 changeMasterKeyAndReencryptGroupKeys(decryptKeyName(msg.encKeyName()));
+
+                MasterKeyChangeSingleNodeAck res = new MasterKeyChangeSingleNodeAck(msg.requestId());
+
+                try {
+                    ctx.io().sendToGridTopic(initNodeId, TOPIC_MASTER_KEY_CHANGE, res, SYSTEM_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Unable to send result ack.", e);
+                }
+            }
         }
     }
 
@@ -1310,9 +1320,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * Master key change future.
      */
-    private class MasterKeyChangeFuture extends GridFutureAdapter<Void> {
+    private static class MasterKeyChangeFuture extends GridFutureAdapter<Void> {
         /** */
-        private UUID id;
+        private final UUID id;
+
+        /** */
+        private final Set<UUID> remaining = new GridConcurrentHashSet<>();
 
         /**
          * @param id Future ID.
@@ -1327,16 +1340,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-            // Make sure to remove future before completion.
-            masterKeyChangeFuts.remove(id, this);
-
-            return super.onDone(res, err);
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MasterKeyChangeFuture.class, this);
+        }
+
+        /** */
+        public void onResult(UUID nodeId) {
+            boolean rmvd = remaining.remove(nodeId);
+
+            if (rmvd && remaining.isEmpty() && !isDone())
+                onDone();
+        }
+
+        /** */
+        public void addRemaining(Set<UUID> remaining) {
+            this.remaining.addAll(remaining);
         }
     }
 }
