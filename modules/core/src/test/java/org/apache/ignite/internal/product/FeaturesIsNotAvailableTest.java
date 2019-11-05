@@ -35,18 +35,23 @@ public class FeaturesIsNotAvailableTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void indexingFeatureIsNotAvailable() throws Exception {
+    public void indexingFeatureIsNotAvailable() {
         assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.INDEXING));
     }
 
     /**
-     * @throws Exception If failed.
      */
     @Test
-    public void schedulingFeatureIsNotAvailable() throws Exception {
+    public void tracingFeatureIsNotAvailable() {
+        assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.TRACING));
+    }
+
+    /**
+     */
+    @Test
+    public void schedulingFeatureIsNotAvailable() {
         assertTrue(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.WC_SCHEDULING_NOT_AVAILABLE));
     }
 }

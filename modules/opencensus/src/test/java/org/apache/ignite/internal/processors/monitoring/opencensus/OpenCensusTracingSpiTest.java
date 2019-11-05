@@ -35,6 +35,7 @@ import io.opencensus.trace.samplers.Samplers;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
@@ -339,6 +340,13 @@ public class OpenCensusTracingSpiTest extends GridCommonAbstractTest {
                 );
             });
         }
+    }
+
+    /**
+     */
+    @Test
+    public void testTracingFeatureAvailable() {
+        assertTrue(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid(0).context()), IgniteFeatures.TRACING));
     }
 
     /**
