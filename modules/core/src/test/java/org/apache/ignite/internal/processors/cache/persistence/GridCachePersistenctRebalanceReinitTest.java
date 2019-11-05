@@ -224,7 +224,8 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
                 cctx.group().onPartitionEvicted(p);
 
                 try {
-                    IgniteInternalFuture<Boolean> fut0 = cctx.group().offheap().destroyCacheDataStore(part.dataStore());
+                    //IgniteInternalFuture<Boolean> fut0 =
+                    cctx.group().offheap().destroyCacheDataStore(part.dataStore());
 
                     ((GridCacheDatabaseSharedManager)cctx.shared().database()).cancelOrWaitPartitionDestroy(cctx.groupId(), p);
 
