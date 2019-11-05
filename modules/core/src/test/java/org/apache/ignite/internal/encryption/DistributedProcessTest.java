@@ -109,7 +109,7 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void onAllRecieved(Map<UUID, TestSingleNodeResult> res) {
+        @Override protected void onAllReceived(Map<UUID, TestSingleNodeResult> res) {
             sendAction(new TestResult(res.values().stream().findFirst().get().requestId()));
         }
 

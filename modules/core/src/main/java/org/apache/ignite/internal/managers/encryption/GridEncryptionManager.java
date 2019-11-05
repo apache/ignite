@@ -1163,7 +1163,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override protected void onSingleResultRecieved(UUID nodeId, MasterKeyChangeSingleNodeResult msg) {
+        @Override protected void onSingleResultReceived(UUID nodeId, MasterKeyChangeSingleNodeResult msg) {
             if (msg.hasError()) {
                 IgniteException err = new IgniteException("Master key change was rejected [nodeId=" +
                     nodeId + ", error=" + msg.error() +']');
@@ -1175,7 +1175,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override protected void onAllRecieved(Map<UUID, MasterKeyChangeSingleNodeResult> res) {
+        @Override protected void onAllReceived(Map<UUID, MasterKeyChangeSingleNodeResult> res) {
             boolean hasErrors = res.values().stream().anyMatch(MasterKeyChangeSingleNodeResult::hasError);
 
             if (!hasErrors) {

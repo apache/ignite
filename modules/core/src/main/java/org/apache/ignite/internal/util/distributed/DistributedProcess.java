@@ -26,9 +26,17 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * Provides logic for a distributed process:
  * <ul>
  *  <li>1. Initial discovery message starts process.</li>
- *  <li>2. Each server node process it and send the result via the communication message to the coordinator.</li>
+ *  <li>2. Each server node process it and send the result via the communication message to the coordinator.
+ *  See {@link #process}.</li>
  *  <li>3. The coordinator processes all single nodes results and sends the action message via discovery.</li>
  * </ul>
+ * Several processes can be started at the same time. Processes are identified by request id.
+ * Follow methods used to manage process:
+ * {@link #onSingleResultReceived}
+ * {@link #onAllReceived}
+ * {@link #onActionMessage}
+ * {@link #onAllServersLeft}
+ * <p>
  *
  * @param <I> Type of initial message.
  * @param <R> Type of single nodes result message.
@@ -107,7 +115,7 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
 
                     if (crdNode != null) {
                         if (crdNode.isLocal())
-                            onSingleNodeMessageRecieved(res, crdNode.id());
+                            onSingleNodeMessageReceived(res, crdNode.id());
                         else
                             ctx.io().sendToGridTopic(crdNode, topic, res, SYSTEM_POOL);
                     }
@@ -126,7 +134,7 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
             if (resCls.isAssignableFrom(msg0.getClass())) {
                 R msg = (R)msg0;
 
-                onSingleNodeMessageRecieved(msg, nodeId);
+                onSingleNodeMessageReceived(msg, nodeId);
             }
         });
 
@@ -160,7 +168,7 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
                                         return;
 
                                     if (crd.isLocal())
-                                        onSingleNodeMessageRecieved(res, crd.id());
+                                        onSingleNodeMessageReceived(res, crd.id());
                                     else
                                         ctx.io().sendToGridTopic(crd, topic, res, SYSTEM_POOL);
                                 }
@@ -185,7 +193,7 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
                             proc.results.remove(leftNodeId);
 
                             if (isEmpty) {
-                                onAllRecieved(proc.results);
+                                onAllReceived(proc.results);
 
                                 processes.remove(proc.id);
                             }
@@ -197,26 +205,26 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
     }
 
     /**
-     * Called when all single nodes results recieved.
+     * Called when all single nodes results received.
      *
      * @param res Map of single nodes results.
      */
-    protected void onAllRecieved(Map<UUID, R> res) {
+    protected void onAllReceived(Map<UUID, R> res) {
         // No-op.
     }
 
     /**
-     * Called when single node result recieved.
+     * Called when single node result received.
      *
      * @param nodeId Node id.
      * @param msg    Single node result.
      */
-    protected void onSingleResultRecieved(UUID nodeId, R msg) {
+    protected void onSingleResultReceived(UUID nodeId, R msg) {
         // No-op.
     }
 
     /**
-     * Called when action message recieved.
+     * Called when action message received.
      *
      * @param msg Action message.
      */
@@ -247,8 +255,13 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
         // No-op.
     }
 
-    /** */
-    private void onSingleNodeMessageRecieved(R msg, UUID nodeId) {
+    /**
+     * Processes the received single node message.
+     *
+     * @param msg Message.
+     * @param nodeId Node id.
+     */
+    private void onSingleNodeMessageReceived(R msg, UUID nodeId) {
         Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
         proc.initCrdFut.listen(f -> {
@@ -263,10 +276,10 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
             if (rmvd) {
                 proc.results.put(nodeId, msg);
 
-                onSingleResultRecieved(nodeId, msg);
+                onSingleResultReceived(nodeId, msg);
 
                 if (isEmpty) {
-                    onAllRecieved(proc.results);
+                    onAllReceived(proc.results);
 
                     processes.remove(msg.requestId());
                 }
@@ -274,7 +287,12 @@ public abstract class DistributedProcess<I extends DistributedProcessInitialMess
         });
     }
 
-    /** */
+    /**
+     * Initiates process coordinator.
+     *
+     * @param topVer Topology version.
+     * @param proc Process.
+     */
     private void initCoordinator(AffinityTopologyVersion topVer, Process proc) {
         Set<UUID> aliveSrvNodesIds = new HashSet<>();
 
