@@ -2191,7 +2191,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     GridDhtPartitionTopology top = grpHolder.topology(fut.context().events().discoveryCache());
 
-                    if (top.hasMovingPartitions())
+                    if (top.hasMovingPartitions() && grpHolder.rebalanceEnabled)
                         rebInfo.add(grpHolder.groupId());
                 }
             });
