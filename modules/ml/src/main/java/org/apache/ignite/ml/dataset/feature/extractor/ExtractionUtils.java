@@ -58,6 +58,91 @@ public class ExtractionUtils {
     }
 
     /**
+     * Vectorizer with String-label containing on same level as feature values.
+     *
+     * @param <K> Key type.
+     * @param <V> Value type
+     * @param <C> Type of coordinate.
+     */
+    public abstract static class ObjectLabelVectorizer<K, V, C extends Serializable> extends Vectorizer<K, V, C, Object> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 2226703640636013770L;
+
+        /**
+         * Creates an instance of Vectorizer.
+         *
+         * @param coords Coordinates.
+         */
+        public ObjectLabelVectorizer(C... coords) {
+            super(coords);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object label(C coord, K key, V value) {
+            return feature(coord, key, value);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Object zero() {
+            return "default";
+        }
+    }
+
+    /**
+     * Vectorizer with integer coordinates.
+     *
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     */
+    public abstract static class IntCoordObjectLabelVectorizer<K, V> extends ObjectLabelVectorizer<K, V, Integer> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = -2834141133396507699L;
+
+        /**
+         * Creates an instance of Vectorizer.
+         *
+         * @param coords Coordinates.
+         */
+        public IntCoordObjectLabelVectorizer(Integer... coords) {
+            super(coords);
+        }
+    }
+
+    /**
+     * Vectorizer extracting vectors from array-like structure with finite size and integer coordinates.
+     *
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     */
+    public abstract static class ArrayLikeObjectLabelVectorizer<K, V> extends IntCoordObjectLabelVectorizer<K, V> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 5383770258177533358L;
+
+        /**
+         * Creates an instance of Vectorizer.
+         *
+         * @param coords Coordinates.
+         */
+        public ArrayLikeObjectLabelVectorizer(Integer... coords) {
+            super(coords);
+        }
+
+        /**
+         * Size of array-like structure of upstream object.
+         *
+         * @param key Key.
+         * @param value Value.
+         * @return size.
+         */
+        protected abstract int sizeOf(K key, V value);
+
+        /** {@inheritDoc} */
+        @Override protected List<Integer> allCoords(K key, V value) {
+            return IntStream.range(0, sizeOf(key, value)).boxed().collect(Collectors.toList());
+        }
+    }
+
+    /**
      * Vectorizer with String-coordinates.
      *
      * @param <K> Type of key.

@@ -51,8 +51,8 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * using random forest regression algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
- * expected outcome (ground truth), and evaluates model quality in terms of Mean Squared Error (MSE) and
- * Mean Absolute Error (MAE).</p>
+ * expected outcome (ground truth), and evaluates model quality in terms of Mean Squared Error (MSE) and Mean Absolute
+ * Error (MAE).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
@@ -115,18 +115,20 @@ public class RandomForestRegressionExample {
 
                     System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
 
-                    mse = mse / totalAmount;
+                    mse /= totalAmount;
                     System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
-                    mae = mae / totalAmount;
+                    mae /= totalAmount;
                     System.out.println("\n>>> Mean absolute error (MAE) " + mae);
 
                     System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");
                 }
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
-        } finally {
+        }
+        finally {
             System.out.flush();
         }
     }

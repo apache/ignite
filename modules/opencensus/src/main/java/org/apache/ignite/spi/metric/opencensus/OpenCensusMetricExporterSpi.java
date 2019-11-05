@@ -29,6 +29,7 @@ import io.opencensus.stats.View;
 import io.opencensus.stats.View.Name;
 import io.opencensus.tags.TagContextBuilder;
 import io.opencensus.tags.TagKey;
+import io.opencensus.tags.TagMetadata;
 import io.opencensus.tags.TagValue;
 import io.opencensus.tags.Tags;
 import java.time.OffsetDateTime;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -52,6 +55,10 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
+
+import static io.opencensus.tags.TagMetadata.TagTtl.UNLIMITED_PROPAGATION;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
 /**
  * <a href="https://opencensus.io">OpenCensus</a> monitoring exporter. <br>
@@ -95,6 +102,9 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** Ignite node consistent id. */
     public static final TagKey CONSISTENT_ID_TAG = TagKey.create("inci");
 
+    /** Tags metadata. */
+    public static final TagMetadata METADATA = TagMetadata.create(UNLIMITED_PROPAGATION);
+
     /** Ignite instance name in the form of {@link TagValue}. */
     private TagValue instanceNameValue;
 
@@ -117,6 +127,9 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
      * Values obtained from Ignite recorded to them.
      */
     private Map<String, Measure> measures = new HashMap<>();
+
+    /** Cached histogram metrics intervals names. */
+    private final Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
 
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
@@ -183,6 +196,21 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
                         mmap.put(msr, val);
                     }
+                    else if (metric instanceof HistogramMetric) {
+                        String[] names = histogramBucketNames((HistogramMetric)metric, histogramNames);
+                        long[] vals = ((HistogramMetric)metric).value();
+
+                        assert names.length == vals.length;
+
+                        for (int i = 0; i < vals.length; i++) {
+                            String name = names[i];
+
+                            MeasureLong msr = (MeasureLong)measures.computeIfAbsent(name,
+                                k -> createMeasureLong(name, metric.description()));
+
+                            mmap.put(msr, vals[i]);
+                        }
+                    }
                     else if (log.isDebugEnabled()) {
                         log.debug(metric.name() +
                             "[" + metric.getClass() + "] not supported by Opencensus exporter");
@@ -199,13 +227,13 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         TagContextBuilder builder = Tags.getTagger().currentBuilder();
 
         if (sendInstanceName)
-            builder.put(INSTANCE_NAME_TAG, instanceNameValue);
+            builder.put(INSTANCE_NAME_TAG, instanceNameValue, METADATA);
 
         if (sendNodeId)
-            builder.put(NODE_ID_TAG, nodeIdValue);
+            builder.put(NODE_ID_TAG, nodeIdValue, METADATA);
 
         if (sendConsistentId)
-            builder.put(CONSISTENT_ID_TAG, consistenIdValue);
+            builder.put(CONSISTENT_ID_TAG, consistenIdValue, METADATA);
 
         return builder.buildScoped();
     }
@@ -213,6 +241,15 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** */
     private Measure createMeasure(Metric m, Function<Metric, Measure> factory) {
         Measure msr = factory.apply(m);
+
+        addView(msr);
+
+        return msr;
+    }
+
+    /** */
+    private MeasureLong createMeasureLong(String name, String desc) {
+        MeasureLong msr = MeasureLong.create(name, desc == null ? name : desc, "");
 
         addView(msr);
 
@@ -248,6 +285,8 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
             //Node consistent id will be known in #onContextInitialized0(IgniteSpiContext), after DiscoMgr started.
             consistenIdValue = TagValue.create("unknown");
         }
+
+        mreg.addMetricRegistryRemoveListener(mreg -> mreg.forEach(metric -> histogramNames.remove(metric.name())));
     }
 
     /** {@inheritDoc} */

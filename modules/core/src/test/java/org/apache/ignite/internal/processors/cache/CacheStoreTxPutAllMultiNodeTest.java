@@ -139,7 +139,7 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
     private static Map<Integer, String> createMap() {
         Map<Integer, String> data = new TreeMap<>();
 
-        for (int i = 1; i < 500; i ++)
+        for (int i = 1; i < 10_000; i ++)
             data.put(i, "Eddy " + i);
 
         return data;

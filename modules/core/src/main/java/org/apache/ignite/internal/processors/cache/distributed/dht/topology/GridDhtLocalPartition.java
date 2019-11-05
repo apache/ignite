@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -62,7 +63,9 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -141,10 +144,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final long createTime = U.currentTimeMillis();
 
-    /** Lock. */
-    @GridToStringExclude
-    private final ReentrantLock lock = new ReentrantLock();
-
     /** */
     @GridToStringExclude
     private final IntMap<CacheMapHolder> cacheMaps;
@@ -169,9 +168,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile boolean delayedRenting;
 
-    /** Set if partition must be cleared in MOVING state. */
-    private volatile boolean clear;
-
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
@@ -182,10 +178,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param recovery Flag indicates that partition is created during recovery phase.
      */
     public GridDhtLocalPartition(
-            GridCacheSharedContext ctx,
-            CacheGroupContext grp,
-            int id,
-            boolean recovery
+        GridCacheSharedContext ctx,
+        CacheGroupContext grp,
+        int id,
+        boolean recovery
     ) {
         super(ENTRY_FACTORY);
 
@@ -448,21 +444,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Locks partition.
-     */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-    public void lock() {
-        lock.lock();
-    }
-
-    /**
-     * Unlocks partition.
-     */
-    public void unlock() {
-        lock.unlock();
-    }
-
-    /**
      * Reserves a partition so it won't be cleared or evicted.
      *
      * @return {@code True} if reserved.
@@ -508,7 +489,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (reservations == 0)
                 return;
 
-            assert getPartState(state) != EVICTED : getPartState(state);
+            assert getPartState(state) != EVICTED : this;
 
             long newState = setReservations(state, --reservations);
             newState = setSize(newState, getSize(newState) + sizeChange);
@@ -518,12 +499,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
                 // If no more reservations try to continue delayed renting.
-                if (reservations == 0 && delayedRenting)
-                    rent(true);
+                if (reservations == 0) {
+                    if (delayedRenting)
+                        rent(true);
+                    else if (getPartState(state) == RENTING)
+                        tryContinueClearing();
+                }
 
-                // Partition could be only reserved in OWNING state so no further actions
-                // are required.
-                break;
+                return;
             }
         }
     }
@@ -571,6 +554,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update) {
+                    assert toState != EVICTED || reservations() == 0 : this;
+
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                     }
@@ -594,6 +579,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
             if (update) {
+                assert toState != EVICTED || reservations() == 0 : this;
+
                 if (log.isDebugEnabled())
                     log.debug("Partition changed state [grp=" + grp.cacheOrGroupName()
                         + ", p=" + id + ", prev=" + prevState + ", to=" + toState + "]");
@@ -611,7 +598,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             long state = this.state.get();
 
             GridDhtPartitionState partState = getPartState(state);
-
             if (partState == RENTING || partState == EVICTED)
                 return false;
 
@@ -620,8 +606,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             assert partState == MOVING || partState == LOST;
 
-            if (casState(state, OWNING))
+            if (casState(state, OWNING)) {
+                if (hasTombstones())
+                    clearTombstonesAsync();
+
                 return true;
+            }
         }
     }
 
@@ -699,17 +689,42 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState partState = getPartState(state);
 
-        boolean evictionRequested = partState == RENTING || delayedRenting;
-        boolean clearingRequested = partState == MOVING && clear;
+        boolean evictionRequested = partState == RENTING;
+        boolean clearingRequested = partState == MOVING;
 
         if (!evictionRequested && !clearingRequested)
             return;
 
         boolean reinitialized = clearFuture.initialize(updateSeq, evictionRequested);
 
-        // Clearing process is already running at the moment. No needs to run it again.
+        // Clearing process is already running at the moment. No need to run it again.
         if (!reinitialized)
             return;
+
+        // Make sure current rebalance future is finished before start clearing
+        // to avoid clearing currently rebalancing partition (except "initial" dummy rebalance).
+        if (clearingRequested) {
+            GridDhtPartitionDemander.RebalanceFuture rebFut =
+                (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
+
+            if (!rebFut.isInitial() && !rebFut.isDone()) {
+                rebFut.listen(fut -> {
+                    // Partition could be owned after rebalance future is done. Skip clearing in such case.
+                    // Otherwise continue clearing.
+                    if (fut.error() == null && state() == MOVING) {
+                        if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
+                            clearFuture.finish();
+
+                            return;
+                        }
+
+                        ctx.evict().evictPartitionAsync(grp, GridDhtLocalPartition.this);
+                    }
+                });
+
+                return;
+            }
+        }
 
         // Try fast eviction.
         if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
@@ -722,7 +737,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     destroy();
                 }
 
-                if (log.isDebugEnabled())
+                if (log.isDebugEnabled() && evictionRequested)
                     log.debug("Partition has been fast evicted [grp=" + grp.cacheOrGroupName()
                         + ", p=" + id + ", state=" + state() + "]");
 
@@ -736,6 +751,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Initiates single clear process if partition is in MOVING state or continues cleaning for RENTING state.
      * Method does nothing if clear process is already running.
+     *
+     * IMPORTANT: if clearing is required when after return from method call clear future must be initialized.
+     * This enforces clearing happens before sending demand requests.
      */
     public void clearAsync() {
         GridDhtPartitionState state0 = state();
@@ -743,18 +761,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state0 != MOVING && state0 != RENTING)
             return;
 
-        clear = true;
+        clearAsync0(false);
+    }
 
-        GridDhtPartitionDemander.RebalanceFuture rebFut =
-            (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
+    /**
+     * @return {@code True} if partition has tombstone entries.
+     */
+    boolean hasTombstones() {
+        return grp.supportsTombstone() && dataStore().tombstonesCount() > 0;
+    }
 
-        // Make sure current rebalance future finishes before clearing
-        // to avoid clearing currently rebalancing partition.
-        // NOTE: this invariant is not true for initial rebalance future.
-        if (rebFut.topologyVersion() != null && state0 == MOVING && !rebFut.isDone())
-            rebFut.listen(fut -> clearAsync0(false));
-        else
-            clearAsync0(false);
+    /**
+     * Adds async task that will clear tombstone entries from partition.
+     * @see #clearTombstones(EvictionContext).
+     */
+    void clearTombstonesAsync() {
+        grp.shared().evict().clearTombstonesAsync(grp, this);
     }
 
     /**
@@ -847,7 +869,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         GridDhtPartitionState state = getPartState(state0);
 
-        if (state == EVICTED || (freeAndEmpty(state0) && state == RENTING && casState(state0, EVICTED)))
+        // Some entries still might be present in partition cache maps due to concurrent updates on backup nodes,
+        // but it's safe to finish eviction because no physical updates are possible.
+        if (state == EVICTED ||
+                (store.isEmpty() && getReservations(state0) == 0 && state == RENTING && casState(state0, EVICTED)))
             updateSeqOnDestroy = updateSeq;
     }
 
@@ -919,7 +944,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
-    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException, IgniteCheckedException {
         if (clearFuture.isDone())
             return true;
 
@@ -930,8 +955,73 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (addEvicting()) {
             try {
+                GridCacheVersion clearVer = ctx.versions().next();
+
+                GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
+
+                boolean rec = grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
+
+                if (grp.sharedGroup())
+                    cacheMaps.forEach((key, hld) -> clearOnheapEntries(hld.map, extras, rec));
+                else
+                    clearOnheapEntries(singleCacheEntryMap.map, extras, rec);
+
                 // Attempt to evict partition entries from cache.
-                long clearedEntities = clearAll(evictionCtx);
+                long clearedEntities = doClear(
+                    evictionCtx,
+                    1000,
+                    grp.offheap().partitionIterator(id, true),
+                    (hld, row) -> {
+                        // Do not clear fresh rows in case of partition reloading.
+                        // This is required because normal updates are possible to moving partition which is currently cleared.
+                        if (row.version().compareTo(clearVer) >= 0 && state() == MOVING)
+                            return false;
+
+                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
+                            hld,
+                            hld.cctx,
+                            grp.affinity().lastVersion(),
+                            row.key(),
+                            true,
+                            false);
+
+                        if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                            removeEntry(cached);
+
+                            if (rec && !hld.cctx.config().isEventsDisabled()) {
+                                hld.cctx.events().addEvent(cached.partition(),
+                                    cached.key(),
+                                    ctx.localNodeId(),
+                                    null,
+                                    null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
+                            }
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+                );
+
+                if (forceTestCheckpointOnEviction) {
+                    if (partWhereTestCheckpointEnforced == null && clearedEntities >= fullSize()) {
+                        ctx.database().forceCheckpoint("test").finishFuture().get();
+
+                        log.warning("Forced checkpoint by test reasons for partition: " + this);
+
+                        partWhereTestCheckpointEnforced = id;
+                    }
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("Partition has been cleared [grp=" + grp.cacheOrGroupName()
@@ -1118,112 +1208,119 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Removes all entries and rows from this partition.
+     * Iterates over partition entries and removes tombstone entries.
      *
-     * @return Number of rows cleared from page memory.
-     * @throws NodeStoppingException If node stopping.
+     * @param evictionCtx Eviction context.
      */
-    private long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
-        GridCacheVersion clearVer = ctx.versions().next();
+    void clearTombstones(EvictionContext evictionCtx) throws IgniteCheckedException {
+        if (evictionCtx.shouldStop())
+            return;
 
-        GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
+        GridIterator<CacheDataRow> iter;
 
-        boolean rec = grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
+        try {
+            GridCursor<? extends CacheDataRow> cur = store.cursor(CacheDataRowAdapter.RowData.TOMBSTONES);
 
-        if (grp.sharedGroup())
-            cacheMaps.forEach((key, hld) -> clear(hld.map, extras, rec));
-        else
-            clear(singleCacheEntryMap.map, extras, rec);
+            iter = new GridIteratorAdapter<CacheDataRow>() {
+                @Override public boolean hasNextX() throws IgniteCheckedException {
+                    return cur.next();
+                }
 
+                @Override public CacheDataRow nextX() throws IgniteCheckedException {
+                    return cur.get();
+                }
+
+                @Override public void removeX() throws IgniteCheckedException {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Failed to get iterator for partition: " + id, e);
+        }
+
+        doClear(
+            evictionCtx,
+            10,
+            iter,
+            (hld, row) -> {
+                while (true) {
+                    GridCacheMapEntry cached = null;
+
+                    try {
+                        cached = putEntryIfObsoleteOrAbsent(
+                            hld,
+                            hld.cctx,
+                            grp.affinity().lastVersion(),
+                            row.key(),
+                            true,
+                            false);
+
+                        cached.removeTombstone(row.version());
+
+                        return true;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        cached = null;
+                    }
+                    finally {
+                        if (cached != null)
+                            cached.touch();
+                    }
+                }
+            }
+        );
+    }
+
+    /**
+     * Runs abstract clear operation over partition data rows.
+     *
+     * @param evictionCtx Eviction context.
+     * @param stopCheckingFreq Frequency to check stopping eviction/clearing.
+     * @param rowIter Rows iterator.
+     * @param clearOp Clear operation.
+     * @return Number of cleared rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long doClear(
+        EvictionContext evictionCtx,
+        int stopCheckingFreq,
+        GridIterator<CacheDataRow> rowIter,
+        ClearRowOperation clearOp
+    ) throws IgniteCheckedException {
         long cleared = 0;
-
-        final int stopCheckingFreq = 1000;
 
         CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
-        try {
-            GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
+        while (rowIter.hasNext()) {
+            ctx.database().checkpointReadLock();
 
-            while (it0.hasNext()) {
-                ctx.database().checkpointReadLock();
+            try {
+                CacheDataRow row = rowIter.next();
 
-                try {
-                    CacheDataRow row = it0.next();
+                assert row.key() != null : row;
+                assert row.version() != null : row;
 
-                    // Do not clear fresh rows in case of partition reloading.
-                    // This is required because normal updates are possible to moving partition which is currently cleared.
-                    if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
-                        continue;
+                if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                    hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
 
-                    if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
-                        hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
+                assert hld != null;
 
-                    assert hld != null;
+                if (clearOp.apply(hld, row))
+                    cleared++;
 
-                    GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
-                        hld,
-                        hld.cctx,
-                        grp.affinity().lastVersion(),
-                        row.key(),
-                        true,
-                        false);
-
-                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                        removeEntry(cached);
-
-                        if (rec && !hld.cctx.config().isEventsDisabled()) {
-                            hld.cctx.events().addEvent(cached.partition(),
-                                cached.key(),
-                                ctx.localNodeId(),
-                                null,
-                                null,
-                                null,
-                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                null,
-                                false,
-                                cached.rawGet(),
-                                cached.hasValue(),
-                                null,
-                                null,
-                                null,
-                                false);
-                        }
-
-                        cleared++;
-                    }
-
-                    // For each 'stopCheckingFreq' cleared entities check clearing process to stop.
-                    if (cleared % stopCheckingFreq == 0 && evictionCtx.shouldStop())
-                        return cleared;
-                }
-                catch (GridDhtInvalidPartitionException e) {
-                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
-
-                    break; // Partition is already concurrently cleared and evicted.
-                }
-                finally {
-                    ctx.database().checkpointReadUnlock();
-                }
+                // For each 'stopCheckingFreq' cleared entities check clearing process to stop.
+                if (cleared % stopCheckingFreq == 0 && evictionCtx.shouldStop())
+                    return cleared;
             }
+            catch (GridDhtInvalidPartitionException e) {
+                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-            if (forceTestCheckpointOnEviction) {
-                if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
-                    ctx.database().forceCheckpoint("test").finishFuture().get();
-
-                    log.warning("Forced checkpoint by test reasons for partition: " + this);
-
-                    partWhereTestCheckpointEnforced = id;
-                }
+                break; // Partition is already concurrently cleared and evicted.
             }
-        }
-        catch (NodeStoppingException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to get iterator for evicted partition: " + id);
-
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get iterator for evicted partition: " + id, e);
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
 
         return cleared;
@@ -1237,9 +1334,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param evt Unload event flag.
      * @throws NodeStoppingException If current node is stopping.
      */
-    private void clear(ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map,
+    private void clearOnheapEntries(
+        ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map,
         GridCacheObsoleteEntryExtras extras,
-        boolean evt) throws NodeStoppingException {
+        boolean evt
+    ) throws NodeStoppingException {
         Iterator<GridCacheMapEntry> it = map.values().iterator();
 
         while (it.hasNext()) {
@@ -1298,12 +1397,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return id;
+        return 31 * id + grp.groupId();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridDhtLocalPartition part = (GridDhtLocalPartition)o;
+
+        return id == part.id && grp.groupId() == part.group().groupId();
     }
 
     /** {@inheritDoc} */
@@ -1322,6 +1429,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "reservations", reservations(),
             "empty", isEmpty(),
             "createTime", U.format(createTime),
+            "fullSize", fullSize(),
             "cntr", dataStore().partUpdateCounter());
     }
 
@@ -1531,6 +1639,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Abstract operation to clear row.
+     */
+    @FunctionalInterface
+    private static interface ClearRowOperation {
+        /**
+         * @param hld Hld.
+         * @param row Row.
+         */
+        boolean apply(CacheMapHolder hld, CacheDataRow row) throws IgniteCheckedException;
+    }
+
+    /**
      * Future is needed to control partition clearing process.
      * Future can be used both for single clearing or eviction processes.
      */
@@ -1601,8 +1721,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
                 listen(f -> {
-                    clear = false;
-
                     clearingCbRegistered = false;
                 });
             }

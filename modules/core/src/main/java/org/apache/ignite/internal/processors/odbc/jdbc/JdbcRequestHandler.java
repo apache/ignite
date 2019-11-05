@@ -1071,7 +1071,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName());
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
@@ -1484,5 +1484,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
         return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
     }
 }

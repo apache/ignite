@@ -1253,6 +1253,38 @@ public final class IgniteSystemProperties {
     public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
     /**
+     * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
+     * information about how much time did it spent in system time (time while aquiring locks, preparing,
+     * commiting, etc) and user time (time when client node runs some code while holding transaction and not
+     * waiting it). Equals 0 if not set. No long transactions are dumped in log if nor this parameter
+     * neither {@link #IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT} is set.
+     */
+    public static final String IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD = "IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD";
+
+    /**
+     * The coefficient for samples of completed transactions that will be dumped in log. Must be float value
+     * between 0.0 and 1.0 inclusive. Default value is <code>0.0</code>.
+     */
+    public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT =
+        "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT";
+
+    /**
+     * The limit of samples of completed transactions that will be dumped in log per second, if
+     * {@link #IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT} is above <code>0.0</code>. Must be integer value
+     * greater than <code>0</code>. Default value is <code>5</code>.
+     */
+    public static final String IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT =
+        "IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT";
+
+    /**
+     * Disable onheap caching of pages lists (free lists and reuse lists).
+     * If persistence is enabled changes to page lists are not stored to page memory immediately, they are cached in
+     * onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such onheap caching.
+     * Default value is <code>false</code>.
+     */
+    public static final String IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING = "IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

@@ -56,6 +56,7 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
@@ -75,12 +76,14 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Configuration\ExecutorConfiguration.cs" />
     <Compile Include="Failure\IFailureHandler.cs" />
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheTopologyPartitionMap.cs" />
@@ -90,9 +93,11 @@
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
+    <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
+    <Compile Include="Configuration\ThinClientConfiguration.cs" />
     <Compile Include="Datastream\DataStreamerDefaults.cs" />
     <Compile Include="IDataRegionMetrics.cs" />
     <Compile Include="IDataStorageMetrics.cs" />

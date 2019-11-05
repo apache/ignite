@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingMvccTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapOnInvalidTopologyTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemoteMultiplePartitionReservationTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
@@ -67,6 +69,10 @@ public class IgniteCacheMvccTestSuite7 {
         // TODO IGNITE-10175: refactor these tests (use assume) to support both mvcc and non-mvcc modes after moving to JUnit4/5.
         ignoredTests.add(CacheGroupMetricsTest.class); // See MvccCacheGroupMetricsMBeanTest
         ignoredTests.add(GridCacheRebalancingPartitionCountersTest.class); // See GridCacheRebalancingPartitionCountersMvccTest
+
+        // Test logic is not compatible with MVCC style tx locking.
+        ignoredTests.add(TxCrossCacheMapOnInvalidTopologyTest.class);
+        ignoredTests.add(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite7.suite(ignoredTests));
 

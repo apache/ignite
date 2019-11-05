@@ -19,7 +19,7 @@ package org.apache.ignite.ml.math.distances;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -35,10 +35,8 @@ public class HammingDistance implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b)
         throws CardinalityException {
-        IgniteDoubleFunction<Double> fun = (value -> {
-            if (value == 0) return 0.0;
-            else return 1.0;
-        });
+        IgniteDoubleFunction<Double> fun = (value -> value == 0 ? 0.0 : 1.0);
+
         return MatrixUtil.localCopyOf(a).minus(b).foldMap(Functions.PLUS, fun, 0d);
     }
 

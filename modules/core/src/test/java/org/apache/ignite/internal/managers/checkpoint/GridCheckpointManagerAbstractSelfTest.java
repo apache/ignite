@@ -165,6 +165,8 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
             cfg.setCheckpointSpi(spi);
         }
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

@@ -98,7 +98,7 @@ public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdenti
                 // we must add mini future before sending a message, otherwise mini future must miss completion
                 add(miniFut);
 
-                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId), SYSTEM_POOL);
+                cctx.io().send(peer, new PartitionCountersNeighborcastRequest(cntrs, futId, tx.topologyVersion()), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))

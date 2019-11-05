@@ -99,10 +99,9 @@ public class CovarianceMatricesAggregator implements Serializable {
     void add(Vector x, double pcxi) {
         Matrix deltaCol = x.minus(mean).toMatrix(false);
         Matrix weightedCovComponent = deltaCol.times(deltaCol.transpose()).times(pcxi);
-        if (weightedSum == null)
-            weightedSum = weightedCovComponent;
-        else
-            weightedSum = weightedSum.plus(weightedCovComponent);
+
+        weightedSum = weightedSum == null ? weightedCovComponent : weightedSum.plus(weightedCovComponent);
+
         rowCount += 1;
     }
 
