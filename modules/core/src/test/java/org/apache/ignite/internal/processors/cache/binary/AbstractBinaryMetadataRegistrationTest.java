@@ -27,6 +27,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -39,9 +40,16 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
- * Test for discovery message exchange, that is performed upon binary type registration.
+ * Abstract tests for discovery message exchange, that is performed
+ * upon binary type registration.
  */
-public class BinaryMetadataRegistrationTest extends GridCommonAbstractTest {
+public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonAbstractTest {
+    /** */
+    private static final String CACHE_NAME = "cache";
+
+    /** Counter of new binary types. Used to generate new type name for each test. */
+    private static final AtomicInteger TYPES_COUNT = new AtomicInteger();
+
     /**
      * Number of {@link MetadataUpdateProposedMessage} that have been sent since a test was start.
      */
@@ -69,6 +77,8 @@ public class BinaryMetadataRegistrationTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
+        cfg.setCacheConfiguration(cacheConfiguration());
+
         return cfg;
     }
 
@@ -86,6 +96,18 @@ public class BinaryMetadataRegistrationTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
+
+    /**
+     * Creates cache configuration with name
+     * {@link AbstractBinaryMetadataRegistrationTest#CACHE_NAME CACHE_NAME}
+     * and default parameters.
+     */
+    protected CacheConfiguration<Integer, Object> cacheConfiguration() {
+        return new CacheConfiguration<>(CACHE_NAME);
+    }
+
+    /** */
+    protected abstract void put(IgniteCache<Integer, Object> cache, Integer key, Object val);
 
     /**
      * Tests registration of user classes.
@@ -140,10 +162,24 @@ public class BinaryMetadataRegistrationTest extends GridCommonAbstractTest {
     private void checkMetadataRegisteredOnce(Object val) {
         IgniteCache<Integer, Object> cache = grid().getOrCreateCache("cache");
 
-        cache.put(1, val);
+        put(cache, 1, val);
 
         assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
             1, proposeMsgNum.get());
+
+        put(cache, 2, val);
+
+        assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
+            1, proposeMsgNum.get());
+
+        BinaryObjectBuilder builder = grid().binary().builder("OneMoreType_" + TYPES_COUNT.incrementAndGet());
+
+        builder.setField("f", 1);
+
+        put(cache, 3, builder.build());
+
+        assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
+            2, proposeMsgNum.get());
     }
 
     /**
