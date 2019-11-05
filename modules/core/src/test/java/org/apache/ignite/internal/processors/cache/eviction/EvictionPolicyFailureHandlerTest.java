@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -97,6 +98,8 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheMapDoesNotContainsWrongEntityAfterTransaction() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         LogListener lsnr = LogListener.matches(s -> s.contains("Eviction manager caught an error"))
             .times(1).build();
 
@@ -161,6 +164,8 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testErrorShouldCallErrorHandler() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         oom = true;
 
         IgniteEx node1 = startGrid(0);
@@ -188,6 +193,8 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFailureHandlerShouldNotCallOnRuntimeException() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
         IgniteEx node1 = startGrid(0);
 
         IgniteEx node2 = startGrid(1);
