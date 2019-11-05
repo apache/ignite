@@ -107,7 +107,7 @@
                         <executions>
                             <execution>
                                 <id>scaladoc</id>
-                                <phase>prepare-package</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>doc</goal>
                                 </goals>
