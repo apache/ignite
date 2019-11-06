@@ -154,7 +154,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     private static final int SNAPSHOT_THEEAD_POOL_SIZE = 4;
 
     /** Default snapshot topic to receive snapshots from remote node. */
-    private static final Object DFLT_RMT_SNAPSHOT_TOPIC = GridTopic.TOPIC_RMT_SNAPSHOT.topic("0");
+    private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("0");
 
     /** Cache group id parameter name for a file transmission. */
     private static final String SNP_GRP_ID_PARAM = "grpId";
@@ -432,7 +432,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         });
 
         // Receive remote snapshots requests.
-        cctx.gridIO().addMessageListener(DFLT_RMT_SNAPSHOT_TOPIC, new GridMessageListener() {
+        cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof RequestSnapshotMessage) {
                     if (!busyLock.enterBusy())
@@ -462,7 +462,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         });
 
         // Remote snapshot handler.
-        cctx.kernalContext().io().addTransmissionHandler(DFLT_RMT_SNAPSHOT_TOPIC, new TransmissionHandler() {
+        cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
             /** {@inheritDoc} */
             @Override public void onException(UUID nodeId, Throwable err) {
                 Iterator<Map.Entry<T2<UUID, String>, SnapshotTransmission>> iter0 = reqSnps.entrySet().iterator();
@@ -677,8 +677,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             partWriters.clear();
             snpRunner.shutdown();
 
-            cctx.kernalContext().io().removeMessageListener(DFLT_RMT_SNAPSHOT_TOPIC);
-            cctx.kernalContext().io().removeTransmissionHandler(DFLT_RMT_SNAPSHOT_TOPIC);
+            cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
+            cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
 
             cctx.exchange().unregisterExchangeAwareComponent(this);
         }
@@ -833,7 +833,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             assert prev == null : prev;
 
-            cctx.gridIO().sendToCustomTopic(rmtNodeId, DFLT_RMT_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL);
+            cctx.gridIO().sendToCustomTopic(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL);
         }
         finally {
             busyLock.leaveBusy();
@@ -1003,7 +1003,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             .pdsNodePath();
 
         return new RemoteSnapshotSender(log,
-            cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_RMT_SNAPSHOT_TOPIC),
+            cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             snpName,
             dbNodePath);
     }
