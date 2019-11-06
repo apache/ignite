@@ -190,6 +190,9 @@
     <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sql_schema_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -237,6 +240,15 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\queries-transaction-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-schema.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-schema-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-schema-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
