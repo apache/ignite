@@ -28,36 +28,36 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 /**
  *
  */
-interface SnapshotReceiver extends Closeable {
+interface SnapshotSender extends Closeable {
     /**
      * @param mappings Local node marshaller mappings.
      */
-    public void receiveMarshallerMeta(List<Map<Integer, MappedName>> mappings);
+    public void sendMarshallerMeta(List<Map<Integer, MappedName>> mappings);
 
     /**
      * @param types Collection of known binary types.
      */
-    public void receiveBinaryMeta(Map<Integer, BinaryType> types);
+    public void sendBinaryMeta(Map<Integer, BinaryType> types);
 
     /**
      * @param ccfg Cache configuration file.
      * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
      */
-    public void receiveCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair);
+    public void sendCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair);
 
     /**
-     * @param part Partition file to receive.
+     * @param part Partition file to send.
      * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
      * @param length Partition length.
      */
-    public void receivePart(File part, String cacheDirName, GroupPartitionId pair, Long length);
+    public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length);
 
     /**
      * @param delta Delta pages file.
      * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
      */
-    public void receiveDelta(File delta, String cacheDirName, GroupPartitionId pair);
+    public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair);
 }
