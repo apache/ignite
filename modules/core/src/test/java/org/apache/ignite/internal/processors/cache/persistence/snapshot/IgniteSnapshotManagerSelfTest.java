@@ -448,7 +448,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
-                log.error("Error creating snapshot [snpName=" + snpName + ']', t);
+                fail("Exception must not be thrown [rmtNodeId=" + rmtNodeId + ", snpName=" + snpName + ", t=" + t);
             }
         });
 
