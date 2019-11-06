@@ -317,7 +317,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         // Register invalid partitions with transaction.
         if (tx != null)
-            tx.addInvalidPartition(cacheCtx, invalidPart);
+            tx.addInvalidPartition(cacheCtx.cacheId(), invalidPart);
 
         if (log.isDebugEnabled())
             log.debug("Added invalid partition to future [invalidPart=" + invalidPart + ", fut=" + this + ']');

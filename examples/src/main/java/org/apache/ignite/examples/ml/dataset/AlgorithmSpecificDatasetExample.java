@@ -78,7 +78,7 @@ public class AlgorithmSpecificDatasetExample {
             try {
                 persons = createCache(ignite);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1);
 
                 IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] {lv.label()});
 

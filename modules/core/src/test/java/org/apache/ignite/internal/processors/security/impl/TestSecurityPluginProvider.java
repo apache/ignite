@@ -34,15 +34,19 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** Permissions. */
     private final SecurityPermissionSet perms;
 
+    /** Global authentication. */
+    private final boolean globalAuth;
+
     /** Users security data. */
     private final TestSecurityData[] clientData;
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms, boolean globalAuth,
         TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
         this.perms = perms;
+        this.globalAuth = globalAuth;
         this.clientData = clientData.clone();
     }
 
@@ -50,6 +54,7 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms),
-            Arrays.asList(clientData));
+            Arrays.asList(clientData),
+            globalAuth);
     }
 }
