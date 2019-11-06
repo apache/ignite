@@ -156,16 +156,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("0");
 
-    /** Cache group id parameter name for a file transmission. */
+    /** File transmission parameter of cache group id. */
     private static final String SNP_GRP_ID_PARAM = "grpId";
 
-    /** Cache partition id parameter name for a file transmission. */
+    /** File transmission parameter of cache partition id. */
     private static final String SNP_PART_ID_PARAM = "partId";
 
-    /** Cache local node directory path name (e.g. db/IgniteNode0). */
+    /** File transmission parameter of node-sender directory path with its consistentId (e.g. db/IgniteNode0). */
     private static final String SNP_DB_NODE_PATH_PARAM = "dbNodePath";
 
-    /** Cache directory parameter name for a file transmission. */
+    /** File transmission parameter of a cache directory with is currently sends its partitions. */
     private static final String SNP_CACHE_DIR_NAME_PARAM = "cacheDirName";
 
     /** Snapshot parameter name for a file transmission. */
