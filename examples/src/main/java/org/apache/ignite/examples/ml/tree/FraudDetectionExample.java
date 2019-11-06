@@ -46,6 +46,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * .
  */
 public class FraudDetectionExample {
+    /** Run example. */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");

@@ -37,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 
 /** Test for {@link CompoundNaiveBayesTrainer} */
 public class CompoundNaiveBayesTrainerTest extends TrainerTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
