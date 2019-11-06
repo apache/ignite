@@ -535,9 +535,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                             grpPartId.getPartitionId());
                     });
 
-                    int left = snpTrans.partsLeft.decrementAndGet();
-
-                    if (left == 0) {
+                    if (snpTrans.partsLeft.decrementAndGet() == 0) {
                         reqSnps.remove(new T2<>(rmtNodeId, snpName));
 
                         cctx.kernalContext().closure().runLocalSafe(() -> {
@@ -633,9 +631,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
                 return new Consumer<File>() {
                     @Override public void accept(File file) {
-                        if (snpTrans.stopped)
-                            return;
-
                         busyLock.enterBusy();
 
                         try {
