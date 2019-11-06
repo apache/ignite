@@ -89,12 +89,6 @@ This utility can do the following commands:
   Start data center replication on all caches in cluster:
     control.(sh|bat) --dr resume <remoteDataCenterId> [--yes]
 
-  Enable read-only mode on active cluster:
-    control.(sh|bat) --read-only-on [--yes]
-
-  Disable read-only mode on active cluster:
-    control.(sh|bat) --read-only-off [--yes]
-
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

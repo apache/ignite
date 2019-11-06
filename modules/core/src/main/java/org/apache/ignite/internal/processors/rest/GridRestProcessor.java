@@ -49,12 +49,11 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeReadOnlyModeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridClusterNameCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -551,7 +550,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
-            addHandler(new GridChangeReadOnlyModeCommandHandler(ctx));
             addHandler(new GridClusterNameCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));

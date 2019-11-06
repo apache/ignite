@@ -30,7 +30,6 @@ import static org.apache.ignite.internal.commandline.CommandList.STATE;
  * Command to print cluster state.
  */
 public class StateCommand implements Command<Void> {
-
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
         Command.usage(logger, "Print current cluster state:", STATE);
@@ -56,14 +55,7 @@ public class StateCommand implements Command<Void> {
                 log.info(CommandHandler.DELIM);
             }
 
-            if (state.active()) {
-                if (state.readOnly())
-                    log.info("Cluster is active (read-only)");
-                else
-                    log.info("Cluster is active");
-            }
-            else
-                log.info("Cluster is inactive");
+            log.info("Cluster is " + (state.active() ? "active" : "inactive"));
         }
         catch (Throwable e) {
             if (!CommandHandler.isAuthError(e))

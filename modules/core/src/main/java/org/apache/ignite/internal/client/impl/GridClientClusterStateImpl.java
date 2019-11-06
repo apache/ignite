@@ -82,23 +82,6 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readOnly() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::readOnlyState).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readOnly(boolean readOnly) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn,
-                UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeReadOnlyState(readOnly, nodeId);
-            }
-        }).get();
-    }
-
-    /** {@inheritDoc} */
     @Override public UUID id() throws GridClientException {
         return withReconnectHandling(ID_AND_TAG_VIEW_CL).get().id();
     }

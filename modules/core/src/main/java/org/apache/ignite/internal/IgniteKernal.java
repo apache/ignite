@@ -4412,24 +4412,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readOnlyMode() {
-        return ctx.state().publicApiReadOnlyMode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readOnlyMode(boolean readOnly) {
-        ctx.state().changeGlobalState(readOnly);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getReadOnlyModeDuration() {
-        if (ctx.state().publicApiReadOnlyMode())
-            return U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime();
-        else
-            return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteKernal.class, this);
     }

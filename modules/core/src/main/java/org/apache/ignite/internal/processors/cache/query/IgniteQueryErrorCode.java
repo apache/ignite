@@ -207,9 +207,6 @@ public final class IgniteQueryErrorCode {
             case QUERY_OUT_OF_MEMORY:
                 return SqlStateCode.MEMORY_ALLOCATION_ERROR;
 
-            case CLUSTER_READ_ONLY_MODE_ENABLED:
-                return SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED;
-
             default:
                 return SqlStateCode.INTERNAL_ERROR;
         }

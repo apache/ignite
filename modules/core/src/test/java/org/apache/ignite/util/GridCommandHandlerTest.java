@@ -183,35 +183,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
-        assertFalse(ignite.cluster().readOnly());
-    }
-
-    /**
-     * Test enabling/disabling read-only mode works via control.sh
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReadOnlyEnableDisable() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        ignite.cluster().active(true);
-
-        assertFalse(ignite.cluster().readOnly());
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
-
-        assertTrue(ignite.cluster().readOnly());
-
-        assertContains(log, testOut.toString(), "Cluster read-only mode enabled");
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
-
-        assertFalse(ignite.cluster().readOnly());
-
-        assertContains(log, testOut.toString(), "Cluster read-only mode disabled");
     }
 
     /**
@@ -397,16 +368,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertContains(log, testOut.toString(), "Cluster tag: " + newTag);
-
-        ignite.cluster().readOnly(true);
-
-        awaitPartitionMapExchange();
-
-        assertTrue(ignite.cluster().readOnly());
-
-        assertEquals(EXIT_CODE_OK, execute("--state"));
-
-        assertContains(log, testOut.toString(), "Cluster is active (read-only)");
     }
 
     /**
