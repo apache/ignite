@@ -41,7 +41,7 @@ public class RequestSnapshotMessage implements Message {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
-    /** Unique snapshot message name. */
+    /** Unique snapshot name. */
     private String snpName;
 
     /** Map of requested partitions to be snapshotted. */
@@ -56,7 +56,7 @@ public class RequestSnapshotMessage implements Message {
     }
 
     /**
-     * @param snpName Unique snapshot message name.
+     * @param snpName Unique snapshot name.
      * @param parts Map of requested partitions to be snapshotted.
      */
     public RequestSnapshotMessage(
@@ -73,7 +73,7 @@ public class RequestSnapshotMessage implements Message {
     }
 
     /**
-     * @return Unique snapshot message name.
+     * @return Unique snapshot name.
      */
     public String snapshotName() {
         return snpName;

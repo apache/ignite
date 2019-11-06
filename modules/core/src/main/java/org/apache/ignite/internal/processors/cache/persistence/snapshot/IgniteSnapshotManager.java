@@ -268,8 +268,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
-        PdsFolderSettings rslvDir = kctx.pdsFolderResolver().resolveFolders();
-
         // todo must be available on storage configuration
         localSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false);
         snpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
@@ -372,11 +370,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     for (GroupPartitionId pair : sctx0.parts) {
                         CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
                         String cacheDirName = cacheDirName(ccfg);
-                        Long length = sctx0.partFileLengths.get(pair);
+                        Long partLen = sctx0.partFileLengths.get(pair);
 
                         try {
                             // Initialize empty partition file.
-                            if (length == 0) {
+                            if (partLen == 0) {
                                 FilePageStore filePageStore = (FilePageStore) storeMgr.getStore(pair.getGroupId(),
                                     pair.getPartitionId());
 
@@ -392,7 +390,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                                     getPartitionFileEx(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
                                     cacheDirName,
                                     pair,
-                                    length);
+                                    partLen);
 
                                 // Stop partition writer.
                                 sctx0.partDeltaWriters.get(pair).partProcessed = true;
