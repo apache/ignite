@@ -96,9 +96,7 @@ public class CheckpointMetricsTracker {
         COW_PAGES_UPDATER.incrementAndGet(this);
     }
 
-    /**
-     *
-     */
+    /** */
     public void onDataPageWritten() {
         DATA_PAGES_UPDATER.incrementAndGet(this);
     }
@@ -117,79 +115,57 @@ public class CheckpointMetricsTracker {
         return dataPages;
     }
 
-    /**
-     *
-     */
+    /** */
     public void onLockWaitStart() {
         cpLockWaitStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onMarkStart() {
         cpMarkStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onLockRelease() {
         cpLockRelease = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onPagesWriteStart() {
         cpPagesWriteStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onFsyncStart() {
         cpFsyncStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onEnd() {
         cpEnd = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onListenersExecuteEnd() {
         listenersExecEnd = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onWalCpRecordFsyncStart() {
         walCpRecordFsyncStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onSplitAndSortCpPagesStart() {
         splitAndSortCpPagesStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onSplitAndSortCpPagesEnd() {
         splitAndSortCpPagesEnd = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onWalCpRecordFsyncEnd() {
         walCpRecordFsyncEnd = System.currentTimeMillis();
     }
