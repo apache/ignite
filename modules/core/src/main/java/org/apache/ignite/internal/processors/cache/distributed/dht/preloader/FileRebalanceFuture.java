@@ -138,6 +138,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                     Set<Integer> parttitions = msg.partitions().fullSet();
 
                     for (Integer partId : parttitions) {
+                        assert grp.topology().localPartition(partId).dataStore().readOnly() :
+                            "cache=" + grp.cacheOrGroupName() + " p=" + partId;
+
                         regionParts.add(((long)grpId << 32) + partId);
 
                         allPartitions.add(partId);

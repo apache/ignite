@@ -54,13 +54,13 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * todo naming
@@ -161,6 +161,18 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
                     if (part.state() == OWNING)
                         continue;
+
+                    // If partition is currently rented prevent destroy and start clearing process.
+                    // todo think about reserve/clear
+                    if (part.state() == RENTING)
+                        part.moving();
+
+//                    // If partition was destroyed recreate it.
+//                    if (part.state() == EVICTED) {
+//                        part.awaitDestroy();
+//
+//                        part = grp.topology().localPartition(p, topVer, true);
+//                    }
 
                     assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
                         ", p=" + p + ", state=" + part.state() + "]";
@@ -452,6 +464,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         cpLsnr.schedule(() -> {
             if (staleFuture(fut))
                 return;
+
+            assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
 
             // Save current update counter.
             PartitionUpdateCounter maxCntr = part.dataStore().partUpdateCounter();
