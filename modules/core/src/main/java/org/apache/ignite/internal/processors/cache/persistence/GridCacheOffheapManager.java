@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -587,7 +587,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 processed++;
 
-                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p, false);
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
                 // Triggers initialization of existing(having datafile) partition before acquiring cp read lock.
                 part.dataStore().init();
@@ -640,7 +640,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
             else if (recoverState != null) { // Pre-create partition if having valid state.
-                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p, false);
+                GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
                 updateState(part, recoverState);
 
@@ -879,15 +879,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         final int currAllocatedPageCnt,
         final long partSize
     ) {
-//        if (part != null) {
-//            boolean reserved = part.reserve();
-//
-//            if (!reserved)
-//                return false;
-//        }
-//        else
-//            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
-
         assert PageIO.getPageId(metaPageAddr) != 0;
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
@@ -902,7 +893,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<Boolean> destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+    @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
         assert ctx.database() instanceof GridCacheDatabaseSharedManager
             : "Destroying cache data store when persistence is not enabled: " + ctx.database();
 
@@ -917,7 +908,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.database().checkpointReadUnlock();
         }
 
-        return ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
+        ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
     }
 
     /**
@@ -1483,7 +1474,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
 
                 assert entryIt != null || doneParts.size() == partMap.size() :
-                    "Reached end of WAL but not all partitions are done ; done=" + doneParts + ", parts=" + partMap;
+                    "Reached end of WAL but not all partitions are done ; done=" + doneParts + ", required=" + partMap;
             }
         }
     }

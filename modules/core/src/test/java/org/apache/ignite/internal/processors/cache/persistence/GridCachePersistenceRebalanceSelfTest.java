@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -91,6 +92,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
     private int parts = 16;
 
     private int backups = 0;
+
+    private CacheWriteSynchronizationMode cacheWriteSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
     /** */
     @Before
@@ -153,6 +156,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         return new CacheConfiguration(name).setCacheMode(cacheMode)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setAtomicityMode(cacheAtomicityMode)
+            .setWriteSynchronizationMode(cacheWriteSyncMode)
             //.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
 //                .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction(false, parts))
@@ -419,7 +423,6 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         }
     }
 
-    // todo flaky fails
     /** Check partitions moving with file rebalancing. */
     @Test
     @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
@@ -431,9 +434,10 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         cacheMode = PARTITIONED;
         parts = 128;
         backups = 0;
+        cacheWriteSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
-        int nodesCnt = 5;
-        int loadThreads = Runtime.getRuntime().availableProcessors();
+        int grids = 5;
+        int threads = Runtime.getRuntime().availableProcessors();
 
         List<ClusterNode> blt = new ArrayList<>();
 
@@ -443,7 +447,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         AtomicLong cntr = new AtomicLong(TEST_SIZE);
 
-        for (int i = 0; i < nodesCnt; i++) {
+        for (int i = 0; i < grids; i++) {
             IgniteEx ignite = startGrid(i);
 
             blt.add(ignite.localNode());
@@ -454,34 +458,39 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 loadData(ignite, CACHE1, TEST_SIZE);
                 loadData(ignite, CACHE2, TEST_SIZE);
 
-                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false, loadThreads);
+                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false, threads);
 
-                ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, loadThreads, "thread");
+                ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "thread");
             }
             else
                 ignite.cluster().setBaselineTopology(blt);
 
-            awaitPartitionMapExchange();
-
-            IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
-            IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
-
-            ldr.pause();
-
-            // todo should check partitions
-            for (long k = 0; k < cntr.get(); k++) {
-                assertEquals("k=" + k, generateValue(k, CACHE1), cache1.get(k));
-
-                if (k < TEST_SIZE)
-                    assertEquals("k=" + k, generateValue(k, CACHE2), cache2.get(k));
-            }
-
-            ldr.resume();
+            awaitPartitionMapExchange(true, true, null, true);
         }
 
         ldr.stop();
 
         ldrFut.get();
+
+        Ignite ignite = grid(grids - 1);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
+        IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
+
+        long size = cntr.get();
+
+        log.info("Data verification (size=" + size + ")");
+
+        // todo should check partitions
+        for (long k = 0; k < size; k++) {
+            assertEquals("k=" + k, generateValue(k, CACHE1), cache1.get(k));
+
+            if (k < TEST_SIZE)
+                assertEquals("k=" + k, generateValue(k, CACHE2), cache2.get(k));
+
+            if ((k + 1) % (size / 10) == 0)
+                log.info("Verified " + (k + 1) * 100 / size + "% entries");
+        }
     }
 
     /** */
@@ -714,7 +723,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         /** */
         private final boolean enableRemove;
 
-        private final CyclicBarrier barrier;
+        /** */
+        private final CyclicBarrier pauseBarrier;
 
         /** */
         private volatile boolean pause;
@@ -733,7 +743,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
             this.cache = cache;
             this.cntr = cntr;
             this.enableRemove = enableRemove;
-            this.barrier = new CyclicBarrier(threadCnt);
+            this.pauseBarrier = new CyclicBarrier(threadCnt + 1); // +1 waiter
         }
 
         /** {@inheritDoc} */
@@ -743,12 +753,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
             while (!stop && !Thread.currentThread().isInterrupted()) {
                 if (pause) {
                     if (!paused) {
-                        U.awaitQuiet(barrier);
+                        U.awaitQuiet(pauseBarrier);
 
                         paused = true;
                     }
-                        //paused = true;
 
+                    // Busy wait for resume.
                     try {
                         U.sleep(100);
                     }
@@ -785,14 +795,12 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         public void pause() {
             pause = true;
 
-            while (!paused) {
-                try {
-                    U.sleep(100);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    break;
-                }
-            }
+            log.info("Suspending loader threads: " + pauseBarrier.getParties());
+
+            // Wait all workers came to barrier.
+            U.awaitQuiet(pauseBarrier);
+
+            log.info("Loader suspended");
         }
 
         /**

@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -111,7 +110,6 @@ import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.collection.IntSet;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -184,9 +182,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     protected final GridSpinBusyLock busyLock = new GridSpinBusyLock();
-
-    /** */
-    private final IgniteInternalFuture<Boolean> alwaysDoneFut = new GridFinishedFuture<>(true);
 
     /** */
     private int updateValSizeThreshold;
@@ -1338,7 +1333,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> destroyCacheDataStore(CacheDataStore store) {
+    @Override public final void destroyCacheDataStore(CacheDataStore store) {
         int p = store.partId();
 
         partStoreLock.lock(p);
@@ -1348,7 +1343,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             assert removed : "cache=" + grp.cacheOrGroupName() + " p=" + p;
 
-            return destroyCacheDataStore0(store);
+            destroyCacheDataStore0(store);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1362,11 +1357,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @param store Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected IgniteInternalFuture<Boolean> destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+    protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
         store.destroy();
-
-        // For in-memory partition, we always destroy the partition storage synchronously.
-        return alwaysDoneFut;
     }
 
     /**

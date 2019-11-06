@@ -168,11 +168,10 @@ public interface GridDhtPartitionTopology {
      * Unconditionally creates partition during restore of persisted partition state.
      *
      * @param p Partition ID.
-     * @param replace
      * @return Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public GridDhtLocalPartition forceCreatePartition(int p, boolean replace) throws IgniteCheckedException;
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
 
     /**
      * @param topVer Topology version at the time of creation.

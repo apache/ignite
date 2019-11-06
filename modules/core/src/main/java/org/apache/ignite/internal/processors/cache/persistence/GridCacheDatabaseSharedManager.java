@@ -1844,7 +1844,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
-        log.info("Reserve history for preloading: " + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + " p=" + partId + ", cntr=" + cntr);
+        if (log.isDebugEnabled()) {
+            log.debug("Reserve history for preloading [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+        }
 
         CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
 
@@ -2826,7 +2829,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
 
                         if (ctx != null && !ctx.isLocal()) {
-                            ctx.topology().forceCreatePartition(rbRec.partitionId(), false);
+                            ctx.topology().forceCreatePartition(rbRec.partitionId());
 
                             ctx.offheap().onPartitionInitialCounterUpdated(rbRec.partitionId(), rbRec.start(),
                                 rbRec.range());
@@ -2986,7 +2989,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId, false);
+        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
 
         switch (dataEntry.op()) {
             case CREATE:
@@ -3354,13 +3357,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      */
-    public IgniteInternalFuture<Boolean> schedulePartitionDestroy(int grpId, int partId) {
+    public void schedulePartitionDestroy(int grpId, int partId) {
         Checkpointer cp = checkpointer;
 
         if (cp != null)
-            return cp.schedulePartitionDestroy(cctx.cache().cacheGroup(grpId), grpId, partId);
-
-        return null;
+            cp.schedulePartitionDestroy(cctx.cache().cacheGroup(grpId), grpId, partId);
     }
 
     /**
@@ -4023,11 +4024,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param grpId Group ID.
          * @param partId Partition ID.
          */
-        private IgniteInternalFuture<Boolean> schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
-            IgniteInternalFuture<Boolean> resFut;
-
+        private void schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
             synchronized (this) {
-                resFut = scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
+                scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
             }
 
             if (log.isDebugEnabled())
@@ -4035,8 +4034,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (grpCtx != null)
                 wakeupForCheckpoint(PARTITION_DESTROY_CHECKPOINT_TIMEOUT, "partition destroy");
-
-            return resFut;
         }
 
         /**

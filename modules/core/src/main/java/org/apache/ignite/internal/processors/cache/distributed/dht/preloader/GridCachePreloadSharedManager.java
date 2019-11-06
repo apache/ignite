@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -138,6 +139,10 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
+        // todo normal check
+        if (!presistenceRebalanceEnabled)
+            return;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (!grp.dataRegion().config().isPersistenceEnabled() || CU.isUtilityCache(grp.cacheOrGroupName()))
                 continue;
@@ -148,6 +153,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
             assert aff != null;
 
+            CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
+
             for (int p = 0; p < partitions; p++) {
                 if (aff.get(p).contains(cctx.localNode())) {
                     GridDhtLocalPartition part = grp.topology().localPartition(p);
@@ -155,11 +162,13 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                     if (part.state() == OWNING)
                         continue;
 
-                    assert part.state() == MOVING : "Unexpected state [cache=" + grp.cacheOrGroupName() +
+                    assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
                         ", p=" + p + ", state=" + part.state() + "]";
 
                     // Should have partition file supplier to start file rebalance.
-                    if (exchFut.partitionFileSupplier(grp.groupId(), p) != null)
+                    long cntr = cntrsMap.updateCounter(p);
+
+                    if (exchFut.partitionFileSupplier(grp.groupId(), p, cntr) != null)
                         part.readOnly(true);
 //                        else
 //                            part.readOnly(false);
@@ -169,10 +178,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     public void onTopologyChanged(GridDhtPartitionsExchangeFuture exchFut) {
-        if (log.isDebugEnabled())
-            log.debug("Topology changed - canceling file rebalance.");
+        FileRebalanceFuture fut0 = fileRebalanceFut;
 
-        fileRebalanceFut.cancel();
+        if (!fut0.isDone()) {
+            if (log.isDebugEnabled())
+                log.debug("Topology changed - canceling file rebalance.");
+
+            fileRebalanceFut.cancel();
+        }
     }
 
     /**
@@ -422,7 +435,8 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
                 cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
 
-            Files.move(src.toPath(), dest.toPath());
+            // todo change to "move" when issue with zero snapshot page will be catched and investiageted.
+            Files.copy(src.toPath(), dest.toPath());
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to move file [source=" + src +
