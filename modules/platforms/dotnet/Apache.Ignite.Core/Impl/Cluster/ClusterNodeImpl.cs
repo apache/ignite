@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Impl.Common;
@@ -58,6 +59,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Consistent id. */
         private readonly object _consistentId;
 
+        /** Ignite version. */
+        private readonly IgniteProductVersion _version;
+
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
         
@@ -84,6 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _isDaemon = reader.ReadBoolean();
             _isClient = reader.ReadBoolean();
             _consistentId = reader.ReadObject<object>();
+            _version = new IgniteProductVersion(reader);
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
@@ -157,6 +162,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
+        public IgniteProductVersion Version
+        {
+            get { return _version; }
+        }
+
         public IClusterMetrics GetMetrics()
         {
             var ignite = (Ignite)_igniteRef.Target;

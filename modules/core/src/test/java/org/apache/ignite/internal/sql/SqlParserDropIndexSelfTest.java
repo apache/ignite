@@ -26,11 +26,9 @@ import org.junit.Test;
 public class SqlParserDropIndexSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for DROP INDEX command.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testDropIndex() throws Exception {
+    public void testDropIndex() {
         // Base.
         parseValidate(null, "DROP INDEX idx", null, "IDX");
         parseValidate(null, "DROP INDEX IDX", null, "IDX");

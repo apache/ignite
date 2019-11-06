@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.scheduler.SchedulerFuture;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link IgniteScheduler} implementation.
@@ -57,7 +57,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> runLocal(Runnable r) {
+    @Override public IgniteFuture<?> runLocal(@NotNull Runnable r) {
         A.notNull(r, "r");
 
         guard();
@@ -71,7 +71,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit) {
+    @Override public Closeable runLocal(@NotNull Runnable r, long delay, TimeUnit timeUnit) {
         A.notNull(r, "r");
         A.ensure(delay > 0, "Illegal delay");
 
@@ -86,7 +86,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> callLocal(Callable<R> c) {
+    @Override public <R> IgniteFuture<R> callLocal(@NotNull Callable<R> c) {
         A.notNull(c, "c");
 
         guard();
@@ -100,7 +100,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
+    @Override public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
@@ -114,7 +114,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) {
+    @Override public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String ptrn) {
         A.notNull(job, "job");
 
         guard();

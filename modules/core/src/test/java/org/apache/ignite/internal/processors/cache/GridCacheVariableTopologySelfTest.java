@@ -50,10 +50,10 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
     private static final Random RAND = new Random();
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7388", MvccFeatureChecker.forcedMvcc());
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** Constructs test. */

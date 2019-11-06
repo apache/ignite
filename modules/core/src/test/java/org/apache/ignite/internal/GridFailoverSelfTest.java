@@ -40,6 +40,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -97,7 +98,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
             nodeRef.set(subgrid.get(0));

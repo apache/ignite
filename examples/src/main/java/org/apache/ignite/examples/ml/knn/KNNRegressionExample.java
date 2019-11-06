@@ -17,18 +17,19 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
-import javax.cache.Cache;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
+import org.apache.ignite.ml.knn.utils.indices.SpatialIndexType;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.Rmse;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -41,71 +42,53 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> regression algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
- * You can change the test data used in this example or trainer object settings and re-run it to explore
- * this algorithm further.</p>
+ * You can change the test data used in this example or trainer object settings and re-run it to explore this algorithm
+ * further.</p>
  */
 public class KNNRegressionExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN regression over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-            KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer()
+                    .withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withIdxType(SpatialIndexType.BALL_TREE)
+                    .withWeighted(true);
 
-            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            ).withK(5)
-                .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                KNNRegressionModel knnMdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            int totalAmount = 0;
-            // Calculate mean squared error (MSE)
-            double mse = 0.0;
-            // Calculate mean absolute error (MAE)
-            double mae = 0.0;
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    knnMdl,
+                    vectorizer,
+                    new Rmse()
+                );
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = knnMdl.predict(inputs);
-
-                    mse += Math.pow(prediction - groundTruth, 2.0);
-                    mae += Math.abs(prediction - groundTruth);
-
-                    totalAmount++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                mse /= totalAmount;
-                System.out.println("\n>>> Mean squared error (MSE) " + mse);
-
-                mae /= totalAmount;
-                System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                System.out.println(">>> kNN regression over cached dataset usage example completed.");
+                System.out.println("\n>>> Rmse = " + rmse);
             }
+            finally {
+                dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

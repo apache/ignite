@@ -17,10 +17,12 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.binary;
 
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -28,10 +30,9 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
-
-import java.io.FileNotFoundException;
 
 /**
  * Run logistic regression model based on <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">
@@ -49,52 +50,55 @@ import java.io.FileNotFoundException;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class LogisticRegressionSGDTrainerExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
-                .withUpdatesStgy(new UpdatesStrategy<>(
-                    new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate::sumLocal,
-                    SimpleGDParameterUpdate::avg
-                ))
-                .withMaxIterations(100000)
-                .withLocIterations(100)
-                .withBatchSize(10)
-                .withSeed(123L);
+                System.out.println(">>> Create new logistic regression trainer object.");
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
+                    .withUpdatesStgy(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate.SUM_LOCAL,
+                        SimpleGDParameterUpdate.AVG
+                    ))
+                    .withMaxIterations(100000)
+                    .withLocIterations(100)
+                    .withBatchSize(10)
+                    .withSeed(123L);
 
-            System.out.println(">>> Perform the training to get the model.");
-            IgniteBiFunction<Integer, Vector, Vector> featureExtractor = (k, v) -> v.copyOfRange(1, v.size());
-            IgniteBiFunction<Integer, Vector, Double> lbExtractor = (k, v) -> v.get(0);
+                System.out.println(">>> Perform the training to get the model.");
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            LogisticRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                featureExtractor,
-                lbExtractor
-            );
+                LogisticRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = Evaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor
-            ).accuracy();
+                double accuracy = Evaluator.evaluate(dataCache,
+                    mdl, vectorizer, MetricName.ACCURACY
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-            System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
+                System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
+            }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

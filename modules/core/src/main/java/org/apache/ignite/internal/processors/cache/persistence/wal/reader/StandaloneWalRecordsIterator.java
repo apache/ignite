@@ -80,6 +80,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /** Factory to provide I/O interfaces for read primitives with files. */
     private static final SegmentFileInputFactory FILE_INPUT_FACTORY = new SimpleSegmentFileInputFactory();
+
     /**
      * File descriptors remained to scan.
      * <code>null</code> value means directory scan mode

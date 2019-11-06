@@ -50,6 +50,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -183,7 +184,6 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     public void testClientStartLastServerFailsMvccTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
     }
-
 
     /**
      * @param atomicityMode Cache atomicity mode.
@@ -437,6 +437,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11810")
     @Test
     public void testClientStartCloseServersRestart() throws Exception {
         final int SRVS = 4;
@@ -572,8 +573,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             cache.putAll(map);
         }
 
-        //TODO: uncomment TRANSACTIONAL_SNAPSHOT cache creation when IGNITE-9470 will be fixed.
-       /* for (int i = 0; i < 3; i++) {
+       for (int i = 0; i < 3; i++) {
             CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
 
             IgniteCache<Object, Object> cache = node.createCache(ccfg);
@@ -581,8 +581,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             cacheNames.add(ccfg.getName());
 
             cache.putAll(map);
-        }*/
-
+        }
 
         return cacheNames;
     }
@@ -602,6 +601,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         return ccfg;
     }
+
     /**
      *
      */

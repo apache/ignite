@@ -24,11 +24,13 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
 /**
  * This example demonstrates how to create a {@link IFitnessFunction}.
  * <p>
- * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
- * to calculate the value of an individual solution relative to other solutions.</p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want to
+ * calculate the value of an individual solution relative to other solutions.</p>
  */
 public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
-    /** Target amount. */
+    /**
+     * Target amount.
+     */
     private int targetAmount;
 
     /**
@@ -39,12 +41,9 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     }
 
     /**
-     * Calculate fitness.
-     *
-     * @param genes List of genes.
-     * @return Fitness value.
+     * {@inheritDoc}
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         int changeAmount = getAmountOfChange(genes);
         int totalCoins = getTotalNumberOfCoins(genes);
         int changeDifference = Math.abs(targetAmount - changeAmount);
@@ -88,7 +87,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
 
         for (Gene gene : genes) {
             int numOfCoins = ((Coin)gene.getVal()).getNumOfCoins();
-            totalNumOfCoins = totalNumOfCoins + numOfCoins;
+            totalNumOfCoins += numOfCoins;
         }
 
         return totalNumOfCoins;

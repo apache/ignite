@@ -19,7 +19,7 @@ import {AppStore, USER, ofType, hideNavigationMenuItem, showNavigationMenuItem} 
 import {map} from 'rxjs/operators';
 
 export class UIEffects {
-    static $inject = ['Store']
+    static $inject = ['Store'];
     constructor(private store: AppStore) {}
 
     toggleQueriesNavItemEffect$ = this.store.actions$.pipe(

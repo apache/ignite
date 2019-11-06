@@ -27,7 +27,6 @@ import javax.cache.CacheException;
 
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
@@ -54,22 +53,17 @@ public class ReduceQueryRun {
     /** */
     private final AtomicReference<State> state = new AtomicReference<>();
 
-    /** Future controlling {@code SELECT FOR UPDATE} query execution. */
-    private final GridNearTxSelectForUpdateFuture selectForUpdateFut;
-
     /**
      * Constructor.
      * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
-     * @param selectForUpdateFut Future controlling {@code SELECT FOR UPDATE} query execution.
      * @param dataPageScanEnabled If data page scan is enabled.
      */
     ReduceQueryRun(
         Connection conn,
         int idxsCnt,
         int pageSize,
-        GridNearTxSelectForUpdateFuture selectForUpdateFut,
         Boolean dataPageScanEnabled
     ) {
         this.conn = (JdbcConnection)conn;
@@ -77,7 +71,6 @@ public class ReduceQueryRun {
         idxs = new ArrayList<>(idxsCnt);
 
         this.pageSize = pageSize > 0 ? pageSize : Query.DFLT_PAGE_SIZE;
-        this.selectForUpdateFut = selectForUpdateFut;
         this.dataPageScanEnabled  = dataPageScanEnabled;
     }
 
@@ -218,13 +211,6 @@ public class ReduceQueryRun {
      */
     void latch(CountDownLatch latch) {
         this.latch = latch;
-    }
-
-    /**
-     * @return {@code SELECT FOR UPDATE} future, if any.
-     */
-    @Nullable public GridNearTxSelectForUpdateFuture selectForUpdateFuture() {
-        return selectForUpdateFut;
     }
 
     /**

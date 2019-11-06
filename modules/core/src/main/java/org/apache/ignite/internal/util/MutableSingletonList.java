@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-
 import java.util.AbstractList;
 
 /**

@@ -625,8 +625,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
 
-        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
-            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
+        if (grp.supportsTombstone() && cache.configuration().getAtomicityMode() == TRANSACTIONAL
+                && !store().configured())
+            deferredDel = false;
+        else {
+            deferredDel = (cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+                (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC));
+        }
     }
 
     /**
@@ -675,14 +680,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache is replicated cache.
      */
     public boolean isReplicated() {
-        return cacheCfg.getCacheMode() == CacheMode.REPLICATED;
+        return config().getCacheMode() == CacheMode.REPLICATED;
     }
 
     /**
      * @return {@code True} if cache is partitioned cache.
      */
     public boolean isPartitioned() {
-        return cacheCfg.getCacheMode() == CacheMode.PARTITIONED;
+        return config().getCacheMode() == CacheMode.PARTITIONED;
     }
 
     /**
@@ -696,7 +701,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} in case cache supports query.
      */
     public boolean isQueryEnabled() {
-        return !F.isEmpty(cacheCfg.getQueryEntities());
+        return !F.isEmpty(config().getQueryEntities());
     }
 
     /**
@@ -821,7 +826,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (CU.isSystemCache(name()))
             return;
 
-        ctx.security().authorize(name(), op, null);
+        ctx.security().authorize(name(), op);
     }
 
     /**
@@ -849,21 +854,23 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if atomic.
      */
     public boolean atomic() {
-        return cacheCfg.getAtomicityMode() == ATOMIC;
+        return config().getAtomicityMode() == ATOMIC;
     }
 
     /**
      * @return {@code True} if transactional.
      */
     public boolean transactional() {
-        return cacheCfg.getAtomicityMode() == TRANSACTIONAL || cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        CacheConfiguration cfg = config();
+
+        return cfg.getAtomicityMode() == TRANSACTIONAL || cfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
     }
 
     /**
      * @return {@code True} if transactional snapshot.
      */
     public boolean transactionalSnapshot() {
-        return cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+        return config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
     }
 
     /**
@@ -1043,9 +1050,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @return Cache configuration for given cache instance.
+     * @throws IllegalStateException If this cache context was cleaned up.
      */
     public CacheConfiguration config() {
-        return cacheCfg;
+        CacheConfiguration res = cacheCfg;
+
+        if (res == null)
+            throw new IllegalStateException((new CacheStoppedException(name())));
+
+        return res;
     }
 
     /**
@@ -1054,7 +1067,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocal() || cacheCfg.isWriteBehindEnabled();
+        return store().isLocal() || config().isWriteBehindEnabled();
     }
 
     /**
@@ -1488,56 +1501,56 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return cacheCfg.isReadThrough() && !skipStore();
+        return config().isReadThrough() && !skipStore();
     }
 
     /**
      * @return {@code True} if store and read-through mode are enabled in configuration.
      */
     public boolean readThroughConfigured() {
-        return store().configured() && cacheCfg.isReadThrough();
+        return store().configured() && config().isReadThrough();
     }
 
     /**
      * @return {@code True} if {@link CacheConfiguration#isLoadPreviousValue()} flag is set.
      */
     public boolean loadPreviousValue() {
-        return cacheCfg.isLoadPreviousValue();
+        return config().isLoadPreviousValue();
     }
 
     /**
      * @return {@code True} if store write-through is enabled.
      */
     public boolean writeThrough() {
-        return cacheCfg.isWriteThrough() && !skipStore();
+        return config().isWriteThrough() && !skipStore();
     }
 
     /**
      * @return {@code True} if invalidation is enabled.
      */
     public boolean isInvalidate() {
-        return cacheCfg.isInvalidate();
+        return config().isInvalidate();
     }
 
     /**
      * @return {@code True} if synchronous commit is enabled.
      */
     public boolean syncCommit() {
-        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC;
+        return config().getWriteSynchronizationMode() == FULL_SYNC;
     }
 
     /**
      * @return {@code True} if synchronous rollback is enabled.
      */
     public boolean syncRollback() {
-        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC;
+        return config().getWriteSynchronizationMode() == FULL_SYNC;
     }
 
     /**
      * @return {@code True} if only primary node should be updated synchronously.
      */
     public boolean syncPrimary() {
-        return cacheCfg.getWriteSynchronizationMode() == PRIMARY_SYNC;
+        return config().getWriteSynchronizationMode() == PRIMARY_SYNC;
     }
 
     /**
@@ -1753,7 +1766,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * of {@link CacheConfiguration#isCopyOnRead()}.
      */
     public boolean needValueCopy() {
-        return affNode && cacheCfg.isCopyOnRead();
+        return affNode && config().isCopyOnRead();
     }
 
     /**
@@ -2227,13 +2240,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @param partitionId Partition ID.
+     * @param partId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         Set<ClusterNode> invalidNodes,
-        int partitionId,
+        int partId,
         boolean canRemap
     ) {
         if (!readLoadBalancingEnabled) {
@@ -2283,13 +2296,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Prepare affinity field for builder (if possible).
      *
-     * @param buider Builder.
+     * @param builder Builder.
      */
-    public void prepareAffinityField(BinaryObjectBuilder buider) {
+    public void prepareAffinityField(BinaryObjectBuilder builder) {
         assert binaryMarshaller();
-        assert buider instanceof BinaryObjectBuilderImpl;
+        assert builder instanceof BinaryObjectBuilderImpl;
 
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)buider;
+        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
 
         if (!cacheObjCtx.customAffinityMapper()) {
             CacheDefaultBinaryAffinityKeyMapper mapper =

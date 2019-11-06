@@ -25,8 +25,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ml.math.ExternalizeTest;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
@@ -671,7 +671,8 @@ public class VectorImplementationsTest { // TODO: IGNITE-5723, split this to sma
                 for (int idx = 0; idx < size; idx++)
                     ref[idx] = operation.apply(ref[idx], val);
 
-                checker.assertCloseEnough(vecOperation.apply(v, val), ref);
+                Vector apply = vecOperation.apply(v, val);
+                checker.assertCloseEnough(apply, ref);
             });
     }
 

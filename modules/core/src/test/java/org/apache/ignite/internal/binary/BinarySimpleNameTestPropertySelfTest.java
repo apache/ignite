@@ -27,7 +27,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
-import static org.apache.ignite.testframework.config.GridTestProperties.MARSH_CLASS_NAME;
 
 /**
  * Tests testing framewrok, epecially BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER test property.
@@ -94,22 +93,12 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void checkProperty(String expTypeName) throws Exception {
-        String marshBackup = GridTestProperties.getProperty(MARSH_CLASS_NAME);
+        IgniteBinary binary = startGrid().binary();
 
-        try {
-            GridTestProperties.setProperty(MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+        BinaryObjectBuilder builder = binary.builder("org.ignite.test.TestClass");
 
-            IgniteBinary binary = startGrid().binary();
+        BinaryObject bObj = builder.build();
 
-            BinaryObjectBuilder builder = binary.builder("org.ignite.test.TestClass");
-
-            BinaryObject bObj = builder.build();
-
-            assertEquals(expTypeName, bObj.type().typeName());
-        }
-        finally {
-            if (marshBackup != null)
-                GridTestProperties.setProperty(MARSH_CLASS_NAME, marshBackup);
-        }
+        assertEquals(expTypeName, bObj.type().typeName());
     }
 }

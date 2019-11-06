@@ -17,16 +17,17 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.DiscreteRandomProducer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents a distribution family of district vector generators.
@@ -55,7 +56,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     }
 
     /**
-     * @return pseudo random vector with parent distribution id.
+     * @return Pseudo random vector with parent distribution id.
      */
     public VectorWithDistributionId getWithId() {
         int id = selector.getInt();

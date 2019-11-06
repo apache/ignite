@@ -165,33 +165,45 @@ public class TreeNode implements IgniteModel<Vector, Double> {
     }
 
     /** */
+    public double getVal() {
+        return val;
+    }
+
+    /** */
     public void setImpurity(double impurity) {
         this.impurity = impurity;
     }
 
     /**
-     * @return impurity in current node.
+     * @return Impurity in current node.
      */
     public double getImpurity() {
         return impurity;
     }
 
     /**
-     * @return depth of current node.
+     * @return Depth of current node.
      */
     public int getDepth() {
         return depth;
     }
 
     /**
-     * @return right subtree.
+     * @return Feature id.
+     */
+    public int getFeatureId() {
+        return featureId;
+    }
+
+    /**
+     * @return Right subtree.
      */
     public TreeNode getLeft() {
         return left;
     }
 
     /**
-     * @return left subtree.
+     * @return Left subtree.
      */
     public TreeNode getRight() {
         return right;

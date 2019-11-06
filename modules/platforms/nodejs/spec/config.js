@@ -19,7 +19,7 @@
 
 exports.endpoints = process.env.APACHE_IGNITE_CLIENT_ENDPOINTS ?
                     process.env.APACHE_IGNITE_CLIENT_ENDPOINTS.split(',') : [];
-exports.debug = process.env.APACHE_IGNITE_CLIENT_DEBUG === 'true' || 
+exports.debug = process.env.APACHE_IGNITE_CLIENT_DEBUG === 'true' ||
                 process.env.APACHE_IGNITE_CLIENT_DEBUG === '1';
 
 

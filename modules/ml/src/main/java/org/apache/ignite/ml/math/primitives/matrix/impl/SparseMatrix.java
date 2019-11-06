@@ -63,7 +63,7 @@ public class SparseMatrix extends AbstractMatrix implements StorageConstants {
 
     /** {@inheritDoc} */
     @Override public Vector likeVector(int crd) {
-        return new SparseVector(crd, StorageConstants.RANDOM_ACCESS_MODE);
+        return new SparseVector(crd);
     }
 
     /** {@inheritDoc} */

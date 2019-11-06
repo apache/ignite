@@ -362,6 +362,11 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getCurrentPmeDuration() {
+        return metrics().getCurrentPmeDuration();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
 

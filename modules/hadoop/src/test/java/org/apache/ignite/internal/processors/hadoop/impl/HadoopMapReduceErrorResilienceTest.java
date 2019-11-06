@@ -68,6 +68,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
     public void testRecoveryAfterAnError7_Runtime() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Runtime);
     }
+
     /**
      * Tests recovery.
      *
@@ -77,6 +78,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
     public void testRecoveryAfterAnError7_IOException() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IOException);
     }
+
     /**
      * Tests recovery.
      *

@@ -130,7 +130,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
             params,
             flags,
             pageSize,
-            0,
+            (int)timeout,
             tx.topologyVersionSnapshot(),
             mvccSnapshot,
             new GridQueryCancel()

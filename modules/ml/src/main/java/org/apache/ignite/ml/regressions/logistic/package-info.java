@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains various logistic regressions.
  */
+
 package org.apache.ignite.ml.regressions.logistic;

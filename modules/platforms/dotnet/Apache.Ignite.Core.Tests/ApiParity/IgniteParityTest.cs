@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IIgnite"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class IgniteParityTest
     {
         /** Methods that are not needed on .NET side. */
@@ -38,8 +39,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "version", // IGNITE-7101
-            
             "createCaches",   // IGNITE-7100
             "orCreateCaches", // IGNITE-7100
             "destroyCaches",  // IGNITE-7100

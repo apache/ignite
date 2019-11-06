@@ -18,10 +18,12 @@
 package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -30,7 +32,8 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
  */
-public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
+public final class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat>,
+    DeployableObject {
     /** Centers of clusters. */
     private final Vector[] centers;
 
@@ -53,22 +56,18 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distanceMeasure;
     }
 
-    /** Amount of centers in clusterization. */
+    /** {@inheritDoc} */
     @Override public int getAmountOfClusters() {
         return centers.length;
     }
 
-    /** Get centers of clusters. */
+    /** {@inheritDoc} */
     @Override public Vector[] getCenters() {
         return Arrays.copyOf(centers, centers.length);
     }
 
-    /**
-     * Predict closest center index for a given vector.
-     *
-     * @param vec Vector.
-     */
-    public Integer predict(Vector vec) {
+    /** {@inheritDoc} */
+    @Override public Integer predict(Vector vec) {
         int res = -1;
         double minDist = Double.POSITIVE_INFINITY;
 
@@ -128,5 +127,10 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
             .addField("distance measure", measureName)
             .addField("centroids", centersList)
             .toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(distanceMeasure);
     }
 }

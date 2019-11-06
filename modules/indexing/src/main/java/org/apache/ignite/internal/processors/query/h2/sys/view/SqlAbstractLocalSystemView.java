@@ -17,28 +17,27 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.TimeZone;
 import java.util.UUID;
+
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
-import org.h2.util.DateTimeUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestamp;
-import org.h2.value.ValueTimestampTimeZone;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Local system view base class (which uses only local node data).
  */
 @SuppressWarnings("IfMayBeConditional")
 public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
-
-    public static final int MILLIS_IN_MIN = 60_000;
-
     /**
      * @param tblName Table name.
      * @param desc Description.
@@ -155,18 +154,43 @@ public abstract class SqlAbstractLocalSystemView extends SqlAbstractSystemView {
     }
 
     /**
-     * Converts millis to H2 ValueTimestamp in default time zone.
+     * Get node's filter string representation.
      *
-     * @param millis Millis.
+     * @param ccfg Cache configuration.
+     *
+     * @return String representation of node filter.
      */
-    protected static Value valueTimestampZoneFromMillis(long millis) {
-        long dateVal = DateTimeUtils.dateValueFromDate(millis);
-        long nanos = DateTimeUtils.nanosFromDate(millis);
-        int tzOff = TimeZone.getDefault().getRawOffset();
+    @Nullable protected static String nodeFilter(CacheConfiguration<?, ?> ccfg) {
+        IgnitePredicate<ClusterNode> nodeFilter = ccfg.getNodeFilter();
 
-        if(tzOff % MILLIS_IN_MIN == 0)
-            return ValueTimestampTimeZone.fromDateValueAndNanos(dateVal, nanos, (short)(tzOff / MILLIS_IN_MIN));
-        else
-            return DateTimeUtils.timestampTimeZoneFromLocalDateValueAndNanos(dateVal, nanos);
+        if (nodeFilter instanceof CacheConfiguration.IgniteAllNodesPredicate)
+            nodeFilter = null;
+
+        return toStringSafe(nodeFilter);
+    }
+
+    /**
+     * Get string representation of an object properly catching all exceptions.
+     *
+     * @param obj Object.
+     * @return Result or {@code null}.
+     */
+    @Nullable protected static String toStringSafe(@Nullable Object obj) {
+        if (obj == null)
+            return null;
+        else {
+            try {
+                return obj.toString();
+            }
+            catch (Exception e) {
+                try {
+                    return "Failed to convert object to string: " + e.getMessage();
+                }
+                catch (Exception e0) {
+                    return "Failed to convert object to string (error message is not available)";
+                }
+            }
+        }
+
     }
 }

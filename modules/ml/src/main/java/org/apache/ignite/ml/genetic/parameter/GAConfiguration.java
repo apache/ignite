@@ -39,10 +39,11 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  */
 public class GAConfiguration {
     /** Selection method */
-    private GAGridConstants.SELECTION_METHOD selectionMtd = null;
+    private GAGridConstants.SELECTION_METHOD selectionMtd;
 
     /** Criteria used to describe a chromosome */
-    private ChromosomeCriteria chromosomeCriteria = null;
+    private ChromosomeCriteria chromosomeCriteria;
+
     /**
      * Percentage of most fit chromosomes to be maintained and utilized to copy into new population.
      *
@@ -51,6 +52,7 @@ public class GAConfiguration {
      * Accepted values between 0 and 1
      */
     private double truncateRate;
+
     /**
      * Elitism is the concept that the strongest members of the population will be preserved from generation to
      * generation. <br/>
@@ -59,13 +61,14 @@ public class GAConfiguration {
      *
      * NOTE: This parameter is only considered when selectionMethod is SELECTON_METHOD_ELETISM.
      */
-    private int elitismCnt = 0;
+    private int elitismCnt;
 
     /**
      * Indicates how chromosome fitness values should be evaluated. </br> A chromosome with
      * isHigherFitnessValueFitter=true is considered fittest.
      */
     private boolean isHigherFitnessValFitter = true;
+
     /**
      * Population size represents the number of potential solutions (ie: chromosomes) between each generation Default
      * size is 500
@@ -78,7 +81,8 @@ public class GAConfiguration {
     private List<Gene> genePool = new ArrayList<Gene>();
 
     /** Number of genes within a chromosome */
-    private int chromosomeLen = 0;
+    private int chromosomeLen;
+
     /**
      * Crossover rate is the probability that two chromosomes will breed with each other. offspring with traits of each
      * of the parents.
@@ -86,6 +90,7 @@ public class GAConfiguration {
      * Accepted values are between 0 and 1
      */
     private double crossOverRate = .50;
+
     /**
      * Mutation rate is the probability that a chromosome will be mutated offspring with traits of each of the parents.
      *
@@ -93,17 +98,18 @@ public class GAConfiguration {
      * Accepted values are between 0 and 1
      */
     private double mutationRate = .50;
+
     /**
      * Call back interface used to terminate Genetic algorithm.
      *
      * Implement this interface based on particular use case.
      */
-    private ITerminateCriteria terminateCriteria = null;
+    private ITerminateCriteria terminateCriteria;
 
     /**
      * Represents a fitness function. Implement the IFitnessFunction to satisfy your particular use case.
      */
-    private IFitnessFunction fitnessFunction = null;
+    private IFitnessFunction fitnessFunction;
 
     public GAConfiguration() {
         this.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);

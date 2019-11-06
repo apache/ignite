@@ -43,7 +43,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** */
-    private final int SRV_CNT = 3;
+    private static final int SRV_CNT = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -148,7 +148,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         }
 
         try {
-            long stopTime = System.currentTimeMillis() + 30_000;
+            long stopTime = System.currentTimeMillis() + 10_000;
 
             int iter = 0;
 

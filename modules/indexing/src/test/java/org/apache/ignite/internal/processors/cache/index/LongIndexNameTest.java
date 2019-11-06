@@ -95,8 +95,6 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
             assertEquals(cursor1.getAll().size(), cursor1Idx.getAll().size());
             assertEquals(cursor2.getAll().size(), cursor2Idx.getAll().size());
-
-
         }
         finally {
             stopAllGrids();

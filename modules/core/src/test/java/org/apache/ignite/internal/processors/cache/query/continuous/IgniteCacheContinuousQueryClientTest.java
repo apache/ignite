@@ -109,6 +109,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined1 = startGrid(4);
 
+            awaitPartitionMapExchange();
+
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
@@ -118,6 +120,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined2 = startGrid(5);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
@@ -162,6 +166,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined1 = startGrid(4);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 

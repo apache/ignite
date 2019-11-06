@@ -17,19 +17,19 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.io.FileNotFoundException;
 
 /**
  * Usage of {@link ImputerTrainer} to fill missed data ({@code Double.NaN}) values in the chosen columns.
@@ -44,24 +44,23 @@ import java.io.FileNotFoundException;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_2_Imputing {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 2 (imputing) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                IgniteBiFunction<Integer, Object[], Vector> featureExtractor
-                    = (k, v) -> VectorUtils.of((double) v[0], (double) v[5], (double) v[6]);
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
-                        featureExtractor // "pclass", "sibsp", "parch"
+                        vectorizer // "pclass", "sibsp", "parch"
                     );
 
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
@@ -70,8 +69,7 @@ public class Step_2_Imputing {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    imputingPreprocessor,
-                    lbExtractor
+                    vectorizer
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
@@ -80,7 +78,6 @@ public class Step_2_Imputing {
                     dataCache,
                     mdl,
                     imputingPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 
@@ -92,6 +89,9 @@ public class Step_2_Imputing {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

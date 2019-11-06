@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -347,7 +347,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     }
 
     /**
-     * Check failover on restart cluster ar stop one node.
+     * Check failover on restart cluster or stop one node.
      *
      * @param url Connection URL.
      * @param allNodes Restart all nodes flag.
@@ -357,7 +357,9 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         try (Connection conn = DriverManager.getConnection(url)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs0 = meta.getTables(null, null, null, null);
+            final String[] types = {"TABLES"};
+
+            ResultSet rs0 = meta.getTables(null, null, null, types);
 
             assertFalse(rs0.next());
 
@@ -373,7 +375,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
             restart(allNodes);
 
-            rs0 = meta.getTables(null, null, null, null);
+            rs0 = meta.getTables(null, null, null, types);
             assertFalse(rs0.next());
         }
     }
@@ -534,11 +536,16 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         if (all)
             stopAllGrids();
         else {
-            JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, "cliIo");
 
-            int idx = io.serverIndex();
+            if (affinityAwareness) {
+                for (int i = 0; i < NODES_CNT - 1; i++)
+                    stopGrid(i);
+            }
+            else {
+                int idx = ((JdbcThinConnection)conn).serverIndex();
 
-            stopGrid(idx);
+                stopGrid(idx);
+            }
         }
     }
 

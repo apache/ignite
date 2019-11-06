@@ -169,6 +169,11 @@ namespace ignite
             return BinaryStringArrayWriter(impl, id);
         }
 
+        void BinaryRawWriter::WriteBinaryEnum(BinaryEnumEntry entry)
+        {
+            impl->WriteBinaryEnum(entry);
+        }
+
         void BinaryRawWriter::WriteNull()
         {
             impl->WriteNull();

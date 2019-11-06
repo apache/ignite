@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 public class StaticMvccQueryTracker implements MvccQueryTracker {
     /** */
     private final MvccSnapshot snapshot;
+
     /** */
     private final GridCacheContext cctx;
 

@@ -91,7 +91,7 @@ public class HadoopExternalSplit extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopExternalSplit.class, this, "hosts", Arrays.toString(hosts));
     }
 }

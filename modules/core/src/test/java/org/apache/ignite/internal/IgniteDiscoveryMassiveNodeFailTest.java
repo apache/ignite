@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -37,14 +36,18 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
 
 /**
  * Tests checks case when one node is unable to connect to next in a ring,
  * but those nodes are not experiencing any connectivity troubles between
  * each other.
  */
+@WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
 public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     /** */
     private static final int FAILURE_DETECTION_TIMEOUT = 5_000;
@@ -82,20 +85,6 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "true");
     }
 
     /** {@inheritDoc} */

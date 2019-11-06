@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -44,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for local transactions.
  */
-@SuppressWarnings( {"BusyWait"})
+@SuppressWarnings({"BusyWait"})
 abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     /** Random number generator. */
     private static final Random RAND = new Random();
@@ -89,7 +91,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean printMemoryStats();
 
-    /** {@inheritDoc} */
+    /** */
     private void debug(String msg) {
         if (isTestDebug())
             info(msg);
@@ -208,6 +210,9 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                     throw e;
                 }
+            }
+            catch (CacheException e) {
+                MvccFeatureChecker.assertMvccWriteConflict(e);
             }
             catch (Throwable e) {
                 log.error("Unexpected error: " + e, e);

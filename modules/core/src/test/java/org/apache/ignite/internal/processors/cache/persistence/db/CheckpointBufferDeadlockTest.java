@@ -365,5 +365,4 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
         }
     }
 
-
 }

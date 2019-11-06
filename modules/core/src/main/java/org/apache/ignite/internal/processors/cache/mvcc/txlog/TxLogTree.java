@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 
 /**
@@ -39,12 +40,30 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
      * @param initNew {@code True} if new tree should be created.
      * @throws IgniteCheckedException If fails.
      */
-    public TxLogTree(PageMemory pageMem,
-        IgniteWriteAheadLogManager wal, long metaPageId,
-        ReuseList reuseList, FailureProcessor failureProcessor,
-        boolean initNew) throws IgniteCheckedException {
-        super(TxLog.TX_LOG_CACHE_NAME, TxLog.TX_LOG_CACHE_ID, pageMem, wal, new AtomicLong(), metaPageId,
-            reuseList, TxLogInnerIO.VERSIONS, TxLogLeafIO.VERSIONS, failureProcessor);
+    public TxLogTree(
+        String name,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        ReuseList reuseList,
+        FailureProcessor failureProcessor,
+        boolean initNew,
+        PageLockListener lockLsnr
+    ) throws IgniteCheckedException {
+        super(
+            TxLog.TX_LOG_CACHE_NAME,
+            TxLog.TX_LOG_CACHE_ID,
+            TxLog.TX_LOG_CACHE_NAME,
+            pageMem,
+            wal,
+            new AtomicLong(),
+            metaPageId,
+            reuseList,
+            TxLogInnerIO.VERSIONS,
+            TxLogLeafIO.VERSIONS,
+            failureProcessor,
+            lockLsnr
+        );
 
         initTree(initNew);
     }

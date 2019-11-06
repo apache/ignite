@@ -30,6 +30,7 @@ import org.apache.kafka.connect.storage.Converter;
  */
 public class CacheEventConverter implements Converter {
     private final CacheEventDeserializer deserializer = new CacheEventDeserializer();
+
     private final CacheEventSerializer serializer = new CacheEventSerializer();
 
     /** {@inheritDoc} */

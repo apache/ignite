@@ -92,6 +92,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** */
     private boolean depEnabled;
 
+    /** Class loader id for local thread. */
+    private ThreadLocal<IgniteUuid> localLdrId = new ThreadLocal<>();
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         globalLdr = new CacheClassLoader(cctx.gridConfig().getClassLoader());
@@ -229,8 +232,16 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         // Unwind immediately for local and replicate caches.
         // We go through preloader for proper synchronization.
-        if (ctx.isLocal())
-            ctx.preloader().unwindUndeploys();
+        if (ctx.isLocal()) {
+            ctx.preloader().pause();
+
+            try {
+                ctx.group().unwindUndeploys();
+            }
+            finally {
+                ctx.preloader().resume();
+            }
+        }
     }
 
     /**
@@ -365,6 +376,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         DeploymentMode mode,
         Map<UUID, IgniteUuid> participants
     ) {
+        localLdrId.set(ldrId);
+
         assert depEnabled;
 
         if (mode == PRIVATE || mode == ISOLATED) {
@@ -447,7 +460,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (cctx.discovery().node(id) == null) {
                     if (depInfo.removeParticipant(id))
                         deps.remove(ldrId, depInfo);
-
 
                     allParticipants.remove(id);
                 }
@@ -803,29 +815,23 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
-            for (CachedDeploymentInfo<K, V> t : deps.values()) {
-                UUID sndId = t.senderId();
-                IgniteUuid ldrId = t.loaderId();
-                String userVer = t.userVersion();
-                DeploymentMode mode = t.mode();
-                Map<UUID, IgniteUuid> participants = t.participants();
+            IgniteUuid curLdrId = localLdrId.get();
 
-                GridDeployment d = cctx.gridDeploy().getGlobalDeployment(
-                    mode,
-                    name,
-                    name,
-                    userVer,
-                    sndId,
-                    ldrId,
-                    participants,
-                    F.<ClusterNode>alwaysTrue());
+            if (curLdrId != null) {
+                CachedDeploymentInfo<K, V> t = deps.get(curLdrId);
 
-                if (d != null) {
-                    Class cls = d.deployedClass(name);
+                if (t != null) {
+                    Class<?> cls = tryToloadClassFromCacheDep(name, t);
 
                     if (cls != null)
                         return cls;
                 }
+            }
+
+            for (CachedDeploymentInfo<K, V> t : deps.values()) {
+                Class<?> cls = tryToloadClassFromCacheDep(name, t);
+                if (cls != null)
+                    return cls;
             }
 
             Class cls = getParent().loadClass(name);
@@ -834,6 +840,33 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 return cls;
 
             throw new ClassNotFoundException("Failed to load class [name=" + name+ ", ctx=" + deps + ']');
+        }
+
+        /**
+         * @param name Name of resource.
+         * @param deploymentInfo Grid cached deployment info.
+         * @return Class if can to load resource with the <code>name</code> or {@code null} otherwise.
+         */
+        @Nullable private Class<?> tryToloadClassFromCacheDep(String name, CachedDeploymentInfo<K, V> deploymentInfo) {
+            UUID sndId = deploymentInfo.senderId();
+            IgniteUuid ldrId = deploymentInfo.loaderId();
+            String userVer = deploymentInfo.userVersion();
+            DeploymentMode mode = deploymentInfo.mode();
+            Map<UUID, IgniteUuid> participants = deploymentInfo.participants();
+
+            GridDeployment d = cctx.gridDeploy().getGlobalDeployment(
+                mode,
+                name,
+                name,
+                userVer,
+                sndId,
+                ldrId,
+                participants,
+                F.<ClusterNode>alwaysTrue());
+
+            Class cls = d != null ? d.deployedClass(name) : null;
+
+            return cls;
         }
 
         /**

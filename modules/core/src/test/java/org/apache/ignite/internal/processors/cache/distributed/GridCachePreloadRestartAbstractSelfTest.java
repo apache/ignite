@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
 /**
  * Test node restart.
@@ -195,7 +195,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      */
     @Test
     public void testDisabledPreloadRestart() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
 

@@ -241,6 +241,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
 
         assertEquals(expSize, res.size());
     }
+
     /**
      *
      */

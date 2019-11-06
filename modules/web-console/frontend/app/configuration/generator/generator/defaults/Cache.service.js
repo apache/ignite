@@ -48,6 +48,7 @@ const DFLT_CACHE = {
             sqlEscapeAll: false
         }
     },
+    storeConcurrentLoadAllThreshold: 5,
     readThrough: false,
     writeThrough: false,
     writeBehindEnabled: false,
@@ -69,7 +70,6 @@ const DFLT_CACHE = {
         clsName: 'org.apache.ignite.cache.CacheRebalanceMode',
         value: 'ASYNC'
     },
-    rebalanceThreadPoolSize: 1,
     rebalanceBatchSize: 524288,
     rebalanceBatchesPrefetchCount: 2,
     rebalanceOrder: 0,
@@ -97,6 +97,18 @@ const DFLT_CACHE = {
         valField: 'className',
         entries: []
     },
+    defaultFieldValues: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Object'
+    },
+    fieldsPrecision: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
+    },
+    fieldsScale: {
+        keyClsName: 'java.lang.String',
+        valClsName: 'java.lang.Integer'
+    },
     aliases: {
         keyClsName: 'java.lang.String',
         valClsName: 'java.lang.String',
@@ -123,7 +135,13 @@ const DFLT_CACHE = {
     memoryPolicyName: 'default',
     diskPageCompression: {
         clsName: 'org.apache.ignite.configuration.DiskPageCompression'
-    }
+    },
+    sqlOnheapCacheEnabled: false,
+    sqlOnheapCacheMaxSize: 0,
+    storeByValue: false,
+    encryptionEnabled: false,
+    eventsDisabled: false,
+    maxQueryIteratorsCount: 1024
 };
 
 export default class IgniteCacheDefaults {

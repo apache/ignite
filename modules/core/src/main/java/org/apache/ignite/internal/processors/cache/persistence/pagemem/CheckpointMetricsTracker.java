@@ -232,4 +232,11 @@ public class CheckpointMetricsTracker {
     public long walCpRecordFsyncDuration() {
         return walCpRecordFsyncEnd - walCpRecordFsyncStart;
     }
+
+    /**
+     * @return Checkpoint start time.
+     */
+    public long checkpointStartTime() {
+        return cpStart;
+    }
 }

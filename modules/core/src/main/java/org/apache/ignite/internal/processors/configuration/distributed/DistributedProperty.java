@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.configuration.distributed;
 
 import java.io.Serializable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -30,10 +31,16 @@ import org.jetbrains.annotations.NotNull;
 public class DistributedProperty<T extends Serializable> {
     /** Name of property. */
     private final String name;
+
     /** Property value. */
     protected volatile T val;
+
     /** Sign of attachment to the processor. */
     private volatile boolean attached = false;
+
+    /** Listeners of property update. */
+    private final ConcurrentLinkedQueue<DistributePropertyListener<T>> updateListeners = new ConcurrentLinkedQueue<>();
+
     /**
      * Specific consumer for update value in cluster. It is null when property doesn't ready to update value on cluster
      * wide.
@@ -43,10 +50,9 @@ public class DistributedProperty<T extends Serializable> {
 
     /**
      * @param name Name of property.
-     * @param initVal Initial value of property.
+     *
      */
-    public DistributedProperty(String name, T initVal) {
-        this.val = initVal;
+    public DistributedProperty(String name) {
         this.name = name;
     }
 
@@ -104,8 +110,16 @@ public class DistributedProperty<T extends Serializable> {
     /**
      * @return Current property value.
      */
-    public T value() {
+    public T get() {
         return val;
+    }
+
+    /**
+     * @param dfltVal Default value when current value is null.
+     * @return Current property value.
+     */
+    public T getOrDefault(T dfltVal) {
+        return val == null ? dfltVal : val;
     }
 
     /**
@@ -113,6 +127,13 @@ public class DistributedProperty<T extends Serializable> {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * @param listener Update listener.
+     */
+    public void addListener(DistributePropertyListener<T> listener) {
+        updateListeners.add(listener);
     }
 
     /**
@@ -136,8 +157,12 @@ public class DistributedProperty<T extends Serializable> {
      *
      * @param newVal New value.
      */
-    public void localUpdate(Serializable newVal) {
+    void localUpdate(Serializable newVal) {
+        T oldVal = val;
+
         val = (T)newVal;
+
+        updateListeners.forEach(listener -> listener.onUpdate(name, oldVal, val));
     }
 
     /** {@inheritDoc} */

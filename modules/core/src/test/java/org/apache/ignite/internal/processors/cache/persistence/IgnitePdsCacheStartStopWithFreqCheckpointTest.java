@@ -37,6 +37,8 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,7 +48,7 @@ import org.junit.Test;
  */
 public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbstractTest {
     /** Caches. */
-    private static final int CACHES = 10;
+    private static final int CACHES = SF.applyLB(10, 3);
 
     /** Cache name. */
     private static final String CACHE_NAME = "test";
@@ -78,13 +80,19 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private CacheConfiguration cacheConfiguration(int cacheIdx) {
-        return new CacheConfiguration(CACHE_NAME + cacheIdx)
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME + cacheIdx)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
-            .setBackups(0)
-            .setRebalanceMode(CacheRebalanceMode.NONE);
+            .setBackups(0);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
@@ -145,7 +153,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
             }
         });
 
-        U.sleep(60_000);
+        U.sleep(SF.applyLB(60_000, 10_000));
 
         log.info("Stopping caches start/stop process.");
 

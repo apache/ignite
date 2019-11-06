@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoadBalancerResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This class defines simplified adapter for {@link ComputeTask}. This adapter can be used
@@ -99,7 +100,7 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
     protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg) {
+    @NotNull @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg) {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 

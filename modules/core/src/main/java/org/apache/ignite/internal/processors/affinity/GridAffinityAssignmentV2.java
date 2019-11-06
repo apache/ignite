@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,6 +57,9 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
     /** Map of backup node partitions. */
     private Map<UUID, Set<Integer>> backup;
+
+    /** Set of partitions which primary is different than in ideal assignment. */
+    private Set<Integer> primariesDifferentToIdeal;
 
     /** Assignment node IDs */
     private transient volatile List<Collection<UUID>> assignmentIds;
@@ -105,23 +109,25 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
         this.idealAssignment =
             idealAssignment.equals(assignment) ? this.assignment : Collections.unmodifiableList(idealAssignment);
 
-
         // Temporary mirrors with modifiable partition's collections.
         Map<UUID, Set<Integer>> tmpPrimary = new HashMap<>();
         Map<UUID, Set<Integer>> tmpBackup = new HashMap<>();
+        Set<Integer> primariesDifferentToIdeal = new HashSet<>();
         boolean isPrimary;
 
         for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
             isPrimary = true;
 
-            for (ClusterNode node : assignment.get(p)) {
+            List<ClusterNode> currOwners = assignment.get(p);
+
+            for (ClusterNode node : currOwners) {
                 UUID id = node.id();
 
                 Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
 
                 /*
                     https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet at most cases.
-                    However with 65k partition and high number of nodes (700+) BitSet is loosing HashSet.
+                    However with 65k partition and high number of nodes (700+) BitSet is losing HashSet.
                     We need to replace it with sparse bitsets.
                  */
                 tmp.computeIfAbsent(id, uuid ->
@@ -130,10 +136,19 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
                 isPrimary =  false;
             }
+
+            List<ClusterNode> idealOwners = p < idealAssignment.size() ? idealAssignment.get(p) : Collections.emptyList();
+
+            ClusterNode curPrimary = !currOwners.isEmpty() ? currOwners.get(0) : null;
+            ClusterNode idealPrimary = !idealOwners.isEmpty() ? idealOwners.get(0) : null;
+
+            if (curPrimary != null && !curPrimary.equals(idealPrimary))
+                primariesDifferentToIdeal.add(p);
         }
 
         primary = Collections.unmodifiableMap(tmpPrimary);
         backup = Collections.unmodifiableMap(tmpBackup);
+        this.primariesDifferentToIdeal = Collections.unmodifiableSet(primariesDifferentToIdeal);
     }
 
     /**
@@ -147,6 +162,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+        primariesDifferentToIdeal = aff.primariesDifferentToIdeal;
     }
 
     /**
@@ -273,7 +289,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? ImmutableIntSet.emptySet() : ImmutableIntSet.wrap(set);
     }
 
     /**
@@ -285,7 +301,12 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? ImmutableIntSet.emptySet() : ImmutableIntSet.wrap(set);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.unmodifiableSet(primariesDifferentToIdeal);
     }
 
     /** {@inheritDoc} */

@@ -21,8 +21,8 @@ import _ from 'lodash';
 import naturalCompare from 'natural-compare-lite';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
-import {race, timer, merge, of, from, combineLatest, EMPTY} from 'rxjs';
-import {tap, filter, take, pluck, switchMap, map} from 'rxjs/operators';
+import {combineLatest, EMPTY, from, merge, of, race, timer} from 'rxjs';
+import {distinctUntilChanged, filter, map, pluck, switchMap, take, tap} from 'rxjs/operators';
 import ObjectID from 'bson-objectid';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
@@ -375,6 +375,12 @@ export class ModalImportModels {
             },
             {
                 db: 'MySQL',
+                jdbcDriverClass: 'com.mysql.cj.jdbc.Driver',
+                jdbcUrl: 'jdbc:mysql://[host]:[port]/[database]',
+                user: 'root'
+            },
+            {
+                db: 'MySQL',
                 jdbcDriverClass: 'org.mariadb.jdbc.Driver',
                 jdbcUrl: 'jdbc:mariadb://[host]:[port]/[database]',
                 user: 'root'
@@ -452,6 +458,7 @@ export class ModalImportModels {
 
             result.jdbcDriverJar = selectedJdbcJar.jdbcDriverJar;
             result.jdbcDriverClass = selectedJdbcJar.jdbcDriverClass;
+            result.jdbcDriverImplementationVersion = selectedJdbcJar.jdbcDriverImplementationVersion;
 
             return result;
         }
@@ -818,7 +825,8 @@ export class ModalImportModels {
                             kind: 'CacheJdbcPojoStoreFactory',
                             CacheJdbcPojoStoreFactory: {
                                 dataSourceBean: 'ds' + dialect + '_' + catalog,
-                                dialect
+                                dialect,
+                                implementationVersion: $scope.selectedPreset.jdbcDriverImplementationVersion
                             },
                             CacheJdbcBlobStoreFactory: { connectVia: 'DataSource' }
                         };
@@ -1040,7 +1048,8 @@ export class ModalImportModels {
                                         label: drv.jdbcDriverJar,
                                         value: {
                                             jdbcDriverJar: drv.jdbcDriverJar,
-                                            jdbcDriverClass: drv.jdbcDriverCls
+                                            jdbcDriverClass: drv.jdbcDriverCls,
+                                            jdbcDriverImplementationVersion: drv.jdbcDriverImplVersion
                                         }
                                     });
                                 });
@@ -1066,6 +1075,7 @@ export class ModalImportModels {
 
         this.agentIsAvailable$ = this.agentMgr.connectionSbj.pipe(
             pluck('state'),
+            distinctUntilChanged(),
             map((state) => state !== 'AGENT_DISCONNECTED')
         );
 
@@ -1092,6 +1102,7 @@ export class ModalImportModels {
                 selectedPreset.db = foundPreset.db;
                 selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
                 selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
+                selectedPreset.jdbcDriverImplementationVersion = foundPreset.jdbcDriverImplementationVersion;
                 selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
                 selectedPreset.user = foundPreset.user;
             }

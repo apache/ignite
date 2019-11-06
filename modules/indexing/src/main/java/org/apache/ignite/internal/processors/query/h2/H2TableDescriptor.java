@@ -51,10 +51,10 @@ public class H2TableDescriptor {
     /** PK index name. */
     public static final String PK_IDX_NAME = "_key_PK";
 
-    /** PK hashindex name */
+    /** PK hash index name. */
     public static final String PK_HASH_IDX_NAME = "_key_PK_hash";
 
-    /** Affinity key index name */
+    /** Affinity key index name. */
     public static final String AFFINITY_KEY_IDX_NAME = "AFFINITY_KEY";
 
     /** Indexing. */
@@ -102,6 +102,13 @@ public class H2TableDescriptor {
         this.isSql = isSql;
 
         fullTblName = H2Utils.withQuotes(schemaName) + "." + H2Utils.withQuotes(type.tableName());
+    }
+
+    /**
+     * @return {@code true} In case table was created from SQL.
+     */
+    public boolean sql(){
+        return isSql;
     }
 
     /**

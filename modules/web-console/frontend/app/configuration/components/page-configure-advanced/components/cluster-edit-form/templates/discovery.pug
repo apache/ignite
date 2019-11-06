@@ -214,6 +214,33 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"authenticator"',
                     tip: 'Class name of node authenticator implementation'
                 })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +form-field__number({
+                    label: 'Reconnect delay:',
+                    model: `${model}.reconnectDelay`,
+                    name: '"reconnectDelay"',
+                    placeholder: '2000',
+                    min: '0',
+                    tip: 'Amount of time in milliseconds that node waits before retrying to (re)connect to the cluster'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'Connection recovery timeout:',
+                    model: `${model}.connectionRecoveryTimeout`,
+                    name: '"connectionRecoveryTimeout"',
+                    placeholder: '10000',
+                    min: '0',
+                    tip: 'Defines how long server node would try to recovery connection'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__number({
+                    label: 'SO Linger timeout:',
+                    model: `${model}.soLinger`,
+                    name: '"soLinger"',
+                    placeholder: '5',
+                    min: '-1',
+                    tip: 'SO_LINGER timeout for socket'
+                })
             .pc-form-grid-col-60
                 +form-field__checkbox({
                     label: 'Force server mode',

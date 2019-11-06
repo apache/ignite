@@ -36,6 +36,9 @@ Skip Java build.
 .PARAMETER skipDotNet
 Skip .NET build.
 
+.PARAMETER skipDotNetCore
+Skip .NET Core build.
+
 .PARAMETER skipNuGet
 Skip NuGet packaging.
 
@@ -79,6 +82,7 @@ NuGet version override (normally inferred from assembly version).
 param (
     [switch]$skipJava,
 	[switch]$skipDotNet,
+    [switch]$skipDotNetCore,
     [switch]$skipNuGet,
     [switch]$skipCodeAnalysis,  
     [switch]$clean,
@@ -193,13 +197,34 @@ if (!$skipDotNet) {
 	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 	$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
 	echo "Starting MsBuild: '$msBuildCommand'"
-	cmd /c $msBuildCommand
+	cmd /c $msBuildCommand   
 
 	# Check result
 	if ($LastExitCode -ne 0) {
 		echo ".NET build failed."
 		exit -1
 	}
+}
+
+if(!$skipDotNetCore) {
+    
+    # Build core
+    $targetSolution =  ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj"
+    if ($clean) {
+        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
+        echo "Starting dotnet clean: '$cleanCommand'"
+        cmd /c $cleanCommand
+    }
+
+    $publishCommand = "dotnet publish $targetSolution -c $configuration"
+	echo "Starting dotnet publish: '$publishCommand'"
+	cmd /c $publishCommand    
+
+    # Check result
+    if ($LastExitCode -ne 0) {
+        echo ".NET Core build failed."
+        exit -1
+    }
 }
 
 if ($asmDirs) {
@@ -221,7 +246,7 @@ if ($asmDirs) {
 }
 
 # Copy binaries
-mkdir -Force bin; del -Force bin\*.*
+mkdir -Force bin; del -Force -Recurse bin\*.*
 
 ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `

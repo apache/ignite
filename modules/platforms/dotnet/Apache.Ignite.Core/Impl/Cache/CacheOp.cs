@@ -109,6 +109,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         ResetQueryMetrics = 86,
         PreloadPartition = 87,
         PreloadPartitionAsync = 88,
-        LocalPreloadPartition = 89
+        LocalPreloadPartition = 89,
+        SizeLong = 90,
+        SizeLongAsync = 91,
+        SizeLongLoc = 92,
+        WithReadRepair = 93
     }
 }

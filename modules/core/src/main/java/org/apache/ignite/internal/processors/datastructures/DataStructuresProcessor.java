@@ -717,7 +717,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
     }
 
-
     /**
      * Would return this cache to normal work if it was suspened (and if it is atomics cache).
      * @param cacheName To restart.

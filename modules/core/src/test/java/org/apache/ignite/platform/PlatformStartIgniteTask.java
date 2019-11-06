@@ -26,6 +26,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -37,7 +38,7 @@ import java.util.Map;
  */
 public class PlatformStartIgniteTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String arg) throws IgniteException {
         return Collections.singletonMap(new PlatformStartIgniteJob(arg), F.first(subgrid));
     }

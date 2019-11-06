@@ -46,6 +46,7 @@ import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
 import static java.sql.Types.DECIMAL;
+
 /**
  * Utility methods for JDBC driver.
  *

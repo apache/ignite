@@ -17,6 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains exceptions for distributed code algebra.
+ * Contains exceptions for distributed ML.
  */
+
 package org.apache.ignite.ml.math.exceptions;

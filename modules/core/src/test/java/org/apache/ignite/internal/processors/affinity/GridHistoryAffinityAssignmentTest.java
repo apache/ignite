@@ -21,9 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,13 +32,10 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests affinity history assignment diff calculation for history assignment.
  */
-@RunWith(JUnit4.class)
 public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,13 +62,13 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = new AffinityTopologyVersion(1, 0);
         HistoryAffinityAssignment lateAssign =
-            new HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+            new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
 
         assertEquals("Late", curr, lateAssign.assignment());
         assertEquals("Ideal late", ideal, lateAssign.idealAssignment());
 
         HistoryAffinityAssignment idealAssign = new
-            HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
+            HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
 
         assertSame(idealAssign.assignment(), idealAssign.idealAssignment());
 

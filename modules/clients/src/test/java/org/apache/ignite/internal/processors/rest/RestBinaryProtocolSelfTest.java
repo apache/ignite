@@ -180,7 +180,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     public void testFailure() throws Exception {
         IgniteKernal kernal = ((IgniteKernal)grid());
 
-        GridRestProcessor proc = kernal.context().rest();
+        IgniteRestProcessor proc = kernal.context().rest();
 
         // Clearing handlers collection to force failure.
         Field hndField = proc.getClass().getDeclaredField("handlers");
@@ -268,7 +268,6 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertFalse(client.cacheRemove(DEFAULT_CACHE_NAME, "wrongKey"));
 
         assertNull(jcacheDflt.get("key"));
-
 
         jcacheName.put("key", "val");
 

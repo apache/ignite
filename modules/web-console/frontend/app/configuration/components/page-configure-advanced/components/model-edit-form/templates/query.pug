@@ -77,12 +77,12 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                             ng-change=`$ctrl.onQueryFieldsChange(${model})`
                         )
                             list-editable-item-view
-                                | {{ $item.name}} / {{ $item.className}}
+                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}}
 
                             list-editable-item-edit
                                 - form = '$parent.form'
                                 .pc-form-grid-row
-                                    .pc-form-grid-col-30(divider='/')
+                                    .pc-form-grid-col-30
                                         +form-field__text({
                                             label: 'Field name:',
                                             model: '$item.name',
@@ -98,7 +98,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                     .pc-form-grid-col-30
                                         +form-field__java-class--typeahead({
                                             label: 'Field full class name:',
-                                            model: `$item.className`,
+                                            model: '$item.className',
                                             name: '"className"',
                                             options: '$ctrl.queryFieldTypes',
                                             required: 'true',
@@ -107,6 +107,41 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                             ng-model-options='{allowInvalid: true}'
                                             extra-valid-java-identifiers='$ctrl.queryFieldTypes'
                                         )
+                                    .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                                        +form-field__text({
+                                            label: 'Default value:',
+                                            model: '$item.defaultValue',
+                                            name: '"defaultValue"',
+                                            placeholder: 'Enter default value'
+                                        })
+                                    .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.7.0") && $ctrl.Models.fieldProperties.precisionAvailable($item)')
+                                        +form-field__number({
+                                            label: 'Precision:',
+                                            model: '$item.precision',
+                                            name: '"Precision"',
+                                            placeholder: 'Input field precision',
+                                            min: '1',
+                                            tip: 'Precision of field',
+                                            required: '$item.scale'
+                                        })
+                                    .pc-form-grid-col-30(ng-if-end)
+                                        +form-field__number({
+                                            label: 'Scale:',
+                                            model: '$item.scale',
+                                            name: '"Scale"',
+                                            placeholder: 'input field scale',
+                                            disabled: '!$ctrl.Models.fieldProperties.scaleAvailable($item)',
+                                            min: '0',
+                                            max: '{{$item.precision}}',
+                                            tip: 'Scale of field'
+                                        })
+                                    .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                                        +form-field__checkbox({
+                                            label: 'Not NULL',
+                                            model: '$item.notNull',
+                                            name: '"notNull"',
+                                            tip: 'Field must have non-null value'
+                                        })
 
                             list-editable-no-items
                                 list-editable-add-item-button(
@@ -223,6 +258,37 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                         placeholder: 'Select index type',
                                         options: '::$ctrl.Models.indexType.values'
                                     })
+                                .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                                    +form-field__dropdown({
+                                        label: 'Inline size:',
+                                        model: `queryIndex.inlineSizeType`,
+                                        name: '"InlineSizeKind"',
+                                        placeholder: '{{::$ctrl.Models.inlineSizeType.default}}',
+                                        options: '{{::$ctrl.Models.inlineSizeTypes}}',
+                                        tip: `Inline size
+                                            <ul>
+                                                <li>Auto - Determine inline size automatically</li>
+                                                <li>Custom - Fixed index inline</li>
+                                                <li>Disabled - Index inline is disabled</li>
+                                            </ul>`
+                                    })(
+                                        ng-change=`$ctrl.Models.inlineSizeType.onChange(queryIndex)`
+                                        ng-model-options='{allowInvalid: true}'
+                                    )
+                                .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0") && queryIndex.inlineSizeType === 1')
+                                    form-field-size(
+                                        label='Inline size:'
+                                        ng-model=`queryIndex.inlineSize`
+                                        ng-model-options='{allowInvalid: true}'
+                                        name=`InlineSize`
+                                        tip='Index inline size in bytes. Part of indexed value will be placed directly to index pages thus minimizing data page accesses'
+                                        placeholder='Input inline size'
+                                        min=`1`
+                                        size-scale-label='kb'
+                                        size-type='bytes'
+                                        required='true'
+                                    )
+                                        +form-field__error({error: 'min', message: 'Inline size should be greater than 0'})
                                 .pc-form-grid-col-60
                                     .ignite-form-field
                                         +form-field__label({ label: 'Index fields:', name: '"indexFields"', required: true })

@@ -25,7 +25,7 @@ panel-collapsible(ng-show='$ctrl.available("2.7.0")' ng-form=form on-open=`ui.lo
     panel-description Multiversion concurrency control (MVCC) configuration.
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
-            .pc-form-grid-col-30(ng-if='$ctrl.available("2.1.0")')
+            .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Vacuum thread pool size:',
                     model: `${model}.mvccVacuumThreadCount`,
@@ -34,7 +34,7 @@ panel-collapsible(ng-show='$ctrl.available("2.7.0")' ng-form=form on-open=`ui.lo
                     min: '0',
                     tip: 'Number of MVCC vacuum cleanup threads'
                 })
-            .pc-form-grid-col-30(ng-if='$ctrl.available("2.1.0")')
+            .pc-form-grid-col-30
                 +form-field__number({
                     label: 'Vacuum intervals:',
                     model: `${model}.mvccVacuumFrequency`,

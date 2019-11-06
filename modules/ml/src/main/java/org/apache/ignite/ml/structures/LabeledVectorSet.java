@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.structures;
 
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.datastructures.NoLabelVectorException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.NoDataException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * The set of labeled vectors used in local partition calculations.
  */
-public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
+public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -39,20 +39,9 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      *
      * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0.
-     * @param isDistributed Use distributed data structures to keep data.
-     */
-    public LabeledVectorSet(int rowSize, int colSize, boolean isDistributed){
-        this(rowSize, colSize, null, isDistributed);
-    }
-
-    /**
-     * Creates new local Labeled Dataset and initialized with empty data structure.
-     *
-     * @param rowSize Amount of instances. Should be > 0.
-     * @param colSize Amount of attributes. Should be > 0.
      */
     public LabeledVectorSet(int rowSize, int colSize){
-        this(rowSize, colSize, null, false);
+        this(rowSize, colSize, null);
     }
 
     /**
@@ -61,10 +50,9 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0
      * @param featureNames Column names.
-     * @param isDistributed Use distributed data structures to keep data.
      */
-    public LabeledVectorSet(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
-        super(rowSize, colSize, featureNames, isDistributed);
+    public LabeledVectorSet(int rowSize, int colSize, String[] featureNames){
+        super(rowSize, colSize, featureNames);
 
         initializeDataWithLabeledVectors();
     }
@@ -82,7 +70,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     private void initializeDataWithLabeledVectors() {
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
-            data[i] = (Row)new LabeledVector(emptyVector(colSize, isDistributed), null);
+            data[i] = (Row)new LabeledVector(emptyVector(colSize), null);
     }
 
     /**
@@ -95,7 +83,6 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
         super(data, colSize);
     }
 
-
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
      *
@@ -103,7 +90,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      * @param lbs Labels of observations.
      */
     public LabeledVectorSet(double[][] mtx, double[] lbs) {
-       this(mtx, lbs, null, false);
+       this(mtx, lbs, null);
     }
 
     /**
@@ -112,9 +99,8 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      * @param mtx Given matrix with rows as observations.
      * @param lbs Labels of observations.
      * @param featureNames Column names.
-     * @param isDistributed Use distributed data structures to keep data.
      */
-    public LabeledVectorSet(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
+    public LabeledVectorSet(double[][] mtx, double[] lbs, String[] featureNames) {
         super();
         assert mtx != null;
         assert lbs != null;
@@ -138,7 +124,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
 
-            data[i] = (Row)new LabeledVector(emptyVector(colSize, isDistributed), lbs[i]);
+            data[i] = (Row)new LabeledVector(emptyVector(colSize), lbs[i]);
             for (int j = 0; j < colSize; j++) {
                 try {
                     data[i].features().set(j, mtx[i][j]);
@@ -158,10 +144,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     public double label(int idx) {
         LabeledVector labeledVector = data[idx];
 
-        if(labeledVector!=null)
-            return (double)labeledVector.label();
-        else
-            return Double.NaN;
+        return labeledVector != null ? (double)labeledVector.label() : Double.NaN;
     }
 
     /**
@@ -198,14 +181,13 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
     }
 
     /** */
-    public static Vector emptyVector(int size, boolean isDistributed) {
+    public static Vector emptyVector(int size) {
             return new DenseVector(size);
     }
 
     /** Makes copy with new Label objects and old features and Metadata objects. */
     public LabeledVectorSet copy(){
         LabeledVectorSet res = new LabeledVectorSet(this.data, this.colSize);
-        res.isDistributed = this.isDistributed;
         res.meta = this.meta;
         for (int i = 0; i < rowSize; i++)
             res.setLabel(i, this.label(i));

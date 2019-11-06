@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Utility and helper classes.
  */
+
 package org.apache.ignite.yarn.utils;

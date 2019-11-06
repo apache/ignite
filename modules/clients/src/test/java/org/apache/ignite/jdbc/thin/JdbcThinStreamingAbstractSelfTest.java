@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -210,6 +210,13 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
         for (int i = 51; i <= 100; i++)
             assertEquals(i, grid(0).cache("T").get(i));
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11795")
+    @Test
+    @Override public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
+        super.testStreamedInsertFailsOnReadOnlyMode();
     }
 
     /**
@@ -517,13 +524,24 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
         }
 
         /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-            GridQueryCancel cancel, boolean registerAsNewQry) {
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
+            String schemaName,
+            SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx,
+            boolean keepBinary,
+            boolean failOnMultipleStmts,
+            GridQueryCancel cancel
+        ) {
             IndexingWithContext.cliCtx = cliCtx;
 
-            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, tracker, cancel,
-                registerAsNewQry);
+            return super.querySqlFields(
+                schemaName,
+                qry,
+                cliCtx,
+                keepBinary,
+                failOnMultipleStmts,
+                cancel
+            );
         }
     }
 }

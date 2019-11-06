@@ -193,9 +193,6 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final ZookeeperDiscoveryStatistics stats;
 
-    /** Last listener future. */
-    private IgniteFuture<?> lastCustomEvtLsnrFut;
-
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -564,12 +561,12 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param feature Feature to check.
-     * @return {@code true} if all nodes support the given feature, false otherwise.
+     * @return {@code true} if all nodes support the given feature, {@code false} otherwise.
      */
     public boolean allNodesSupport(IgniteFeatures feature) {
         checkState();
 
-        return rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
+        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
     }
 
     /**
@@ -2022,7 +2019,7 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param node Joining node data.
+     * @param joiningNodeData Joining node data.
      * @return Validation result.
      */
     private ZkNodeValidateResult validateJoiningNode(ZkJoiningNodeData joiningNodeData) {
@@ -2104,6 +2101,12 @@ public class ZookeeperDiscoveryImpl {
 
         try {
             secSubjZipBytes = marshalZip(subj);
+
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.put(ATTR_SECURITY_SUBJECT_V2, U.marshal(marsh, subj));
+
+            node.setAttributes(attrs);
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal node security subject: " + e, e);
@@ -2231,7 +2234,8 @@ public class ZookeeperDiscoveryImpl {
 
             assert secSubjPartCnt > 0 : secSubjPartCnt;
 
-            setNodeSecuritySubject(joinedNode, secSubjZipBytes);
+            if (spi.getAuthenticator() == null)
+                setNodeSecuritySubject(joinedNode, secSubjZipBytes);
         }
 
         ZkJoinedNodeEvtData nodeEvtData = new ZkJoinedNodeEvtData(
@@ -2807,8 +2811,6 @@ public class ZookeeperDiscoveryImpl {
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
         throws Exception
     {
-        waitForLastListenerFuture();
-
         boolean evtProcessed = false;
 
         for (int i = 0; i < evtData.joinedNodes.size(); i++) {
@@ -3487,8 +3489,6 @@ public class ZookeeperDiscoveryImpl {
 
         if (msg != null && msg.isMutable())
             fut.get();
-        else
-            lastCustomEvtLsnrFut = fut;
     }
 
     /**
@@ -4046,20 +4046,6 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * Wait for all the listeners from previous discovery message to be completed.
-     */
-    private void waitForLastListenerFuture() {
-        if (lastCustomEvtLsnrFut != null) {
-            try {
-                lastCustomEvtLsnrFut.get();
-            }
-            finally {
-                lastCustomEvtLsnrFut = null;
-            }
-        }
-    }
-
-    /**
      *
      */
     private class ReconnectClosure implements Runnable {
@@ -4468,7 +4454,7 @@ public class ZookeeperDiscoveryImpl {
             id = IgniteUuid.fromUuid(node.id());
 
             endTime = System.currentTimeMillis() + node.sessionTimeout() + 1000;
-        };
+        }
 
         /** {@inheritDoc} */
         @Override public IgniteUuid id() {

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -27,6 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public class ConsoleLogger implements MLLogger {
     /** Maximum Verbose level. */
     private final VerboseLevel maxVerboseLevel;
+
     /** Class name. */
     private final String clsName;
 
@@ -81,7 +83,7 @@ public class ConsoleLogger implements MLLogger {
     /**
      * ConsoleLogger factory.
      */
-    private static class Factory implements MLLogger.Factory {
+    public static class Factory implements MLLogger.Factory {
         /** Serial version uuid. */
         private static final long serialVersionUID = 5864605548782107893L;
 
@@ -101,5 +103,14 @@ public class ConsoleLogger implements MLLogger {
         @Override public <T> MLLogger create(Class<T> targetCls) {
             return new ConsoleLogger(maxVerboseLevel, targetCls.getName());
         }
+
+        /** Low. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> LOW = part -> new Factory(VerboseLevel.LOW);
+
+        /** High. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> HIGH = part -> new Factory(VerboseLevel.HIGH);
+
+        /** Offset. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> OFF = part -> new Factory(VerboseLevel.OFF);
     }
 }

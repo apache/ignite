@@ -43,22 +43,6 @@ ignite-grid-table {
         }
     }
 
-    .ui-grid.ui-grid--ignite.ui-grid--thin-rows {
-        .ui-grid-row {
-            height: 36px !important;
-
-            .ui-grid-cell {
-                height: 100% !important;
-            }
-        }
-
-        .ui-grid-cell .ui-grid-cell-contents {
-            padding: 8px 20px !important;
-            min-height: 35px !important;
-            max-height: 35px !important;
-        }
-    }
-
     .ui-grid.ui-grid--ignite:not(.ui-grid--thin) {
         // Start section row height.
         .ui-grid-row {

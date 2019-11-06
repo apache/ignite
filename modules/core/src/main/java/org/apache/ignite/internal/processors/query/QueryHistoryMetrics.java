@@ -44,17 +44,16 @@ public class QueryHistoryMetrics {
      * @param qry Textual query representation.
      * @param schema Schema name.
      * @param loc {@code true} for local query.
-     * @param startTime Duration of queue execution.
-     * @param duration Duration of queue execution.
+     * @param startTime Start time of query execution.
+     * @param duration Duration of query execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
      */
     public QueryHistoryMetrics(String qry, String schema, boolean loc, long startTime, long duration, boolean failed) {
         key = new QueryHistoryMetricsKey(qry, schema, loc);
 
-        if (failed)
-            val = new QueryHistoryMetricsValue(1, 1, 0, 0, startTime);
-        else
-            val = new QueryHistoryMetricsValue(1, 0, duration, duration, startTime);
+        long failures = failed ? 1 : 0;
+
+        val = new QueryHistoryMetricsValue(1, failures, duration, duration, startTime);
 
         linkRef = new AtomicReference<>();
     }
@@ -109,7 +108,7 @@ public class QueryHistoryMetrics {
      *
      * @return Number of executions.
      */
-    public int executions() {
+    public long executions() {
         return val.execs();
     }
 
@@ -118,7 +117,7 @@ public class QueryHistoryMetrics {
      *
      * @return Number of times a query execution failed.
      */
-    public int failures() {
+    public long failures() {
         return val.failures();
     }
 

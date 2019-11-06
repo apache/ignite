@@ -48,6 +48,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -153,7 +154,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class GridWaitTask extends ComputeTaskAdapter<UUID, Integer> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             ClusterNode mappedNode = null;
 
             for (ClusterNode node : subgrid) {
@@ -195,7 +196,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
             ClusterNode node = F.view(subgrid, F.remoteNodes(ignite.configuration().getNodeId())).iterator().next();

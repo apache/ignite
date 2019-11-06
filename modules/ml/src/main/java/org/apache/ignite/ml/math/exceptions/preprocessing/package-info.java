@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains exceptions for preprocessing.
  */
+
 package org.apache.ignite.ml.math.exceptions.preprocessing;

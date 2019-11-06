@@ -189,6 +189,4 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
             return super.readMessage(sock, in, timeout);
         }
     }
-
-
 }

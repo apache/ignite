@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -51,6 +52,11 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
     /** Client flag. */
     private boolean client;
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30_000;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -101,6 +107,7 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11877")
     @Test
     public void testMultithreadedPutAll() throws Exception {
         final AtomicInteger idx = new AtomicInteger();

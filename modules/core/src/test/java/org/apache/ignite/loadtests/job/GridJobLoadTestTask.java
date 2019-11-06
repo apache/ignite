@@ -25,6 +25,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
@@ -36,7 +37,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
  */
 public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParams, Integer> {
     /**{@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg) {
         assert !subgrid.isEmpty();
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();

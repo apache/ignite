@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -38,7 +39,7 @@ import org.apache.ignite.plugin.security.SecurityException;
  * Sql query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
+public class ClientCacheSqlFieldsQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** Query. */
     private final SqlFieldsQuery qry;
 

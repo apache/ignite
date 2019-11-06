@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,9 +30,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -58,15 +59,16 @@ public abstract class AbstractVector implements Vector {
     private IgniteUuid guid = IgniteUuid.randomUuid();
 
     /** Cached value for length squared. */
-    private double lenSq = 0.0;
+    private double lenSq;
 
     /** Maximum cached element. */
-    private Element maxElm = null;
+    private Element maxElm;
+
     /** Minimum cached element. */
-    private Element minElm = null;
+    private Element minElm;
 
     /** Readonly flag (false by default). */
-    private boolean readOnly = false;
+    private boolean readOnly;
 
     /** Read-only error message. */
     private static final String RO_MSG = "Vector is read-only.";
@@ -126,11 +128,37 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Sets serializable value.
+     *
+     * @param i Index.
+     * @param v Value.
+     */
+    protected void storageSetRaw(int i, Serializable v) {
+        ensureReadOnly();
+
+        sto.setRaw(i, v);
+
+        // Reset cached values.
+        lenSq = 0.0;
+        maxElm = minElm = null;
+    }
+
+    /**
      * @param i Index.
      * @return Value.
      */
     protected double storageGet(int i) {
         return sto.get(i);
+    }
+
+    /**
+     * Gets serializable value from storage and casts it to targe type T.
+     *
+     * @param i Index.
+     * @return Value.
+     */
+    protected <T extends Serializable> T storageGetRaw(int i) {
+        return sto.getRaw(i);
     }
 
     /** {@inheritDoc} */
@@ -158,6 +186,18 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public double getX(int idx) {
         return storageGet(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int idx) {
+        checkIndex(idx);
+
+        return sto.getRaw(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRawX(int idx) {
+        return sto.getRaw(idx);
     }
 
     /** {@inheritDoc} */
@@ -236,6 +276,16 @@ public abstract class AbstractVector implements Vector {
             @Override public void set(double val) {
                 storageSet(idx, val);
             }
+
+            /** {@inheritDoc} */
+            @Override public void setRaw(Serializable val) {
+                storageSetRaw(idx, val);
+            }
+
+            /** {@inheritDoc} */
+            @Override public <T extends Serializable> T getRaw() {
+                return storageGetRaw(idx);
+            }
         };
     }
 
@@ -298,6 +348,22 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
+    @Override public Vector setRaw(int idx, Serializable val) {
+        checkIndex(idx);
+
+        storageSetRaw(idx, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector setRawX(int idx, Serializable val) {
+        storageSetRaw(idx, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public Vector increment(int idx, double val) {
         checkIndex(idx);
 
@@ -341,7 +407,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> all() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
 
             /** {@inheritDoc} */
             @NotNull
@@ -403,7 +469,7 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Iterable<Element> nonZeroes() {
         return new Iterable<Element>() {
-            private int idx = 0;
+            private int idx;
             private int idxNext = -1;
 
             /** {@inheritDoc} */
@@ -617,18 +683,8 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return sto.isDistributed();
+    @Override public boolean isNumeric() {
+        return sto.isNumeric();
     }
 
     /** {@inheritDoc} */

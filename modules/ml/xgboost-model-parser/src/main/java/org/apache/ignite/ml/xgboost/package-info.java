@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for XGBoost model parser, correspondent DTOs and util classes.
  */
+
 package org.apache.ignite.ml.xgboost;

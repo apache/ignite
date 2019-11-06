@@ -5,6 +5,7 @@ Requirements:
 * Windows (XP and up), Windows Server (2008 and up)
 * Oracle JDK 8 and above
 * .NET Framework 4.0
+* .NET Core 2.0+
 * PowerShell 3.0+
 * Visual Studio 2010+
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)

@@ -1041,6 +1041,22 @@ public class GridNioServer<T> {
         clientWorkers.get(balanceIdx).offer(req);
     }
 
+    /**
+     * Stop polling for write availability if write queue is empty.
+     */
+    private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
+        if (ses.procWrite.get()) {
+            ses.procWrite.set(false);
+
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNioServer.class, this);
@@ -1165,16 +1181,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         break;
                     }
@@ -1356,10 +1363,14 @@ public class GridNioServer<T> {
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
-                writeSslSystem(ses, sockCh);
+                boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished)
+                if (!handshakeFinished) {
+                    if (writeFinished)
+                        stopPollingForWrite(key, ses);
+
                     return;
+                }
 
                 ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
 
@@ -1399,16 +1410,7 @@ public class GridNioServer<T> {
                             req = ses.pollFuture();
 
                             if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
-
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
+                                stopPollingForWrite(key, ses);
 
                                 break;
                             }
@@ -1535,8 +1537,10 @@ public class GridNioServer<T> {
          * @param ses NIO session.
          * @param sockCh Socket channel.
          * @throws IOException If failed.
+         *
+         * @return {@code True} if there's nothing else to write (last buffer is written and queue is empty).
          */
-        private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
+        private boolean writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
             ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
 
@@ -1555,8 +1559,10 @@ public class GridNioServer<T> {
                 if (!buf.hasRemaining())
                     queue.poll();
                 else
-                    break;
+                    return false;
             }
+
+            return true;
         }
 
         /**
@@ -1608,16 +1614,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null && buf.position() == 0) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         return;
                     }
@@ -2687,17 +2684,32 @@ public class GridNioServer<T> {
         }
 
         /**
-         * Closes the session and all associated resources, then notifies the listener.
-         *
          * @param ses Session to be closed.
          * @param e Exception to be passed to the listener, if any.
          * @return {@code True} if this call closed the ses.
          */
         protected boolean close(final GridSelectorNioSessionImpl ses, @Nullable final IgniteCheckedException e) {
+            return close(ses, e, ses.closeSocketOnSessionClose());
+        }
+
+        /**
+         * Closes the session and all associated resources, then notifies the listener.
+         *
+         * @param ses Session to be closed.
+         * @param e Exception to be passed to the listener, if any.
+         * @param closeSock If {@code True} the channel will be closed.
+         * @return {@code True} if this call closed the ses.
+         */
+        protected boolean close(
+            final GridSelectorNioSessionImpl ses,
+            @Nullable final IgniteCheckedException e,
+            boolean closeSock
+        ) {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
-                    U.warn(log, "Closing NIO session because of unhandled exception [cls=" + e.getClass() +
+                    U.warn(log, "Client disconnected abruptly due to network connection loss or because " +
+                        "the connection was left open on application shutdown. [cls=" + e.getClass() +
                         ", msg=" + e.getMessage() + ']');
                 else
                     U.error(log, "Closing NIO session because of unhandled exception.", e);
@@ -2717,7 +2729,10 @@ public class GridNioServer<T> {
                         GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
-                closeKey(ses.key());
+                if (closeSock)
+                    closeKey(ses.key());
+                else
+                    ses.key().cancel(); // Unbind socket to the current SelectionKey.
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
@@ -2880,6 +2895,16 @@ public class GridNioServer<T> {
             super(igniteInstanceName, name, log, workerLsnr);
 
             this.selector = selector;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            super.cancel();
+
+            // If accept worker never was started then explicitly close selector, otherwise selector will be closed
+            // in finally block when workers thread will be stopped.
+            if (runner() == null)
+                closeSelector();
         }
 
         /** {@inheritDoc} */

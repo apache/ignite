@@ -49,10 +49,12 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Second node. */
         [NonSerialized]
+        // ReSharper disable once NotAccessedField.Local
         private IIgnite _grid2;
 
         /** Third node. */
         [NonSerialized]
+        // ReSharper disable once NotAccessedField.Local
         private IIgnite _grid3;
 
         /** Second process. */

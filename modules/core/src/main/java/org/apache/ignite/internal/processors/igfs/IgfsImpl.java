@@ -454,6 +454,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         });
     }
+
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return data.groupBlockSize();

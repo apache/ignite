@@ -21,7 +21,20 @@ const DFLT_IGFS = {
         value: 'DUAL_ASYNC'
     },
     secondaryFileSystem: {
-
+        userNameMapper: {
+            Basic: {
+                mappings: {
+                    keyClsName: 'java.lang.String',
+                    valClsName: 'java.lang.String',
+                    keyField: 'name',
+                    valField: 'value',
+                    entries: []
+                }
+            }
+        },
+        Kerberos: {
+            reloginInterval: 600000
+        }
     },
     ipcEndpointConfiguration: {
         type: {

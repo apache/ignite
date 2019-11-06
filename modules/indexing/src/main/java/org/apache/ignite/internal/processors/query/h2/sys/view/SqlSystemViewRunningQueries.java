@@ -43,7 +43,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
             newColumn("SQL"),
             newColumn("SCHEMA_NAME"),
             newColumn("LOCAL", Value.BOOLEAN),
-            newColumn("START_TIME", Value.TIMESTAMP_TZ),
+            newColumn("START_TIME", Value.TIMESTAMP),
             newColumn("DURATION", Value.LONG)
         );
     }
@@ -80,7 +80,7 @@ public class SqlSystemViewRunningQueries extends SqlAbstractLocalSystemView {
                     info.query(),
                     info.schemaName(),
                     info.local(),
-                    valueTimestampZoneFromMillis(info.startTime()),
+                    valueTimestampFromMillis(info.startTime()),
                     duration
                 )
             );

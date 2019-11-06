@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -25,6 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -32,14 +32,12 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.*;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import java.io.Serializable;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
@@ -74,8 +72,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     public void testXORSimpleGD() {
         xorTest(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.3),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         ));
     }
 
@@ -86,8 +84,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     public void testXORRProp() {
         xorTest(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
-            RPropParameterUpdate::sumLocal,
-            RPropParameterUpdate::avg
+            RPropParameterUpdate.SUM_LOCAL,
+            RPropParameterUpdate.AVG
         ));
     }
 
@@ -105,20 +103,21 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
 
     /**
      * Common method for testing 'XOR' with various updaters.
+     *
      * @param updatesStgy Update strategy.
      * @param <P> Updater parameters type.
      */
     private <P extends Serializable> void xorTest(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy) {
-        CacheConfiguration<Integer, LabeledPoint> xorCacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, LabeledVector<double[]>> xorCacheCfg = new CacheConfiguration<>();
         xorCacheCfg.setName("XorData");
         xorCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 5));
-        IgniteCache<Integer, LabeledPoint> xorCache = ignite.createCache(xorCacheCfg);
+        IgniteCache<Integer, LabeledVector<double[]>> xorCache = ignite.createCache(xorCacheCfg);
 
         try {
-            xorCache.put(0, new LabeledPoint(0.0, 0.0, 0.0));
-            xorCache.put(1, new LabeledPoint(0.0, 1.0, 1.0));
-            xorCache.put(2, new LabeledPoint(1.0, 0.0, 1.0));
-            xorCache.put(3, new LabeledPoint(1.0, 1.0, 0.0));
+            xorCache.put(0, VectorUtils.of(0.0, 0.0).labeled(new double[] {0.0}));
+            xorCache.put(1, VectorUtils.of(0.0, 1.0).labeled(new double[] {1.0}));
+            xorCache.put(2, VectorUtils.of(1.0, 0.0).labeled(new double[] {1.0}));
+            xorCache.put(3, VectorUtils.of(1.0, 1.0).labeled(new double[] {0.0}));
 
             MLPArchitecture arch = new MLPArchitecture(2).
                 withAddedLayer(10, true, Activators.RELU).
@@ -134,14 +133,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
                 123L
             );
 
-            MultilayerPerceptron mlp = trainer.fit(
-                ignite,
-                xorCache,
-                (k, v) -> VectorUtils.of(v.x, v.y ),
-                (k, v) -> new double[]{ v.lb}
-            );
-
-            Matrix predict = mlp.predict(new DenseMatrix(new double[][]{
+            MultilayerPerceptron mlp = trainer.fit(ignite, xorCache, new LabeledDummyVectorizer<>());
+            Matrix predict = mlp.predict(new DenseMatrix(new double[][] {
                 {0.0, 0.0},
                 {0.0, 1.0},
                 {1.0, 0.0},
@@ -150,37 +143,12 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
 
             Tracer.showAscii(predict);
 
-            X.println(new DenseVector(new double[]{0.0}).minus(predict.getRow(0)).kNorm(2) + "");
+            X.println(new DenseVector(new double[] {0.0}).minus(predict.getRow(0)).kNorm(2) + "");
 
-            TestUtils.checkIsInEpsilonNeighbourhood(new DenseVector(new double[]{0.0}), predict.getRow(0), 1E-1);
+            TestUtils.checkIsInEpsilonNeighbourhood(new DenseVector(new double[] {0.0}), predict.getRow(0), 1E-1);
         }
         finally {
             xorCache.destroy();
-        }
-    }
-
-    /** Labeled point data class. */
-    private static class LabeledPoint {
-        /** X coordinate. */
-        private final double x;
-
-        /** Y coordinate. */
-        private final double y;
-
-        /** Point label. */
-        private final double lb;
-
-        /**
-         * Constructs a new instance of labeled point data.
-         *
-         * @param x X coordinate.
-         * @param y Y coordinate.
-         * @param lb Point label.
-         */
-        public LabeledPoint(double x, double y, double lb) {
-            this.x = x;
-            this.y = y;
-            this.lb = lb;
         }
     }
 }

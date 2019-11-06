@@ -118,16 +118,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Flag indicating whether SQL indexes should support snapshots'
                 })
 
-            .pc-form-grid-col-60
-                +form-field__checkbox({
-                    label: 'Escape table and filed names',
-                    model: `${model}.sqlEscapeAll`,
-                    name: '"sqlEscapeAll"',
-                    tip: 'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
-                         This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
-                         Escaped names will be used for creation internal structures in Ignite SQL engine.'
-                })
-
             //- Since ignite 2.0
             .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
                 +form-field__number({
@@ -146,6 +136,41 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     placeholder: '-1',
                     min: '-1',
                     tip: 'Maximum inline size for sql indexes'
+                })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.4.0")')
+                +form-field__checkbox({
+                    label: 'Onheap cache enabled',
+                    model: `${model}.sqlOnheapCacheEnabled`,
+                    name: '"sqlOnheapCacheEnabled"',
+                    tip: 'When enabled, Ignite will cache SQL rows as they are accessed by query engine'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__number({
+                    label: 'Onheap cache max size:',
+                    model: `${model}.sqlOnheapCacheMaxSize`,
+                    name: '"SqlOnheapCacheMaxSize"',
+                    disabled: `!${model}.sqlOnheapCacheEnabled`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Maximum SQL on-heap cache'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Max query iterators count:',
+                    model: `${model}.maxQueryIteratorsCount`,
+                    name: '"MaxQueryIteratorsCount"',
+                    placeholder: '1024',
+                    min: '1',
+                    tip: 'Maximum number of query iterators that can be stored'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Escape table and filed names',
+                    model: `${model}.sqlEscapeAll`,
+                    name: '"sqlEscapeAll"',
+                    tip: 'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
+                         This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
+                         Escaped names will be used for creation internal structures in Ignite SQL engine.'
                 })
 
         .pca-form-column-6

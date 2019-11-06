@@ -51,6 +51,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
      */
     private static class GridCacheWrongValue1 {
         private int val1 = 8;
+
         private long val2 = 9;
     }
 

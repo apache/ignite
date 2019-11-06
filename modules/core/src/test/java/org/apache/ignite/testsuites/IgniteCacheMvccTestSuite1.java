@@ -41,8 +41,6 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheMvccTxFastFinishTest;
-import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
 import org.apache.ignite.internal.processors.cache.DataStorageConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
@@ -198,8 +196,6 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheAffinityMapperSelfTest.class);
         ignoredTests.add(GridCacheAffinityApiSelfTest.class);
 
-        ignoredTests.add(CacheNamesSelfTest.class);
-        ignoredTests.add(CacheNamesWithSpecialCharactersTest.class);
         ignoredTests.add(GridCacheConfigurationValidationSelfTest.class);
 
         ignoredTests.add(GridDataStorageConfigurationConsistencySelfTest.class);

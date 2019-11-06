@@ -18,11 +18,26 @@
 user-menu {
     --active-link-color: #ee2b27;
     font-size: 14px;
+    max-width: 150px;
+    max-height: 100%;
+    display: flex;
 
     &>.active {
         color: var(--active-link-color)
     }
     .caret {
         margin-left: 8px;
+        margin-top: 3px;
+        align-self: center;
+    }
+    .user-menu__username {
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .user-menu__trigger {
+        display: flex;
+        max-height: 100%;
+        overflow: hidden;
     }
 }

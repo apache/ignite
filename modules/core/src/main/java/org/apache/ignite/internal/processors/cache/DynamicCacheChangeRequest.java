@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Cache configuration enrichment. */
+    private CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -130,16 +134,22 @@ public class DynamicCacheChangeRequest implements Serializable {
     /**
      * @param ctx Context.
      * @param cfg0 Template configuration.
+     * @param splitCfg Cache configuration splitter.
      * @return Request to add template.
      */
-    static DynamicCacheChangeRequest addTemplateRequest(GridKernalContext ctx, CacheConfiguration<?, ?> cfg0) {
-        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>(cfg0);
-
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg.getName(), ctx.localNodeId());
+    static DynamicCacheChangeRequest addTemplateRequest(
+        GridKernalContext ctx,
+        CacheConfiguration<?, ?> cfg0,
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg
+    ) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg0.getName(), ctx.localNodeId());
 
         req.template(true);
-        req.startCacheConfiguration(cfg);
-        req.schema(new QuerySchema(cfg.getQueryEntities()));
+
+        req.startCacheConfiguration(splitCfg.get1());
+        req.cacheConfigurationEnrichment(splitCfg.get2());
+
+        req.schema(new QuerySchema(cfg0.getQueryEntities()));
         req.deploymentId(IgniteUuid.randomUuid());
 
         return req;
@@ -455,6 +465,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
+    }
+
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @param cacheCfgEnrichment Cache config enrichment.
+     */
+    public void cacheConfigurationEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

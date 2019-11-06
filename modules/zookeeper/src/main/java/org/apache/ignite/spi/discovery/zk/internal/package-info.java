@@ -18,4 +18,5 @@
 /**
  * Contains <b>Zookeeper Discovery Spi</b> implementation classes.
  */
+
 package org.apache.ignite.spi.discovery.zk.internal;

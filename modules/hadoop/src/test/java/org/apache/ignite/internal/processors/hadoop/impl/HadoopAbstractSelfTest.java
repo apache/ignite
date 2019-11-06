@@ -72,7 +72,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
         SECONDARY_REST_CFG.setPort(11500);
     }
 
-
     /** Initial classpath. */
     private static String initCp;
 

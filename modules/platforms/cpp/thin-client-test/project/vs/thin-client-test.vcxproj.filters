@@ -78,5 +78,14 @@
     <None Include="..\..\config\auth-default.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\non-ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\non-ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\non-ssl-default.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

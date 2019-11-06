@@ -91,11 +91,6 @@ namespace ignite
                     GetCacheImpl(impl).LocalPeek(key, value);
                 }
 
-                void CacheClientProxy::RefreshAffinityMapping()
-                {
-                    GetCacheImpl(impl).RefreshAffinityMapping();
-                }
-
                 bool CacheClientProxy::Remove(const WritableKey& key)
                 {
                     return GetCacheImpl(impl).Remove(key);

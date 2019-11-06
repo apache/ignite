@@ -165,12 +165,12 @@ public class TestJdbcPojoDataSource implements DataSource {
         throw new SQLFeatureNotSupportedException();
     }
 
-    /** {@inheritDoc} */
+    /** */
     private Connection createConnection() throws SQLException {
         return DriverManager.getConnection(url, username, password);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private class ConnectionHolder implements Connection {
         /** */
         private Connection conn;
@@ -192,8 +192,7 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void close() throws SQLException {
+        @Override public void close() throws SQLException {
             if (!perThreadMode)
                 conn.close();
         }

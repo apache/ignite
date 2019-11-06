@@ -37,6 +37,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorFoldMapTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorNormTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorViewTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorageTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.SparseVectorStorageTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -60,6 +62,8 @@ import org.junit.runners.Suite;
     VectorFoldMapTest.class,
     // Vector storage tests
     VectorArrayStorageTest.class,
+    DenseVectorStorageTest.class,
+    SparseVectorStorageTest.class,
     // Matrix storage tests.
     MatrixStorageImplementationTest.class,
     MatrixArrayStorageTest.class,

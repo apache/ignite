@@ -182,7 +182,6 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
                 if (i % accsPerPerson == 0)
                     pers.put(pKey, new Person("pers-" + pKey));
 
-
                 acc.put(new AffinityKey(i, pKey), new Account(pKey, "acc-" + i));
             }
 

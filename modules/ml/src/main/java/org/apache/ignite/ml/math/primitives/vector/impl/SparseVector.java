@@ -50,12 +50,9 @@ public class SparseVector extends AbstractVector implements StorageConstants {
 
     /**
      * @param size Vector size.
-     * @param acsMode Vector elements access mode.
      */
-    public SparseVector(int size, int acsMode) {
-        assertAccessMode(acsMode);
-
-        setStorage(new SparseVectorStorage(size, acsMode));
+    public SparseVector(int size) {
+        setStorage(new SparseVectorStorage(size));
     }
 
     /** */
@@ -65,9 +62,7 @@ public class SparseVector extends AbstractVector implements StorageConstants {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        SparseVectorStorage sto = storage();
-
-        return new SparseVector(crd, sto.getAccessMode());
+        return new SparseVector(crd);
     }
 
     /** {@inheritDoc} */

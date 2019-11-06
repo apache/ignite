@@ -206,7 +206,6 @@ public class GridAtomicInteger extends AtomicInteger {
         }
     }
 
-
     /**
      * Sets value only if it is not equals to current one.
      *
