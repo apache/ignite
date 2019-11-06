@@ -123,8 +123,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileEx;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionNameEx;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
@@ -387,7 +387,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
                         CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
                                 sctx0.snpSndr.sendPart(
-                                    getPartitionFileEx(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                                    getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
                                     cacheDirName,
                                     pair,
                                     partLen);
@@ -498,7 +498,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         cacheSnapshotPath(snpName, rmtDbNodePath, cacheDirName),
                         false);
 
-                    return new File(cacheDir, getPartitionNameEx(partId)).getAbsolutePath();
+                    return new File(cacheDir, getPartitionFileName(partId)).getAbsolutePath();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -1713,7 +1713,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         /** {@inheritDoc} */
         @Override public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
-            File snpPart = getPartitionFileEx(dbNodeSnpDir, cacheDirName, pair.getPartitionId());
+            File snpPart = getPartitionFile(dbNodeSnpDir, cacheDirName, pair.getPartitionId());
 
             U.log(log, "Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                 ", delta=" + delta + ']');
