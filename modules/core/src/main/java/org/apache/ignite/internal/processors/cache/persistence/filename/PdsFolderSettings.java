@@ -60,7 +60,7 @@ public class PdsFolderSettings {
     /**
      * Indicates if compatible mode is enabled, in that case all sub folders are generated from consistent ID without
      * 'node' and node index prefix. In compatible mode there is no overriding for consistent ID is done.
-        */
+     */
     private final boolean compatible;
 
     /**

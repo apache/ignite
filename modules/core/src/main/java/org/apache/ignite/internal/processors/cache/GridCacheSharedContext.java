@@ -755,7 +755,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Page store backup manager.
+     * @return Page storage snapshot manager.
      */
     public IgniteSnapshotManager snapshotMgr() {
         return snapshotMgr;

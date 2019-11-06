@@ -142,10 +142,7 @@ public enum GridTopic {
     TOPIC_SERVICES,
 
     /** */
-    TOPIC_DEADLOCK_DETECTION,
-
-    /** */
-    TOPIC_RMT_SNAPSHOT;
+    TOPIC_DEADLOCK_DETECTION;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

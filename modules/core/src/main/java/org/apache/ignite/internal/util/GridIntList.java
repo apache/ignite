@@ -139,16 +139,16 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param parts The set of partitions.
+     * @param ints The set of partitions.
      * @return Representation as primitive list.
      */
-    public static GridIntList valueOf(Set<Integer> parts) {
-        if (parts == null)
+    public static GridIntList valueOf(Set<Integer> ints) {
+        if (ints == null)
             return new GridIntList(0);
 
-        GridIntList intParts = new GridIntList(parts.size());
+        GridIntList intParts = new GridIntList(ints.size());
 
-        for (Integer partId : parts)
+        for (Integer partId : ints)
             intParts.add(partId);
 
         return intParts;

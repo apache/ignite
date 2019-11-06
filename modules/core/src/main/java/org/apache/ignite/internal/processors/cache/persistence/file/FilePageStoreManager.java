@@ -760,7 +760,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param partId Partition id.
      */
     @NotNull private Path getPartitionFilePath(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)).toPath();
+        return new File(cacheWorkDir, getPartitionFileName(partId)).toPath();
     }
 
     /**
@@ -769,15 +769,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param partId Partition id.
      * @return Partition file.
      */
-    @NotNull public static File getPartitionFileEx(File workDir, String cacheDirName, int partId) {
-        return new File (cacheWorkDir(workDir, cacheDirName), getPartitionNameEx(partId));
+    @NotNull public static File getPartitionFile(File workDir, String cacheDirName, int partId) {
+        return new File(cacheWorkDir(workDir, cacheDirName), getPartitionFileName(partId));
     }
 
     /**
      * @param partId Partition id.
      * @return File name.
      */
-    public static String getPartitionNameEx(int partId) {
+    public static String getPartitionFileName(int partId) {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return  partId == INDEX_PARTITION ? INDEX_FILE_NAME : format(PART_FILE_TEMPLATE, partId);
