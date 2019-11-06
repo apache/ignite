@@ -38,12 +38,12 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
     /**
      * Valid answers count.
      */
-    private long validAnswersCount = 0;
+    private long validAnswersCnt;
 
     /**
      * Total number of examples.
      */
-    private long totalNumberOfExamples = 0;
+    private long totalNumberOfExamples;
 
     /**
      * Creates an instance of ClassificationMetricsAggregator.
@@ -58,7 +58,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
      * @param totalNumberOfExamples Total number of examples.
      */
     public ClassificationMetricsAggregator(long validAnswersCount, long totalNumberOfExamples) {
-        this.validAnswersCount = validAnswersCount;
+        this.validAnswersCnt = validAnswersCount;
         this.totalNumberOfExamples = totalNumberOfExamples;
     }
 
@@ -69,7 +69,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
         L modelAns = model.predict(vector.features());
         L truth = vector.label();
         if (modelAns.equals(truth))
-            validAnswersCount++;
+            validAnswersCnt++;
         totalNumberOfExamples++;
     }
 
@@ -78,7 +78,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
      */
     @Override public ClassificationMetricsAggregator<L> mergeWith(ClassificationMetricsAggregator<L> other) {
         return new ClassificationMetricsAggregator<>(
-            this.validAnswersCount + other.validAnswersCount,
+            this.validAnswersCnt + other.validAnswersCnt,
             this.totalNumberOfExamples + other.totalNumberOfExamples
         );
     }
@@ -103,7 +103,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
      * @return validAnswersCount.
      */
     public long getValidAnswersCount() {
-        return validAnswersCount;
+        return validAnswersCnt;
     }
 
     /**

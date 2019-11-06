@@ -51,7 +51,7 @@ public class EncoderExampleWithNormalization {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Train Decision Tree model on mushrooms.csv dataset.");
 
