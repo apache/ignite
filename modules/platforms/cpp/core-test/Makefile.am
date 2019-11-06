@@ -59,6 +59,7 @@ ignite_tests_SOURCES = \
 	src/binary_identity_resolver_test.cpp \
 	src/cache_test.cpp \
 	src/cache_query_test.cpp \
+	src/cache_query_schema_test.cpp \
 	src/cache_store_test.cpp \
 	src/continuous_query_test.cpp \
 	src/concurrent_test.cpp \

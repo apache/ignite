@@ -97,6 +97,9 @@
     <ClCompile Include="..\..\src\affinity_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache_query_schema_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
@@ -197,6 +200,15 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\persistence-store-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-schema.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-schema-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-schema-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
