@@ -3235,7 +3235,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // todo   crd node should always have history for max counter - this is redundant
                     // todo   if minCntr is zero - check that file rebalancing is supported and partition is big enough,
                     // todo   otherwise - do regular  preloading
-                    if (fileRebalanceRequired && minCntr == 0 && localHistCntr <= maxCntr &&
+                    // todo  && minCntr == 0
+                    if (fileRebalanceRequired && localHistCntr <= maxCntr &&
                         maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
@@ -3259,8 +3260,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (histCntr != null) {
                     // todo merge conditions (with else)
-                    if (minCntr == 0 && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                        // For file rebalancing we need to reserve historyfrom current update counter.
+                    if (fileRebalanceRequired && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        // For file rebalancing we need to reserve history from current update counter.
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
 
                         haveHistory.add(p);

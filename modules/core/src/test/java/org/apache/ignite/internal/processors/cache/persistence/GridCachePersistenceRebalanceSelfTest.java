@@ -436,8 +436,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         backups = 0;
         cacheWriteSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
-        int nodesCnt = 5;
-        int loadThreads = Runtime.getRuntime().availableProcessors();
+        int grids = 5;
+        int threads = Runtime.getRuntime().availableProcessors();
 
         List<ClusterNode> blt = new ArrayList<>();
 
@@ -447,7 +447,7 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 
         AtomicLong cntr = new AtomicLong(TEST_SIZE);
 
-        for (int i = 0; i < nodesCnt; i++) {
+        for (int i = 0; i < grids; i++) {
             IgniteEx ignite = startGrid(i);
 
             blt.add(ignite.localNode());
@@ -458,41 +458,39 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
                 loadData(ignite, CACHE1, TEST_SIZE);
                 loadData(ignite, CACHE2, TEST_SIZE);
 
-                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false, loadThreads);
+                ldr = new ConstantLoader(ignite.cache(CACHE1), cntr, false, threads);
 
-                ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, loadThreads, "thread");
+                ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "thread");
             }
             else
                 ignite.cluster().setBaselineTopology(blt);
 
             awaitPartitionMapExchange(true, true, null, true);
-
-            IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
-            IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
-
-            ldr.pause();
-
-            long size = cntr.get();
-
-            log.info("Data verification (size=" + size + ")");
-
-            // todo should check partitions
-            for (long k = 0; k < size; k++) {
-                assertEquals("k=" + k, generateValue(k, CACHE1), cache1.get(k));
-
-                if (k < TEST_SIZE)
-                    assertEquals("k=" + k, generateValue(k, CACHE2), cache2.get(k));
-
-                if ((k + 1) % (size / 10) == 0)
-                    log.info("Verified " + (k + 1) * 100 / size + "% entries");
-            }
-
-            ldr.resume();
         }
 
         ldr.stop();
 
         ldrFut.get();
+
+        Ignite ignite = grid(grids - 1);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
+        IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
+
+        long size = cntr.get();
+
+        log.info("Data verification (size=" + size + ")");
+
+        // todo should check partitions
+        for (long k = 0; k < size; k++) {
+            assertEquals("k=" + k, generateValue(k, CACHE1), cache1.get(k));
+
+            if (k < TEST_SIZE)
+                assertEquals("k=" + k, generateValue(k, CACHE2), cache2.get(k));
+
+            if ((k + 1) % (size / 10) == 0)
+                log.info("Verified " + (k + 1) * 100 / size + "% entries");
+        }
     }
 
     /** */

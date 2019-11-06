@@ -139,6 +139,10 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
+        // todo normal check
+        if (!presistenceRebalanceEnabled)
+            return;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (!grp.dataRegion().config().isPersistenceEnabled() || CU.isUtilityCache(grp.cacheOrGroupName()))
                 continue;
@@ -174,10 +178,14 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     public void onTopologyChanged(GridDhtPartitionsExchangeFuture exchFut) {
-        if (log.isDebugEnabled())
-            log.debug("Topology changed - canceling file rebalance.");
+        FileRebalanceFuture fut0 = fileRebalanceFut;
 
-        fileRebalanceFut.cancel();
+        if (!fut0.isDone()) {
+            if (log.isDebugEnabled())
+                log.debug("Topology changed - canceling file rebalance.");
+
+            fileRebalanceFut.cancel();
+        }
     }
 
     /**
