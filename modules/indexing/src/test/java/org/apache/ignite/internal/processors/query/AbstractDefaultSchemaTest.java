@@ -111,7 +111,7 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
         sql("SELECT * FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(1, 5).equals(res));
 
         sql("DELETE FROM " + tableName(withSchemaDecisionSup.get()) + " WHERE id = 1");
-        sql("SELECT COUNT(*) FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(0).equals(res));
+        sql("SELECT COUNT(*) FROM " + tableName(withSchemaDecisionSup.get()), res -> oneRowList(0L).equals(res));
 
         Assert.assertNotNull(((IgniteH2Indexing)grid(0).context().query().getIndexing())
             .dataTable("PUBLIC", TBL_NAME));
@@ -134,6 +134,6 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
         List<List<?>> res = execSql(qry);
 
         if (validator != null)
-            validator.test(res);
+            Assert.assertTrue(validator.test(res));
     }
 }
