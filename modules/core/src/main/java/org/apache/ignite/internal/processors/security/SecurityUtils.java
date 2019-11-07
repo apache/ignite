@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
@@ -26,11 +29,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -181,5 +186,58 @@ public class SecurityUtils {
      */
     public static boolean hasSecurityManager() {
         return System.getSecurityManager() != null;
+    }
+
+    /**
+     * @return Proxy of {@code instance} if the sandbox is enabled otherwise {@code instance}.
+     */
+    public static <T> T sandboxedProxy(IgniteSandbox sandbox, Class cls, T instance) {
+        if (instance == null)
+            return null;
+
+        Objects.requireNonNull(sandbox, "Parameter 'sandbox' cannot be null.");
+        Objects.requireNonNull(cls, "Parameter 'cls' cannot be null.");
+
+        if (sandbox.enabled()) {
+            return doPrivileged(() -> (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(), new Class[] {cls},
+                new SandboxInvocationHandler(sandbox, instance))
+            );
+        }
+
+        return instance;
+    }
+
+    /** */
+    private static class SandboxInvocationHandler<T> implements InvocationHandler, Callable<T> {
+        /** */
+        private final IgniteSandbox sandbox;
+
+        /** */
+        private final Object original;
+
+        /** */
+        private Method mtd;
+
+        /** */
+        private Object[] args;
+
+        /** */
+        public SandboxInvocationHandler(IgniteSandbox sandbox, Object original) {
+            this.sandbox = sandbox;
+            this.original = original;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+            this.mtd = mtd;
+            this.args = args;
+
+            return sandbox.execute(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public T call() throws Exception {
+            return (T)mtd.invoke(original, args);
+        }
     }
 }
