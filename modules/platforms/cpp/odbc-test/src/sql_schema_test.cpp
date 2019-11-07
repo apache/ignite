@@ -199,7 +199,7 @@ struct SchemaTestSuiteFixture : odbc::OdbcTestSuite
         Sql("SELECT COUNT(*) FROM " + TableName(pred()));
         CheckSingleLongRow1(stmt, 0);
 
-        Sql("SELECT COUNT(*) FROM SYS.TABLES WHERE schema_name = 'PUBLIC' "
+        Sql("SELECT COUNT(*) FROM IGNITE.TABLES WHERE schema_name = 'PUBLIC' "
             "AND table_name = \'" + TABLE_NAME + "\'");
         CheckSingleLongRow1(stmt, 1);
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE(TestBasicOpsDiffSchemas)
       + " JOIN " + Q_SCHEMA_NAME_3 + '.' + TABLE_NAME
       + " JOIN " + SCHEMA_NAME_4 + '.' + TABLE_NAME);
 
-    Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM SYS.TABLES ORDER BY SCHEMA_NAME");
+    Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM IGNITE.TABLES ORDER BY SCHEMA_NAME");
 
     CheckStringRow2(stmt, SCHEMA_NAME_1, "S1_KEY");
     CheckStringRow2(stmt, SCHEMA_NAME_2, "S2_KEY");

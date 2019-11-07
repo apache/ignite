@@ -181,7 +181,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private static void VerifyTables()
         {
-            Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM SYS.TABLES ORDER BY SCHEMA_NAME", res =>
+            Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM IGNITE.TABLES ORDER BY SCHEMA_NAME", res =>
             {
                 Assert.AreEqual(new List<List<object>>
                 {
@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Sql("SELECT COUNT(*) FROM " + GetTableName(withSchemaDecisionSup()),
                 res => Assert.AreEqual(OneRowList(0), res));
 
-            Sql("SELECT COUNT(*) FROM SYS.TABLES WHERE schema_name = 'PUBLIC' " +
+            Sql("SELECT COUNT(*) FROM IGNITE.TABLES WHERE schema_name = 'PUBLIC' " +
                 "AND table_name = \'" + TableName + "\'", res => Assert.AreEqual(OneRowList(1), res));
 
             Sql("DROP TABLE " + GetTableName(withSchemaDecisionSup()));

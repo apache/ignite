@@ -174,7 +174,7 @@ struct CacheQuerySchemaTestSuiteFixture
         cursor = Sql("SELECT COUNT(*) FROM " + TableName(pred()));
         CheckSingleRow<int64_t>(cursor, 0);
 
-        cursor = Sql("SELECT COUNT(*) FROM SYS.TABLES WHERE schema_name = 'PUBLIC' "
+        cursor = Sql("SELECT COUNT(*) FROM IGNITE.TABLES WHERE schema_name = 'PUBLIC' "
             "AND table_name = \'" + TABLE_NAME + "\'");
         CheckSingleRow<int64_t>(cursor, 1);
 
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(TestBasicOpsDiffSchemas)
       + " JOIN " + Q_SCHEMA_NAME_3 + '.' + TABLE_NAME
       + " JOIN " + SCHEMA_NAME_4 + '.' + TABLE_NAME);
 
-    QueryFieldsCursor cursor = Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM SYS.TABLES ORDER BY SCHEMA_NAME");
+    QueryFieldsCursor cursor = Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM IGNITE.TABLES ORDER BY SCHEMA_NAME");
 
     CheckRow<std::string, std::string>(cursor, SCHEMA_NAME_1, "S1_KEY");
     CheckRow<std::string, std::string>(cursor, SCHEMA_NAME_2, "S2_KEY");
