@@ -234,12 +234,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Should be performed on any topology update on coordinator.
-     *
-     * @param grpId Group Id with changed status.
      * @param top Topology.
+     * @param grpId Group ID.
      */
-    void checkRebalanceState(Integer grpId, GridDhtPartitionTopology top) {
+    void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
         boolean rmv = top == null;
 
         if (!rmv) {
@@ -776,7 +774,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (stoppedGrps != null)
             for (Integer grpId : stoppedGrps)
-                checkRebalanceState(grpId, null);
+                checkRebalanceState(null, grpId);
 
         ClientCacheChangeDiscoveryMessage msg = clientCacheChanges.get();
 
