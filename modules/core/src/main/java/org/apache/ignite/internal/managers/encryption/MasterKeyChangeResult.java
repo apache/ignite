@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.distributed.DistributedProcessActionMessage;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -27,22 +26,22 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * @see GridEncryptionManager.MasterKeyChangeProcess
  */
-public class MasterKeyChangeResult extends MasterKeyChangeAbstractMessage implements DistributedProcessActionMessage {
+public class MasterKeyChangeResult extends MasterKeyChangeAbstractMessage implements InitMessage {
     /** Error that caused this change to be rejected. */
-    private IgniteException err;
+    private String err;
 
     /**
      * @param req Request.
      * @param err Error.
      */
-    MasterKeyChangeResult(MasterKeyChangeRequest req, IgniteException err) {
+    MasterKeyChangeResult(MasterKeyChangeRequest req, String err) {
         super(req.requestId(), req.encKeyName(), req.digest());
 
         this.err = err;
     }
 
     /** @return Error that caused this change to be rejected. */
-    public IgniteException error() {
+    public String error() {
         return err;
     }
 

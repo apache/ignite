@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.util.UUID;
-import org.apache.ignite.internal.util.distributed.DistributedProcessInitialMessage;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -26,28 +26,19 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * @see GridEncryptionManager.MasterKeyChangeProcess
  */
-public class MasterKeyChangeRequest extends MasterKeyChangeAbstractMessage implements DistributedProcessInitialMessage {
-    /** The initiator node id. */
-    private final UUID initNodeId;
+public class MasterKeyChangeRequest extends MasterKeyChangeAbstractMessage implements InitMessage {
 
     /**
      * @param encKeyName Encrypted master key name.
      * @param digest Master key digest.
      */
-    MasterKeyChangeRequest(byte[] encKeyName, byte[] digest, UUID initNodeId) {
+    MasterKeyChangeRequest(byte[] encKeyName, byte[] digest) {
         super(UUID.randomUUID(), encKeyName, digest);
-
-        this.initNodeId = initNodeId;
     }
 
     /** {@inheritDoc} */
     @Override public UUID requestId() {
         return reqId;
-    }
-
-    /** @return The initiator node id. */
-    public UUID initNodeId() {
-        return initNodeId;
     }
 
     /** {@inheritDoc} */

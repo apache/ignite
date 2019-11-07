@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,6 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -54,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedProcessManager;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -178,7 +177,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private volatile byte[] lastChangedMasterKeyDigest;
 
     /** */
-    private final MasterKeyChangeProcess masterKeyChangeProcess = new MasterKeyChangeProcess();
+    private DistributedProcessManager mkChangePrepare;
+
+    /** */
+    private DistributedProcessManager mkChangeFinish;
 
     /**
      * @param ctx Kernel context.
@@ -267,22 +269,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        masterKeyChangeProcess.init(ctx, MasterKeyChangeRequest.class,
-            MasterKeyChangeSingleNodeResult.class, TOPIC_MASTER_KEY_CHANGE, MasterKeyChangeResult.class);
+        mkChangePrepare = new DistributedProcessManager<>(ctx,
+            MasterKeyChangeRequest.class,
+            MasterKeyChangeSingleNodeRequestAck.class, TOPIC_MASTER_KEY_CHANGE,
+            MasterKeyChangeRequestAck.class,
+            new MasterKeyChangePrepareProcess());
 
-        ctx.io().addMessageListener(TOPIC_MASTER_KEY_CHANGE, ioLsnr = (nodeId, msg0, plc) -> {
-            if (msg0 instanceof MasterKeyChangeSingleNodeAck) {
-                MasterKeyChangeSingleNodeAck msg = (MasterKeyChangeSingleNodeAck)msg0;
-
-                synchronized (opsMux) {
-                    if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
-                        F.eq(masterKeyChangeFut.id(), msg.requestId())) {
-
-                        masterKeyChangeFut.onResult(nodeId);
-                    }
-                }
-            }
-        });
+        mkChangeFinish = new DistributedProcessManager<>(ctx,
+            MasterKeyChangeResult.class,
+            MasterKeyChangeSingleNodeResultAck.class, TOPIC_MASTER_KEY_CHANGE,
+            MasterKeyChangeResultAck.class,
+            new MasterKeyChangeProcess());
     }
 
     /** {@inheritDoc} */
@@ -547,7 +544,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void groupKey(int grpId, byte[] encGrpKey) {
         assert !grpEncKeys.containsKey(grpId) && !isMasterKeyChangeInProgress();
 
-        Serializable encKey = getSpi().decryptKey(encGrpKey);
+        Serializable encKey;
+
+        synchronized (masterKeyChangeMux) {
+            encKey = getSpi().decryptKey(encGrpKey);
+        }
 
         synchronized (metaStorageMux) {
             if (log.isDebugEnabled())
@@ -569,44 +570,38 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
-        try {
-            checkMasterKeyChangeSupported();
+        checkMasterKeyChangeSupported();
 
-            byte[] digest;
+        byte[] digest;
 
-            synchronized (masterKeyChangeMux) {
-                String curName = getSpi().getMasterKeyName();
+        synchronized (masterKeyChangeMux) {
+            String curName = getSpi().getMasterKeyName();
 
-                try {
-                    getSpi().setMasterKeyName(masterKeyName);
+            try {
+                getSpi().setMasterKeyName(masterKeyName);
 
-                    digest = getSpi().masterKeyDigest();
-                } catch (Exception e) {
-                    throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']');
-                } finally {
-                    getSpi().setMasterKeyName(curName);
-                }
+                digest = getSpi().masterKeyDigest();
+            } catch (Exception e) {
+                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']');
+            } finally {
+                getSpi().setMasterKeyName(curName);
             }
-
-            MasterKeyChangeRequest msg = new MasterKeyChangeRequest(encryptKeyName(masterKeyName), digest,
-                ctx.localNodeId());
-
-            synchronized (opsMux) {
-                checkState();
-
-                if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
-                    throw new IgniteException("Master key change is in progress.");
-
-                masterKeyChangeFut = new MasterKeyChangeFuture(msg.requestId());
-
-                ctx.discovery().sendCustomEvent(msg);
-            }
-
-            return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+
+        MasterKeyChangeRequest msg = new MasterKeyChangeRequest(encryptKeyName(masterKeyName), digest);
+
+        synchronized (opsMux) {
+            checkState();
+
+            if ((masterKeyChangeFut != null && !masterKeyChangeFut.isDone()) || pendingMasterKey != null)
+                throw new IgniteException("Master key change is in progress.");
+
+            masterKeyChangeFut = new MasterKeyChangeFuture(msg.requestId());
+
+            mkChangePrepare.start(msg);
         }
+
+        return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
 
     /** {@inheritDoc} */
@@ -1083,52 +1078,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
     }
 
-    /**
-     * Master key change process.
-     * <ul>
-     *     <li>1. The initiator(a server node) sends the {@link MasterKeyChangeRequest} message.</li>
-     *     <li>2. Server nodes verify the master key and send the verification result in the
-     *     {@link MasterKeyChangeSingleNodeResult} message.</li>
-     *     <li>3. The coordinator checks the results and sends the action {@link MasterKeyChangeResult}
-     *     message.</li>
-     *     <li>4. The server nodes change the master key and send the {@link MasterKeyChangeSingleNodeAck} ack to the
-     *     initiator.</li>
-     *     <li>5. The initiator completes the master key change future when all acks received.</li>
-     * </ul>
-     */
-    private class MasterKeyChangeProcess extends
-        DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeSingleNodeResult, MasterKeyChangeResult> {
-        /** {@inheritDoc} */
-        @Override protected IgniteInternalFuture<MasterKeyChangeSingleNodeResult> process(
-            MasterKeyChangeRequest msg, AffinityTopologyVersion topVer) {
+    private class MasterKeyChangePrepareProcess implements DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeSingleNodeRequestAck, MasterKeyChangeRequestAck> {
+        @Override public IgniteInternalFuture<MasterKeyChangeSingleNodeRequestAck> execute(MasterKeyChangeRequest msg) {
             if (pendingMasterKey != null) {
-                if (isCoordinator()) {
-                    IgniteException err = new IgniteException("Master key change was rejected due to previous " +
-                        "change was not completed.");
+                MasterKeyChangeSingleNodeRequestAck res = new MasterKeyChangeSingleNodeRequestAck(msg.requestId(),
+                    "Master key change was rejected due to previous change was not completed.");
 
-                    MasterKeyChangeResult res = new MasterKeyChangeResult(msg, err);
-
-                    sendAction(res);
-                }
-
-                return new GridFinishedFuture<>();
+                return new GridFinishedFuture<>(res);
             }
 
             pendingMasterKey = msg;
 
             if (ctx.clientNode())
                 return new GridFinishedFuture<>();
-
-            if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId())) {
-                Set<UUID> aliveSrvNodesIds = new HashSet<>();
-
-                for (ClusterNode node : ctx.discovery().serverNodes(topVer)) {
-                    if (ctx.discovery().alive(node))
-                        aliveSrvNodesIds.add(node.id());
-                }
-
-                masterKeyChangeFut.addRemaining(aliveSrvNodesIds);
-            }
 
             IgniteException err = null;
 
@@ -1156,87 +1118,100 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
 
-            MasterKeyChangeSingleNodeResult res = new MasterKeyChangeSingleNodeResult(msg.requestId(),
+            MasterKeyChangeSingleNodeRequestAck res = new MasterKeyChangeSingleNodeRequestAck(msg.requestId(),
                 err == null ? null : err.getMessage());
 
             return new GridFinishedFuture<>(res);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void onSingleResultReceived(UUID nodeId, MasterKeyChangeSingleNodeResult msg) {
-            if (msg.hasError()) {
-                IgniteException err = new IgniteException("Master key change was rejected [nodeId=" +
-                    nodeId + ", error=" + msg.error() +']');
-
-                MasterKeyChangeResult res = new MasterKeyChangeResult(pendingMasterKey, err);
-
-                sendAction(res);
-            }
+        @Override public void finish(MasterKeyChangeRequestAck msg) {
+            if (isCoordinator())
+                mkChangeFinish.start(new MasterKeyChangeResult(pendingMasterKey, msg.error()));
         }
 
-        /** {@inheritDoc} */
-        @Override protected void onAllReceived(Map<UUID, MasterKeyChangeSingleNodeResult> res) {
-            boolean hasErrors = res.values().stream().anyMatch(MasterKeyChangeSingleNodeResult::hasError);
+        @Override public MasterKeyChangeRequestAck buildFinishMessage(Map<UUID, MasterKeyChangeSingleNodeRequestAck> res) {
+            for (Map.Entry<UUID, MasterKeyChangeSingleNodeRequestAck> entry : res.entrySet()) {
+                UUID nodeId = entry.getKey();
 
-            if (!hasErrors) {
-                MasterKeyChangeResult msg = new MasterKeyChangeResult(pendingMasterKey, null);
+                MasterKeyChangeSingleNodeRequestAck msg = entry.getValue();
 
-                sendAction(msg);
+                if (msg.hasError()) {
+                    return new MasterKeyChangeRequestAck(pendingMasterKey, "Master key change was rejected [nodeId=" +
+                        nodeId + ", error=" + msg.error() + ']');
+                }
             }
-        }
 
-        /** {@inheritDoc} */
-        @Override protected void onActionMessage(MasterKeyChangeResult msg) {
+            return new MasterKeyChangeRequestAck(pendingMasterKey, null);
+        }
+    }
+
+    private class MasterKeyChangeProcess implements DistributedProcess<MasterKeyChangeResult, MasterKeyChangeSingleNodeResultAck, MasterKeyChangeResultAck> {
+        @Override public IgniteInternalFuture<MasterKeyChangeSingleNodeResultAck> execute(MasterKeyChangeResult msg) {
             if (pendingMasterKey == null || !F.eq(pendingMasterKey.requestId(), msg.requestId()) ||
                 !Arrays.equals(pendingMasterKey.encKeyName(), msg.encKeyName()) ||
                 !Arrays.equals(pendingMasterKey.digest(), msg.digest())) {
-                if (msg.hasError()) {
-                    if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId()))
-                        masterKeyChangeFut.onDone(msg.error());
-                }
-                else {
+                if (!msg.hasError()) {
                     log.warning("Unknown master key change was rejected (possible cause is message's double " +
                         "delivering)");
                 }
 
-                return;
+                return new GridFinishedFuture<>(new MasterKeyChangeSingleNodeResultAck(msg.requestId(), msg.error()));
             }
-
-            UUID initNodeId = pendingMasterKey.initNodeId();
 
             pendingMasterKey = null;
 
             lastChangedMasterKeyDigest = msg.digest();
 
+            if (msg.hasError())
+                return new GridFinishedFuture<>(new MasterKeyChangeSingleNodeResultAck(msg.requestId(), msg.error()));
+
             boolean active = ctx.state().clusterState().active();
 
-            if (msg.hasError() || !active) {
-                if (masterKeyChangeFut != null && masterKeyChangeFut.id().equals(msg.requestId())) {
-                    if (active)
-                        masterKeyChangeFut.onDone(msg.error());
-                    else {
-                        masterKeyChangeFut.onDone(new IgniteException("Master key change was rejected " +
-                            "(the cluster is inactive)"));
-                    }
-                }
-
-                return;
+            if (!active) {
+                return new GridFinishedFuture<>(new MasterKeyChangeSingleNodeResultAck(msg.requestId(),
+                    "Master key change was rejected (the cluster is inactive)"));
             }
 
             if (!ctx.clientNode()) {
                 changeMasterKeyAndReencryptGroupKeys(decryptKeyName(msg.encKeyName()));
+            }
 
-                MasterKeyChangeSingleNodeAck res = new MasterKeyChangeSingleNodeAck(msg.requestId());
+            return new GridFinishedFuture<>(new MasterKeyChangeSingleNodeResultAck(msg.requestId(), null));
+        }
 
-                try {
-                    ctx.io().sendToGridTopic(initNodeId, TOPIC_MASTER_KEY_CHANGE, res, SYSTEM_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    log.warning("Unable to send result ack.", e);
+        @Override
+        public MasterKeyChangeResultAck buildFinishMessage(Map<UUID, MasterKeyChangeSingleNodeResultAck> singleMsgs) {
+            MasterKeyChangeSingleNodeResultAck ack = singleMsgs.values().stream().findFirst().get();
+
+            return new MasterKeyChangeResultAck(ack.requestId(), ack.error());
+        }
+
+        @Override public void finish(MasterKeyChangeResultAck msg) {
+            synchronized (opsMux) {
+                if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
+                    masterKeyChangeFut.id().equals(msg.requestId())) {
+                    if (msg.hasError())
+                        masterKeyChangeFut.onDone(new IgniteException(msg.error()));
+                    else
+                        masterKeyChangeFut.onDone();
                 }
             }
         }
     }
+
+    /**
+     * Master key change process.
+     * <ul>
+     *     <li>1. The initiator(a server node) sends the {@link MasterKeyChangeRequest} message.</li>
+     *     <li>2. Server nodes verify the master key and send the verification result in the
+     *     {@link MasterKeyChangeSingleNodeRequestAck} message.</li>
+     *     <li>3. The coordinator checks the results and sends the action {@link MasterKeyChangeResult}
+     *     message.</li>
+     *     <li>4. The server nodes change the master key and send the {@link MasterKeyChangeSingleNodeResultAck} ack to the
+     *     initiator.</li>
+     *     <li>5. The initiator completes the master key change future when all acks received.</li>
+     * </ul>
+     */
 
     /** */
     public static class NodeEncryptionKeys implements Serializable {

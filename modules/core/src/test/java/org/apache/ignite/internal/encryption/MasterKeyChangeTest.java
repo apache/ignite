@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeResult;
+import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeRequestAck;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -126,7 +126,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
@@ -196,7 +196,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
@@ -224,7 +224,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeResult);
+        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 

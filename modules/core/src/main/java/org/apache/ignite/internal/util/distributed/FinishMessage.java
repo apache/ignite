@@ -4,9 +4,9 @@ import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 
 /**
- * Action message interface of the {@link DistributedProcess}.
+ * Action message interface of the {@link DistributedProcessManager}.
  */
-public interface DistributedProcessActionMessage extends DiscoveryCustomMessage {
+public interface FinishMessage extends DiscoveryCustomMessage {
     /** @return Request id. */
     public UUID requestId();
 }
