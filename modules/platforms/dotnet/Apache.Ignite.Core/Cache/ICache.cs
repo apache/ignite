@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Cache
         /// invoked on the returned cache.
         /// <para />
         /// Expiry durations for each operation are calculated only once and then used as constants. Please
-        /// consider this when implementing customg expiry policy implementations.
+        /// consider this when implementing custom expiry policy implementations.
         /// </summary>
         /// <param name="plc">Expiry policy to use.</param>
         /// <returns>Cache instance with the specified expiry policy set.</returns>

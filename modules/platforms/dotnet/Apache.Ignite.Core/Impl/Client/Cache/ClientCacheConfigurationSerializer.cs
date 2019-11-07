@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
 
     /// <summary>
     /// Writes and reads <see cref="CacheConfiguration"/> for thin client mode.
@@ -74,7 +75,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             MaxConcurrentAsyncOperations = 403,
             PartitionLossPolicy = 404,
             EagerTtl = 405, 
-            StatisticsEnabled = 406
+            StatisticsEnabled = 406,
+            ExpiryPolicy = 407
         }
 
         /** Property count. */
@@ -94,6 +96,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.CopyOnRead = from.CopyOnRead;
             to.DataRegionName = from.DataRegionName;
             to.EagerTtl = from.EagerTtl;
+            to.ExpiryPolicyFactory = from.ExpiryPolicyFactory;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
             to.LockTimeout = from.LockTimeout;
@@ -125,7 +128,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 // Unsupported complex properties.
                 ThrowUnsupportedIfNotDefault(from.AffinityFunction, "AffinityFunction");
                 ThrowUnsupportedIfNotDefault(from.EvictionPolicy, "EvictionPolicy");
-                ThrowUnsupportedIfNotDefault(from.ExpiryPolicyFactory, "ExpiryPolicyFactory");
                 ThrowUnsupportedIfNotDefault(from.PluginConfigurations, "PluginConfigurations");
                 ThrowUnsupportedIfNotDefault(from.CacheStoreFactory, "CacheStoreFactory");
                 ThrowUnsupportedIfNotDefault(from.NearConfiguration, "NearConfiguration");
@@ -164,6 +166,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.CopyOnRead = from.CopyOnRead;
             to.DataRegionName = from.DataRegionName;
             to.EagerTtl = from.EagerTtl;
+            to.ExpiryPolicyFactory = from.ExpiryPolicyFactory;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
             to.LockTimeout = from.LockTimeout;
@@ -231,7 +234,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             
             code(Op.EagerTtl);
             writer.WriteBoolean(cfg.EagerTtl);
-            
+
             code(Op.StatisticsEnabled);
             writer.WriteBoolean(cfg.EnableStatistics);
             
@@ -304,6 +307,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             code(Op.QueryEntities);
             writer.WriteCollectionRaw(cfg.QueryEntities, srvVer);
 
+            code(Op.ExpiryPolicy);
+            ExpiryPolicySerializer.WritePolicyFactory(writer, cfg.ExpiryPolicyFactory);
+
             // Write length (so that part of the config can be skipped).
             var len = writer.Stream.Position - pos - 4;
             writer.Stream.WriteInt(pos, len);
@@ -352,6 +358,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
             cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
+            if (srvVer.CompareTo(ClientSocket.Ver150) >= 0)
+                cfg.ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
             Debug.Assert(len == reader.Stream.Position - pos);
         }
