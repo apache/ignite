@@ -2154,7 +2154,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             partHistSuppliers,
             partsToReload);
 
-        m.rebalanced(cctx.affinity().waitGroups().isEmpty());
+        m.rebalanced(rebalanced);
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
@@ -3797,9 +3797,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         nodes.addAll(sndResNodes);
                 }
 
-                if (msg.rebalanced())
-                    markRebalanced();
-
                 if (!nodes.isEmpty())
                     sendAllPartitions(msg, nodes, mergedJoinExchMsgs0, joinedNodeAff);
 
@@ -5147,8 +5144,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Sets cluster fully rebalanced flag.
      */
     public void markRebalanced() {
-        assert !rebalanced;
-
         rebalanced = true;
     }
 

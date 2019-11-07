@@ -236,19 +236,31 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Should be performed on any topology update on coordinator.
      *
-     * @param top Croup's topology.
      * @param grpId Group Id with changed status.
+     * @param top Topology.
      */
-    void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
-        CacheAffinityChangeMessage msg = null;
+    void checkRebalanceState(Integer grpId, GridDhtPartitionTopology top) {
+        boolean rmv = top == null;
 
-        synchronized (mux) {
-            if (waitInfo == null)
-                return;
+        if (!rmv) {
+            if (!top.hasMovingPartitions()) { // Fast check.
+                List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
 
-            assert !waitInfo.empty();
+                for (int p = 0; p < ideal.size(); p++)
+                    if (top.owners(p).containsAll(ideal.get(p))) // Full check.
+                        rmv = true;
+            }
+        }
 
-            if (top == null /*group destroyed*/ || !top.hasMovingPartitions() /*group rebalanced*/) {
+        if (rmv) {
+            CacheAffinityChangeMessage msg = null;
+
+            synchronized (mux) {
+                if (waitInfo == null)
+                    return;
+
+                assert !waitInfo.empty();
+
                 waitInfo.grps.remove(grpId);
 
                 if (waitInfo.empty()) {
@@ -257,14 +269,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     waitInfo = null;
                 }
             }
-        }
 
-        try {
-            if (msg != null)
-                cctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send affinity change message.", e);
+            try {
+                if (msg != null)
+                    cctx.discovery().sendCustomEvent(msg);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send affinity change message.", e);
+            }
         }
     }
 
@@ -764,7 +776,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (stoppedGrps != null)
             for (Integer grpId : stoppedGrps)
-                checkRebalanceState(null, grpId);
+                checkRebalanceState(grpId, null);
 
         ClientCacheChangeDiscoveryMessage msg = clientCacheChanges.get();
 
@@ -2182,22 +2194,38 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void initWaitGroupsBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion topVer = fut.initialVersion();
 
-        synchronized (mux) {
-            WaitRebalanceInfo rebInfo = new WaitRebalanceInfo(lastAffVer);
+        WaitRebalanceInfo rebInfo = new WaitRebalanceInfo(lastAffVer);
 
+        synchronized (mux) {
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                     CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
 
+                    if (!grpHolder.rebalanceEnabled)
+                        return;
+
                     GridDhtPartitionTopology top = grpHolder.topology(fut.context().events().discoveryCache());
 
-                    if (top.hasMovingPartitions() && grpHolder.rebalanceEnabled)
+                    if (top.hasMovingPartitions())  // Fast check. Ignores joined nodes.
                         rebInfo.add(grpHolder.groupId());
+                    else {
+                        List<List<ClusterNode>> ideal = grpHolder.affinity().idealAssignmentRaw();
+
+                        for (int p = 0; p < ideal.size(); p++)
+                            if (!top.owners(p).containsAll(ideal.get(p))) { // Full check.
+                                rebInfo.add(grpHolder.groupId());
+
+                                break;
+                            }
+                    }
                 }
             });
 
             waitInfo = rebInfo.empty() ? null : rebInfo;
         }
+
+        if (rebInfo.empty())
+            fut.markRebalanced();
 
         if (log.isDebugEnabled()) {
             log.debug("Computed new rebalance wait info [topVer=" + waitInfo.topVer +

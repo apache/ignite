@@ -1227,7 +1227,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = grp.topology();
 
                     if (top != null)
-                        cctx.affinity().checkRebalanceState(top, grp.groupId());
+                        cctx.affinity().checkRebalanceState(grp.groupId(), top);
                 }
             }
 
@@ -1876,7 +1876,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (top != null) {
                         updated |= top.update(null, entry.getValue(), false);
 
-                        cctx.affinity().checkRebalanceState(top, grpId);
+                        cctx.affinity().checkRebalanceState(grpId, top);
                     }
                 }
 

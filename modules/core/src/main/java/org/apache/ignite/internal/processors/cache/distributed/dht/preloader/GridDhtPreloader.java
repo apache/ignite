@@ -312,7 +312,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!assignments.isEmpty()) {
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
-            assert !exchFut.rebalanced();
+            assert exchFut == null || !exchFut.rebalanced() : grp.groupId();
         }
 
         return assignments;
