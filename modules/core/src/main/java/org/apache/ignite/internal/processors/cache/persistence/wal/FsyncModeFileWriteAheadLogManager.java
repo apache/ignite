@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -2653,8 +2652,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             lock.lock();
 
             try {
-                while (written < expWritten && !cctx.kernalContext().invalid())
-                    U.awaitQuiet(writeComplete);
+                while (written < expWritten && !cctx.kernalContext().invalid()) {
+                    try {
+                        writeComplete.await(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException ignore) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
             finally {
                 lock.unlock();
