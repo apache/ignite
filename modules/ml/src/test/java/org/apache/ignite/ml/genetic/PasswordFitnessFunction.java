@@ -40,12 +40,12 @@ public class PasswordFitnessFunction implements IFitnessFunction {
         for (Gene gene : genes) {
             Character aCharacter = (Character)(gene.getVal());
             if (Character.isUpperCase(aCharacter))
-                upperCaseCnt = upperCaseCnt + 1;
+                upperCaseCnt += 1;
 
             else if (Character.isLowerCase(aCharacter))
-                lowerCaseCnt = lowerCaseCnt + 1;
+                lowerCaseCnt += 1;
             else
-                specialCCnt = specialCCnt + 1;
+                specialCCnt += 1;
         }
 
         specialCCnt = specialCScore * specialCCnt;
