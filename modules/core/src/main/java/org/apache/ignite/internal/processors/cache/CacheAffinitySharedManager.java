@@ -2194,9 +2194,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void initWaitGroupsBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion topVer = fut.initialVersion();
 
-        WaitRebalanceInfo rebInfo = new WaitRebalanceInfo(lastAffVer);
+        WaitRebalanceInfo rebInfo;
 
         synchronized (mux) {
+            rebInfo = new WaitRebalanceInfo(lastAffVer, waitInfo);
+
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                     CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
@@ -2228,8 +2230,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             fut.markRebalanced();
 
         if (log.isDebugEnabled()) {
-            log.debug("Computed new rebalance wait info [topVer=" + waitInfo.topVer +
-                ", waitGrps=" + (waitInfo != null ? groupNames(waitInfo.grps) : null) + ']');
+            log.debug("Computed new rebalance wait info [topVer=" + rebInfo.topVer +
+                ", waitGrps=" + (rebInfo != null ? groupNames(rebInfo.grps) : null) + ']');
         }
     }
 
@@ -2696,9 +2698,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         /**
          * @param topVer Topology version.
+         * @param waitInfo Previous wait info.
          */
-        WaitRebalanceInfo(AffinityTopologyVersion topVer) {
+        WaitRebalanceInfo(AffinityTopologyVersion topVer, WaitRebalanceInfo waitInfo) {
             this.topVer = topVer;
+
+            if (waitInfo != null) {
+                deploymentIds.putAll(waitInfo.deploymentIds);
+
+                assert !deploymentIds.isEmpty();
+            }
         }
 
         /**
@@ -2712,7 +2721,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param grpId Group ID.
          */
         void add(Integer grpId) {
-            deploymentIds.putIfAbsent(grpId, cachesRegistry.group(grpId).deploymentId());
+            deploymentIds.put(grpId, cachesRegistry.group(grpId).deploymentId());
 
             grps.add(grpId);
         }
