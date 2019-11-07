@@ -18,6 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -28,7 +32,11 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.Location;
+import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -37,16 +45,17 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
-import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistribution;
-import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -58,12 +67,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     private static CalciteQueryProcessor proc;
     private static SchemaPlus schema;
 
-    private static PartitionsDistribution developerDistribution;
-    private static PartitionsDistribution projectDistribution;
-    private static PartitionsDistribution randomDistribution;
-    private static PartitionsDistribution singleDistribution;
-
-    private static PartitionsDistributionRegistry registry;
+    private static TestRegistry registry;
+    private static List<ClusterNode> nodes;
 
     @BeforeClass
     public static void setupClass() {
@@ -109,47 +114,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         schema.add("PUBLIC", publicSchema);
 
-        developerDistribution = new PartitionsDistribution();
+        nodes = new ArrayList<>(4);
 
-        developerDistribution.parts = 5;
-        developerDistribution.nodes = new int[]{0,1,2};
-        developerDistribution.nodeParts = new int[][]{{1,2},{3,4},{5}};
+        for (int i = 0; i < 4; i++) {
+            nodes.add(new GridTestNode(UUID.randomUUID()));
+        }
 
-        projectDistribution = new PartitionsDistribution();
-
-        projectDistribution.excessive = true;
-        projectDistribution.parts = 5;
-        projectDistribution.nodes = new int[]{0,1,2};
-        projectDistribution.nodeParts = new int[][]{{1,2,3,5},{2,3,4},{1,4,5}};
-
-        randomDistribution = new PartitionsDistribution();
-        randomDistribution.parts = 3;
-        randomDistribution.nodes = new int[]{0,1,2};
-        randomDistribution.nodeParts = new int[][]{{1},{2},{3}};
-
-        singleDistribution = new PartitionsDistribution();
-        singleDistribution.parts = 1;
-        singleDistribution.nodes = new int[]{0};
-        singleDistribution.nodeParts = new int[][]{{1}};
-
-        registry = new PartitionsDistributionRegistry() {
-            @Override public PartitionsDistribution distributed(int cacheId, AffinityTopologyVersion topVer) {
-                if (cacheId == CU.cacheId("Developer"))
-                    return developerDistribution;
-                if (cacheId == CU.cacheId("Project"))
-                    return projectDistribution;
-
-                throw new AssertionError("Unexpected cache id:" + cacheId);
-            }
-
-            @Override public PartitionsDistribution random(AffinityTopologyVersion topVer) {
-                return randomDistribution;
-            }
-
-            @Override public PartitionsDistribution single() {
-                return singleDistribution;
-            }
-        };
+        registry = new TestRegistry();
     }
 
     @Test
@@ -405,13 +376,183 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testSplitterCollocated() throws Exception {
+    public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
             ") p " +
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
+
+            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+        }
+
+        assertNotNull(relRoot);
+
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+
+        assertNotNull(plan);
+
+        plan.init(ctx);
+
+        assertNotNull(plan);
+
+        assertTrue(plan.fragments().size() == 2);
+    }
+
+    @Test
+    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
+    public void testSplitterCollocatedReplicatedReplicated() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.id = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                return IgniteDistributions.broadcast();
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(select(nodes, 0,1,2), null, Location.HAS_REPLICATED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1,2), null, Location.HAS_REPLICATED_CACHES);
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
+
+            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+        }
+
+        assertNotNull(relRoot);
+
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+
+        assertNotNull(plan);
+
+        plan.init(ctx);
+
+        assertNotNull(plan);
+
+        assertTrue(plan.fragments().size() == 2);
+    }
+
+    @Test
+    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
+    public void testSplitterCollocatedReplicatedAndPartitioned() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.id = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                if (cacheId == CU.cacheId("Project"))
+                    return IgniteDistributions.broadcast();
+
+                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(null, Arrays.asList(
+                        select(nodes, 0,1),
+                        select(nodes, 1,2),
+                        select(nodes, 2,0),
+                        select(nodes, 0,1),
+                        select(nodes, 1,2)
+                    ), Location.HAS_PARTITIONED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
 
         Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
 
@@ -594,5 +735,229 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(plan);
 
         assertTrue(plan.fragments().size() == 4);
+    }
+
+    @Test
+    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
+    public void testSplitterPartiallyReplicated1() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.id = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                if (cacheId == CU.cacheId("Project"))
+                    return IgniteDistributions.broadcast();
+
+                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(null, Arrays.asList(
+                        select(nodes, 0,1),
+                        select(nodes, 1,2),
+                        select(nodes, 2,0),
+                        select(nodes, 0,1),
+                        select(nodes, 1,2)
+                    ), Location.HAS_PARTITIONED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
+
+            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+        }
+
+        assertNotNull(relRoot);
+
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+
+        assertNotNull(plan);
+
+        plan.init(ctx);
+
+        assertNotNull(plan);
+
+        assertTrue(plan.fragments().size() == 2);
+    }
+
+    @Test
+    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
+    public void testSplitterPartiallyReplicated2() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.id = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                if (cacheId == CU.cacheId("Project"))
+                    return IgniteDistributions.broadcast();
+
+                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(null, Arrays.asList(
+                        select(nodes, 0,1),
+                        select(nodes, 2),
+                        select(nodes, 2,0),
+                        select(nodes, 0,1),
+                        select(nodes, 1,2)
+                    ), Location.HAS_PARTITIONED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
+
+            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
+        }
+
+        assertNotNull(relRoot);
+
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+
+        assertNotNull(plan);
+
+        plan.init(ctx);
+
+        assertNotNull(plan);
+
+        assertTrue(plan.fragments().size() == 3);
+    }
+
+    private static <T> List<T> select(List<T> src, int... idxs) {
+        ArrayList<T> res = new ArrayList<>(idxs.length);
+
+        for (int idx : idxs) {
+            res.add(src.get(idx));
+        }
+
+        return res;
+    }
+
+    private static class TestRegistry implements LocationRegistry, DistributionRegistry {
+        @Override public Location random(AffinityTopologyVersion topVer) {
+            return new Location(select(nodes, 0,1,2,3), null, (byte) 0);
+        }
+
+        @Override public Location single(AffinityTopologyVersion topVer) {
+            return new Location(select(nodes, 0), null, (byte) 0);
+        }
+
+        @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+            return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+        }
+
+        @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            if (cacheId == CU.cacheId("Developer"))
+                return new Location(null, Arrays.asList(
+                    select(nodes, 0,1),
+                    select(nodes, 1,2),
+                    select(nodes, 2,0),
+                    select(nodes, 0,1),
+                    select(nodes, 1,2)
+                ), Location.HAS_PARTITIONED_CACHES);
+            if (cacheId == CU.cacheId("Project"))
+                return new Location(null, Arrays.asList(
+                    select(nodes, 0,1),
+                    select(nodes, 1,2),
+                    select(nodes, 2,0),
+                    select(nodes, 0,1),
+                    select(nodes, 1,2)
+                ), Location.HAS_PARTITIONED_CACHES);
+
+            throw new AssertionError("Unexpected cache id:" + cacheId);
+        }
     }
 }

@@ -16,12 +16,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.List;
-import org.apache.ignite.cluster.ClusterNode;
-
 /**
  *
  */
-public interface DistributionFunction {
-    List<ClusterNode> destination(Object row);
+public enum DistributionType {
+    HASH("hash"),
+    RANDOM("random"),
+    BROADCAST("broadcast"),
+    SINGLE("single"),
+    ANY("any");
+
+    /**
+     *
+     */
+    private final String description;
+
+    /**
+     *
+     */
+    DistributionType(String description) {
+        this.description = description;
+    }
+
+    /**
+     *
+     */
+    @Override public String toString() {
+        return description;
+    }
 }

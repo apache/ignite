@@ -37,11 +37,7 @@ public final class IgniteProject extends Project implements IgniteRel {
     super(cluster, traitSet, input, projects, rowType);
   }
 
-  @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteProject(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getProjects(), getRowType());
-  }
-
-    @Override public IgniteProject copy(RelTraitSet traitSet, RelNode input,
+  @Override public IgniteProject copy(RelTraitSet traitSet, RelNode input,
       List<RexNode> projects, RelDataType rowType) {
     return new IgniteProject(getCluster(), traitSet, input, projects, rowType);
   }

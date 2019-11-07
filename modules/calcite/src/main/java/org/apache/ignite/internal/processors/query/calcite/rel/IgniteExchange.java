@@ -54,10 +54,6 @@ public final class IgniteExchange extends SingleRel implements IgniteRel {
         return new IgniteExchange(getCluster(), traitSet, sole(inputs));
     }
 
-    @Override public IgniteRel clone(CloneContext ctx) {
-        return new IgniteExchange(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()));
-    }
-
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
             .item("distribution", getTraitSet().getTrait(DistributionTraitDef.INSTANCE));

@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import java.util.List;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.util.GridIntList;
 
 /**
  *
  */
-public interface DistributionFunctionFactory {
-    DistributionFunction create(SourceDistribution targetDistr, ImmutableIntList keys);
+public class FragmentLocation {
+    public Location location;
+    public List<Receiver> remoteInputs;
+    public GridIntList localInputs;
+    public AffinityTopologyVersion topVer;
 }

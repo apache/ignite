@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.util.List;
-import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
-import org.apache.ignite.internal.util.GridIntList;
+import org.apache.calcite.rel.RelNode;
 
 /**
  *
  */
-public class SourceDistribution {
-    public PartitionsDistribution partitionMapping; // partitions mapping.
-    public List<Receiver> remoteInputs; // remote inputs to notify particular senders about final task distribution
-    public GridIntList localInputs; // involved caches, used for partitions reservation
+public class Edge {
+    private final RelNode parent;
+    private final RelNode child;
+    private final int childIdx;
+
+    public Edge(RelNode parent, RelNode child, int childIdx) {
+        this.parent = parent;
+        this.child = child;
+        this.childIdx = childIdx;
+    }
+
+    public RelNode parent() {
+        return parent;
+    }
+
+    public RelNode child() {
+        return child;
+    }
+
+    public int childIdx() {
+        return childIdx;
+    }
 }

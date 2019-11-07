@@ -31,6 +31,4 @@ public interface IgniteRel extends RelNode {
             return true; // Enables trait definition conversion
         }
     };
-
-    IgniteRel clone(CloneContext ctx);
 }

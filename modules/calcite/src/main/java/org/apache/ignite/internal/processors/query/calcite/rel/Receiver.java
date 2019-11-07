@@ -21,14 +21,15 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 /**
  *
  */
-public class Receiver extends SingleRel implements IgniteRel {
-    private SourceDistribution sourceDistribution;
+public final class Receiver extends SingleRel implements IgniteRel {
+    private FragmentLocation sourceDistribution;
 
     /**
      * @param cluster Cluster this relational expression belongs to
@@ -49,17 +50,17 @@ public class Receiver extends SingleRel implements IgniteRel {
         return new Receiver(getCluster(), traitSet, (Sender) sole(inputs));
     }
 
-    @Override public IgniteRel clone(CloneContext ctx) {
-        return new Receiver(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()));
+    public void init(FragmentLocation targetDistribution, RelMetadataQueryEx mq) {
+        getInput().init(targetDistribution, getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
+
+        sourceDistribution = getInput().location(mq);
     }
 
-    public void init(SourceDistribution targetDistribution, RelMetadataQueryEx mq) {
-        getInput().init(targetDistribution);
-
-        sourceDistribution = getInput().sourceDistribution(mq);
-    }
-
-    public SourceDistribution sourceDistribution() {
+    public FragmentLocation sourceDistribution() {
         return sourceDistribution;
+    }
+
+    public void reset() {
+        sourceDistribution = null;
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.cluster.RegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DistributedExecution;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
@@ -148,6 +149,7 @@ public class CalciteQueryProcessor implements QueryEngine {
         return Contexts.chain(ctx, config.getContext(),
             Contexts.of(
                 new Query(query, params),
+                new RegistryImpl(kernalContext),
                 provided(ctx, SchemaPlus.class, schemaHolder::schema),
                 provided(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)));
     }

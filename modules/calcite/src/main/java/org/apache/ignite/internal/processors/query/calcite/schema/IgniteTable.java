@@ -27,13 +27,13 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
+import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.splitter.PartitionsDistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -77,24 +77,35 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     }
 
     public DistributionTrait distributionTrait(Context context) {
-        return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.noOpFunction()); // TODO
+        return distributionRegistry(context).distribution(CU.cacheId(cacheName), rowType);
     }
 
-    public SourceDistribution sourceDistribution(Context context, boolean local) {
+    public FragmentLocation location(Context context, boolean local) {
         int cacheId = CU.cacheId(cacheName);
 
-        SourceDistribution res = new SourceDistribution();
+        FragmentLocation res = new FragmentLocation();
 
         GridIntList localInputs = new GridIntList();
         localInputs.add(cacheId);
         res.localInputs = localInputs;
 
-        if (!local) {
-            PartitionsDistributionRegistry registry = context.unwrap(PartitionsDistributionRegistry.class);
-            AffinityTopologyVersion topVer = context.unwrap(AffinityTopologyVersion.class);
-            res.partitionMapping = registry.distributed(cacheId, topVer);
-        }
+        if (!local)
+            res.location = locationRegistry(context).distributed(cacheId, topologyVersion(context));
+
+        res.topVer = topologyVersion(context);
 
         return res;
+    }
+
+    private LocationRegistry locationRegistry(Context ctx) {
+        return ctx.unwrap(LocationRegistry.class);
+    }
+
+    public DistributionRegistry distributionRegistry(Context ctx) {
+        return ctx.unwrap(DistributionRegistry.class);
+    }
+
+    private AffinityTopologyVersion topologyVersion(Context ctx) {
+        return ctx.unwrap(AffinityTopologyVersion.class);
     }
 }

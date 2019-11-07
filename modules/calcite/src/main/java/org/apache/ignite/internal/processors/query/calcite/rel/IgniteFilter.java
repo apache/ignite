@@ -42,10 +42,6 @@ public final class IgniteFilter extends Filter implements IgniteRel {
     return variablesSet;
   }
 
-  @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteFilter(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()), getCondition(), variablesSet);
-  }
-
   @Override public IgniteFilter copy(RelTraitSet traitSet, RelNode input,
       RexNode condition) {
     return new IgniteFilter(getCluster(), traitSet, input, condition, variablesSet);

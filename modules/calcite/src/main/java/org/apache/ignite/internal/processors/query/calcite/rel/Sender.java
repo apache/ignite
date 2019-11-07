@@ -22,19 +22,19 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 /**
  *
  */
-public class Sender extends SingleRel implements IgniteRel {
-    private SourceDistribution sourceDistribution;
-    private SourceDistribution targetDistribution;
-    private DistributionFunction targetFunction;
+public final class Sender extends SingleRel implements IgniteRel {
+    private FragmentLocation location;
+    private FragmentLocation targetLocation;
+    private DistributionTrait targetDistribution;
+    private DestinationFunction destinationFunction;
 
     /**
      * Creates a <code>SingleRel</code>.
@@ -47,34 +47,36 @@ public class Sender extends SingleRel implements IgniteRel {
         super(cluster, traits, input);
     }
 
-    @Override public IgniteRel clone(CloneContext ctx) {
-        return new Sender(ctx.getCluster(), getTraitSet(), ctx.clone(getInput()));
-    }
-
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new Sender(getCluster(), traitSet, sole(inputs));
     }
 
-    public void init(SourceDistribution targetDistribution) {
+    public void init(FragmentLocation targetLocation, DistributionTrait targetDistribution) {
+        this.targetLocation = targetLocation;
         this.targetDistribution = targetDistribution;
     }
 
-    public DistributionFunction targetFunction() {
-        if (targetFunction == null) {
-            assert targetDistribution != null && targetDistribution.partitionMapping != null;
+    public DestinationFunction targetFunction() {
+        if (destinationFunction == null) {
+            assert targetLocation != null && targetLocation.location != null && targetDistribution != null;
 
-            DistributionTrait distribution = getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-
-            targetFunction = distribution.functionFactory().create(targetDistribution, distribution.keys());
+            destinationFunction = targetDistribution.destinationFunctionFactory().create(targetLocation, targetDistribution.keys());
         }
 
-        return targetFunction;
+        return destinationFunction;
     }
 
-    public SourceDistribution sourceDistribution(RelMetadataQuery mq) {
-        if (sourceDistribution == null)
-            sourceDistribution = RelMetadataQueryEx.wrap(mq).getSourceDistribution(getInput());
+    public FragmentLocation location(RelMetadataQuery mq) {
+        if (location == null)
+            location = RelMetadataQueryEx.wrap(mq).getFragmentLocation(getInput());
 
-        return sourceDistribution;
+        return location;
+    }
+
+    public void reset() {
+        location = null;
+        targetLocation = null;
+        targetDistribution = null;
+        destinationFunction = null;
     }
 }

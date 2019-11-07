@@ -25,7 +25,6 @@ import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
@@ -37,11 +36,12 @@ public class IgniteMetadata {
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
                 IgniteMdDistribution.SOURCE,
-                IgniteMdSourceDistribution.SOURCE,
+                IgniteMdFragmentLocation.SOURCE,
                 DefaultRelMetadataProvider.INSTANCE));
 
     public interface DistributionTraitMetadata extends Metadata {
-        MetadataDef<DistributionTraitMetadata> DEF = MetadataDef.of(DistributionTraitMetadata.class, DistributionTraitMetadata.Handler.class, IgniteMethod.DISTRIBUTION_TRAIT.method());
+        MetadataDef<DistributionTraitMetadata> DEF = MetadataDef.of(DistributionTraitMetadata.class,
+            DistributionTraitMetadata.Handler.class, IgniteMethod.DISTRIBUTION_TRAIT.method());
 
         /** Determines how the rows are distributed. */
         DistributionTrait getDistributionTrait();
@@ -52,15 +52,16 @@ public class IgniteMetadata {
         }
     }
 
-    public interface SourceDistributionMetadata extends Metadata {
-        MetadataDef<SourceDistributionMetadata> DEF = MetadataDef.of(SourceDistributionMetadata.class, SourceDistributionMetadata.Handler.class, IgniteMethod.SOURCE_DISTRIBUTION.method());
+    public interface FragmentLocationMetadata extends Metadata {
+        MetadataDef<FragmentLocationMetadata> DEF = MetadataDef.of(FragmentLocationMetadata.class,
+            FragmentLocationMetadata.Handler.class, IgniteMethod.FRAGMENT_LOCATION.method());
 
         /** Determines how the rows are distributed. */
-        SourceDistribution getSourceDistribution();
+        FragmentLocation getLocation();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<SourceDistributionMetadata> {
-            SourceDistribution getSourceDistribution(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<FragmentLocationMetadata> {
+            FragmentLocation getLocation(RelNode r, RelMetadataQuery mq);
         }
     }
 }

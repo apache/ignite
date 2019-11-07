@@ -42,14 +42,15 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait.DistributionType.HASH;
+import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
 /**
  *
  */
 public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.DistributionTraitMetadata> {
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(IgniteMethod.DISTRIBUTION_TRAIT.method(), new IgniteMdDistribution());
+        ReflectiveRelMetadataProvider.reflectiveSource(
+            IgniteMethod.DISTRIBUTION_TRAIT.method(), new IgniteMdDistribution());
 
     @Override public MetadataDef<IgniteMetadata.DistributionTraitMetadata> getDef() {
         return IgniteMetadata.DistributionTraitMetadata.DEF;
@@ -108,7 +109,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
                 newKeys.add(mapped);
             }
 
-            return IgniteDistributions.hash(newKeys, trait.functionFactory());
+            return IgniteDistributions.hash(newKeys, trait.destinationFunctionFactory());
         }
 
         return trait;

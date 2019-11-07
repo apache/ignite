@@ -16,21 +16,45 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.ToIntFunction;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.cluster.ClusterNode;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait.DistributionType.HASH;
+import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
 /**
  *
  */
 public class IgniteDistributions {
-    private static final DistributionFunctionFactory NO_OP_FACTORY = (t,k) -> null;
+    private static final DestinationFunctionFactory NO_OP_FACTORY = (t,k) -> null;
+    private static final DestinationFunctionFactory HASH_FACTORY = (t,k) -> {
+        int[] fields = k.toIntArray();
 
-    private static final DistributionTrait BROADCAST = new DistributionTraitImpl(DistributionTrait.DistributionType.BROADCAST, ImmutableIntList.of(), allTargetsFunction());
-    private static final DistributionTrait SINGLE = new DistributionTraitImpl(DistributionTrait.DistributionType.SINGLE, ImmutableIntList.of(), singleTargetFunction());
-    private static final DistributionTrait RANDOM = new DistributionTraitImpl(DistributionTrait.DistributionType.RANDOM, ImmutableIntList.of(), randomTargetFunction());
-    private static final DistributionTrait ANY    = new DistributionTraitImpl(DistributionTrait.DistributionType.ANY, ImmutableIntList.of(), noOpFunction());
+        ToIntFunction<Object> hashFun = r -> {
+            Object[] row = (Object[]) r;
+
+            if (row == null)
+                return 0;
+
+            int hash = 1;
+
+            for (int i : fields)
+                hash = 31 * hash + (row[i] == null ? 0 : row[i].hashCode());
+
+            return hash;
+        };
+
+        return r -> t.location.nodes(hashFun.applyAsInt(r));
+    };
+
+
+    private static final DistributionTrait BROADCAST = new DistributionTrait(DistributionType.BROADCAST, ImmutableIntList.of(), allTargetsFunction());
+    private static final DistributionTrait SINGLE = new DistributionTrait(DistributionType.SINGLE, ImmutableIntList.of(), singleTargetFunction());
+    private static final DistributionTrait RANDOM = new DistributionTrait(DistributionType.RANDOM, ImmutableIntList.of(), randomTargetFunction());
+    private static final DistributionTrait ANY    = new DistributionTrait(DistributionType.ANY, ImmutableIntList.of(), noOpFunction());
 
     public static DistributionTrait any() {
         return ANY;
@@ -48,23 +72,39 @@ public class IgniteDistributions {
         return BROADCAST;
     }
 
-    public static DistributionTrait hash(List<Integer> keys, DistributionFunctionFactory factory) {
-        return new DistributionTraitImpl(HASH, ImmutableIntList.copyOf(keys), factory);
+    public static DistributionTrait hash(List<Integer> keys, DestinationFunctionFactory factory) {
+        return new DistributionTrait(HASH, ImmutableIntList.copyOf(keys), factory);
     }
 
-    public static DistributionFunctionFactory noOpFunction() {
+    public static DestinationFunctionFactory noOpFunction() {
         return NO_OP_FACTORY;
     }
 
-    public static DistributionFunctionFactory singleTargetFunction() {
-        return noOpFunction(); // TODO
+    public static DestinationFunctionFactory singleTargetFunction() {
+        return (t, k) -> {
+            List<ClusterNode> nodes = t.location.nodes();
+
+            return r -> nodes;
+        };
     }
 
-    public static DistributionFunctionFactory allTargetsFunction() {
-        return noOpFunction(); // TODO
+    public static DestinationFunctionFactory allTargetsFunction() {
+        return (t, k) -> {
+            List<ClusterNode> nodes = t.location.nodes();
+
+            return r -> nodes;
+        };
     }
 
-    public static DistributionFunctionFactory randomTargetFunction() {
-        return noOpFunction(); // TODO
+    public static DestinationFunctionFactory randomTargetFunction() {
+        return (t, k) -> {
+            List<ClusterNode> nodes = t.location.nodes();
+
+            return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
+        };
+    }
+
+    public static DestinationFunctionFactory hashFunction() {
+        return HASH_FACTORY;
     }
 }

@@ -16,46 +16,52 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteRelShuttle;
 
 /**
  *
  */
-public class Splitter extends RelShuttleImpl {
-    private ImmutableList.Builder<Fragment> b;
+public class Splitter extends IgniteRelShuttle {
+    private List<Fragment> fragments;
 
     public QueryPlan go(IgniteRel root) {
-        b = ImmutableList.builder();
+        fragments = new ArrayList<>();
 
-        return new QueryPlan(b.add(new Fragment(root.accept(this))).build());
+        fragments.add(new Fragment(root.accept(this)));
+
+        Collections.reverse(fragments);
+
+        return new QueryPlan(fragments);
     }
 
-    @Override public RelNode visit(RelNode rel) {
-        if (!(rel instanceof IgniteRel))
-            throw new AssertionError("Unexpected node: " + rel);
-        else if (rel instanceof Sender || rel instanceof Receiver)
-            throw new AssertionError("An attempt to split an already split task.");
-        else if (rel instanceof IgniteExchange) {
-            IgniteExchange exchange = (IgniteExchange) rel;
+    @Override public RelNode visit(IgniteExchange rel) {
+        RelOptCluster cluster = rel.getCluster();
 
-            RelOptCluster cluster = exchange.getCluster();
-            RelTraitSet traitSet = exchange.getTraitSet();
+        Sender sender = new Sender(cluster, rel.getInput().getTraitSet(), visit(rel.getInput()));
 
-            Sender sender = new Sender(cluster, traitSet, visit(exchange.getInput()));
+        fragments.add(new Fragment(sender));
 
-            b.add(new Fragment(sender));
+        return new Receiver(cluster, rel.getTraitSet(), sender);
+    }
 
-            return new Receiver(cluster, traitSet, sender);
-        }
+    @Override public RelNode visit(Receiver rel) {
+        throw new AssertionError("An attempt to split an already split task.");
+    }
 
-        return super.visit(rel);
+    @Override public RelNode visit(Sender rel) {
+        throw new AssertionError("An attempt to split an already split task.");
+    }
+
+    @Override protected RelNode visitOther(RelNode rel) {
+        throw new AssertionError("Unexpected node: " + rel);
     }
 }

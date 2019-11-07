@@ -42,10 +42,6 @@ public final class IgniteHashJoin extends Join implements IgniteRel {
     this.semiJoinDone = semiJoinDone;
   }
 
-  @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteHashJoin(ctx.getCluster(), getTraitSet(), ctx.clone(getLeft()), ctx.clone(getRight()), getCondition(), variablesSet, getJoinType(), semiJoinDone);
-  }
-
   @Override public IgniteHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
     return new IgniteHashJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);

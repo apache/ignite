@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 
 /**
  *
  */
-public interface PartitionsDistributionRegistry {
-    PartitionsDistribution single(); // returns local node with single partition
-    PartitionsDistribution random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
-    PartitionsDistribution distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
+public interface DistributionRegistry {
+    DistributionTrait distribution(int cacheId, RowType rowType);
 }

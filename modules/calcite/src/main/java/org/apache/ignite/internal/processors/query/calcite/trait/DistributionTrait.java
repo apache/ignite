@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.Objects;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.util.ImmutableIntList;
@@ -24,37 +25,57 @@ import org.apache.calcite.util.ImmutableIntList;
 /**
  *
  */
-public interface DistributionTrait extends RelTrait {
-    enum DistributionType {
-        HASH("hash"),
-        RANDOM("random"),
-        BROADCAST("broadcast"),
-        SINGLE("single"),
-        ANY("any");
+public final class DistributionTrait implements RelTrait {
+    private final DistributionType type;
+    private final ImmutableIntList keys;
+    private final DestinationFunctionFactory functionFactory;
 
-        /** */
-        private final String description;
-
-        /** */
-        DistributionType(String description) {
-            this.description = description;
-        }
-
-        /** */
-        @Override public String toString() {
-            return description;
-        }
+    public DistributionTrait(DistributionType type, ImmutableIntList keys, DestinationFunctionFactory functionFactory) {
+        this.type = type;
+        this.keys = keys;
+        this.functionFactory = functionFactory;
     }
 
-    DistributionType type();
+    public DistributionType type() {
+        return type;
+    }
 
-    DistributionFunctionFactory functionFactory();
+    public DestinationFunctionFactory destinationFunctionFactory() {
+        return functionFactory;
+    }
 
-    @Override default RelTraitDef getTraitDef() {
+    public ImmutableIntList keys() {
+        return keys;
+    }
+
+    @Override public void register(RelOptPlanner planner) {}
+
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o instanceof DistributionTrait) {
+            DistributionTrait that = (DistributionTrait) o;
+
+            return type == that.type() && keys.equals(that.keys());
+        }
+
+        return false;
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash(type, keys);
+    }
+
+    @Override public String toString() {
+        return type + (type == DistributionType.HASH ? keys.toString()  : "");
+    }
+
+    @Override public RelTraitDef getTraitDef() {
         return DistributionTraitDef.INSTANCE;
     }
 
-    @Override default boolean satisfies(RelTrait trait) {
+    @Override public boolean satisfies(RelTrait trait) {
         if (trait == this)
             return true;
 
@@ -68,13 +89,10 @@ public interface DistributionTrait extends RelTrait {
 
         if (type() == other.type())
             return type() != DistributionType.HASH
-                || (Objects.equals(keys(), other.keys()) && Objects.equals(functionFactory(), other.functionFactory()));
+                || (Objects.equals(keys(), other.keys())
+                    && Objects.equals(destinationFunctionFactory(), other.destinationFunctionFactory()));
 
         return other.type() == DistributionType.RANDOM && type() == DistributionType.HASH;
     }
 
-    /**
-     * @return Hash distribution columns ordinals or empty list otherwise.
-     */
-    ImmutableIntList keys();
 }

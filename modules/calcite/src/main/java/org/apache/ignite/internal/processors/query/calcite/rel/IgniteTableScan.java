@@ -22,17 +22,13 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 
 public final class IgniteTableScan extends TableScan implements IgniteRel {
   public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
     super(cluster, traitSet, table);
-  }
-
-  @Override public IgniteRel clone(CloneContext ctx) {
-    return new IgniteTableScan(ctx.getCluster(), getTraitSet(), getTable());
   }
 
   @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -41,8 +37,8 @@ public final class IgniteTableScan extends TableScan implements IgniteRel {
     return this;
   }
 
-  public SourceDistribution tableDistribution() {
+  public FragmentLocation location() {
     boolean local = !getTraitSet().isEnabled(DistributionTraitDef.INSTANCE);
-    return getTable().unwrap(IgniteTable.class).sourceDistribution(getCluster().getPlanner().getContext(), local);
+    return getTable().unwrap(IgniteTable.class).location(getCluster().getPlanner().getContext(), local);
   }
 }

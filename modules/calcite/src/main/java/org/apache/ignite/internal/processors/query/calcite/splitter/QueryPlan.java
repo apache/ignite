@@ -16,37 +16,61 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.plan.Context;
-import org.apache.ignite.internal.processors.query.calcite.rel.CloneContext;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.util.Edge;
 
 /**
  *
  */
 public class QueryPlan {
-    private final ImmutableList<Fragment> fragments;
+    private final List<Fragment> fragments;
 
-    public QueryPlan(ImmutableList<Fragment> fragments) {
+    public QueryPlan(List<Fragment> fragments) {
         this.fragments = fragments;
     }
 
     public void init(Context ctx) {
-        for (Fragment fragment : fragments) {
-            fragment.init(ctx);
+        int i = 0;
+
+        while (true) {
+            try {
+                for (Fragment fragment : fragments)
+                    fragment.init(ctx);
+
+                break;
+            }
+            catch (OptimisticPlanningException e) {
+                if (++i > 3)
+                    throw new IgniteSQLException("Failed to map query.", e);
+
+                for (Fragment fragment0 : fragments)
+                    fragment0.reset();
+
+                Edge edge = e.edge();
+
+                RelNode parent = edge.parent();
+                RelNode child = edge.child();
+
+                RelOptCluster cluster = child.getCluster();
+                RelTraitSet traitSet = child.getTraitSet();
+
+                Sender sender = new Sender(cluster, traitSet, child);
+                parent.replaceInput(edge.childIdx(), new Receiver(cluster, traitSet, sender));
+
+                fragments.add(new Fragment(sender));
+            }
         }
     }
 
-    public ImmutableList<Fragment> fragments() {
+    public List<Fragment> fragments() {
         return fragments;
-    }
-
-    public QueryPlan clone(CloneContext ctx) {
-        ImmutableList.Builder<Fragment> b = ImmutableList.builder();
-
-        for (Fragment f : fragments) {
-            b.add(new Fragment(ctx.clone(f.rel)));
-        }
-
-        return new QueryPlan(b.build());
     }
 }

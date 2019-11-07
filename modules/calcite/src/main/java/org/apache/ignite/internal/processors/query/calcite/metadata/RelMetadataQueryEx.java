@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.splitter.SourceDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,47 +30,47 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     private static final JaninoRelMetadataProvider PROVIDER = JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER);
 
     private IgniteMetadata.DistributionTraitMetadata.Handler distributionTraitHandler;
-    private IgniteMetadata.SourceDistributionMetadata.Handler sourceDistributionHandler;
-
-    private RelMetadataQueryEx() {
-        super(JaninoRelMetadataProvider.DEFAULT, RelMetadataQuery.EMPTY);
-
-        distributionTraitHandler = initialHandler(IgniteMetadata.DistributionTraitMetadata.Handler.class);
-        sourceDistributionHandler = initialHandler(IgniteMetadata.SourceDistributionMetadata.Handler.class);
-    }
-
-    protected RelMetadataQueryEx(JaninoRelMetadataProvider metadataProvider, RelMetadataQueryEx prototype) {
-        super(metadataProvider, prototype);
-
-        distributionTraitHandler = prototype.distributionTraitHandler;
-        sourceDistributionHandler = prototype.sourceDistributionHandler;
-    }
-
-    protected RelMetadataQueryEx(JaninoRelMetadataProvider metadataProvider, RelMetadataQuery parent) {
-        super(metadataProvider, parent);
-
-        distributionTraitHandler = PROTO.distributionTraitHandler;
-        sourceDistributionHandler = PROTO.sourceDistributionHandler;
-    }
+    private IgniteMetadata.FragmentLocationMetadata.Handler sourceDistributionHandler;
 
     @SuppressWarnings("MethodOverridesStaticMethodOfSuperclass")
     public static RelMetadataQueryEx instance() {
-        return new RelMetadataQueryEx(PROVIDER, PROTO);
+        return new RelMetadataQueryEx(PROTO);
     }
 
     public static RelMetadataQueryEx wrap(@NotNull RelMetadataQuery mq) {
         if (mq.getClass() == RelMetadataQueryEx.class)
             return (RelMetadataQueryEx) mq;
 
-        return new RelMetadataQueryEx(PROVIDER, mq);
+        return new RelMetadataQueryEx(mq);
     }
 
-    public SourceDistribution getSourceDistribution(RelNode rel) {
+    private RelMetadataQueryEx(@NotNull RelMetadataQueryEx parent) {
+        super(PROVIDER, parent);
+
+        distributionTraitHandler = parent.distributionTraitHandler;
+        sourceDistributionHandler = parent.sourceDistributionHandler;
+    }
+
+    private RelMetadataQueryEx(@NotNull RelMetadataQuery parent) {
+        super(PROVIDER, parent);
+
+        distributionTraitHandler = PROTO.distributionTraitHandler;
+        sourceDistributionHandler = PROTO.sourceDistributionHandler;
+    }
+
+    private RelMetadataQueryEx() {
+        super(JaninoRelMetadataProvider.DEFAULT, RelMetadataQuery.EMPTY);
+
+        distributionTraitHandler = initialHandler(IgniteMetadata.DistributionTraitMetadata.Handler.class);
+        sourceDistributionHandler = initialHandler(IgniteMetadata.FragmentLocationMetadata.Handler.class);
+    }
+
+    public FragmentLocation getFragmentLocation(RelNode rel) {
         for (;;) {
             try {
-                return sourceDistributionHandler.getSourceDistribution(rel, this);
+                return sourceDistributionHandler.getLocation(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
-                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.SourceDistributionMetadata.DEF);
+                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentLocationMetadata.DEF);
             }
         }
     }
