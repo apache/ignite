@@ -187,7 +187,6 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
 
             String msg = "Map executor state is not cleared";
 
-            // TODO FIXME Current implementation leaves map entry for each node that's ever executed a query.
             for (Object result : map.values()) {
                 Map<Long, ?> m = U.field(result, "res");
 
