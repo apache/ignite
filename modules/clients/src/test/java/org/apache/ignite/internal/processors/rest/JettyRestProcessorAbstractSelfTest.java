@@ -124,6 +124,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -280,6 +282,31 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertTrue(res.get("error").isNull());
 
         return res.get("result");
+    }
+
+    /**
+     * Check task result with expected failure.
+     *
+     * @param content Content to check.
+     * @return Node with failure result.
+     */
+    protected JsonNode jsonTaskErrorResult(String content) throws IOException {
+        assertNotNull(content);
+        assertFalse(content.isEmpty());
+
+        JsonNode node = JSON_MAPPER.readTree(content);
+
+        assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
+        assertFalse(node.get("error").isNull());
+        assertTrue(node.get("response").isNull());
+
+        assertEquals(securityEnabled(), !node.get("sessionToken").isNull());
+
+        JsonNode error = node.get("error");
+
+        assertTrue(error.isTextual());
+
+        return error;
     }
 
     /**
@@ -1621,120 +1648,120 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         final IgniteUuid cid = grid(1).context().cache().internalCache("person").context().dynamicDeploymentId();
 
         String ret = content(new VisorGatewayArgument(VisorCacheConfigurationCollectorTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheConfigurationCollectorTaskArg.class)
-            .collection(IgniteUuid.class, cid));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheConfigurationCollectorTaskArg.class)
+            .addCollectionArgument(IgniteUuid.class, cid));
 
         info("VisorCacheConfigurationCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheNodesTaskArg.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheNodesTaskArg.class, "person"));
 
         info("VisorCacheNodesTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCachePartitionsTask.class)
-            .forNode(locNode)
-            .argument(VisorCachePartitionsTaskArg.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCachePartitionsTaskArg.class, "person"));
 
         info("VisorCachePartitionsTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheLoadTaskArg.class)
-            .set(String.class, "person")
-            .arguments(0, "null"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheLoadTaskArg.class)
+            .addSetArgument(String.class, "person")
+            .addArguments(0, "null"));
 
         info("VisorCacheLoadTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheRebalanceTaskArg.class)
-            .set(String.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheRebalanceTaskArg.class)
+            .addSetArgument(String.class, "person"));
 
         info("VisorCacheRebalanceTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetadataTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheMetadataTaskArg.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheMetadataTaskArg.class, "person"));
 
         info("VisorCacheMetadataTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheResetMetricsTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheResetMetricsTaskArg.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheResetMetricsTaskArg.class, "person"));
 
         info("VisorCacheResetMetricsTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorThreadDumpTask.class)
-            .forNode(locNode));
+            .setNode(locNode));
 
         info("VisorThreadDumpTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorLatestTextFilesTask.class)
-            .forNode(locNode)
-            .argument(VisorLatestTextFilesTaskArg.class, "", ""));
+            .setNode(locNode)
+            .setTaskArgument(VisorLatestTextFilesTaskArg.class, "", ""));
 
         info("VisorLatestTextFilesTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorLatestVersionTask.class)
-            .forNode(locNode));
+            .setNode(locNode));
 
         info("VisorLatestVersionTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorFileBlockTask.class)
-            .forNode(locNode)
-            .argument(VisorFileBlockTaskArg.class, "", 0L, 1, 0L));
+            .setNode(locNode)
+            .setTaskArgument(VisorFileBlockTaskArg.class, "", 0L, 1, 0L));
 
         info("VisorFileBlockTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodePingTask.class)
-            .forNode(locNode)
-            .argument(VisorNodePingTaskArg.class, locNode.id()));
+            .setNode(locNode)
+            .setTaskArgument(VisorNodePingTaskArg.class, locNode.id()));
 
         info("VisorNodePingTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeConfigurationCollectorTask.class)
-            .forNode(locNode));
+            .setNode(locNode));
 
         info("VisorNodeConfigurationCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorComputeResetMetricsTask.class)
-            .forNode(locNode));
+            .setNode(locNode));
 
         info("VisorComputeResetMetricsTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryTask.class)
-            .forNode(locNode)
-            .argument(VisorQueryTaskArg.class, "person", URLEncoder.encode("select * from Person", CHARSET),
+            .setNode(locNode)
+            .setTaskArgument(VisorQueryTaskArg.class, "person", URLEncoder.encode("select * from Person", CHARSET),
                 false, false, false, false, 1));
 
         info("VisorQueryTask result: " + ret);
@@ -1744,51 +1771,51 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         final String qryId = res.get("result").get("queryId").asText();
 
         ret = content(new VisorGatewayArgument(VisorQueryNextPageTask.class)
-            .forNode(locNode)
-            .argument(VisorQueryNextPageTaskArg.class, qryId, 1));
+            .setNode(locNode)
+            .setTaskArgument(VisorQueryNextPageTaskArg.class, qryId, 1));
 
         info("VisorQueryNextPageTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryCleanupTask.class)
-            .argument(VisorQueryCleanupTaskArg.class)
-            .map(UUID.class, Set.class, F.asMap(locNode.id(), qryId)));
+            .setTaskArgument(VisorQueryCleanupTaskArg.class)
+            .addMapArgument(UUID.class, Set.class, F.asMap(locNode.id(), qryId)));
 
         info("VisorQueryCleanupTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorResolveHostNameTask.class)
-            .forNode(locNode));
+            .setNode(locNode));
 
         info("VisorResolveHostNameTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryCancelTask.class)
-            .argument(VisorQueryCancelTaskArg.class, 0L));
+            .setTaskArgument(VisorQueryCancelTaskArg.class, 0L));
 
         info("VisorResolveHostNameTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryResetMetricsTask.class)
-            .argument(VisorQueryResetMetricsTaskArg.class, "person"));
+            .setTaskArgument(VisorQueryResetMetricsTaskArg.class, "person"));
 
         info("VisorResolveHostNameTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryCancelTask.class)
-            .argument(VisorQueryCancelTaskArg.class, 0L));
+            .setTaskArgument(VisorQueryCancelTaskArg.class, 0L));
 
         info("VisorResolveHostNameTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryResetMetricsTask.class)
-            .argument(VisorQueryResetMetricsTaskArg.class, "person"));
+            .setTaskArgument(VisorQueryResetMetricsTaskArg.class, "person"));
 
         info("VisorResolveHostNameTask result: " + ret);
 
@@ -1797,30 +1824,30 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         // Multinode tasks
 
         ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
-            .argument(VisorComputeCancelSessionsTaskArg.class)
-            .set(IgniteUuid.class, IgniteUuid.randomUuid()));
+            .setTaskArgument(VisorComputeCancelSessionsTaskArg.class)
+            .addSetArgument(IgniteUuid.class, IgniteUuid.randomUuid()));
 
         info("VisorComputeCancelSessionsTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
-            .argument(VisorCacheMetricsCollectorTaskArg.class, false)
-            .collection(String.class, "person"));
+            .setTaskArgument(VisorCacheMetricsCollectorTaskArg.class, false)
+            .addCollectionArgument(String.class, "person"));
 
         info("VisorCacheMetricsCollectorTask result: " + ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
-            .forNodes(grid(1).cluster().nodes())
-            .argument(VisorCacheMetricsCollectorTaskArg.class, false)
-            .collection(String.class, "person"));
+            .setNodes(grid(1).cluster().nodes())
+            .setTaskArgument(VisorCacheMetricsCollectorTaskArg.class, false)
+            .addCollectionArgument(String.class, "person"));
 
         info("VisorCacheMetricsCollectorTask (with nodes) result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorLogSearchTask.class)
-            .argument(VisorLogSearchTaskArg.class, ".", ".", "abrakodabra.txt", 1));
+            .setTaskArgument(VisorLogSearchTaskArg.class, ".", ".", "abrakodabra.txt", 1));
 
         info("VisorLogSearchTask result: " + ret);
 
@@ -1833,14 +1860,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorAckTask.class)
-            .argument(VisorAckTaskArg.class, "MSG"));
+            .setTaskArgument(VisorAckTaskArg.class, "MSG"));
 
         info("VisorAckTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeEventsCollectorTask.class)
-            .argument(VisorNodeEventsCollectorTaskArg.class,
+            .setTaskArgument(VisorNodeEventsCollectorTaskArg.class,
                 "null", "null", "null", "taskName", "null"));
 
         info("VisorNodeEventsCollectorTask result: " + ret);
@@ -1848,7 +1875,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeDataCollectorTask.class)
-            .argument(VisorNodeDataCollectorTaskArg.class, false,
+            .setTaskArgument(VisorNodeDataCollectorTaskArg.class, false,
                 "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), false));
 
         info("VisorNodeDataCollectorTask result: " + ret);
@@ -1856,23 +1883,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorComputeToggleMonitoringTask.class)
-            .argument(VisorComputeToggleMonitoringTaskArg.class, UUID.randomUUID(), false));
+            .setTaskArgument(VisorComputeToggleMonitoringTaskArg.class, UUID.randomUUID(), false));
 
         info("VisorComputeToggleMonitoringTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorNodeSuppressedErrorsTask.class)
-            .argument(VisorNodeSuppressedErrorsTaskArg.class)
-            .map(UUID.class, Long.class, new HashMap()));
+            .setTaskArgument(VisorNodeSuppressedErrorsTaskArg.class)
+            .addMapArgument(UUID.class, Long.class, new HashMap()));
 
         info("VisorNodeSuppressedErrorsTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheClearTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheClearTaskArg.class, "person"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheClearTaskArg.class, "person"));
 
         info("VisorCacheClearTask result: " + ret);
 
@@ -1891,7 +1918,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 "</beans>";
 
         ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
-            .argument(VisorCacheStartTaskArg.class, false, "person2",
+            .setTaskArgument(VisorCacheStartTaskArg.class, false, "person2",
                 URLEncoder.encode(START_CACHE, CHARSET)));
 
         info("VisorCacheStartTask result: " + ret);
@@ -1899,29 +1926,29 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorCacheStopTask.class)
-            .forNode(locNode)
-            .argument(VisorCacheStopTaskArg.class, "c"));
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheStopTaskArg.class, "c"));
 
         info("VisorCacheStopTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorQueryDetailMetricsCollectorTask.class)
-            .argument(VisorQueryDetailMetricsCollectorTaskArg.class, 0));
+            .setTaskArgument(VisorQueryDetailMetricsCollectorTaskArg.class, 0));
 
         info("VisorQueryDetailMetricsCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorRunningQueriesCollectorTask.class)
-            .argument(VisorRunningQueriesCollectorTaskArg.class, 0L));
+            .setTaskArgument(VisorRunningQueriesCollectorTaskArg.class, 0L));
 
         info("VisorQueryDetailMetricsCollectorTask result: " + ret);
 
         jsonTaskResult(ret);
 
         ret = content(new VisorGatewayArgument(VisorChangeGridActiveStateTask.class)
-            .argument(VisorChangeGridActiveStateTaskArg.class, true));
+            .setTaskArgument(VisorChangeGridActiveStateTaskArg.class, true));
 
         info("VisorQueryDetailMetricsCollectorTask result: " + ret);
 
@@ -2920,24 +2947,24 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /**
-         * Execute task on node.
+         * Execute task on specified node.
          *
          * @param node Node.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument forNode(ClusterNode node) {
+        public VisorGatewayArgument setNode(ClusterNode node) {
             put("p1", node != null ? node.id().toString() : null);
 
             return this;
         }
 
         /**
-         * Prepare list of node IDs.
+         * Execute task on specified nodes.
          *
          * @param nodes Collection of nodes.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument forNodes(Collection<ClusterNode> nodes) {
+        public VisorGatewayArgument setNodes(Collection<ClusterNode> nodes) {
             put("p1", concat(F.transform(nodes, new C1<ClusterNode, UUID>() {
                 /** {@inheritDoc} */
                 @Override public UUID apply(ClusterNode node) {
@@ -2949,43 +2976,48 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /**
-         * Add custom argument.
+         * Add custom arguments.
          *
-         * @param vals Values.
+         * @param vals Array of values or {@code null}.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument arguments(Object... vals) {
-            for (Object val : vals)
-                put("p" + idx++, String.valueOf(val));
+        public VisorGatewayArgument addArguments(@Nullable Object... vals) {
+            if (idx == 3)
+                throw new IllegalStateException("Task argument class should be declared before adding of additional arguments. " +
+                    "Use VisorGatewayArgument.setTaskArgument first");
+
+            if (vals != null && F.isEmpty(vals))
+                throw new IllegalArgumentException("Additional arguments should be configured as null or not empty array of arguments");
+
+            if (vals != null) {
+                for (Object val : vals)
+                    put("p" + idx++, String.valueOf(val));
+            }
+            else
+                put("p" + idx++, null);
 
             return this;
         }
 
         /**
-         * Add string argument.
-         *
-         * @param val Value.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument argument(String val) {
-            put("p" + idx++, String.class.getName());
-            put("p" + idx++, val);
-
-            return this;
-        }
-
-        /**
-         * Add custom class argument.
+         * Add task argument class with custom arguments.
          *
          * @param cls Class.
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument argument(Class cls, Object... vals) {
+        public VisorGatewayArgument setTaskArgument(Class cls, @Nullable Object... vals) {
+            if (idx != 3)
+                throw new IllegalStateException("Task argument class should be declared before adding of additional arguments");
+
             put("p" + idx++, cls.getName());
 
-            for (Object val : vals)
-                put("p" + idx++, val != null ? val.toString() : null);
+            if (vals != null) {
+                for (Object val : vals)
+                    put("p" + idx++, val != null ? val.toString() : null);
+            }
+            else
+                put("p" + idx++, null);
 
             return this;
         }
@@ -2997,7 +3029,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument collection(Class cls, Object... vals) {
+        public VisorGatewayArgument addCollectionArgument(Class cls, @Nullable Object... vals) {
+            if (idx == 3)
+                throw new IllegalStateException("Task argument class should be declared before adding of additional arguments. " +
+                    "Use VisorGatewayArgument.setTaskArgument first");
+
             put("p" + idx++, Collection.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
@@ -3012,7 +3048,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument set(Class cls, Object... vals) {
+        public VisorGatewayArgument addSetArgument(Class cls, @Nullable Object... vals) {
+            if (idx == 3)
+                throw new IllegalStateException("Task argument class should be declared before adding of additional argument. " +
+                    "Use VisorGatewayArgument.setTaskArgument first");
+
             put("p" + idx++, Set.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
@@ -3027,7 +3067,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @param valCls Value class.
          * @param map Map.
          */
-        public VisorGatewayArgument map(Class keyCls, Class valCls, Map<?, ?> map) throws UnsupportedEncodingException {
+        public VisorGatewayArgument addMapArgument(Class keyCls, Class valCls, @NotNull Map<?, ?> map) throws UnsupportedEncodingException {
+            if (idx == 3)
+                throw new IllegalStateException("Task argument class should be declared before adding of additional arguments. " +
+                    "Use VisorGatewayArgument.setTaskArgument first");
+
+            if (map == null)
+                throw new IllegalArgumentException("Map argument should be specified");
+
             put("p" + idx++, Map.class.getName());
             put("p" + idx++, keyCls.getName());
             put("p" + idx++, valCls.getName());
@@ -3064,14 +3111,18 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
             boolean first = true;
 
-            for (Object val : vals) {
-                if (!first)
-                    sb.a(delim);
+            if (vals != null) {
+                for (Object val : vals) {
+                    if (!first)
+                        sb.a(delim);
 
-                sb.a(val);
+                    sb.a(val);
 
-                first = false;
+                    first = false;
+                }
             }
+            else
+                sb.a(vals);
 
             return sb.toString();
         }
