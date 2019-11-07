@@ -228,6 +228,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             " Zero means there is no limits.",
         0L, false, 0, Integer.MAX_VALUE);
 
+    // TODO: GG-25595 remove when version 8.7.X support ends
+    /** */
+    private BooleanProperty limitedV2_8_0Enabled = new BooleanProperty("limitedV2_8_0Enabled",
+        "Whether to use limited protocol V2.8.0 or full. " +
+            "Note: this property was introduced to get around a compatibility problem which appears when newer" +
+            " clients try to fall back to protocol V2.8.0. Should not be used in general case.", false, false);
+
 
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
@@ -245,7 +252,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         affinityAwarenessPartDistributionsCacheSize,
         qryMaxMemory,
         qryTimeout,
-        connTimeout
+        connTimeout,
+        limitedV2_8_0Enabled
     };
 
     /** {@inheritDoc} */
@@ -622,6 +630,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setConnectionTimeout(@Nullable Integer timeout) throws SQLException {
         connTimeout.setValue(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isLimitedV2_8_0Enabled() {
+        return limitedV2_8_0Enabled.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setLimitedV2_8_0Enabled(boolean enabled) {
+        limitedV2_8_0Enabled.setValue(enabled);
     }
 
     /**

@@ -173,15 +173,23 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         Integer updateBatchSize = null;
         long maxMemory = 0L;
 
-        if (ver.compareTo(VER_2_8_0) >= 0) {
-            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+        try {
+            if (ver.compareTo(VER_2_8_0) >= 0) {
+                dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
-            updateBatchSize = JdbcUtils.readNullableInteger(reader);
+                updateBatchSize = JdbcUtils.readNullableInteger(reader);
 
-            if (ver.compareTo(VER_2_8_1) >= 0){
-                if (reader.readBoolean())
-                    maxMemory = reader.readLong();
+                if (ver.compareTo(VER_2_8_1) >= 0) {
+                    if (reader.readBoolean())
+                        maxMemory = reader.readLong();
+                }
             }
+        }
+        catch (Exception ex) {
+            if (ver.compareTo(VER_2_8_0) != 0)
+                throw ex;
+
+            // TODO: GG-25595 remove when version 8.7.X support ends
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {

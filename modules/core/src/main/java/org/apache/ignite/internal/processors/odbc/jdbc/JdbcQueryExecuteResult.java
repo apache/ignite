@@ -165,8 +165,13 @@ public class JdbcQueryExecuteResult extends JdbcResult {
             updateCnt = reader.readLong();
         }
 
-        if (ver.compareTo(VER_2_8_0) >= 0 && reader.readBoolean())
-            partRes = PartitionResultMarshaler.unmarshal(reader);
+        try {
+            if (ver.compareTo(VER_2_8_0) >= 0 && reader.readBoolean())
+                partRes = PartitionResultMarshaler.unmarshal(reader);
+        }
+        catch (Exception ignored) {
+            // TODO: GG-25595 remove when version 8.7.X support ends
+        }
     }
 
     /**

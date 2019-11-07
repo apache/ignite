@@ -95,8 +95,13 @@ public class JdbcTableMeta implements JdbcRawBinarylizable {
         schemaName = reader.readString();
         tblName = reader.readString();
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            tblType = reader.readString();
+        try {
+            if (ver.compareTo(VER_2_8_0) >= 0)
+                tblType = reader.readString();
+        }
+        catch (Exception ignored) {
+            // TODO: GG-25595 remove when version 8.7.X support ends
+        }
     }
 
     /** {@inheritDoc} */

@@ -154,17 +154,22 @@ public class JdbcResponse extends ClientListenerResponse implements JdbcRawBinar
         else
             error(reader.readString());
 
-        if (ver.compareTo(VER_2_8_0) >= 0) {
-            activeTx = reader.readBoolean();
+        try {
+            if (ver.compareTo(VER_2_8_0) >= 0) {
+                activeTx = reader.readBoolean();
 
-            boolean affinityVerChanged = reader.readBoolean();
+                boolean affinityVerChanged = reader.readBoolean();
 
-            if (affinityVerChanged) {
-                long topVer = reader.readLong();
-                int minorTopVer = reader.readInt();
+                if (affinityVerChanged) {
+                    long topVer = reader.readLong();
+                    int minorTopVer = reader.readInt();
 
-                affinityVer = new AffinityTopologyVersion(topVer, minorTopVer);
+                    affinityVer = new AffinityTopologyVersion(topVer, minorTopVer);
+                }
             }
+        }
+        catch (Exception ignored) {
+            // TODO: GG-25595 remove when version 8.7.X support ends
         }
     }
 }

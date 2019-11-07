@@ -502,4 +502,23 @@ public interface ConnectionProperties {
      * @param connTimeout Connection timeout in milliseconds.
      */
     public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
+     * @return {@code true} if using of limited protocol version is required
+     * for connection.
+     * @deprecated This property was introduced to get around a compatibility
+     * problem which appears when newer clients try to fall back to protocol
+     * V2.8.0. Should not be used in general case.
+     */
+    @Deprecated
+    public boolean isLimitedV2_8_0Enabled();
+
+    /**
+     * @param enabled Enabled.
+     * @deprecated This property was introduced to get around a compatibility
+     * problem which appears when newer clients try to fall back to protocol
+     * V2.8.0. Should not be used in general case.
+     */
+    @Deprecated
+    public void setLimitedV2_8_0Enabled(boolean enabled);
 }

@@ -195,8 +195,13 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             throw new BinaryObjectException(e);
         }
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
-            partResReq = reader.readBoolean();
+        try {
+            if (ver.compareTo(VER_2_8_0) >= 0)
+                partResReq = reader.readBoolean();
+        }
+        catch (Exception ignored) {
+            // TODO: GG-25595 remove when version 8.7.X support ends
+        }
     }
 
     /**
