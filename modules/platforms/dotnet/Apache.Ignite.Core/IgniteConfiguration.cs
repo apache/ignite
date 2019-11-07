@@ -73,11 +73,6 @@ namespace Apache.Ignite.Core
         public const int DefaultJvmMaxMem = -1;
 
         /// <summary>
-        /// Default query timeout.
-        /// </summary>
-        public static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromMilliseconds(0);
-
-        /// <summary>
         /// Default metrics expire time.
         /// </summary>
         public static readonly TimeSpan DefaultMetricsExpireTime = TimeSpan.MaxValue;
