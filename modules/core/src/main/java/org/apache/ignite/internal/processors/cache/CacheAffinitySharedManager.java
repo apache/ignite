@@ -241,13 +241,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         boolean rmv = top == null;
 
         if (!rmv) {
-            if (!top.hasMovingPartitions()) { // Fast check.
-                List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
+            List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
 
-                for (int p = 0; p < ideal.size(); p++)
-                    if (top.owners(p).containsAll(ideal.get(p))) // Full check.
-                        rmv = true;
-            }
+            for (int p = 0; p < ideal.size(); p++)
+                if (top.owners(p).containsAll(ideal.get(p)))
+                    rmv = true;
         }
 
         if (rmv) {
@@ -2206,18 +2204,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     GridDhtPartitionTopology top = grpHolder.topology(fut.context().events().discoveryCache());
 
-                    if (top.hasMovingPartitions())  // Fast check. Ignores joined nodes.
-                        rebInfo.add(grpHolder.groupId());
-                    else {
-                        List<List<ClusterNode>> ideal = grpHolder.affinity().idealAssignmentRaw();
+                    List<List<ClusterNode>> ideal = grpHolder.affinity().idealAssignmentRaw();
 
-                        for (int p = 0; p < ideal.size(); p++)
-                            if (!top.owners(p).containsAll(ideal.get(p))) { // Full check.
-                                rebInfo.add(grpHolder.groupId());
+                    for (int p = 0; p < ideal.size(); p++)
+                        if (!top.owners(p).containsAll(ideal.get(p))) {
+                            rebInfo.add(grpHolder.groupId());
 
-                                break;
-                            }
-                    }
+                            break;
+                        }
                 }
             });
 
