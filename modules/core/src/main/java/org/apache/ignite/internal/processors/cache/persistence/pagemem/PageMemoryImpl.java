@@ -414,9 +414,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 totalTblSize += segments[i].tableSize();
             }
 
-            this.segments = segments;
-
             initWriteThrottle();
+
+            this.segments = segments;
 
             if (log.isInfoEnabled())
                 log.info("Started page memory [memoryAllocated=" + U.readableSize(totalAllocated, false) +
@@ -1194,11 +1194,17 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (segments == null)
             return;
 
-        for (Segment seg : segments)
-            seg.checkpointPages = null;
+        PagesWriteThrottlePolicy writeThrottle0;
+
+        synchronized (segmentsLock) {
+            for (Segment seg : segments)
+                seg.checkpointPages = null;
+
+            writeThrottle0 = writeThrottle;
+        }
 
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
-            writeThrottle.onFinishCheckpoint();
+            writeThrottle0.onFinishCheckpoint();
     }
 
     /** {@inheritDoc} */
