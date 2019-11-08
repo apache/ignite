@@ -194,21 +194,23 @@ class ServiceDeploymentTask {
                         Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
                         if (!services.isEmpty()) {
-                            Map<Integer, Map<Integer, List<UUID>>> change = msg0.assignmentChange();
+                            Map<Integer, Map<Integer, List<UUID>>> change = msg0.assignmentChange(); // Node left case.
+                            Map<Integer, IgniteUuid> deployments = msg0.cacheDeploymentIds(); // Late affinity case.
 
-                            if (change != null) {
-                                Set<String> names = new HashSet<>();
+                            Set<String> names = new HashSet<>();
 
-                                ctx.cache().cacheDescriptors().forEach((name, desc) -> {
-                                    if (change.containsKey(desc.groupId()))
-                                        names.add(name);
-                                });
+                            ctx.cache().cacheDescriptors().forEach((name, desc) -> {
+                                if ((change != null && change.containsKey(desc.groupId())) ||
+                                    (deployments != null && deployments.containsKey(desc.groupId())))
+                                    names.add(name);
+                            });
 
-                                services.forEach((srvcId, desc) -> {
-                                    if (names.contains(desc.cacheName()))
-                                        toDeploy.put(srvcId, desc);
-                                });
-                            }
+                            assert !names.isEmpty() : msg0;
+
+                            services.forEach((srvcId, desc) -> {
+                                if (names.contains(desc.cacheName()))
+                                    toDeploy.put(srvcId, desc);
+                            });
                         }
                     }
                 }
