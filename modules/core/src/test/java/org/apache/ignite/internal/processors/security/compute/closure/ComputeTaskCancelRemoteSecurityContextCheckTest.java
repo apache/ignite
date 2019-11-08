@@ -51,9 +51,6 @@ import org.junit.Test;
  * node security context.
  */
 public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
-    /** Cancel action was called. */
-    private static final AtomicBoolean CANCEL_CALLED = new AtomicBoolean();
-
     /** Cancel method was executed. */
     private static final AtomicBoolean CANCELED = new AtomicBoolean();
 
@@ -134,7 +131,6 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
             .expect(rmt.name(), 1);
 
         BARRIER.reset();
-        CANCEL_CALLED.set(false);
         CANCELED.set(false);
 
         IgniteFuture fut = compute(initator, Collections.singleton(rmt.localNode().id()))
@@ -143,8 +139,6 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
         BARRIER.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
         consumer.accept(fut);
-
-        CANCEL_CALLED.set(true);
 
         GridTestUtils.waitForCondition(CANCELED::get, TIMEOUT);
 
@@ -173,7 +167,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
                         try {
                             BARRIER.await(TIMEOUT, TimeUnit.MILLISECONDS);
 
-                            GridTestUtils.waitForCondition(CANCEL_CALLED::get, TIMEOUT);
+                            GridTestUtils.waitForCondition(() -> false, TIMEOUT);
                         }
                         catch (Exception e) {
                             throw new RuntimeException(e);
