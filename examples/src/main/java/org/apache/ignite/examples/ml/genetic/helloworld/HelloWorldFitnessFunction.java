@@ -42,7 +42,7 @@ public class HelloWorldFitnessFunction implements IFitnessFunction {
         for (int i = 0; i < genes.size(); i++) {
             String targetStr = "HELLO WORLD";
             if (genes.get(i).getVal().equals(targetStr.charAt(i)))
-                matches = matches + 1;
+                matches += 1;
         }
         return matches;
     }

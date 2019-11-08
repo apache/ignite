@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite resource. */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Fittest keys. */
     private List<Long> fittestKeys;
@@ -118,10 +118,10 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
 
         int k = 0;
         for (Long key : chromosomeKeys) {
-            TruncateSelectionJob ajob = new TruncateSelectionJob(key, (List)enhancedPopulation.get(k));
+            TruncateSelectionJob ajob = new TruncateSelectionJob(key, enhancedPopulation.get(k));
             ClusterNode primary = affinity.mapKeyToNode(key);
             map.put(ajob, primary);
-            k = k + 1;
+            k += 1;
         }
         return map;
     }

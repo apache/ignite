@@ -87,7 +87,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
 
         for (Gene gene : genes) {
             int numOfCoins = ((Coin)gene.getVal()).getNumOfCoins();
-            totalNumOfCoins = totalNumOfCoins + numOfCoins;
+            totalNumOfCoins += numOfCoins;
         }
 
         return totalNumOfCoins;
