@@ -2224,8 +2224,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             waitInfo = rebInfo.empty() ? null : rebInfo;
         }
 
-        if (rebInfo.empty())
+        if (rebInfo.empty()) { // Recalculated as ideally rebalanced locally.
             fut.markRebalanced();
+
+            if (!rebInfo.deploymentIds.isEmpty()) // Contains groups to be initialized as ideally rebalanced across the cluster.
+                try {
+                    CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(rebInfo.topVer, rebInfo.deploymentIds);
+
+                    cctx.discovery().sendCustomEvent(msg);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send affinity change message.", e);
+                }
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("Computed new rebalance wait info [topVer=" + rebInfo.topVer +
