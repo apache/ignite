@@ -349,6 +349,9 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
+            if (("cache1".equals(grp.cacheOrGroupName()) || "cache2".equals(grp.cacheOrGroupName())) && !rebalanceFut.isDone())
+                U.dumpStack("Created rebalance future: " + rebalanceFut);
+
             return () -> {
                 if (next != null)
                     fut.listen(f -> {

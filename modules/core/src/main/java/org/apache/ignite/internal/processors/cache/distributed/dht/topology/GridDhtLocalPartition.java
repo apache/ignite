@@ -724,15 +724,23 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
 
             if (!rebFut.isInitial() && !rebFut.isDone()) {
+                log.warning("Wait for rebalance future, [grp=" + grp.cacheOrGroupName() + ", p=" + id + ", fut=" + rebFut+"]");
+
                 rebFut.listen(fut -> {
                     // Partition could be owned after rebalance future is done. Skip clearing in such case.
                     // Otherwise continue clearing.
+                    log.warning("rebalance future finished [grp=" + grp.cacheOrGroupName() + ", p=" + id + ", err=" + fut.error() + ", state=" + state()+"]");
+
                     if (fut.error() == null && state() == MOVING) {
                         if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
+                            log.warning("freeAndEmpty [grp=" + grp.cacheOrGroupName() + ", p=" + id + "]");
+
                             clearFuture.finish();
 
                             return;
                         }
+
+                        log.warning("evictPartitionAsync [grp=" + grp.cacheOrGroupName() + ", p=" + id + " ]");
 
                         ctx.evict().evictPartitionAsync(grp, GridDhtLocalPartition.this);
                     }

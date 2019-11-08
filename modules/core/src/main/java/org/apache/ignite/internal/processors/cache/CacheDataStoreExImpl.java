@@ -100,8 +100,8 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
         if (this.readOnly.compareAndSet(!readOnly, readOnly)) {
             log.info("Changing data store mode to " + (readOnly ? "READ-ONLY" : "FULL") + " [p=" + partId() + "]");
 
-            if (readOnly)
-                readOnlyStore.reinit();
+//            if (readOnly)
+//                readOnlyStore.reinit();
         }
     }
 

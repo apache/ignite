@@ -127,7 +127,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
 
     @Test
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "1")
-    public void checkEvictingReadonlyPartition() throws Exception {
+    public void checkEvictingRestoredReadonlyPartition() throws Exception {
         IgniteEx node0 = startGrid(1);
 
         node0.cluster().active(true);

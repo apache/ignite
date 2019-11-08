@@ -1469,6 +1469,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
             partHistReserved = cctx.database().reserveHistoryForExchange();
 
+            log.info("Current future hashCode=" + System.identityHashCode(this));
+
             log.info(cctx.localNodeId() + " partHistReserved: " + partHistReserved);
         }
         finally {
@@ -3215,7 +3217,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
-        boolean fileRebalanceRequired = cctx.filePreloader().fileRebalanceRequired(grp, nodes);
+        boolean fileRebalanceRequired =
+            cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceRequired(grp, nodes, false);
+
+        log.info("grp=" + grp.cacheOrGroupName() + " file rebalanced required=" + fileRebalanceRequired + " fut hashCode="+System.identityHashCode(this) + " minCntrs="+minCntrs);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3225,11 +3230,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
 
-            if (minCntr == maxCntr)
-                continue;
+            // todo think carefully
+//            if (minCntr == maxCntr) // && allOwners(top))
+//                continue;
 
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
+
+                log.debug("grp=" + grp.cacheOrGroupName() + ", p=" + p + ", localHistCntr=" + localHistCntr);
 
                 if (localHistCntr != null) {
                     // todo   crd node should always have history for max counter - this is redundant
@@ -3245,7 +3253,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         continue;
                     }
                     else
-                    if (localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
@@ -3269,7 +3277,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         break;
                     }
                     else
-                    if (histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        //assert ;
+
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);
@@ -3913,6 +3923,30 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     return null;
                 }
             );
+
+            if (log.isDebugEnabled()) {
+                StringBuilder buf = new StringBuilder("\n\nHist suppliers\n");
+
+                for (UUID node : F.concat(false, cctx.localNodeId(), msgs.keySet())) {
+                    buf.append("\nReservations for node " + node + "\n");
+
+                    Map<T2<Integer, Integer>, Long> reservations = partHistSuppliers.getReservations(node);
+
+                    if (reservations == null || reservations.isEmpty()) {
+                        buf.append("EMPTY\n");
+
+                        continue;
+                    }
+
+                    for (Map.Entry<T2<Integer, Integer>, Long> e : reservations.entrySet()) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey().get1());
+
+                        buf.append("cache=" + grp.cacheOrGroupName() + " p=" + e.getKey().get2() + " cntr=" + e.getValue() + "\n");
+                    }
+                }
+
+                log.debug(buf.toString());
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to assign partition states", e);

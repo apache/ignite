@@ -72,7 +72,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** */
     public FileRebalanceFuture() {
-        this(null, null, null, null, null);
+        this(null, null, null, null, null, null);
 
         onDone(true);
     }
@@ -85,6 +85,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         Map<Integer, GridDhtPreloaderAssignments> assignsMap,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
+        GridDhtPartitionsExchangeFuture exchFut,
         IgniteLogger log
     ) {
         cpLsnr = lsnr;
@@ -93,7 +94,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         this.log = log;
         this.cctx = cctx;
 
-        initialize(assignsMap);
+        initialize(assignsMap, exchFut);
     }
 
     /**
@@ -101,7 +102,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      *
      * @param assignments Assignments.
      */
-    private synchronized void initialize(Map<Integer, GridDhtPreloaderAssignments> assignments) {
+    private synchronized void initialize(Map<Integer, GridDhtPreloaderAssignments> assignments, GridDhtPartitionsExchangeFuture exchFut) {
         if (assignments == null || assignments.isEmpty())
             return;
 
@@ -120,7 +121,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                if (!cctx.filePreloader().fileRebalanceRequired(grp, assigns))
+                if (!cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut))
                     continue;
 
                 String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
@@ -271,9 +272,12 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             for (Integer partId : e.getValue()) {
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
+                log.info("clearAsync p=" + partId + " cache=" + grp.cacheOrGroupName() + ", topVer=" + topVer);
+
                 part.clearAsync();
 
                 part.onClearFinished(c -> {
+                    log.info("onClearAsync finished p=" + partId + " cache=" + grp.cacheOrGroupName() + ", topVer=" + topVer);
                     cancelLock.lock();
 
                     try {

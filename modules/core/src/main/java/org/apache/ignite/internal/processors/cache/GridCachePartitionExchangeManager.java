@@ -3371,7 +3371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
                         if (cctx.filePreloader() != null)
-                            loadPartsRun = cctx.filePreloader().addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+                            loadPartsRun = cctx.filePreloader().addNodeAssignments(assignsMap, resVer, forcePreload, cnt, exchFut);
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
@@ -3383,7 +3383,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assignsCancelled |= assigns.cancelled();
 
                                 if (cctx.filePreloader() != null &&
-                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns))
+                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut))
                                     continue;
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,

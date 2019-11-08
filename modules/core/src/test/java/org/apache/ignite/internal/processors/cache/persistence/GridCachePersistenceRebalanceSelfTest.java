@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -144,6 +146,8 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
 //                .setWalSegmentSize(4 * 1024 * 1024)
 //                .setMaxWalArchiveSize(32 * 1024 * 1024 * 1024L))
             .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME).setDataRegionName("someRegion"), cacheConfig(CACHE1), cacheConfig(CACHE2));
+
+        cfg.setSystemThreadPoolSize(56);
             //.setCacheConfiguration(cacheConfig(CACHE1));
 
 //        if (getTestIgniteInstanceIndex(igniteInstanceName) == 2)
@@ -301,6 +305,84 @@ public class GridCachePersistenceRebalanceSelfTest extends GridCommonAbstractTes
         U.sleep(1_000);
 
         verifyLocalCache(ignite0.cachex(DEFAULT_CACHE_NAME), ignite1.cachex(DEFAULT_CACHE_NAME));
+    }
+
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_JVM_PAUSE_DETECTOR_DISABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
+    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
+    public void checkEvictionOfReadonlyPartition() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+        ignite0.cluster().baselineAutoAdjustTimeout(0);
+
+        loadData(ignite0, CACHE1, TEST_SIZE);
+        loadData(ignite0, CACHE2, TEST_SIZE);
+//        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalCache<Object, Object> cache1 = ignite1.cachex(CACHE1);
+        IgniteInternalCache<Object, Object> cache2 = ignite1.cachex(CACHE2);
+
+        AtomicInteger partsCntr = new AtomicInteger();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        for (GridDhtLocalPartition part : cache1.context().topology().currentLocalPartitions()) {
+            partsCntr.incrementAndGet();
+
+            part.moving();
+
+            part.readOnly(true);
+        }
+
+        for (GridDhtLocalPartition part : cache2.context().topology().currentLocalPartitions()) {
+            partsCntr.incrementAndGet();
+
+            part.moving();
+
+            part.readOnly(true);
+        }
+
+        for (GridDhtLocalPartition part : cache1.context().topology().currentLocalPartitions()) {
+            part.clearAsync();
+
+            part.onClearFinished(c -> {
+                int remain = partsCntr.decrementAndGet();
+
+                log.info("Remain: " + remain);
+
+                if (remain == 0)
+                    latch.countDown();
+            });
+        }
+
+        for (GridDhtLocalPartition part : cache2.context().topology().currentLocalPartitions()) {
+            part.clearAsync();
+
+            part.onClearFinished(c -> {
+                int remain = partsCntr.decrementAndGet();
+
+                log.info("Remain: " + remain);
+
+                if (remain == 0)
+                    latch.countDown();
+            });
+        }
+
+        boolean success = latch.await(30, TimeUnit.SECONDS);
+
+        assertTrue(success);
     }
 
     /** */

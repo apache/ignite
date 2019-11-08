@@ -781,9 +781,9 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public void sync() throws StorageException {
-//        // todo
-//        if (!inited)
-//            return;
+        // todo
+        if (!inited)
+            return;
 
         lock.writeLock().lock();
 

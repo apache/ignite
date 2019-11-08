@@ -1935,6 +1935,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             else {
                 U.await(latch);
 
+                // todo correct sync on re-initialization
+                while (delegate == null)
+                    U.sleep(400);
+
                 delegate0 = delegate;
 
                 if (delegate0 == null)
@@ -2090,6 +2094,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void reinit() {
             try {
+                // todo hard thinking about checkExists flag + think about initLatch
                 if (init.compareAndSet(true, false)) {
                     delegate = null;
 

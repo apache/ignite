@@ -1755,6 +1755,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> earliestValidCheckpoints;
 
+        if (log.isDebugEnabled())
+            log.debug("applicableGroups=" + applicableGroupsAndPartitions);
+
         checkpointReadLock();
 
         try {
@@ -1765,6 +1768,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         Map</*grpId*/Integer, Map</*partId*/Integer, /*updCntr*/Long>> grpPartsWithCnts = new HashMap<>();
+
+        if (log.isDebugEnabled())
+            log.debug("Earliest valid checkpoints: " + earliestValidCheckpoints);
 
         for (Map.Entry<Integer, Map<Integer, CheckpointEntry>> e : earliestValidCheckpoints.entrySet()) {
             int grpId = e.getKey();
@@ -1780,11 +1786,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Long updCntr = cpEntry.partitionCounter(cctx, grpId, partId);
 
                 if (updCntr != null) {
+                    log.debug("Reserved p="+partId+" grp="+cctx.cache().cacheGroup(grpId).cacheOrGroupName()+", cntr="+updCntr);
+
                     reservedForExchange.computeIfAbsent(grpId, k -> new HashMap<>())
                         .put(partId, new T2<>(updCntr, cpEntry.checkpointMark()));
 
                     grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
                 }
+                else
+                    log.debug("NOT RESERVED p="+partId+" grp="+cctx.cache().cacheGroup(grpId).cacheOrGroupName()+", cntr="+updCntr);
             }
         }
 
