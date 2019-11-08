@@ -272,14 +272,12 @@ public class IgniteThrottlingUnitTest {
         try {
             loadThreads.forEach(Thread::start);
 
-            for (int i = 0; i < 100_000; i++)
+            for (int i = 0; i < 1_000; i++)
                 loadThreads.forEach(LockSupport::unpark);
 
             // Awaiting that all load threads are parked.
             for (Thread t : loadThreads)
                 assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 500L));
-
-            plc.tryWakeupThrottledThreads();
 
             // Threads shouldn't wakeup because of throttling enabled.
             for (Thread t : loadThreads)
@@ -287,8 +285,6 @@ public class IgniteThrottlingUnitTest {
 
             // Disable throttling
             when(pageMemory2g.checkpointBufferPagesCount()).thenReturn(50);
-
-            plc.tryWakeupThrottledThreads();
 
             // Awaiting that all load threads are unparked.
             for (Thread t : loadThreads)
