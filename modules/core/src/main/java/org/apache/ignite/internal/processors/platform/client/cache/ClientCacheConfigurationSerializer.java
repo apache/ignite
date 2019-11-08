@@ -135,7 +135,6 @@ public class ClientCacheConfigurationSerializer {
     /** */
     private static final short EXPIRY_POLICY = 407;
 
-
     /**
      * Writes the cache configuration.
      * @param writer Writer.
