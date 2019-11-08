@@ -25,10 +25,11 @@ import org.apache.calcite.rel.RelNode;
  *
  */
 public interface IgniteRel extends RelNode {
-    Convention LOGICAL_CONVENTION = new Convention.Impl("IGNITE_LOGICAL", IgniteRel.class) {
+    Convention IGNITE_CONVENTION = new Convention.Impl("IGNITE_LOGICAL", IgniteRel.class) {
         /** */
         @Override public boolean useAbstractConvertersForConversion(RelTraitSet fromTraits, RelTraitSet toTraits) {
-            return true; // Enables trait definition conversion
+            return fromTraits.containsIfApplicable(IGNITE_CONVENTION)
+                && toTraits.containsIfApplicable(IGNITE_CONVENTION); // Enables trait definition conversion
         }
     };
 }

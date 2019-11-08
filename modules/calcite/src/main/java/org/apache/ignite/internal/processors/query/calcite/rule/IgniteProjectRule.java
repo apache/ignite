@@ -42,7 +42,7 @@ public class IgniteProjectRule extends RelOptRule {
         LogicalProject project = call.rel(0);
         RelNode input = project.getInput();
 
-        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.LOGICAL_CONVENTION);
+        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.IGNITE_CONVENTION);
 
         RelNode converted = convert(input, traitSet);
 

@@ -44,7 +44,7 @@ public final class IgniteProject extends Project implements IgniteRel {
 
   public static IgniteProject create(Project project, RelNode input) {
     RelTraitSet traits = project.getTraitSet()
-        .replace(IgniteRel.LOGICAL_CONVENTION)
+        .replace(IgniteRel.IGNITE_CONVENTION)
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(RelMetadataQueryEx.instance(), input, project.getProjects()));
 
     return new IgniteProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());

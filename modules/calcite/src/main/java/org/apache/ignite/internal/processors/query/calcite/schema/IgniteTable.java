@@ -71,7 +71,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.LOGICAL_CONVENTION)
+        RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.IGNITE_CONVENTION)
                 .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(cluster.getPlanner().getContext()));
         return new IgniteTableScan(cluster, traitSet, relOptTable);
     }

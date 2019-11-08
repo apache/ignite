@@ -45,11 +45,11 @@ public class IgniteHashJoinRule extends RelOptRule {
         LogicalJoin join = call.rel(0);
 
         RelTraitSet leftTraits = join.getLeft().getTraitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
+            .replace(IgniteRel.IGNITE_CONVENTION)
             .replace(IgniteDistributions.hash(join.analyzeCondition().leftKeys, IgniteDistributions.noOpFunction()));
 
         RelTraitSet rightTraits = join.getRight().getTraitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
+            .replace(IgniteRel.IGNITE_CONVENTION)
             .replace(IgniteDistributions.hash(join.analyzeCondition().rightKeys, IgniteDistributions.noOpFunction()));
 
         RelNode left = convert(join.getLeft(), leftTraits);
@@ -58,7 +58,7 @@ public class IgniteHashJoinRule extends RelOptRule {
         RelMetadataQuery mq = call.getMetadataQuery();
 
         RelTraitSet traitSet = join.getTraitSet()
-            .replace(IgniteRel.LOGICAL_CONVENTION)
+            .replace(IgniteRel.IGNITE_CONVENTION)
             .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.join(mq, left, right, join.getCondition()));
 
         call.transformTo(new IgniteHashJoin(join.getCluster(), traitSet, left, right,

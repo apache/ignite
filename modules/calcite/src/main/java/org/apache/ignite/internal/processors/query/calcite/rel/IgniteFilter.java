@@ -54,7 +54,7 @@ public final class IgniteFilter extends Filter implements IgniteRel {
 
   public static IgniteFilter create(Filter filter, RelNode input) {
     RelTraitSet traits = filter.getTraitSet()
-        .replace(IgniteRel.LOGICAL_CONVENTION)
+        .replace(IgniteRel.IGNITE_CONVENTION)
         .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.filter(RelMetadataQueryEx.instance(), input, filter.getCondition()));
 
     return new IgniteFilter(filter.getCluster(), traits, input, filter.getCondition(), filter.getVariablesSet());

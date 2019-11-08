@@ -42,7 +42,7 @@ public class IgniteFilterRule extends RelOptRule {
         LogicalFilter filter = call.rel(0);
         RelNode input = filter.getInput();
 
-        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.LOGICAL_CONVENTION);
+        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.IGNITE_CONVENTION);
 
         RelNode converted = convert(input, traitSet);
 

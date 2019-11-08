@@ -250,7 +250,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             // Transformation chain
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -302,7 +302,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             // Transformation chain
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -355,7 +355,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -417,7 +417,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -498,7 +498,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -587,7 +587,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -651,7 +651,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -715,7 +715,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -805,7 +805,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
@@ -894,7 +894,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
             RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(IgniteDistributions.single())
                 .simplify();
 

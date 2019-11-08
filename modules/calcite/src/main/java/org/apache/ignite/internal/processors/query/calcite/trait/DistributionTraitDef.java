@@ -44,7 +44,7 @@ public class DistributionTraitDef extends RelTraitDef<DistributionTrait> {
         if (srcDist.equals(targetDist))
             return rel;
 
-        if (rel.getConvention() != IgniteRel.LOGICAL_CONVENTION)
+        if (rel.getConvention() != IgniteRel.IGNITE_CONVENTION)
             return null;
 
         switch(targetDist.type()){

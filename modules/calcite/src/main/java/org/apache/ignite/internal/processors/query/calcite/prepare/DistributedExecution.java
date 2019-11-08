@@ -86,7 +86,7 @@ public class DistributedExecution implements QueryExecution {
 
             RelTraitSet desired = rel.getTraitSet()
                 .replace(relRoot.collation)
-                .replace(IgniteRel.LOGICAL_CONVENTION)
+                .replace(IgniteRel.IGNITE_CONVENTION)
                 .replace(RelDistributions.ANY)
                 .simplify();
 
