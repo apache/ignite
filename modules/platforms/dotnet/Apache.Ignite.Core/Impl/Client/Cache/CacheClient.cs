@@ -66,7 +66,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             /// With transactional binary flag.
             /// Reserved for IEP-34 Thin client: transactions support.
             /// </summary>
-            // ReSharper disable once ShiftExpressionRealShiftCountIsZero
             // ReSharper disable once UnusedMember.Local
             WithTransactional = 1 << 1,
 
