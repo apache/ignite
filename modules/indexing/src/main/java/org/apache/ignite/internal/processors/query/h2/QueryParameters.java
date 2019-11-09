@@ -19,8 +19,6 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.List;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 
 /**
