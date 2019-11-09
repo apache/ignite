@@ -624,8 +624,6 @@ public class PlatformConfigurationUtils {
         ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
-        if (in.readBoolean())
-            cfg.setDefaultQueryTimeout(in.readLong());
         int[] evtTypes = in.readIntArray();
         if (evtTypes != null)
             cfg.setIncludeEventTypes(evtTypes);
@@ -1232,8 +1230,6 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
         w.writeBoolean(cfg.isClientMode());
-        w.writeBoolean(true);
-        w.writeLong(cfg.getDefaultQueryTimeout());
         w.writeIntArray(cfg.getIncludeEventTypes());
         w.writeBoolean(true);
         w.writeLong(cfg.getMetricsExpireTime());
