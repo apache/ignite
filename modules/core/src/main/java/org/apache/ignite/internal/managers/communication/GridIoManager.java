@@ -3294,9 +3294,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey +
                         ", retries=" + retries + ", cause='" + e.getCause().getMessage() + "']");
                 }
-                else
+                else {
                     throw new IgniteCheckedException("Exception while sending file [rmtId=" + rmtId +
                         ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
+                }
             }
             catch (Throwable e) {
                 closeChannelQuiet();
