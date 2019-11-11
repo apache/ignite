@@ -19,7 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 /**
  * Exception is used to cancel file transmission operation on the receiver. It can be thrown on a node which receives
- * data from a node-sender to gracefully  interrupt the transmission session.
+ * data from a node-sender to gracefully interrupt the transmission session.
  */
 public class TransmissionCancelException extends RuntimeException {
     /** {@inheritDoc} */
