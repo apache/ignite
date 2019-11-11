@@ -37,10 +37,10 @@ import static org.junit.Assert.assertEquals;
  */
 public class GAGridInitializePopulationTest {
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAGrid **/
-    private GAGrid gaGrid = null;
+    private GAGrid gaGrid;
 
     @Before
     public void initialize() {
@@ -64,7 +64,7 @@ public class GAGridInitializePopulationTest {
             gaGrid = new GAGrid(gaCfg, ignite);
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -91,7 +91,7 @@ public class GAGridInitializePopulationTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -119,7 +119,7 @@ public class GAGridInitializePopulationTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 

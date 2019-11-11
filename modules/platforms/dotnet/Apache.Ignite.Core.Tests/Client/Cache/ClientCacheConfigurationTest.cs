@@ -53,9 +53,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestSerializeDeserializeUnspported(cfg, "EvictionPolicy");
             cfg.EvictionPolicy = null;
 
-            TestSerializeDeserializeUnspported(cfg, "ExpiryPolicyFactory");
-            cfg.ExpiryPolicyFactory = null;
-
             TestSerializeDeserializeUnspported(cfg, "PluginConfigurations");
             cfg.PluginConfigurations = null;
 

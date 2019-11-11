@@ -53,7 +53,7 @@ public class RecommendationTrainer {
     private int batchSize = 1000;
 
     /** Regularization parameter. */
-    private double regParam = 0.0;
+    private double regParam;
 
     /** Learning rate. */
     private double learningRate = 10.0;

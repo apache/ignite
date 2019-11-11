@@ -85,12 +85,7 @@ public class VectorGeneratorPrimitivesExample {
             .rotate(Math.PI / 4).filter(v -> Math.abs(v.get(0)) > 1.5)
             .rotate(-Math.PI / 2).filter(v -> Math.abs(v.get(0)) > 1.5)
             .rotate(Math.PI / 4).filter(v -> Math.sqrt(v.getLengthSquared()) > 10)
-            .map(v -> {
-                if (Math.abs(v.get(0)) > 8 && Math.abs(v.get(1)) < 9)
-                    return v.times(0.5);
-                else
-                    return v;
-            }).rotate(Math.PI / 2);
+            .map(v -> Math.abs(v.get(0)) > 8 && Math.abs(v.get(1)) < 9 ? v.times(0.5) : v).rotate(Math.PI / 2);
 
         Tracer.showClassificationDatasetHtml("Axe blade", axeBlade.asDataStream(), 1500, 0, 1, false);
         System.out.flush();

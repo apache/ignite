@@ -66,25 +66,21 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** {@inheritDoc} */
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = new double[priorProbabilities.length];
-        for (int i = 0; i < priorProbabilities.length; i++) {
+        for (int i = 0; i < priorProbabilities.length; i++)
             probapilityPowers[i] = Math.log(priorProbabilities[i]);
-        }
 
-        if (discreteModel != null) {
+        if (discreteModel != null)
             probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
-        }
 
-        if (gaussianModel != null) {
+        if (gaussianModel != null)
             probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
-        }
 
-        int maxLabelIndex = 0;
+        int maxLbIdx = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
-                maxLabelIndex = i;
-            }
+            if (probapilityPowers[i] > probapilityPowers[maxLbIdx])
+                maxLbIdx = i;
         }
-        return labels[maxLabelIndex];
+        return labels[maxLbIdx];
     }
 
     /** Returns a gaussian model. */
@@ -139,9 +135,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         double[] result = new double[arr1.length];
 
-        for (int i = 0; i < arr1.length; i++) {
+        for (int i = 0; i < arr1.length; i++)
             result[i] = arr1[i] + arr2[i];
-        }
+
         return result;
     }
 
