@@ -434,6 +434,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
 
         final CountDownLatch awaitLatch = new CountDownLatch(ints.size());
+        final CountDownLatch cancelLatch = new CountDownLatch(1);
 
         mgr0.addSnapshotListener(new SnapshotListener() {
             @Override public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId) {
@@ -441,6 +442,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                     ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
 
                 awaitLatch.countDown();
+                cancelLatch.countDown();
             }
 
             @Override public void onEnd(UUID rmtNodeId, String snpName) {
@@ -453,7 +455,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         });
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        String snpName = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
+        IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
+
+        cancelLatch.await();
+
+        fut.cancel();
+
+        IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
 
         awaitLatch.await();
     }
