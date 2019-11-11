@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
@@ -49,6 +50,6 @@ public class IgniteFilterRule extends RelOptRule {
         RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteFilter::create);
 
         if (!transformOp.go(filter))
-            call.transformTo(LogicalFilter.create(converted, filter.getCondition()));
+            call.transformTo(filter.copy(filter.getTraitSet(), ImmutableList.of(converted)));
     }
 }

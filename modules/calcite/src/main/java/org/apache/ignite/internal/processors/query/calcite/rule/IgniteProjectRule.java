@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
@@ -49,6 +50,6 @@ public class IgniteProjectRule extends RelOptRule {
         RelOp<LogicalProject, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteProject::create);
 
         if (!transformOp.go(project))
-            call.transformTo(LogicalProject.create(converted, project.getProjects(), project.getRowType()));
+            call.transformTo(project.copy(project.getTraitSet(), ImmutableList.of(converted)));
     }
 }
