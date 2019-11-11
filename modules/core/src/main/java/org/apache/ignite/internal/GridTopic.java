@@ -145,7 +145,7 @@ public enum GridTopic {
     TOPIC_DEADLOCK_DETECTION,
 
     /** */
-    TOPIC_MASTER_KEY_CHANGE;
+    TOPIC_DISTRIBUTED_PROCESS;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

@@ -36,8 +36,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRequest;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeRequestAck;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeResultAck;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
@@ -198,6 +196,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -1175,12 +1174,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 177:
-                msg = new MasterKeyChangeSingleNodeRequestAck();
-
-                break;
-
-            case 178:
-                msg = new MasterKeyChangeSingleNodeResultAck();
+                msg = new SingleNodeMessage();
 
                 break;
 

@@ -15,45 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.encryption;
+package org.apache.ignite.internal.util.distributed;
 
+import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Abstract master key change message.
- */
-abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage {
+/** */
+public class ProcessInitMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Encrypted master key name. */
-    private final byte[] encKeyName;
+    /** */
+    private final UUID reqId;
 
-    /** Master key digest. */
-    private final byte[] digest;
+    /** */
+    private int procTypeId;
 
-    /** Request id. */
-    protected final UUID reqId;
+    /** */
+    @GridToStringInclude
+    private final Serializable req;
 
-    /**
-     * @param reqId Request id.
-     * @param encKeyName Encrypted master key name.
-     * @param digest Master key digest.
-     */
-    protected MasterKeyChangeAbstractMessage(UUID reqId, byte[] encKeyName, byte[] digest) {
+    /** */
+    public ProcessInitMessage(UUID reqId, int procTypeId, Serializable req) {
         this.reqId = reqId;
-        this.encKeyName = encKeyName;
-        this.digest = digest;
+        this.procTypeId = procTypeId;
+        this.req = req;
     }
 
     /** {@inheritDoc} */
@@ -79,21 +76,26 @@ abstract class MasterKeyChangeAbstractMessage implements DiscoveryCustomMessage 
     /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
-    /** @return Master key name. */
-    public byte[] encKeyName() {
-        return encKeyName;
+    /** */
+    public UUID requestId() {
+        return reqId;
     }
 
-    /** @return Master key digest. */
-    public byte[] digest() {
-        return digest;
+    /** */
+    public int processTypeId() {
+        return procTypeId;
+    }
+
+    /** */
+    public Serializable request() {
+        return req;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MasterKeyChangeAbstractMessage.class, this, "reqId", reqId);
+        return S.toString(ProcessInitMessage.class, this);
     }
 }

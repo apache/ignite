@@ -78,7 +78,6 @@ public enum IgniteFeatures {
     /** Master key change.  */
     MASTER_KEY_CHANGE(19);
 
-
     /**
      * Unique feature identifier.
      */

@@ -1,30 +1,30 @@
 package org.apache.ignite.internal.util.distributed;
 
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.CO;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+//import java.nio.ByteBuffer;
+//import java.util.HashMap;
+//import java.util.Map;
+//import java.util.UUID;
+//import java.util.concurrent.CountDownLatch;
+//import org.apache.ignite.configuration.IgniteConfiguration;
+//import org.apache.ignite.internal.GridTopic;
+//import org.apache.ignite.internal.IgniteEx;
+//import org.apache.ignite.internal.IgniteInternalFuture;
+//import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+//import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+//import org.apache.ignite.internal.managers.discovery.DiscoCache;
+//import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+//import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+//import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+//import org.apache.ignite.internal.util.future.GridFinishedFuture;
+//import org.apache.ignite.internal.util.typedef.CO;
+//import org.apache.ignite.internal.util.typedef.G;
+//import org.apache.ignite.lang.IgniteUuid;
+//import org.apache.ignite.plugin.extensions.communication.Message;
+//import org.apache.ignite.plugin.extensions.communication.MessageReader;
+//import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+//import org.jetbrains.annotations.Nullable;
+//import org.junit.Test;
 
 /**
  * Tests {@link DistributedProcessManager}.

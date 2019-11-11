@@ -30,10 +30,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse;
-import org.apache.ignite.internal.managers.encryption.MasterKeyChangeSingleNodeRequestAck;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.Transaction;
@@ -126,7 +126,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
+        commSpi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
@@ -196,7 +196,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
+        commSpi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
@@ -224,7 +224,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi commSpi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        commSpi.blockMessages((node, msg) -> msg instanceof MasterKeyChangeSingleNodeRequestAck);
+        commSpi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
 

@@ -17,30 +17,27 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.ignite.internal.IgniteInternalFuture;
-
-/**
- * @param <I> init request.
- * @param <S> single node response.
- * @param <R> result.
- */
-public interface DistributedProcess<I extends Serializable, S extends Serializable, R extends Serializable> {
+/** */
+public enum DistributedProcesses {
     /** */
-    IgniteInternalFuture<S> execute(I req);
+    MASTER_KEY_CHANGE_PREPARE(0),
 
     /** */
-    R buildResult(Map<UUID, S> map);
+    MASTER_KEY_CHANGE_COMMIT(1);
 
-    /** */
-    default void onResult(R msg) {
-        // No-op.
+    /**
+     * Unique process type identifier.
+     */
+    private final int procTypeId;
+
+    DistributedProcesses(int procId) {
+        this.procTypeId = procId;
     }
 
-    /** */
-    default void onError(Exception e) {
-        // No-op.
+    /**
+     * @return Process type ID.
+     */
+    public int processTypeId() {
+        return procTypeId;
     }
 }
