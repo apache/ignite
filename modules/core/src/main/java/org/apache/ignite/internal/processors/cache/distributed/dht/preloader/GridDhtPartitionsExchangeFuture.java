@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -3218,7 +3217,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         boolean fileRebalanceRequired =
-            cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceRequired(grp, nodes, false);
+            cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceSupported(grp, nodes);
 
         log.info("grp=" + grp.cacheOrGroupName() + " file rebalanced required=" + fileRebalanceRequired + " fut hashCode="+System.identityHashCode(this) + " minCntrs="+minCntrs);
 

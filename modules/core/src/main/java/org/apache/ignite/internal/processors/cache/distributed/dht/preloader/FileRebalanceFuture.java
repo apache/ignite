@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,7 +73,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** */
     public FileRebalanceFuture() {
-        this(null, null, null, null, null, null);
+        this(null, null, null, null, null);
 
         onDone(true);
     }
@@ -82,10 +83,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      */
     public FileRebalanceFuture(
         GridCachePreloadSharedManager.CheckpointListener lsnr,
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap,
+        NavigableMap</** order */Integer, Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assignsMap,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
-        GridDhtPartitionsExchangeFuture exchFut,
         IgniteLogger log
     ) {
         cpLsnr = lsnr;
@@ -94,7 +94,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         this.log = log;
         this.cctx = cctx;
 
-        initialize(assignsMap, exchFut);
+        // The dummy future does not require initialization.
+        if (assignsMap != null)
+            initialize(assignsMap);
     }
 
     /**
@@ -102,9 +104,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      *
      * @param assignments Assignments.
      */
-    private synchronized void initialize(Map<Integer, GridDhtPreloaderAssignments> assignments, GridDhtPartitionsExchangeFuture exchFut) {
-        if (assignments == null || assignments.isEmpty())
-            return;
+    private synchronized void initialize(NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
+        assert assignments != null;
+        assert !assignments.isEmpty();
 
         Map<String, Set<Long>> regionToParts = new HashMap<>();
 
@@ -112,42 +114,48 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         cancelLock.lock();
 
         try {
-            for (Map.Entry<Integer, GridDhtPreloaderAssignments> entry : assignments.entrySet()) {
-                int grpId = entry.getKey();
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : assignments.values()) {
+                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
+                    UUID nodeId = mapEntry.getKey().id();
 
-                GridDhtPreloaderAssignments assigns = entry.getValue();
+                    for (Map.Entry<Integer, Set<Integer>> entry : mapEntry.getValue().entrySet()) {
+                        int grpId = entry.getKey();
 
-                Set<UUID> nodes = allGroupsMap.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>());
+                        allGroupsMap.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>()).add(nodeId);
 
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                if (!cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut))
-                    continue;
+                        // todo remove
+                        //assert cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut);
 
-                String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
+                        String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
 
-                Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
+                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
 
-                Set<Integer> allPartitions = allPartsMap.computeIfAbsent(grpId, v -> new HashSet<>());
+                        Set<Integer> allPartitions = allPartsMap.computeIfAbsent(grpId, v -> new HashSet<>());
 
-                for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-                    GridDhtPartitionDemandMessage msg = e.getValue();
-                    ClusterNode node = e.getKey();
+//                        GridDhtPartitionDemandMessage msg = e.getValue();
+//                        ClusterNode node = e.getKey();
+//
+//                        nodes.add(node.id());
 
-                    nodes.add(node.id());
+//                        Set<Integer> parttitions = msg.partitions().fullSet();
 
-                    Set<Integer> parttitions = msg.partitions().fullSet();
+                        for (Integer partId : entry.getValue()) {
+                            assert grp.topology().localPartition(partId).dataStore().readOnly() :
+                                "cache=" + grp.cacheOrGroupName() + " p=" + partId;
 
-                    for (Integer partId : parttitions) {
-                        assert grp.topology().localPartition(partId).dataStore().readOnly() :
-                            "cache=" + grp.cacheOrGroupName() + " p=" + partId;
+                            regionParts.add(((long)grpId << 32) + partId);
 
-                        regionParts.add(((long)grpId << 32) + partId);
-
-                        allPartitions.add(partId);
+                            allPartitions.add(partId);
+                        }
                     }
                 }
             }
+
+            //for (Map.Entry<Integer, GridDhtPreloaderAssignments> entry : assignments.entrySet()) {
+
+//            }
 
             for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
                 regions.put(e.getKey(), new FileRebalanceFuture.PageMemCleanupTask(e.getKey(), e.getValue()));
