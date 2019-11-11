@@ -613,7 +613,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry));
+                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry), qry.limit());
 
                     break;
 
@@ -790,7 +790,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert !cctx.mvccEnabled() || qry.mvccSnapshot() != null;
 
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
-        final InternalScanFilter<K,V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
+        final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
         try {
             injectResources(keyValFilter);
@@ -1142,7 +1142,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Need to call it after gathering start time because
                     // actual row extracting may happen inside this method.
-                    if(!iter.hasNext())
+                    if (!iter.hasNext())
                         break;
 
                     Object row0 = iter.next();
@@ -1158,7 +1158,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         // Scan iterator may return already transformed entry
                         data.add(row0);
                     else {
-                        IgniteBiTuple<K, V> row = (IgniteBiTuple<K, V>) row0;
+                        IgniteBiTuple<K, V> row = (IgniteBiTuple<K, V>)row0;
 
                         final K key = row.getKey();
 
@@ -1360,7 +1360,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final String namex = cctx.name();
 
         final InternalScanFilter<K, V> intFilter = qry.scanFilter() != null ?
-                new InternalScanFilter<>(qry.scanFilter()) : null;
+            new InternalScanFilter<>(qry.scanFilter()) : null;
 
         try {
             assert qry.type() == SCAN;
@@ -2501,6 +2501,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             /**
+             *
              */
             public void init() {
                 assert next == null;
@@ -2747,15 +2748,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param clsName Query class name.
      * @param search Search clause.
+     * @param limit Limits response records count. If 0 or less, considered to be no limit.
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search, boolean keepBinary) {
+        String search, int limit, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
-        return new GridCacheQueryAdapter<>(cctx,
+        return new GridCacheQueryAdapter<Map.Entry<K, V>>(cctx,
             TEXT,
             clsName,
             search,
@@ -2763,7 +2765,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-            null);
+            null).limit(limit);
     }
 
     /**
@@ -2916,7 +2918,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ) &&
                 cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ);
 
-            if (readEvt){
+            if (readEvt) {
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
                 subjId = qry.subjectId();
             }
@@ -3091,7 +3093,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             }
                         }
                         else
-                            next0 = !locNode ? new T2<>(key0, val0):
+                            next0 = !locNode ? new T2<>(key0, val0) :
                                 new CacheQueryEntry<>(key0, val0);
 
                         break;
@@ -3125,7 +3127,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(K k, V v){
+        @Override public boolean apply(K k, V v) {
             try {
                 return scanFilter == null || scanFilter.apply(k, v);
             }
