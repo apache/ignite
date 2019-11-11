@@ -222,4 +222,17 @@ public final class Commons {
     private static int[] ensureSize(int[] array, int size) {
         return size < array.length ? array : Arrays.copyOf(array, U.ceilPow2(size));
     }
+
+    public static <T> List<T> concat(List<T> col, T... elements) {
+        ArrayList<T> res = new ArrayList<>(col.size() + elements.length);
+
+        res.addAll(col);
+        Collections.addAll(res, elements);
+
+        return res;
+    }
+
+//    public String explainToString(RelNode node) {
+//        RelWriterImpl
+//    }
 }

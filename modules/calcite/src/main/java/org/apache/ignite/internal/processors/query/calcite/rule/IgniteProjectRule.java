@@ -49,6 +49,6 @@ public class IgniteProjectRule extends RelOptRule {
         RelOp<LogicalProject, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteProject::create);
 
         if (!transformOp.go(project))
-            call.transformTo(IgniteProject.create(project, converted));
+            call.transformTo(LogicalProject.create(converted, project.getProjects(), project.getRowType()));
     }
 }

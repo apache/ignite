@@ -16,12 +16,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.ToIntFunction;
+import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
@@ -106,5 +112,20 @@ public class IgniteDistributions {
 
     public static DestinationFunctionFactory hashFunction() {
         return HASH_FACTORY;
+    }
+
+    public static List<DistributionTrait> deriveDistributions(RelNode rel, RelMetadataQuery mq) {
+        if (!(rel instanceof RelSubset)) {
+            DistributionTrait dist = IgniteMdDistribution.distribution(rel, mq);
+
+            return dist.type() == DistributionType.ANY ? Collections.emptyList() : Collections.singletonList(dist);
+        }
+
+        HashSet<DistributionTrait> res = new HashSet<>();
+
+        for (RelNode relNode : ((RelSubset) rel).getRels())
+            res.addAll(deriveDistributions(relNode, mq));
+
+        return res.isEmpty() ? Collections.emptyList() : new ArrayList<>(res);
     }
 }

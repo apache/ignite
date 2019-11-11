@@ -49,6 +49,6 @@ public class IgniteFilterRule extends RelOptRule {
         RelOp<LogicalFilter, Boolean> transformOp = Commons.transformSubset(call, converted, IgniteFilter::create);
 
         if (!transformOp.go(filter))
-            call.transformTo(IgniteFilter.create(filter, converted));
+            call.transformTo(LogicalFilter.create(converted, filter.getCondition()));
     }
 }

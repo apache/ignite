@@ -37,11 +37,13 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.BROADCAST;
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
 /**
@@ -73,6 +75,10 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
     }
 
     public DistributionTrait getDistributionTrait(RelSubset rel, RelMetadataQuery mq) {
+        return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    public DistributionTrait getDistributionTrait(IgniteTableScan rel, RelMetadataQuery mq) {
         return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
@@ -120,7 +126,9 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
     }
 
     public static DistributionTrait join(RelMetadataQuery mq, RelNode left, RelNode right, RexNode condition) {
-        return distribution(left, mq);
+        DistributionTrait leftDist = distribution(left, mq);
+
+        return leftDist.type() != BROADCAST ? leftDist : distribution(right, mq);
     }
 
     public static DistributionTrait distribution(RelNode rel, RelMetadataQuery mq) {

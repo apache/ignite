@@ -155,14 +155,14 @@ public class IgniteRules {
         SubQueryRemoveRule.PROJECT,
         SubQueryRemoveRule.JOIN);
 
-    public static final List<RelOptRule> IGNITE_LOGICAL_RULES = ImmutableList.of(
+    public static final List<RelOptRule> IGNITE_RULES = ImmutableList.of(
         IgniteFilterRule.INSTANCE,
         IgniteProjectRule.INSTANCE,
         IgniteHashJoinRule.INSTANCE);
 
     public static List<RelOptRule> logicalRules(Context ctx) {
         return ImmutableList.<RelOptRule>builder()
-            .addAll(IGNITE_LOGICAL_RULES)
+            .addAll(IGNITE_RULES)
             .add(AbstractConverter.ExpandConversionRule.INSTANCE)
             .build();
     }

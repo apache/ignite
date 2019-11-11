@@ -55,7 +55,6 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -263,119 +262,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    public void testVolcanoPlanerLocal() throws Exception {
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.projectId = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
-
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
-
-        assertNotNull(ctx);
-
-        RelTraitDef[] traitDefs = {
-            ConventionTraitDef.INSTANCE
-        };
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
-            assertNotNull(planner);
-
-            Query query = ctx.unwrap(Query.class);
-
-            assertNotNull(planner);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            // Transformation chain
-
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.IGNITE_CONVENTION)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
-
-            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
-        }
-
-        assertNotNull(relRoot.rel);
-    }
-
-    @Test
-    public void testSplitterLocal() throws Exception {
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.projectId = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
-
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
-
-        assertNotNull(ctx);
-
-        RelTraitDef[] traitDefs = {
-            ConventionTraitDef.INSTANCE
-        };
-
-        RelRoot relRoot;
-
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
-            assertNotNull(planner);
-
-            Query query = ctx.unwrap(Query.class);
-
-            assertNotNull(planner);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            relRoot = planner.rel(sqlNode);
-
-            RelNode rel = relRoot.rel;
-
-            // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
-
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteRel.IGNITE_CONVENTION)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
-
-            relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
-        }
-
-        assertNotNull(relRoot);
-
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
-
-        assertNotNull(plan);
-
-        plan.init(ctx);
-
-        assertNotNull(plan);
-    }
-
-    @Test
     public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
@@ -440,7 +326,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
     public void testSplitterCollocatedReplicatedReplicated() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
@@ -521,7 +406,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
     public void testSplitterCollocatedReplicatedAndPartitioned() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
@@ -618,6 +502,30 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                if (cacheId == CU.cacheId("Project"))
+                    return IgniteDistributions.broadcast();
+
+                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(null, Arrays.asList(
+                        select(nodes, 1),
+                        select(nodes, 2),
+                        select(nodes, 2),
+                        select(nodes, 0),
+                        select(nodes, 1)
+                    ), Location.HAS_PARTITIONED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+
         Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
 
         assertNotNull(ctx);
@@ -682,6 +590,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) > ?";
 
+        TestRegistry registry = new TestRegistry(){
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                return IgniteDistributions.broadcast();
+            }
+
+            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new Location(select(nodes, 2), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                else if (cacheId == CU.cacheId("Project"))
+                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+
         Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
 
         assertNotNull(ctx);
@@ -734,11 +658,10 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 4);
+        assertTrue(plan.fragments().size() == 3);
     }
 
     @Test
-    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
     public void testSplitterPartiallyReplicated1() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
@@ -828,7 +751,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
-    @Ignore("Need to request broadcast trait as a variant for left inner join sub-tree.")
     public void testSplitterPartiallyReplicated2() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
