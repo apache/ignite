@@ -41,8 +41,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
     /** New test cache. */
     protected static final String NEW_TEST_CACHE = "NEW_CACHE";
+
     /** Cache name. */
     protected static final String TEST_CACHE = "TEST_CACHE";
+
     /** Forbidden cache. */
     protected static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
 
