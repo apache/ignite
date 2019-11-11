@@ -31,44 +31,26 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
-import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Test CRUD, create and destroy cache permissions.
+ * Test CRUD cache permissions.
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** */
-    protected static final String NEW_TEST_CACHE = "NEW_CACHE";
-
-    /** */
     @Test
-    public void testCrudCachePermissionsOnServerNode() throws Exception {
+    public void testServerNode() throws Exception {
         testCrudCachePermissions(false);
     }
 
     /** */
     @Test
-    public void testCrudCachePermissionsOnClientNode() throws Exception {
+    public void testClientNode() throws Exception {
         testCrudCachePermissions(true);
-    }
-
-    /** */
-    @Test
-    public void testCreateDestroyPermissionsOnServerNode() throws Exception {
-        testCreateDestroyCachePermissions(false);
-    }
-
-    /** */
-    @Test
-    public void testCreateDestroyPermissionsOnClientNode() throws Exception {
-        testCreateDestroyCachePermissions(true);
     }
 
     /**
@@ -83,28 +65,9 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
 
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));
+
             assertThrowsWithCause(() -> c.accept(node.cache(FORBIDDEN_CACHE)), SecurityException.class);
         }
-    }
-
-    /**
-     * @param isClient Is client.
-     * @throws Exception If failed.
-     */
-    private void testCreateDestroyCachePermissions(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS)
-                .appendSystemPermissions(JOIN_AS_SERVER, CACHE_CREATE)
-                .build(),
-            isClient);
-        // This won't fail becouse CACHE_CREATE is in systemPermissions.
-        node.createCache(NEW_TEST_CACHE);
-        // This won't fail since defaultAllowAll is true.
-        node.cache(NEW_TEST_CACHE).destroy();
-        node.cache(CACHE_NAME).destroy();
-        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
     }
 
     /**
@@ -119,28 +82,12 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
             c -> c.containsKey("key"),
             c -> c.remove("key"),
             c -> c.removeAll(Collections.singleton("key")),
+            IgniteCache::clear,
             c -> c.replace("key", "value"),
             c -> c.putIfAbsent("key", "value"),
             c -> c.getAndPut("key", "value"),
             c -> c.getAndRemove("key"),
-            c -> c.getAndReplace("key", "value"),
-            IgniteCache::clear
+            c -> c.getAndReplace("key", "value")
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startGridAllowAll("server").cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-        cleanPersistenceDir();
     }
 }
