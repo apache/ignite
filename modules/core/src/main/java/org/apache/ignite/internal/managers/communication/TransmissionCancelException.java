@@ -23,7 +23,19 @@ package org.apache.ignite.internal.managers.communication;
  * session on a node-sender.
  */
 public class TransmissionCancelException extends RuntimeException {
-    /** {@inheritDoc} */
+    /** Class serialization version number. */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Default no-op consturctor.
+     */
+    public TransmissionCancelException() {
+        // No-op.
+    }
+
+    /**
+     * @param msg Cancellation cause.
+     */
     public TransmissionCancelException(String msg) {
         super(msg);
     }
