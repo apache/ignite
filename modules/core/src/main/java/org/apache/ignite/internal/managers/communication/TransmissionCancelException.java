@@ -27,9 +27,4 @@ public class TransmissionCancelException extends RuntimeException {
     public TransmissionCancelException(String msg) {
         super(msg);
     }
-
-    /** {@inheritDoc} */
-    public TransmissionCancelException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }
