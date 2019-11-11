@@ -809,7 +809,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      * @throws Exception If fails.
      */
     @Test(expected = TransmissionCancelException.class)
-    public void testChunkHandlerCancel() throws Exception {
+    public void testChunkHandlerCancelTransmission() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
 
@@ -832,6 +832,11 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
+        }
+        catch (TransmissionCancelException e) {
+            log.error("Transmission cancelled", e);
+
+            throw e;
         }
     }
 
