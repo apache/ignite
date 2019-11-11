@@ -30,7 +30,7 @@ import org.h2.value.ValueNull;
  * @author Noel Grandin
  * @author Nicolas Fortin, Atelier SIG, IRSTV FR CNRS 24888
  */
-public class IndexCursor implements Cursor {
+public class IndexCursor implements Cursor, AutoCloseable {
 
     private final TableFilter tableFilter;
     private Index index;
@@ -292,5 +292,11 @@ public class IndexCursor implements Cursor {
     @Override
     public boolean previous() {
         throw DbException.throwInternalError(toString());
+    }
+
+    @Override
+    public void close() throws Exception {
+        if (cursor instanceof AutoCloseable)
+            ((AutoCloseable)cursor).close();
     }
 }

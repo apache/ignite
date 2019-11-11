@@ -1233,6 +1233,18 @@ public class TableFilter implements ColumnResolver {
         return indexHints;
     }
 
+    public void cleanup() {
+        current = null;
+        currentSearchRow = null;
+
+        try {
+            cursor.close();
+        }
+        catch (Exception ignore) {
+            // Ignore.
+        }
+    }
+
     /**
      * A visitor for table filters.
      */

@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Simple cursor abstraction. Initial state must be "before first".
  */
-public interface GridCursor<T> {
+public interface GridCursor<T> extends AutoCloseable {
     /**
      * Attempt to move cursor position forward.
      *
@@ -37,4 +37,24 @@ public interface GridCursor<T> {
      * @throws IgniteCheckedException If failed.
      */
     public T get() throws IgniteCheckedException;
+
+    /**
+     * Empty cursor.
+     */
+    GridCursor EMPTY_CURSOR = new GridCursor() {
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object get() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            // No-op.
+        }
+    };
 }

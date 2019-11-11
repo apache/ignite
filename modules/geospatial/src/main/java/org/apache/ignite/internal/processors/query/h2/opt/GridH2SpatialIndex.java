@@ -54,6 +54,8 @@ import org.h2.value.ValueGeometry;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 
+import static org.apache.ignite.internal.util.lang.GridCursor.EMPTY_CURSOR;
+
 /**
  * Spatial index.
  */
@@ -349,7 +351,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     @SuppressWarnings("unchecked")
     private GridCursor<H2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
-            return H2Utils.EMPTY_CURSOR;
+            return EMPTY_CURSOR;
 
         long time = System.currentTimeMillis();
 

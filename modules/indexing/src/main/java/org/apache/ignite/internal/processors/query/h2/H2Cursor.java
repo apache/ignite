@@ -28,12 +28,15 @@ import org.h2.result.SearchRow;
 /**
  * Cursor.
  */
-public class H2Cursor implements Cursor {
+public class H2Cursor implements Cursor, AutoCloseable {
     /** */
     private final GridCursor<H2Row> cursor;
 
     /** */
     private final long time = U.currentTimeMillis();
+
+    /** */
+    private Row cur;
 
     /**
      * @param cursor Cursor.
@@ -46,12 +49,7 @@ public class H2Cursor implements Cursor {
 
     /** {@inheritDoc} */
     @Override public Row get() {
-        try {
-            return cursor.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
+        return cur;
     }
 
     /** {@inheritDoc} */
@@ -68,8 +66,12 @@ public class H2Cursor implements Cursor {
                 if (row.expireTime() > 0 && row.expireTime() <= time)
                     continue;
 
+                cur = row;
+
                 return true;
             }
+
+            cur = null;
 
             return false;
         }
@@ -81,5 +83,11 @@ public class H2Cursor implements Cursor {
     /** {@inheritDoc} */
     @Override public boolean previous() {
         throw DbException.getUnsupportedException("previous");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cursor.close();
+        cur = null;
     }
 }
