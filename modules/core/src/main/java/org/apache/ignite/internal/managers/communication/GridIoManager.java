@@ -3289,8 +3289,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             catch (IgniteCheckedException e) {
                 closeChannelQuiet();
 
-                throw new IgniteCheckedException("Exception while sending file [rmtId=" + rmtId +
-                    ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
+                if (X.hasCause(e, TransmissionCancelException.class)) {
+                    throw new TransmissionCancelException("File transmission has been cancelled on the remote node " +
+                        "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey +
+                        ", retries=" + retries + ", cause='" + e.getCause().getMessage() + "']");
+                }
+                else {
+                    throw new IgniteCheckedException("Exception while sending file [rmtId=" + rmtId +
+                        ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
+                }
             }
             catch (Throwable e) {
                 closeChannelQuiet();
