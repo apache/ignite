@@ -345,18 +345,18 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             assertEquals(0, spi3.partitionsFullMessages());
         }
         else {
-            waitForTopologyUpdate(4, 6);
+            waitForTopologyUpdate(4, new AffinityTopologyVersion(6, 1));
 
             assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(3, spi0.partitionsFullMessages());
+            assertEquals(6, spi0.partitionsFullMessages());
 
-            assertEquals(1, spi1.partitionsSingleMessages());
+            assertEquals(2, spi1.partitionsSingleMessages());
             assertEquals(0, spi1.partitionsFullMessages());
 
-            assertEquals(1, spi2.partitionsSingleMessages());
+            assertEquals(2, spi2.partitionsSingleMessages());
             assertEquals(0, spi2.partitionsFullMessages());
 
-            assertEquals(1, spi3.partitionsSingleMessages());
+            assertEquals(2, spi3.partitionsSingleMessages());
             assertEquals(0, spi3.partitionsFullMessages());
         }
 
