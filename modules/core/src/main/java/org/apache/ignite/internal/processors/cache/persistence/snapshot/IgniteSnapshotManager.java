@@ -77,8 +77,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -127,7 +125,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
-public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware  {
+public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -276,8 +274,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
-
-        cctx.exchange().registerExchangeAwareComponent(this);
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
@@ -768,8 +764,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
             cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
-
-            cctx.exchange().unregisterExchangeAwareComponent(this);
         }
         finally {
             busyLock.unblock();
@@ -814,21 +808,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      */
     public File snapshotWorkDir(String snpName) {
         return new File(snapshotWorkDir(), snpName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        SnapshotTransmissionFuture transFut = snpRq.get();
-
-        if (transFut == null)
-            return;
-
-        transFut.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        // No-op.
     }
 
     /**

@@ -873,9 +873,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             exchangeType = exchange;
 
-            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
-                comp.onInitBeforeTopologyLock(this);
-
             updateTopologies(crdNode);
 
             timeBag.finishGlobalStage("Determine exchange type");
@@ -2255,9 +2252,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (err == null)
                 cctx.coordinators().onExchangeDone(events().discoveryCache());
-
-            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
-                comp.onDoneBeforeTopologyUnlock(this);
 
             // Create and destory caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
