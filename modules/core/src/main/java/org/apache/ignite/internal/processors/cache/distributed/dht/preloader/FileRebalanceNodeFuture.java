@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -76,12 +77,12 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
     private final int rebalanceOrder;
 
     /** Node snapshot name. */
-    private volatile String snapName;
+    private volatile IgniteInternalFuture<Boolean> snapFut;
 
     /** */
-    public String snapshotName() {
-        return snapName;
-    }
+//    public IgniteInternalFuture<Boolean> snapshotFuture() {
+//        return snapFut;
+//    }
 
     /**
      * Default constructor for the dummy future.
@@ -272,6 +273,14 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
 
         boolean r = super.onDone(res, err, cancel);
 
+        try {
+            if (!snapFut.isDone())
+                snapFut.cancel();
+        }
+        catch (IgniteCheckedException e) {
+            e.printStackTrace();
+        }
+
         mainFut.onNodeDone(this, res, err, cancel);
 
         return r;
@@ -282,10 +291,10 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
      */
     public void requestPartitions() {
         try {
-            snapName = cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
+            snapFut = cctx.snapshotMgr().createRemoteSnapshot(node.id(), assigns);
 
             if (log.isInfoEnabled())
-                log.info("Start partitions preloading [from=" + node.id() + ", snapshot=" + snapName + ", fut=" + this + ']');
+                log.info("Start partitions preloading [from=" + node.id() + ", snapshot=" + snapFut + ", fut=" + this + ']');
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to create remote snapshot [from=" + node.id() + ", assigns=" + assigns + "]", e);

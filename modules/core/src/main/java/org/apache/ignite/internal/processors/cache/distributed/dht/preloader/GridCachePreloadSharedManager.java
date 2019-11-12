@@ -39,7 +39,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -438,7 +437,6 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             if (part.state() == OWNING)
                 continue;
 
-
             assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
                 ", p=" + part.id() + ", state=" + part.state() + "]";
 
@@ -644,12 +642,12 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      */
     private class PartitionSnapshotListener implements SnapshotListener {
         /** {@inheritDoc} */
-        @Override public void onPartition(UUID nodeId, String snpName, File file, int grpId, int partId) {
+        @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
             FileRebalanceNodeFuture fut = fileRebalanceFut.nodeRoutine(grpId, nodeId);
 
-            if (staleFuture(fut) || !snpName.equals(fut.snapshotName())) {
-                if (log.isDebugEnabled())
-                    log.debug("Cancel partitions download due to stale rebalancing future [current snapshot=" + snpName + ", fut=" + fut);
+            if (staleFuture(fut)) { // || !snpName.equals(fut.snapshotName())) {
+//                if (log.isDebugEnabled())
+//                    log.debug("Cancel partitions download due to stale rebalancing future [current snapshot=" + snpName + ", fut=" + fut);
 
                 file.delete();
 
@@ -687,23 +685,23 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public void onEnd(UUID rmtNodeId, String snpName) {
+        @Override public void onEnd(UUID rmtNodeId) {
             // No-op.
             // todo add assertion
         }
 
         /** {@inheritDoc} */
-        @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
-            if (t instanceof ClusterTopologyCheckedException) {
-                if (log.isDebugEnabled())
-                    log.debug("Snapshot canceled (topology changed): " + snpName);
+        @Override public void onException(UUID rmtNodeId, Throwable t) {
+//            if (t instanceof CancelledSna) {
+//                if (log.isDebugEnabled())
+//                    log.debug("Snapshot canceled (topology changed): " + snpName);
+//
+////                fileRebalanceFut.cancel();
+//
+//                return;
+//            }
 
-//                fileRebalanceFut.cancel();
-
-                return;
-            }
-
-            log.error("Unable to create remote snapshot: " + snpName, t);
+            log.error("Unable to create remote snapshot: " + t.getMessage(), t);
 
 //            fileRebalanceFut.onDone(t);
         }
