@@ -299,9 +299,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5, 0);
-        waitRebalanceFinished(ignite2, 5, 0);
-        waitRebalanceFinished(ignite3, 5, 0);
+        waitRebalanceFinished(ignite0, 5, minorVer);
+        waitRebalanceFinished(ignite2, 5, minorVer);
+        waitRebalanceFinished(ignite3, 5, minorVer);
     }
 
     /**
