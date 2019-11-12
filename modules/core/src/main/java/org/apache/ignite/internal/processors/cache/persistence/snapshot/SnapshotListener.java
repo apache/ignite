@@ -25,21 +25,21 @@ import java.util.UUID;
  */
 public interface SnapshotListener {
     /**
-     * @param snpName Snapshot name.
+     * @param rmtNodeId Remote node id received partition from.
      * @param part Partition file.
      * @param grpId Cache group id.
      * @param partId Partition id.
      */
-    public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId);
+    public void onPartition(UUID rmtNodeId, File part, int grpId, int partId);
 
     /**
-     * @param snpName Snapshot name.
+     * @param rmtNodeId Remote node id ends processing request.
      */
-    public void onEnd(UUID rmtNodeId, String snpName);
+    public void onEnd(UUID rmtNodeId);
 
     /**
-     * @param snpName Snapshot name.
+     * @param rmtNodeId Remote node id.
      * @param t Exception which has been occurred.
      */
-    public void onException(UUID rmtNodeId, String snpName, Throwable t);
+    public void onException(UUID rmtNodeId, Throwable t);
 }
