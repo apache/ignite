@@ -261,13 +261,6 @@ public class DistributedProcessManager {
     }
 
     /**
-     * Handles case when all server nodes have left the grid.
-     */
-    private void onAllServersLeft() {
-        processes.clear();
-    }
-
-    /**
      * Sends single node message to coordinator.
      *
      * @param p Process.
@@ -316,6 +309,13 @@ public class DistributedProcessManager {
                     onAllReceived(proc);
             }
         });
+    }
+
+    /**
+     * Handles case when all server nodes have left the grid.
+     */
+    private void onAllServersLeft() {
+        processes.clear();
     }
 
     /** @return Cluster coordinator, {@code null} if failed to determine. */

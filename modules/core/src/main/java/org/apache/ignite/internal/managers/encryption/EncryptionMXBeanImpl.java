@@ -24,12 +24,10 @@ import org.apache.ignite.mxbean.EncryptionMXBean;
  * Encryption features MBean.
  */
 public class EncryptionMXBeanImpl implements EncryptionMXBean {
-    /** */
+    /** Encryption manager. */
     private final GridEncryptionManager encryptionMgr;
 
-    /**
-     * @param ctx Context.
-     */
+    /** @param ctx Context. */
     public EncryptionMXBeanImpl(GridKernalContextImpl ctx) {
         encryptionMgr = ctx.encryption();
     }

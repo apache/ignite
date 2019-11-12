@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcessManager;
 import org.apache.ignite.internal.util.distributed.DistributedProcesses;
@@ -223,9 +222,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                         fut.onDone(null, e);
                     }
                 }
-
-                if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
-                    masterKeyChangeFut.onResult(leftNodeId);
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
@@ -534,7 +530,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param encGrpKey Encrypted group key.
      */
     public void groupKey(int grpId, byte[] encGrpKey) {
-        assert !grpEncKeys.containsKey(grpId) && !isMasterKeyChangeInProgress();
+        assert !grpEncKeys.containsKey(grpId);
 
         Serializable encKey;
 
@@ -1087,17 +1083,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (spi instanceof TcpDiscoverySpi)
             return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
         else {
-            ClusterNode crd = coordinator();
+            ClusterNode crd = U.oldest(ctx.discovery().aliveServerNodes(), null);
 
             return crd != null && F.eq(ctx.localNodeId(), crd.id());
         }
-    }
-
-    /**
-     * @return Cluster coordinator, {@code null} if failed to determine.
-     */
-    @Nullable ClusterNode coordinator() {
-        return U.oldest(ctx.discovery().aliveServerNodes(), null);
     }
 
     /**
@@ -1364,12 +1353,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** */
         private final UUID id;
 
-        /** */
-        private final Set<UUID> remaining = new GridConcurrentHashSet<>();
-
-        /**
-         * @param id Future ID.
-         */
+        /** @param id Future ID. */
         private MasterKeyChangeFuture(UUID id) {
             this.id = id;
         }
@@ -1382,19 +1366,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MasterKeyChangeFuture.class, this);
-        }
-
-        /** */
-        public void onResult(UUID nodeId) {
-            boolean rmvd = remaining.remove(nodeId);
-
-            if (rmvd && remaining.isEmpty() && !isDone())
-                onDone();
-        }
-
-        /** */
-        public void addRemaining(Set<UUID> remaining) {
-            this.remaining.addAll(remaining);
         }
     }
 }
