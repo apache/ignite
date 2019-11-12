@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.client.suite;
 
+import org.apache.ignite.common.ClientSideCacheCreationDestructionWileTopologyChangeTest;
+import org.apache.ignite.common.ClientSizeCacheCreationDestructionTest;
 import org.apache.ignite.internal.IgniteClientFailuresTest;
 import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
@@ -172,7 +174,10 @@ import org.junit.runners.Suite;
     IgniteClientFailuresTest.class,
 
     // Test for custom queries registry
-    ThinClientCustomQueryRegistryTest.class
+    ThinClientCustomQueryRegistryTest.class,
+
+    ClientSizeCacheCreationDestructionTest.class,
+    ClientSideCacheCreationDestructionWileTopologyChangeTest.class
 })
 public class IgniteClientTestSuite {
 }
