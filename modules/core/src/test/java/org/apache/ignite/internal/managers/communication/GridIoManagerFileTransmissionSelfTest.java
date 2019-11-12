@@ -808,7 +808,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = TransmissionCancelException.class)
+    @Test(expected = TransmissionCancelledException.class)
     public void testChunkHandlerCancelTransmission() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -822,7 +822,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
                 return new Consumer<ByteBuffer>() {
                     @Override public void accept(ByteBuffer buffer) {
-                        throw new TransmissionCancelException("Operation cancelled by the user");
+                        throw new TransmissionCancelledException("Operation cancelled by the user");
                     }
                 };
             }
@@ -833,7 +833,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .openTransmissionSender(rcv.localNode().id(), topic)) {
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
         }
-        catch (TransmissionCancelException e) {
+        catch (TransmissionCancelledException e) {
             log.error("Transmission cancelled", e);
 
             throw e;

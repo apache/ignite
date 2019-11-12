@@ -47,7 +47,7 @@ public interface TransmissionHandler {
     public void onException(UUID nodeId, Throwable err);
 
     /**
-     * Absolute path of a file to receive remote transmission data into. The {@link TransmissionCancelException}
+     * Absolute path of a file to receive remote transmission data into. The {@link TransmissionCancelledException}
      * can be thrown if it is necessary to gracefully interrupt current transmission session on the node-sender.
      *
      * @param nodeId Remote node id from which request has been received.
@@ -61,7 +61,7 @@ public interface TransmissionHandler {
      * It accepts within each chunk a {@link ByteBuffer} with data from input for further processing.
      * Activated when the {@link TransmissionPolicy#CHUNK} policy sent.
      * <p>
-     * The {@link TransmissionCancelException} can be thrown to gracefully interrupt the local transmission and
+     * The {@link TransmissionCancelledException} can be thrown to gracefully interrupt the local transmission and
      * the node-senders transmission session.
      *
      * @param nodeId Remote node id from which request has been received.
@@ -75,7 +75,7 @@ public interface TransmissionHandler {
      * be processed under the hood using zero-copy transferring algorithm and only start file processing and
      * the end of processing will be provided. Activated when the {@link TransmissionPolicy#FILE} policy sent.
      * <p>
-     * The {@link TransmissionCancelException} can be thrown to gracefully interrupt the local transmission and
+     * The {@link TransmissionCancelledException} can be thrown to gracefully interrupt the local transmission and
      * the node-senders transmission session.
      *
      * @param nodeId Remote node id from which request has been received.

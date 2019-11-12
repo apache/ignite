@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
@@ -499,7 +500,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 if (transFut.isCancelled()) {
                     snpRq.compareAndSet(transFut, null);
 
-                    throw new IgniteException("Snapshot request is cancelled.");
+                    throw new TransmissionCancelledException("Snapshot request is cancelled [snpName=" + snpName +
+                        ", cacheDirName=" + cacheDirName + ", partId=" + partId + ']');
                 }
 
                 try {
@@ -612,7 +614,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                             if (transFut.isCancelled()) {
                                 snpRq.compareAndSet(transFut, null);
 
-                                throw new IgniteException("Snapshot request is cancelled " +
+                                throw new TransmissionCancelledException("Snapshot request is cancelled " +
                                     "[snpName=" + snpName + ", grpId=" + grpId + ", partId=" + partId + ']');
                             }
 
@@ -657,7 +659,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         if (transFut.isCancelled()) {
                             snpRq.compareAndSet(transFut, null);
 
-                            throw new IgniteException("Snapshot request is cancelled.");
+                            throw new TransmissionCancelledException("Snapshot request is cancelled [snpName=" + snpName +
+                                ", grpId=" + grpId + ", partId=" + partId + ']');
                         }
 
                         busyLock.enterBusy();

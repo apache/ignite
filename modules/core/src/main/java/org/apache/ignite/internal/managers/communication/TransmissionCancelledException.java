@@ -22,9 +22,9 @@ package org.apache.ignite.internal.managers.communication;
  * at anytime during session handling by a {@link TransmissionHandler} to gracefully interrupt the transmission
  * session on a node-sender.
  */
-public class TransmissionCancelException extends RuntimeException {
+public class TransmissionCancelledException extends RuntimeException {
     /** {@inheritDoc} */
-    public TransmissionCancelException(String msg) {
+    public TransmissionCancelledException(String msg) {
         super(msg);
     }
 }
