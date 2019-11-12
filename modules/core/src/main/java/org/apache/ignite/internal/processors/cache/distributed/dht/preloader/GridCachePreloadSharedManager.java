@@ -145,7 +145,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             log.debug("Preparing to start rebalancing: " + exchId);
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            Set<Integer> moving = movingPartitions(grp, exchFut);
+            Set<Integer> moving = detectMovingPartitions(grp, exchFut);
 
             if (moving == null)
                 continue;
@@ -158,7 +158,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    private Set<Integer> movingPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
+    private Set<Integer> detectMovingPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         int partitions = grp.affinity().partitions();
@@ -370,6 +370,16 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param fut Future.
+     * @return {@code True} if rebalance topology version changed by exchange thread or force
+     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
+     */
+    private boolean topologyChanged(FileRebalanceNodeFuture fut) {
+        return !cctx.exchange().rebalanceTopologyVersion().equals(fut.topologyVersion());
+        // todo || fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+    }
+
+    /**
      * @param grp The corresponding to assignments cache group context.
      * @param nodes Preloading assignments.
      * @return {@code True} if cache must be rebalanced by sending files.
@@ -405,30 +415,39 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         if (assignments == null || assignments.isEmpty())
             return false;
 
-        if (movingPartitions(grp, exchFut) == null)
+//        if (movingPartitions(grp, exchFut) == null)
+//            return false;
+
+        if (!fileRebalanceSupported(grp, assignments.keySet()))
             return false;
 //
-//        // onExchangeDone should create all partitions
-//        AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
-//
-//        CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
-//
-//        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-//            if (part.state() == OWNING)
-//                continue;
-//
-//            if (!aff.get(part.id()).contains(cctx.localNode()))
-//                continue;
-//
-//            assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
-//                ", p=" + part.id() + ", state=" + part.state() + "]";
-//
-//            assert part.dataStore().readOnly() : "Expected read-only partition [cache=" + grp.cacheOrGroupName() +
-//                ", p=" + part.id() + "]";
-//
-//            if (exchFut.partitionFileSupplier(grp.groupId(), part.id(), cntrsMap.updateCounter(part.id())) == null)
-//                return false;
-//        }
+        // onExchangeDone should create all partitions
+        AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
+
+        CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
+
+        // todo currentLocalPartitions?
+        int parts = grp.affinity().partitions();
+
+        for (int p = 0; p < parts; p++) {
+            if (!aff.get(p).contains(cctx.localNode()))
+                continue;
+
+            GridDhtLocalPartition part = grp.topology().localPartition(p);
+
+            if (part.state() == OWNING)
+                continue;
+
+
+            assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
+                ", p=" + part.id() + ", state=" + part.state() + "]";
+
+            assert part.dataStore().readOnly() : "Expected read-only partition [cache=" + grp.cacheOrGroupName() +
+                ", p=" + part.id() + "]";
+
+            if (exchFut.partitionFileSupplier(grp.groupId(), part.id(), cntrsMap.updateCounter(part.id())) == null)
+                return false;
+        }
 
         // For now mixed rebalancing modes are not supported.
         for (GridDhtPartitionDemandMessage msg : assignments.values()) {
@@ -448,6 +467,15 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * todo this method should be moved into GridDhtLocalPartition and implemented similar to destroy partition
+     *                                             DhtLocalPartition.restore()
+     *                                               /                   /
+     *                                              /      (1) dataStore.reinit()
+     *                                             /
+     *                             (2) schedulePartition destroy
+     *                                           /
+     *                                    return future (cancel can be implemented similar to destroy)
+     *
      * Restore partition on new file. Partition should be completely destroyed before restore it with new file.
      *
      * @param grpId Group id.
@@ -539,17 +567,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         return endFut;
     }
 
-    /**
-     * @param fut Future.
-     * @return {@code True} if rebalance topology version changed by exchange thread or force
-     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
-     */
-    private boolean topologyChanged(FileRebalanceNodeFuture fut) {
-        return !cctx.exchange().rebalanceTopologyVersion().equals(fut.topologyVersion());
-        // todo || fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
-    }
-
-    /** */
+    /**todo should be elimiaated (see comment about restorepartition) */
     public static class CheckpointListener implements DbCheckpointListener {
         /** Queue. */
         private final ConcurrentLinkedQueue<CheckpointTask> queue = new ConcurrentLinkedQueue<>();
