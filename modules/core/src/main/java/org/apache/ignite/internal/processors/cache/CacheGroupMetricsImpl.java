@@ -68,6 +68,9 @@ public class CacheGroupMetricsImpl {
     /** */
     private final LongMetric sparseStorageSize;
 
+    /** Number of local partitions initialized on current node. */
+    private final AtomicLongMetric initLocalPartitionsNumber;
+
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
         /**
@@ -103,6 +106,8 @@ public class CacheGroupMetricsImpl {
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
+
+        initLocalPartitionsNumber = mreg.longMetric("InitializedLocalPartitionsNumber", "Number of local partitions initialized on current node.");
 
         DataRegion region = ctx.dataRegion();
 
@@ -185,6 +190,20 @@ public class CacheGroupMetricsImpl {
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();
+    }
+
+    /**
+     * Increments number of local partitions initialized on current node.
+     */
+    public void incrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.increment();
+    }
+
+    /**
+     * Decrements number of local partitions initialized on current node.
+     */
+    public void decrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.decrement();
     }
 
     /** */

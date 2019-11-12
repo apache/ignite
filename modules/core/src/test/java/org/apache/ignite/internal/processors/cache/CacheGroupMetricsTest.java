@@ -46,6 +46,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -414,5 +415,35 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             mxBean0Grp1.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
             mxBean0Grp2.get2().<LongMetric>findMetric("TotalAllocatedPages").value() +
             mxBean0Grp3.get2().<LongMetric>findMetric("TotalAllocatedPages").value());
+    }
+
+    /**
+     * Verifies metric for initialized local partitions.
+     * It is incremented when partition is actually created on node and decremented when it is destroyed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInitializedLocalPartitions() throws Exception {
+        pds = true;
+
+        cleanPersistenceDir();
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        MetricRegistry group1Metrics = cacheGroupMetrics(0, "group1").get2();
+
+        AtomicLongMetric locPartsNum = group1Metrics.findMetric("InitializedLocalPartitionsNumber");
+
+        assertEquals(0, locPartsNum.value());
+
+        IgniteCache cache = ignite.cache("cache1");
+
+        for (int i = 0; i < 10; i++)
+            cache.put(i, new byte[100]);
+
+        assertEquals(10, locPartsNum.value());
     }
 }

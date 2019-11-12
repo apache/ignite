@@ -1897,7 +1897,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int grpId = grp.groupId();
             long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
 
-            long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+            AtomicBoolean metaPageAllocated = new AtomicBoolean(false);
+
+            long partMetaPage = pageMem.acquirePage(grpId, partMetaId, metaPageAllocated);
+
+            if (metaPageAllocated.get())
+                grp.metrics().incrementInitializedLocalPartitions();
+
             try {
                 boolean allocated = false;
                 boolean pendingTreeAllocated = false;
