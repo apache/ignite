@@ -42,9 +42,9 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -325,23 +325,18 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         ignite4.close();
 
         if (compatibilityMode) {
-            // With late affinity old protocol exchange on server leave is completed by discovery message.
-            // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
-            boolean exchangeAfterRebalance = false;
-
-            waitForTopologyUpdate(4,
-                exchangeAfterRebalance ? new AffinityTopologyVersion(6, 1) : new AffinityTopologyVersion(6, 0));
+            waitForTopologyUpdate(4, new AffinityTopologyVersion(6, 1));
 
             assertEquals(0, spi0.partitionsSingleMessages());
-            assertEquals(exchangeAfterRebalance ? 3 : 0, spi0.partitionsFullMessages());
+            assertEquals(3, spi0.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 2 : 1, spi1.partitionsSingleMessages());
+            assertEquals(2, spi1.partitionsSingleMessages());
             assertEquals(0, spi1.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi2.partitionsSingleMessages());
+            assertEquals(1, spi2.partitionsSingleMessages());
             assertEquals(0, spi2.partitionsFullMessages());
 
-            assertEquals(exchangeAfterRebalance ? 1 : 0, spi3.partitionsSingleMessages());
+            assertEquals(1, spi3.partitionsSingleMessages());
             assertEquals(0, spi3.partitionsFullMessages());
         }
         else {

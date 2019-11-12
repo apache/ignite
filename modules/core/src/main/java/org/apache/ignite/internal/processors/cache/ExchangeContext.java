@@ -65,7 +65,8 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int ver = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (ver > 2 && fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted() && fut.wasRebalanced()) {
+        if (!compatibilityNode && ver > 2 &&
+            fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted() && fut.wasRebalanced()) {
             baselineNodeLeft = true;
             merge = false;
 
