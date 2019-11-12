@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.cache;
+package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -29,9 +29,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Checks correct checkpoint times logging
+ * Checks correct checkpoint times logging.
  */
-public class CheckCheckpointStartLoggingTest extends GridCommonAbstractTest {
+public class CheckpointStartLoggingTest extends GridCommonAbstractTest {
     /** */
     private static final String VALID_MS_PATTERN = "[0-9]*ms";
 
