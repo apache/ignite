@@ -15,46 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.IgniteException;
 
 /**
- * Result of a function throwing an exception.
+ * Exception is used to cancel a file transmission operation on the receiver. This exception may be thrown
+ * at anytime during session handling by a {@link TransmissionHandler} to gracefully interrupt the transmission
+ * session on a node-sender.
  */
-final class Result<T> {
-    /** Value. */
-    private final T val;
-
-    /** Exception. */
-    private final ClientException ex;
+public class TransmissionCancelledException extends IgniteException {
+    /** Class serialization version number. */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Initializes a successful result.
+     * Default no-op consturctor.
      */
-    Result(T val) {
-        this.val = val;
-        ex = null;
+    public TransmissionCancelledException() {
+        // No-op.
     }
 
     /**
-     * Initializes a failed result.
+     * @param msg Cancellation cause.
      */
-    Result(ClientException ex) {
-        if (ex == null)
-            throw new NullPointerException("ex");
-
-        this.ex = ex;
-        val = null;
-    }
-
-    /**
-     * @return Value;
-     */
-    public T get() throws ClientException {
-        if (ex != null)
-            throw ex;
-
-        return val;
+    public TransmissionCancelledException(String msg) {
+        super(msg);
     }
 }

@@ -125,6 +125,13 @@ public class FullPageId {
     }
 
     /**
+     * @return Effective page ID.
+     */
+    public long effectivePageId() {
+        return effectivePageId;
+    }
+
+    /**
      * @return Cache group ID.
      */
     public int groupId() {

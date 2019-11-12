@@ -2496,7 +2496,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
                         new GridNioSslFilter(ignite.configuration().getSslContextFactory().create(),
-                            true, ByteOrder.nativeOrder(), log);
+                            true, ByteOrder.LITTLE_ENDIAN, log);
 
                     sslFilter.directMode(true);
 
@@ -2525,7 +2525,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     .serverName("tcp-comm")
                     .tcpNoDelay(tcpNoDelay)
                     .directBuffer(directBuf)
-                    .byteOrder(ByteOrder.nativeOrder())
+                    .byteOrder(ByteOrder.LITTLE_ENDIAN)
                     .socketSendBufferSize(sockSndBuf)
                     .socketReceiveBufferSize(sockRcvBuf)
                     .sendQueueLimit(msgQueueLimit)
@@ -3843,7 +3843,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslMeta != null;
 
-                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
+                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.LITTLE_ENDIAN, log);
 
                 if (!sslHnd.handshake())
                     throw new HandshakeException("SSL handshake is not completed.");
@@ -3921,7 +3921,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             buf = ByteBuffer.allocate(msg.getMessageSize());
 
-            buf.order(ByteOrder.nativeOrder());
+            buf.order(ByteOrder.LITTLE_ENDIAN);
 
             boolean written = msg.writeTo(buf, null);
 
@@ -3945,10 +3945,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 assert sslHnd != null;
 
                 buf = ByteBuffer.allocate(1000);
-                buf.order(ByteOrder.nativeOrder());
+                buf.order(ByteOrder.LITTLE_ENDIAN);
 
                 ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-                decode.order(ByteOrder.nativeOrder());
+                decode.order(ByteOrder.LITTLE_ENDIAN);
 
                 for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                     int read = ch.read(buf);
@@ -3986,7 +3986,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else {
                 buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                buf.order(ByteOrder.nativeOrder());
+                buf.order(ByteOrder.LITTLE_ENDIAN);
 
                 for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                     int read = ch.read(buf);
