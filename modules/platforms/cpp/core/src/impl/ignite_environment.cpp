@@ -40,8 +40,6 @@ namespace ignite
 {
     namespace impl
     {
-        typedef common::concurrent::SharedPointer<impl::cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
-
         /**
          * Callback codes.
          */
@@ -92,6 +90,8 @@ namespace ignite
             };
         };
 
+        typedef SharedPointer<impl::cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
+
         /*
          * Stores cluster nodes in thread-safe manner.
          */
@@ -112,6 +112,18 @@ namespace ignite
                 CsLockGuard mtx(nodesLock);
 
                 nodes.insert(std::pair<Guid, SP_ClusterNodeImpl>(node.Get()->GetId(), node));
+            }
+
+            SP_ClusterNodeImpl GetLocalNode()
+            {
+                CsLockGuard mtx(nodesLock);
+
+                std::map<Guid, SP_ClusterNodeImpl>::iterator it;
+                for (it = nodes.begin(); it != nodes.end(); ++it)
+                    if (it->second.Get()->IsLocal())
+                        return it->second;
+
+                return NULL;
             }
 
             SP_ClusterNodeImpl GetNode(Guid Id)
@@ -136,6 +148,9 @@ namespace ignite
         {
             int64_t res = 0;
             SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            if (!env)
+                return res;
 
             switch (type)
             {
@@ -353,6 +368,8 @@ namespace ignite
         {
             JniHandlers hnds;
 
+            memset(&hnds, 0, sizeof(hnds));
+
             hnds.target = target;
 
             hnds.inLongOutLong = InLongOutLong;
@@ -443,6 +460,11 @@ namespace ignite
         BinaryTypeUpdater* IgniteEnvironment::GetTypeUpdater()
         {
             return metaUpdater;
+        }
+
+        IgniteEnvironment::SP_ClusterNodeImpl IgniteEnvironment::GetLocalNode()
+        {
+            return nodes.Get()->GetLocalNode();
         }
 
         IgniteEnvironment::SP_ClusterNodeImpl IgniteEnvironment::GetNode(Guid Id)

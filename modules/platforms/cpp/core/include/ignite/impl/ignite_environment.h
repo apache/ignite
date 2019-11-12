@@ -35,12 +35,15 @@ namespace ignite
     namespace impl
     {
         /* Forward declarations. */
+        class IgniteEnvironment;
         class IgniteBindingImpl;
         class ModuleManager;
         class ClusterNodesHolder;
         namespace cluster {
             class ClusterNodeImpl;
         }
+
+        typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
 
         /**
          * Defines environment in which Ignite operates.
@@ -197,6 +200,13 @@ namespace ignite
              * @return Type updater.
              */
             binary::BinaryTypeUpdater* GetTypeUpdater();
+
+            /**
+             * Get local cluster node implementation.
+             *
+             * @return Cluster node implementation or NULL if does not exist.
+             */
+            SP_ClusterNodeImpl GetLocalNode();
 
             /**
              * Get cluster node implementation by id.

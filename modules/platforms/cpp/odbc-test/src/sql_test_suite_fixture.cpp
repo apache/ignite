@@ -194,7 +194,7 @@ namespace ignite
         BOOST_CHECK_EQUAL(res.Data2, expected.GetMostSignificantBits() & 0x00000000FFFF0000ULL >> 16);
         BOOST_CHECK_EQUAL(res.Data3, expected.GetMostSignificantBits() & 0x000000000000FFFFULL);
 
-        for (int i = 0; i < sizeof(res.Data4); ++i)
+        for (size_t i = 0; i < sizeof(res.Data4); ++i)
             BOOST_CHECK_EQUAL(res.Data4[i], (expected.GetLeastSignificantBits() & (0xFFULL << (8 * i))) >> (8 * i));
     }
 

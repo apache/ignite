@@ -30,21 +30,6 @@ namespace
     {
         return *reinterpret_cast<IgniteClientImpl*>(ptr.Get());
     }
-
-    const IgniteClientImpl& GetClientImpl(const SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<const IgniteClientImpl*>(ptr.Get());
-    }
-
-    CacheClientImpl& GetCacheImpl(SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<CacheClientImpl*>(ptr.Get());
-    }
-
-    const CacheClientImpl& GetCacheImpl(const SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<const CacheClientImpl*>(ptr.Get());
-    }
 }
 
 namespace ignite
