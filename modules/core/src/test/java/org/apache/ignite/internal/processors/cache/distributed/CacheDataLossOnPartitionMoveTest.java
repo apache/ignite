@@ -65,7 +65,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
     public static final int GRIDS_CNT = 2;
 
     /** */
-    public static final String EVEN_GRP = "event";
+    public static final String EVEN_GRP = "even";
 
     /** */
     public static final String ODD_GRP = "odd";

@@ -2221,7 +2221,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (rebInfo.empty()) { // Recalculated as ideally rebalanced locally.
             fut.markRebalanced();
 
-            if (!rebInfo.deploymentIds.isEmpty()) // Contains groups to be initialized as ideally rebalanced across the cluster.
+            if (!rebInfo.deploymentIds.isEmpty()) // Contains groups rebalanced at previous topology.
                 try {
                     CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(rebInfo.topVer, rebInfo.deploymentIds);
 
@@ -2701,15 +2701,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         /**
          * @param topVer Topology version.
-         * @param waitInfo Previous wait info.
+         * @param prev Previous wait info.
          */
-        WaitRebalanceInfo(AffinityTopologyVersion topVer, WaitRebalanceInfo waitInfo) {
+        WaitRebalanceInfo(AffinityTopologyVersion topVer, WaitRebalanceInfo prev) {
             this.topVer = topVer;
 
-            if (waitInfo != null) {
-                deploymentIds.putAll(waitInfo.deploymentIds);
-
-                assert !deploymentIds.isEmpty();
+            if (prev != null) {
+                for (Map.Entry<Integer, IgniteUuid> entry : prev.deploymentIds.entrySet()) {
+                    if (!prev.grps.contains(entry.getKey())) // Rebalanced.
+                        deploymentIds.put(entry.getKey(), entry.getValue());
+                }
             }
         }
 
