@@ -90,6 +90,8 @@ namespace ignite
             };
         };
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         typedef SharedPointer<impl::cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
 
         /*
@@ -97,6 +99,8 @@ namespace ignite
          */
         class ClusterNodesHolder
         {
+            typedef common::concurrent::SharedPointer<impl::cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
+
             CriticalSection nodesLock;
             std::map<Guid, SP_ClusterNodeImpl> nodes;
 
@@ -107,12 +111,14 @@ namespace ignite
                 // No-op.
             }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
             void AddNode(SP_ClusterNodeImpl node)
             {
                 CsLockGuard mtx(nodesLock);
 
                 nodes.insert(std::pair<Guid, SP_ClusterNodeImpl>(node.Get()->GetId(), node));
             }
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
             SP_ClusterNodeImpl GetLocalNode()
             {
@@ -137,9 +143,12 @@ namespace ignite
             }
         };
 
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
+
+
         /**
          * InLongOutLong callback.
-         * 
+         *
          * @param target Target environment.
          * @param type Operation type.
          * @param val Value.
@@ -154,6 +163,7 @@ namespace ignite
 
             switch (type)
             {
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
                 case OperationCallback::NODE_INFO:
                 {
                     SharedPointer<InteropMemory> mem = env->Get()->GetMemory(val);
@@ -164,6 +174,7 @@ namespace ignite
                     env->Get()->nodes.Get()->AddNode(node);
                     break;
                 }
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
                 case OperationCallback::ON_STOP:
                 {
@@ -266,7 +277,7 @@ namespace ignite
 
         /**
          * InLongOutLong callback.
-         * 
+         *
          * @param target Target environment.
          * @param type Operation type.
          * @param val1 Value1.
@@ -274,7 +285,7 @@ namespace ignite
          * @param val3 Value3.
          * @param arg Object arg.
          */
-        long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2, 
+        long long IGNITE_CALL InLongLongLongObjectOutLong(void* target, int type, long long val1, long long val2,
             long long val3, void* arg)
         {
             int64_t res = 0;
@@ -339,7 +350,9 @@ namespace ignite
             metaUpdater(0),
             binding(),
             moduleMgr(),
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
             nodes(new ClusterNodesHolder()),
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
             ignite(NULL)
         {
             binding = SharedPointer<IgniteBindingImpl>(new IgniteBindingImpl(*this));
@@ -462,6 +475,8 @@ namespace ignite
             return metaUpdater;
         }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         IgniteEnvironment::SP_ClusterNodeImpl IgniteEnvironment::GetLocalNode()
         {
             return nodes.Get()->GetLocalNode();
@@ -471,6 +486,8 @@ namespace ignite
         {
             return nodes.Get()->GetNode(Id);
         }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         SharedPointer<IgniteBindingImpl> IgniteEnvironment::GetBinding() const
         {

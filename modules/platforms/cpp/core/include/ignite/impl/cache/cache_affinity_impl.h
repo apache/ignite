@@ -17,6 +17,8 @@
 #ifndef _IGNITE_CACHE_AFFINITY_IMPL
 #define _IGNITE_CACHE_AFFINITY_IMPL
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 
@@ -400,4 +402,5 @@ namespace ignite
     }
 }
 
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 #endif // _IGNITE_CACHE_AFFINITY_IMPL

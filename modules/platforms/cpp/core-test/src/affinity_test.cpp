@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
 #include <boost/test/unit_test.hpp>
 #include <boost/chrono.hpp>
 #include <boost/thread.hpp>
@@ -178,3 +180,5 @@ BOOST_AUTO_TEST_CASE(IgniteAffinityMapPartitionsToNodes)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API

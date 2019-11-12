@@ -54,7 +54,8 @@ namespace ignite
          * Constructor.
          */
         Ignite(impl::IgniteImpl* impl);
-        
+
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
         /**
          * Get affinity service to provide information about data partitioning and distribution.
          *
@@ -74,6 +75,7 @@ namespace ignite
 
             return ret;
         }
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         /**
          * Get Ignite instance name.
@@ -226,6 +228,8 @@ namespace ignite
          */
         transactions::Transactions GetTransactions();
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         /**
          * Get cluster.
          *
@@ -235,6 +239,8 @@ namespace ignite
          */
         cluster::IgniteCluster GetCluster();
 
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
+
         /**
          * Gets compute instance over all cluster nodes started in server mode.
          *
@@ -243,6 +249,8 @@ namespace ignite
          * @return Compute class instance.
          */
         compute::Compute GetCompute();
+
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
 
         /**
          * Gets compute instance over the specified cluster group. All operations
@@ -255,6 +263,8 @@ namespace ignite
          * @return Compute class instance over the specified cluster group.
          */
         compute::Compute GetCompute(cluster::ClusterGroup grp);
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         /**
          * Get ignite binding.

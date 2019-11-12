@@ -24,12 +24,10 @@
 #include <ignite/cluster/cluster_group.h>
 
 #include <ignite/impl/ignite_environment.h>
-#include <ignite/impl/cache/cache_affinity_impl.h>
 #include <ignite/impl/cache/cache_impl.h>
 #include <ignite/impl/transactions/transactions_impl.h>
-#include <ignite/impl/cluster/cluster_group_impl.h>
-#include <ignite/impl/cluster/ignite_cluster_impl.h>
 #include <ignite/impl/compute/compute_impl.h>
+#include <ignite/impl/cluster/cluster_group_impl.h>
 
 namespace ignite
 {
@@ -41,10 +39,14 @@ namespace ignite
         class IGNITE_FRIEND_EXPORT IgniteImpl : private interop::InteropTarget
         {
             typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
-            typedef common::concurrent::SharedPointer<cluster::IgniteClusterImpl> SP_IgniteClusterImpl;
             typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
             typedef common::concurrent::SharedPointer<IgniteBindingImpl> SP_IgniteBindingImpl;
+
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
             typedef common::concurrent::SharedPointer<cache::CacheAffinityImpl> SP_CacheAffinityImpl;
+            typedef common::concurrent::SharedPointer<cluster::IgniteClusterImpl> SP_IgniteClusterImpl;
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
+
         public:
             /**
              * Constructor used to create new instance.
@@ -53,6 +55,7 @@ namespace ignite
              */
             IgniteImpl(SP_IgniteEnvironment env);
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
             /**
              * Get affinity service to provide information about data partitioning and distribution.
              *
@@ -61,6 +64,8 @@ namespace ignite
              * @return Pointer to cache affinity implementation.
              */
             SP_CacheAffinityImpl GetAffinity(const std::string& cacheName, IgniteError& err);
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
+
             /**
              * Get name of the Ignite.
              *
@@ -157,6 +162,8 @@ namespace ignite
                 return prjImpl.Get();
             }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
             /**
              * Get cluster.
              *
@@ -164,12 +171,16 @@ namespace ignite
              */
             SP_IgniteClusterImpl GetCluster();
 
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
+
             /**
              * Gets compute instance over all cluster nodes started in server mode.
              *
              * @return ComputeImpl instance.
              */
             SP_ComputeImpl GetCompute();
+
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
 
             /**
              * Gets compute instance over the specified cluster group. All operations
@@ -180,6 +191,8 @@ namespace ignite
              * @return ComputeImpl instance.
              */
             SP_ComputeImpl GetCompute(ignite::cluster::ClusterGroup grp);
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
             /**
              * Check if the Ignite grid is active.

@@ -62,6 +62,8 @@ namespace ignite
             prjImpl.Init(common::Bind(this, &IgniteImpl::InternalGetProjection));
         }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         IgniteImpl::SP_CacheAffinityImpl IgniteImpl::GetAffinity(const std::string& cacheName, IgniteError& err)
         {
             SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
@@ -83,6 +85,8 @@ namespace ignite
 
             return new CacheAffinityImpl(env, affinityJavaRef);
         }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         const char* IgniteImpl::GetName() const
         {
@@ -119,10 +123,14 @@ namespace ignite
             return env.Get()->GetBinding();
         }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         IgniteImpl::SP_IgniteClusterImpl IgniteImpl::GetCluster()
         {
             return IgniteImpl::SP_IgniteClusterImpl(new IgniteClusterImpl(this->GetProjection()));
         }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
         {
@@ -131,10 +139,14 @@ namespace ignite
             return serversCluster.Get()->GetCompute();
         }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute(ClusterGroup grp)
         {
             return this->GetProjection().Get()->GetCompute(grp);
         }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
         void IgniteImpl::DisableWal(std::string cacheName)
         {

@@ -496,6 +496,8 @@ IGNITE_EXPORTED_CALL void IgniteModuleInit1(IgniteBindingContext& context)
     binding.RegisterComputeFunc<FuncAffinityCall>();
 }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
 template<typename TK>
 std::vector<int32_t> GetPrimaryKeys(int32_t num, ClusterNode& node, CacheAffinity<TK>& affinity)
 {
@@ -609,6 +611,8 @@ BOOST_AUTO_TEST_CASE(IgniteAffinityRunAsync)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuite, ComputeTestSuiteFixture)
 
@@ -876,6 +880,8 @@ BOOST_AUTO_TEST_CASE(IgniteBroadcastRemoteError)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
 BOOST_FIXTURE_TEST_SUITE(ComputeTestSuiteClusterGroup, ComputeTestSuiteFixtureClusterGroup)
 
 BOOST_AUTO_TEST_CASE(IgniteGetClusterGroupForServers)
@@ -918,3 +924,5 @@ BOOST_AUTO_TEST_CASE(IgniteGetClusterGroupForAttribute)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API

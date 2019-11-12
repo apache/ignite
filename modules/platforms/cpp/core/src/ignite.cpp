@@ -63,21 +63,25 @@ namespace ignite
 
         return transactions::Transactions(txImpl);
     }
-
+    
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
     cluster::IgniteCluster Ignite::GetCluster()
     {
         return cluster::IgniteCluster(impl.Get()->GetCluster());
     }
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
     compute::Compute Ignite::GetCompute()
     {
         return compute::Compute(impl.Get()->GetCompute());
     }
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
     compute::Compute Ignite::GetCompute(cluster::ClusterGroup grp)
     {
         return compute::Compute(impl.Get()->GetCompute(grp));
     }
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
 
     IgniteBinding Ignite::GetBinding()
     {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
 #include "ignite/impl/cluster/cluster_node_impl.h"
 
 using namespace ignite::jni::java;
@@ -177,3 +178,5 @@ namespace ignite
         }
     }
 }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API

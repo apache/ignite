@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
 
 #include "ignite/cluster/cluster_node.h"
 
@@ -85,3 +86,5 @@ namespace ignite
         }
     }
 }
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API

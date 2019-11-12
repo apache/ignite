@@ -56,7 +56,6 @@ AC_CONFIG_FILES([ \
     query-example/Makefile \
     continuous-query-example/Makefile \
     compute-example/Makefile \
-    cluster-compute-example/Makefile \
     thin-client-put-get-example/Makefile \
 ])
 

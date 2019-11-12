@@ -771,6 +771,8 @@ BOOST_AUTO_TEST_CASE(TestPutGetStructWithEnumField)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+#ifdef GRIDGAIN_ENABLE_CLUSTER_API
+
 BOOST_FIXTURE_TEST_SUITE(CacheTestSuiteNativePersistence, CacheNativePersistenceTestSuiteFixture);
 
 BOOST_AUTO_TEST_CASE(TestWal)
@@ -793,3 +795,5 @@ BOOST_AUTO_TEST_CASE(TestWal)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#endif // GRIDGAIN_ENABLE_CLUSTER_API
