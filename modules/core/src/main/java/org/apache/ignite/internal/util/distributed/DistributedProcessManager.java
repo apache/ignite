@@ -41,22 +41,19 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
- * TODO Update javadocs
- * Provides logic for a distributed process:
- * <ul>
- *  <li>1. Initial discovery message starts process.</li>
- *  <li>2. Each server node process it and send the result via the communication message to the coordinator.
- *  See {@link DistributedProcess#execute}.</li>
- *  <li>3. The coordinator processes all single nodes results and sends the action message via discovery.</li>
- * </ul>
- * Several processes can be started at the same time. Processes are identified by request id.
- * Follow methods used to manage process:
- * {@link #onAllReceived}
- * {@link #onAllServersLeft}
-
+ * Distributed processes manager.
+ * <p>
+ * Each distributed process should be registered via {@link #register} before discovery manager started.
+ * The method {@link #start} starts process.
+ * <p>
+ * Several processes of one type can be started at the same time.
+ *
+ * @see DistributedProcess
+ * @see DistributedProcesses
  */
+@SuppressWarnings("unchecked")
 public class DistributedProcessManager {
-    /** */
+    /** Map of registered processes. */
     private final ConcurrentHashMap<Integer, DistributedProcessFactory> registered = new ConcurrentHashMap<>(1);
 
     /** Map of all active processes. */
@@ -66,14 +63,12 @@ public class DistributedProcessManager {
     private final Object mux = new Object();
 
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
-    /**
-     * @param ctx Kernal context.
-     */
+    /** @param ctx Kernal context. */
     public DistributedProcessManager(GridKernalContext ctx) {
         this.ctx = ctx;
 
@@ -100,9 +95,9 @@ public class DistributedProcessManager {
             if (crd.isLocal())
                 initCoordinator(topVer, proc);
 
-            proc.dp = registered.get(msg.processTypeId()).create();
+            proc.instance = registered.get(msg.processTypeId()).create();
 
-            IgniteInternalFuture<Serializable> fut = proc.dp.execute(msg.request());
+            IgniteInternalFuture<Serializable> fut = proc.instance.execute(msg.request());
 
             fut.listen(f -> {
                 if (f.error() != null)
@@ -123,9 +118,9 @@ public class DistributedProcessManager {
             Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
             if (msg.hasError())
-                proc.dp.onError(msg.error());
+                proc.instance.cancel(msg.error());
             else
-                proc.dp.onResult(msg.result());
+                proc.instance.finish(msg.result());
 
             processes.remove(msg.requestId());
         });
@@ -180,15 +175,27 @@ public class DistributedProcessManager {
         }, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
-    /** */
-    public void register(DistributedProcesses proc, DistributedProcessFactory factory) {
-        registered.put(proc.processTypeId(), factory);
+    /**
+     * Registers distributed process.
+     * <p>
+     * Note: Processes should be registered before the discovery manager started.
+     *
+     * @param p Distibuted process.
+     * @param factory Distributed process factory.
+     */
+    public void register(DistributedProcesses p, DistributedProcessFactory factory) {
+        registered.put(p.processTypeId(), factory);
     }
 
-    /** */
-    public void start(DistributedProcesses proc, Serializable req) {
+    /**
+     * Starts distributed process.
+     *
+     * @param p Distibuted process.
+     * @param req Initial request.
+     */
+    public void start(DistributedProcesses p, Serializable req) {
         try {
-            InitMessage msg = new InitMessage(UUID.randomUUID(), proc.processTypeId(), req);
+            InitMessage msg = new InitMessage(UUID.randomUUID(), p.processTypeId(), req);
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -223,22 +230,26 @@ public class DistributedProcessManager {
         }
     }
 
-    /** */
-    private void onAllReceived(Process proc) {
-        Optional<SingleNodeMessage> errMsg = proc.singleMsgs.values().stream().filter(SingleNodeMessage::hasError).findFirst();
+    /**
+     * Creates and sends finish message when all single nodes result received.
+     *
+     * @param p Process.
+     */
+    private void onAllReceived(Process p) {
+        Optional<SingleNodeMessage> errMsg = p.singleMsgs.values().stream().filter(SingleNodeMessage::hasError).findFirst();
 
         FinishMessage msg;
 
         if (errMsg.isPresent())
-            msg = new FinishMessage(proc.id, errMsg.get().error());
+            msg = new FinishMessage(p.id, errMsg.get().error());
         else {
-            HashMap<UUID, Serializable> map = new HashMap<>(proc.singleMsgs.size());
+            HashMap<UUID, Serializable> map = new HashMap<>(p.singleMsgs.size());
 
-            proc.singleMsgs.forEach((uuid, m) -> map.put(uuid, m.response()));
+            p.singleMsgs.forEach((uuid, m) -> map.put(uuid, m.response()));
 
-            Serializable res = proc.dp.buildResult(map);
+            Serializable res = p.instance.buildResult(map);
 
-            msg = new FinishMessage(proc.id, res);
+            msg = new FinishMessage(p.id, res);
         }
 
         try {
@@ -256,7 +267,12 @@ public class DistributedProcessManager {
         processes.clear();
     }
 
-    /** */
+    /**
+     * Sends single node message to coordinator.
+     *
+     * @param p Process.
+     * @param crd Coordinator node to send message.
+     */
     private void sendSingleSingleMessage(Process p, ClusterNode crd) {
         assert p.singleResFut.isDone();
 
@@ -308,7 +324,7 @@ public class DistributedProcessManager {
     }
 
     /** */
-    private class Process {
+    private static class Process {
         /** Process id. */
         private final UUID id;
 
@@ -318,17 +334,17 @@ public class DistributedProcessManager {
         /** Coordinator id. */
         private volatile UUID crdId;
 
-        /** */
-        private volatile DistributedProcess dp;
+        /** Local instance of process. */
+        private volatile DistributedProcess instance;
 
         /** Init process future. */
         private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
-        /** Future of single local node result. */
-        private final GridFutureAdapter<Serializable> singleResFut = new GridFutureAdapter<>();
-
-        /** Remaining nodes to received single result message. */
+        /** Remaining nodes to received single nodes result. */
         private final Set</*nodeId*/UUID> remaining = new GridConcurrentHashSet<>();
+
+        /** Future for a single local node result. */
+        private final GridFutureAdapter<Serializable> singleResFut = new GridFutureAdapter<>();
 
         /** Single nodes results. */
         private final ConcurrentHashMap</*nodeId*/UUID, SingleNodeMessage> singleMsgs = new ConcurrentHashMap<>();

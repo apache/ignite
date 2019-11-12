@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcessManager;
+import org.apache.ignite.internal.util.distributed.DistributedProcesses;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -84,7 +85,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MASTER_KEY_DIGEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.util.distributed.DistributedProcesses.MASTER_KEY_CHANGE_COMMIT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcesses.MASTER_KEY_CHANGE_PREPARE;
 
 /**
@@ -178,7 +178,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
 
-    /** */
+    /** Distributed process manager. */
     private DistributedProcessManager dpMgr;
 
     /**
@@ -188,6 +188,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         super(ctx, ctx.config().getEncryptionSpi());
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+
+        dpMgr = new DistributedProcessManager(ctx);
     }
 
     /** {@inheritDoc} */
@@ -268,10 +270,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        dpMgr = new DistributedProcessManager(ctx);
-
         dpMgr.register(MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
-        dpMgr.register(MASTER_KEY_CHANGE_COMMIT, MasterKeyChangeProcess::new);
+        dpMgr.register(DistributedProcesses.MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
     }
 
     /** {@inheritDoc} */
@@ -564,21 +564,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         checkMasterKeyChangeSupported();
 
-        byte[] digest;
-
-        synchronized (masterKeyChangeMux) {
-            String curName = getSpi().getMasterKeyName();
-
-            try {
-                getSpi().setMasterKeyName(masterKeyName);
-
-                digest = getSpi().masterKeyDigest();
-            } catch (Exception e) {
-                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']');
-            } finally {
-                getSpi().setMasterKeyName(curName);
-            }
-        }
+        byte[] digest = masterKeyDigest(masterKeyName);
 
         PendingMasterKey request = new PendingMasterKey(encryptKeyName(masterKeyName), digest, UUID.randomUUID());
 
@@ -606,6 +592,31 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (masterKeyChangeMux) {
             return getSpi().getMasterKeyName();
         }
+    }
+
+    /**
+     * @param masterKeyName Master key name.
+     * @return Master key digest.
+     * @throws IgniteException if unable to get master key digest.
+     */
+    private byte[] masterKeyDigest(String masterKeyName) {
+        byte[] digest;
+
+        synchronized (masterKeyChangeMux) {
+            String curName = getSpi().getMasterKeyName();
+
+            try {
+                getSpi().setMasterKeyName(masterKeyName);
+
+                digest = getSpi().masterKeyDigest();
+            } catch (Exception e) {
+                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']');
+            } finally {
+                getSpi().setMasterKeyName(curName);
+            }
+        }
+
+        return digest;
     }
 
     /**
@@ -1028,6 +1039,31 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return new MasterKeyChangeRecord(getSpi().getMasterKeyName(), reencryptedKeys);
     }
 
+    /** Checks that the master key change process supported by all nodes in cluster. */
+    public void checkMasterKeyChangeSupported() {
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
+            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
+    }
+
+    /**
+     * @param reqId Request id.
+     * @param err Exception.
+     */
+    private void finishMasterKeyChange(UUID reqId, Exception err) {
+        if (pendingMasterKey != null && pendingMasterKey.requestId().equals(reqId))
+            pendingMasterKey = null;
+
+        synchronized (opsMux) {
+            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
+                masterKeyChangeFut.id().equals(reqId)) {
+                if (err != null)
+                    masterKeyChangeFut.onDone(err);
+                else
+                    masterKeyChangeFut.onDone();
+            }
+        }
+    }
+
     /**
      * @param msg Error message.
      */
@@ -1064,100 +1100,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
     }
 
-    /** Checks that the master key change process supported by all nodes in cluster. */
-    public void checkMasterKeyChangeSupported() {
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
-    }
-
-    /** */
-    private void finishMasterKeyChange(UUID reqId, Exception err) {
-        System.out.println("MY FINISH CHANGE reqId="+reqId+ " err="+err);
-        if (pendingMasterKey != null && pendingMasterKey.requestId().equals(reqId))
-            pendingMasterKey = null;
-
-        synchronized (opsMux) {
-            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
-                masterKeyChangeFut.id().equals(reqId)) {
-                if (err != null)
-                    masterKeyChangeFut.onDone(err);
-                else
-                    masterKeyChangeFut.onDone();
-            }
-        }
-    }
-
-    /** */
-    private static class PendingMasterKey implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Encrypted master key name. */
-        private final byte[] encKeyName;
-
-        /** Master key digest. */
-        private final byte[] digest;
-
-        /** Master key digest. */
-        private final UUID reqId;
-
-        /** */
-        private PendingMasterKey(byte[] encKeyName, byte[] digest, UUID reqId) {
-            this.encKeyName = encKeyName;
-            this.digest = digest;
-            this.reqId = reqId;
-        }
-
-        /** */
-        byte[] encKeyName() {
-            return encKeyName;
-        }
-
-        /** */
-        byte[] digest() {
-            return digest;
-        }
-
-        /** */
-        UUID requestId() {
-            return reqId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (!(o instanceof PendingMasterKey))
-                return false;
-            PendingMasterKey key = (PendingMasterKey)o;
-            return Arrays.equals(encKeyName, key.encKeyName) &&
-                Arrays.equals(digest, key.digest) &&
-                Objects.equals(reqId, key.reqId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = Objects.hash(reqId);
-            result = 31 * result + Arrays.hashCode(encKeyName);
-            result = 31 * result + Arrays.hashCode(digest);
-            return result;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PendingMasterKey.class, this);
-        }
-    }
-
-    /** */
-    private static class MasterKeyChangeResult implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-    }
-
-    /** */
-    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult, PendingMasterKey> {
-        /** */
+    /**
+     * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
+     * {@link MasterKeyChangeFinishProcess}.
+     */
+    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult,
+        PendingMasterKey> {
+        /** Request id. */
         private UUID reqId;
 
         /** {@inheritDoc} */
@@ -1172,29 +1121,19 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (ctx.clientNode())
                 return new GridFinishedFuture<>();
 
-            synchronized (masterKeyChangeMux) {
-                String curKeyName = getSpi().getMasterKeyName();
+            try {
+                byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
 
-                try {
-                    String newKeyName = decryptKeyName(req.encKeyName);
-
-                    getSpi().setMasterKeyName(newKeyName);
-
-                    byte[] digest = getSpi().masterKeyDigest();
-
-                    if (!Arrays.equals(req.digest, digest)) {
-                        throw new IgniteException("Master key digest consistency check failed. Make sure that " +
-                            "a new master key is the same at all server nodes.");
-                    }
+                if (!Arrays.equals(req.digest, digest)) {
+                    throw new IgniteException("Master key digest consistency check failed. Make sure that " +
+                        "a new master key is the same at all server nodes.");
                 }
-                catch (IgniteException e) {
-                    log.warning("Master key change was rejected.", e);
+            }
+            catch (Exception e) {
+                log.warning("Master key change was rejected.", e);
 
-                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
-                        ctx.localNodeId() + ']', e));
-                } finally {
-                    getSpi().setMasterKeyName(curKeyName);
-                }
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
+                    ctx.localNodeId() + ']', e));
             }
 
             return new GridFinishedFuture<>(new MasterKeyChangeResult());
@@ -1206,20 +1145,22 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public void onResult(PendingMasterKey req) {
+        @Override public void finish(PendingMasterKey req) {
             if (isCoordinator())
-                dpMgr.start(MASTER_KEY_CHANGE_COMMIT, req);
+                dpMgr.start(DistributedProcesses.MASTER_KEY_CHANGE_FINISH, req);
         }
 
         /** {@inheritDoc} */
-        @Override public void onError(Exception e) {
+        @Override public void cancel(Exception e) {
             finishMasterKeyChange(reqId, e);
         }
     }
 
-    /** */
-    private class MasterKeyChangeProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult, MasterKeyChangeResult> {
-        /** */
+    /**
+     * Master key change finish process. Changes master key.
+     */
+    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult, MasterKeyChangeResult> {
+        /** Request id. */
         private UUID reqId;
 
         /** {@inheritDoc} */
@@ -1248,13 +1189,93 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public void onResult(MasterKeyChangeResult res) {
+        @Override public void finish(MasterKeyChangeResult res) {
             finishMasterKeyChange(reqId, null);
         }
 
-        @Override public void onError(Exception e) {
+        /** {@inheritDoc} */
+        @Override public void cancel(Exception e) {
             finishMasterKeyChange(reqId, e);
         }
+    }
+
+    /**
+     * Pending master key.
+     */
+    private static class PendingMasterKey implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Encrypted master key name. */
+        private final byte[] encKeyName;
+
+        /** Master key digest. */
+        private final byte[] digest;
+
+        /** Master key digest. */
+        private final UUID reqId;
+
+        /**
+         * @param encKeyName Encrypted master key name.
+         * @param digest Master key digest.
+         * @param reqId Request id.
+         */
+        private PendingMasterKey(byte[] encKeyName, byte[] digest, UUID reqId) {
+            this.encKeyName = encKeyName;
+            this.digest = digest;
+            this.reqId = reqId;
+        }
+
+        /** @return Encrypted master key name. */
+        byte[] encKeyName() {
+            return encKeyName;
+        }
+
+        /** @return Master key digest. */
+        byte[] digest() {
+            return digest;
+        }
+
+        /** @return Request id. */
+        UUID requestId() {
+            return reqId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof PendingMasterKey))
+                return false;
+
+            PendingMasterKey key = (PendingMasterKey)o;
+
+            return Arrays.equals(encKeyName, key.encKeyName) &&
+                Arrays.equals(digest, key.digest) &&
+                Objects.equals(reqId, key.reqId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = Objects.hash(reqId);
+
+            res = 31 * res + Arrays.hashCode(encKeyName);
+            res = 31 * res + Arrays.hashCode(digest);
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PendingMasterKey.class, this);
+        }
+    }
+
+    /** */
+    private static class MasterKeyChangeResult implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
     }
 
     /** */

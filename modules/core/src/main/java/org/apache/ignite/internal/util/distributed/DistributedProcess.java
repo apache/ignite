@@ -23,24 +23,49 @@ import java.util.UUID;
 import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * @param <I> init request.
- * @param <S> single node response.
- * @param <R> result.
+ * Distributed process is a cluster-wide process that accumulates single nodes results to finish itself.
+ * <p>
+ * The process consists of the following phases:
+ * <ol>
+ *  <li>Initial request starts process. (Sent via discovery)</li>
+ *  <li>Each server node process an initial request and send the single node result to the coordinator. (Sent via communication)</li>
+ *  <li>The coordinator processes all single nodes results and finish or cancel process. (Sent via discovery)</li>
+ * </ol>
+ *
+ * @param <I> Init request.
+ * @param <S> Single node result.
+ * @param <R> Result.
  */
 public interface DistributedProcess<I extends Serializable, S extends Serializable, R extends Serializable> {
-    /** */
+    /**
+     * Executes some action and returns future with the single node result to send to the coordinator.
+     *
+     * @param req Init request.
+     * @return Future for this operation.
+     */
     IgniteInternalFuture<S> execute(I req);
 
-    /** */
+    /**
+     * Builds the process result to finish it.
+     * <p>
+     * Called on the coordinator when all single nodes results received.
+     *
+     * @param map Map of single nodes result.
+     * @return Result to finish process.
+     */
     R buildResult(Map<UUID, S> map);
 
-    /** */
-    default void onResult(R msg) {
-        // No-op.
-    }
+    /**
+     * Finish process.
+     *
+     * @param res Result.
+     */
+    void finish(R res);
 
-    /** */
-    default void onError(Exception e) {
-        // No-op.
-    }
+    /**
+     * Cancel process.
+     *
+     * @param e Exception.
+     */
+    void cancel(Exception e);
 }
