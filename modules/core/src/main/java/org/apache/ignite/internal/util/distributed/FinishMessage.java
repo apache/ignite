@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ProcessInitMessage implements DiscoveryCustomMessage {
+public class FinishMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,17 +40,22 @@ public class ProcessInitMessage implements DiscoveryCustomMessage {
     private final UUID reqId;
 
     /** */
-    private int procTypeId;
+    private Exception err;
 
     /** */
     @GridToStringInclude
-    private final Serializable req;
+    private Serializable res;
 
     /** */
-    public ProcessInitMessage(UUID reqId, int procTypeId, Serializable req) {
+    public FinishMessage(UUID reqId, Serializable res) {
         this.reqId = reqId;
-        this.procTypeId = procTypeId;
-        this.req = req;
+        this.res = res;
+    }
+
+    /** */
+    public FinishMessage(UUID reqId, Exception err) {
+        this.reqId = reqId;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -85,17 +90,22 @@ public class ProcessInitMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public int processTypeId() {
-        return procTypeId;
+    public Serializable result() {
+        return res;
     }
 
     /** */
-    public Serializable request() {
-        return req;
+    boolean hasError() {
+        return err != null;
+    }
+
+    /** */
+    Exception error() {
+        return err;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ProcessInitMessage.class, this);
+        return S.toString(FinishMessage.class, this);
     }
 }

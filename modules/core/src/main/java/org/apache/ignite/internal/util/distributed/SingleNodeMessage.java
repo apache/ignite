@@ -34,13 +34,17 @@ public class SingleNodeMessage implements Message {
     private Serializable response;
 
     /** */
+    private Exception err;
+
+    /** */
     public SingleNodeMessage() {
     }
 
     /** */
-    public SingleNodeMessage(UUID reqId, Serializable response) {
+    public SingleNodeMessage(UUID reqId, Serializable response, Exception err) {
         this.reqId = reqId;
         this.response = response;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -63,6 +67,12 @@ public class SingleNodeMessage implements Message {
 
             case 1:
                 if (!writer.writeByteArray("data", U.toBytes(response)))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeByteArray("err", U.toBytes(err)))
                     return false;
 
                 writer.incrementState();
@@ -94,6 +104,14 @@ public class SingleNodeMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 2:
+                err = U.fromBytes(reader.readByteArray("err"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(SingleNodeMessage.class);
@@ -106,7 +124,7 @@ public class SingleNodeMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -123,4 +141,15 @@ public class SingleNodeMessage implements Message {
     public Serializable response() {
         return response;
     }
+
+    /** */
+    boolean hasError() {
+        return err != null;
+    }
+
+    /** */
+    Exception error() {
+        return err;
+    }
+
 }

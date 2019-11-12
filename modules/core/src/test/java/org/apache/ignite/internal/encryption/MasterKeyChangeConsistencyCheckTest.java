@@ -78,7 +78,7 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
             grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
             return null;
-        }, IgniteException.class, "Test error.");
+        }, IgniteSpiException.class, "Test error.");
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
 

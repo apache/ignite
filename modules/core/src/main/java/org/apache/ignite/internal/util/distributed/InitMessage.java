@@ -29,7 +29,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ProcessFinishMessage implements DiscoveryCustomMessage {
+public class InitMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,13 +40,17 @@ public class ProcessFinishMessage implements DiscoveryCustomMessage {
     private final UUID reqId;
 
     /** */
-    @GridToStringInclude
-    private final Serializable res;
+    private int procTypeId;
 
     /** */
-    public ProcessFinishMessage(UUID reqId, Serializable res) {
+    @GridToStringInclude
+    private final Serializable req;
+
+    /** */
+    public InitMessage(UUID reqId, int procTypeId, Serializable req) {
         this.reqId = reqId;
-        this.res = res;
+        this.procTypeId = procTypeId;
+        this.req = req;
     }
 
     /** {@inheritDoc} */
@@ -81,12 +85,17 @@ public class ProcessFinishMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public Serializable result() {
-        return res;
+    public int processTypeId() {
+        return procTypeId;
+    }
+
+    /** */
+    public Serializable request() {
+        return req;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ProcessFinishMessage.class, this);
+        return S.toString(InitMessage.class, this);
     }
 }

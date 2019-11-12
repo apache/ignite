@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,7 +57,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class DistributedProcessManager {
     /** */
-    private final ConcurrentHashMap<Integer, DistributedProcess> dps = new ConcurrentHashMap<>(1);
+    private final ConcurrentHashMap<Integer, DistributedProcessFactory> registered = new ConcurrentHashMap<>(1);
 
     /** Map of all active processes. */
     private final ConcurrentHashMap</*processId*/UUID, Process> processes = new ConcurrentHashMap<>(1);
@@ -77,20 +79,18 @@ public class DistributedProcessManager {
 
         log = ctx.log(getClass());
 
-        ctx.discovery().setCustomEventListener(ProcessInitMessage.class, (topVer, snd, msg) -> {
+        ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
             Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
             if (proc.initFut.isDone())
                 return;
-
-            proc.typeId = msg.processTypeId();
 
             ClusterNode crd = coordinator();
 
             if (crd == null) {
                 proc.initFut.onDone();
 
-                onAllServersLeft(msg.requestId());
+                onAllServersLeft();
 
                 return;
             }
@@ -100,46 +100,32 @@ public class DistributedProcessManager {
             if (crd.isLocal())
                 initCoordinator(topVer, proc);
 
-            DistributedProcess dp = dps.get(proc.typeId);
+            proc.dp = registered.get(msg.processTypeId()).create();
 
-            IgniteInternalFuture<Serializable> fut = dp.execute(msg.request());
+            IgniteInternalFuture<Serializable> fut = proc.dp.execute(msg.request());
 
             fut.listen(f -> {
-                try {
-                    Serializable res = f.get();
+                if (f.error() != null)
+                    proc.singleResFut.onDone(f.error());
+                else
+                    proc.singleResFut.onDone(f.result());
 
-                    proc.singleResFut.onDone(res);
+                ClusterNode crdNode = coordinator();
 
-                    if (res == null)
-                        return;
-
-                    ClusterNode crdNode = coordinator();
-
-                    SingleNodeMessage singleMsg = new SingleNodeMessage(proc.id, res);
-
-                    if (crdNode != null) {
-                        if (crdNode.isLocal())
-                            onSingleNodeMessageReceived(singleMsg, crdNode.id());
-                        else
-                            ctx.io().sendToGridTopic(crdNode, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
-                    }
-                    else
-                        onAllServersLeft(msg.requestId());
-                }
-                catch (IgniteCheckedException e) {
-                    log.warning("Unable to send result.", e);
-                }
+                if (crdNode != null)
+                    sendSingleSingleMessage(proc, crdNode);
             });
 
             proc.initFut.onDone();
         });
 
-        ctx.discovery().setCustomEventListener(ProcessFinishMessage.class, (topVer, snd, msg) -> {
+        ctx.discovery().setCustomEventListener(FinishMessage.class, (topVer, snd, msg) -> {
             Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
-            DistributedProcess dp = dps.get(proc.typeId);
-
-            dp.onResult(msg.result());
+            if (msg.hasError())
+                proc.dp.onError(msg.error());
+            else
+                proc.dp.onResult(msg.result());
 
             processes.remove(msg.requestId());
         });
@@ -168,27 +154,10 @@ public class DistributedProcessManager {
                             if (crd.isLocal())
                                 initCoordinator(discoCache.version(), proc);
 
-                            proc.singleResFut.listen(f -> {
-                                try {
-                                    Serializable res = f.get();
-
-                                    if (res == null)
-                                        return;
-
-                                    SingleNodeMessage singleMsg = new SingleNodeMessage(proc.id, res);
-
-                                    if (crd.isLocal())
-                                        onSingleNodeMessageReceived(singleMsg, crd.id());
-                                    else
-                                        ctx.io().sendToGridTopic(crd, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    log.warning("Unable to send result.", e);
-                                }
-                            });
+                            proc.singleResFut.listen(f -> sendSingleSingleMessage(proc, crd));
                         }
                         else
-                            onAllServersLeft(proc.id);
+                            onAllServersLeft();
                     }
                     else if (ctx.localNodeId().equals(proc.crdId)) {
                         boolean rmvd, isEmpty;
@@ -200,7 +169,7 @@ public class DistributedProcessManager {
                         }
 
                         if (rmvd) {
-                            proc.results.remove(leftNodeId);
+                            proc.singleMsgs.remove(leftNodeId);
 
                             if (isEmpty)
                                 onAllReceived(proc);
@@ -212,72 +181,20 @@ public class DistributedProcessManager {
     }
 
     /** */
-    public void register(DistributedProcesses proc, DistributedProcess dp) {
-        dps.put(proc.processTypeId(), dp);
+    public void register(DistributedProcesses proc, DistributedProcessFactory factory) {
+        registered.put(proc.processTypeId(), factory);
     }
 
     /** */
     public void start(DistributedProcesses proc, Serializable req) {
         try {
-            ProcessInitMessage msg = new ProcessInitMessage(UUID.randomUUID(), proc.processTypeId(), req);
+            InitMessage msg = new InitMessage(UUID.randomUUID(), proc.processTypeId(), req);
 
             ctx.discovery().sendCustomEvent(msg);
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
         }
-    }
-
-    /** */
-    protected void onAllReceived(Process proc) {
-        DistributedProcess dp = dps.get(proc.typeId);
-
-        Serializable res = dp.buildResult(proc.results);
-
-        try {
-            ProcessFinishMessage msg = new ProcessFinishMessage(proc.id, res);
-
-            ctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Unable to send action message.", e);
-        }
-    }
-
-    /**
-     * Handles case when all server nodes have left the grid.
-     *
-     * @param id Request id.
-     */
-    protected void onAllServersLeft(UUID id) {
-        // No-op.
-    }
-
-    /**
-     * Processes the received single node message.
-     *
-     * @param msg Message.
-     * @param nodeId Node id.
-     */
-    private void onSingleNodeMessageReceived(SingleNodeMessage msg, UUID nodeId) {
-        Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
-
-        proc.initCrdFut.listen(f -> {
-            boolean rmvd, isEmpty;
-
-            synchronized (mux) {
-                rmvd = proc.remaining.remove(nodeId);
-
-                isEmpty = proc.remaining.isEmpty();
-            }
-
-            if (rmvd) {
-                proc.results.put(nodeId, msg.response());
-
-                if (isEmpty)
-                    onAllReceived(proc);
-            }
-        });
     }
 
     /**
@@ -306,6 +223,85 @@ public class DistributedProcessManager {
         }
     }
 
+    /** */
+    private void onAllReceived(Process proc) {
+        Optional<SingleNodeMessage> errMsg = proc.singleMsgs.values().stream().filter(SingleNodeMessage::hasError).findFirst();
+
+        FinishMessage msg;
+
+        if (errMsg.isPresent())
+            msg = new FinishMessage(proc.id, errMsg.get().error());
+        else {
+            HashMap<UUID, Serializable> map = new HashMap<>(proc.singleMsgs.size());
+
+            proc.singleMsgs.forEach((uuid, m) -> map.put(uuid, m.response()));
+
+            Serializable res = proc.dp.buildResult(map);
+
+            msg = new FinishMessage(proc.id, res);
+        }
+
+        try {
+            ctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Unable to send action message.", e);
+        }
+    }
+
+    /**
+     * Handles case when all server nodes have left the grid.
+     */
+    private void onAllServersLeft() {
+        processes.clear();
+    }
+
+    /** */
+    private void sendSingleSingleMessage(Process p, ClusterNode crd) {
+        assert p.singleResFut.isDone();
+
+        SingleNodeMessage singleMsg = new SingleNodeMessage(p.id, p.singleResFut.result(),
+            (Exception)p.singleResFut.error());
+
+        if (crd.isLocal())
+            onSingleNodeMessageReceived(singleMsg, crd.id());
+        else {
+            try {
+                ctx.io().sendToGridTopic(crd, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Unable to send message.", e);
+            }
+        }
+    }
+
+    /**
+     * Processes the received single node message.
+     *
+     * @param msg Message.
+     * @param nodeId Node id.
+     */
+    private void onSingleNodeMessageReceived(SingleNodeMessage msg, UUID nodeId) {
+        Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+
+        proc.initCrdFut.listen(f -> {
+            boolean rmvd, isEmpty;
+
+            synchronized (mux) {
+                rmvd = proc.remaining.remove(nodeId);
+
+                isEmpty = proc.remaining.isEmpty();
+            }
+
+            if (rmvd) {
+                proc.singleMsgs.put(nodeId, msg);
+
+                if (isEmpty)
+                    onAllReceived(proc);
+            }
+        });
+    }
+
     /** @return Cluster coordinator, {@code null} if failed to determine. */
     private @Nullable ClusterNode coordinator() {
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
@@ -322,8 +318,8 @@ public class DistributedProcessManager {
         /** Coordinator id. */
         private volatile UUID crdId;
 
-        /** Process name. */
-        private volatile int typeId = -1;
+        /** */
+        private volatile DistributedProcess dp;
 
         /** Init process future. */
         private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
@@ -335,7 +331,7 @@ public class DistributedProcessManager {
         private final Set</*nodeId*/UUID> remaining = new GridConcurrentHashSet<>();
 
         /** Single nodes results. */
-        private final ConcurrentHashMap</*nodeId*/UUID, Serializable> results = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap</*nodeId*/UUID, SingleNodeMessage> singleMsgs = new ConcurrentHashMap<>();
 
         /** @param id Process id. */
         private Process(UUID id) {
