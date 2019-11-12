@@ -59,11 +59,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.5.0. Added: Transactions support, IEP-34. */
     public static final ClientListenerProtocolVersion VER_1_5_0 = ClientListenerProtocolVersion.create(1, 5, 0);
 
+    /** Version 1.6.0. Added: Expiration Policy configuration. */
+    public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_5_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_6_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_6_0,
         VER_1_5_0,
         VER_1_4_0,
         VER_1_3_0,
