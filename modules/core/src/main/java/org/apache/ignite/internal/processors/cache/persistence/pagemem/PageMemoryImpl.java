@@ -725,8 +725,25 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
+    @Override public long acquirePage(int grpId, long pageId, AtomicBoolean pageAllocated) throws IgniteCheckedException {
+        return acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, false, pageAllocated);
+    }
+
+    /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
         boolean restore) throws IgniteCheckedException {
+        return acquirePage(grpId, pageId, statHolder, restore, null);
+    }
+
+    /**
+     * @param grpId Group id.
+     * @param pageId Page id.
+     * @param statHolder Stat holder.
+     * @param restore Restore.
+     * @param pageAllocated Page allocated.
+     */
+    private long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
+        boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
         assert started;
 
         FullPageId fullId = new FullPageId(pageId, grpId);
@@ -783,6 +800,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (relPtr == INVALID_REL_PTR) {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
+
+                if (pageAllocated != null)
+                    pageAllocated.set(true);
 
                 if (relPtr == INVALID_REL_PTR)
                     relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);

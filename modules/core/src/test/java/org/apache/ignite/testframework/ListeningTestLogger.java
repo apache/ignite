@@ -79,6 +79,19 @@ public class ListeningTestLogger implements IgniteLogger {
     }
 
     /**
+     * Resets and registers all message listeners.
+     *
+     * @param lsnrs Message listeners.
+     */
+    public void registerAllListeners(@NotNull LogListener... lsnrs) {
+        for (LogListener lsnr : lsnrs) {
+            lsnr.reset();
+
+            this.lsnrs.add(lsnr);
+        }
+    }
+
+    /**
      * Registers message listener.
      * <p>
      * NOTE listener is executed in the thread causing the logging, so it is not recommended to throw any exceptions
