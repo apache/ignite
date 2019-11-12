@@ -28,6 +28,9 @@ import org.apache.ignite.scheduler.SchedulerFuture;
  * Demonstrates a cron-based {@link Runnable} execution scheduling.
  * Test runnable object broadcasts a phrase to all cluster nodes every minute
  * three times with initial scheduling delay equal to five seconds.
+ * This example uses an Ignite extension to Cron syntax,
+ * which can be used to specify an initial delay in seconds and a number of runs.
+ * https://apacheignite.readme.io/docs/cron-based-scheduling#syntax-extension
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -67,11 +70,18 @@ public class ComputeScheduleExample {
                         return invocations;
                     }
                 },
-                "{9, 5, 3} * * * * *" // Cron expression.
+                // Callable object broadcasts a phrase to all cluster nodes every minute
+                // three times with initial scheduling delay equal to five seconds.
+                // https://apacheignite.readme.io/docs/cron-based-scheduling#syntax-extension
+                "{5, 3} * * * * *" // Cron expression.
             );
 
             while (!fut.isDone())
                 System.out.println(">>> Invocation #: " + fut.get());
+
+            // In case the Cron expression is invalid, SchedulerFuture will be immediately completed with an error,
+            // that provides additional details.
+            fut.get();
 
             System.out.println();
             System.out.println(">>> Schedule future is done and has been unscheduled.");
