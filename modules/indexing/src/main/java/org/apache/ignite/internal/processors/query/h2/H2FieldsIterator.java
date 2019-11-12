@@ -75,6 +75,11 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
             super.onClose();
         }
         finally {
+            GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            if (qctx != null)
+                qctx.closeResources();
+
             if (lazy && GridH2QueryContext.get() != null)
                 GridH2QueryContext.clearThreadLocal();
 

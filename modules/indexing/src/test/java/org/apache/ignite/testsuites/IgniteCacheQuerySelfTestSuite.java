@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQu
 import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLargeRecordsOomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
@@ -352,6 +353,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQueryIndexingDisabledSelfTest.class);
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
         suite.addTestSuite(CacheQueryEvictDataLostTest.class);
+        suite.addTestSuite(IgniteCacheQueryLargeRecordsOomTest.class);
 
         // Full text queries.
         suite.addTestSuite(GridCacheFullTextQuerySelfTest.class);
