@@ -55,6 +55,16 @@ namespace ignite
             return impl.Get()->IsWalEnabled(cacheName);
         }
 
+        ClusterGroup IgniteCluster::ForLocal()
+        {
+            return impl.Get()->ForLocal();
+        }
+
+        ClusterNode IgniteCluster::GetLocalNode()
+        {
+            return impl.Get()->GetLocalNode();
+        }
+
         void IgniteCluster::SetBaselineTopologyVersion(int64_t topVer)
         {
             impl.Get()->SetBaselineTopologyVersion(topVer);

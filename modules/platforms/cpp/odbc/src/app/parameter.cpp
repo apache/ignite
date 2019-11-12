@@ -231,7 +231,7 @@ namespace ignite
             bool Parameter::IsDataReady() const
             {
                 return !buffer.IsDataAtExec() ||
-                       storedData.size() == buffer.GetDataAtExecSize();
+                    static_cast<SqlLen>(storedData.size()) == buffer.GetDataAtExecSize();
             }
 
             void Parameter::PutData(void* data, SqlLen len)

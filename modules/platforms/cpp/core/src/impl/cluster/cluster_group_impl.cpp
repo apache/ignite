@@ -425,6 +425,18 @@ namespace ignite
                 return ForAttribute(attrPlatform, platform);
             }
 
+            SP_ClusterGroupImpl ClusterGroupImpl::ForLocal()
+            {
+                return ForNodeId(GetLocalNode().GetId());
+            }
+
+            ClusterNode ClusterGroupImpl::GetLocalNode()
+            {
+                RefreshNodes();
+
+                return ClusterNode(GetEnvironment().GetLocalNode());
+            }
+
             ClusterNode ClusterGroupImpl::GetNode()
             {
                 std::vector<ClusterNode> nodes = GetNodes();

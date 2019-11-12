@@ -476,7 +476,7 @@ void CheckCollectionIterators(CollectionType::Type* colType)
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    BOOST_REQUIRE(reader.ReadCollectionSize("field1") == writeValues.size());
+    BOOST_REQUIRE(reader.ReadCollectionSize("field1") == static_cast<int32_t>(writeValues.size()));
 
     CollectionType::Type expectedCollectionType = colType ? *colType : CollectionType::UNDEFINED;
     BOOST_REQUIRE(reader.ReadCollectionType("field1") == expectedCollectionType);

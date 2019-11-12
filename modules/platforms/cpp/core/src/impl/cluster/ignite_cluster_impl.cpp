@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "ignite/cluster/cluster_group.h"
+
 #include "ignite/impl/cluster/ignite_cluster_impl.h"
 
 using namespace ignite::jni::java;
@@ -60,6 +62,16 @@ namespace ignite
             bool IgniteClusterImpl::IsWalEnabled(std::string cacheName)
             {
                 return impl.Get()->IsWalEnabled(cacheName);
+            }
+
+            ClusterGroup IgniteClusterImpl::ForLocal()
+            {
+                return impl.Get()->ForLocal();
+            }
+
+            ClusterNode IgniteClusterImpl::GetLocalNode()
+            {
+                return impl.Get()->GetLocalNode();
             }
 
             void IgniteClusterImpl::SetBaselineTopologyVersion(int64_t topVer)

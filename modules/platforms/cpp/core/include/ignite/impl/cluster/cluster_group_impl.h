@@ -225,6 +225,20 @@ namespace ignite
                 SP_ClusterGroupImpl ForCpp();
 
                 /**
+                 * Get a cluster group consisting from the local node.
+                 *
+                 * @return Pointer to cluster group consisting from the local node.
+                 */
+                SP_ClusterGroupImpl ForLocal();
+
+                /**
+                 * Get local grid node.
+                 *
+                 * @return Local node.
+                 */
+                ignite::cluster::ClusterNode GetLocalNode();
+
+                /**
                  * Get first node from the list of nodes in this cluster group.
                  *
                  * @return Cluster node in this cluster group.

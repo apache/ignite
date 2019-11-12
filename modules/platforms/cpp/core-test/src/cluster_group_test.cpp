@@ -477,6 +477,29 @@ BOOST_AUTO_TEST_CASE(IgniteForCpp)
     BOOST_REQUIRE(group.GetNodes().size() == 4);
 }
 
+BOOST_AUTO_TEST_CASE(IgniteForLocal)
+{
+    IgniteCluster cluster = server1.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group = cluster.ForLocal();
+
+    BOOST_REQUIRE(group.GetNodes().size() == 1);
+    BOOST_REQUIRE(group.GetNodes().front().IsLocal());
+}
+
+BOOST_AUTO_TEST_CASE(IgniteGetLocalNode)
+{
+    IgniteCluster cluster = server1.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterNode node = cluster.GetLocalNode();
+
+    BOOST_REQUIRE(node.IsLocal());
+}
+
 BOOST_AUTO_TEST_CASE(IgniteGetNode)
 {
     IgniteCluster cluster = server1.GetCluster();

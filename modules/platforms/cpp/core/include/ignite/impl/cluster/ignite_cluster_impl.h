@@ -88,6 +88,20 @@ namespace ignite
                 bool IsWalEnabled(std::string cacheName);
 
                 /**
+                 * Get a cluster group consisting from the local node.
+                 *
+                 * @return Cluster group consisting from the local node.
+                 */
+                ignite::cluster::ClusterGroup ForLocal();
+
+                /**
+                 * Get local grid node.
+                 *
+                 * @return Local node.
+                 */
+                ignite::cluster::ClusterNode GetLocalNode();
+
+                /**
                  * Set baseline topology constructed from the cluster topology of the given version.
                  * The method succeeds only if the cluster topology has not changed.
                  *
