@@ -834,7 +834,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
         }
         catch (TransmissionCancelledException e) {
-            log.error("Transmission cancelled", e);
+            log.warning("Transmission cancelled", e);
 
             throw e;
         }
