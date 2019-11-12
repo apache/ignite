@@ -29,63 +29,69 @@ import org.apache.ignite.client.SslProtocol;
  */
 final class ClientChannelConfiguration {
     /** Host. */
-    private InetSocketAddress addr;
+    private final InetSocketAddress addr;
 
     /** Ssl mode. */
-    private SslMode sslMode;
+    private final SslMode sslMode;
 
     /** Tcp no delay. */
-    private boolean tcpNoDelay;
+    private final boolean tcpNoDelay;
 
     /** Timeout. */
-    private int timeout;
+    private final int timeout;
 
     /** Send buffer size. */
-    private int sndBufSize;
+    private final int sndBufSize;
 
     /** Receive buffer size. */
-    private int rcvBufSize;
+    private final int rcvBufSize;
 
     /** Ssl client certificate key store path. */
-    private String sslClientCertKeyStorePath;
+    private final String sslClientCertKeyStorePath;
 
     /** Ssl client certificate key store type. */
-    private String sslClientCertKeyStoreType;
+    private final String sslClientCertKeyStoreType;
 
     /** Ssl client certificate key store password. */
-    private String sslClientCertKeyStorePwd;
+    private final String sslClientCertKeyStorePwd;
 
     /** Ssl trust certificate key store path. */
-    private String sslTrustCertKeyStorePath;
+    private final String sslTrustCertKeyStorePath;
 
     /** Ssl trust certificate key store type. */
-    private String sslTrustCertKeyStoreType;
+    private final String sslTrustCertKeyStoreType;
 
     /** Ssl trust certificate key store password. */
-    private String sslTrustCertKeyStorePwd;
+    private final String sslTrustCertKeyStorePwd;
 
     /** Ssl key algorithm. */
-    private String sslKeyAlgorithm;
+    private final String sslKeyAlgorithm;
 
     /** Ssl protocol. */
-    private SslProtocol sslProto;
+    private final SslProtocol sslProto;
 
     /** Ssl trust all. */
-    private boolean sslTrustAll;
+    private final boolean sslTrustAll;
 
     /** SSL Context Factory. */
-    private Factory<SSLContext> sslCtxFactory;
+    private final Factory<SSLContext> sslCtxFactory;
 
     /** User. */
-    private String userName;
+    private final String userName;
 
     /** Password. */
-    private String userPwd;
+    private final String userPwd;
+
+    /** Reconnect period (for throttling). */
+    private final long reconnectThrottlingPeriod;
+
+    /** Reconnect retries within period (for throttling). */
+    private final int reconnectThrottlingRetries;
 
     /**
      * Constructor.
      */
-    ClientChannelConfiguration(ClientConfiguration cfg) {
+    ClientChannelConfiguration(ClientConfiguration cfg, InetSocketAddress addr) {
         this.sslMode = cfg.getSslMode();
         this.tcpNoDelay = cfg.isTcpNoDelay();
         this.timeout = cfg.getTimeout();
@@ -103,6 +109,9 @@ final class ClientChannelConfiguration {
         this.sslCtxFactory = cfg.getSslContextFactory();
         this.userName = cfg.getUserName();
         this.userPwd = cfg.getUserPassword();
+        this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
+        this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
+        this.addr = addr;
     }
 
     /**
@@ -110,15 +119,6 @@ final class ClientChannelConfiguration {
      */
     public InetSocketAddress getAddress() {
         return addr;
-    }
-
-    /**
-     * @param newVal Address.
-     */
-    public ClientChannelConfiguration setAddress(InetSocketAddress newVal) {
-        addr = newVal;
-
-        return this;
     }
 
     /**
@@ -238,5 +238,19 @@ final class ClientChannelConfiguration {
      */
     public String getUserPassword() {
         return userPwd;
+    }
+
+    /**
+     * @return Reconnect period (for throttling).
+     */
+    public long getReconnectThrottlingPeriod() {
+        return reconnectThrottlingPeriod;
+    }
+
+    /**
+     * @return Reconnect retries within period (for throttling).
+     */
+    public int getReconnectThrottlingRetries() {
+        return reconnectThrottlingRetries;
     }
 }
