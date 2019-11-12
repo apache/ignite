@@ -60,7 +60,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final AffinityTopologyVersion topVer;
 
     /** */
-    private final Map<String, FileRebalanceFuture.PageMemCleanupTask> regions = new HashMap<>();
+    private final Map<String, PageMemCleanupTask> regions = new HashMap<>();
 
     /** */
     private final ReentrantLock cancelLock = new ReentrantLock();
@@ -158,15 +158,20 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 //            }
 
             for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
-                regions.put(e.getKey(), new FileRebalanceFuture.PageMemCleanupTask(e.getKey(), e.getValue()));
+                regions.put(e.getKey(), new PageMemCleanupTask(e.getKey(), e.getValue()));
         }
         finally {
             cancelLock.unlock();
         }
     }
 
+    /** */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
     public synchronized void add(int order, FileRebalanceNodeFuture fut) {
-        T2<Integer, UUID> k = new T2<>(order, fut.node().id());
+        T2<Integer, UUID> k = new T2<>(order, fut.nodeId());
 
         futs.put(k, fut);
     }
@@ -298,7 +303,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                             return;
                         }
 
-                        FileRebalanceFuture.PageMemCleanupTask task = regions.get(grp.dataRegion().config().getName());
+                        PageMemCleanupTask task = regions.get(grp.dataRegion().config().getName());
 
                         if (log.isDebugEnabled())
                             log.debug("OnPartitionCleared [topVer=" + topVer + "]");

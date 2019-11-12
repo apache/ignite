@@ -1163,7 +1163,7 @@ public final class IgniteSystemProperties {
     /**
      * Flag to enable persistence rebalance.
      */
-    public static final String IGNITE_PERSISTENCE_REBALANCE_ENABLED = "IGNITE_PERSISTENCE_REBALANCE_ENABLED";
+    public static final String IGNITE_FILE_REBALANCE_ENABLED = "IGNITE_PERSISTENCE_REBALANCE_ENABLED";
 
     /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.

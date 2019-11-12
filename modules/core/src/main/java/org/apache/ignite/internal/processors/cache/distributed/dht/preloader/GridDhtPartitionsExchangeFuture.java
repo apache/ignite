@@ -3216,10 +3216,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
-        boolean fileRebalanceRequired =
+        boolean enableFileRebalance =
             cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceSupported(grp, nodes);
 
-        log.info("grp=" + grp.cacheOrGroupName() + " file rebalanced required=" + fileRebalanceRequired + " fut hashCode="+System.identityHashCode(this) + " minCntrs="+minCntrs);
+        log.info("cache=" + grp.cacheOrGroupName() + ", fileRebalance=" + enableFileRebalance + " minCntrs="+minCntrs);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3243,7 +3243,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // todo   if minCntr is zero - check that file rebalancing is supported and partition is big enough,
                     // todo   otherwise - do regular  preloading
                     // todo  && minCntr == 0
-                    if (fileRebalanceRequired && localHistCntr <= maxCntr &&
+                    if (enableFileRebalance && localHistCntr <= maxCntr &&
                         maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
@@ -3267,7 +3267,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (histCntr != null) {
                     // todo merge conditions (with else)
-                    if (fileRebalanceRequired && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (enableFileRebalance && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         // For file rebalancing we need to reserve history from current update counter.
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
 

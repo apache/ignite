@@ -61,7 +61,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
     private Map<Integer, Set<Integer>> remaining;
 
     /** */
-    private Map<Integer, Set<HistoryDesc>> remainingHist;
+    private Map<Integer, Set<PartCounters>> remainingHist;
 
     /** {@code True} if the initial demand request has been sent. */
     private AtomicBoolean initReq = new AtomicBoolean();
@@ -144,6 +144,10 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         return node.id();
     }
 
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         return onDone(false, null, true);
@@ -159,7 +163,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         assert parts != null : "Unexpected group identifier: " + grpId;
 
         remainingHist.computeIfAbsent(grpId, v -> new ConcurrentSkipListSet<>())
-            .add(new HistoryDesc(partId, min, max));
+            .add(new PartCounters(partId, min, max));
 
         if (log.isDebugEnabled()) {
             log.debug("Partition done [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() +
@@ -180,7 +184,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         if (parts == null)
             return;
 
-        Set<HistoryDesc> histParts = remainingHist.remove(grpId);
+        Set<PartCounters> histParts = remainingHist.remove(grpId);
 
         assert histParts.size() == assigns.get(grpId).size() : "expect=" + assigns.get(grpId).size() + ", actual=" + histParts.size();
 
@@ -188,7 +192,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
 
         GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grpId);
 
-        for (HistoryDesc desc : histParts) {
+        for (PartCounters desc : histParts) {
             assert desc.toCntr >= desc.fromCntr : "from=" + desc.fromCntr + ", to=" + desc.toCntr;
 
             if (desc.fromCntr != desc.toCntr) {
@@ -295,15 +299,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         return S.toString(FileRebalanceNodeFuture.class, this);
     }
 
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    public ClusterNode node() {
-        return node;
-    }
-
-    private static class HistoryDesc implements Comparable {
+    private static class PartCounters implements Comparable {
         /** Partition id. */
         final int partId;
 
@@ -313,14 +309,14 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         /** To counter. */
         final long toCntr;
 
-        public HistoryDesc(int partId, long fromCntr, long toCntr) {
+        public PartCounters(int partId, long fromCntr, long toCntr) {
             this.partId = partId;
             this.fromCntr = fromCntr;
             this.toCntr = toCntr;
         }
 
         @Override public int compareTo(@NotNull Object o) {
-            HistoryDesc otherDesc = (HistoryDesc)o;
+            PartCounters otherDesc = (PartCounters)o;
 
             if (partId > otherDesc.partId)
                 return 1;
