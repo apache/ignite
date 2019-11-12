@@ -236,7 +236,8 @@ public class DistributedProcessManager {
      * @param p Process.
      */
     private void onAllReceived(Process p) {
-        Optional<SingleNodeMessage> errMsg = p.singleMsgs.values().stream().filter(SingleNodeMessage::hasError).findFirst();
+        Optional<SingleNodeMessage> errMsg = p.singleMsgs.values().stream().filter(SingleNodeMessage::hasError)
+            .findFirst();
 
         FinishMessage msg;
 

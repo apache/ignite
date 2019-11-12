@@ -1102,8 +1102,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         @Override public IgniteInternalFuture<MasterKeyChangeResult> execute(PendingMasterKey req) {
             reqId = req.requestId();
 
-            if (pendingMasterKey != null)
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected due to previous change was not completed."));
+            if (pendingMasterKey != null) {
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected due to previous " +
+                    "change was not completed."));
+            }
 
             pendingMasterKey = req;
 
@@ -1148,7 +1150,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * Master key change finish process. Changes master key.
      */
-    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult, MasterKeyChangeResult> {
+    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult,
+        MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1161,8 +1164,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             boolean active = ctx.state().clusterState().active();
 
-            if (!active)
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected (the cluster is inactive)"));
+            if (!active) {
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected " +
+                    "(the cluster is inactive)"));
+            }
 
             if (!ctx.clientNode())
                 changeMasterKeyAndReencryptGroupKeys(decryptKeyName(msg.encKeyName()));
