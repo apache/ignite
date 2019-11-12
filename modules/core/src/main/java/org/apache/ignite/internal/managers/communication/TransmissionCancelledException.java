@@ -17,26 +17,28 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import org.apache.ignite.IgniteException;
+
 /**
  * Exception is used to cancel a file transmission operation on the receiver. This exception may be thrown
  * at anytime during session handling by a {@link TransmissionHandler} to gracefully interrupt the transmission
  * session on a node-sender.
  */
-public class TransmissionCancelException extends RuntimeException {
+public class TransmissionCancelledException extends IgniteException {
     /** Class serialization version number. */
     private static final long serialVersionUID = 0L;
 
     /**
      * Default no-op consturctor.
      */
-    public TransmissionCancelException() {
+    public TransmissionCancelledException() {
         // No-op.
     }
 
     /**
      * @param msg Cancellation cause.
      */
-    public TransmissionCancelException(String msg) {
+    public TransmissionCancelledException(String msg) {
         super(msg);
     }
 }
