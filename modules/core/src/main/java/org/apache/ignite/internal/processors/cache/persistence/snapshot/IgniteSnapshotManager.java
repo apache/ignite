@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -353,18 +352,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx0.partFileLengths);
 
                     // Process binary meta
-                    futs.add(CompletableFuture.runAsync(() ->
+                    futs.add(CompletableFuture.runAsync(() -> {
+                            if (sctx0.snpFut.isDone())
+                                return;
+
                             sctx0.snpSndr.sendBinaryMeta(cctx.kernalContext()
                                 .cacheObjects()
-                                .metadataTypes()),
-                        sctx0.exec));
+                                .metadataTypes());
+                        },
+                        sctx0.exec)
+                        .whenComplete((res, ex) -> {
+                            if (ex != null) {
+                                log.warning("Binary metadata has not been processed due to an exception " +
+                                    "[snpName=" + sctx0.snpName + ']', ex);
+
+                                sctx0.snpFut.onDone(ex);
+                            }
+                        }));
 
                     // Process marshaller meta
-                    futs.add(CompletableFuture.runAsync(() ->
+                    futs.add(CompletableFuture.runAsync(() -> {
+                            if (sctx0.snpFut.isDone())
+                                return;
+
                             sctx0.snpSndr.sendMarshallerMeta(cctx.kernalContext()
                                 .marshallerContext()
-                                .getCachedMappings()),
-                        sctx0.exec));
+                                .getCachedMappings());
+                        },
+                        sctx0.exec)
+                        .whenComplete((res, ex) -> {
+                            if (ex != null) {
+                                log.warning("Marshaller metadata has not been processed due to an exception " +
+                                    "[snpName=" + sctx0.snpName + ']', ex);
+
+                                sctx0.snpFut.onDone(ex);
+                            }
+                        }));
 
                     // Process partitions
                     for (GroupPartitionId pair : sctx0.parts) {
@@ -386,6 +409,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         }
 
                         CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
+                                if (sctx0.snpFut.isDone())
+                                    return;
+
                                 sctx0.snpSndr.sendPart(
                                     getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
                                     cacheDirName,
@@ -393,12 +419,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                                     partLen);
 
                                 // Stop partition writer.
-                                sctx0.partDeltaWriters.get(pair).partProcessed = true;
+                                sctx0.partDeltaWriters.get(pair).markPartitionProcessed();
                             },
                             sctx0.exec)
+                            // Using this will stop the method on its tracks and not execute the next runAfterBothAsync.
+                            .whenComplete((res, ex) -> {
+                                if (ex != null) {
+                                    log.warning("Partition has not been processed due to an exception " +
+                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
+
+                                    sctx0.snpFut.onDone(ex);
+                                }
+                            })
                             // Wait for the completion of both futures - checkpoint end, copy partition
                             .runAfterBothAsync(sctx0.cpEndFut,
                                 () -> {
+                                    if (sctx0.snpFut.isDone())
+                                        return;
+
                                     File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
                                         pair.getPartitionId());
 
@@ -409,7 +447,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                                     assert deleted;
                                 },
                                 sctx0.exec)
-                            .thenRunAsync(() -> sctx0.snpSndr.sendCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair));
+                            .whenComplete((res, ex) -> {
+                                if (ex != null) {
+                                    log.warning("Delta pages have not been processed due to an exception " +
+                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
+
+                                    sctx0.snpFut.onDone(ex);
+                                }
+                            })
+                            .thenRunAsync(() -> {
+                                    if (sctx0.snpFut.isDone())
+                                        return;
+
+                                    sctx0.snpSndr.sendCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair);
+                                },
+                                sctx0.exec)
+                            .whenComplete((res, ex) -> {
+                                if (ex != null) {
+                                    log.warning("Сache configuration has not been processed due to an exception " +
+                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
+
+                                    sctx0.snpFut.onDone(ex);
+                                }
+                            });
 
                         futs.add(fut0);
                     }
@@ -417,13 +477,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     int futsSize = futs.size();
 
                     CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-                        .whenComplete(new BiConsumer<Void, Throwable>() {
-                            @Override public void accept(Void res, Throwable t) {
-                                if (t == null)
-                                    sctx0.snpFut.onDone(sctx0.snpName);
-                                else
-                                    sctx0.snpFut.onDone(t);
-                            }
+                        .whenComplete((res, t) -> {
+                            if (t == null)
+                                sctx0.snpFut.onDone(true);
+                            else
+                                sctx0.snpFut.onDone(t);
                         });
 
                     sctx0.started = true;
@@ -476,7 +534,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     snpRq.set(null);
 
                     if(snpLsnr != null)
-                        snpLsnr.onException(nodeId, fut.snpName, err);
+                        snpLsnr.onException(nodeId, err);
                 }
             }
 
@@ -542,7 +600,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                             return;
 
                         snpLsnr.onPartition(rmtNodeId,
-                            snpName,
                             new File(partAbsPath),
                             grpPartId.getGroupId(),
                             grpPartId.getPartitionId());
@@ -553,7 +610,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                             if (snpLsnr == null)
                                 return;
 
-                            snpLsnr.onEnd(rmtNodeId, snpName);
+                            snpLsnr.onEnd(rmtNodeId);
                         });
 
                         snpTrans.onDone(true);
@@ -878,7 +935,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @return Future which will be completed when snapshot is done.
      * @throws IgniteCheckedException If initialiation fails.
      */
-    IgniteInternalFuture<String> scheduleSnapshot(
+    IgniteInternalFuture<Boolean> scheduleSnapshot(
         String snpName,
         Map<Integer, GridIntList> parts,
         Executor exec,
@@ -1164,7 +1221,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         @GridToStringExclude
         private final IgniteLogger log;
 
-        /** Buse lock to perform write opertions. */
+        /** Busy lock to protect write opertions. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
         /** Local buffer to perpform copy-on-write operations. */
@@ -1179,7 +1236,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         /** IO over the underlying file */
         private volatile FileIO fileIo;
 
-        /** {@code true} if current writer is stopped. */
+        /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
 
         /**
@@ -1231,6 +1288,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         }
 
         /**
+         * Mark partition has been processed by another thread.
+         */
+        public void markPartitionProcessed() {
+            lock.writeLock().lock();
+
+            try {
+                partProcessed = true;
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        /**
          * @param pageId Page id to write.
          * @param buf Page buffer.
          * @param store Storage to write to.
@@ -1238,10 +1309,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         public void write(long pageId, ByteBuffer buf, PageStore store) {
             assert pagesWrittenBits != null;
 
-            if (stopped())
-                return;
+            Throwable t = null;
+
+            lock.readLock().lock();
 
             try {
+                if (stopped())
+                    return;
+
                 if (checkpointComplete.getAsBoolean()) {
                     int pageIdx = PageIdUtils.pageIndex(pageId);
 
@@ -1273,9 +1348,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     buf.rewind();
                 }
             }
-            catch (Throwable t) {
-                snpFut.onDone(t);
+            catch (Throwable ex) {
+                t = ex;
             }
+            finally {
+                lock.readLock().unlock();
+            }
+
+            if (t != null)
+                snpFut.onDone(t);
         }
 
         /**
@@ -1284,33 +1365,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
          * @throws IOException If page writing failed (IO error occurred).
          */
         private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
-            lock.readLock().lock();
+            assert fileIo != null : "Delta pages storage is not inited: " + this;
+            assert pageBuf.position() == 0;
+            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                + " should be same with " + ByteOrder.nativeOrder();
 
-            try {
-                assert fileIo != null : "Delta pages storage is not inited: " + this;
-                assert pageBuf.position() == 0;
-                assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
-                    + " should be same with " + ByteOrder.nativeOrder();
+            int crc = PageIO.getCrc(pageBuf);
+            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
 
-                int crc = PageIO.getCrc(pageBuf);
-                int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
-
-                if (log.isDebugEnabled()) {
-                    log.debug("onPageWrite [pageId=" + pageId +
-                        ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
-                        ", fileSize=" + fileIo.size() +
-                        ", crcBuff=" + crc32 +
-                        ", crcPage=" + crc + ']');
-                }
-
-                pageBuf.rewind();
-
-                // Write buffer to the end of the file.
-                fileIo.writeFully(pageBuf);
+            if (log.isDebugEnabled()) {
+                log.debug("onPageWrite [pageId=" + pageId +
+                    ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
+                    ", fileSize=" + fileIo.size() +
+                    ", crcBuff=" + crc32 +
+                    ", crcPage=" + crc + ']');
             }
-            finally {
-                lock.readLock().unlock();
-            }
+
+            pageBuf.rewind();
+
+            // Write buffer to the end of the file.
+            fileIo.writeFully(pageBuf);
         }
 
         /** {@inheritDoc} */
@@ -1414,7 +1488,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         /** Future of result completion. */
         @GridToStringExclude
-        private final GridFutureAdapter<String> snpFut = new GridFutureAdapter<>();
+        private final GridFutureAdapter<Boolean> snpFut = new GridFutureAdapter<>();
 
         /** Snapshot data sender. */
         @GridToStringExclude

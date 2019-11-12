@@ -360,10 +360,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> backupFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> snpFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
-        backupFut.get();
+        snpFut.get();
     }
 
     /**
@@ -433,24 +433,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
 
-        final CountDownLatch awaitLatch = new CountDownLatch(ints.size());
         final CountDownLatch cancelLatch = new CountDownLatch(1);
 
         mgr0.addSnapshotListener(new SnapshotListener() {
-            @Override public void onPartition(UUID rmtNodeId, String snpName, File part, int grpId, int partId) {
-                log.info("Snapshot partition received successfully [snpName=" + snpName +
+            @Override public void onPartition(UUID rmtNodeId, File part, int grpId, int partId) {
+                log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
                     ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
 
-                awaitLatch.countDown();
                 cancelLatch.countDown();
             }
 
-            @Override public void onEnd(UUID rmtNodeId, String snpName) {
-                log.info("Snapshot created successfully [snpName=" + snpName + ']');
+            @Override public void onEnd(UUID rmtNodeId) {
+                log.info("Snapshot created successfully [rmtNodeId=" + rmtNodeId + ']');
             }
 
-            @Override public void onException(UUID rmtNodeId, String snpName, Throwable t) {
-                fail("Exception must not be thrown [rmtNodeId=" + rmtNodeId + ", snpName=" + snpName + ", t=" + t);
+            @Override public void onException(UUID rmtNodeId, Throwable t) {
+                fail("Exception must not be thrown [rmtNodeId=" + rmtNodeId + ", t=" + t);
             }
         });
 
@@ -463,7 +461,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
 
-        awaitLatch.await();
+        fut2.get();
     }
 
     /**
