@@ -225,8 +225,9 @@ public class WorkersRegistry implements GridWorkerListener {
 
                         if (worker0 != null && worker0 == worker) {
                             log.error("Blocked system-critical thread has been detected. " +
-                                "This can lead to cluster-wide undefined behaviour " +
-                                "[threadName=" + worker.name() + ", blockedFor=" + heartbeatDelay / 1000 + "s]");
+                                    "This can lead to cluster-wide undefined behaviour " +
+                                    "[workerName=" + worker.name() + ", threadName=" + worker.runner().getName() +
+                                    ", blockedFor=" + heartbeatDelay / 1000 + "s]");
 
                             U.dumpThread(worker.runner(), log);
 
