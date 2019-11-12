@@ -25,7 +25,10 @@ public enum DistributedProcesses {
     MASTER_KEY_CHANGE_PREPARE(0),
 
     /** */
-    MASTER_KEY_CHANGE_FINISH(1);
+    MASTER_KEY_CHANGE_FINISH(1),
+
+    /** */
+    TEST_PROCESS(2);
 
     /**
      * Unique process type identifier.
