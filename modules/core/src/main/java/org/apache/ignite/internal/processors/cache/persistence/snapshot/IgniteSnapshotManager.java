@@ -310,7 +310,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             // There is no data assigned to partition, thus it haven't been created yet
                             if (allocRange == null) {
                                 log.warning("Allocated info about requested partition is missing during snapshot " +
-                                    "operation [pair=" + pair + ", snmName=" + sctx0.snpName + ']');
+                                    "operation [cache=" + cctx.cache().cacheGroup(pair.getGroupId()).cacheOrGroupName() +
+                                    ", p=" + pair.getPartitionId() + ", state=" +
+                                    cctx.cache().cacheGroup(pair.getGroupId()).topology().localPartition(pair.getPartitionId()).state() +
+                                    ", snmName=" + sctx0.snpName + ']');
                             }
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());

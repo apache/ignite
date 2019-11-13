@@ -1811,6 +1811,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+                // todo at least one partition should be greater then threshold
                 if (locPart.state() == GridDhtPartitionState.OWNING) // locPart.fullSize() > walRebalanceThreshold
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }
@@ -1860,18 +1861,48 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
 
-        if (cpEntry == null)
+        if (cpEntry == null) {
+            log.warning("Unable to reserve history, checkpoint not found [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+
             return false;
+        }
 
         WALPointer ptr = cpEntry.checkpointMark();
 
-        if (ptr == null)
+        if (ptr == null) {
+            log.warning("Unable to reserve history, WAL pointer is null [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+
             return false;
+        }
 
         boolean reserved = cctx.wal().reserve(ptr);
 
         if (reserved)
             reservedForPreloading.put(new T2<>(grpId, partId), new T2<>(cntr, ptr));
+        else {
+            FileWALPointer minPtr = (FileWALPointer)ptr;
+            boolean exchReserved = false;
+
+            for (Map<Integer, T2<Long, WALPointer>> value : reservedForExchange.values()) {
+                for (T2<Long, WALPointer> pair : value.values()) {
+                    FileWALPointer ptr0 = (FileWALPointer)pair.get2();
+
+                    if (minPtr.compareTo(ptr0) >= 0) {
+                        if (log.isDebugEnabled())
+                            log.debug("Found reserved pointer: " + ptr0 + ", not reserved = " + ptr);
+
+                        exchReserved = true;
+
+                        break;
+                    }
+                }
+            }
+
+            log.warning("Unable to reserve WAL pointer [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + ", exchReserved="+exchReserved+"]");
+        }
 
         return reserved;
     }

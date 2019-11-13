@@ -46,7 +46,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
     protected GridCacheSharedContext cctx;
 
     /** Logger. */
-    protected IgniteLogger log;
+    private final IgniteLogger log;
 
     /** */
     private long rebalanceId;
@@ -219,7 +219,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         }
 
         if (!msg.partitions().hasHistorical()) {
-            mainFut.onNodeGroupDone(grpId, nodeId(), false);
+            mainFut.onCacheGroupDone(grpId, nodeId(), false);
 
             if (remaining.isEmpty() && !isDone())
                 onDone(true);
@@ -233,34 +233,38 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
 
         assigns.put(node, msg);
 
-        GridCompoundFuture<Boolean, Boolean> forceFut = new GridCompoundFuture<>(CU.boolReducer());
+        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
 
-        Runnable cur = grp.preloader().addAssignments(assigns,
-            true,
-            rebalanceId,
-            null,
-            forceFut);
+        Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
 
         if (log.isDebugEnabled())
-            log.debug("Triggering historical rebalancing [node=" + node.id() + ", group=" + grp.cacheOrGroupName() + "]");
+            log.debug("Starting historical rebalancing [node=" + node.id() + ", cache=" + grp.cacheOrGroupName() + "]");
 
-        cur.run();
+        task.run();
 
-        forceFut.markInitialized();
+        histFut.markInitialized();
 
-        forceFut.listen(c -> {
+        histFut.listen(c -> {
             try {
-                mainFut.onNodeGroupDone(grpId, nodeId(), true);
-                // todo think
-//if (forceFut.get() &&
+                if (isDone())
+                    return;
+
+                mainFut.onCacheGroupDone(grpId, nodeId(), true);
+
+                // todo Test cancel of historical rebalancing + redundant forceFut.get() it's called onDone(cancelled)
+                if (histFut.isCancelled() && !histFut.get()) {
+                    log.warning("Cancelling file rebalancing due to unsuccessful historical rebalance [cancelled=" +
+                        histFut.isCancelled() + ", failed=" + histFut.isFailed() + "]");
+
+                    cancel();
+
+                    return;
+                }
+
                 if (remaining.isEmpty())
                     onDone(true);
-
-                // todo think
-//                else
-//                    cancel();
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException e) {
                 onDone(e);
             }
         });
@@ -274,11 +278,11 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
         boolean r = super.onDone(res, err, cancel);
 
         try {
-            if (!snapFut.isDone())
+            if (snapFut != null && !snapFut.isDone())
                 snapFut.cancel();
         }
         catch (IgniteCheckedException e) {
-            e.printStackTrace();
+            log.error("Unable to finish file rebalancing node routine", e);
         }
 
         mainFut.onNodeDone(this, res, err, cancel);

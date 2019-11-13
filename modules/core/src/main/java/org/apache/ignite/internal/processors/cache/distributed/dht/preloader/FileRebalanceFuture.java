@@ -229,7 +229,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         return super.onDone(res, err, cancel);
     }
 
-    public void onNodeGroupDone(int grpId, UUID nodeId, boolean historical) {
+    public void onCacheGroupDone(int grpId, UUID nodeId, boolean historical) {
         Set<UUID> remainingNodes = allGroupsMap.get(grpId);
 
         boolean rmvd = remainingNodes.remove(nodeId);

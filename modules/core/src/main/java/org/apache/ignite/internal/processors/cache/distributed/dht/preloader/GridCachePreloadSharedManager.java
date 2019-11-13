@@ -98,8 +98,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param ktx Kernal context.
      */
     public GridCachePreloadSharedManager(GridKernalContext ktx) {
-        assert CU.isPersistenceEnabled(ktx.config()) :
-            "Persistence must be enabled to preload any of cache partition files";
+        assert CU.isPersistenceEnabled(ktx.config()) : "Persistence must be enabled to use file preloading";
     }
 
     /** {@inheritDoc} */
@@ -123,8 +122,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    // todo the result assignment should be equal to generate assignments
-    // todo logic duplication should be eliminated
+    // todo logic duplication with preload.addAssignment should be eliminated
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut != null;
 
@@ -211,7 +209,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         FileRebalanceFuture fut0 = fileRebalanceFut;
 
-        if (!fut0.isDone() && !lastFut.topologyVersion().equals(fut0.topologyVersion())) {
+        if (!fut0.isDone()) {
             if (log.isDebugEnabled())
                 log.debug("Topology changed - canceling file rebalance.");
 
@@ -236,7 +234,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> nodeOrderAssignsMap =
-            sliceNodeCacheAssignments(assignsMap, exchFut);
+            remapAssignments(assignsMap, exchFut);
 
         if (nodeOrderAssignsMap.isEmpty())
             return NO_OP;
@@ -281,6 +279,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
                         fut.listen(f -> {
                             try {
+                                if (f.isCancelled())
+                                    return;
+
                                 if (log.isDebugEnabled())
                                     log.debug("Running next task, last future result is " + f.get());
 
@@ -324,7 +325,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
      * @param assignsMap The map of cache groups assignments to process.
      * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
-    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sliceNodeCacheAssignments(
+    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> remapAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap, GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> result = new TreeMap<>();
 
