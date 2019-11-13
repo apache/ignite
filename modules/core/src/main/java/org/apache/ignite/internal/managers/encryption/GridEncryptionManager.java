@@ -627,7 +627,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 digest = getSpi().masterKeyDigest();
             } catch (Exception e) {
-                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']');
+                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']', e);
             } finally {
                 getSpi().setMasterKeyName(curName);
             }
