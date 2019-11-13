@@ -5149,8 +5149,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Sets cluster fully rebalanced flag.
      */
     public void markRebalanced() {
-        assert !isDone();
-
         rebalanced = true;
     }
 
