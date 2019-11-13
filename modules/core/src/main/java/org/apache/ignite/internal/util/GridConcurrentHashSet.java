@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -113,6 +112,6 @@ public class GridConcurrentHashSet<E> extends GridSetWrapper<E> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridConcurrentHashSet.class, this, "elements", map().keySet());
+        return map().keySet().toString();
     }
 }

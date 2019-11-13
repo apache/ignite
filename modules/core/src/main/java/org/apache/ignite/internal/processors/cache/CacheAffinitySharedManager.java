@@ -2236,7 +2236,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +
-            ", wait=\"" + groupNames(rebInfo.grps) + "\", total=\"" + groupNames(rebInfo.deploymentIds.keySet()) + "\"]");
+            ", wait=" + rebInfo.grps + ", total=" + rebInfo.deploymentIds.keySet() + "]");
     }
 
     /**
