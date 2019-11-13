@@ -2222,9 +2222,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (rebInfo.empty()) { // Recalculated as ideally rebalanced locally.
-            fut.markRebalanced();
-
-            if (!rebInfo.deploymentIds.isEmpty()) // Contains groups rebalanced at previous topology.
+            if (!rebInfo.deploymentIds.isEmpty()) { // Contains groups rebalanced at previous topology.
                 try {
                     CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(rebInfo.topVer, rebInfo.deploymentIds);
 
@@ -2233,6 +2231,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity change message.", e);
                 }
+            }
+            else
+                fut.markRebalanced();
         }
 
         log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +
