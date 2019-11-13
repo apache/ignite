@@ -81,9 +81,9 @@ public class MovieFitnessFunction implements IFitnessFunction {
     private double getGenreScore(Movie movie) {
         double genreScore = 0;
 
-        for (String genre : this.genres) {
+        for (String genre : genres) {
             if (movie.getGenre().contains(genre))
-                genreScore = genreScore + 1;
+                genreScore += 1;
         }
         return genreScore;
     }

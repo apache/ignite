@@ -37,7 +37,7 @@ public class DeployingContextImplTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         environment = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
     }
 
