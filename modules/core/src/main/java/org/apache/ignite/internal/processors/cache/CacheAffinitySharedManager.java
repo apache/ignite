@@ -239,6 +239,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
         if (top != null) {
+            synchronized (mux) {
+                if (waitInfo == null || !waitInfo.grps.contains(grpId))
+                    return; // Already rebalanced.
+            }
+
             List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
 
             for (int p = 0; p < ideal.size(); p++)
