@@ -1874,9 +1874,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = grp.topology();
 
                     if (top != null) {
-                        updated |= top.update(null, entry.getValue(), false);
+                        boolean locUpdated = top.update(null, entry.getValue(), false);
 
-                        cctx.affinity().checkRebalanceState(top, grpId);
+                        if (locUpdated)
+                            cctx.affinity().checkRebalanceState(top, grpId);
+
+                        updated |= locUpdated;
                     }
                 }
 
