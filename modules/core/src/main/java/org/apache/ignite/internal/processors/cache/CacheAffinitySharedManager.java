@@ -2222,7 +2222,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (rebInfo.empty()) { // Recalculated as ideally rebalanced locally.
-            if (!rebInfo.deploymentIds.isEmpty()) { // Contains groups rebalanced at previous topology.
+            if (!rebInfo.deploymentIds.isEmpty()) { // Contains groups rebalanced at previous topology. LAS required.
                 try {
                     CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(rebInfo.topVer, rebInfo.deploymentIds);
 
