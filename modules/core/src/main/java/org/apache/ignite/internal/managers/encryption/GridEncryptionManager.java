@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteEncryption;
@@ -132,8 +133,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Synchronization mutex for generate encryption keys and change master key operations. */
     private final Object opsMux = new Object();
 
-    /** Synchronization mutex for spi master key change. */
-    private final Object masterKeyChangeMux = new Object();
+    /** Master key change lock. The main purpose is to avoid encrypt and decrypt group keys when master key changing. */
+    private final ReentrantReadWriteLock masterKeyChangeLock = new ReentrantReadWriteLock();
 
     /** Disconnected flag. */
     private volatile boolean disconnected;
@@ -236,13 +237,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                     byte[] masterKeyDigest;
 
-                    synchronized (masterKeyChangeMux) {
+                    masterKeyChangeLock.readLock().lock();
+
+                    try {
                         for (int i = 0; i < req.keyCount(); i++)
                             encKeys.add(getSpi().encryptKey(getSpi().create()));
 
                         // We should send the master key digest that encrypted group keys because the response can be
                         // processed after the possible master key change.
                         masterKeyDigest = getSpi().masterKeyDigest();
+                    }
+                    finally {
+                        masterKeyChangeLock.readLock().unlock();
                     }
 
                     try {
@@ -534,8 +540,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         Serializable encKey;
 
-        synchronized (masterKeyChangeMux) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
             encKey = getSpi().decryptKey(encGrpKey);
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
 
         synchronized (metaStorageMux) {
@@ -559,6 +570,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
         checkMasterKeyChangeSupported();
+
+        if (masterKeyName.equals(getMasterKeyName()))
+            return new IgniteFutureImpl<>(new GridFinishedFuture<>());
 
         byte[] digest = masterKeyDigest(masterKeyName);
 
@@ -585,8 +599,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         checkMasterKeyChangeSupported();
 
-        synchronized (masterKeyChangeMux) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
             return getSpi().getMasterKeyName();
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
     }
 
@@ -598,7 +617,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private byte[] masterKeyDigest(String masterKeyName) {
         byte[] digest;
 
-        synchronized (masterKeyChangeMux) {
+        masterKeyChangeLock.writeLock().lock();
+
+        try {
             String curName = getSpi().getMasterKeyName();
 
             try {
@@ -611,6 +632,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 getSpi().setMasterKeyName(curName);
             }
         }
+        finally {
+            masterKeyChangeLock.writeLock().unlock();
+        }
 
         return digest;
     }
@@ -620,21 +644,28 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Encrypted master key name.
      */
     private byte[] encryptKeyName(String keyName) {
-        Serializable key = getSpi().create();
+        masterKeyChangeLock.readLock().lock();
 
-        byte[] encKey = getSpi().encryptKey(key);
+        try {
+            Serializable key = getSpi().create();
 
-        byte[] serKeyName = U.toBytes(keyName);
+            byte[] encKey = getSpi().encryptKey(key);
 
-        ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
-            getSpi().encryptedSize(serKeyName.length));
+            byte[] serKeyName = U.toBytes(keyName);
 
-        res.putInt(encKey.length);
-        res.put(encKey);
+            ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
+                getSpi().encryptedSize(serKeyName.length));
 
-        getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
+            res.putInt(encKey.length);
+            res.put(encKey);
 
-        return res.array();
+            getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
+
+            return res.array();
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
+        }
     }
 
     /**
@@ -642,21 +673,28 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Decrypted master key name.
      */
     private String decryptKeyName(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+        masterKeyChangeLock.readLock().lock();
 
-        int keyLen = buf.getInt();
+        try {
+            ByteBuffer buf = ByteBuffer.wrap(data);
 
-        byte[] encKey = new byte[keyLen];
+            int keyLen = buf.getInt();
 
-        buf.get(encKey);
+            byte[] encKey = new byte[keyLen];
 
-        byte[] encKeyName = new byte[buf.remaining()];
+            buf.get(encKey);
 
-        buf.get(encKeyName);
+            byte[] encKeyName = new byte[buf.remaining()];
 
-        byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
+            buf.get(encKeyName);
 
-        return U.fromBytes(serKeyName);
+            byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
+
+            return U.fromBytes(serKeyName);
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
+        }
     }
 
     /** */
@@ -771,18 +809,32 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        synchronized (metaStorageMux) {
-            writeToMetaStoreEnabled = metaStorage != null;
+        masterKeyChangeLock.readLock().lock();
 
-            if (writeToMetaStoreEnabled)
-                writeAllToMetaStore();
+        try {
+            synchronized (metaStorageMux) {
+                writeToMetaStoreEnabled = metaStorage != null;
+
+                if (writeToMetaStoreEnabled)
+                    writeAllToMetaStore();
+            }
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        synchronized (metaStorageMux) {
-            writeToMetaStoreEnabled = false;
+        masterKeyChangeLock.readLock().lock();
+
+        try {
+            synchronized (metaStorageMux) {
+                writeToMetaStoreEnabled = false;
+            }
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
     }
 
@@ -952,7 +1004,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @return Tuple of collection with newly generated encryption keys and master key digest.
      */
     private T2<Collection<byte[]>, byte[]> createKeys(int keyCnt) {
-        synchronized (masterKeyChangeMux) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
             if (keyCnt == 0)
                 return new T2<>(Collections.emptyList(), getSpi().masterKeyDigest());
 
@@ -962,6 +1016,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 encKeys.add(getSpi().encryptKey(getSpi().create()));
 
             return new T2<>(encKeys, getSpi().masterKeyDigest());
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
     }
 
@@ -993,7 +1050,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private void changeMasterKeyAndReencryptGroupKeys(String name) {
         log.info("Start master key change [masterKeyName=" + name + ']');
 
-        synchronized (masterKeyChangeMux) {
+        masterKeyChangeLock.writeLock().lock();
+
+        try {
             getSpi().setMasterKeyName(name);
 
             MasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
@@ -1022,6 +1081,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             finally {
                 ctx.cache().context().database().checkpointReadUnlock();
             }
+        }
+        finally {
+            masterKeyChangeLock.writeLock().unlock();
         }
     }
 

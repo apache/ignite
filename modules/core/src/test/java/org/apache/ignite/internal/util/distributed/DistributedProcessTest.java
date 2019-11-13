@@ -1,13 +1,13 @@
 package org.apache.ignite.internal.util.distributed;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -17,12 +17,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.util.distributed.DistributedProcesses.TEST_PROCESS;
-
 /**
  * Tests {@link DistributedProcessManager}.
  */
 public class DistributedProcessTest extends GridCommonAbstractTest {
+    /** */
+    private static final int TEST_PROCESS_TYPE_ID = -1;
+
     /** */
     private final ConcurrentHashMap<UUID, TestDistributedProcess> processes = new ConcurrentHashMap<>();
 
@@ -40,23 +41,14 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
     public void testCoordinatorChange() throws Exception {
         IgniteEx crd = startGrids(3);
 
-        AtomicReference<DistributedProcessManager> mgr = new AtomicReference<>();
-
-        G.allGrids().forEach(ignite -> {
-            GridKernalContext ctx = ((IgniteEx)ignite).context();
-
-            DistributedProcessManager mgr0 = U.field(ctx.encryption(), "dpMgr");
-
-            mgr0.register(TEST_PROCESS, new TestDistributedProcessFactory(ctx.localNodeId()));
-
-            mgr.compareAndSet(null, mgr0);
-        });
+        G.allGrids().forEach(ignite -> registerProcess((IgniteEx)ignite, TEST_PROCESS_TYPE_ID,
+                new TestDistributedProcessFactory(ignite.cluster().localNode().id())));
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(2));
 
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
-        mgr.get().start(TEST_PROCESS, 10);
+        startProcess(crd, TEST_PROCESS_TYPE_ID, 10);
 
         spi.waitForBlocked();
 
@@ -93,8 +85,32 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
         processes.forEach((uuid, process) -> assertEquals(20, process.result.get()));
     }
 
+    /**
+     * @param ignite Ignite.
+     * @param typeId Process type id.
+     * @param factory Distributed process factory.
+     */
+    private void registerProcess(IgniteEx ignite, int typeId, DistributedProcessFactory factory) {
+        DistributedProcessManager mgr0 = U.field(ignite.context().encryption(), "dpMgr");
+
+        ConcurrentHashMap<Integer, DistributedProcessFactory> registered = U.field(mgr0, "registered");
+
+        registered.put(typeId, factory);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param typeId Process type id.
+     * @param req Initial request.
+     */
+    private void startProcess(IgniteEx ignite, int typeId, Serializable req) throws IgniteCheckedException {
+        InitMessage msg = new InitMessage(UUID.randomUUID(), typeId, req);
+
+        ignite.context().discovery().sendCustomEvent(msg);
+    }
+
     /** Test implementation of {@link DistributedProcessManager}. */
-    private class TestDistributedProcess implements DistributedProcess<Integer, Integer, Integer> {
+    private static class TestDistributedProcess implements DistributedProcess<Integer, Integer, Integer> {
         /** */
         private final CountDownLatch completed = new CountDownLatch(1);
 
@@ -130,7 +146,7 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
         private final UUID nodeId;
 
         /** @param nodeId Node id. */
-        public TestDistributedProcessFactory(UUID nodeId) {
+        TestDistributedProcessFactory(UUID nodeId) {
             this.nodeId = nodeId;
         }
 

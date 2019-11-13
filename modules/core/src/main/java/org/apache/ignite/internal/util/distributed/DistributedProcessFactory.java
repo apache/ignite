@@ -17,8 +17,16 @@
 
 package org.apache.ignite.internal.util.distributed;
 
-/** */
+/**
+ * Distributed process factory.
+ *
+ * @see DistributedProcess
+ */
 public interface DistributedProcessFactory {
-    /** */
+    /**
+     * Creates distributed process instance.
+     *
+     * @return Distributed process instance.
+     */
     DistributedProcess create();
 }

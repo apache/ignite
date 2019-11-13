@@ -19,16 +19,15 @@ package org.apache.ignite.internal.util.distributed;
 
 /**
  * Defines distributed processes.
+ *
+ * @see DistributedProcess
  */
 public enum DistributedProcesses {
     /** */
     MASTER_KEY_CHANGE_PREPARE(0),
 
     /** */
-    MASTER_KEY_CHANGE_FINISH(1),
-
-    /** */
-    TEST_PROCESS(2);
+    MASTER_KEY_CHANGE_FINISH(1);
 
     /**
      * Unique process type identifier.

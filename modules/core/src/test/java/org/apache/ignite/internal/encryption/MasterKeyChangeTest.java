@@ -233,7 +233,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         // Stops block subsequent changes.
         commSpi.stopBlock(false, null, true, false);
 
-        assertThrowsWithCause(() -> grids.get2().encryption().changeMasterKey(DEFAULT_MASTER_KEY_NAME).get(),
+        assertThrowsWithCause(() -> grids.get2().encryption().changeMasterKey(MASTER_KEY_NAME_3).get(),
             IgniteException.class);
 
         // Unblocks first change.

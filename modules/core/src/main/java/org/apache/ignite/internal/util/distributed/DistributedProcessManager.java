@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +55,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 @SuppressWarnings("unchecked")
 public class DistributedProcessManager {
     /** Map of registered processes. */
-    private final ConcurrentHashMap<Integer, DistributedProcessFactory> registered = new ConcurrentHashMap<>(1);
+    private final ConcurrentHashMap<Integer, DistributedProcessFactory> registered = new ConcurrentHashMap<>();
 
     /** Map of all active processes. */
     private final ConcurrentHashMap</*processId*/UUID, Process> processes = new ConcurrentHashMap<>(1);
@@ -75,52 +76,52 @@ public class DistributedProcessManager {
         log = ctx.log(getClass());
 
         ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
-            Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+            Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
-            if (proc.initFut.isDone())
+            if (p.initFut.isDone())
                 return;
 
             ClusterNode crd = coordinator();
 
             if (crd == null) {
-                proc.initFut.onDone();
+                p.initFut.onDone();
 
                 onAllServersLeft();
 
                 return;
             }
 
-            proc.crdId = crd.id();
+            p.crdId = crd.id();
 
             if (crd.isLocal())
-                initCoordinator(topVer, proc);
+                initCoordinator(p, topVer);
 
-            proc.instance = registered.get(msg.processTypeId()).create();
+            p.instance = registered.get(msg.processTypeId()).create();
 
-            IgniteInternalFuture<Serializable> fut = proc.instance.execute(msg.request());
+            IgniteInternalFuture<Serializable> fut = p.instance.execute(msg.request());
 
             fut.listen(f -> {
                 if (f.error() != null)
-                    proc.singleResFut.onDone(f.error());
+                    p.singleResFut.onDone(f.error());
                 else
-                    proc.singleResFut.onDone(f.result());
+                    p.singleResFut.onDone(f.result());
 
                 ClusterNode crdNode = coordinator();
 
                 if (crdNode != null)
-                    sendSingleSingleMessage(proc, crdNode);
+                    sendSingleSingleMessage(p, crdNode);
             });
 
-            proc.initFut.onDone();
+            p.initFut.onDone();
         });
 
         ctx.discovery().setCustomEventListener(FinishMessage.class, (topVer, snd, msg) -> {
-            Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+            Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
             if (msg.hasError())
-                proc.instance.cancel(msg.error());
+                p.instance.cancel(msg.error());
             else
-                proc.instance.finish(msg.result());
+                p.instance.finish(msg.result());
 
             processes.remove(msg.requestId());
         });
@@ -136,38 +137,38 @@ public class DistributedProcessManager {
         ctx.event().addDiscoveryEventListener((evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
-            for (Process proc : processes.values()) {
-                proc.initFut.listen(fut -> {
-                    boolean crdChanged = org.apache.ignite.internal.util.typedef.F.eq(leftNodeId, proc.crdId);
+            for (Process p : processes.values()) {
+                p.initFut.listen(fut -> {
+                    boolean crdChanged = F.eq(leftNodeId, p.crdId);
 
                     if (crdChanged) {
                         ClusterNode crd = coordinator();
 
                         if (crd != null) {
-                            proc.crdId = crd.id();
+                            p.crdId = crd.id();
 
                             if (crd.isLocal())
-                                initCoordinator(discoCache.version(), proc);
+                                initCoordinator(p, discoCache.version());
 
-                            proc.singleResFut.listen(f -> sendSingleSingleMessage(proc, crd));
+                            p.singleResFut.listen(f -> sendSingleSingleMessage(p, crd));
                         }
                         else
                             onAllServersLeft();
                     }
-                    else if (ctx.localNodeId().equals(proc.crdId)) {
+                    else if (ctx.localNodeId().equals(p.crdId)) {
                         boolean rmvd, isEmpty;
 
                         synchronized (mux) {
-                            rmvd = proc.remaining.remove(leftNodeId);
+                            rmvd = p.remaining.remove(leftNodeId);
 
-                            isEmpty = proc.remaining.isEmpty();
+                            isEmpty = p.remaining.isEmpty();
                         }
 
                         if (rmvd) {
-                            proc.singleMsgs.remove(leftNodeId);
+                            p.singleMsgs.remove(leftNodeId);
 
                             if (isEmpty)
-                                onAllReceived(proc);
+                                finishProcess(p);
                         }
                     }
                 });
@@ -178,7 +179,7 @@ public class DistributedProcessManager {
     /**
      * Registers distributed process.
      * <p>
-     * Note: Processes should be registered before the discovery manager started.
+     * Note: Process should be registered before the discovery manager started.
      *
      * @param p Distibuted process.
      * @param factory Distributed process factory.
@@ -207,10 +208,10 @@ public class DistributedProcessManager {
     /**
      * Initiates process coordinator.
      *
+     * @param p Process.
      * @param topVer Topology version.
-     * @param proc Process.
      */
-    private void initCoordinator(AffinityTopologyVersion topVer, Process proc) {
+    private void initCoordinator(Process p, AffinityTopologyVersion topVer) {
         Set<UUID> aliveSrvNodesIds = new HashSet<>();
 
         for (ClusterNode node : ctx.discovery().serverNodes(topVer)) {
@@ -219,45 +220,14 @@ public class DistributedProcessManager {
         }
 
         synchronized (mux) {
-            if (proc.initCrdFut.isDone())
+            if (p.initCrdFut.isDone())
                 return;
 
-            assert proc.remaining.isEmpty();
+            assert p.remaining.isEmpty();
 
-            proc.remaining.addAll(aliveSrvNodesIds);
+            p.remaining.addAll(aliveSrvNodesIds);
 
-            proc.initCrdFut.onDone();
-        }
-    }
-
-    /**
-     * Creates and sends finish message when all single nodes result received.
-     *
-     * @param p Process.
-     */
-    private void onAllReceived(Process p) {
-        Optional<SingleNodeMessage> errMsg = p.singleMsgs.values().stream().filter(SingleNodeMessage::hasError)
-            .findFirst();
-
-        FinishMessage msg;
-
-        if (errMsg.isPresent())
-            msg = new FinishMessage(p.id, errMsg.get().error());
-        else {
-            HashMap<UUID, Serializable> map = new HashMap<>(p.singleMsgs.size());
-
-            p.singleMsgs.forEach((uuid, m) -> map.put(uuid, m.response()));
-
-            Serializable res = p.instance.buildResult(map);
-
-            msg = new FinishMessage(p.id, res);
-        }
-
-        try {
-            ctx.discovery().sendCustomEvent(msg);
-        }
-        catch (IgniteCheckedException e) {
-            log.warning("Unable to send action message.", e);
+            p.initCrdFut.onDone();
         }
     }
 
@@ -292,24 +262,55 @@ public class DistributedProcessManager {
      * @param nodeId Node id.
      */
     private void onSingleNodeMessageReceived(SingleNodeMessage msg, UUID nodeId) {
-        Process proc = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+        Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
-        proc.initCrdFut.listen(f -> {
+        p.initCrdFut.listen(f -> {
             boolean rmvd, isEmpty;
 
             synchronized (mux) {
-                rmvd = proc.remaining.remove(nodeId);
+                rmvd = p.remaining.remove(nodeId);
 
-                isEmpty = proc.remaining.isEmpty();
+                isEmpty = p.remaining.isEmpty();
             }
 
             if (rmvd) {
-                proc.singleMsgs.put(nodeId, msg);
+                p.singleMsgs.put(nodeId, msg);
 
                 if (isEmpty)
-                    onAllReceived(proc);
+                    finishProcess(p);
             }
         });
+    }
+
+    /**
+     * Creates and sends finish message when all single nodes result received.
+     *
+     * @param p Process.
+     */
+    private void finishProcess(Process p) {
+        Optional<SingleNodeMessage> errMsg = p.singleMsgs.values().stream().filter(SingleNodeMessage::hasError)
+            .findFirst();
+
+        FinishMessage msg;
+
+        if (errMsg.isPresent())
+            msg = new FinishMessage(p.id, errMsg.get().error());
+        else {
+            HashMap<UUID, Serializable> map = new HashMap<>(p.singleMsgs.size());
+
+            p.singleMsgs.forEach((uuid, m) -> map.put(uuid, m.response()));
+
+            Serializable res = p.instance.buildResult(map);
+
+            msg = new FinishMessage(p.id, res);
+        }
+
+        try {
+            ctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Unable to send action message.", e);
+        }
     }
 
     /**
