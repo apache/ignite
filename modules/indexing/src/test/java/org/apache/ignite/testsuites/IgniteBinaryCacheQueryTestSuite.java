@@ -214,6 +214,8 @@ import org.apache.ignite.internal.processors.query.QueryJmxMetricsTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
+import org.apache.ignite.internal.processors.query.SqlIndexesSystemViewStaticCfgTest;
+import org.apache.ignite.internal.processors.query.SqlIndexesSystemViewTest;
 import org.apache.ignite.internal.processors.query.SqlMetricsOnWebConsoleSelfTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
@@ -518,6 +520,8 @@ import org.junit.runners.Suite;
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
+    SqlIndexesSystemViewTest.class,
+    SqlIndexesSystemViewStaticCfgTest.class,
     SqlMetricsOnWebConsoleSelfTest.class,
 
     GridIndexRebuildSelfTest.class,
