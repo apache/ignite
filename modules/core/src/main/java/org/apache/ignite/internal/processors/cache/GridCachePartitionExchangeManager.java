@@ -1221,16 +1221,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // If this is the oldest node.
         if (oldest.id().equals(cctx.localNodeId())) {
-            // Check rebalance state & send CacheAffinityChangeMessage if need.
-            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal()) {
-                    GridDhtPartitionTopology top = grp.topology();
-
-                    if (top != null)
-                        cctx.affinity().checkRebalanceState(top, grp.groupId());
-                }
-            }
-
             GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
 
             // No need to send to nodes which did not finish their first exchange.

@@ -238,6 +238,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param grpId Group ID.
      */
     public void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
+        assert cctx.kernalContext().discovery().discoCache().oldestServerNode().isLocal(); // This node is a coordinator.
+
         if (top != null) {
             synchronized (mux) {
                 if (waitInfo == null || !waitInfo.grps.contains(grpId))
@@ -771,7 +773,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Set<Integer> stoppedGrps = processCacheStopRequests(fut, crd, exchActions, false);
 
-        if (stoppedGrps != null)
+        if (crd && stoppedGrps != null)
             for (Integer grpId : stoppedGrps)
                 checkRebalanceState(null, grpId);
 
@@ -2233,10 +2235,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("Computed new rebalance wait info [topVer=" + rebInfo.topVer +
-                ", waitGrps=" + groupNames(rebInfo.grps) + ", total=" + groupNames(rebInfo.deploymentIds.keySet()) + ']');
-        }
+        log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +
+            ", wait=\"" + groupNames(rebInfo.grps) + "\", total=\"" + groupNames(rebInfo.deploymentIds.keySet()) + "\"]");
     }
 
     /**
