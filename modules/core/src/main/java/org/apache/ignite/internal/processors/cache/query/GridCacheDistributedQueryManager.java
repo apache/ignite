@@ -550,6 +550,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             String clsName = qry.query().queryClassName();
 
+            boolean deployFilterOrTransformer = (qry.query().scanFilter() != null || qry.query().transform() != null)
+                && cctx.gridDeploy().enabled();
+
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
                 reqId,
@@ -571,7 +574,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().taskHash(),
                 queryTopologyVersion(),
                 // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
+                cctx.deploymentEnabled() || deployFilterOrTransformer);
 
             addQueryFuture(req.id(), fut);
 
