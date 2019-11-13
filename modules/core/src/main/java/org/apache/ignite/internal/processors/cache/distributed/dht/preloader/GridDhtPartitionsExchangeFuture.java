@@ -3706,7 +3706,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             // Should be performed after any recovery which updates the topology, but prior to full message generation.
-            cctx.affinity().initWaitGroupsBasedOnPartitionsAvailability(this);
+            cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this);
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
@@ -4538,7 +4538,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionTopology top = grp != null ? grp.topology() :
                 cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            top.update(exchId, entry.getValue(), false);
+            boolean updated = top.update(exchId, entry.getValue(), false);
+
+            if (updated)
+                cctx.affinity().checkRebalanceState(top, grpId);
         }
     }
 

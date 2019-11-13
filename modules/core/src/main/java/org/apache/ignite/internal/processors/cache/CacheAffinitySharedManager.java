@@ -237,42 +237,38 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param top Topology.
      * @param grpId Group ID.
      */
-    void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
-        boolean rmv = top == null;
-
-        if (!rmv) {
+    public void checkRebalanceState(GridDhtPartitionTopology top, Integer grpId) {
+        if (top != null) {
             List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
 
             for (int p = 0; p < ideal.size(); p++)
-                if (top.owners(p).containsAll(ideal.get(p)))
-                    rmv = true;
+                if (!top.owners(p).containsAll(ideal.get(p)))
+                    return; // Not rebalanced.
         }
 
-        if (rmv) {
-            CacheAffinityChangeMessage msg = null;
+        CacheAffinityChangeMessage msg = null;
 
-            synchronized (mux) {
-                if (waitInfo == null)
-                    return;
+        synchronized (mux) {
+            if (waitInfo == null)
+                return;
 
-                assert !waitInfo.empty();
+            assert !waitInfo.empty();
 
-                waitInfo.grps.remove(grpId);
+            waitInfo.grps.remove(grpId);
 
-                if (waitInfo.empty()) {
-                    msg = new CacheAffinityChangeMessage(waitInfo.topVer, waitInfo.deploymentIds);
+            if (waitInfo.empty()) {
+                msg = new CacheAffinityChangeMessage(waitInfo.topVer, waitInfo.deploymentIds);
 
-                    waitInfo = null;
-                }
+                waitInfo = null;
             }
+        }
 
-            try {
-                if (msg != null)
-                    cctx.discovery().sendCustomEvent(msg);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send affinity change message.", e);
-            }
+        try {
+            if (msg != null)
+                cctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send affinity change message.", e);
         }
     }
 
@@ -2187,7 +2183,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param fut Future.
      */
-    public void initWaitGroupsBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
+    public void initRebalanceStateBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion topVer = fut.initialVersion();
 
         WaitRebalanceInfo rebInfo;
@@ -2234,7 +2230,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (log.isDebugEnabled()) {
             log.debug("Computed new rebalance wait info [topVer=" + rebInfo.topVer +
-                ", waitGrps=" + (rebInfo != null ? groupNames(rebInfo.grps) : null) + ']');
+                ", waitGrps=" + groupNames(rebInfo.grps) + ", total=" + groupNames(rebInfo.deploymentIds.keySet()) + ']');
         }
     }
 
