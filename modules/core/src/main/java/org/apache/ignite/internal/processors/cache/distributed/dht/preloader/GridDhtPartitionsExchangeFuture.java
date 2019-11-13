@@ -5129,6 +5129,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if cluster fully rebalanced.
      */
     public boolean rebalanced() {
+        assert isDone();
+
         return rebalanced;
     }
 
@@ -5140,13 +5142,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert prev != this;
 
-        return prev != null && prev.rebalanced;
+        return prev != null && prev.rebalanced();
     }
 
     /**
      * Sets cluster fully rebalanced flag.
      */
     public void markRebalanced() {
+        assert !isDone();
+
         rebalanced = true;
     }
 
