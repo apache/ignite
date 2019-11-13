@@ -20,26 +20,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class Location {
-    public static byte HAS_MOVING_PARTITIONS = 0x1;
-    public static byte HAS_REPLICATED_CACHES = 0x2;
-    public static byte HAS_PARTITIONED_CACHES = 0x4;
-    public static byte PARTIALLY_REPLICATED = 0x8;
-    public static byte DEDUPLICATED = 0x16;
+public class NodesMapping {
+    public static final byte HAS_MOVING_PARTITIONS = 0x1;
+    public static final byte HAS_REPLICATED_CACHES = 0x2;
+    public static final byte HAS_PARTITIONED_CACHES = 0x4;
+    public static final byte PARTIALLY_REPLICATED = 0x8;
+    public static final byte DEDUPLICATED = 0x16;
 
     private final List<ClusterNode> nodes;
     private final List<List<ClusterNode>> assignments;
     private final byte flags;
 
-    public Location(List<ClusterNode> nodes, List<List<ClusterNode>> assignments, byte flags) {
+    public NodesMapping(List<ClusterNode> nodes, List<List<ClusterNode>> assignments, byte flags) {
         this.nodes = nodes;
         this.assignments = assignments;
         this.flags = flags;
@@ -49,15 +51,15 @@ public class Location {
         return nodes;
     }
 
-    public List<ClusterNode> nodes(int part) {
-        return assignments.get(part % assignments.size());
+    public List<List<ClusterNode>> assignments() {
+        return assignments;
     }
 
-    public Location mergeWith(Location other) throws LocationMappingException {
+    public NodesMapping mergeWith(NodesMapping other) throws LocationMappingException {
         byte flags = (byte) (this.flags | other.flags);
 
         if ((flags & PARTIALLY_REPLICATED) == 0)
-            return new Location(U.firstNotNull(nodes, other.nodes), mergeAssignments(other, null), flags);
+            return new NodesMapping(U.firstNotNull(nodes, other.nodes), mergeAssignments(other, null), flags);
 
         List<ClusterNode> nodes;
 
@@ -71,10 +73,65 @@ public class Location {
         if (nodes != null && nodes.isEmpty())
             throw new LocationMappingException("Failed to map fragment to location.");
 
-        return new Location(nodes, mergeAssignments(other, nodes), flags);
+        return new NodesMapping(nodes, mergeAssignments(other, nodes), flags);
     }
 
-    private List<List<ClusterNode>> mergeAssignments(Location other, List<ClusterNode> nodes) throws LocationMappingException {
+    public NodesMapping deduplicate() throws LocationMappingException {
+        if (assignments == null || !excessive())
+            return this;
+
+        HashSet<ClusterNode> nodes0 = new HashSet<>();
+        List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
+
+        for (List<ClusterNode> partNodes : assignments) {
+            ClusterNode node = F.first(partNodes);
+
+            if (node == null)
+                throw new LocationMappingException("Failed to map fragment to location.");
+
+            assignments0.add(Collections.singletonList(node));
+            nodes0.add(node);
+        }
+
+        return new NodesMapping(new ArrayList<>(nodes0), assignments0, (byte)(flags | DEDUPLICATED));
+    }
+
+    public int[] partitions(ClusterNode node) {
+        if (assignments == null)
+            return null;
+
+        GridIntList parts = new GridIntList(assignments.size());
+
+        for (int i = 0; i < assignments.size(); i++) {
+            List<ClusterNode> assignment = assignments.get(i);
+            if (Objects.equals(node, F.first(assignment)))
+                parts.add(i);
+        }
+
+        return parts.array();
+    }
+
+    public boolean excessive() {
+        return (flags & DEDUPLICATED) == 0;
+    }
+
+    public boolean hasMovingPartitions() {
+        return (flags & HAS_MOVING_PARTITIONS) == HAS_MOVING_PARTITIONS;
+    }
+
+    public boolean hasReplicatedCaches() {
+        return (flags & HAS_REPLICATED_CACHES) == HAS_REPLICATED_CACHES;
+    }
+
+    public boolean hasPartitionedCaches() {
+        return (flags & HAS_PARTITIONED_CACHES) == HAS_PARTITIONED_CACHES;
+    }
+
+    public boolean partiallyReplicated() {
+        return (flags & PARTIALLY_REPLICATED) == PARTIALLY_REPLICATED;
+    }
+
+    private List<List<ClusterNode>> mergeAssignments(NodesMapping other, List<ClusterNode> nodes) throws LocationMappingException {
         byte flags = (byte) (this.flags | other.flags); List<List<ClusterNode>> left = assignments, right = other.assignments;
 
         if (left == null && right == null)
@@ -125,41 +182,5 @@ public class Location {
         }
 
         return assignments;
-    }
-
-    public Location deduplicate() throws LocationMappingException {
-        if (assignments == null || (flags & DEDUPLICATED) == DEDUPLICATED)
-            return this;
-
-        HashSet<ClusterNode> nodes0 = new HashSet<>();
-        List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
-
-        for (List<ClusterNode> partNodes : assignments) {
-            ClusterNode node = F.first(partNodes);
-
-            if (node == null)
-                throw new LocationMappingException("Failed to map fragment to location.");
-
-            assignments0.add(Collections.singletonList(node));
-            nodes0.add(node);
-        }
-
-        return new Location(new ArrayList<>(nodes0), assignments0, (byte)(flags | DEDUPLICATED));
-    }
-
-    public boolean hasMovingPartitions() {
-        return (flags & HAS_MOVING_PARTITIONS) == HAS_MOVING_PARTITIONS;
-    }
-
-    public boolean hasReplicatedCaches() {
-        return (flags & HAS_REPLICATED_CACHES) == HAS_REPLICATED_CACHES;
-    }
-
-    public boolean hasPartitionedCaches() {
-        return (flags & HAS_PARTITIONED_CACHES) == HAS_PARTITIONED_CACHES;
-    }
-
-    public boolean partiallyReplicated() {
-        return (flags & PARTIALLY_REPLICATED) == PARTIALLY_REPLICATED;
     }
 }

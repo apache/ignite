@@ -26,6 +26,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 public final class IgniteProject extends Project implements IgniteRel {
   public IgniteProject(
@@ -40,6 +41,11 @@ public final class IgniteProject extends Project implements IgniteRel {
   @Override public IgniteProject copy(RelTraitSet traitSet, RelNode input,
       List<RexNode> projects, RelDataType rowType) {
     return new IgniteProject(getCluster(), traitSet, input, projects, rowType);
+  }
+
+  /** {@inheritDoc} */
+  @Override public <T> T implement(Implementor<T> implementor) {
+    return implementor.implement(this);
   }
 
   public static IgniteProject create(Project project, RelNode input) {

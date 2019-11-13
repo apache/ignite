@@ -16,8 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.Collections;
-import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -29,15 +28,14 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentLocationMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.Edge;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -79,9 +77,9 @@ public class IgniteMdFragmentLocation implements MetadataHandler<FragmentLocatio
         }
         catch (LocationMappingException e) {
             // a replicated cache is cheaper to redistribute
-            if (!leftLoc.location.hasPartitionedCaches())
+            if (!leftLoc.mapping().hasPartitionedCaches())
                 throw planningException(rel, e, true);
-            else if (!rightLoc.location.hasPartitionedCaches())
+            else if (!rightLoc.mapping().hasPartitionedCaches())
                 throw planningException(rel, e, false);
 
             // both sub-trees have partitioned sources, less cost is better
@@ -104,12 +102,8 @@ public class IgniteMdFragmentLocation implements MetadataHandler<FragmentLocatio
     }
 
     public FragmentLocation getLocation(Receiver rel, RelMetadataQuery mq) {
-        FragmentLocation res = new FragmentLocation();
-
-        res.remoteInputs = Collections.singletonList(rel);
-        res.topVer = rel.getCluster().getPlanner().getContext().unwrap(AffinityTopologyVersion.class);
-
-        return res;
+        return new FragmentLocation(ImmutableList.of(rel),
+            rel.getCluster().getPlanner().getContext().unwrap(AffinityTopologyVersion.class));
     }
 
     public FragmentLocation getLocation(IgniteTableScan rel, RelMetadataQuery mq) {
@@ -121,17 +115,13 @@ public class IgniteMdFragmentLocation implements MetadataHandler<FragmentLocatio
     }
 
     private static FragmentLocation merge(FragmentLocation left, FragmentLocation right) throws LocationMappingException {
-        FragmentLocation res = new FragmentLocation();
-
-        res.location = merge(left.location, right.location);
-        res.remoteInputs = merge(left.remoteInputs, right.remoteInputs);
-        res.localInputs = merge(left.localInputs, right.localInputs);
-        res.topVer = U.firstNotNull(left.topVer, right.topVer);
-
-        return res;
+        return new FragmentLocation(merge(left.mapping(), right.mapping()),
+            merge(left.remoteInputs(), right.remoteInputs()),
+            merge(left.localInputs(), right.localInputs()),
+            U.firstNotNull(left.topologyVersion(), right.topologyVersion()));
     }
 
-    private static Location merge(Location left, Location right) throws LocationMappingException {
+    private static NodesMapping merge(NodesMapping left, NodesMapping right) throws LocationMappingException {
         if (left == null)
             return right;
         if (right == null)
@@ -140,22 +130,21 @@ public class IgniteMdFragmentLocation implements MetadataHandler<FragmentLocatio
         return left.mergeWith(right);
     }
 
-    private static <T> List<T> merge(List<T> left, List<T> right) {
+    private static <T> ImmutableList<T> merge(ImmutableList<T> left, ImmutableList<T> right) {
         if (left == null)
             return right;
         if (right == null)
             return left;
 
-        return Commons.union(left, right);
+        return ImmutableList.<T>builder().addAll(left).addAll(right).build();
     }
 
-    private static GridIntList merge(GridIntList left, GridIntList right) {
+    private static ImmutableIntList merge(ImmutableIntList left, ImmutableIntList right) {
         if (left == null)
             return right;
+        if (right == null)
+            return left;
 
-        if (right != null)
-            left.addAll(right);
-
-        return left;
+        return left.appendAll(right);
     }
 }

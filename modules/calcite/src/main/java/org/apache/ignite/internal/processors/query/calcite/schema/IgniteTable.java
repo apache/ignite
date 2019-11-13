@@ -26,15 +26,16 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
@@ -80,21 +81,12 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         return distributionRegistry(context).distribution(CU.cacheId(cacheName), rowType);
     }
 
-    public FragmentLocation location(Context context, boolean local) {
+    public FragmentLocation location(Context ctx) {
         int cacheId = CU.cacheId(cacheName);
+        AffinityTopologyVersion topVer = topologyVersion(ctx);
+        NodesMapping mapping = locationRegistry(ctx).distributed(cacheId, topVer);
 
-        FragmentLocation res = new FragmentLocation();
-
-        GridIntList localInputs = new GridIntList();
-        localInputs.add(cacheId);
-        res.localInputs = localInputs;
-
-        if (!local)
-            res.location = locationRegistry(context).distributed(cacheId, topologyVersion(context));
-
-        res.topVer = topologyVersion(context);
-
-        return res;
+        return new FragmentLocation(mapping, ImmutableIntList.of(cacheId), topVer);
     }
 
     private LocationRegistry locationRegistry(Context ctx) {

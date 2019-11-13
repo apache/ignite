@@ -24,7 +24,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 public final class IgniteTableScan extends TableScan implements IgniteRel {
   public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
@@ -37,8 +37,12 @@ public final class IgniteTableScan extends TableScan implements IgniteRel {
     return this;
   }
 
+  /** {@inheritDoc} */
+  @Override public <T> T implement(Implementor<T> implementor) {
+    return implementor.implement(this);
+  }
+
   public FragmentLocation location() {
-    boolean local = !getTraitSet().isEnabled(DistributionTraitDef.INSTANCE);
-    return getTable().unwrap(IgniteTable.class).location(getCluster().getPlanner().getContext(), local);
+    return getTable().unwrap(IgniteTable.class).location(getCluster().getPlanner().getContext());
   }
 }

@@ -16,9 +16,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.Arrays;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +36,18 @@ import org.jetbrains.annotations.NotNull;
 public class RelMetadataQueryEx extends RelMetadataQuery {
     private static final RelMetadataQueryEx PROTO = new RelMetadataQueryEx();
     private static final JaninoRelMetadataProvider PROVIDER = JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER);
+
+    static {
+        PROVIDER.register(Arrays.asList(
+            IgniteExchange.class,
+            IgniteFilter.class,
+            IgniteHashJoin.class,
+            IgniteProject.class,
+            IgniteTableScan.class,
+            Receiver.class,
+            Sender.class
+        ));
+    }
 
     private IgniteMetadata.DistributionTraitMetadata.Handler distributionTraitHandler;
     private IgniteMetadata.FragmentLocationMetadata.Handler sourceDistributionHandler;

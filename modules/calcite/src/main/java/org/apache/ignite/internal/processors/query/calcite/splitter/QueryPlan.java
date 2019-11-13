@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 import org.apache.ignite.internal.processors.query.calcite.util.Edge;
@@ -40,10 +41,12 @@ public class QueryPlan {
     public void init(Context ctx) {
         int i = 0;
 
+        RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
+
         while (true) {
             try {
                 for (Fragment fragment : fragments)
-                    fragment.init(ctx);
+                    fragment.init(ctx, mq);
 
                 break;
             }

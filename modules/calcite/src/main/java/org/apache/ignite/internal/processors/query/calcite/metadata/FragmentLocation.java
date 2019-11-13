@@ -16,17 +16,53 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.List;
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
-import org.apache.ignite.internal.util.GridIntList;
 
 /**
  *
  */
 public class FragmentLocation {
-    public Location location;
-    public List<Receiver> remoteInputs;
-    public GridIntList localInputs;
-    public AffinityTopologyVersion topVer;
+    private NodesMapping mapping;
+
+    private final ImmutableList<Receiver> remoteInputs;
+    private final ImmutableIntList localInputs;
+    private final AffinityTopologyVersion topVer;
+
+    public FragmentLocation(ImmutableList<Receiver> remoteInputs, AffinityTopologyVersion topVer) {
+        this(null, remoteInputs, null, topVer);
+    }
+
+    public FragmentLocation(NodesMapping mapping, ImmutableIntList localInputs, AffinityTopologyVersion topVer) {
+        this(mapping, null, localInputs, topVer);
+    }
+
+    public FragmentLocation(NodesMapping mapping, ImmutableList<Receiver> remoteInputs, ImmutableIntList localInputs, AffinityTopologyVersion topVer) {
+        this.mapping = mapping;
+        this.remoteInputs = remoteInputs;
+        this.localInputs = localInputs;
+        this.topVer = topVer;
+    }
+
+    public NodesMapping mapping() {
+        return mapping;
+    }
+
+    public void mapping(NodesMapping mapping) {
+        this.mapping = mapping;
+    }
+
+    public ImmutableList<Receiver> remoteInputs() {
+        return remoteInputs;
+    }
+
+    public ImmutableIntList localInputs() {
+        return localInputs;
+    }
+
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
 }

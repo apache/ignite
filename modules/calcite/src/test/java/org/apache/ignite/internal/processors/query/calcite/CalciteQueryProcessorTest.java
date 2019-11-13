@@ -35,8 +35,8 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.Location;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -339,11 +339,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.broadcast();
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(select(nodes, 0,1,2), null, Location.HAS_REPLICATED_CACHES);
+                    return new NodesMapping(select(nodes, 0,1,2), null, NodesMapping.HAS_REPLICATED_CACHES);
                 if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1,2), null, Location.HAS_REPLICATED_CACHES);
+                    return new NodesMapping(select(nodes, 0,1,2), null, NodesMapping.HAS_REPLICATED_CACHES);
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -422,17 +422,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(null, Arrays.asList(
+                    return new NodesMapping(null, Arrays.asList(
                         select(nodes, 0,1),
                         select(nodes, 1,2),
                         select(nodes, 2,0),
                         select(nodes, 0,1),
                         select(nodes, 1,2)
-                    ), Location.HAS_PARTITIONED_CACHES);
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
                 if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 0,1), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -510,17 +510,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(null, Arrays.asList(
+                    return new NodesMapping(null, Arrays.asList(
                         select(nodes, 1),
                         select(nodes, 2),
                         select(nodes, 2),
                         select(nodes, 0),
                         select(nodes, 1)
-                    ), Location.HAS_PARTITIONED_CACHES);
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
                 if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 0,1), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -595,12 +595,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.broadcast();
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(select(nodes, 2), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 2), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 else if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 0,1), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -679,17 +679,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(null, Arrays.asList(
+                    return new NodesMapping(null, Arrays.asList(
                         select(nodes, 0,1),
                         select(nodes, 1,2),
                         select(nodes, 2,0),
                         select(nodes, 0,1),
                         select(nodes, 1,2)
-                    ), Location.HAS_PARTITIONED_CACHES);
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
                 if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 0,1), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -768,17 +768,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
             }
 
-            @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
                 if (cacheId == CU.cacheId("Developer"))
-                    return new Location(null, Arrays.asList(
+                    return new NodesMapping(null, Arrays.asList(
                         select(nodes, 0,1),
                         select(nodes, 2),
                         select(nodes, 2,0),
                         select(nodes, 0,1),
                         select(nodes, 1,2)
-                    ), Location.HAS_PARTITIONED_CACHES);
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
                 if (cacheId == CU.cacheId("Project"))
-                    return new Location(select(nodes, 0,1), null, (byte)(Location.HAS_REPLICATED_CACHES | Location.PARTIALLY_REPLICATED));
+                    return new NodesMapping(select(nodes, 0,1), null, (byte)(NodesMapping.HAS_REPLICATED_CACHES | NodesMapping.PARTIALLY_REPLICATED));
 
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
@@ -849,35 +849,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     private static class TestRegistry implements LocationRegistry, DistributionRegistry {
-        @Override public Location random(AffinityTopologyVersion topVer) {
-            return new Location(select(nodes, 0,1,2,3), null, (byte) 0);
+        @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+            return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
         }
 
-        @Override public Location single(AffinityTopologyVersion topVer) {
-            return new Location(select(nodes, 0), null, (byte) 0);
+        @Override public NodesMapping local() {
+            return new NodesMapping(select(nodes, 0), null, (byte) 0);
         }
 
         @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
             return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
         }
 
-        @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+        @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
             if (cacheId == CU.cacheId("Developer"))
-                return new Location(null, Arrays.asList(
+                return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0,1),
                     select(nodes, 1,2),
                     select(nodes, 2,0),
                     select(nodes, 0,1),
                     select(nodes, 1,2)
-                ), Location.HAS_PARTITIONED_CACHES);
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
             if (cacheId == CU.cacheId("Project"))
-                return new Location(null, Arrays.asList(
+                return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0,1),
                     select(nodes, 1,2),
                     select(nodes, 2,0),
                     select(nodes, 0,1),
                     select(nodes, 1,2)
-                ), Location.HAS_PARTITIONED_CACHES);
+                ), NodesMapping.HAS_PARTITIONED_CACHES);
 
             throw new AssertionError("Unexpected cache id:" + cacheId);
         }

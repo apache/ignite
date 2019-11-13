@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.metadata;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 /**
  *
  */
-public interface LocationRegistry {
-    NodesMapping local(); // returns local node with single partition
-    NodesMapping random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
-    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
+public interface Implementor<T> {
+    T implement(IgniteRel other);
 }

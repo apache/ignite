@@ -231,8 +231,4 @@ public final class Commons {
 
         return res;
     }
-
-//    public String explainToString(RelNode node) {
-//        RelWriterImpl
-//    }
 }

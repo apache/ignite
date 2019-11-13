@@ -21,9 +21,11 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 /**
  *
@@ -50,10 +52,15 @@ public final class Receiver extends SingleRel implements IgniteRel {
         return new Receiver(getCluster(), traitSet, (Sender) sole(inputs));
     }
 
-    public void init(FragmentLocation targetDistribution, RelMetadataQueryEx mq) {
-        getInput().init(targetDistribution, getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
+    /** {@inheritDoc} */
+    @Override public <T> T implement(Implementor<T> implementor) {
+        return implementor.implement(this);
+    }
 
-        sourceDistribution = getInput().location(mq);
+    public void init(FragmentLocation targetDistribution, RelMetadataQuery mq) {
+        sourceDistribution = IgniteMdFragmentLocation.location(getInput(), mq);
+
+        getInput().init(targetDistribution, getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
     }
 
     public FragmentLocation sourceDistribution() {

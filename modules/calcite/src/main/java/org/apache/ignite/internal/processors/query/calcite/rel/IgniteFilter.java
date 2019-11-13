@@ -28,6 +28,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 public final class IgniteFilter extends Filter implements IgniteRel {
   private final Set<CorrelationId> variablesSet;
@@ -45,6 +46,11 @@ public final class IgniteFilter extends Filter implements IgniteRel {
   @Override public IgniteFilter copy(RelTraitSet traitSet, RelNode input,
       RexNode condition) {
     return new IgniteFilter(getCluster(), traitSet, input, condition, variablesSet);
+  }
+
+  /** {@inheritDoc} */
+  @Override public <T> T implement(Implementor<T> implementor) {
+    return implementor.implement(this);
   }
 
   @Override public RelWriter explainTerms(RelWriter pw) {

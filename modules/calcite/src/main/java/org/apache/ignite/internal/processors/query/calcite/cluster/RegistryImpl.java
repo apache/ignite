@@ -29,14 +29,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.Location;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -58,22 +59,22 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(partFun, key));
     }
 
-    @Override public Location single(AffinityTopologyVersion topVer) {
-        return new Location(Collections.singletonList(ctx.discovery().localNode()), null, (byte) 0);
+    @Override public NodesMapping local() {
+        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode()), null, (byte) 0);
     }
 
-    @Override public Location random(AffinityTopologyVersion topVer) {
-        return new Location(ctx.discovery().discoCache(topVer).serverNodes(), null, (byte) 0);
+    @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+        return new NodesMapping(ctx.discovery().discoCache(topVer).serverNodes(), null, (byte) 0);
     }
 
-    @Override public Location distributed(int cacheId, AffinityTopologyVersion topVer) {
+    @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
         GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
         return cctx.isReplicated() ? replicatedLocation(cctx, topVer) : partitionedLocation(cctx, topVer);
     }
 
-    private Location partitionedLocation(GridCacheContext cctx, AffinityTopologyVersion topVer) {
-        byte flags = Location.HAS_PARTITIONED_CACHES;
+    private NodesMapping partitionedLocation(GridCacheContext cctx, AffinityTopologyVersion topVer) {
+        byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
 
         List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
@@ -86,7 +87,7 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
             assignments = assignments0;
         }
         else if (!cctx.topology().rebalanceFinished(topVer)) {
-            flags |= Location.HAS_MOVING_PARTITIONS;
+            flags |= NodesMapping.HAS_MOVING_PARTITIONS;
 
             List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
 
@@ -104,19 +105,19 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
             assignments = assignments0;
         }
 
-        return new Location(null, assignments, flags);
+        return new NodesMapping(null, assignments, flags);
     }
 
-    private Location replicatedLocation(GridCacheContext cctx, AffinityTopologyVersion topVer) {
-        byte flags = Location.HAS_REPLICATED_CACHES;
+    private NodesMapping replicatedLocation(GridCacheContext cctx, AffinityTopologyVersion topVer) {
+        byte flags = NodesMapping.HAS_REPLICATED_CACHES;
 
         if (cctx.config().getNodeFilter() != null)
-            flags |= Location.PARTIALLY_REPLICATED;
+            flags |= NodesMapping.PARTIALLY_REPLICATED;
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
 
         if (!cctx.topology().rebalanceFinished(topVer)) {
-            flags |= Location.PARTIALLY_REPLICATED;
+            flags |= NodesMapping.PARTIALLY_REPLICATED;
 
             List<ClusterNode> nodes0 = new ArrayList<>(nodes.size());
 
@@ -135,7 +136,7 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
             nodes = nodes0;
         }
 
-        return new Location(nodes, null, flags);
+        return new NodesMapping(nodes, null, flags);
     }
 
     private static class AffinityFactory implements DestinationFunctionFactory {
@@ -148,9 +149,17 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         }
 
         @Override public DestinationFunction create(FragmentLocation targetLocation, ImmutableIntList keys) {
-            assert keys.size() == 1 && targetLocation.location != null;
+            assert keys.size() == 1 && targetLocation.mapping() != null && !F.isEmpty(targetLocation.mapping().assignments());
 
-            return create(targetLocation.location, partFun, keys.getInt(0));
+            List<List<ClusterNode>> assignments = targetLocation.mapping().assignments();
+
+            if (U.assertionsEnabled()) {
+                for (List<ClusterNode> assignment : assignments) {
+                    assert F.isEmpty(assignment) || assignment.size() == 1;
+                }
+            }
+
+            return create(assignments, partFun, keys.getInt(0));
         }
 
         @Override public boolean equals(Object o) {
@@ -166,8 +175,8 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
             return key.hashCode();
         }
 
-        private static DestinationFunction create(Location location, ToIntFunction<Object> partFun, int affField) {
-            return row -> location.nodes(partFun.applyAsInt(((Object[]) row)[affField]));
+        private static DestinationFunction create(List<List<ClusterNode>> assignments, ToIntFunction<Object> partFun, int affField) {
+            return row -> assignments.get(partFun.applyAsInt(((Object[]) row)[affField]));
         }
     }
 }

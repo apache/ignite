@@ -28,6 +28,8 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
@@ -37,6 +39,8 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
 public class IgniteDistributions {
     private static final DestinationFunctionFactory NO_OP_FACTORY = (t,k) -> null;
     private static final DestinationFunctionFactory HASH_FACTORY = (t,k) -> {
+        assert t.mapping() != null && !F.isEmpty(t.mapping().assignments());
+
         int[] fields = k.toIntArray();
 
         ToIntFunction<Object> hashFun = r -> {
@@ -53,7 +57,15 @@ public class IgniteDistributions {
             return hash;
         };
 
-        return r -> t.location.nodes(hashFun.applyAsInt(r));
+        List<List<ClusterNode>> assignments = t.mapping().assignments();
+
+        if (U.assertionsEnabled()) {
+            for (List<ClusterNode> assignment : assignments) {
+                assert F.isEmpty(assignment) || assignment.size() == 1;
+            }
+        }
+
+        return r -> assignments.get(hashFun.applyAsInt(r) % assignments.size());
     };
 
 
@@ -88,7 +100,7 @@ public class IgniteDistributions {
 
     public static DestinationFunctionFactory singleTargetFunction() {
         return (t, k) -> {
-            List<ClusterNode> nodes = t.location.nodes();
+            List<ClusterNode> nodes = t.mapping().nodes().subList(0, 1);
 
             return r -> nodes;
         };
@@ -96,7 +108,7 @@ public class IgniteDistributions {
 
     public static DestinationFunctionFactory allTargetsFunction() {
         return (t, k) -> {
-            List<ClusterNode> nodes = t.location.nodes();
+            List<ClusterNode> nodes = t.mapping().nodes();
 
             return r -> nodes;
         };
@@ -104,7 +116,7 @@ public class IgniteDistributions {
 
     public static DestinationFunctionFactory randomTargetFunction() {
         return (t, k) -> {
-            List<ClusterNode> nodes = t.location.nodes();
+            List<ClusterNode> nodes = t.mapping().nodes();
 
             return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
         };

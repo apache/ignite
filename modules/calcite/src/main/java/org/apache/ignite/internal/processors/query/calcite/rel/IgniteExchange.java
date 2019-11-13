@@ -27,6 +27,7 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 /**
  *
@@ -52,6 +53,11 @@ public final class IgniteExchange extends SingleRel implements IgniteRel {
 
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteExchange(getCluster(), traitSet, sole(inputs));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T implement(Implementor<T> implementor) {
+        return implementor.implement(this);
     }
 
     @Override public RelWriter explainTerms(RelWriter pw) {

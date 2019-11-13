@@ -23,9 +23,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 /**
  *
@@ -51,6 +52,11 @@ public final class Sender extends SingleRel implements IgniteRel {
         return new Sender(getCluster(), traitSet, sole(inputs));
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T implement(Implementor<T> implementor) {
+        return implementor.implement(this);
+    }
+
     public void init(FragmentLocation targetLocation, DistributionTrait targetDistribution) {
         this.targetLocation = targetLocation;
         this.targetDistribution = targetDistribution;
@@ -58,7 +64,7 @@ public final class Sender extends SingleRel implements IgniteRel {
 
     public DestinationFunction targetFunction() {
         if (destinationFunction == null) {
-            assert targetLocation != null && targetLocation.location != null && targetDistribution != null;
+            assert targetLocation != null && targetLocation.mapping() != null && targetDistribution != null;
 
             destinationFunction = targetDistribution.destinationFunctionFactory().create(targetLocation, targetDistribution.keys());
         }
@@ -68,7 +74,7 @@ public final class Sender extends SingleRel implements IgniteRel {
 
     public FragmentLocation location(RelMetadataQuery mq) {
         if (location == null)
-            location = RelMetadataQueryEx.wrap(mq).getFragmentLocation(getInput());
+            location = IgniteMdFragmentLocation.location(getInput(), mq);
 
         return location;
     }
