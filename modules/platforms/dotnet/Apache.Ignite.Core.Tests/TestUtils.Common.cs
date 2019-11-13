@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests
         public const string CategoryExamples = "EXAMPLES_TEST";
 
         /** */
-        private const int DfltBusywaitSleepInterval = 200;
+        public const int DfltBusywaitSleepInterval = 200;
 
         /** Work dir. */
         private static readonly string WorkDir =

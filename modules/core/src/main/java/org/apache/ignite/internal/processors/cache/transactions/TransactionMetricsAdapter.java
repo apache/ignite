@@ -218,14 +218,14 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /**
      * Callback for completion of near transaction. Writes metrics of single near transaction.
      *
-     * @param systemTime Transaction system time.
+     * @param sysTime Transaction system time.
      * @param userTime Transaction user time.
      */
-    public void onNearTxComplete(long systemTime, long userTime) {
-        if (systemTime >= 0) {
-            totalTxSystemTime.add(systemTime);
+    public void onNearTxComplete(long sysTime, long userTime) {
+        if (sysTime >= 0) {
+            totalTxSystemTime.add(sysTime);
 
-            txSystemTimeHistogram.value(systemTime);
+            txSystemTimeHistogram.value(sysTime);
         }
 
         if (userTime >= 0) {

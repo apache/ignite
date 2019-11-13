@@ -20,6 +20,11 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteFeatures.INDEXING;
+import static org.apache.ignite.internal.IgniteFeatures.MANAGEMENT_CONSOLE;
+import static org.apache.ignite.internal.IgniteFeatures.TRACING;
+import static org.apache.ignite.internal.IgniteFeatures.allFeatures;
+
 /**
  * The test checks that indexing feature is not available in ignite core module.
  */
@@ -34,17 +39,21 @@ public class FeatureIsNotAvailableTest extends GridCommonAbstractTest {
         stopGrid();
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testIndexingFeatureIsNotAvailable() {
-        assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.INDEXING));
+        assertFalse(IgniteFeatures.nodeSupports(allFeatures(grid().context()), INDEXING));
     }
 
-    /**
-     */
+    /** */
     @Test
     public void testTracingFeatureIsNotAvailable() {
-        assertFalse(IgniteFeatures.nodeSupports(IgniteFeatures.allFeatures(grid().context()), IgniteFeatures.TRACING));
+        assertFalse(IgniteFeatures.nodeSupports(allFeatures(grid().context()), TRACING));
+    }
+
+    /** */
+    @Test
+    public void testManagementConsoleFeatureIsNotAvailable() {
+        assertFalse(IgniteFeatures.nodeSupports(allFeatures(grid().context()), MANAGEMENT_CONSOLE));
     }
 }

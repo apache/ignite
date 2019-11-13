@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -267,12 +266,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public MetricRegistry registry(String name) {
         return registries.computeIfAbsent(name, n -> {
-            MetricRegistry mreg = new MetricRegistry(name, log);
+            MetricRegistry mreg = new MetricRegistry(name, name, log);
 
             notifyListeners(mreg, metricRegCreationLsnrs);
 
             return mreg;
         });
+    }
+
+    /**
+     * @return Registries snapshot.
+     */
+    public Map<String, MetricRegistry> registries() {
+        return registries;
     }
 
     /** {@inheritDoc} */

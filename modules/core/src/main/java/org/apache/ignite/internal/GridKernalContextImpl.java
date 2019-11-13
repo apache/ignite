@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.management.ManagementConsoleProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
@@ -323,6 +324,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     RollingUpgradeProcessor rollingUpgradeProc;
+
+    /** */
+    @GridToStringExclude
+    private ManagementConsoleProcessorAdapter mgmtConsoleProc;
 
     /** */
     @GridToStringExclude
@@ -678,6 +683,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (comp instanceof RollingUpgradeProcessor)
             rollingUpgradeProc = (RollingUpgradeProcessor)comp;
+        else if (comp instanceof ManagementConsoleProcessorAdapter)
+            mgmtConsoleProc = (ManagementConsoleProcessorAdapter)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1250,6 +1257,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public RollingUpgradeProcessor rollingUpgrade() {
         return rollingUpgradeProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ManagementConsoleProcessorAdapter managementConsole() {
+        return mgmtConsoleProc;
     }
 
     /** {@inheritDoc} */

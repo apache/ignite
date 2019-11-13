@@ -106,7 +106,10 @@ public enum IgniteFeatures {
     DR_CONTROL_UTILITY(25),
 
     /** */
-    TRACING(26);
+    TRACING(26),
+
+    /***/
+    MANAGEMENT_CONSOLE(28);
 
     /**
      * Unique feature identifier.
@@ -214,6 +217,10 @@ public enum IgniteFeatures {
 
             // Add only when tracing is enabled.
             if (TRACING == value && !IgniteComponentType.TRACING.inClassPath())
+                continue;
+
+            // Add only when management console is enabled.
+            if (MANAGEMENT_CONSOLE == value && !IgniteComponentType.MANAGEMENT_CONSOLE.inClassPath())
                 continue;
 
             final int featureId = value.getFeatureId();

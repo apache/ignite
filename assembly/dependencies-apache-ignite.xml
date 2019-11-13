@@ -33,6 +33,7 @@
             <includes>
                 <include>org.gridgain:ignite-spring</include>
                 <include>org.gridgain:ignite-indexing</include>
+                <include>org.gridgain:ignite-management-console-agent</include>
             </includes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
@@ -141,6 +142,7 @@
                 <exclude>org.gridgain:ignite-compatibility</exclude>
                 <exclude>org.gridgain:ignite-sqlline</exclude>
                 <exclude>org.gridgain:ignite-h2</exclude>
+                <exclude>org.gridgain:ignite-management-console-agent</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

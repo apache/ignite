@@ -95,6 +95,18 @@ This utility can do the following commands:
   Disable read-only mode on active cluster:
     control.(sh|bat) --read-only-off [--yes]
 
+  Enable management:
+    control.(sh|bat) --management on
+
+  Disable management:
+    control.(sh|bat) --management off
+
+  Change management URI:
+    control.(sh|bat) --management uri MANAGEMENT_URIS [--management-cipher-suites MANAGEMENT_CIPHER_1[, MANAGEMENT_CIPHER_2, ..., MANAGEMENT_CIPHER_N]] [--management-keystore MANAGEMENT_KEYSTORE_PATH] [--management-keystore-password MANAGEMENT_KEYSTORE_PASSWORD] [--management-truststore MANAGEMENT_TRUSTSTORE_PATH] [--management-truststore-password MANAGEMENT_TRUSTSTORE_PASSWORD] [--management-session-timeout MANAGEMENT_SESSION_TIMEOUT] [--management-session-expiration-timeout MANAGEMENT_SESSION_EXPIRATION_TIMEOUT]
+
+  Get management status:
+    control.(sh|bat) --management status
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

@@ -84,6 +84,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IL
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.MANAGEMENT;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
@@ -1560,6 +1561,37 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         of("print", "delete")
             .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
+            .forEach(c -> assertContains(log, testOut.toString(), warning));
+    }
+
+    /**
+     * Don't show management commands by --help in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testHideManagementCommandsInHelpWhenDisableExperimentalCommand() {
+        injectTestSystemOut();
+
+        execute("--help");
+
+        assertNotContains(log, testOut.toString(), MANAGEMENT.text());
+    }
+
+    /**
+     * Management commands should ignored and print warning in case
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     * */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testManagementCommandsInCaseDisableExperimentalCommand() {
+        injectTestSystemOut();
+
+        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
+            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
+
+        of("on", "off", "uri", "status")
+            .peek(c -> assertEquals(EXIT_CODE_OK, execute(MANAGEMENT.text(), c)))
             .forEach(c -> assertContains(log, testOut.toString(), warning));
     }
 }
