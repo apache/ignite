@@ -166,11 +166,6 @@ public class DenseVectorStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isNumeric() {
         if (data != null || rawData == null)
             return true;

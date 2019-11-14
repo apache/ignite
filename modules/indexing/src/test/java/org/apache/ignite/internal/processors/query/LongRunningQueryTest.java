@@ -31,10 +31,15 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+
+import static java.lang.Thread.currentThread;
+import static org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager.LONG_QUERY_EXEC_MSG;
 
 /**
  * Tests for log print for long running query.
@@ -99,6 +104,26 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test checks the correctness of thread name when displaying errors
+     * about long queries.
+     */
+    @Test
+    public void testCorrectThreadName() {
+        GridWorker checkWorker = GridTestUtils.getFieldValue(longRunningQueryManager(), "checkWorker");
+
+        LogListener logLsnr = LogListener
+            .matches(LONG_QUERY_EXEC_MSG)
+            .andMatches(logStr -> currentThread().getName().startsWith(checkWorker.name()))
+            .build();
+
+        testLog().registerListener(logLsnr);
+
+        sqlCheckLongRunning();
+
+        assertTrue(logLsnr.check());
+    }
+
+    /**
      * Do several fast queries.
      * Log messages must not contain info about long query.
      */
@@ -106,7 +131,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches(Pattern.compile("Query execution is too long"))
+            .matches(Pattern.compile(LONG_QUERY_EXEC_MSG))
             .build();
 
         testLog.registerListener(lsnr);
@@ -126,12 +151,12 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ListeningTestLogger testLog = testLog();
 
         LogListener lsnr = LogListener
-            .matches("Query execution is too long")
+            .matches(LONG_QUERY_EXEC_MSG)
             .build();
 
         testLog.registerListener(lsnr);
 
-        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
+        sqlCheckLongRunning();
 
         assertTrue(lsnr.check());
     }
@@ -140,8 +165,15 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @param sql SQL query.
      * @param args Query parameters.
      */
-    private void sqlCheckLongRunning(String sql, Object ... args) {
+    private void sqlCheckLongRunning(String sql, Object... args) {
         GridTestUtils.assertThrowsAnyCause(log, () -> sql(sql, args).getAll(), QueryCancelledException.class, "");
+    }
+
+    /**
+     * Execute long running sql with a check for errors.
+     */
+    private void sqlCheckLongRunning() {
+        sqlCheckLongRunning("SELECT T0.id FROM test AS T0, test AS T1, test AS T2 where T0.id > ?", 0);
     }
 
     /**
@@ -186,9 +218,17 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     private ListeningTestLogger testLog() {
         ListeningTestLogger testLog = new ListeningTestLogger(false, log);
 
-        GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
-            "log", testLog);
+        GridTestUtils.setFieldValue(longRunningQueryManager(), "log", testLog);
 
         return testLog;
+    }
+
+    /**
+     * Getting {@link LongRunningQueryManager} from the node.
+     *
+     * @return LongRunningQueryManager.
+     */
+    private LongRunningQueryManager longRunningQueryManager() {
+        return ((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries();
     }
 }
