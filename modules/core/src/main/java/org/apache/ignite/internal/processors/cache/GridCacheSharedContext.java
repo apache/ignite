@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +39,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -66,7 +64,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -75,11 +72,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.spi.systemview.view.ScanQueryIteratorView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 
 /**
@@ -87,12 +82,6 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
  */
 @GridToStringExclude
 public class GridCacheSharedContext<K, V> {
-    /** Scan query iterators system view name. */
-    public static final String SCAN_QRY_ITER_SYS_VIEW = metricName("scan", "queries");
-
-    /** Scan query iterators system view description. */
-    public static final String SCAN_QRY_ITER_SYS_VIEW_DESC = "Scan queries";
-
     /** Kernal context. */
     private GridKernalContext kernalCtx;
 
@@ -271,32 +260,7 @@ public class GridCacheSharedContext<K, V> {
 
         ctxMap = new ConcurrentHashMap<>();
 
-        kernalCtx.systemView().registerInnerCollectionView(SCAN_QRY_ITER_SYS_VIEW, SCAN_QRY_ITER_SYS_VIEW_DESC,
-            ScanQueryIteratorView.class,
-            ctxMap.values(),
-            ctx -> {
-                List<ScanQueryIteratorView> res = new ArrayList<>();
-
-                Set<Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap>> entries =
-                    ctx.queries().queryIterators().entrySet();
-
-                for (Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap> entry : entries) {
-                    UUID nodeId = entry.getKey();
-
-                    for (Map.Entry<Long, GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>>> adapterEntry :
-                        entry.getValue().entrySet()) {
-                        res.add(new ScanQueryIteratorView<>(
-                            ctx,
-                            nodeId,
-                            adapterEntry.getKey(),
-                            entry.getValue().isCanceled(adapterEntry.getKey()),
-                            adapterEntry.getValue()));
-                    }
-                }
-
-                return res;
-            },
-            (ctx, view) -> view);
+        kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values()));
 
         locStoreCnt = new AtomicInteger();
 

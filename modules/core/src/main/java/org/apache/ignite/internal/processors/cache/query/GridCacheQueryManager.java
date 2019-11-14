@@ -3164,6 +3164,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public String taskName() {
             return taskName;
         }
+
+        /** */
+        public GridCacheContext cacheContext() {
+            return cctx;
+        }
     }
 
     /**

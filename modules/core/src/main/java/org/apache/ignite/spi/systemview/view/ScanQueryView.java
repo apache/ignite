@@ -18,47 +18,40 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
 /**
  * Scan query iterator representation for a {@link SystemView}.
  */
-public class ScanQueryIteratorView<K, V> {
+public class ScanQueryView {
     /** */
-    private GridCacheContext<K, V> ctx;
+    private final UUID nodeId;
 
     /** */
-    private UUID nodeId;
+    private final long qryId;
 
     /** */
-    private long qryId;
+    private final boolean canceled;
 
     /** */
-    private boolean canceled;
+    private final ScanQueryIterator iter;
 
     /** */
-    private GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>> qryRes;
-
-    /** */
-    public ScanQueryIteratorView(GridCacheContext<K, V> ctx, UUID nodeId, long qryId,
-        boolean canceled, GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>> qryRes) {
-        this.ctx = ctx;
+    public <K, V> ScanQueryView(UUID nodeId, long qryId, boolean canceled,
+        IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> iter) {
         this.nodeId = nodeId;
         this.qryId = qryId;
         this.canceled = canceled;
-        this.qryRes = qryRes;
+        this.iter = (ScanQueryIterator)iter;
     }
 
     /** @return . */
@@ -81,56 +74,41 @@ public class ScanQueryIteratorView<K, V> {
     /** @return . */
     @Order(2)
     public String cacheName() {
-        return ctx.name();
+        return iter.cacheContext().name();
     }
 
     /** @return . */
     @Order(3)
     public int cacheId() {
-        return ctx.cacheId();
+        return iter.cacheContext().cacheId();
     }
 
     /** @return . */
     @Order(4)
     public int cacheGroupId() {
-        return ctx.groupId();
+        return iter.cacheContext().groupId();
     }
 
     /** @return . */
     @Order(5)
     public String cacheGroupName() {
-        return ctx.group().cacheOrGroupName();
+        return iter.cacheContext().group().cacheOrGroupName();
     }
 
     /** @return . */
     @Order(6)
     public long startTime() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return -1;
-
         return iter.startTime();
     }
 
     /** @return . */
     @Order(7)
     public long duration() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return -1;
-
         return U.currentTimeMillis() - iter.startTime();
     }
 
     /** @return . */
     public String filter() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return null;
-
         IgniteBiPredicate filter = iter.filter();
 
         return filter == null ? null : toStringSafe(filter);
@@ -138,10 +116,6 @@ public class ScanQueryIteratorView<K, V> {
 
     /** @return . */
     public int partition() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return -1;
 
         GridDhtLocalPartition part = iter.localPartition();
 
@@ -153,18 +127,11 @@ public class ScanQueryIteratorView<K, V> {
 
     /** @return . */
     public boolean local() {
-        ScanQueryIterator iter = iter();
-
-        return iter != null && iter.local();
+        return iter.local();
     }
 
     /** @return . */
     public String transformer() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return null;
-
         IgniteClosure<?, ?> trans = iter.transformer();
 
         return trans == null ? null : toStringSafe(trans);
@@ -172,50 +139,18 @@ public class ScanQueryIteratorView<K, V> {
 
     /** @return . */
     public String topology() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return null;
-
         return toStringSafe(iter.topVer());
     }
 
     public boolean keepBinary() {
-        ScanQueryIterator iter = iter();
-
-        return iter != null && iter.keepBinary();
+        return iter.keepBinary();
     }
 
     public UUID subjectId() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return null;
-
         return iter.subjectId();
     }
 
     public String taskName() {
-        ScanQueryIterator iter = iter();
-
-        if (iter == null)
-            return null;
-
         return iter.taskName();
-    }
-
-    /** @return Scan query iterator if exists. */
-    private ScanQueryIterator iter() {
-        try {
-            if (!qryRes.isDone())
-                return null;
-
-            GridCacheQueryManager.QueryResult<K, V> result = qryRes.get();
-
-            return (ScanQueryIterator)result.get();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
     }
 }

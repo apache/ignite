@@ -53,7 +53,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
@@ -70,7 +69,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
-import org.apache.ignite.spi.systemview.view.ScanQueryIteratorView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -82,9 +81,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
-import static org.apache.ignite.internal.processors.cache.GridCacheSharedContext.SCAN_QRY_ITER_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
@@ -730,8 +729,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 cache2.put(i, i);
             }
 
-            SystemView<ScanQueryIteratorView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_ITER_SYS_VIEW);
-            SystemView<ScanQueryIteratorView> qrySysView1 = g1.context().systemView().view(SCAN_QRY_ITER_SYS_VIEW);
+            SystemView<ScanQueryView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_SYS_VIEW);
+            SystemView<ScanQueryView> qrySysView1 = g1.context().systemView().view(SCAN_QRY_SYS_VIEW);
 
             assertNotNull(qrySysView0);
             assertNotNull(qrySysView1);
@@ -766,12 +765,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     private void checkScanQueryView(IgniteEx client1, IgniteEx client2,
-        SystemView<ScanQueryIteratorView> qrySysView) throws Exception {
+        SystemView<ScanQueryView> qrySysView) throws Exception {
         boolean res = waitForCondition(() -> qrySysView.size()> 1, 5_000);
 
         assertTrue(res);
 
-        Consumer<ScanQueryIteratorView> cache1checker = view -> {
+        Consumer<ScanQueryView> cache1checker = view -> {
             assertEquals(client1.localNode().id(), view.nodeId());
             assertTrue(view.queryId() != 0);
             assertEquals("cache1", view.cacheName());
@@ -791,7 +790,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertNull(view.taskName());
         };
 
-        Consumer<ScanQueryIteratorView> cache2checker = view -> {
+        Consumer<ScanQueryView> cache2checker = view -> {
             assertEquals(client2.localNode().id(), view.nodeId());
             assertTrue(view.queryId() != 0);
             assertEquals("cache2", view.cacheName());
@@ -814,7 +813,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         boolean found1 = false;
         boolean found2 = false;
 
-        for (ScanQueryIteratorView view : qrySysView) {
+        for (ScanQueryView view : qrySysView) {
             if ("cache2".equals(view.cacheName())) {
                 cache2checker.accept(view);
                 found1 = true;

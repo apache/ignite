@@ -853,11 +853,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647"
             ));
 
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }
