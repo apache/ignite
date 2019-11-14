@@ -188,8 +188,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         super(ctx, ctx.config().getEncryptionSpi());
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
-
-        dpMgr = new DistributedProcessManager(ctx);
     }
 
     /** {@inheritDoc} */
@@ -271,6 +269,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
         });
+
+        dpMgr = new DistributedProcessManager(ctx);
 
         dpMgr.register(MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
         dpMgr.register(DistributedProcesses.MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
@@ -627,7 +627,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 digest = getSpi().masterKeyDigest();
             } catch (Exception e) {
-                throw new IgniteException("Unable to set master key locally [" + masterKeyName + ']', e);
+                throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
             } finally {
                 getSpi().setMasterKeyName(curName);
             }
