@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -77,6 +77,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -308,9 +310,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             // Partition can be MOVING\RENTING states
                             // Index partition will be excluded if not all partition OWNING
                             // There is no data assigned to partition, thus it haven't been created yet
+                            assert allocRange != null : pair;
+//                                cctx.cache().cacheGroup(pair.getGroupId()).topology()
+//                                .localPartition(pair.getPartitionId());
+
                             if (allocRange == null) {
                                 log.warning("Allocated info about requested partition is missing during snapshot " +
-                                    "operation [pair=" + pair + ", snmName=" + sctx0.snpName + ']');
+                                    "operation [pair=" + pair + ", snpName=" + sctx0.snpName + ']');
                             }
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
@@ -819,14 +825,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
                 grpId -> {
-                    int partsCnt = cctx.cache()
-                        .cacheGroup(grpId)
-                        .affinity()
-                        .partitions();
+                    Set<Integer> grpParts = new HashSet<>();
 
-                    Set<Integer> grpParts = Stream.iterate(0, n -> n + 1)
-                        .limit(partsCnt)
-                        .collect(Collectors.toSet());
+                    cctx.cache()
+                        .cacheGroup(grpId)
+                        .topology()
+                        .currentLocalPartitions()
+                        .forEach(p -> grpParts.add(p.id()));
 
                     grpParts.add(INDEX_PARTITION);
 
@@ -861,6 +866,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         if (rmtNode == null)
             throw new IgniteCheckedException("Requested snpashot node doesn't exists [rmtNodeId=" + rmtNodeId + ']');
+
+        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
+            int grpId = e.getKey();
+
+            GridDhtPartitionMap partMap = cctx.cache()
+                .cacheGroup(grpId)
+                .topology()
+                .partitions(rmtNodeId);
+
+            Set<Integer> owningParts = partMap.entrySet()
+                .stream()
+                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+            if (!owningParts.containsAll(e.getValue())) {
+                Set<Integer> substract = new HashSet<>(e.getValue());
+
+                substract.removeAll(owningParts);
+
+                throw new IgniteCheckedException("Only owning partitions allowed to be requested from the remote node " +
+                    "[rmtNodeId=" + rmtNodeId + ", grpId=" + grpId + ", missed=" + substract + ']');
+            }
+        }
 
         SnapshotTransmissionFuture snpTransFut = new SnapshotTransmissionFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum());
