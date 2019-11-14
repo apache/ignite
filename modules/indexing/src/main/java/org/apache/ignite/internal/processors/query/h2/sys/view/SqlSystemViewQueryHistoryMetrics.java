@@ -42,7 +42,7 @@ public class SqlSystemViewQueryHistoryMetrics extends SqlAbstractLocalSystemView
      * @param ctx kernal context.
      */
     public SqlSystemViewQueryHistoryMetrics(GridKernalContext ctx) {
-        super("LOCAL_SQL_QUERY_HISTORY", "Ignite SQL query history metrics", ctx,
+        super("SQL_QUERIES_HISTORY", "Ignite SQL query history metrics", ctx,
             newColumn("SCHEMA_NAME"),
             newColumn("SQL"),
             newColumn("LOCAL", Value.BOOLEAN),

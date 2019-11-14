@@ -88,10 +88,10 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 @GridToStringExclude
 public class GridCacheSharedContext<K, V> {
     /** Scan query iterators system view name. */
-    public static final String SCAN_QRY_ITER_SYS_VIEW = metricName("scan", "query", "iterators");
+    public static final String SCAN_QRY_ITER_SYS_VIEW = metricName("scan", "queries");
 
     /** Scan query iterators system view description. */
-    public static final String SCAN_QRY_ITER_SYS_VIEW_DESC = "Scan query iterators";
+    public static final String SCAN_QRY_ITER_SYS_VIEW_DESC = "Scan queries";
 
     /** Kernal context. */
     private GridKernalContext kernalCtx;

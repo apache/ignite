@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class RunningQueryManager {
     /** */
-    public static final String SQL_QRY_VIEW = metricName("sql", "query");
+    public static final String SQL_QRY_VIEW = metricName("sql", "queries");
 
     /** */
     public static final String SQL_QRY_VIEW_DESC = "Running SQL queries.";
