@@ -63,9 +63,9 @@ public interface DistributedProcess<I extends Serializable, S extends Serializab
     void finish(R res);
 
     /**
-     * Cancel process.
+     * Finish process with error.
      *
      * @param e Exception.
      */
-    void cancel(Exception e);
+    void error(Exception e);
 }

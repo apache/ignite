@@ -119,7 +119,7 @@ public class DistributedProcessManager {
             Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
 
             if (msg.hasError())
-                p.instance.cancel(msg.error());
+                p.instance.error(msg.error());
             else
                 p.instance.finish(msg.result());
 

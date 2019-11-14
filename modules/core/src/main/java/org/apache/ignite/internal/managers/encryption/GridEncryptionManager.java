@@ -1204,7 +1204,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(Exception e) {
+        @Override public void error(Exception e) {
             finishMasterKeyChange(reqId, e);
         }
     }
@@ -1250,7 +1250,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(Exception e) {
+        @Override public void error(Exception e) {
             finishMasterKeyChange(reqId, e);
         }
     }

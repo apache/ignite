@@ -135,7 +135,7 @@ public class DistributedProcessTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(Exception e) {
+        @Override public void error(Exception e) {
             // No-op.
         }
     }
