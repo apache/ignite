@@ -5129,8 +5129,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if cluster fully rebalanced.
      */
     public boolean rebalanced() {
-        assert isDone();
-
         return rebalanced;
     }
 
