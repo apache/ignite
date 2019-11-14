@@ -310,14 +310,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             // Partition can be MOVING\RENTING states
                             // Index partition will be excluded if not all partition OWNING
                             // There is no data assigned to partition, thus it haven't been created yet
-                            assert allocRange != null : pair;
-//                                cctx.cache().cacheGroup(pair.getGroupId()).topology()
-//                                .localPartition(pair.getPartitionId());
-
-                            if (allocRange == null) {
-                                log.warning("Allocated info about requested partition is missing during snapshot " +
-                                    "operation [pair=" + pair + ", snpName=" + sctx0.snpName + ']');
-                            }
+                            assert allocRange != null : "Partitions counter has not been fully collected " +
+                                "[pair=" + pair + ", snpName=" + sctx0.snpName + ']';
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 
