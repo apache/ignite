@@ -463,6 +463,50 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testSnapshotRemoteOnBothNodes() throws Exception {
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().active(true);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        CheckpointFuture cpFut = ig0.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("the next one");
+
+        cpFut.finishFuture().get();
+
+        IgniteSnapshotManager mgr0 = ig0.context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        IgniteSnapshotManager mgr1 = grid(1).context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        UUID node0 = grid(0).localNode().id();
+        UUID node1 = grid(1).localNode().id();
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node1));
+
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0,
+            owningParts(grid(1), new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node0));
+
+        futFrom0To1.get();
+        futFrom1To0.get();
+    }
+
+    /**
      * @param src Source node to calculate.
      * @param grps Groups to collect owning parts.
      * @param rmtNodeId Remote node id.
