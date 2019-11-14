@@ -215,7 +215,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        if (!ctx.nextSnapshot() && !ctx.gatherPartStats().containsKey(grp.groupId()))
+        if (!ctx.nextSnapshot())
             syncMetadata(ctx);
     }
 
