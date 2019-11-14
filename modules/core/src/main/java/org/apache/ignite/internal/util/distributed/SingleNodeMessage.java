@@ -32,8 +32,8 @@ public class SingleNodeMessage implements Message {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Request id. */
-    private UUID reqId;
+    /** Process id. */
+    private UUID processId;
 
     /** Single node response. */
     private Serializable response;
@@ -46,12 +46,12 @@ public class SingleNodeMessage implements Message {
     }
 
     /**
-     * @param reqId Request id.
+     * @param processId Process id.
      * @param response Single node response.
      * @param err Error.
      */
-    public SingleNodeMessage(UUID reqId, Serializable response, Exception err) {
-        this.reqId = reqId;
+    public SingleNodeMessage(UUID processId, Serializable response, Exception err) {
+        this.processId = processId;
         this.response = response;
         this.err = err;
     }
@@ -69,7 +69,7 @@ public class SingleNodeMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("reqId", reqId))
+                if (!writer.writeUuid("processId", processId))
                     return false;
 
                 writer.incrementState();
@@ -99,7 +99,7 @@ public class SingleNodeMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                reqId = reader.readUuid("reqId");
+                processId = reader.readUuid("processId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,9 +141,9 @@ public class SingleNodeMessage implements Message {
         // No-op.
     }
 
-    /** @return Request id. */
-    public UUID requestId() {
-        return reqId;
+    /** @return Process id. */
+    public UUID processId() {
+        return processId;
     }
 
     /** @return Single node response. */

@@ -38,8 +38,8 @@ public class InitMessage implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Request id. */
-    private final UUID reqId;
+    /** Process id. */
+    private final UUID processId;
 
     /** Process type id. */
     private final int typeId;
@@ -49,12 +49,12 @@ public class InitMessage implements DiscoveryCustomMessage {
     private final Serializable req;
 
     /**
-     * @param reqId Request id.
+     * @param processId Process id.
      * @param typeId Process type id.
      * @param req Request.
      */
-    public InitMessage(UUID reqId, int typeId, Serializable req) {
-        this.reqId = reqId;
+    public InitMessage(UUID processId, int typeId, Serializable req) {
+        this.processId = processId;
         this.typeId = typeId;
         this.req = req;
     }
@@ -85,9 +85,9 @@ public class InitMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** @return Request id. */
-    public UUID requestId() {
-        return reqId;
+    /** @return Process id. */
+    public UUID processId() {
+        return processId;
     }
 
     /** @return Process type id. */

@@ -35,10 +35,10 @@ public enum DistributedProcesses {
     private final int procTypeId;
 
     /**
-     * @param procId Process type ID.
+     * @param procTypeId Process type ID.
      */
-    DistributedProcesses(int procId) {
-        this.procTypeId = procId;
+    DistributedProcesses(int procTypeId) {
+        this.procTypeId = procTypeId;
     }
 
     /**

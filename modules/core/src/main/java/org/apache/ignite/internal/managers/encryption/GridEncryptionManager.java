@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcessManager;
-import org.apache.ignite.internal.util.distributed.DistributedProcesses;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -85,6 +84,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_ENCRYPTION_MASTER_KEY_DIGEST;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.util.distributed.DistributedProcesses.MASTER_KEY_CHANGE_FINISH;
 import static org.apache.ignite.internal.util.distributed.DistributedProcesses.MASTER_KEY_CHANGE_PREPARE;
 
 /**
@@ -273,7 +273,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         dpMgr = new DistributedProcessManager(ctx);
 
         dpMgr.register(MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
-        dpMgr.register(DistributedProcesses.MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
+        dpMgr.register(MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
     }
 
     /** {@inheritDoc} */
@@ -1200,7 +1200,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** {@inheritDoc} */
         @Override public void finish(PendingMasterKey req) {
             if (isCoordinator())
-                dpMgr.start(DistributedProcesses.MASTER_KEY_CHANGE_FINISH, req);
+                dpMgr.start(MASTER_KEY_CHANGE_FINISH, req);
         }
 
         /** {@inheritDoc} */

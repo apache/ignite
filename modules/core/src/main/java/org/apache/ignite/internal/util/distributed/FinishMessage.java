@@ -38,8 +38,8 @@ public class FinishMessage implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Request id. */
-    private final UUID reqId;
+    /** Process id. */
+    private final UUID processId;
 
     /** Result. */
     @GridToStringInclude
@@ -49,20 +49,20 @@ public class FinishMessage implements DiscoveryCustomMessage {
     private Exception err;
 
     /**
-     * @param reqId Request id.
+     * @param processId Process id.
      * @param res Result.
      */
-    public FinishMessage(UUID reqId, Serializable res) {
-        this.reqId = reqId;
+    public FinishMessage(UUID processId, Serializable res) {
+        this.processId = processId;
         this.res = res;
     }
 
     /**
-     * @param reqId Request id.
+     * @param processId Request id.
      * @param err Error.
      */
-    public FinishMessage(UUID reqId, Exception err) {
-        this.reqId = reqId;
+    public FinishMessage(UUID processId, Exception err) {
+        this.processId = processId;
         this.err = err;
     }
 
@@ -92,9 +92,9 @@ public class FinishMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** @return Request id. */
-    public UUID requestId() {
-        return reqId;
+    /** @return Process id. */
+    public UUID processId() {
+        return processId;
     }
 
     /** @return Result. */

@@ -28,9 +28,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
  * The process consists of the following phases:
  * <ol>
  *  <li>Initial request starts process. (Sent via discovery)</li>
- *  <li>Each server node process an initial request and send the single node result to the coordinator. (Sent via communication)</li>
+ *  <li>Each server node process an initial request and send the single node result to the coordinator. (Sent via
+ *  communication)</li>
  *  <li>The coordinator processes all single nodes results and finish or cancel process. (Sent via discovery)</li>
  * </ol>
+ *
+ * @see DistributedProcessManager
  *
  * @param <I> Init request.
  * @param <S> Single node result.

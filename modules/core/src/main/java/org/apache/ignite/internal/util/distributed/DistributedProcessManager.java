@@ -76,7 +76,7 @@ public class DistributedProcessManager {
         log = ctx.log(getClass());
 
         ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
-            Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+            Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
             if (p.initFut.isDone())
                 return;
@@ -116,14 +116,14 @@ public class DistributedProcessManager {
         });
 
         ctx.discovery().setCustomEventListener(FinishMessage.class, (topVer, snd, msg) -> {
-            Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+            Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
             if (msg.hasError())
                 p.instance.error(msg.error());
             else
                 p.instance.finish(msg.result());
 
-            processes.remove(msg.requestId());
+            processes.remove(msg.processId());
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
@@ -262,7 +262,7 @@ public class DistributedProcessManager {
      * @param nodeId Node id.
      */
     private void onSingleNodeMessageReceived(SingleNodeMessage msg, UUID nodeId) {
-        Process p = processes.computeIfAbsent(msg.requestId(), id -> new Process(msg.requestId()));
+        Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
         p.initCrdFut.listen(f -> {
             boolean rmvd, isEmpty;
