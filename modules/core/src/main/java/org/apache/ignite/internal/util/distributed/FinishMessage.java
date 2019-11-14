@@ -28,31 +28,39 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Finish process message.
+ */
 public class FinishMessage implements DiscoveryCustomMessage {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Requiest id. */
     private final UUID reqId;
 
-    /** */
+    /** Error. */
     private Exception err;
 
-    /** */
+    /** Result. */
     @GridToStringInclude
     private Serializable res;
 
-    /** */
+    /**
+     * @param reqId Requiest id.
+     * @param res Result.
+     */
     public FinishMessage(UUID reqId, Serializable res) {
         this.reqId = reqId;
         this.res = res;
     }
 
-    /** */
+    /**
+     * @param reqId Requiest id.
+     * @param err Error.
+     */
     public FinishMessage(UUID reqId, Exception err) {
         this.reqId = reqId;
         this.err = err;
@@ -84,23 +92,23 @@ public class FinishMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** */
+    /** @return Requiest id. */
     public UUID requestId() {
         return reqId;
     }
 
-    /** */
+    /** @return Result. */
     public Serializable result() {
         return res;
     }
 
-    /** */
-    boolean hasError() {
+    /** @return {@code True} if process finished with error. */
+    public boolean hasError() {
         return err != null;
     }
 
-    /** */
-    Exception error() {
+    /** @return Error. */
+    public Exception error() {
         return err;
     }
 

@@ -25,22 +25,31 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** */
+/**
+ * Single node result message.
+ */
 public class SingleNodeMessage implements Message {
-    /** */
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
+    /** Requiest id. */
     private UUID reqId;
 
-    /** */
+    /** Single node response. */
     private Serializable response;
 
-    /** */
+    /** Error. */
     private Exception err;
 
-    /** */
+    /** Empty constructor for marshalling purposes. */
     public SingleNodeMessage() {
     }
 
-    /** */
+    /**
+     * @param reqId Requiest id.
+     * @param response Single node response.
+     * @param err Error.
+     */
     public SingleNodeMessage(UUID reqId, Serializable response, Exception err) {
         this.reqId = reqId;
         this.response = response;
@@ -132,24 +141,23 @@ public class SingleNodeMessage implements Message {
         // No-op.
     }
 
-    /** */
+    /** @return Requiest id. */
     public UUID requestId() {
         return reqId;
     }
 
-    /** */
+    /** @return Single node response. */
     public Serializable response() {
         return response;
     }
 
-    /** */
-    boolean hasError() {
+    /** @return {@code True} if finished with error. */
+    public boolean hasError() {
         return err != null;
     }
 
-    /** */
-    Exception error() {
+    /** @return Error. */
+    public Exception error() {
         return err;
     }
-
 }

@@ -28,25 +28,31 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Initiate message.
+ */
 public class InitMessage implements DiscoveryCustomMessage {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Requiest id. */
     private final UUID reqId;
 
-    /** */
+    /** Process type id. */
     private int procTypeId;
 
-    /** */
+    /** Request. */
     @GridToStringInclude
     private final Serializable req;
 
-    /** */
+    /**
+     * @param reqId Requiest id.
+     * @param procTypeId Process type id.
+     * @param req Request.
+     */
     public InitMessage(UUID reqId, int procTypeId, Serializable req) {
         this.reqId = reqId;
         this.procTypeId = procTypeId;
@@ -79,17 +85,17 @@ public class InitMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** */
+    /** @return Requiest id. */
     public UUID requestId() {
         return reqId;
     }
 
-    /** */
+    /** @return Process type id. */
     public int processTypeId() {
         return procTypeId;
     }
 
-    /** */
+    /** @return Request. */
     public Serializable request() {
         return req;
     }
