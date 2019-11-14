@@ -116,7 +116,18 @@ public class DistributedProcessManager {
         });
 
         ctx.discovery().setCustomEventListener(FinishMessage.class, (topVer, snd, msg) -> {
-            Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
+            Process p = processes.get(msg.processId());
+
+            if (p == null) {
+                log.warning("Received finish distributed process message for an uninitialized process [msg=" +
+                    msg + ']');
+
+                return;
+            }
+
+            // May be completed in case of double delivering.
+            if (p.completeFut.isDone())
+                return;
 
             if (msg.hasError())
                 p.instance.error(msg.error());
@@ -124,6 +135,8 @@ public class DistributedProcessManager {
                 p.instance.finish(msg.result());
 
             processes.remove(msg.processId());
+
+            p.completeFut.onDone();
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
@@ -165,7 +178,7 @@ public class DistributedProcessManager {
                         }
 
                         if (rmvd) {
-                            p.singleMsgs.remove(leftNodeId);
+                            assert !p.singleMsgs.containsKey(leftNodeId);
 
                             if (isEmpty)
                                 finishProcess(p);
@@ -350,6 +363,9 @@ public class DistributedProcessManager {
 
         /** Single nodes results. */
         private final ConcurrentHashMap</*nodeId*/UUID, SingleNodeMessage> singleMsgs = new ConcurrentHashMap<>();
+
+        /** Process completion future. */
+        private final GridFutureAdapter<Void> completeFut = new GridFutureAdapter<>();
 
         /** @param id Process id. */
         private Process(UUID id) {
