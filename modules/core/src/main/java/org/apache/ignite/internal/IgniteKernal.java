@@ -241,6 +241,7 @@ import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
+import static org.apache.ignite.internal.IgniteComponentType.MANAGEMENT_CONSOLE;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -1151,6 +1152,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     startProcessor(new DistributedMetaStorageImpl(ctx));
 
                 startProcessor(new DistributedConfigurationProcessor(ctx));
+                startProcessor(MANAGEMENT_CONSOLE.createOptional(ctx));
 
                 // Start transactional data replication processor.
                 startProcessor(createComponent(TransactionalDrProcessor.class, ctx));

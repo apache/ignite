@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -68,7 +67,7 @@ public class WalCommands implements Command<T2<String, String>> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        if (!enableExperimental())
+        if (!experimentalEnabled())
             return;
 
         Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
@@ -84,7 +83,7 @@ public class WalCommands implements Command<T2<String, String>> {
      * @throws Exception If failed to execute wal action.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        if (enableExperimental()) {
+        if (experimentalEnabled()) {
             this.logger = logger;
 
             try (GridClient client = Command.startClient(clientCfg)) {
@@ -128,7 +127,7 @@ public class WalCommands implements Command<T2<String, String>> {
                 ? argIter.nextArg("Unexpected argument for " + WAL.text() + ": " + walAct)
                 : "";
 
-            if (enableExperimental()) {
+            if (experimentalEnabled()) {
                 this.walAct = walAct;
                 this.walArgs = walArgs;
             }
@@ -273,12 +272,5 @@ public class WalCommands implements Command<T2<String, String>> {
     /** {@inheritDoc} */
     @Override public String name() {
         return WAL.toCommandName();
-    }
-
-    /**
-     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
-     */
-    private boolean enableExperimental() {
-        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
     }
 }

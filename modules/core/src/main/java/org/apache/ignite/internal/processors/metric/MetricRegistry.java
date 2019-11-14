@@ -16,7 +16,9 @@
 
 package org.apache.ignite.internal.processors.metric;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -25,6 +27,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleGauge;
@@ -36,7 +39,6 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -50,24 +52,52 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
 
 /**
  * Metric registry.
+ *
+ * Represents named set of metrics produced by one metrics source.
  */
 public class MetricRegistry implements Iterable<Metric> {
+    /** Registry type. */
+    private final String type;
+
     /** Registry name. */
-    private String grpName;
+    private final String grpName;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Registered metrics. */
-    private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
+    private final Map<String, Metric> metrics;
 
     /**
      * @param grpName Group name.
      * @param log Logger.
      */
-    public MetricRegistry(String grpName, IgniteLogger log) {
+    public MetricRegistry(String type, String grpName, IgniteLogger log) {
+        this.type = type;
         this.grpName = grpName;
         this.log = log;
+
+        metrics = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * @param type Type.
+     * @param grpName Group name.
+     * @param log Logger.
+     * @param metrics Metrics snapshot.
+     */
+    public MetricRegistry(String type, String grpName, IgniteLogger log, Map<String, Metric> metrics) {
+        this.type = type;
+        this.grpName = grpName;
+        this.log = log;
+        this.metrics = Collections.unmodifiableMap(metrics);
+    }
+
+    /**
+     * @return Registry type.
+     */
+    public String type() {
+        return type;
     }
 
     /**
@@ -100,6 +130,13 @@ public class MetricRegistry implements Iterable<Metric> {
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<Metric> iterator() {
         return metrics.values().iterator();
+    }
+
+    /**
+     * @return Metrics map.
+     */
+    public Map<String, Metric> metrics() {
+        return Collections.unmodifiableMap(metrics);
     }
 
     /**

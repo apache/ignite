@@ -67,9 +67,6 @@ import static org.apache.ignite.internal.processors.database.DataRegionMetricsSe
  */
 public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
-
-    /** */
     private static final long MB = 1024L * 1024L;
 
     /** */
@@ -367,7 +364,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg,
             new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)),
-            NO_OP_METRICS);
+                NO_OP_METRICS);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 

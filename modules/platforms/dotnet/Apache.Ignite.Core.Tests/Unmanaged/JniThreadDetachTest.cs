@@ -16,7 +16,9 @@
 
 namespace Apache.Ignite.Core.Tests.Unmanaged
 {
+    using System;
     using System.Linq;
+    using System.Threading;
     using NUnit.Framework;
 
     /// <summary>
@@ -34,12 +36,27 @@ namespace Apache.Ignite.Core.Tests.Unmanaged
             cache.Put(0, 0);
 
             var threadNamesBefore = GetJavaThreadNames();
+            
+            // Wait for Java threads to stabilize.
+            Thread.Sleep(TestUtils.DfltBusywaitSleepInterval);
+            Assert.IsTrue(TestUtils.WaitForCondition(() =>
+            {
+                var threadNames = threadNamesBefore;
+                threadNamesBefore = GetJavaThreadNames();
+                return threadNames.SequenceEqual(threadNamesBefore);
+            }, 5000));
 
+            // Run Ignite operations on C# threads to cause JNI thread attach.
             TestUtils.RunMultiThreaded(() => cache.Put(1, 1), 10);
 
+            // Verify that all JNI threads are cleaned up and Java thread set is the same.
             var threadNamesAfter = GetJavaThreadNames();
-            Assert.AreEqual(threadNamesBefore, threadNamesAfter);
+            var message = GetMessage(threadNamesBefore, threadNamesAfter);
+            
+            Assert.AreEqual(threadNamesBefore, threadNamesAfter, message);
             Assert.IsNotEmpty(threadNamesAfter);
+            
+            Console.WriteLine("Java Threads: {0}", string.Join(", ", threadNamesAfter));
         }
 
         /// <summary>
@@ -52,6 +69,16 @@ namespace Apache.Ignite.Core.Tests.Unmanaged
                 .Where(x => !x.StartsWith("pub-#") && !x.StartsWith("jvm-"))
                 .OrderBy(x => x)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Gets the message with thread name comparison.
+        /// </summary>
+        private static string GetMessage(string[] threadNamesBefore, string[] threadNamesAfter)
+        {
+            return string.Format("Before: {0}; After: {1}",
+                string.Join(", ", threadNamesBefore),
+                string.Join(", ", threadNamesAfter));
         }
     }
 }
