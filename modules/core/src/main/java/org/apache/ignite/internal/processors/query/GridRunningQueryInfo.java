@@ -64,7 +64,7 @@ public class GridRunningQueryInfo {
      * @param loc Local query flag.
      */
     public GridRunningQueryInfo(
-        long id,
+        Long id,
         UUID nodeId,
         String qry,
         GridCacheQueryType qryType,
@@ -86,7 +86,7 @@ public class GridRunningQueryInfo {
     /**
      * @return Query ID.
      */
-    public long id() {
+    public Long id() {
         return id;
     }
 
@@ -161,12 +161,5 @@ public class GridRunningQueryInfo {
      */
     public boolean local() {
         return loc;
-    }
-
-    /**
-     * @return Originating node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
     }
 }

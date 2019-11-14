@@ -30,7 +30,7 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ScanQueryViewWalker implements SystemViewRowAttributeWalker<ScanQueryView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "nodeId", UUID.class);
+        v.accept(0, "originNodeId", UUID.class);
         v.accept(1, "queryId", long.class);
         v.accept(2, "cacheName", String.class);
         v.accept(3, "cacheId", int.class);
@@ -51,7 +51,7 @@ public class ScanQueryViewWalker implements SystemViewRowAttributeWalker<ScanQue
 
     /** {@inheritDoc} */
     @Override public void visitAll(ScanQueryView row, AttributeWithValueVisitor v) {
-        v.accept(0, "nodeId", UUID.class, row.nodeId());
+        v.accept(0, "originNodeId", UUID.class, row.originNodeId());
         v.acceptLong(1, "queryId", row.queryId());
         v.accept(2, "cacheName", String.class, row.cacheName());
         v.acceptInt(3, "cacheId", row.cacheId());

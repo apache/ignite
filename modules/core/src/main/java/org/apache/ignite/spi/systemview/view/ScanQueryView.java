@@ -56,7 +56,7 @@ public class ScanQueryView {
 
     /** @return . */
     @Order
-    public UUID nodeId() {
+    public UUID originNodeId() {
         return nodeId;
     }
 

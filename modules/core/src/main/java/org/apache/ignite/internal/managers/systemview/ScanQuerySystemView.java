@@ -150,6 +150,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
                         continue;
 
                     qryId = qryRes.getKey();
+
                     qry = qryRes.getValue().get().get();
 
                     return true;

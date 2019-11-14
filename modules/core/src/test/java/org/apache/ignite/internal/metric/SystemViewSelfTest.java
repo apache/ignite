@@ -771,7 +771,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertTrue(res);
 
         Consumer<ScanQueryView> cache1checker = view -> {
-            assertEquals(client1.localNode().id(), view.nodeId());
+            assertEquals(client1.localNode().id(), view.originNodeId());
             assertTrue(view.queryId() != 0);
             assertEquals("cache1", view.cacheName());
             assertEquals(cacheId("cache1"), view.cacheId());
@@ -791,7 +791,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         };
 
         Consumer<ScanQueryView> cache2checker = view -> {
-            assertEquals(client2.localNode().id(), view.nodeId());
+            assertEquals(client2.localNode().id(), view.originNodeId());
             assertTrue(view.queryId() != 0);
             assertEquals("cache2", view.cacheName());
             assertEquals(cacheId("cache2"), view.cacheId());
@@ -860,6 +860,4 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             return true;
         }
     }
-
-
 }
