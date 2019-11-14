@@ -41,8 +41,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 
 import static org.apache.ignite.Ignition.localIgnite;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -162,7 +160,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        private Verifier clear() {
+        public Verifier clear() {
             registeredSubjects.clear();
             expInvokes.clear();
 
@@ -185,11 +183,16 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /**
-         * Registers current security context and increments invoke's counter.
+         * Registers a security subject referred for {@code localIgnite} and increments invoke counter.
          */
-        public synchronized void register() {
-            IgniteEx ignite = (IgniteEx)localIgnite();
+        public void register() {
+            register((IgniteEx)localIgnite());
+        }
 
+        /**
+         * Registers a security subject referred for the passed {@code ignite} and increments invoke counter.
+         */
+        public synchronized void register(IgniteEx ignite) {
             registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
             expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
@@ -204,15 +207,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Checks result of test and clears expected behavior.
          */
-        private void checkResult() {
+        public void checkResult() {
             registeredSubjects.forEach(t ->
-                assertThat("Invalide security context on node " + t.get2(),
-                    t.get1(), is(expSecSubjId))
+                assertEquals("Invalide security context on node " + t.get2(),
+                    expSecSubjId, t.get1())
             );
 
             expInvokes.forEach((key, value) ->
-                assertThat("Node " + key + ". Execution of register: ",
-                    value.get2(), is(value.get1())));
+                assertEquals("Node " + key + ". Execution of register: ",
+                    value.get1(), value.get2()));
 
             clear();
         }
@@ -225,8 +228,10 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /** */
-        private void initiator(IgniteEx initiator) {
+        public Verifier initiator(IgniteEx initiator) {
             expSecSubjId = secSubjectId(initiator);
+
+            return this;
         }
 
         /** */
