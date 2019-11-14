@@ -33,16 +33,16 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
  * Scan query iterator representation for a {@link SystemView}.
  */
 public class ScanQueryView {
-    /** */
+    /** Origin node id. */
     private final UUID nodeId;
 
-    /** */
+    /** Local query id. */
     private final long qryId;
 
-    /** */
+    /** Canceled flag. */
     private final boolean canceled;
 
-    /** */
+    /** Scan query iterator. */
     private final ScanQueryIterator iter;
 
     /** */
@@ -54,67 +54,67 @@ public class ScanQueryView {
         this.iter = (ScanQueryIterator)iter;
     }
 
-    /** @return . */
+    /** @return Origin node id. */
     @Order
     public UUID originNodeId() {
         return nodeId;
     }
 
-    /** @return . */
+    /** @return Local query id. */
     @Order(1)
     public long queryId() {
         return qryId;
     }
 
-    /** @return . */
+    /** @return {@True} if query canceled. */
     public boolean canceled() {
         return canceled;
     }
 
-    /** @return . */
+    /** @return Cache name. */
     @Order(2)
     public String cacheName() {
         return iter.cacheContext().name();
     }
 
-    /** @return . */
+    /** @return Cache id. */
     @Order(3)
     public int cacheId() {
         return iter.cacheContext().cacheId();
     }
 
-    /** @return . */
+    /** @return Cache group id. */
     @Order(4)
     public int cacheGroupId() {
         return iter.cacheContext().groupId();
     }
 
-    /** @return . */
+    /** @return Cache group name. */
     @Order(5)
     public String cacheGroupName() {
         return iter.cacheContext().group().cacheOrGroupName();
     }
 
-    /** @return . */
+    /** @return Start time. */
     @Order(6)
     public long startTime() {
         return iter.startTime();
     }
 
-    /** @return . */
+    /** @return Query duration. */
     @Order(7)
     public long duration() {
         return U.currentTimeMillis() - iter.startTime();
     }
 
-    /** @return . */
+    /** @return Filter. */
     public String filter() {
         IgniteBiPredicate filter = iter.filter();
 
         return filter == null ? null : toStringSafe(filter);
     }
 
-    /** @return . */
+    /** @return Cache partition. */
     public int partition() {
 
         GridDhtLocalPartition part = iter.localPartition();
@@ -125,31 +125,34 @@ public class ScanQueryView {
         return part.id();
     }
 
-    /** @return . */
+    /** @return {@True} if query local. */
     public boolean local() {
         return iter.local();
     }
 
-    /** @return . */
+    /** @return Transformer. */
     public String transformer() {
         IgniteClosure<?, ?> trans = iter.transformer();
 
         return trans == null ? null : toStringSafe(trans);
     }
 
-    /** @return . */
+    /** @return Topology. */
     public String topology() {
         return toStringSafe(iter.topVer());
     }
 
+    /** @return Keep binary flag. */
     public boolean keepBinary() {
         return iter.keepBinary();
     }
 
+    /** @return Subject id. */
     public UUID subjectId() {
         return iter.subjectId();
     }
 
+    /** @return Task name. */
     public String taskName() {
         return iter.taskName();
     }

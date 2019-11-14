@@ -89,19 +89,19 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         private Iterator<Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap>> nodeQryIter;
 
         /** Current node id. */
-        UUID nodeId;
+        private UUID nodeId;
 
         /** Current requests map. */
-        GridCacheQueryManager<K, V>.RequestFutureMap reqMap;
+        private GridCacheQueryManager<K, V>.RequestFutureMap reqMap;
 
         /** Request results iterator. */
         private Iterator<Map.Entry<Long, GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>>>> qriesIter;
 
         /** Current query id. */
-        long qryId;
+        private long qryId;
 
         /** Current scan iterator. */
-        IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> qry;
+        private IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> qry;
 
         /** */
         public DataIterator() {

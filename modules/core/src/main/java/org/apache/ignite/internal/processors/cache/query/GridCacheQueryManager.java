@@ -2768,9 +2768,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null).limit(limit);
     }
 
-    /**
-     * @return Query iterators.
-     */
+    /** @return Query iterators. */
     public ConcurrentMap<UUID, RequestFutureMap> queryIterators() {
         return qryIters;
     }
