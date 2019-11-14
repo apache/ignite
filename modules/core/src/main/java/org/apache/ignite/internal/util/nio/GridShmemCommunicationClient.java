@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryClientEndpoint;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +35,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 
 /**
  *
@@ -47,6 +52,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
     /** */
     private final MessageFormatter formatter;
+
+    /** Sent bytes count metric. */
+    @Nullable protected final AtomicLongMetric sentBytesCntMetric;
 
     /**
      * @param connIdx Connection index.
@@ -65,7 +73,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         IgniteLogger log,
         MessageFormatter formatter
     ) throws IgniteCheckedException {
-        super(connIdx, mreg);
+        super(connIdx);
 
         assert mreg != null;
         assert port > 0 && port < 0xffff;
@@ -78,6 +86,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         writeBuf.order(ByteOrder.nativeOrder());
 
         this.formatter = formatter;
+
+        sentBytesCntMetric = mreg == null ?
+            null : mreg.longMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
     }
 
     /** {@inheritDoc} */
