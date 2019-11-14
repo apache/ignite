@@ -96,7 +96,7 @@ public class DistributedProcessManager {
             if (crd.isLocal())
                 initCoordinator(p, topVer);
 
-            p.instance = registered.get(msg.processTypeId()).create();
+            p.instance = registered.get(msg.typeId()).create();
 
             IgniteInternalFuture<Serializable> fut = p.instance.execute(msg.request());
 

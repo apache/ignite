@@ -32,7 +32,7 @@ public class SingleNodeMessage implements Message {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Requiest id. */
+    /** Request id. */
     private UUID reqId;
 
     /** Single node response. */
@@ -46,7 +46,7 @@ public class SingleNodeMessage implements Message {
     }
 
     /**
-     * @param reqId Requiest id.
+     * @param reqId Request id.
      * @param response Single node response.
      * @param err Error.
      */
@@ -141,7 +141,7 @@ public class SingleNodeMessage implements Message {
         // No-op.
     }
 
-    /** @return Requiest id. */
+    /** @return Request id. */
     public UUID requestId() {
         return reqId;
     }

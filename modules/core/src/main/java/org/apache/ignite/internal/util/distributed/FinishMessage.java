@@ -38,18 +38,18 @@ public class FinishMessage implements DiscoveryCustomMessage {
     /** Custom message ID. */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Requiest id. */
+    /** Request id. */
     private final UUID reqId;
-
-    /** Error. */
-    private Exception err;
 
     /** Result. */
     @GridToStringInclude
     private Serializable res;
 
+    /** Error. */
+    private Exception err;
+
     /**
-     * @param reqId Requiest id.
+     * @param reqId Request id.
      * @param res Result.
      */
     public FinishMessage(UUID reqId, Serializable res) {
@@ -58,7 +58,7 @@ public class FinishMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @param reqId Requiest id.
+     * @param reqId Request id.
      * @param err Error.
      */
     public FinishMessage(UUID reqId, Exception err) {
@@ -92,7 +92,7 @@ public class FinishMessage implements DiscoveryCustomMessage {
         return null;
     }
 
-    /** @return Requiest id. */
+    /** @return Request id. */
     public UUID requestId() {
         return reqId;
     }
