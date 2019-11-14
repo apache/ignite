@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -236,7 +235,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
         if (needSnapshot ||
-            ctx.gatherPartStats().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
+            ctx.collectPartStat().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
             if (execSvc == null)
                 addIndexPartition(ctx);
             else {
@@ -261,14 +260,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
-        final Set<Integer> parts = ctx.gatherPartStats()
-            .getOrDefault(grp.groupId(), new HashSet<>());
-
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
             for (CacheDataStore store : partDataStores.values())
-                saveStoreMetadata(store, ctx, false, needSnapshot || parts.contains(store.partId()));
+                saveStoreMetadata(store, ctx, false, needSnapshot);
         }
         else {
             execSvc.execute(() -> {
@@ -283,7 +279,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot || parts.contains(store.partId()));
+                        saveStoreMetadata(store, ctx, false, needSnapshot);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -300,12 +296,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDataStore store,
         Context ctx,
         boolean beforeDestroy,
-        boolean gatherStats
+        boolean needSnapshot
     ) throws IgniteCheckedException {
         assert store instanceof CacheDataStoreEx : store.getClass().getName();
 
         if (store instanceof CacheDataStoreEx && ((CacheDataStoreEx)store).readOnly())
             return;
+
+        Set<Integer> partsToCollect = ctx.collectPartStat()
+            .getOrDefault(grp.groupId(), new HashSet<>());
+
+        boolean savePagesCount = needSnapshot || partsToCollect.contains(store.partId());
 
         RowStore rowStore0 = store.rowStore();
 
@@ -371,7 +372,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         changed |= savePartitionUpdateCounterGaps(store, io, partMetaPageAddr);
                         changed |= saveCacheSizes(store, io, partMetaPageAddr);
 
-                        if (gatherStats)
+                        if (savePagesCount)
                             changed |= savePagesCount(ctx, part, store, io, partMetaPageAddr);
 
                         if (changed && PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
@@ -396,10 +397,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else if (gatherStats)
+            else if (savePagesCount)
                 tryAddEmptyPartitionToSnapshot(store, ctx);
         }
-        else if (gatherStats)
+        else if (savePagesCount)
             tryAddEmptyPartitionToSnapshot(store, ctx);
     }
 

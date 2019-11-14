@@ -29,6 +29,7 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -425,14 +427,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
-            .limit(CACHE_PARTS_COUNT) // With index partition
-            .collect(Collectors.toSet());
-        ints.add(PageIdAllocator.INDEX_PARTITION);
-
-        Map<Integer, Set<Integer>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
-
         final CountDownLatch cancelLatch = new CountDownLatch(1);
 
         mgr0.addSnapshotListener(new SnapshotListener() {
@@ -452,16 +446,91 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
+        UUID rmtNodeId = grid(1).localNode().id();
+
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
+        IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(rmtNodeId,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
 
         cancelLatch.await();
 
         fut.cancel();
 
-        IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(grid(1).localNode().id(), parts);
+        IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
 
         fut2.get();
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testSnapshotRemoteOnBothNodes() throws Exception {
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().active(true);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        CheckpointFuture cpFut = ig0.context()
+            .cache()
+            .context()
+            .database()
+            .forceCheckpoint("the next one");
+
+        cpFut.finishFuture().get();
+
+        IgniteSnapshotManager mgr0 = ig0.context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        IgniteSnapshotManager mgr1 = grid(1).context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        UUID node0 = grid(0).localNode().id();
+        UUID node1 = grid(1).localNode().id();
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node1));
+
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0,
+            owningParts(grid(1), new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node0));
+
+        futFrom0To1.get();
+        futFrom1To0.get();
+    }
+
+    /**
+     * @param src Source node to calculate.
+     * @param grps Groups to collect owning parts.
+     * @param rmtNodeId Remote node id.
+     * @return Map of collected parts.
+     */
+    private static Map<Integer, Set<Integer>> owningParts(IgniteEx src, Set<Integer> grps, UUID rmtNodeId) {
+        Map<Integer, Set<Integer>> result = new HashMap<>();
+
+        for (Integer grpId : grps) {
+            Set<Integer> parts = src.context()
+                .cache()
+                .cacheGroup(grpId)
+                .topology()
+                .partitions(rmtNodeId)
+                .entrySet()
+                .stream()
+                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+            result.put(grpId, parts);
+        }
+
+        return result;
     }
 
     /**

@@ -841,6 +841,88 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testFileHandlerCrossConnections() throws Exception {
+        snd = startGrid(0);
+        rcv = startGrid(1);
+
+        snd.cluster().active(true);
+
+        File from0To1 = createFileRandomData("1Mb_1_0", 1024 * 1024);
+        File from1To0 = createFileRandomData("1Mb_0_1", 1024 * 1024);
+
+        CountDownLatch touched = new CountDownLatch(2);
+
+        snd.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
+            @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
+                return new File(tempStore, fileMeta.name()).getAbsolutePath();
+            }
+
+            @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
+                return new Consumer<File>() {
+                    @Override public void accept(File file) {
+                        assertEquals(from1To0.getName(), file.getName());
+
+                        touched.countDown();
+                    }
+                };
+            }
+        });
+
+        rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
+            @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
+                return new File(tempStore, fileMeta.name()).getAbsolutePath();
+            }
+
+            @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
+                return new Consumer<File>() {
+                    @Override public void accept(File file) {
+                        assertEquals(from0To1.getName(), file.getName());
+
+                        touched.countDown();
+                    }
+                };
+            }
+        });
+
+        Exception[] ex = new Exception[1];
+
+        GridTestUtils.runAsync(() -> {
+            try (GridIoManager.TransmissionSender snd0 = snd.context()
+                .io()
+                .openTransmissionSender(rcv.localNode().id(), topic)) {
+                // Iterate over cache partition cacheParts.
+                snd0.send(from0To1, TransmissionPolicy.FILE);
+            }
+            catch (Exception e) {
+                log.error("Send fail from 0 to 1", e);
+
+                ex[0] = e;
+            }
+        });
+
+        GridTestUtils.runAsync(() -> {
+            try (GridIoManager.TransmissionSender snd1 = rcv.context()
+                .io()
+                .openTransmissionSender(snd.localNode().id(), topic)) {
+                // Iterate over cache partition cacheParts.
+                snd1.send(from1To0, TransmissionPolicy.FILE);
+            }
+            catch (Exception e) {
+                log.error("Send fail from 1 to 0", e);
+
+                ex[0] = e;
+            }
+        });
+
+        touched.await(10_000L, TimeUnit.MILLISECONDS);
+
+        assertNull("Exception occurred during file sending: " + ex[0], ex[0]);
+    }
+
+    /**
      * @param ig Ignite instance to check.
      */
     private static void ensureResourcesFree(IgniteEx ig) {
