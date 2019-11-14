@@ -2306,7 +2306,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      *
      */
-    private static class QueryResult<K, V> extends CachedResult<IgniteBiTuple<K, V>> {
+    public static class QueryResult<K, V> extends CachedResult<IgniteBiTuple<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2767,9 +2767,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * @return Query iterators.
+     */
+    public ConcurrentMap<UUID, RequestFutureMap> queryIterators() {
+        return qryIters;
+    }
+
+    /**
      * The map prevents put to the map in case the specified request has been removed previously.
      */
-    private class RequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
+    public class RequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2805,13 +2812,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @return true if the key is canceled
          */
-        boolean isCanceled(Long key) {
+        public boolean isCanceled(Long key) {
             return canceled != null && canceled.contains(key);
         }
     }
 
     /** */
-    private static final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
+    public static final class ScanQueryIterator<K, V> extends GridCloseableIteratorAdapter<Object> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2878,6 +2885,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final boolean incBackups;
 
+        /** */
+        private final long startTime;
+
         /**
          * @param it Iterator.
          * @param qry Query.
@@ -2935,6 +2945,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             needAdvance = true;
             expiryPlc = this.cctx.cache().expiryPolicy(null);
+
+            startTime = U.currentTimeMillis();
         }
 
         /** {@inheritDoc} */
@@ -3104,6 +3116,51 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 expiryPlc = null;
             }
+        }
+
+        /** */
+        @Nullable public IgniteBiPredicate<K, V> filter() {
+            return intScanFilter == null ? null : intScanFilter.scanFilter;
+        }
+
+        /** */
+        public AffinityTopologyVersion topVer() {
+            return topVer;
+        }
+
+        /** */
+        public GridDhtLocalPartition localPartition() {
+            return locPart;
+        }
+
+        /** */
+        public IgniteClosure transformer() {
+            return transform;
+        }
+
+        /** */
+        public long startTime() {
+            return startTime;
+        }
+
+        /** */
+        public boolean local() {
+            return locNode;
+        }
+
+        /** */
+        public boolean keepBinary() {
+            return keepBinary;
+        }
+
+        /** */
+        public UUID subjectId() {
+            return subjId;
+        }
+
+        /** */
+        public String taskName() {
+            return taskName;
         }
     }
 
