@@ -230,7 +230,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
         if (needSnapshot ||
-            ctx.gatherPartStats().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
+            ctx.collectPartStat().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
             if (execSvc == null)
                 addIndexPartition(ctx);
             else {
@@ -293,10 +293,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean beforeDestroy,
         boolean needSnapshot
     ) throws IgniteCheckedException {
-        Set<Integer> parts = ctx.gatherPartStats()
+        Set<Integer> partsToCollect = ctx.collectPartStat()
             .getOrDefault(grp.groupId(), new HashSet<>());
 
-        boolean savePagesCount = needSnapshot || parts.contains(store.partId());
+        boolean savePagesCount = needSnapshot || partsToCollect.contains(store.partId());
 
         RowStore rowStore0 = store.rowStore();
 

@@ -4389,13 +4389,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public Map<Integer, Set<Integer>> gatherPartStats() {
-                    return delegate.gatherPartStats();
+                @Override public Map<Integer, Set<Integer>> collectPartStat() {
+                    return delegate.collectPartStat();
                 }
 
                 /** {@inheritDoc} */
-                @Override public void gatherPartStats(List<GroupPartitionId> parts) {
-                    delegate.gatherPartStats(parts);
+                @Override public void collectPartStat(List<GroupPartitionId> parts) {
+                    delegate.collectPartStat(parts);
                 }
 
                 /** {@inheritDoc} */
@@ -4543,7 +4543,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private final PartitionAllocationMap map;
 
             /** Collection of partitions to gather statistics. */
-            private final Map<Integer, Set<Integer>> gatherParts = new HashMap<>();
+            private final Map<Integer, Set<Integer>> collectPartStat = new HashMap<>();
 
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
@@ -4564,14 +4564,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /** {@inheritDoc} */
-            @Override public Map<Integer, Set<Integer>> gatherPartStats() {
-                return gatherParts;
+            @Override public Map<Integer, Set<Integer>> collectPartStat() {
+                return collectPartStat;
             }
 
             /** {@inheritDoc} */
-            @Override public void gatherPartStats(List<GroupPartitionId> parts) {
+            @Override public void collectPartStat(List<GroupPartitionId> parts) {
                 for (GroupPartitionId part : parts) {
-                    gatherParts.computeIfAbsent(part.getGroupId(), g -> new HashSet<>())
+                    collectPartStat.computeIfAbsent(part.getGroupId(), g -> new HashSet<>())
                         .add(part.getPartitionId());
                 }
             }

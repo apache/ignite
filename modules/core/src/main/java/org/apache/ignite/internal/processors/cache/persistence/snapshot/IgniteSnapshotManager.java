@@ -284,7 +284,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         continue;
 
                     // Gather partitions metainfo for thouse which will be copied.
-                    ctx.gatherPartStats(sctx0.parts);
+                    ctx.collectPartStat(sctx0.parts);
                 }
             }
 
@@ -310,8 +310,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             // Partition can be MOVING\RENTING states
                             // Index partition will be excluded if not all partition OWNING
                             // There is no data assigned to partition, thus it haven't been created yet
-                            assert allocRange != null : "Partitions counter has not been fully collected " +
-                                "[pair=" + pair + ", snpName=" + sctx0.snpName + ']';
+                            assert allocRange != null : "Partition counters has not been collected " +
+                                "[pair=" + pair + ", snpName=" + sctx0.snpName +
+                                ", part=" + cctx.cache().cacheGroup(pair.getGroupId()).topology()
+                                .localPartition(pair.getPartitionId()) + ']';
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 

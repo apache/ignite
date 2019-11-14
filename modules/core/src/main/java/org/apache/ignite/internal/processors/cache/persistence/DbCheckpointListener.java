@@ -42,12 +42,12 @@ public interface DbCheckpointListener {
         /**
          * @return Collection partition which require meta to be collected.
          */
-        public Map<Integer, Set<Integer>> gatherPartStats();
+        public Map<Integer, Set<Integer>> collectPartStat();
 
         /**
          * @param parts Collection of partitions for which statistics should be gathered.
          */
-        public void gatherPartStats(List<GroupPartitionId> parts);
+        public void collectPartStat(List<GroupPartitionId> parts);
 
         /**
          * @return Partition allocation statistic map
