@@ -79,6 +79,9 @@ public enum IgniteFeatures {
     /** Support of DR events from  Web Console. */
     WC_DR_EVENTS(20),
 
+    /** Support of chain parameter in snapshot delete task for Web Console. */
+    WC_SNAPSHOT_CHAIN_MODE(22),
+
     /** Support of DR-specific visor tasks used by control utility. */
     DR_CONTROL_UTILITY(25);
 
