@@ -555,6 +555,10 @@
                                 <title>OpenCensus Tracing Integration</title>
                                 <packages>org.apache.ignite.spi.tracing.opencensus*</packages>
                             </group>
+                            <group>
+                                <title>Management Console</title>
+                                <packages>org.apache.ignite.agent*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
