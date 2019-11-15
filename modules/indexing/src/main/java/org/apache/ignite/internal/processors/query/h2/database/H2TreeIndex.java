@@ -279,10 +279,8 @@ public class H2TreeIndex extends GridH2IndexBase {
     private void registerCursor(GridCursor<GridH2Row> cursor) {
         GridH2QueryContext qctx = GridH2QueryContext.get();
 
-        if(qctx == null)
-            throw new IllegalStateException("GridH2QueryContext is not initialized.");
-
-        qctx.addResource(cursor);
+        if(qctx != null)
+            qctx.addResource(cursor);
     }
 
     /** {@inheritDoc} */
