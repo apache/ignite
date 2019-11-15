@@ -182,11 +182,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Requested snapshot from remote node. */
     private final AtomicReference<SnapshotTransmissionFuture> snpRq = new AtomicReference<>();
 
-    /** Main snapshot directory to store files. */
+    /** Main snapshot directory to save created snapshots. */
     private File localSnpDir;
 
-    /** Working directory for loaded snapshots from remote nodes. */
-    private File snpWorkDir;
+    /**
+     * Working directory for loaded snapshots from the remote nodes and storing
+     * temporary partition delta-files of locally started snapshot process.
+     */
+    private File tmpWorkDir;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -269,10 +272,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         // todo must be available on storage configuration
         localSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false);
-        snpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
+        tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
 
         U.ensureDirectory(localSnpDir, "local snapshots directory", log);
-        U.ensureDirectory(snpWorkDir, "work directory for snapshots creation", log);
+        U.ensureDirectory(tmpWorkDir, "work directory for snapshots creation", log);
 
         storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
@@ -561,7 +564,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
 
                 try {
-                    File cacheDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(),
+                    File cacheDir = U.resolveWorkDirectory(tmpWorkDir.getAbsolutePath(),
                         cacheSnapshotPath(snpName, rmtDbNodePath, cacheDirName),
                         false);
 
@@ -800,9 +803,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Node snapshot working directory.
      */
     public File snapshotWorkDir() {
-        assert snpWorkDir != null;
+        assert tmpWorkDir != null;
 
-        return snpWorkDir;
+        return tmpWorkDir;
     }
 
     /**
@@ -965,7 +968,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         try {
             String dbNodePath = cctx.kernalContext().pdsFolderResolver().resolveFolders().pdsNodePath();
-            nodeSnpDir = U.resolveWorkDirectory(new File(snpWorkDir, snpName).getAbsolutePath(), dbNodePath, false);
+            nodeSnpDir = U.resolveWorkDirectory(new File(tmpWorkDir, snpName).getAbsolutePath(), dbNodePath, false);
 
             sctx = new LocalSnapshotContext(snpName,
                 nodeSnpDir,
