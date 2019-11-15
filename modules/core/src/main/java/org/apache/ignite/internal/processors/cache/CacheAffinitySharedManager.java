@@ -241,11 +241,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert cctx.kernalContext().discovery().discoCache().oldestServerNode().isLocal(); // This node is a coordinator.
 
         if (top != null) {
-            synchronized (mux) {
-                if (waitInfo == null || !waitInfo.grps.contains(grpId))
-                    return; // Already rebalanced.
-            }
-
             List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
 
             for (int p = 0; p < ideal.size(); p++)
