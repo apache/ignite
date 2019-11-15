@@ -212,6 +212,21 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         clientNodeIds.add(clientNodeId);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @return Number of laps, that the message passed for this node.
+     */
+    public int passedLaps(UUID nodeId) {
+        boolean hasLocMetrics = this.hasMetrics(nodeId) || this.hasCacheMetrics(nodeId);
+
+        if (nodeId.equals(creatorNodeId()) && !hasLocMetrics && senderNodeId() != null)
+            return 2;
+        else if (senderNodeId() == null || !hasLocMetrics)
+            return 0;
+        else
+            return 1;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
