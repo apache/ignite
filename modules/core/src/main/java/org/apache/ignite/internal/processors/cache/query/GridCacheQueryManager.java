@@ -197,7 +197,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap<>();
 
-    /** */
+    /** Local query iterators. */
     private final GridConcurrentHashSet<ScanQueryIterator> locIters = new GridConcurrentHashSet<>();
 
     /** */

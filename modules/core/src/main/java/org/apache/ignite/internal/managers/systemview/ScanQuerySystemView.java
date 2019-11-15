@@ -53,22 +53,22 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
     public static final String SCAN_QRY_SYS_VIEW_DESC = "Scan queries";
 
     /** Cache data. */
-    private Collection<GridCacheContext<K, V>> ctxs;
+    private Collection<GridCacheContext<K, V>> cctxs;
 
     /**
-     * @param ctxs Cache data.
+     * @param cctxs Cache data.
      */
-    public ScanQuerySystemView(Collection<GridCacheContext<K, V>> ctxs) {
+    public ScanQuerySystemView(Collection<GridCacheContext<K, V>> cctxs) {
         super(SCAN_QRY_SYS_VIEW, SCAN_QRY_SYS_VIEW_DESC, ScanQueryView.class, new ScanQueryViewWalker());
 
-        this.ctxs = ctxs;
+        this.cctxs = cctxs;
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
         int sz = 0;
 
-        DataIterator iter = new DataIterator();
+        Iterator<ScanQueryView> iter = new QueryDataIterator();
 
         while(iter.hasNext())
             sz++;
@@ -78,13 +78,13 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<ScanQueryView> iterator() {
-        return new DataIterator();
+        return new QueryDataIterator();
     }
 
     /** Class to iterate through all {@link GridCacheQueryManager.ScanQueryIterator}. */
-    private class DataIterator implements Iterator<ScanQueryView> {
+    private class QueryDataIterator implements Iterator<ScanQueryView> {
         /** Cache contexts iterator. */
-        private final Iterator<GridCacheContext<K, V>> ctxsIter;
+        private final Iterator<GridCacheContext<K, V>> cctxsIter;
 
         /** Current cache context. */
         private GridCacheContext<K, V> cctx;
@@ -114,8 +114,8 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         private boolean hasNextExec;
 
         /** */
-        public DataIterator() {
-            this.ctxsIter = ctxs.iterator();
+        public QueryDataIterator() {
+            this.cctxsIter = cctxs.iterator();
             this.nodeQryIter = Collections.emptyIterator();
             this.qriesIter = Collections.emptyIterator();
             this.localQryIter = Collections.emptyIterator();
@@ -127,10 +127,10 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
             while (!nextScanIter()) {
                 while (!nodeQryIter.hasNext() && !localQryIter.hasNext()) {
-                    if (!ctxsIter.hasNext())
+                    if (!cctxsIter.hasNext())
                         return false;
 
-                    cctx = ctxsIter.next();
+                    cctx = cctxsIter.next();
 
                     GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
@@ -164,7 +164,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         /** {@inheritDoc} */
         @Override public ScanQueryView next() {
             if (!hasNextExec && !hasNext())
-                throw new NoSuchElementException("No more elemtns.");
+                throw new NoSuchElementException("No more elements.");
 
             hasNextExec = false;
 
