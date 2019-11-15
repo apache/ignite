@@ -33,12 +33,12 @@ public class BinaryClassificationEvaluationContextTest {
     public void testAggregate() {
         BinaryClassificationEvaluationContext<Double> ctx = new BinaryClassificationEvaluationContext<>();
         ctx.aggregate(VectorUtils.of().labeled(1.0));
-        assertEquals(ctx.getFirstClassLbl(), 1., 0.);
-        assertEquals(ctx.getSecondClassLbl(), null);
+        assertEquals(ctx.getFirstClsLbl(), 1., 0.);
+        assertEquals(ctx.getSecondClsLbl(), null);
 
         ctx.aggregate(VectorUtils.of().labeled(0.0));
-        assertEquals(ctx.getFirstClassLbl(), 0., 0.);
-        assertEquals(ctx.getSecondClassLbl(), 1., 0.);
+        assertEquals(ctx.getFirstClsLbl(), 0., 0.);
+        assertEquals(ctx.getSecondClsLbl(), 1., 0.);
     }
 
     /**
@@ -50,8 +50,8 @@ public class BinaryClassificationEvaluationContextTest {
         ctx.aggregate(VectorUtils.of().labeled(-1.0));
         ctx.aggregate(VectorUtils.of().labeled(1.0));
 
-        assertEquals(ctx.getFirstClassLbl(), -1., 0.);
-        assertEquals(ctx.getSecondClassLbl(), 1., 0.);
+        assertEquals(ctx.getFirstClsLbl(), -1., 0.);
+        assertEquals(ctx.getSecondClsLbl(), 1., 0.);
 
         ctx.aggregate(VectorUtils.of().labeled(0.0));
     }
@@ -65,8 +65,8 @@ public class BinaryClassificationEvaluationContextTest {
         BinaryClassificationEvaluationContext<Double> right = new BinaryClassificationEvaluationContext<>();
 
         BinaryClassificationEvaluationContext<Double> res = left.mergeWith(right);
-        assertEquals(res.getFirstClassLbl(), null);
-        assertEquals(res.getSecondClassLbl(), null);
+        assertEquals(res.getFirstClsLbl(), null);
+        assertEquals(res.getSecondClsLbl(), null);
     }
 
     /**
@@ -78,12 +78,12 @@ public class BinaryClassificationEvaluationContextTest {
         BinaryClassificationEvaluationContext<Double> right = new BinaryClassificationEvaluationContext<>();
 
         BinaryClassificationEvaluationContext<Double> res = left.mergeWith(right);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), null);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), null);
 
         res = right.mergeWith(left);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), null);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), null);
     }
 
     /**
@@ -95,12 +95,12 @@ public class BinaryClassificationEvaluationContextTest {
         BinaryClassificationEvaluationContext<Double> right = new BinaryClassificationEvaluationContext<>();
 
         BinaryClassificationEvaluationContext<Double> res = left.mergeWith(right);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), null);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), null);
 
         res = right.mergeWith(left);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), null);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), null);
     }
 
     /**
@@ -112,12 +112,12 @@ public class BinaryClassificationEvaluationContextTest {
         BinaryClassificationEvaluationContext<Double> right = new BinaryClassificationEvaluationContext<>();
 
         BinaryClassificationEvaluationContext<Double> res = left.mergeWith(right);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), 1., 0.);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), 1., 0.);
 
         res = right.mergeWith(left);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), 1., 0.);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), 1., 0.);
     }
 
     /**
@@ -129,12 +129,12 @@ public class BinaryClassificationEvaluationContextTest {
         BinaryClassificationEvaluationContext<Double> right = new BinaryClassificationEvaluationContext<>(0., 1.);
 
         BinaryClassificationEvaluationContext<Double> res = left.mergeWith(right);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), 1., 0.);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), 1., 0.);
 
         res = right.mergeWith(left);
-        assertEquals(res.getFirstClassLbl(), 0., 0.);
-        assertEquals(res.getSecondClassLbl(), 1., 0.);
+        assertEquals(res.getFirstClsLbl(), 0., 0.);
+        assertEquals(res.getSecondClsLbl(), 1., 0.);
     }
 
     /**

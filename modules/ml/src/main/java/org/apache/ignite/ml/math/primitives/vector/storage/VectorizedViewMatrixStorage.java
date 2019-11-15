@@ -146,11 +146,6 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return parent.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isNumeric() {
         return parent.isNumeric();
     }

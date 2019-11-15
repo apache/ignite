@@ -56,7 +56,6 @@ public class FallOut<L extends Serializable> extends BinaryClassificationMetric<
      */
     @Override public FallOut<L> initBy(BinaryClassificationPointwiseMetricStatsAggregator<L> aggr) {
         int n = aggr.getTrueNegative() + aggr.getFalsePositive();
-        ;
         value = n == 0 ? 1 : (double)aggr.getFalsePositive() / n;
         return this;
     }
