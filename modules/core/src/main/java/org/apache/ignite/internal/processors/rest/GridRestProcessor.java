@@ -83,6 +83,8 @@ import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -805,10 +807,13 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-        authCtx.nodeAttributes(req.sslCerts() != null && ctx.config().isSslCertsTransmissionEnabled() ?
-            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, req.sslCerts()) :
-            Collections.emptyMap());
         authCtx.address(req.address());
+
+        JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        authCtx.nodeAttributes(req.sslCerts() != null && ctx.config().isSslCertsTransmissionEnabled() ?
+            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller, req.sslCerts())) :
+            Collections.emptyMap());
 
         SecurityCredentials creds = credentials(req);
 

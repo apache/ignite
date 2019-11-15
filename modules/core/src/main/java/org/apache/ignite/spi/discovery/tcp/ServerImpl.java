@@ -103,6 +103,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -6780,8 +6782,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     spi.ignite().configuration().isSslCertsTransmissionEnabled()) {
                                     HashMap<String, Object> attrs = new HashMap<>(req.node().getAttributes());
 
-                                    attrs.put(ATTR_SECURITY_CERTIFICATES, ((SSLSocket) sock).getSession()
-                                        .getPeerCertificateChain());
+                                    JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(igniteInstanceName);
+
+                                    attrs.put(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller,
+                                        ((SSLSocket) sock).getSession().getPeerCertificateChain()));
 
                                     req.node().setAttributes(attrs);
                                 }

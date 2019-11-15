@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 
@@ -44,24 +48,49 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
-        if (checkSslCerts && node.attributes().get(ATTR_SECURITY_CERTIFICATES) == null &&
-            !ctx.localNodeId().equals(node.id())) {
-            log.info("SSL certificates are not found.");
+        if (checkSslCerts && !ctx.localNodeId().equals(node.id())) {
+            Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+            ClassLoader ldr = U.resolveClassLoader(ctx.config());
+            byte[] bytes = node.attribute(ATTR_SECURITY_CERTIFICATES);
 
-            return null;
+            if (bytes == null) {
+                log.info("SSL certificates are not found.");
+
+                return null;
+            }
+
+            try {
+                U.unmarshal(marshaller, bytes, ldr);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SecurityException("Failed to get security certificates.", e);
+            }
         }
 
         return super.authenticateNode(node, cred);
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
-        if (checkSslCerts && ctx.nodeAttributes().get(ATTR_SECURITY_CERTIFICATES) == null) {
-            log.info("SSL certificates are not found.");
+    @Override public SecurityContext authenticate(AuthenticationContext authCtx) {
+        if (checkSslCerts) {
+            Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+            ClassLoader ldr = U.resolveClassLoader(ctx.config());
+            byte[] bytes = (byte[]) authCtx.nodeAttributes().get(ATTR_SECURITY_CERTIFICATES);
 
-            return null;
+            if (bytes == null) {
+                log.info("SSL certificates are not found.");
+
+                return null;
+            }
+
+            try {
+                U.unmarshal(marshaller, bytes, ldr);
+            }
+            catch (IgniteCheckedException e) {
+                throw new SecurityException("Failed to get security certificates.", e);
+            }
         }
 
-        return super.authenticate(ctx);
+        return super.authenticate(authCtx);
     }
 }
