@@ -142,7 +142,7 @@ final class BinaryMetadataTransport {
         if (clientNode)
             ctx.event().addLocalEventListener(new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
-                    DiscoveryEvent evt0 = (DiscoveryEvent) evt;
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
                     if (!ctx.isStopping()) {
                         for (ClientMetadataRequestFuture fut : clientReqSyncMap.values())
@@ -198,7 +198,7 @@ final class BinaryMetadataTransport {
             .map(BinaryMetadataHolder::metadata)
             .orElse(null);
 
-        Set<Integer> changedSchemas  = new LinkedHashSet<>();
+        Set<Integer> changedSchemas = new LinkedHashSet<>();
 
         //Ensure after putting pending future, metadata still has difference.
         BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta, changedSchemas);
@@ -289,6 +289,7 @@ final class BinaryMetadataTransport {
 
     /**
      * Await specific schema update.
+     *
      * @param typeId Type id.
      * @param schemaId Schema id.
      * @return Future which will be completed when schema is received.
@@ -303,8 +304,8 @@ final class BinaryMetadataTransport {
     }
 
     /**
-     * Allows client node to request latest version of binary metadata for a given typeId from the cluster
-     * in case client is able to detect that it has obsolete metadata in its local cache.
+     * Allows client node to request latest version of binary metadata for a given typeId from the cluster in case
+     * client is able to detect that it has obsolete metadata in its local cache.
      *
      * @param typeId ID of binary type.
      * @return future to wait for request arrival on.
@@ -354,7 +355,8 @@ final class BinaryMetadataTransport {
     private final class MetadataUpdateProposedListener implements CustomEventListener<MetadataUpdateProposedMessage> {
 
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateProposedMessage msg) {
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+            MetadataUpdateProposedMessage msg) {
             if (log.isDebugEnabled())
                 log.debug("Received MetadataUpdateProposedListener [typeId=" + msg.typeId() +
                     ", typeName=" + msg.metadata().typeName() +
@@ -392,10 +394,10 @@ final class BinaryMetadataTransport {
 
                     if (log.isDebugEnabled())
                         log.debug("Versions are stamped on coordinator" +
-                                " [typeId=" + typeId +
-                                ", changedSchemas=" + changedSchemas +
-                                ", pendingVer=" + pendingVer +
-                                ", acceptedVer=" + acceptedVer + "]"
+                            " [typeId=" + typeId +
+                            ", changedSchemas=" + changedSchemas +
+                            ", pendingVer=" + pendingVer +
+                            ", acceptedVer=" + acceptedVer + "]"
                         );
 
                     msg.metadata(mergedMeta);
@@ -429,10 +431,10 @@ final class BinaryMetadataTransport {
                                 holder = metaLocCache.get(typeId);
 
                                 if (obsoleteUpdate(
-                                        holder.pendingVersion(),
-                                        holder.acceptedVersion(),
-                                        pendingVer,
-                                        acceptedVer)) {
+                                    holder.pendingVersion(),
+                                    holder.acceptedVersion(),
+                                    pendingVer,
+                                    acceptedVer)) {
                                     obsoleteUpd = true;
 
                                     fut.onDone(MetadataUpdateResult.createSuccessfulResult(-1));
@@ -457,6 +459,8 @@ final class BinaryMetadataTransport {
                             log.debug("Updated metadata on originating node: " + newHolder);
 
                         metaLocCache.put(typeId, newHolder);
+
+                        metadataFileStore.prepareMetadataWriting(msg.metadata(), pendingVer);
                     }
                 }
             }
@@ -479,13 +483,14 @@ final class BinaryMetadataTransport {
                                     holder = metaLocCache.get(typeId);
 
                                     if (obsoleteUpdate(
-                                            holder.pendingVersion(),
-                                            holder.acceptedVersion(),
-                                            pendingVer,
-                                            acceptedVer))
+                                        holder.pendingVersion(),
+                                        holder.acceptedVersion(),
+                                        pendingVer,
+                                        acceptedVer))
                                         break;
 
-                                } while (!metaLocCache.replace(typeId, holder, newHolder));
+                                }
+                                while (!metaLocCache.replace(typeId, holder, newHolder));
                             }
                         }
                         else {
@@ -494,6 +499,8 @@ final class BinaryMetadataTransport {
                                     ", changedSchemas=" + changedSchemas + ']');
 
                             metaLocCache.put(typeId, newHolder);
+
+                            metadataFileStore.prepareMetadataWriting(mergedMeta, pendingVer);
                         }
                     }
                     catch (BinaryObjectException ignored) {
@@ -537,7 +544,8 @@ final class BinaryMetadataTransport {
     private final class MetadataUpdateAcceptedListener implements CustomEventListener<MetadataUpdateAcceptedMessage> {
 
         /** {@inheritDoc} */
-        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateAcceptedMessage msg) {
+        @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+            MetadataUpdateAcceptedMessage msg) {
             if (log.isDebugEnabled())
                 log.debug("Received MetadataUpdateAcceptedMessage " + msg);
 
@@ -554,7 +562,7 @@ final class BinaryMetadataTransport {
 
             if (clientNode) {
                 BinaryMetadataHolder newHolder = new BinaryMetadataHolder(holder.metadata(),
-                        holder.pendingVersion(), newAcceptedVer);
+                    holder.pendingVersion(), newAcceptedVer);
 
                 do {
                     holder = metaLocCache.get(typeId);
@@ -577,10 +585,12 @@ final class BinaryMetadataTransport {
                     //this is duplicate ack
                     msg.duplicated(true);
 
+                    metadataFileStore.finishWrite(typeId, newAcceptedVer);
+
                     return;
                 }
 
-                metadataFileStore.writeMetadataAsync(holder.metadata(), holder.pendingVersion());
+                metadataFileStore.writeMetadataAsync(typeId, newAcceptedVer);
 
                 metaLocCache.put(typeId, new BinaryMetadataHolder(holder.metadata(), holder.pendingVersion(), newAcceptedVer));
             }
@@ -617,8 +627,8 @@ final class BinaryMetadataTransport {
     }
 
     /**
-     * Future class responsible for blocking threads until particular events with metadata updates happen,
-     * e.g. arriving {@link MetadataUpdateAcceptedMessage} acknowledgment or {@link MetadataResponseMessage} response.
+     * Future class responsible for blocking threads until particular events with metadata updates happen, e.g. arriving
+     * {@link MetadataUpdateAcceptedMessage} acknowledgment or {@link MetadataResponseMessage} response.
      */
     public final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
         /** */
@@ -669,8 +679,8 @@ final class BinaryMetadataTransport {
     }
 
     /**
-     * Key for mapping arriving {@link MetadataUpdateAcceptedMessage} messages
-     * to {@link MetadataUpdateResultFuture}s other threads may be waiting on.
+     * Key for mapping arriving {@link MetadataUpdateAcceptedMessage} messages to {@link MetadataUpdateResultFuture}s
+     * other threads may be waiting on.
      */
     private static final class SyncKey {
         /** */
@@ -715,7 +725,7 @@ final class BinaryMetadataTransport {
             if (!(o instanceof SyncKey))
                 return false;
 
-            SyncKey that = (SyncKey) o;
+            SyncKey that = (SyncKey)o;
 
             return (typeId == that.typeId) && (ver == that.ver);
         }
@@ -744,7 +754,7 @@ final class BinaryMetadataTransport {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataRequestMessage : msg;
 
-            MetadataRequestMessage msg0 = (MetadataRequestMessage) msg;
+            MetadataRequestMessage msg0 = (MetadataRequestMessage)msg;
 
             int typeId = msg0.typeId();
 
@@ -788,7 +798,7 @@ final class BinaryMetadataTransport {
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert msg instanceof MetadataResponseMessage : msg;
 
-            MetadataResponseMessage msg0 = (MetadataResponseMessage) msg;
+            MetadataResponseMessage msg0 = (MetadataResponseMessage)msg;
 
             int typeId = msg0.typeId();
 
@@ -816,10 +826,10 @@ final class BinaryMetadataTransport {
 
                         // typeId metadata cannot be removed after initialization.
                         if (obsoleteUpdate(
-                                oldHolder.pendingVersion(),
-                                oldHolder.acceptedVersion(),
-                                newHolder.pendingVersion(),
-                                newHolder.acceptedVersion()))
+                            oldHolder.pendingVersion(),
+                            oldHolder.acceptedVersion(),
+                            newHolder.pendingVersion(),
+                            newHolder.acceptedVersion()))
                             break;
                     }
                     while (!metaLocCache.replace(typeId, oldHolder, newHolder));

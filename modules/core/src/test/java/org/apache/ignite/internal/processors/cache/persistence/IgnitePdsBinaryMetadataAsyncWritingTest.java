@@ -44,17 +44,21 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
  * Tests for verification of binary metadata async writing to disk.
@@ -309,14 +313,24 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
             .setWriteSynchronizationMode(FULL_SYNC);
 
         IgniteEx ig0 = startGrid(0);
+        IgniteEx cl0 = startGrid("client0");
 
-        final CountDownLatch fileWriteLatch = initSlowFileIOFactory();
+        CountDownLatch fileWriteLatch = new CountDownLatch(1);
         IgniteEx ig1 = startGrid(1);
 
-        specialFileIOFactory = null;
-        IgniteEx ig2 = startGrid(2);
+        ig1.context().discovery().setCustomEventListener(
+            MetadataUpdateAcceptedMessage.class,
+            (topVer, snd, msg) -> suppressException(fileWriteLatch::await)
+        );
 
-        IgniteEx cl0 = startGrid("client0");
+        ListeningTestLogger listeningLog = new ListeningTestLogger(true, log);
+        LogListener waitingForWriteLsnr = LogListener.matches("Waiting for write completion of").build();
+        listeningLog.registerListener(waitingForWriteLsnr);
+
+        startGrid(2);
+
+        listeningLog = null;
+
         ig0.cluster().active(true);
         IgniteCache cache0 = cl0.createCache(testCacheCfg);
 
@@ -445,7 +459,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         //internal map in BinaryMetadataFileStore with futures awaiting write operations
         Map map = GridTestUtils.getFieldValue(
-            (CacheObjectBinaryProcessorImpl)ig1.context().cacheObjects(), "metadataFileStore", "writeOpFutures");
+            (CacheObjectBinaryProcessorImpl)ig1.context().cacheObjects(),  "metadataFileStore", "writer", "preparedWriteTasks");
 
         assertTrue(!map.isEmpty());
 
@@ -572,10 +586,13 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
     static final class TestPerson {
         /** */
         private final int id;
+
         /** */
         private final String firstName;
+
         /** */
         private final String surname;
+
         /** */
         private TestAddress addr;
 
@@ -596,10 +613,13 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
     static final class TestAddress {
         /** */
         private final int id;
+
         /** */
         private final String country;
+
         /** */
         private final String city;
+
         /** */
         private final String address;
 
@@ -624,13 +644,15 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
     static final class TestAccount {
         /** */
         private final TestPerson person;
+
         /** */
         private final int accountId;
+
         /** */
         private final long accountBalance;
+
         /** */
-        TestAccount(
-            TestPerson person, int id, long balance) {
+        TestAccount(TestPerson person, int id, long balance) {
             this.person = person;
             accountId = id;
             accountBalance = balance;
