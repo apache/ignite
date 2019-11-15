@@ -864,8 +864,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 return new Consumer<File>() {
                     @Override public void accept(File file) {
                         assertEquals(from1To0.getName(), file.getName());
-
-                        touched.countDown();
                     }
                 };
             }
@@ -880,8 +878,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
                 return new Consumer<File>() {
                     @Override public void accept(File file) {
                         assertEquals(from0To1.getName(), file.getName());
-
-                        touched.countDown();
                     }
                 };
             }
@@ -901,6 +897,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
                 ex[0] = e;
             }
+
+            touched.countDown();
         });
 
         GridTestUtils.runAsync(() -> {
@@ -915,6 +913,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
                 ex[0] = e;
             }
+
+            touched.countDown();
         });
 
         touched.await(10_000L, TimeUnit.MILLISECONDS);
