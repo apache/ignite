@@ -25,6 +25,8 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.core.JoinInfo;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.BROADCAST;
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
+import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.SINGLE;
 
 /**
  *
@@ -71,7 +74,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
     }
 
     public DistributionTrait getDistributionTrait(Join join, RelMetadataQuery mq) {
-        return join(mq, join.getLeft(), join.getRight(), join.getCondition());
+        return join(mq, join.getLeft(), join.getRight(), join.analyzeCondition(), join.getJoinType());
     }
 
     public DistributionTrait getDistributionTrait(RelSubset rel, RelMetadataQuery mq) {
@@ -82,7 +85,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
         return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
-    public static DistributionTrait project(RelMetadataQuery mq, RelNode input, List<RexNode> projects) {
+    public static DistributionTrait project(RelMetadataQuery mq, RelNode input, List<? extends RexNode> projects) {
         DistributionTrait trait = distribution(input, mq);
 
         if (trait.type() == HASH) {
@@ -93,7 +96,7 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
 
             Map<Integer, Integer> m = new HashMap<>(projects.size());
 
-            for (Ord<RexNode> node : Ord.zip(projects)) {
+            for (Ord<? extends RexNode> node : Ord.zip(projects)) {
                 if (node.e instanceof RexInputRef)
                     m.put( ((RexSlot) node.e).getIndex(), node.i);
                 else if (node.e.isA(SqlKind.CAST)) {
@@ -125,10 +128,71 @@ public class IgniteMdDistribution implements MetadataHandler<IgniteMetadata.Dist
         return distribution(input, mq);
     }
 
-    public static DistributionTrait join(RelMetadataQuery mq, RelNode left, RelNode right, RexNode condition) {
-        DistributionTrait leftDist = distribution(left, mq);
+    public static DistributionTrait join(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
+        /*
+         * Distributions table:
+         *
+         * ===============INNER JOIN==============
+         * hash + hash = hash
+         * broadcast + hash = hash
+         * hash + broadcast = hash
+         * broadcast + broadcast = broadcast
+         * single + single = single
+         *
+         * ===============LEFT JOIN===============
+         * hash + hash = hash
+         * hash + broadcast = hash
+         * broadcast + broadcast = broadcast
+         * single + single = single
+         *
+         * ===============RIGHT JOIN==============
+         * hash + hash = hash
+         * broadcast + hash = hash
+         * broadcast + broadcast = broadcast
+         * single + single = single
+         *
+         * ===========FULL JOIN/CROSS JOIN========
+         * broadcast + broadcast = broadcast
+         * single + single = single
+         *
+         *
+         * others are impossible TODO assertions
+         */
 
-        return leftDist.type() != BROADCAST ? leftDist : distribution(right, mq);
+        DistributionTrait leftDistr = distribution(left, mq);
+        DistributionTrait rightDistr;
+
+        switch (joinType) {
+            case FULL:
+            case LEFT:
+                return leftDistr;
+            case INNER:
+                rightDistr = distribution(right, mq);
+
+                if (joinInfo.keys().isEmpty()
+                    || (leftDistr.type() == HASH || leftDistr.type() == SINGLE)
+                    || (leftDistr.type() == BROADCAST && rightDistr.type() == BROADCAST))
+                    return leftDistr;
+
+                if (rightDistr == null)
+                    rightDistr = distribution(right, mq);
+
+                assert rightDistr.type() == HASH;
+
+                return IgniteDistributions.hash(joinInfo.leftKeys, rightDistr.destinationFunctionFactory());
+            case RIGHT:
+                rightDistr = distribution(right, mq);
+
+                if (leftDistr.type() == SINGLE
+                    || (leftDistr.type() == HASH && rightDistr.type() == HASH)
+                    || (leftDistr.type() == BROADCAST && rightDistr.type() == BROADCAST))
+                    return leftDistr;
+                assert rightDistr.type() == HASH;
+
+                return IgniteDistributions.hash(joinInfo.leftKeys, rightDistr.destinationFunctionFactory());
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
     public static DistributionTrait distribution(RelNode rel, RelMetadataQuery mq) {

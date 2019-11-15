@@ -23,6 +23,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
@@ -63,6 +64,6 @@ public class CalciteSchemaHolder implements SchemaChangeListener {
     private void rebuild() {
         SchemaPlus schema = Frameworks.createRootSchema(false);
         schemas.forEach(schema::add);
-        schema(schema);
+        schema(schema.getSubSchema(QueryUtils.DFLT_SCHEMA));
     }
 }

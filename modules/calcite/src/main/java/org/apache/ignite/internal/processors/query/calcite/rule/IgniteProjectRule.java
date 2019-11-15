@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
@@ -41,9 +42,10 @@ public class IgniteProjectRule extends RelOptRule {
 
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalProject project = call.rel(0);
+        RelOptCluster cluster = project.getCluster();
         RelNode input = project.getInput();
 
-        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.IGNITE_CONVENTION);
+        final RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.IGNITE_CONVENTION);
 
         RelNode converted = convert(input, traitSet);
 

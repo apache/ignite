@@ -21,10 +21,12 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
@@ -48,11 +50,26 @@ public final class IgniteProject extends Project implements IgniteRel {
     return implementor.implement(this);
   }
 
-  public static IgniteProject create(Project project, RelNode input) {
-    RelTraitSet traits = project.getTraitSet()
-        .replace(IgniteRel.IGNITE_CONVENTION)
-        .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(RelMetadataQueryEx.instance(), input, project.getProjects()));
+  /** Creates a LogicalProject. */
+  public static IgniteProject create(final RelNode input, List<? extends RexNode> projects, List<String> fieldNames) {
+    final RelOptCluster cluster = input.getCluster();
+    final RelDataType rowType =
+        RexUtil.createStructType(cluster.getTypeFactory(), projects,
+            fieldNames, SqlValidatorUtil.F_SUGGESTER);
+    return create(input, projects, rowType);
+  }
 
-    return new IgniteProject(project.getCluster(), traits, input, project.getProjects(), project.getRowType());
+  public static IgniteProject create(Project project, RelNode input) {
+    return create(input, project.getProjects(), project.getRowType());
+  }
+
+  public static IgniteProject create(RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
+    RelOptCluster cluster = input.getCluster();
+    RelMetadataQuery mq = cluster.getMetadataQuery();
+    RelTraitSet traits = cluster.traitSet()
+        .replace(IgniteRel.IGNITE_CONVENTION)
+        .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(mq, input, projects));
+
+    return new IgniteProject(cluster, traits, input, projects, rowType);
   }
 }

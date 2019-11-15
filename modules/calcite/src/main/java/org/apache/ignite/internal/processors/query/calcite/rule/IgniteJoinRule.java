@@ -20,15 +20,16 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -42,24 +43,23 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
 /**
  *
  */
-public class IgniteHashJoinRule extends RelOptRule {
-    public static final RelOptRule INSTANCE = new IgniteHashJoinRule();
+public class IgniteJoinRule extends RelOptRule {
+    public static final RelOptRule INSTANCE = new IgniteJoinRule();
 
-    public IgniteHashJoinRule() {
-        super(Commons.any(LogicalJoin.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteHashJoinRule");
+    public IgniteJoinRule() {
+        super(Commons.any(Join.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteJoinRule");
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
-        LogicalJoin join = call.rel(0);
+        Join join = call.rel(0);
 
-        RelTraitSet leftTraits = join.getLeft().getTraitSet()
+        RelOptCluster cluster = join.getCluster();
+
+        RelTraitSet traitSet = cluster.traitSet()
             .replace(IgniteRel.IGNITE_CONVENTION);
 
-        RelTraitSet rightTraits = join.getRight().getTraitSet()
-            .replace(IgniteRel.IGNITE_CONVENTION);
-
-        RelNode left = convert(join.getLeft(), leftTraits);
-        RelNode right = convert(join.getRight(), rightTraits);
+        RelNode left = convert(join.getLeft(), traitSet);
+        RelNode right = convert(join.getRight(), traitSet);
 
         RelMetadataQuery mq = call.getMetadataQuery();
 
@@ -87,27 +87,29 @@ public class IgniteHashJoinRule extends RelOptRule {
         }
     }
 
-    private void transform(RelOptRuleCall call, LogicalJoin join, RelMetadataQuery mq, DistributionTrait leftDist, DistributionTrait rightDist) {
-        RelTraitSet leftTraits = join.getLeft().getTraitSet()
+    private void transform(RelOptRuleCall call, Join join, RelMetadataQuery mq, DistributionTrait leftDist, DistributionTrait rightDist) {
+        RelOptCluster cluster = join.getCluster();
+
+        RelTraitSet leftTraits = cluster.traitSet()
             .replace(IgniteRel.IGNITE_CONVENTION)
             .replace(leftDist);
 
-        RelTraitSet rightTraits = join.getRight().getTraitSet()
+        RelTraitSet rightTraits = cluster.traitSet()
             .replace(IgniteRel.IGNITE_CONVENTION)
             .replace(rightDist);
 
         RelNode left = convert(join.getLeft(), leftTraits);
         RelNode right = convert(join.getRight(), rightTraits);
 
-        RelTraitSet traitSet = join.getTraitSet()
+        RelTraitSet traitSet = cluster.traitSet()
             .replace(IgniteRel.IGNITE_CONVENTION)
-            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.join(mq, left, right, join.getCondition()));
+            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.join(mq, left, right, join.analyzeCondition(), join.getJoinType()));
 
-        call.transformTo(new IgniteHashJoin(join.getCluster(), traitSet, left, right,
+        call.transformTo(new IgniteJoin(cluster, traitSet, left, right,
             join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone()));
     }
 
-    private boolean canTransform(LogicalJoin join, DistributionTrait leftDist, DistributionTrait rightDist) {
+    private boolean canTransform(Join join, DistributionTrait leftDist, DistributionTrait rightDist) {
         if (leftDist.type() == BROADCAST
             && rightDist.type() == BROADCAST)
             return true;

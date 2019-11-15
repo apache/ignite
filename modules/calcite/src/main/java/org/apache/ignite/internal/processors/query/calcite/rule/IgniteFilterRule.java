@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -36,14 +36,15 @@ public class IgniteFilterRule extends RelOptRule {
     public static final RelOptRule INSTANCE = new IgniteFilterRule();
 
     private IgniteFilterRule() {
-        super(Commons.any(LogicalFilter.class, RelNode.class), RelFactories.LOGICAL_BUILDER, "IgniteFilterRule");
+        super(Commons.any(LogicalFilter.class, RelNode.class), "IgniteFilterRule");
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
         LogicalFilter filter = call.rel(0);
+        RelOptCluster cluster = filter.getCluster();
         RelNode input = filter.getInput();
 
-        final RelTraitSet traitSet = input.getTraitSet().replace(IgniteRel.IGNITE_CONVENTION);
+        final RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.IGNITE_CONVENTION);
 
         RelNode converted = convert(input, traitSet);
 

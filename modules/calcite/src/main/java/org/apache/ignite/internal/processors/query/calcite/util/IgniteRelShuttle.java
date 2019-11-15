@@ -20,7 +20,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
@@ -54,7 +54,7 @@ public class IgniteRelShuttle extends RelShuttleImpl {
         return rel;
     }
 
-    public RelNode visit(IgniteHashJoin rel) {
+    public RelNode visit(IgniteJoin rel) {
         return visitChildren(rel);
     }
 
@@ -71,8 +71,8 @@ public class IgniteRelShuttle extends RelShuttleImpl {
             return visit((Sender)rel);
         if (rel instanceof IgniteTableScan)
             return visit((IgniteTableScan)rel);
-        if (rel instanceof IgniteHashJoin)
-            return visit((IgniteHashJoin)rel);
+        if (rel instanceof IgniteJoin)
+            return visit((IgniteJoin)rel);
 
         return visitOther(rel);
     }

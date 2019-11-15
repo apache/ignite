@@ -78,7 +78,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable("Developer", new IgniteTable("Developer", "Developer",
+        publicSchema.addTable(new IgniteTable("Developer", "Developer",
             RowType.builder()
                 .keyField("id", Integer.class, true)
                 .field("name", String.class)
@@ -86,7 +86,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 .field("cityId", Integer.class)
                 .build()));
 
-        publicSchema.addTable("Project", new IgniteTable("Project", "Project",
+        publicSchema.addTable(new IgniteTable("Project", "Project",
             RowType.builder()
                 .keyField("id", Integer.class, true)
                 .field("name", String.class)
@@ -95,23 +95,23 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
 
 
-        publicSchema.addTable("Country", new IgniteTable("Country", "Country",
+        publicSchema.addTable(new IgniteTable("Country", "Country",
             RowType.builder()
                 .keyField("id", Integer.class, true)
                 .field("name", String.class)
                 .field("countryCode", Integer.class)
                 .build()));
 
-        publicSchema.addTable("City", new IgniteTable("City", "City",
+        publicSchema.addTable(new IgniteTable("City", "City",
             RowType.builder()
                 .keyField("id", Integer.class, true)
                 .field("name", String.class)
                 .field("countryId", Integer.class)
                 .build()));
 
-        schema = Frameworks.createRootSchema(false);
-
-        schema.add("PUBLIC", publicSchema);
+        schema = Frameworks
+            .createRootSchema(false)
+            .add("PUBLIC", publicSchema);
 
         nodes = new ArrayList<>(4);
 
@@ -127,6 +127,45 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.projectId = p.id0 + 1" +
+            "WHERE (d.projectId + 1) > ?";
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+        }
+
+        assertNotNull(relRoot.rel);
+    }
+
+    @Test
+    public void testLogicalPlanDefaultSchema() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM Project pp" +
             ") p " +
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
@@ -161,6 +200,41 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(relRoot.rel);
 
 
+    }
+
+    @Test
+    public void testCorrelatedQuery() throws Exception {
+        String sql = "SELECT d.id, (SELECT p.name FROM Project p WHERE p.id = d.id) name, d.projectId " +
+            "FROM Developer d";
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            ConventionTraitDef.INSTANCE
+        };
+
+        RelRoot relRoot;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            relRoot = planner.rel(sqlNode);
+        }
+
+        assertNotNull(relRoot.rel);
     }
 
     @Test

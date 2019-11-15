@@ -27,10 +27,10 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
-public final class IgniteHashJoin extends Join implements IgniteRel {
+public final class IgniteJoin extends Join implements IgniteRel {
   private final boolean semiJoinDone;
 
-  public IgniteHashJoin(
+  public IgniteJoin(
       RelOptCluster cluster,
       RelTraitSet traitSet,
       RelNode left,
@@ -43,9 +43,9 @@ public final class IgniteHashJoin extends Join implements IgniteRel {
     this.semiJoinDone = semiJoinDone;
   }
 
-  @Override public IgniteHashJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
+  @Override public IgniteJoin copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
-    return new IgniteHashJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
+    return new IgniteJoin(getCluster(), traitSet, left, right, conditionExpr, variablesSet, joinType, semiJoinDone);
   }
 
   /** {@inheritDoc} */

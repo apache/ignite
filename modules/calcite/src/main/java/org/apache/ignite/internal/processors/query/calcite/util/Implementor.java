@@ -16,11 +16,25 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 
 /**
  *
  */
 public interface Implementor<T> {
+    T implement(IgniteExchange rel);
+    T implement(IgniteFilter rel);
+    T implement(IgniteJoin rel);
+    T implement(IgniteProject rel);
+    T implement(IgniteTableScan rel);
+    T implement(Receiver rel);
+    T implement(Sender rel);
     T implement(IgniteRel other);
 }

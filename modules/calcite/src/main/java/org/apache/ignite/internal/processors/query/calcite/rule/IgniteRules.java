@@ -158,7 +158,7 @@ public class IgniteRules {
     public static final List<RelOptRule> IGNITE_RULES = ImmutableList.of(
         IgniteFilterRule.INSTANCE,
         IgniteProjectRule.INSTANCE,
-        IgniteHashJoinRule.INSTANCE);
+        IgniteJoinRule.INSTANCE);
 
     public static List<RelOptRule> logicalRules(Context ctx) {
         return ImmutableList.<RelOptRule>builder()

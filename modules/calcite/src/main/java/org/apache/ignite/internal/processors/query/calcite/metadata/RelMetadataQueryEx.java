@@ -22,7 +22,7 @@ import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
@@ -41,7 +41,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         PROVIDER.register(Arrays.asList(
             IgniteExchange.class,
             IgniteFilter.class,
-            IgniteHashJoin.class,
+            IgniteJoin.class,
             IgniteProject.class,
             IgniteTableScan.class,
             Receiver.class,

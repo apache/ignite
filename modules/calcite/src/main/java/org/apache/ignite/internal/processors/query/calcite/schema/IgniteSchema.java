@@ -55,9 +55,7 @@ public class IgniteSchema extends AbstractSchema {
      * @param cacheInfo Cache info.
      */
     public void onSqlTypeCreate(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo cacheInfo) {
-        IgniteTable table = new IgniteTable(typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc));
-
-        addTable(table.tableName(), table);
+        addTable(new IgniteTable(typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc)));
     }
 
     /**
@@ -71,11 +69,10 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
-     * @param name Table name.
      * @param table Table.
      */
-    public void addTable(String name, Table table) {
-        tableMap.put(name, table);
+    public void addTable(IgniteTable table) {
+        tableMap.put(table.tableName(), table);
     }
 
     /**
