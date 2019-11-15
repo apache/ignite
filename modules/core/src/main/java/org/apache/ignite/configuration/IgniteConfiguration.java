@@ -3416,7 +3416,7 @@ public class IgniteConfiguration {
      * {@code true} enables SSL certificates transmission to authenticator.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSslCertsTransmissionEnabled(boolean sslCertsTransmissionEnabled) {
+    public IgniteConfiguration setSslCertificatesTransmissionEnabled(boolean sslCertsTransmissionEnabled) {
         this.sslCertsTransmissionEnabled = sslCertsTransmissionEnabled;
 
         return this;
