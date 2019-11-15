@@ -663,6 +663,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res);
     }
 
+    /** */
     @Test
     public void testScanQuery() throws Exception {
         try(IgniteEx client1 = startGrid("client-1");

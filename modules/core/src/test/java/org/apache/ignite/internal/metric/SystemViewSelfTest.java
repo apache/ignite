@@ -828,8 +828,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkScanQueryView(IgniteEx client1, IgniteEx client2,
-        SystemView<ScanQueryView> qrySysView) throws Exception {
+    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, SystemView<ScanQueryView> qrySysView)
+        throws Exception {
         boolean res = waitForCondition(() -> qrySysView.size() > 1, 5_000);
 
         assertTrue(res);
