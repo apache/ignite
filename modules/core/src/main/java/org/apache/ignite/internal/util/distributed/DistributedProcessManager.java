@@ -108,7 +108,7 @@ public class DistributedProcessManager {
 
                 ClusterNode crdNode = coordinator();
 
-                if (crdNode != null)
+                if (crdNode != null && !ctx.clientNode())
                     sendSingleSingleMessage(p, crdNode);
             });
 
@@ -163,7 +163,8 @@ public class DistributedProcessManager {
                             if (crd.isLocal())
                                 initCoordinator(p, discoCache.version());
 
-                            p.singleResFut.listen(f -> sendSingleSingleMessage(p, crd));
+                            if (!ctx.clientNode())
+                                p.singleResFut.listen(f -> sendSingleSingleMessage(p, crd));
                         }
                         else
                             onAllServersLeft();
