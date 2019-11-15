@@ -255,11 +255,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
+        Set<Integer> partsToCollect = ctx.collectPartStat()
+            .getOrDefault(grp.groupId(), new HashSet<>());
+
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
             for (CacheDataStore store : partDataStores.values())
-                saveStoreMetadata(store, ctx, false, needSnapshot);
+                saveStoreMetadata(store, ctx, false, needSnapshot || partsToCollect.contains(store.partId()));
         }
         else {
             execSvc.execute(() -> {
@@ -274,7 +277,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot);
+                        saveStoreMetadata(store, ctx, false, needSnapshot || partsToCollect.contains(store.partId()));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -291,13 +294,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDataStore store,
         Context ctx,
         boolean beforeDestroy,
-        boolean needSnapshot
+        boolean savePagesCount
     ) throws IgniteCheckedException {
-        Set<Integer> partsToCollect = ctx.collectPartStat()
-            .getOrDefault(grp.groupId(), new HashSet<>());
-
-        boolean savePagesCount = needSnapshot || partsToCollect.contains(store.partId());
-
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
