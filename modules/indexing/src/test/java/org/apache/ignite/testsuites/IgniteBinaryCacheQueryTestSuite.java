@@ -27,6 +27,13 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanW
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaWithPdsEnabled;
+import org.apache.ignite.internal.processors.query.IgniteSqlDefaultSchemaTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSchemaNameValidationTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSchemasDiffConfigurationsTest;
+import org.apache.ignite.internal.processors.query.JdbcSqlCustomSchemaTest;
+import org.apache.ignite.internal.processors.query.JdbcSqlDefaultSchemaTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildTest;
 
@@ -55,6 +62,15 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheSqlInsertValidationSelfTest.class);
         suite.addTestSuite(IgniteCacheSqlDmlErrorSelfTest.class);
         suite.addTestSuite(StopNodeOnRebuildIndexFailureTest.class);
+
+        suite.addTestSuite(IgniteSqlDefaultSchemaTest.class);
+        suite.addTestSuite(IgniteSqlCustomSchemaTest.class);
+        suite.addTestSuite(JdbcSqlDefaultSchemaTest.class);
+        suite.addTestSuite(JdbcSqlCustomSchemaTest.class);
+        suite.addTestSuite(IgniteSqlSchemaNameValidationTest.class);
+        suite.addTestSuite(IgniteSqlCustomSchemaWithPdsEnabled.class);
+        suite.addTestSuite(IgniteSqlSchemasDiffConfigurationsTest.class);
+
 
         //Should be adjusted. Not ready to be used with BinaryMarshaller.
         //suite.addTestSuite(GridCacheBinarySwapScanQuerySelfTest.class);

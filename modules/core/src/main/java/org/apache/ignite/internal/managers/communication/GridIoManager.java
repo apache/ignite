@@ -2017,7 +2017,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param p Message predicate.
      */
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
-        addUserMessageListener(topic, p, null);
+        addUserMessageListener(topic, p, ctx.localNodeId());
     }
 
     /**
@@ -2027,7 +2027,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void addUserMessageListener(
         final @Nullable Object topic,
         final @Nullable IgniteBiPredicate<UUID, ?> p,
-        final @Nullable UUID nodeId
+        final UUID nodeId
     ) {
         if (p != null) {
             try {
