@@ -719,8 +719,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 new CacheConfiguration<Integer, Integer>("cache1")
                     .setGroupName("group1"));
 
-            for (int i = 0; i < 11; i++)
-                cache1.put(i, i);
+            int part = g0.affinity("cache1").primaryPartitions(g0.localNode())[0];
+
+            List<Integer> partKeys = partitionKeys(cache1, part, 11, 0);
+
+            for (Integer key : partKeys)
+                cache1.put(key, key);
 
             SystemView<ScanQueryView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_SYS_VIEW);
 
@@ -732,6 +736,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 new ScanQuery<Integer, Integer>()
                     .setFilter(new MyPredicate())
                     .setLocal(true)
+                    .setPartition(part)
                     .setPageSize(10),
                 new MyTransformer());
 
@@ -754,7 +759,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertFalse(view.canceled());
             assertEquals(MY_PREDICATE, view.filter());
             assertTrue(view.local());
-            assertEquals(-1, view.partition());
+            assertEquals(part, view.partition());
             assertEquals(toStringSafe(g0.context().discovery().topologyVersionEx()), view.topology());
             assertEquals(MY_TRANSFORMER, view.transformer());
             assertFalse(view.keepBinary());
