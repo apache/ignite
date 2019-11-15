@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +54,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -1377,25 +1378,28 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(NODES, topVer(topVer, 1), true);
 
+        AtomicBoolean joined = new AtomicBoolean();
+
         for (int i = 0; i < NODES; i++) {
             TestRecordingCommunicationSpi spi =
                     (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
 
             spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
+                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        joined.set(true); // Join exchange started.
+
                     return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
                         msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
             });
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
-
         IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                latch.await();
-
-                U.sleep(5000);
+                while (!joined.get())
+                    U.sleep(10);
 
                 for (int i = 0; i < NODES; i++)
                     stopGrid(getTestIgniteInstanceName(i), false, false);
@@ -1403,8 +1407,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "stop-thread");
-
-        latch.countDown();
 
         Ignite node = startGrid(NODES);
 
@@ -2602,6 +2604,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
 
+        GridDhtPartitionsExchangeFuture exchFut = null;
+
         for (Ignite node : nodes) {
             log.info("Check affinity [node=" + node.name() + ", topVer=" + topVer + ", expIdeal=" + expIdeal + ']');
 
@@ -2611,6 +2615,24 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             if (fut != null)
                 fut.get();
+
+            List<GridDhtPartitionsExchangeFuture> exchFuts =
+                ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
+
+            for (GridDhtPartitionsExchangeFuture f : exchFuts) {
+                if (f.exchangeDone() && !f.isMerged() && f.topologyVersion().equals(topVer)) {
+                    if (exchFut != null) // Compare with previous node.
+                        assertEquals(f.rebalanced(), exchFut.rebalanced()); // Check homogeneity.
+
+                    assertNotSame(exchFut, f);
+
+                    exchFut = f;
+
+                    break;
+                }
+            }
+
+            assertNotNull(exchFut);
 
             for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
                 if (cctx.startTopologyVersion().compareTo(topVer) > 0)
@@ -2625,6 +2647,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
+                    assertEquals(
+                        "Rebalance state not as expected [node=" + node.name() + ", top=" + topVer + "]",
+                        true,
+                        exchFut.rebalanced());
+
                     List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
 
                     assertAffinity(ideal, aff2, node, cctx.name(), topVer);

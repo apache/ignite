@@ -2154,8 +2154,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             partHistSuppliers,
             partsToReload);
 
-        m.rebalanced(rebalanced);
-
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
             m.setErrorsMap(exchangeGlobalExceptions);
 
@@ -2344,7 +2342,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             log.info("Finish exchange future [startVer=" + initialVersion() +
                 ", resVer=" + res +
                 ", err=" + err +
-                ", rebalanced=" + rebalanced +
+                ", rebalanced=" + rebalanced() +
                 ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
@@ -2899,6 +2897,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         fullMsg.setErrorsMap(exchangeGlobalExceptions);
 
+        fullMsg.rebalanced(rebalanced());
+
         try {
             cctx.io().send(node, fullMsg, SYSTEM_POOL);
 
@@ -3054,9 +3054,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return;
                     }
 
-                    finishState0 = new FinishState(cctx.localNodeId(),
-                        initialVersion(),
-                        createPartitionsMessage(true, node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0));
+                    GridDhtPartitionsFullMessage msg =
+                        createPartitionsMessage(true, node.version().compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+
+                    msg.rebalanced(rebalanced());
+
+                    finishState0 = new FinishState(cctx.localNodeId(), initialVersion(), msg);
                 }
 
                 sendAllPartitionsToNode(finishState0, msg, nodeId);
@@ -3207,6 +3210,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(false, false);
+
+            m.rebalanced(cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this));
 
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 
@@ -3705,9 +3710,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     assignPartitionsStates();
             }
 
-            // Should be performed after any recovery which updates the topology, but prior to full message generation.
-            cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this);
-
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
                 idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
@@ -3796,6 +3798,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     if (!F.isEmpty(sndResNodes))
                         nodes.addAll(sndResNodes);
                 }
+
+                msg.rebalanced(cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this));
+
+                if (msg.rebalanced())
+                    markRebalanced();
 
                 if (!nodes.isEmpty())
                     sendAllPartitions(msg, nodes, mergedJoinExchMsgs0, joinedNodeAff);
@@ -5147,6 +5154,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Sets cluster fully rebalanced flag.
      */
     public void markRebalanced() {
+        assert !rebalanced;
+
         rebalanced = true;
     }
 

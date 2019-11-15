@@ -2189,8 +2189,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * Initializes late affinity assignment's rebalance wait info.
      *
      * @param fut Future.
+     * @return Rebalanced state.
      */
-    public void initRebalanceStateBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
+    public boolean initRebalanceStateBasedOnPartitionsAvailability(final GridDhtPartitionsExchangeFuture fut) {
         AffinityTopologyVersion topVer = fut.initialVersion();
 
         WaitRebalanceInfo rebInfo;
@@ -2209,17 +2210,33 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<List<ClusterNode>> ideal = grpHolder.affinity().idealAssignmentRaw();
 
-                    for (int p = 0; p < ideal.size(); p++)
+                    for (int p = 0; p < ideal.size(); p++) {
+                        if (top.owners(p).isEmpty()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Skipping lost partition [grp=" + grpHolder.groupId() + ", part=" + p +
+                                    ", owners=" + F.nodeIds(top.owners(p)) + ", ideal=" + F.nodeIds(ideal.get(p)) + "]");
+
+                            continue; // Skipping lost partitions.
+                        }
+
                         if (!top.owners(p).containsAll(ideal.get(p))) {
                             rebInfo.add(grpHolder.groupId());
 
+                            if (log.isDebugEnabled())
+                                log.debug("Rebalance required [grp=" + grpHolder.groupId() + ", part=" + p +
+                                    ", owners=" + F.nodeIds(top.owners(p)) + ", ideal=" + F.nodeIds(ideal.get(p)) + "]");
+
                             break;
                         }
+                    }
                 }
             });
 
             waitInfo = rebInfo.empty() ? null : rebInfo;
         }
+
+        log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +
+            ", wait=" + rebInfo.grps + ", total=" + rebInfo.deploymentIds.keySet() + "]");
 
         if (rebInfo.empty()) { // Recalculated as ideally rebalanced locally.
             if (!rebInfo.deploymentIds.isEmpty()) { // Contains groups rebalanced at previous topology. LAS required.
@@ -2233,11 +2250,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
             else
-                fut.markRebalanced();
+                return true;
         }
 
-        log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +
-            ", wait=" + rebInfo.grps + ", total=" + rebInfo.deploymentIds.keySet() + "]");
+        return false;
     }
 
     /**
