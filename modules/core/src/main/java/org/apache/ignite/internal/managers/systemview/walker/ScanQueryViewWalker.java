@@ -42,11 +42,12 @@ public class ScanQueryViewWalker implements SystemViewRowAttributeWalker<ScanQue
         v.accept(9, "filter", String.class);
         v.accept(10, "keepBinary", boolean.class);
         v.accept(11, "local", boolean.class);
-        v.accept(12, "partition", int.class);
-        v.accept(13, "subjectId", UUID.class);
-        v.accept(14, "taskName", String.class);
-        v.accept(15, "topology", String.class);
-        v.accept(16, "transformer", String.class);
+        v.accept(12, "pageSize", int.class);
+        v.accept(13, "partition", int.class);
+        v.accept(14, "subjectId", UUID.class);
+        v.accept(15, "taskName", String.class);
+        v.accept(16, "topology", String.class);
+        v.accept(17, "transformer", String.class);
     }
 
     /** {@inheritDoc} */
@@ -63,15 +64,16 @@ public class ScanQueryViewWalker implements SystemViewRowAttributeWalker<ScanQue
         v.accept(9, "filter", String.class, row.filter());
         v.acceptBoolean(10, "keepBinary", row.keepBinary());
         v.acceptBoolean(11, "local", row.local());
-        v.acceptInt(12, "partition", row.partition());
-        v.accept(13, "subjectId", UUID.class, row.subjectId());
-        v.accept(14, "taskName", String.class, row.taskName());
-        v.accept(15, "topology", String.class, row.topology());
-        v.accept(16, "transformer", String.class, row.transformer());
+        v.acceptInt(12, "pageSize", row.pageSize());
+        v.acceptInt(13, "partition", row.partition());
+        v.accept(14, "subjectId", UUID.class, row.subjectId());
+        v.accept(15, "taskName", String.class, row.taskName());
+        v.accept(16, "topology", String.class, row.topology());
+        v.accept(17, "transformer", String.class, row.transformer());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 17;
+        return 18;
     }
 }

@@ -156,4 +156,9 @@ public class ScanQueryView {
     public String taskName() {
         return iter.taskName();
     }
+
+    /** @return Page size. */
+    public int pageSize() {
+        return iter.pageSize();
+    }
 }

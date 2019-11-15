@@ -712,6 +712,65 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testLocalScanQuery() throws Exception {
+        try(IgniteEx g0 = startGrid(0)) {
+
+            IgniteCache<Integer, Integer> cache1 = g0.createCache(
+                new CacheConfiguration<Integer, Integer>("cache1")
+                    .setGroupName("group1"));
+
+            for (int i = 0; i < 11; i++)
+                cache1.put(i, i);
+
+            SystemView<ScanQueryView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_SYS_VIEW);
+
+            assertNotNull(qrySysView0);
+
+            assertEquals(0, qrySysView0.size());
+
+            QueryCursor<Integer> qryRes1 = cache1.query(
+                new ScanQuery<Integer, Integer>()
+                    .setFilter(new MyPredicate())
+                    .setLocal(true)
+                    .setPageSize(10),
+                new MyTransformer());
+
+            assertTrue(qryRes1.iterator().hasNext());
+
+            boolean res = waitForCondition(() -> qrySysView0.size() > 0, 5_000);
+
+            assertTrue(res);
+
+            ScanQueryView view = qrySysView0.iterator().next();
+
+            assertEquals(g0.localNode().id(), view.originNodeId());
+            assertEquals(0, view.queryId());
+            assertEquals("cache1", view.cacheName());
+            assertEquals(cacheId("cache1"), view.cacheId());
+            assertEquals(cacheGroupId("cache1", "group1"), view.cacheGroupId());
+            assertEquals("group1", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertEquals(MY_PREDICATE, view.filter());
+            assertTrue(view.local());
+            assertEquals(-1, view.partition());
+            assertEquals(toStringSafe(g0.context().discovery().topologyVersionEx()), view.topology());
+            assertEquals(MY_TRANSFORMER, view.transformer());
+            assertFalse(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+
+            qryRes1.close();
+
+            res = waitForCondition(() -> qrySysView0.size() == 0, 5_000);
+
+            assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
     public void testScanQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0);
             IgniteEx g1 = startGrid(1);
@@ -724,7 +783,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Integer> cache2 = client2.createCache("cache2");
 
-            for(int i=0; i<100; i++) {
+            for (int i = 0; i < 100; i++) {
                 cache1.put(i, i);
                 cache2.put(i, i);
             }
@@ -745,7 +804,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 new MyTransformer());
 
             QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
-                .setPageSize(10));
+                .setPageSize(20));
 
             assertTrue(qryRes1.iterator().hasNext());
             assertTrue(qryRes2.iterator().hasNext());
@@ -766,7 +825,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     private void checkScanQueryView(IgniteEx client1, IgniteEx client2,
         SystemView<ScanQueryView> qrySysView) throws Exception {
-        boolean res = waitForCondition(() -> qrySysView.size()> 1, 5_000);
+        boolean res = waitForCondition(() -> qrySysView.size() > 1, 5_000);
 
         assertTrue(res);
 
@@ -788,6 +847,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertFalse(view.keepBinary());
             assertNull(view.subjectId());
             assertNull(view.taskName());
+            assertEquals(10, view.pageSize());
         };
 
         Consumer<ScanQueryView> cache2checker = view -> {
@@ -808,6 +868,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(view.keepBinary());
             assertNull(view.subjectId());
             assertNull(view.taskName());
+            assertEquals(20, view.pageSize());
         };
 
         boolean found1 = false;

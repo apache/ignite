@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
@@ -195,6 +196,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** */
     private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap<>();
+
+    /** */
+    private final GridConcurrentHashSet<ScanQueryIterator> locIters = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
@@ -839,7 +843,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
-            return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode, cctx, log);
+            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode,
+                locNode ? locIters : null, cctx, log);
+
+            if (locNode) {
+                ScanQueryIterator old = locIters.addx(iter);
+
+                assert old == null;
+            }
+
+            return iter;
         }
         catch (IgniteCheckedException | RuntimeException e) {
             if (intFilter != null)
@@ -2773,6 +2786,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         return qryIters;
     }
 
+    /** @return Local query iterators. */
+    public GridConcurrentHashSet<ScanQueryIterator> localQueryIterators() {
+        return locIters;
+    }
+
     /**
      * The map prevents put to the map in case the specified request has been removed previously.
      */
@@ -2888,6 +2906,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final long startTime;
 
+        /** */
+        private final int pageSize;
+
+        /** */
+        @Nullable
+        private final GridConcurrentHashSet<ScanQueryIterator> locIters;
+
+
         /**
          * @param it Iterator.
          * @param qry Query.
@@ -2907,8 +2933,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             IgniteBiPredicate<K, V> scanFilter,
             IgniteClosure transformer,
             boolean locNode,
+            @Nullable GridConcurrentHashSet<ScanQueryIterator> locIters,
             GridCacheContext cctx,
             IgniteLogger log) {
+            assert !locNode || locIters != null : "Local iterators can't be null for local query.";
 
             this.it = it;
             this.topVer = topVer;
@@ -2918,6 +2946,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             this.log = log;
             this.locNode = locNode;
+            this.locIters = locIters;
 
             incBackups = qry.includeBackups();
 
@@ -2947,6 +2976,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             expiryPlc = this.cctx.cache().expiryPolicy(null);
 
             startTime = U.currentTimeMillis();
+            pageSize = qry.pageSize();
         }
 
         /** {@inheritDoc} */
@@ -2986,6 +3016,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (intScanFilter != null)
                 intScanFilter.close();
+
+            if (locIters != null)
+                locIters.remove(this);
         }
 
         /**
@@ -3166,6 +3199,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         public GridCacheContext cacheContext() {
             return cctx;
+        }
+
+        /** */
+        public int pageSize() {
+            return pageSize;
         }
     }
 

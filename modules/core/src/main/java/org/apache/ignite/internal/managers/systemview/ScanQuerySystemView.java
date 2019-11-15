@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -85,8 +86,14 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         /** Cache contexts iterator. */
         private final Iterator<GridCacheContext<K, V>> ctxsIter;
 
+        /** Current cache context. */
+        private GridCacheContext<K, V> cctx;
+
         /** Node requests iterator. */
         private Iterator<Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap>> nodeQryIter;
+
+        /** Loca query iterator. */
+        private Iterator<GridCacheQueryManager.ScanQueryIterator> localQryIter;
 
         /** Current node id. */
         private UUID nodeId;
@@ -103,30 +110,52 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         /** Current scan iterator. */
         private IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> qry;
 
+        /** {@code True} if {@link #hasNext()} was executed before the {@link #next()}. */
+        private boolean hasNextExec;
+
         /** */
         public DataIterator() {
             this.ctxsIter = ctxs.iterator();
             this.nodeQryIter = Collections.emptyIterator();
             this.qriesIter = Collections.emptyIterator();
+            this.localQryIter = Collections.emptyIterator();
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
+            hasNextExec = true;
+
             while (!nextScanIter()) {
-                while (!nodeQryIter.hasNext()) {
+                while (!nodeQryIter.hasNext() && !localQryIter.hasNext()) {
                     if (!ctxsIter.hasNext())
                         return false;
 
-                    nodeQryIter = ctxsIter.next().queries().queryIterators().entrySet().iterator();
+                    cctx = ctxsIter.next();
+
+                    GridCacheQueryManager<K, V> qryMgr = cctx.queries();
+
+                    nodeQryIter = qryMgr.queryIterators().entrySet().iterator();
+
+                    localQryIter = qryMgr.localQueryIterators().iterator();
                 }
 
-                Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap> next = nodeQryIter.next();
+                if (nodeQryIter.hasNext()) {
+                    Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap> next = nodeQryIter.next();
 
-                nodeId = next.getKey();
+                    nodeId = next.getKey();
 
-                reqMap = next.getValue();
+                    reqMap = next.getValue();
 
-                qriesIter = next.getValue().entrySet().iterator();
+                    qriesIter = next.getValue().entrySet().iterator();
+                }
+                else {
+                    nodeId = cctx.localNodeId();
+
+                    reqMap = null;
+
+                    qriesIter = null;
+                }
+
             }
 
             return true;
@@ -134,7 +163,12 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
         /** {@inheritDoc} */
         @Override public ScanQueryView next() {
-            return new ScanQueryView(nodeId, qryId, reqMap.isCanceled(qryId), qry);
+            if (!hasNextExec && !hasNext())
+                throw new NoSuchElementException("No more elemtns.");
+
+            hasNextExec = false;
+
+            return new ScanQueryView(nodeId, qryId, reqMap != null && reqMap.isCanceled(qryId), qry);
         }
 
         /**
@@ -142,7 +176,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
          */
         private boolean nextScanIter() {
             try {
-                while(qriesIter.hasNext()) {
+                while(qriesIter != null && qriesIter.hasNext()) {
                     Map.Entry<Long, GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>>> qryRes =
                         qriesIter.next();
 
@@ -155,12 +189,25 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
                     return true;
                 }
+
+                qriesIter = null;
+
+                reqMap = null;
+
+                if (!localQryIter.hasNext())
+                    return false;
+
+                qryId = 0;
+
+                qry = localQryIter.next();
+
+                nodeId = cctx.localNodeId();
+
+                return true;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-
-            return false;
         }
     }
 }
