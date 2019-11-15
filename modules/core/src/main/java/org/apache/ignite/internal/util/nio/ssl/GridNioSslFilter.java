@@ -332,7 +332,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         GridSslMeta meta = ses.meta(SSL_META.ordinal());
 
-        if (meta.sslEngine() == null)
+        if (meta != null && meta.sslEngine() == null)
             meta.sslEngine(hnd.sslEngine());
 
         hnd.lock();
