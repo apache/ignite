@@ -5515,7 +5515,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert !msg.client();
 
-            int laps = metricsMsgFilter.passedLaps(msg);
+            int laps = msg.passedLaps(getLocalNodeId());
 
             msg = metricsMsgFilter.pollActualMessage(laps, msg);
 
@@ -7772,7 +7772,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * {@code False} if another message of the same kind is already in the queue.
          */
         private boolean addMessage(TcpDiscoveryMetricsUpdateMessage msg) {
-            int laps = passedLaps(msg);
+            int laps = msg.passedLaps(getLocalNodeId());
 
             if (laps == 2)
                 return true;
@@ -7817,33 +7817,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             return msg;
-        }
-
-        /**
-         * @param msg Metrics update message.
-         * @return Number of laps, that the provided message passed.
-         */
-        private int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
-            UUID locNodeId = getLocalNodeId();
-
-            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
-
-            if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
-                return 2;
-            else if (msg.senderNodeId() == null || !hasLocMetrics)
-                return 0;
-            else
-                return 1;
-        }
-
-        /**
-         * @param msg Metrics update message to check.
-         * @param nodeId Node ID for which the check should be performed.
-         * @return {@code True} is the message contains metrics of the node with the provided ID.
-         * {@code False} otherwise.
-         */
-        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
     }
 }
