@@ -51,7 +51,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  */
 public final class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> implements DeployableObject {
     /** */
-    protected static final long serialVersionUID = 6237712226382623488L;
+    private static final long serialVersionUID = 6237712226382623488L;
 
     /**
      * Constructs a new instance of String Encoder preprocessor.

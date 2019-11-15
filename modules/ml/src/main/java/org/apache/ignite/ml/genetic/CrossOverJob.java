@@ -48,11 +48,11 @@ import org.apache.ignite.transactions.Transaction;
 public class CrossOverJob extends ComputeJobAdapter {
     /** Ignite resource */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Ignite logger */
     @LoggerResource
-    private IgniteLogger log = null;
+    private IgniteLogger log;
 
     /** primary key of 1st chromosome */
     private Long key1;
@@ -88,7 +88,7 @@ public class CrossOverJob extends ComputeJobAdapter {
         int k = 0;
         for (int x = updateIdx; x < newGeneKeys.length; x++) {
             newGeneKeys[x] = newKeySwapArrForChrome[k];
-            k = k + 1;
+            k += 1;
         }
         return newGeneKeys;
     }

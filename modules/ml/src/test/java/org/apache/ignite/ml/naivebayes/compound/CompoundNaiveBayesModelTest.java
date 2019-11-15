@@ -35,7 +35,6 @@ import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
 public class CompoundNaiveBayesModelTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 

@@ -38,7 +38,7 @@ public final class LogisticRegressionModel implements IgniteModel<Vector, Double
     private double intercept;
 
     /** Output label format. 0 and 1 for false value and raw sigmoid regression value otherwise. */
-    private boolean isKeepingRawLabels = false;
+    private boolean isKeepingRawLabels;
 
     /** Threshold to assign '1' label to the observation if raw value more than this threshold. */
     private double threshold = 0.5;

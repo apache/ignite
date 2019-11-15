@@ -806,6 +806,41 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test(expected = TransmissionCancelledException.class)
+    public void testChunkHandlerCancelTransmission() throws Exception {
+        snd = startGrid(0);
+        rcv = startGrid(1);
+
+        snd.cluster().active(true);
+
+        File fileToSend = createFileRandomData("testFile", 1024 * 1024);
+
+        rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
+            /** {@inheritDoc} */
+            @Override public Consumer<ByteBuffer> chunkHandler(UUID nodeId, TransmissionMeta initMeta) {
+                return new Consumer<ByteBuffer>() {
+                    @Override public void accept(ByteBuffer buffer) {
+                        throw new TransmissionCancelledException("Operation cancelled by the user");
+                    }
+                };
+            }
+        });
+
+        try (GridIoManager.TransmissionSender sender = snd.context()
+            .io()
+            .openTransmissionSender(rcv.localNode().id(), topic)) {
+            sender.send(fileToSend, TransmissionPolicy.CHUNK);
+        }
+        catch (TransmissionCancelledException e) {
+            log.warning("Transmission cancelled", e);
+
+            throw e;
+        }
+    }
+
+    /**
      * @param ig Ignite instance to check.
      */
     private static void ensureResourcesFree(IgniteEx ig) {

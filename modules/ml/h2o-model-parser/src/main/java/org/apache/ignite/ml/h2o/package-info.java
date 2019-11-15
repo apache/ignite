@@ -15,46 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
-
-import org.apache.ignite.client.ClientException;
-
 /**
- * Result of a function throwing an exception.
+ * <!-- Package description. -->
+ * Base package for H2O MOJO model parser.
  */
-final class Result<T> {
-    /** Value. */
-    private final T val;
 
-    /** Exception. */
-    private final ClientException ex;
-
-    /**
-     * Initializes a successful result.
-     */
-    Result(T val) {
-        this.val = val;
-        ex = null;
-    }
-
-    /**
-     * Initializes a failed result.
-     */
-    Result(ClientException ex) {
-        if (ex == null)
-            throw new NullPointerException("ex");
-
-        this.ex = ex;
-        val = null;
-    }
-
-    /**
-     * @return Value;
-     */
-    public T get() throws ClientException {
-        if (ex != null)
-            throw ex;
-
-        return val;
-    }
-}
+package org.apache.ignite.ml.h2o;
