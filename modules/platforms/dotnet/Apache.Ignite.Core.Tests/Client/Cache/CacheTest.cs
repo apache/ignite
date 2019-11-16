@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;

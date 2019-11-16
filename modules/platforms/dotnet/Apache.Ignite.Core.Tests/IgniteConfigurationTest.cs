@@ -712,7 +712,7 @@ namespace Apache.Ignite.Core.Tests
                     MasterKeyName = KeystoreEncryptionSpi.DefaultMasterKeyName
                 },
                 IgniteInstanceName = "gridName1",
-                IgniteHome = IgniteHome.Resolve(null),
+                IgniteHome = IgniteHome.Resolve(),
                 IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,

@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            _proc = Start(ExePath, IgniteHome.Resolve(null), outReader, args);
+            _proc = Start(ExePath, IgniteHome.Resolve(), outReader, args);
         }
 
         /// <summary>

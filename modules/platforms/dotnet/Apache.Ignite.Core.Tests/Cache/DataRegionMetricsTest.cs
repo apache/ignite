@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>

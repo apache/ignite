@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
