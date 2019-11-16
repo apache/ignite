@@ -2286,7 +2286,9 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BaseSamePropertyClass
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public int Property { get; private set; }
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public string BaseName { get; private set; }
     }
 
@@ -2295,6 +2297,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class DerivedSamePropertyClass : BaseSamePropertyClass
     {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public new int Property { get; private set; }
     }
 }
