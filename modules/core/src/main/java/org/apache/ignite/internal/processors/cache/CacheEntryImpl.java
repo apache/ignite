@@ -39,7 +39,7 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     private V val;
 
     /** Entry version. */
-    private GridCacheVersion ver;
+    protected GridCacheVersion ver;
 
     /**
      * Required by {@link Externalizable}.
