@@ -94,12 +94,14 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void reinit() {
+    @Override public long reinit() {
 //        cntr = delegate.partUpdateCounter();
 //
 //        assert cntr != null;
-
+        assert false : "Should not be called";
         // No-op.
+
+        return -1;
     }
 
     /** {@inheritDoc} */

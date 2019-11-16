@@ -39,8 +39,10 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
@@ -60,6 +62,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final AffinityTopologyVersion topVer;
 
     /** */
+    private final long rebalanceId;
+
+    /** */
     private final Map<String, PageMemCleanupTask> regions = new HashMap<>();
 
     /** */
@@ -73,7 +78,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** */
     public FileRebalanceFuture() {
-        this(null, null, null, null, null);
+        this(null, null, null, null, 0, null);
 
         onDone(true);
     }
@@ -86,6 +91,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         NavigableMap</** order */Integer, Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assignsMap,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
+        long rebalanceId,
         IgniteLogger log
     ) {
         cpLsnr = lsnr;
@@ -93,6 +99,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
         this.log = log;
         this.cctx = cctx;
+        this.rebalanceId = rebalanceId;
 
         // The dummy future does not require initialization.
         if (assignsMap != null)
@@ -229,14 +236,35 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         return super.onDone(res, err, cancel);
     }
 
-    public void onCacheGroupDone(int grpId, UUID nodeId, boolean historical) {
+    private final Map<Integer, GridDhtPreloaderAssignments> historicalAssignments = new ConcurrentHashMap<>();
+
+    public void onCacheGroupDone(int grpId, UUID nodeId, GridDhtPartitionDemandMessage msg) {
         Set<UUID> remainingNodes = allGroupsMap.get(grpId);
 
         boolean rmvd = remainingNodes.remove(nodeId);
 
         assert rmvd : "Duplicate remove " + nodeId;
 
-        if (remainingNodes.isEmpty() && allGroupsMap.remove(grpId) != null && !historical) {
+        if (msg.partitions().hasHistorical()) {
+            GridDhtPartitionExchangeId exchId = cctx.exchange().lastFinishedFuture().exchangeId();
+
+            historicalAssignments.computeIfAbsent(grpId, v -> new GridDhtPreloaderAssignments(exchId, topVer)).put(cctx.discovery().node(nodeId), msg);
+        }
+
+        if (remainingNodes.isEmpty() && allGroupsMap.remove(grpId) != null) {
+            GridDhtPreloaderAssignments assigns = historicalAssignments.remove(grpId);
+
+            if (assigns != null) {
+                GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
+
+                Runnable task = cctx.cache().cacheGroup(grpId).preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
+
+                // todo do we need to run it async
+                cctx.kernalContext().getSystemExecutorService().submit(task);
+
+                return;
+            }
+
             CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
             log.info("Rebalancing complete [group=" + gctx.cacheOrGroupName() + "]");
@@ -259,8 +287,15 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
         assert rmvdFut != null && rmvdFut.isDone() : rmvdFut;
 
-        if (futs.isEmpty())
+//        if (futs.isEmpty()) {
+//            histFut.listen(c -> {
+//                onDone(true);
+//            });
+//        }
+
+        if (futs.isEmpty()) {
             onDone(true);
+        }
     }
 
     /**

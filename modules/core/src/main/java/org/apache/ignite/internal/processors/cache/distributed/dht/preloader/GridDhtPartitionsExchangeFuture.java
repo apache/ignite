@@ -3921,7 +3921,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 StringBuilder buf = new StringBuilder("\n\nHist suppliers\n");
 
                 for (UUID node : F.concat(false, cctx.localNodeId(), msgs.keySet())) {
-                    buf.append("\nReservations for node " + node + "\n");
+                    buf.append("\nReservations for node ").append(node).append("\n");
 
                     Map<T2<Integer, Integer>, Long> reservations = partHistSuppliers.getReservations(node);
 
@@ -3934,7 +3934,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     for (Map.Entry<T2<Integer, Integer>, Long> e : reservations.entrySet()) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey().get1());
 
-                        buf.append("cache=" + grp.cacheOrGroupName() + " p=" + e.getKey().get2() + " cntr=" + e.getValue() + "\n");
+                        buf.append("cache=").append(grp.cacheOrGroupName()).append(" p=").append(e.getKey().get2()).append(" cntr=").append(e.getValue()).append("\n");
                     }
                 }
 

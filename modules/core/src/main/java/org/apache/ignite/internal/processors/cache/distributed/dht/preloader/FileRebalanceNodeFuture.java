@@ -202,6 +202,7 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
                         desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
                 }
 
+                // todo histParts.size incorrect
                 msg.partitions().addHistorical(desc.partId, desc.fromCntr, desc.toCntr, histParts.size());
 
                 continue;
@@ -218,56 +219,60 @@ public class FileRebalanceNodeFuture extends GridFutureAdapter<Boolean> {
             }
         }
 
-        if (!msg.partitions().hasHistorical()) {
-            mainFut.onCacheGroupDone(grpId, nodeId(), false);
+        mainFut.onCacheGroupDone(grpId, nodeId(), msg);
 
-            if (remaining.isEmpty() && !isDone())
-                onDone(true);
+        if (remaining.isEmpty() && !isDone())
+            onDone(true);
 
-            return;
-        }
+//        if (!msg.partitions().hasHistorical()) {
+//            mainFut.onCacheGroupDone(grpId, nodeId(), false);
+//
 
-        GridDhtPartitionExchangeId exchId = cctx.exchange().lastFinishedFuture().exchangeId();
-
-        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, topVer);
-
-        assigns.put(node, msg);
-
-        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
-
-        Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
-
-        if (log.isDebugEnabled())
-            log.debug("Starting historical rebalancing [node=" + node.id() + ", cache=" + grp.cacheOrGroupName() + "]");
-
-        task.run();
-
-        histFut.markInitialized();
-
-        histFut.listen(c -> {
-            try {
-                if (isDone())
-                    return;
-
-                mainFut.onCacheGroupDone(grpId, nodeId(), true);
-
-                // todo Test cancel of historical rebalancing + redundant forceFut.get() it's called onDone(cancelled)
-                if (histFut.isCancelled() && !histFut.get()) {
-                    log.warning("Cancelling file rebalancing due to unsuccessful historical rebalance [cancelled=" +
-                        histFut.isCancelled() + ", failed=" + histFut.isFailed() + "]");
-
-                    cancel();
-
-                    return;
-                }
-
-                if (remaining.isEmpty())
-                    onDone(true);
-            }
-            catch (IgniteCheckedException e) {
-                onDone(e);
-            }
-        });
+//
+//            return;
+//        }
+//
+//        GridDhtPartitionExchangeId exchId = cctx.exchange().lastFinishedFuture().exchangeId();
+//
+//        GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchId, topVer);
+//
+//        assigns.put(node, msg);
+//
+//        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
+//
+//        Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
+//
+//        if (log.isDebugEnabled())
+//            log.debug("Starting historical rebalancing [node=" + node.id() + ", cache=" + grp.cacheOrGroupName() + "]");
+//
+//        task.run();
+//
+//        histFut.markInitialized();
+//
+//        histFut.listen(c -> {
+//            try {
+//                if (isDone())
+//                    return;
+//
+//                mainFut.onCacheGroupDone(grpId, nodeId(), true);
+//
+//                // todo Test cancel of historical rebalancing + redundant forceFut.get() it's called onDone(cancelled)
+//                if (histFut.isCancelled() && !histFut.get()) {
+//                    log.warning("Cancelling file rebalancing due to unsuccessful historical rebalance [cancelled=" +
+//                        histFut.isCancelled() + ", failed=" + histFut.isFailed() + "]");
+//
+//                    cancel();
+//
+//                    return;
+//                }
+//
+//                if (remaining.isEmpty())
+//                    onDone(true);
+//            }
+//            catch (IgniteCheckedException e) {
+//                onDone(e);
+//            }
+//        });
     }
 
     /** {@inheritDoc} */

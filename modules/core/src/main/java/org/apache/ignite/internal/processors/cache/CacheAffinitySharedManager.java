@@ -368,6 +368,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignment0.put(e0.getKey(), toIds0(e0.getValue()));
 
             assignmentsChange.put(grpId, assignment0);
+
+            log.warning("Aff change message " + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + " " + assignment0);
         }
 
         return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);

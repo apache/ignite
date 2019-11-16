@@ -1675,6 +1675,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private final CountDownLatch latch = new CountDownLatch(1);
 
+        /** todo extermely dirty - should rework reinitialization to return correct update counter */
+        private volatile long startCntr = 0;
+
         /**
          * @param partId Partition.
          * @param exists {@code True} if store exists.
@@ -1915,6 +1918,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         pageMem.releasePage(grpId, partMetaId, partMetaPage);
                     }
 
+                    startCntr = delegate0.updateCounter();
+
                     delegate = delegate0;
                 }
                 catch (Throwable ex) {
@@ -2091,7 +2096,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void reinit() {
+        @Override public long reinit() {
             try {
                 // todo hard thinking about checkExists flag + think about initLatch
                 if (init.compareAndSet(true, false)) {
@@ -2102,11 +2107,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     assert delegate0 != null;
                 }
+
+                return startCntr;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
         }
+
 
         /** {@inheritDoc} */
         @Override public int partId() {

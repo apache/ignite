@@ -1936,7 +1936,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         T2<Long, WALPointer> reserved = reservedForPreloading.get(new T2<>(grpId, partId));
 
-        assert reserved != null : "History should be reserved";
+        assert reserved != null : "History should be reserved [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", node=" + cctx.localNodeId() + "]";
 
         long cntr = reserved.get1();
 
@@ -4486,6 +4486,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 /** {@inheritDoc} */
                 @Override public Map<Integer, Set<Integer>> collectPartStat() {
+                    assert delegate != null;
+
                     return delegate.collectPartStat();
                 }
 
@@ -4661,6 +4663,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             /** {@inheritDoc} */
             @Override public Map<Integer, Set<Integer>> collectPartStat() {
+                assert collectPartStat != null;
+
                 return collectPartStat;
             }
 

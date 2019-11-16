@@ -36,12 +36,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -49,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -57,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -148,7 +153,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
                 continue;
 
             if (log.isDebugEnabled())
-                log.debug("Set READ-ONLY mode for cache=" + grp.cacheOrGroupName());
+                log.debug("Set READ-ONLY mode for cache=" + grp.cacheOrGroupName() + " parts=" + moving);
 
             for (int p : moving)
                 grp.topology().localPartition(p).dataStore().readOnly(true);
@@ -169,22 +174,24 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         Set<Integer> movingParts = new HashSet<>();
 
         for (int p = 0; p < partitions; p++) {
-            if (aff.get(p).contains(cctx.localNode())) {
-                GridDhtLocalPartition part = grp.topology().localPartition(p);
+            if (!aff.get(p).contains(cctx.localNode()))
+                continue;
 
-                if (part.state() == OWNING)
-                    continue;
+            GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                // Should have partition file supplier to start file rebalance.
-                long cntr = cntrsMap.updateCounter(p);
+            if (part.state() == OWNING)
+                continue;
 
-                if (exchFut.partitionFileSupplier(grp.groupId(), p, cntr) == null)
-                    return null;
+            // Should have partition file supplier to start file rebalance.
+            long cntr = cntrsMap.updateCounter(p);
 
-                // If partition is currently rented prevent destroy and start clearing process.
-                // todo think about reserve/clear
-                if (part.state() == RENTING)
-                    part.moving();
+            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntr) == null)
+                return null;
+
+            // If partition is currently rented prevent destroy and start clearing process.
+            // todo think about reserve/clear
+            if (part.state() == RENTING)
+                part.moving();
 
 //                    // If partition was destroyed recreate it.
 //                    if (part.state() == EVICTED) {
@@ -193,11 +200,10 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 //                        part = grp.topology().localPartition(p, topVer, true);
 //                    }
 
-                assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
-                    ", p=" + p + ", state=" + part.state() + "]";
+            assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
+                ", p=" + p + ", state=" + part.state() + "]";
 
-                movingParts.add(p);
-            }
+            movingParts.add(p);
         }
 
         return movingParts;
@@ -209,12 +215,45 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
     public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         FileRebalanceFuture fut0 = fileRebalanceFut;
 
-        if (!fut0.isDone()) {
+        // todo think, investigate, eliminate duplication
+        boolean interruptRebalance = inrerruptRebalanceRequired(lastFut);
+
+        if (!fut0.isDone() && interruptRebalance) {
             if (log.isDebugEnabled())
-                log.debug("Topology changed - canceling file rebalance.");
+                log.debug("Topology changed - canceling file rebalance [fut="+lastFut+"]");
 
             fileRebalanceFut.cancel();
         }
+    }
+
+    private boolean inrerruptRebalanceRequired(GridDhtPartitionsExchangeFuture fut) {
+        DiscoveryEvent evt = fut.firstEvent();
+
+//        if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT)
+//            return true;
+
+        if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomEvent customEvent = ((DiscoveryCustomEvent)evt);
+
+            if (customEvent.customMessage() instanceof DynamicCacheChangeBatch && fut.exchangeActions() != null)
+                return true;
+
+            if (customEvent.customMessage() instanceof SnapshotDiscoveryMessage &&
+                ((SnapshotDiscoveryMessage)customEvent.customMessage()).needAssignPartitions())
+                return true;
+
+            return false;
+        }
+
+        if (fut.exchangeActions() != null) {
+            if (fut.exchangeActions().activate())
+                return true;
+
+            if (fut.exchangeActions().changedBaseline())
+                return true;
+        }
+
+        return true;
     }
 
     /**
@@ -246,6 +285,9 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             return NO_OP;
         }
 
+        if (log.isTraceEnabled())
+            log.trace(formatMappings(nodeOrderAssignsMap));
+
         // Start new rebalance session.
         FileRebalanceFuture rebFut = fileRebalanceFut;
 
@@ -255,7 +297,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             if (!rebFut.isDone())
                 rebFut.cancel();
 
-            fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, nodeOrderAssignsMap, topVer, cctx, log);
+            fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, nodeOrderAssignsMap, topVer, cctx, rebalanceId, log);
 
             FileRebalanceNodeFuture lastFut = null;
 
@@ -319,6 +361,31 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    private String formatMappings(Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> map) {
+        StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
+
+        for (Map.Entry<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> entry : map.entrySet()) {
+            buf.append("\torder=").append(entry.getKey()).append('\n');
+
+            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.getValue().entrySet()) {
+                buf.append("\t\tnode=").append(mapEntry.getKey().id()).append('\n');
+
+                for (Map.Entry<Integer, Set<Integer>> setEntry : mapEntry.getValue().entrySet()) {
+                    buf.append("\t\t\tgrp=").append(cctx.cache().cacheGroup(setEntry.getKey()).cacheOrGroupName()).append('\n');
+
+                    for (int p : setEntry.getValue())
+                        buf.append("\t\t\t\tp=").append(p).append('\n');
+                }
+
+                buf.append('\n');
+            }
+
+            buf.append('\n');
+        }
+
+        return buf.toString();
     }
 
     /**
@@ -441,11 +508,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
                 ", p=" + part.id() + ", state=" + part.state() + "]";
 
-            assert part.dataStore().readOnly() : "Expected read-only partition [cache=" + grp.cacheOrGroupName() +
-                ", p=" + part.id() + "]";
-
             if (exchFut.partitionFileSupplier(grp.groupId(), part.id(), cntrsMap.updateCounter(part.id())) == null)
                 return false;
+
+            assert part.dataStore().readOnly() : "Expected read-only partition [cache=" + grp.cacheOrGroupName() +
+                ", p=" + part.id() + "]";
         }
 
         // For now mixed rebalancing modes are not supported.
@@ -514,13 +581,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
 
         GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
 
-        // save counter in readonly partition
-        //part.dataStore().store(true).reinit();
-        //
+        // Save current counter.
+        PartitionUpdateCounter oldCntr = part.dataStore().store(false).partUpdateCounter();
 
-        PartitionUpdateCounter maxCntr = part.dataStore().store(false).partUpdateCounter();
-
-        part.dataStore().store(false).reinit();
+        // Save start counter of restored partition.
+        long minCntr = part.dataStore().store(false).reinit();
 
         GridFutureAdapter<T2<Long, Long>> endFut = new GridFutureAdapter<>();
 
@@ -531,9 +596,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
 
             // Save current update counter.
-            //PartitionUpdateCounter maxCntr = part.dataStore().partUpdateCounter();
-
-//            assert maxCntr != null;
+            PartitionUpdateCounter newCntr = part.dataStore().store(false).partUpdateCounter();
 
             part.readOnly(false);
 
@@ -542,11 +605,11 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // todo check on large partition
             part.entriesMap(null).map.clear();
 
-            PartitionUpdateCounter minCntr = part.dataStore().partUpdateCounter();
+            assert oldCntr != newCntr;
 
-            assert minCntr != null : "grp="+cctx.cache().cacheGroup(grpId) + ", p=" + partId + ", fullSize=" + part.dataStore().fullSize();
+            assert newCntr != null : "grp="+cctx.cache().cacheGroup(grpId) + ", p=" + partId + ", fullSize=" + part.dataStore().fullSize();
             // todo check empty partition
-            assert minCntr.get() != 0 : "grpId=" + cctx.cache().cacheGroup(grpId) + ", p=" + partId + ", fullSize=" + part.dataStore().fullSize();
+            assert newCntr.get() != 0 : "grpId=" + cctx.cache().cacheGroup(grpId) + ", p=" + partId + ", fullSize=" + part.dataStore().fullSize();
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -558,7 +621,7 @@ public class GridCachePreloadSharedManager extends GridCacheSharedManagerAdapter
             // todo Consistency check fails sometimes for ATOMIC cache.
             partReleaseFut.listen(c ->
                 endFut.onDone(
-                    new T2<>(minCntr.get(), Math.max(maxCntr == null ? 0 : maxCntr.highestAppliedCounter(), minCntr.highestAppliedCounter()))
+                    new T2<>(minCntr, Math.max(oldCntr == null ? 0 : oldCntr.highestAppliedCounter(), newCntr.highestAppliedCounter()))
                 )
             );
         });

@@ -245,8 +245,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (grp.persistenceEnabled() && exchFut != null) {
+                if (grp.persistenceEnabled() && exchFut != null && countersMap.updateCounter(p) != part.initialUpdateCounter()) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
+
+                    if (log.isDebugEnabled())
+                        log.info("Got historical supplier: " + nodeId + " p=" + p + " initial=" + part.initialUpdateCounter() + ", curr=" + part.updateCounter());
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
@@ -292,7 +295,23 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             log.debug("Owning partition as there are no other owners: " + part);
                     }
                     else {
-                        ClusterNode n = picked.get(p % picked.size());
+                        ClusterNode n = null;
+
+                        // file rebalance
+                        if (exchFut != null) {
+                            UUID nodeId = exchFut.partitionFileSupplier(grp.groupId(), p, countersMap.updateCounter(p));
+
+                            if (nodeId != null) {
+                                log.info("Got file rebalance supplier=" + nodeId + ", p=" + p + "  cache=" + ctx.cache().cacheGroup(grp.groupId()).cacheOrGroupName());
+
+                                n = ctx.discovery().node(nodeId);
+
+                                assert picked.contains(n);
+                            }
+                        }
+
+                        if (n == null)
+                            n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);
 
