@@ -55,7 +55,8 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     @Override public void active(final boolean active) throws GridClientException {
         withReconnectHandling(new ClientProjectionClosure<Void>() {
             @Override public GridClientFuture apply(
-                GridClientConnection conn, UUID nodeId
+                GridClientConnection conn,
+                UUID nodeId
             ) throws GridClientConnectionResetException, GridClientClosedException {
                 return conn.changeState(active, nodeId);
             }
@@ -64,12 +65,28 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(
-                GridClientConnection conn, UUID nodeId
+        return withReconnectHandling(GridClientConnection::currentState).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readOnly() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::readOnlyState).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readOnly(boolean readOnly) throws GridClientException {
+        withReconnectHandling(new ClientProjectionClosure<Void>() {
+            @Override public GridClientFuture apply(
+                GridClientConnection conn,
+                UUID nodeId
             ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.currentState(nodeId);
+                return conn.changeReadOnlyState(readOnly, nodeId);
             }
         }).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String clusterName() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::clusterName).get();
     }
 }

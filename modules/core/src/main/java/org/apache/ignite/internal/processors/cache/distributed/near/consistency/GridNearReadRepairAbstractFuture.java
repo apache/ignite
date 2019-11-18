@@ -90,7 +90,17 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     private AffinityTopologyVersion topVer;
 
     /**
+     * Creates a new instance of GridNearReadRepairAbstractFuture.
      *
+     * @param topVer Topology version.
+     * @param ctx Cache context.
+     * @param keys Keys.
+     * @param readThrough Read-through flag.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param recovery Partition recovery flag.
+     * @param expiryPlc Expiry policy.
+     * @param tx Transaction. Can be {@code null} in case of atomic cache.
      */
     protected GridNearReadRepairAbstractFuture(
         AffinityTopologyVersion topVer,
@@ -117,7 +127,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     }
 
     /**
-     *
+     * @param topVer Affinity topology version.
      */
     protected synchronized void map(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
@@ -175,7 +185,9 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     }
 
     /**
+     * Collects results of each 'get' future and prepares an overall result of the operation.
      *
+     * @param finished Future represents a result of GET operation.
      */
     protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> finished) {
         if (isDone() || /*remapping*/ topVer == null)

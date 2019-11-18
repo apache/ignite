@@ -311,6 +311,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isCancellationSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void registerRequest(long reqId, int cmdType) {
         // No-op.
     }
@@ -318,6 +323,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void unregisterRequest(long reqId) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return ver;
     }
 
     /**
@@ -333,8 +343,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
         qry.setArgs(args);
-        qry.setTimeout(timeout, TimeUnit.SECONDS);
         qry.setAutoCommit(autoCommit);
+
+        if (timeout >= 0)
+            qry.setTimeout(timeout, TimeUnit.SECONDS);
 
         return qry;
     }

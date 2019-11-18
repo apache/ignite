@@ -142,7 +142,8 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration
             {
-                Endpoints = new List<string> { IPAddress.Loopback.ToString() }
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() },
+                SocketTimeout = TimeSpan.FromSeconds(15)
             };
         }
 
@@ -208,7 +209,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             }
 
-            AssertExtensions.ReflectionEqual(cfg, cfg2);
+            HashSet<string> ignoredProps = null;
+
+            if (cfg.ExpiryPolicyFactory != null && cfg2.ExpiryPolicyFactory != null)
+            {
+                ignoredProps = new HashSet<string> {"ExpiryPolicyFactory"};
+
+                AssertExtensions.ReflectionEqual(cfg.ExpiryPolicyFactory.CreateInstance(),
+                    cfg2.ExpiryPolicyFactory.CreateInstance());
+            }
+
+            AssertExtensions.ReflectionEqual(cfg, cfg2, ignoredProperties : ignoredProps);
         }
     }
 }

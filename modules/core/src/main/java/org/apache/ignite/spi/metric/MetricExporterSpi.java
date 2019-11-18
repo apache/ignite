@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
-import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Exporter of metric information to the external recepient.
@@ -38,15 +37,12 @@ import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
  * @see IntMetric
  * @see LongMetric
  * @see ObjectMetric
- * @see JmxExporterSpi
+ * @see JmxMetricExporterSpi
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
-     *
-     * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link ReadOnlyMetricRegistry#addMetricRegistryCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
      */

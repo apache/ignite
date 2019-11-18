@@ -517,4 +517,32 @@ public interface IgniteMXBean {
     @MXBeanParametersNames({"registry", "name", "config"})
     @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "Configuration string."})
     public void configureMetric(String registry, String name, String config);
+
+    /**
+     * Gets cluster read-only mode status.
+     *
+     * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.
+     */
+    @MXBeanDescription("Cluster read-only mode status.")
+    boolean readOnlyMode();
+
+    /**
+     * Enable or disable cluster read-only mode. If {@code readOnly} flag is {@code true} read-only mode will be
+     * enabled. If {@code readOnly} flag is {@code false} read-only mode will be disabled.
+     *
+     * @param readOnly enable/disable cluster read-only mode flag.
+     */
+    @MXBeanDescription("Enable or disable cluster read-only mode.")
+    @MXBeanParametersNames("readOnly")
+    @MXBeanParametersDescriptions("True - enable read-only mode, false - disable read-only mode.")
+    void readOnlyMode(boolean readOnly);
+
+    /**
+     * Gets duration of read-only mode enabled on cluster.
+     *
+     * @return {@code 0} if cluster read-only mode disabled, and time in milliseconds since enabling cluster read-only
+     * mode.
+     */
+    @MXBeanDescription("Duration of read-only mode enabled on cluster.")
+    long getReadOnlyModeDuration();
 }

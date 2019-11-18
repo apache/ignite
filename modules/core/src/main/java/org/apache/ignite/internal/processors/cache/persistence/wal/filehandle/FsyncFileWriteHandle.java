@@ -188,9 +188,9 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * Write serializer version to current handle. NOTE: Method mutates {@code fileIO} position, written and
      * lastFsyncPos fields.
      *
-     * @throws IgniteCheckedException If fail to write serializer version.
+     * @throws StorageException If fail to write serializer version.
      */
-    @Override public void writeHeader() throws IgniteCheckedException {
+    @Override public void writeHeader() throws StorageException {
         try {
             assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                 fileIO.position();
@@ -203,7 +203,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
             head.set(new FakeRecord(new FileWALPointer(getSegmentId(), (int)updatedPosition, 0), false));
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to write serializer version for segment " + getSegmentId(), e);
+            throw new StorageException("Unable to write serializer version for segment " + getSegmentId(), e);
         }
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.Collections;
@@ -59,6 +60,9 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             return block && node.order() == 3;
         }
     };
+
+    /** Server port for {@link FakeServer}. */
+    private static int serverPort = 47200;
 
     /** Client mode. */
     private static boolean clientMode;
@@ -107,7 +111,27 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        serverPort = takeFreePort();
+
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+    }
+
+    /**
+     * @throws IOException If failed.
+     */
+    private static int takeFreePort() throws IOException {
+        int freePort = serverPort;
+
+        while(true) {
+            try {
+                U.closeQuiet(startServerSocket(freePort));
+
+                return freePort;
+            }
+            catch (BindException ignore) { //If address already in use (Bind failed) t trying to choose another one.
+                freePort++;
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -284,6 +308,13 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws IOException If failed.
+     */
+    private static ServerSocket startServerSocket(int port) throws IOException {
+        return new ServerSocket(port, 50, InetAddress.getByName("127.0.0.1"));
+    }
+
+    /**
      * Server that emulates connection troubles.
      */
     private static class FakeServer implements Runnable {
@@ -297,7 +328,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
          * Default constructor.
          */
         FakeServer() throws IOException {
-            srv = new ServerSocket(47200, 50, InetAddress.getByName("127.0.0.1"));
+            srv = startServerSocket(serverPort);
         }
 
         /**
@@ -336,7 +367,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
 
                 attrs.put(createAttributeName(ATTR_ADDRS), Collections.singleton("127.0.0.1"));
-                attrs.put(createAttributeName(ATTR_PORT), 47200);
+                attrs.put(createAttributeName(ATTR_PORT), serverPort);
                 attrs.put(createAttributeName(ATTR_EXT_ADDRS), Collections.emptyList());
                 attrs.put(createAttributeName(ATTR_HOST_NAMES), Collections.emptyList());
 

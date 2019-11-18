@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.clustering.gmm;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.DistributionMixture;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
@@ -30,7 +32,8 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
  * compute likelihood vector where each component of it is a probability of cluster of mixture (see {@link
  * #likelihood(Vector)}).
  */
-public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double> {
+public class GmmModel extends DistributionMixture<MultivariateGaussianDistribution> implements IgniteModel<Vector, Double>,
+    DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -4484174539118240037L;
 
@@ -47,5 +50,10 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
     /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
         return (double)likelihood(input).maxElement().index();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
     }
 }

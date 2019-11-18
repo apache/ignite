@@ -35,9 +35,8 @@ import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
-import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -48,11 +47,11 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
- * After that it defines how to split the data to train and test sets and configures preprocessors that extract
- * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract features
+ * from an upstream data and perform other desired changes over the extracted data.</p>
  * <p>
- * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
- * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on the
+ * processed data using decision tree classification and the obtained hyperparams.</p>
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  * <p>
@@ -62,13 +61,15 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
  * <p>
- * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * These models are sometimes called surrogate models because the (average) performance measured for these models is
+ * taken as a surrogate of the performance of the model trained on all cases.</p>
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV_with_Param_Grid_and_metrics {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
@@ -118,28 +119,25 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
 
                 DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
-                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
+                CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .addHyperParam("maxDeep", new Double[]{1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", new Double[] {0.0, 0.25, 0.5});
+                    .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.25, 0.5});
 
-                BinaryClassificationMetrics metrics = (BinaryClassificationMetrics) new BinaryClassificationMetrics()
-                    .withNegativeClsLb(0.0)
-                    .withPositiveClsLb(1.0)
-                    .withMetric(BinaryClassificationMetricValues::accuracy);
+                scoreCalculator
+                    .withIgnite(ignite)
+                    .withUpstreamCache(dataCache)
+                    .withTrainer(trainerCV)
+                    .withMetric(MetricName.ACCURACY)
+                    .withFilter(split.getTrainFilter())
+                    .isRunningOnPipeline(false)
+                    .withPreprocessor(normalizationPreprocessor)
+                    .withAmountOfFolds(3)
+                    .withParamGrid(paramGrid);
 
-                CrossValidationResult crossValidationRes = scoreCalculator.score(
-                    trainerCV,
-                    metrics,
-                    ignite,
-                    dataCache,
-                    split.getTrainFilter(),
-                    normalizationPreprocessor,
-                    3,
-                    paramGrid
-                );
+                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
@@ -168,8 +166,7 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
                 System.out.println("\n>>> Trained model: " + bestMdl);
 
                 double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    split.getTestFilter(),
+                    dataCache, split.getTestFilter(),
                     bestMdl,
                     normalizationPreprocessor,
                     new Accuracy<>()
@@ -183,6 +180,9 @@ public class Step_8_CV_with_Param_Grid_and_metrics {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

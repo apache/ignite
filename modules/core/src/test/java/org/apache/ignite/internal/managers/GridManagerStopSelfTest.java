@@ -27,6 +27,8 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.resources.LoggerResource;
@@ -44,6 +46,7 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -69,6 +72,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridResourceProcessor(ctx));
+        ctx.add(new GridSystemViewManager(ctx));
 
         ctx.start();
     }
@@ -128,6 +132,8 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.config().setCommunicationSpi(spi);
         ctx.config().setMarshaller(new BinaryMarshaller());
+        ctx.config().setMetricExporterSpi(new NoopMetricExporterSpi());
+        ctx.add(new GridMetricManager(ctx));
 
         GridIoManager mgr = new GridIoManager(ctx);
 

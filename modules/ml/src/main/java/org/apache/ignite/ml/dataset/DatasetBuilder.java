@@ -21,6 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 
@@ -46,12 +47,14 @@ public interface DatasetBuilder<K, V> {
      * @param partDataBuilder Partition {@code data} builder.
      * @param <C> Type of a partition {@code context}.
      * @param <D> Type of a partition {@code data}.
+     * @param localLearningEnv Local learning environment.
      * @return Dataset.
      */
     public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder);
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment localLearningEnv);
 
     /**
      * Returns new instance of {@link DatasetBuilder} with new {@link UpstreamTransformerBuilder} added

@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -43,7 +42,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,6 +59,32 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
     /** Cache name */
     private static final String PERSON_CACHE = "Person";
+
+    /** Limitation to query response size */
+    private static final int QUERY_LIMIT = 5;
+
+    /** Concurrent threads number */
+    private static final int N_THREADS = 20;
+
+    /**
+     * Container for expected values and all available entries
+     */
+    private static final class TestPair {
+        /** */
+        public final Set<Integer> expected;
+
+        /** */
+        public final List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+
+        /**
+         * Constructor
+         *
+         * @param exp expected values set.
+         * */
+        public TestPair(Set<Integer> exp) {
+            this.expected = new HashSet<>(exp);
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -93,7 +120,15 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTextQueryWithField() throws Exception {
-        checkTextQuery("name:1*", false, false);
+        checkTextQuery("name:1*", 0, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryWithFieldLimited() throws Exception {
+        checkTextQuery("name:1*", QUERY_LIMIT, false, false);
     }
 
     /**
@@ -116,6 +151,14 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testLocalTextQueryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, true, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(false, true);
     }
@@ -124,8 +167,61 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testTextQueryWithKeepBinaryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, false, true);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testTextQuery() throws Exception {
-        checkTextQuery(false, true);
+        checkTextQuery(false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryLimited() throws Exception {
+        checkTextQuery(null, QUERY_LIMIT, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryLimitedConcurrent() throws Exception {
+        final IgniteEx ignite = grid(0);
+
+        final String clause = "1*";
+
+        // 1. Populate cache with data, calculating expected count in parallel.
+        Set<Integer> exp = populateCache(ignite, false, MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
+
+        GridTestUtils.runMultiThreaded(textQueryTask(ignite, clause, exp), N_THREADS, "text-query-test");
+
+        clearCache(ignite);
+    }
+
+    /**
+     * Creates Runnable for TextQuery
+     *
+     * @param ignite Ignite insance.
+     * @param clause Query clause.
+     * @param exp Expected results for validation.
+     * @return TextQuery and validation wrapped into Runnable functional interface.
+     */
+    @NotNull private Runnable textQueryTask(IgniteEx ignite, String clause, Set<Integer> exp) {
+        return () -> {
+            try {
+                TextQuery qry = new TextQuery<>(Person.class, clause);
+                validateQueryResults(ignite, qry, exp, false);
+            }
+            catch (Exception e) {
+                fail(e.getMessage());
+            }
+        };
     }
 
     /**
@@ -133,15 +229,16 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @param keepBinary keep binary flag.
      */
     private void checkTextQuery(boolean loc, boolean keepBinary) throws Exception {
-        checkTextQuery(null, loc, keepBinary);
+        checkTextQuery(null, 0, loc, keepBinary);
     }
 
     /**
      * @param clause Query clause.
+     * @param limit limits response size
      * @param loc local query flag.
      * @param keepBinary keep binary flag.
      */
-    private void checkTextQuery(String clause, boolean loc, boolean keepBinary) throws Exception {
+    private void checkTextQuery(String clause, int limit, boolean loc, boolean keepBinary) throws Exception {
         final IgniteEx ignite = grid(0);
 
         if (F.isEmpty(clause))
@@ -156,7 +253,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         });
 
         // 2. Validate results.
-        TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc);
+        TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc).setLimit(limit);
 
         validateQueryResults(ignite, qry, exp, keepBinary);
 
@@ -212,7 +309,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static void validateQueryResults(IgniteEx ignite, Query qry, Set<Integer> exp,
+    private static void validateQueryResults(IgniteEx ignite, TextQuery qry, Set<Integer> exp,
         boolean keepBinary) throws IgniteCheckedException {
         IgniteCache<Integer, Person> cache = ignite.cache(PERSON_CACHE);
 
@@ -220,78 +317,99 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, BinaryObject> cache0 = cache.withKeepBinary();
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpectedWithBinary(exp, cursor);
 
-                for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
-
-                    assertEquals(entry.getKey(), entry.getValue().field("age"));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                checkForMissedKeys(ignite, exp0, all);
+                assertResult(ignite, qry, testPair);
             }
 
             try (QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor = cache0.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpectedWithBinary(exp, cursor);
 
-                for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
-
-                    assertEquals(entry.getKey(), entry.getValue().field("age"));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                checkForMissedKeys(ignite, exp0, all);
+                assertResult(ignite, qry, testPair);
             }
         }
         else {
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpected(exp, cursor);
 
-                for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
-                    all.add(entry);
+                assertResult(ignite, qry, testPair);
 
-                    assertEquals(entry.getKey().toString(), entry.getValue().name);
-
-                    assertEquals(entry.getKey(), Integer.valueOf(entry.getValue().age));
-
-                    exp0.remove(entry.getKey());
-                }
-
-                checkForMissedKeys(ignite, exp0, all);
             }
 
             try (QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(qry)) {
-                Set<Integer> exp0 = new HashSet<>(exp);
 
-                List<Cache.Entry<Integer, ?>> all = new ArrayList<>();
+                TestPair testPair = processExpected(exp, cursor);
 
-                for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
-                    all.add(entry);
-
-                    assertEquals(entry.getKey().toString(), entry.getValue().name);
-
-                    assertEquals(entry.getKey().intValue(), entry.getValue().age);
-
-                    exp0.remove(entry.getKey());
-                }
-
-                checkForMissedKeys(ignite, exp0, all);
+                assertResult(ignite, qry, testPair);
             }
         }
+    }
+
+    /**
+     * Checks query for missed keys or if limit is set - for limitation correctness.
+     *
+     * @param ignite Ignite context.
+     * @param qry Initial text query.
+     * @param testPair pair containing expected and all entries.
+     * @throws IgniteCheckedException if key check failed.
+     */
+    private static void assertResult(IgniteEx ignite, TextQuery qry,
+        TestPair testPair) throws IgniteCheckedException {
+        if (qry.getLimit() > 0)
+            assertTrue(testPair.all.size() <= QUERY_LIMIT);
+        else
+            checkForMissedKeys(ignite, testPair.expected, testPair.all);
+    }
+
+    /**
+     * Checks cursor with binary entries for correct keys and values.
+     * Removes valid entries from expected list copy.
+     *
+     * @param cursor Query cursor with response
+     * @param exp List of expected values.
+     * @return Altered expected values list.
+     */
+    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpectedWithBinary(Set<Integer> exp,
+        QueryCursor<Cache.Entry<Integer, BinaryObject>> cursor) {
+        TestPair testPair = new TestPair(exp);
+
+        for (Cache.Entry<Integer, BinaryObject> entry : cursor.getAll()) {
+            testPair.all.add(entry);
+
+            assertEquals(entry.getKey().toString(), entry.getValue().field("name"));
+
+            assertEquals(entry.getKey(), entry.getValue().field("age"));
+
+            testPair.expected.remove(entry.getKey());
+        }
+        return testPair;
+    }
+
+    /**
+     * Checks cursor entries for correct keys and values.
+     * Removes valid entries from expected list copy.
+     *
+     * @param cursor Query cursor with response
+     * @param exp List of expected values.
+     * @return Altered expected values list.
+     */
+    @NotNull private static GridCacheFullTextQuerySelfTest.TestPair processExpected(Set<Integer> exp,
+        QueryCursor<Cache.Entry<Integer, Person>> cursor) {
+        TestPair testPair = new TestPair(exp);
+
+        for (Cache.Entry<Integer, Person> entry : cursor.getAll()) {
+            testPair.all.add(entry);
+
+            assertEquals(entry.getKey().toString(), entry.getValue().name);
+
+            assertEquals(entry.getKey().intValue(), entry.getValue().age);
+
+            testPair.expected.remove(entry.getKey());
+        }
+        return testPair;
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -37,6 +38,9 @@ import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
@@ -102,6 +106,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -124,6 +129,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -858,6 +864,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             sb.append("nodeId=")
                 .append(k.context().localNodeId())
+                .append(" consistentId=")
+                .append(k.localNode().consistentId())
                 .append(" isDone=")
                 .append(syncFut.isDone())
                 .append("\n");
@@ -935,10 +943,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 if (part != null) {
                     sb.append(p).append(" counters=")
-                        .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                        .append(part.dataStore().partUpdateCounter())
                         .append(" fullSize=")
-                        .append(part == null ? "NA" : part.fullSize())
-                        .append(" state=").append(part.state());
+                        .append(part.fullSize())
+                        .append(" state=").append(part.state())
+                        .append(" reservations=").append(part.reservations());
                 }
                 else
                     sb.append(p).append(" is null");
@@ -958,7 +967,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             .append(" fullSize=")
                             .append(part == null ? "NA" : part.fullSize())
                             .append(" state=")
-                            .append(part == null ? "NA" : top.partitionState(nodeId, p))
+                            .append(top.partitionState(nodeId, p))
                             .append(" isAffNode=")
                             .append(affNodes.contains(nodeId))
                             .append("\n");
@@ -1291,7 +1300,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return List of keys.
      */
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size) {
-        return movingKeysAfterJoin(ign, cacheName, size, null);
+        return movingKeysAfterJoin(ign, cacheName, size, null, null);
     }
 
     /**
@@ -1302,11 +1311,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @param size Number of keys.
      * @param nodeInitializer Node initializer closure.
+     * @param joiningNodeConsistentId Joining node consistent id.
      * @return List of keys.
      */
     protected final List<Integer> movingKeysAfterJoin(Ignite ign, String cacheName, int size,
-        @Nullable IgniteInClosure<ClusterNode> nodeInitializer) {
-        assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
+        @Nullable IgniteInClosure<ClusterNode> nodeInitializer, @Nullable String joiningNodeConsistentId) {
+        if (joiningNodeConsistentId == null)
+            assertEquals("Expected consistentId is set to node name", ign.name(), ign.cluster().localNode().consistentId());
 
         ArrayList<ClusterNode> nodes = new ArrayList<>(ign.cluster().nodes());
 
@@ -1317,7 +1328,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodeInitializer != null)
             nodeInitializer.apply(fakeNode);
 
-        fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
+        fakeNode.consistentId(joiningNodeConsistentId == null ? getTestIgniteInstanceName(nodes.size()) :
+            joiningNodeConsistentId);
 
         nodes.add(fakeNode);
 
@@ -1852,6 +1864,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param name Instance name.
+     */
+    protected void cleanPersistenceDir(String name) throws Exception {
+        String dn2DirName = name.replace(".", "_");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/archive/" + dn2DirName, true));
+    }
+
+    /**
      * @param aff Affinity.
      * @param key Counter.
      * @param node Target node.
@@ -2301,20 +2324,54 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
         PartitionUpdateCounter cntr0 = null;
 
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.configuration().isClientMode())
+        List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
+            !ignite.configuration().isClientMode()).map(ignite ->
+            new T3<>(ignite.name(), counter(partId, ignite.name()),
+                ignite.affinity(DEFAULT_CACHE_NAME).isPrimary(ignite.cluster().localNode(), partId))).collect(toList());
+
+        for (T3<String, PartitionUpdateCounter, Boolean> cntr : cntrMap) {
+            if (cntr.get2() == null)
                 continue;
 
-            PartitionUpdateCounter cntr = counter(partId, ignite.name());
-
             if (cntr0 != null) {
-                assertEquals("Expecting same counters [partId=" + partId + ']', cntr0, cntr);
+                assertEquals("Expecting same counters [partId=" + partId +
+                    ", cntrs=" + cntrMap + ']', cntr0, cntr.get2());
 
                 if (withReserveCntr)
-                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+                    assertEquals("Expecting same reservation counters [partId=" + partId +
+                            ", cntrs=" + cntrMap + ']',
+                        cntr0.reserved(), cntr.get2().reserved());
             }
 
-            cntr0 = cntr;
+            cntr0 = cntr.get2();
         }
+    }
+
+    /**
+     * Returns MX bean by specified group name and class.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param cls Bean class.
+     * @param implCls Bean implementation class.
+     * @param <T> Type parameter for bean class.
+     * @param <I> Type parameter for bean implementation class.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    protected <T, I> T getMxBean(
+        String igniteInstanceName,
+        String grp,
+        Class<T> cls,
+        Class<I> implCls
+    ) throws Exception {
+        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, implCls.getSimpleName());
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, cls, true);
     }
 }

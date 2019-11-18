@@ -135,10 +135,11 @@ public interface GridQueryIndexing {
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.    @return Queried rows.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter, int limit) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -432,4 +433,27 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException On bean registration error.
      */
     void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
+
+    /**
+     * Return table information filtered by given patterns.
+     *
+     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
+     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
+     * @param tblTypes Filter by table type. As Of now supported only 'TABLES' and 'VIEWS'.
+     * Can be {@code null} or empty to don't use the filter.
+     *
+     * @return Column information filtered by given patterns.
+     */
+    Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn, String... tblTypes);
+
+    /**
+     * Return column information filtered by given patterns.
+     *
+     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
+     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
+     * @param colNamePtrn Filter by column name. Can be {@code null} to don't use the filter.
+     *
+     * @return Column information filtered by given patterns.
+     */
+    Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
 }

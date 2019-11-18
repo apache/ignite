@@ -38,7 +38,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 /**
  * Command line handler test with SSL.
  */
-public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
+public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     private volatile String[] cipherSuites;
 
@@ -84,7 +84,6 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
         final CommandHandler cmd = new CommandHandler();
 
         List<String> params = new ArrayList<>();
-        params.add("--activate");
         params.add("--keystore");
         params.add(GridTestUtils.keyStorePath("node01"));
         params.add("--keystore-password");
@@ -95,6 +94,8 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
             params.add(utilityCipherSuite);
         }
 
+        params.add("--activate");
+
         assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
@@ -103,6 +104,30 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
             assertFalse(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
+    }
+
+    /**
+     * Verifies that when client without SSL tries to connect to SSL-enabled cluster,
+     * it fails and prints clear message with possible causes to output.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testClientWithoutSslConnectsToSslEnabledCluster() throws Exception {
+        startGrid(0);
+
+        List<String> params = new ArrayList<>();
+
+        params.add("--activate");
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute(params));
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "firewall settings");
+        assertContains(log, out, "SSL configuration");
     }
 
     /**

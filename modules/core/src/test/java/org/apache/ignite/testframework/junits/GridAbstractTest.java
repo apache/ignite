@@ -20,6 +20,8 @@ package org.apache.ignite.testframework.junits;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -43,6 +45,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
+import javax.management.DynamicMBean;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,7 +66,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
@@ -103,6 +109,8 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -591,7 +599,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setClientMode(false);
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                //No-op
+                // No-op.
+            }
+        });
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi() {
+            @Override protected void register(SystemView<?> sysView) {
+                // No-op.
             }
         });
 
@@ -733,7 +746,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid() throws Exception {
+    protected IgniteEx startGrid() throws Exception {
         return startGrid(getTestIgniteInstanceName());
     }
 
@@ -1093,21 +1106,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
-
-                    m.setAccessible(true);
-
-                    cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
 
                     resetDiscovery = false;
                 }
-                catch (NoSuchMethodException e) {
+                catch (NoSuchMethodException ignore) {
                     // Ignore.
                 }
             }
         }
 
         return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * Clone added to support ZookeeperDiscoverySpi.
+     *
+     * @param discoverySpi Discovery spi.
+     * @return Clone of discovery spi.
+     */
+    protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
+        Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+
+        m.setAccessible(true);
+
+        return (DiscoverySpi) m.invoke(discoverySpi);
     }
 
     /**
@@ -1726,8 +1749,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setCheckpointSpi(cpSpi);
 
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 
@@ -2578,7 +2599,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         @Override public Statement apply(Statement base, Description desc) {
             return new Statement() {
                 @Override public void evaluate() throws Throwable {
-                    GridAbstractTest fixtureInstance = (GridAbstractTest)desc.getTestClass().newInstance();
+                    Constructor<?> testConstructor = desc.getTestClass().getDeclaredConstructor();
+
+                    testConstructor.setAccessible(true);
+
+                    GridAbstractTest fixtureInstance = (GridAbstractTest)testConstructor.newInstance();
 
                     fixtureInstance.evaluateInsideFixture(base);
                 }
@@ -2618,5 +2643,30 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 throw t;
             }
         }
+    }
+
+
+    /**
+     * Returns metric set.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param metrics Metrics.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public DynamicMBean metricRegistry(
+        String igniteInstanceName,
+        String grp,
+        String metrics
+    ) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, metrics);
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            throw new IgniteException("MBean not registered.");
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
     }
 }

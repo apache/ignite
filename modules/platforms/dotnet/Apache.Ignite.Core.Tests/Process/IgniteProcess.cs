@@ -147,18 +147,18 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            _proc = Start(ExePath, IgniteHome.Resolve(null), outReader, args);
+            _proc = Start(ExePath, IgniteHome.Resolve(), outReader, args);
         }
 
         /// <summary>
         /// Starts a grid process.
         /// </summary>
         /// <param name="exePath">Exe path.</param>
-        /// <param name="ggHome">Ignite home.</param>
+        /// <param name="igniteHome">Ignite home.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>
-        public static Process Start(string exePath, string ggHome, IIgniteProcessOutputReader outReader = null, 
+        public static Process Start(string exePath, string igniteHome, IIgniteProcessOutputReader outReader = null,
             params string[] args)
         {
             Debug.Assert(!string.IsNullOrEmpty(exePath));
@@ -179,8 +179,8 @@ namespace Apache.Ignite.Core.Tests.Process
                 RedirectStandardError = true
             };
 
-            if (ggHome != null)
-                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
+            if (!string.IsNullOrWhiteSpace(igniteHome))
+                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = igniteHome;
 
             procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
 

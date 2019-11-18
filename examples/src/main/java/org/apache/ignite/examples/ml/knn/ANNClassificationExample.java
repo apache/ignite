@@ -32,7 +32,6 @@ import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -46,13 +45,15 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class ANNClassificationExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example started.");
@@ -78,7 +79,7 @@ public class ANNClassificationExample {
                     new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
                 ).withK(5)
                     .withDistanceMeasure(new EuclideanDistance())
-                    .withStrategy(NNStrategy.WEIGHTED);
+                    .withWeighted(true);
 
                 long endTrainingTime = System.currentTimeMillis();
 
@@ -121,9 +122,13 @@ public class ANNClassificationExample {
 
                     System.out.println(">>> ANN multi-class classification algorithm over cached dataset usage example completed.");
                 }
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
@@ -150,16 +155,20 @@ public class ANNClassificationExample {
 
     /**
      * Tiny changing of data depending on k parameter.
+     *
      * @param datum The vector data.
-     * @param k The passed parameter.
+     * @param k     The passed parameter.
      * @return The changed vector data.
      */
     private static double[] mutate(double[] datum, int k) {
-        for (int i = 0; i < datum.length; i++) datum[i] += k / 100000;
+        for (int i = 0; i < datum.length; i++)
+            datum[i] += k / 100000;
         return datum;
     }
 
-    /** The Iris dataset. */
+    /**
+     * The Iris dataset.
+     */
     private static final double[][] data = {
         {1, 5.1, 3.5, 1.4, 0.2},
         {1, 4.9, 3, 1.4, 0.2},

@@ -38,7 +38,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LinearRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                       Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -61,14 +61,14 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
                                                                  DatasetBuilder<K, V> datasetBuilder,
                                                                  Preprocessor<K, V> extractor) {
-
         LSQRResult res;
 
         PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder, envBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor))) {
+            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor),
+            learningEnvironment())) {
 
             double[] x0 = null;
             if (mdl != null) {

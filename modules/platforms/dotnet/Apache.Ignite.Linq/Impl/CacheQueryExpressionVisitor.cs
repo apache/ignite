@@ -182,31 +182,17 @@ namespace Apache.Ignite.Linq.Impl
             {
                 case ExpressionType.Equal:
                 {
-                    var rightConst = expression.Right as ConstantExpression;
+                    // Use `IS [NOT] DISTINCT FROM` for correct null comparison semantics.
+                    // E.g. when user says `.Where(x => x == null)`, it should work, but with `=` it does not.
+                    ResultBuilder.Append(" IS NOT DISTINCT FROM ");
 
-                    if (rightConst != null && rightConst.Value == null)
-                    {
-                        // Special case for nulls, since "= null" does not work in SQL
-                        ResultBuilder.Append(" is null)");
-                        return expression;
-                    }
-
-                    ResultBuilder.Append(" = ");
                     break;
                 }
 
                 case ExpressionType.NotEqual:
                 {
-                    var rightConst = expression.Right as ConstantExpression;
+                    ResultBuilder.Append(" IS DISTINCT FROM ");
 
-                    if (rightConst != null && rightConst.Value == null)
-                    {
-                        // Special case for nulls, since "<> null" does not work in SQL
-                        ResultBuilder.Append(" is not null)");
-                        return expression;
-                    }
-
-                    ResultBuilder.Append(" <> ");
                     break;
                 }
 

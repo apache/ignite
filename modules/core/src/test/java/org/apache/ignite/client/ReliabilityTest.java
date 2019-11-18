@@ -22,8 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +35,7 @@ import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -41,6 +44,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -57,6 +61,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setReconnectThrottlingRetries(0) // Disable throttling.
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
              )
         ) {
@@ -188,6 +193,117 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             catch (ClientReconnectedException expected) {
                 // No-op.
             }
+        }
+    }
+
+    /**
+     * Test that client works properly with servers txId intersection.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testTxWithIdIntersection() throws Exception {
+        int CLUSTER_SIZE = 2;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration().setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+            CyclicBarrier barrier = new CyclicBarrier(2);
+
+            GridTestUtils.runAsync(() -> {
+                try {
+                    // Another thread starts transaction here.
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    for (int i = 0; i < CLUSTER_SIZE; i++)
+                        dropAllThinClientConnections(Ignition.allGrids().get(i));
+
+                    ClientTransaction tx = client.transactions().txStart();
+
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    // Another thread puts to cache here.
+                    barrier.await(1, TimeUnit.SECONDS);
+
+                    tx.commit();
+
+                    barrier.await(1, TimeUnit.SECONDS);
+                }
+                catch (Exception e) {
+                    log.error("Unexpected error", e);
+                }
+            });
+
+            ClientTransaction tx = client.transactions().txStart();
+
+            barrier.await(1, TimeUnit.SECONDS);
+
+            // Another thread drops connections and create new transaction here, which started on another node with the
+            // same transaction id as we started in this thread.
+            barrier.await(1, TimeUnit.SECONDS);
+
+            GridTestUtils.assertThrows(null, () -> {
+                cache.put(0, 0);
+
+                return null;
+            }, ClientException.class, "Transaction context has been lost due to connection errors");
+
+            tx.close();
+
+            barrier.await(1, TimeUnit.SECONDS);
+
+            // Another thread commit transaction here.
+            barrier.await(1, TimeUnit.SECONDS);
+
+            assertFalse(cache.containsKey(0));
+        }
+    }
+
+    /**
+     * Test reconnection throttling.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testReconnectionThrottling() throws Exception {
+        int throttlingRetries = 5;
+        long throttlingPeriod = 3_000L;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setReconnectThrottlingPeriod(throttlingPeriod)
+                 .setReconnectThrottlingRetries(throttlingRetries)
+                 .setAddresses(cluster.clientAddresses().toArray(new String[1])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            for (int i = 0; i < throttlingRetries; i++) {
+                // Attempts to reconnect within throttlingRetries should pass.
+                cache.put(0, 0);
+
+                dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+            }
+
+            for (int i = 0; i < 10; i++) // Attempts to reconnect after throttlingRetries should fail.
+                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+
+            doSleep(throttlingPeriod);
+
+            // Attempt to reconnect after throttlingPeriod should pass.
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                try {
+                    cache.put(0, 0);
+
+                    return true;
+                }
+                catch (ClientConnectionException e) {
+                    return false;
+                }
+            }, throttlingPeriod));
         }
     }
 

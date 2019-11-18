@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpiration
 import org.apache.ignite.internal.processors.cache.CacheQueryAfterDynamicCacheStartFailureTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
@@ -37,9 +38,11 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimi
 import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
+import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
@@ -61,6 +64,7 @@ import org.junit.runners.Suite;
     CacheTtlTransactionalPartitionedSelfTest.class,
     CacheTtlAtomicLocalSelfTest.class,
     CacheTtlAtomicPartitionedSelfTest.class,
+    CacheTtlReadOnlyModeSelfTest.class,
 
     GridCacheOffheapIndexGetSelfTest.class,
     GridCacheOffheapIndexEntryEvictTest.class,
@@ -80,6 +84,8 @@ import org.junit.runners.Suite;
 
     CacheQueryAfterDynamicCacheStartFailureTest.class,
 
+    CacheRegisterMetadataLocallyTest.class,
+
     IgniteCacheGroupsSqlTest.class,
 
     IgniteDataStreamerTest.class,
@@ -92,7 +98,9 @@ import org.junit.runners.Suite;
 
     CacheGroupMetricsWithIndexTest.class,
 
-    RebuildIndexLogMessageTest.class
+    RebuildIndexLogMessageTest.class,
+
+    H2TreeCorruptedTreeExceptionTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

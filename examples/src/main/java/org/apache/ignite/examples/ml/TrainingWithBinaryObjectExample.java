@@ -34,8 +34,10 @@ import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
  * Example of support model training with binary objects.
  */
 public class TrainingWithBinaryObjectExample {
-    /** Run example. */
-    public static void main(String[] args) throws Exception {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Model training over cached dataset with binary objects usage example started.");
         // Start ignite grid.
@@ -57,13 +59,19 @@ public class TrainingWithBinaryObjectExample {
                 KMeansModel kmdl = trainer.fit(datasetBuilder, vectorizer);
 
                 System.out.println(">>> Model trained over binary objects. Model " + kmdl);
-            } finally {
+            }
+            finally {
                 dataCache.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
-    /** Populate cache with some binary objects. */
+    /**
+     * Populate cache with some binary objects.
+     */
     private static IgniteCache<Integer, BinaryObject> populateCache(Ignite ignite) {
         CacheConfiguration<Integer, BinaryObject> cacheConfiguration = new CacheConfiguration<>();
 

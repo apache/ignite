@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Set;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -28,9 +27,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -326,54 +327,56 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
-        return offHeapGets.get();
+        return offHeapGets.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPuts() {
-        return offHeapPuts.get();
+        return offHeapPuts.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapRemovals() {
-        return offHeapRemoves.get();
+        return offHeapRemoves.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEvictions() {
-        return offHeapEvicts.get();
+        return offHeapEvicts.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapHits() {
-        return offHeapHits.get();
+        return offHeapHits.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapHitPercentage() {
-        long hits0 = offHeapHits.get();
-        long gets0 = offHeapGets.get();
+        long hits0 = offHeapHits.value();
+
+        long gets0 = offHeapGets.value();
 
         if (hits0 == 0)
             return 0;
 
-        return (float) hits0 / gets0 * 100.0f;
+        return (float)hits0 / gets0 * 100.0f;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMisses() {
-        return offHeapMisses.get();
+        return offHeapMisses.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapMissPercentage() {
-        long misses0 = offHeapMisses.get();
-        long reads0 = offHeapGets.get();
+        long misses0 = offHeapMisses.value();
+
+        long reads0 = offHeapGets.value();
 
         if (misses0 == 0)
             return 0;
 
-        return (float) misses0 / reads0 * 100.0f;
+        return (float)misses0 / reads0 * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -545,8 +548,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getAverageTxCommitTime() {
-        long timeNanos = commitTimeNanos.get();
-        long commitsCnt = txCommits.get();
+        long timeNanos = commitTimeNanos.value();
+
+        long commitsCnt = txCommits.value();
 
         if (timeNanos == 0 || commitsCnt == 0)
             return 0;
@@ -556,8 +560,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getAverageTxRollbackTime() {
-        long timeNanos = rollbackTimeNanos.get();
-        long rollbacksCnt = txRollbacks.get();
+        long timeNanos = rollbackTimeNanos.value();
+
+        long rollbacksCnt = txRollbacks.value();
 
         if (timeNanos == 0 || rollbacksCnt == 0)
             return 0;
@@ -567,12 +572,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return txCommits.get();
+        return txCommits.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return txRollbacks.get();
+        return txRollbacks.value();
     }
 
     /**
@@ -617,102 +622,107 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return hits.get();
+        return hits.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        long hits0 = hits.get();
-        long gets0 = reads.get();
+        long hits0 = hits.value();
+
+        long gets0 = reads.value();
 
         if (hits0 == 0)
             return 0;
 
-        return (float) hits0 / gets0 * 100.0f;
+        return (float)hits0 / gets0 * 100.0f;
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return misses.get();
+        return misses.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        long misses0 = misses.get();
-        long reads0 = reads.get();
+        long misses0 = misses.value();
+
+        long reads0 = reads.value();
 
         if (misses0 == 0)
             return 0;
 
-        return (float) misses0 / reads0 * 100.0f;
+        return (float)misses0 / reads0 * 100.0f;
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return reads.get();
+        return reads.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return writes.get();
+        return writes.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorPuts() {
-        return entryProcessorPuts.get();
+        return entryProcessorPuts.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorRemovals() {
-        return entryProcessorRemovals.get();
+        return entryProcessorRemovals.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorReadOnlyInvocations() {
-        return entryProcessorReadOnlyInvocations.get();
+        return entryProcessorReadOnlyInvocations.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorInvocations() {
-        return entryProcessorReadOnlyInvocations.get() + entryProcessorPuts.get() + entryProcessorRemovals.get();
+        return entryProcessorReadOnlyInvocations.value() + entryProcessorPuts.value() + entryProcessorRemovals.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorHits() {
-        return entryProcessorHits.get();
+        return entryProcessorHits.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorHitPercentage() {
-        long hits = entryProcessorHits.get();
+        long hits = entryProcessorHits.value();
+
         long totalInvocations = getEntryProcessorInvocations();
 
         if (hits == 0)
             return 0;
 
-        return (float) hits / totalInvocations * 100.0f;
+        return (float)hits / totalInvocations * 100.0f;
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorMisses() {
-        return entryProcessorMisses.get();
+        return entryProcessorMisses.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMissPercentage() {
-        long misses = entryProcessorMisses.get();
+        long misses = entryProcessorMisses.value();
+
         long totalInvocations = getEntryProcessorInvocations();
 
         if (misses == 0)
             return 0;
 
-        return (float) misses / totalInvocations * 100.0f;
+        return (float)misses / totalInvocations * 100.0f;
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorAverageInvocationTime() {
         long totalInvokes = getEntryProcessorInvocations();
-        long timeNanos = entryProcessorInvokeTimeNanos.get();
+
+        long timeNanos = entryProcessorInvokeTimeNanos.value();
 
         if (timeNanos == 0 || totalInvokes == 0)
             return 0;
@@ -722,28 +732,29 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMinInvocationTime() {
-        return (1f * entryProcessorMinInvocationTime.get()) / NANOS_IN_MICROSECOND;
+        return (1f * entryProcessorMinInvocationTime.value()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMaxInvocationTime() {
-        return (1f * entryProcessorMaxInvocationTime.get()) / NANOS_IN_MICROSECOND;
+        return (1f * entryProcessorMaxInvocationTime.value()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return rmCnt.get();
+        return rmCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return evictCnt.get();
+        return evictCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
-        long timeNanos = getTimeNanos.get();
-        long readsCnt = reads.get();
+        long timeNanos = getTimeNanos.value();
+
+        long readsCnt = reads.value();
 
         if (timeNanos == 0 || readsCnt == 0)
             return 0;
@@ -753,8 +764,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getAveragePutTime() {
-        long timeNanos = putTimeNanos.get();
-        long putsCnt = writes.get();
+        long timeNanos = putTimeNanos.value();
+
+        long putsCnt = writes.value();
 
         if (timeNanos == 0 || putsCnt == 0)
             return 0;
@@ -764,8 +776,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        long timeNanos = rmvTimeNanos.get();
-        long removesCnt = rmCnt.get();
+        long timeNanos = rmvTimeNanos.value();
+
+        long removesCnt = rmCnt.value();
 
         if (timeNanos == 0 || removesCnt == 0)
             return 0;
@@ -863,13 +876,13 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     private void recalculateInvokeMinTimeNanos(long duration){
-        long minTime = entryProcessorMinInvocationTime.longValue();
+        long minTime = entryProcessorMinInvocationTime.value();
 
         while (minTime > duration || minTime == 0) {
             if (MetricUtils.compareAndSet(entryProcessorMinInvocationTime, minTime, duration))
                 break;
             else
-                minTime = entryProcessorMinInvocationTime.longValue();
+                minTime = entryProcessorMinInvocationTime.value();
         }
     }
 
@@ -879,13 +892,13 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     private void recalculateInvokeMaxTimeNanos(long duration){
-        long maxTime = entryProcessorMaxInvocationTime.longValue();
+        long maxTime = entryProcessorMaxInvocationTime.value();
 
         while (maxTime < duration) {
             if (MetricUtils.compareAndSet(entryProcessorMaxInvocationTime, maxTime, duration))
                 break;
             else
-                maxTime = entryProcessorMaxInvocationTime.longValue();
+                maxTime = entryProcessorMaxInvocationTime.value();
         }
     }
 
@@ -1118,8 +1131,8 @@ public class CacheMetricsImpl implements CacheMetrics {
             else {
                 AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-                Set<Integer> primaries = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
-                Set<Integer> backups = cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+                IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
+                IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
                 if (cctx.isNear() && cache != null)
                     heapEntriesCnt = cache.nearSize();
@@ -1190,17 +1203,17 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
-        return rebalancedKeys.get();
+        return rebalancedKeys.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
-        return estimatedRebalancingKeys.get();
+        return estimatedRebalancingKeys.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getKeysToRebalanceLeft() {
-        return Math.max(0, estimatedRebalancingKeys.get() - rebalancedKeys.get());
+        return Math.max(0, estimatedRebalancingKeys.value() - rebalancedKeys.value());
     }
 
     /** {@inheritDoc} */
@@ -1244,7 +1257,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
-        return rebalanceStartTime.get();
+        return rebalanceStartTime.value();
     }
 
     /** {@inheritDoc} */
@@ -1257,12 +1270,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
-        return rebalanceStartTime.get();
+        return rebalanceStartTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalanceClearingPartitionsLeft() {
-        return rebalanceClearingPartitions.get();
+        return rebalanceClearingPartitions.value();
     }
 
     /**

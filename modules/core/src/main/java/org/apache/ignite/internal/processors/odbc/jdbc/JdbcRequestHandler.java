@@ -1071,7 +1071,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName());
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
@@ -1354,7 +1354,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *
      * @return True if supported, false otherwise.
      */
-    private boolean isCancellationSupported() {
+    @Override public boolean isCancellationSupported() {
         return (protocolVer.compareTo(VER_2_8_0) >= 0);
     }
 
@@ -1484,5 +1484,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
         return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
     }
 }

@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             // Copy Apache.Ignite.exe and Apache.Ignite.Core.dll 
             // to a separate folder so that it does not locate our assembly automatically.
-            var folder = IgniteUtils.GetTempDirectoryName();
+            var folder = PathUtils.GetTempDirectoryName();
             foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly})
             {
                 Assert.IsNotNull(asm.Location);
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             var config = Path.Combine(Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
                 "Deployment\\peer_assembly_app.config");
 
-            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(null), null,
+            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(), null,
                 "-ConfigFileName=" + config, "-ConfigSectionName=igniteConfiguration");
 
             Thread.Sleep(300);

@@ -31,13 +31,13 @@ import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 /**
  * Example of using distributed {@link DecisionTreeRegressionTrainer}.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)}
- * on interval {@code [0, 10)}).</p>
+ * Code in this example launches Ignite grid and fills the cache with generated test data points ({@code sin(x)} on
+ * interval {@code [0, 10)}).</p>
  * <p>
  * After that it creates classification trainer and uses it to train the model on the training set.</p>
  * <p>
- * Finally, this example loops over the test data points, applies the trained model, and compares prediction
- * to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test data points, applies the trained model, and compares prediction to expected
+ * outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
@@ -88,9 +88,13 @@ public class DecisionTreeRegressionTrainerExample {
                 System.out.println(">>> ---------------------------------");
 
                 System.out.println(">>> Decision tree regression trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 

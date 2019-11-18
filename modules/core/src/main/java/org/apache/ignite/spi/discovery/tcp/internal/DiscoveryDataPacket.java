@@ -477,4 +477,11 @@ public class DiscoveryDataPacket implements Serializable {
     public void joiningNodeClient(boolean joiningNodeClient) {
         this.joiningNodeClient = joiningNodeClient;
     }
+
+    /**
+     * Clears {@link #unmarshalledJoiningNodeData}
+     */
+    public void clearUnmarshalledJoiningNodeData() {
+        unmarshalledJoiningNodeData = null;
+    }
 }

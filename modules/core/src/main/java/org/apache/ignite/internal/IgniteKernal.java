@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import javax.cache.CacheException;
+import javax.management.JMException;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -53,12 +55,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.CacheException;
-import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.DataStorageMetricsAdapter;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -91,6 +92,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -119,6 +121,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -170,7 +173,9 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -295,52 +300,91 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
 /**
- * Ignite kernal.
- * <p/>
- * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
- * misspelling.
+ * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
+ * methods of {@link IgniteEx} for the internal Ignite needs. It also controls the Ignite life cycle, checks
+ * thread pools state for starvation, detects long JVM pauses and prints out the local node metrics.
+ * <p>
+ * Please, refer to the wiki <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a>
+ * for the information on the misspelling.
+ * <p>
+ * <h3>Starting</h3>
+ * The main entry point for all the Ignite instances creation is the method - {@link #start}.
+ * <p>
+ * It starts internal Ignite components (see {@link GridComponent}), for instance:
+ * <ul>
+ * <li>{@link GridManager} - a layer of indirection between kernal and SPI modules.</li>
+ * <li>{@link GridProcessor} - an objects responsible for particular internal process implementation.</li>
+ * <li>{@link IgnitePlugin} - an Ignite addition of user-provided functionality.</li>
+ * </ul>
+ * The {@code start} method also performs additional validation of the provided {@link IgniteConfiguration} and
+ * prints some suggestions such as:
+ * <ul>
+ * <li>Ignite configuration optimizations (e.g. disabling {@link EventType} events).</li>
+ * <li>{@link JvmConfigurationSuggestions} optimizations.</li>
+ * <li>{@link OsConfigurationSuggestions} optimizations.</li>
+ * </ul>
+ * <h3>Stopping</h3>
+ * To stop Ignite instance the {@link #stop(boolean)} method is used. The {@code cancel} argument of this method is used:
+ * <ul>
+ * <li>With {@code true} value. To interrupt all currently acitve {@link GridComponent}s related to the Ignite node.
+ * For instance, {@link ComputeJob} will be interrupted by calling {@link ComputeJob#cancel()} method. Note that just
+ * like with {@link Thread#interrupt()}, it is up to the actual job to exit from execution.</li>
+ * <li>With {@code false} value. To stop the Ignite node gracefully. All jobs currently running will not be interrupted.
+ * The Ignite node will wait for the completion of all {@link GridComponent}s running on it before stopping.
+ * </li>
+ * </ul>
  */
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
-    /** */
+    /** Class serialization version number. */
     private static final long serialVersionUID = 0L;
 
-    /** Ignite site that is shown in log messages. */
+    /** Ignite web-site that is shown in log messages. */
     public static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
     private static final String NL = U.nl();
 
-    /** Periodic starvation check interval. */
+    /**
+     * Default interval of checking thread pool state for the starvation. Will be used only if the
+     * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
+     * <p>
+     * Value is {@code 30 sec}.
+     */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
 
-    /** Force complete reconnect future. */
+    /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
 
-    /** Separator for formatted coordinator properties. */
+    /** The separator is used for coordinator properties formatted as a string. */
     public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
-    /** Default long operations dump timeout. */
+    /**
+     * Default timeout in milliseconds for dumping long running operations. Will be used if the
+     * {@link IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT} is not set.
+     * <p>
+     * Value is {@code 60 sec}.
+     */
     public static final long DFLT_LONG_OPERATIONS_DUMP_TIMEOUT = 60_000L;
 
-    /** Long jvm pause detector. */
+    /** Currently used instance of JVM pause detector thread. See {@link LongJVMPauseDetector} for details. */
     private LongJVMPauseDetector longJVMPauseDetector;
 
-    /** */
+    /** The main kernal context which holds all the {@link GridComponent}s. */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
 
-    /** Helper that registers MBeans */
+    /** Helper which registers and unregisters MBeans. */
     @GridToStringExclude
     private IgniteMBeansManager mBeansMgr;
 
-    /** Configuration. */
+    /** Ignite configuration instance. */
     private IgniteConfiguration cfg;
 
-    /** */
+    /** Ignite logger instance which enriches log messages with the node instance name and the node id. */
     @GridToStringExclude
     private GridLoggerProxy log;
 
-    /** */
+    /** Name of Ignite node. */
     private String igniteInstanceName;
 
     /** Kernal start timestamp. */
@@ -349,35 +393,44 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Spring context, potentially {@code null}. */
     private GridSpringResourceContext rsrcCtx;
 
-    /** */
+    /**
+     * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
+     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
+     */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask starveTask;
 
-    /** */
+    /**
+     * The instance of scheduled metrics logger. {@code null} means that the metrics loggin have been disabled
+     * by configuration. See {@link IgniteConfiguration#getMetricsLogFrequency()} for details.
+     */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask metricsLogTask;
 
-    /** */
+    /**
+     * The instance of scheduled long operation checker. {@code null} means that the operations checker is disabled
+     * by the value of {@link IgniteSystemProperties#IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT} system property.
+     */
     @GridToStringExclude
     private GridTimeoutProcessor.CancelableTask longOpDumpTask;
 
-    /** Indicate error on grid stop. */
+    /** {@code true} if an error occurs at Ignite instance stop. */
     @GridToStringExclude
     private boolean errOnStop;
 
-    /** Scheduler. */
+    /** An instance of the scheduler which provides functionality for scheduling jobs locally. */
     @GridToStringExclude
     private IgniteScheduler scheduler;
 
-    /** Kernal gateway. */
+    /** The kernal state guard. See {@link GridKernalGateway} for details. */
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
-    /** Stop guard. */
+    /** Flag indicates that the ignite instance is scheduled to be stopped. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
 
-    /** */
+    /** The state object is used when reconnection occurs. See {@link IgniteKernal#onReconnected(boolean)}. */
     private final ReconnectState reconnectState = new ReconnectState();
 
     /**
@@ -723,9 +776,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Notifies life-cycle beans of grid event.
+     * Notifies life-cycle beans of ignite event.
      *
-     * @param evt Grid event.
+     * @param evt Lifecycle event to notify beans with.
      * @throws IgniteCheckedException If user threw exception during start.
      */
     private void notifyLifecycleBeans(LifecycleEventType evt) throws IgniteCheckedException {
@@ -743,9 +796,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Notifies life-cycle beans of grid event.
+     * Notifies life-cycle beans of ignite event.
      *
-     * @param evt Grid event.
+     * @param evt Lifecycle event to notify beans with.
      */
     private void notifyLifecycleBeansEx(LifecycleEventType evt) {
         try {
@@ -761,7 +814,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** */
+    /**
+     * @param clsPathEntry Classpath file to process.
+     * @param clsPathContent StringBuilder to attach path to.
+     */
     private void ackClassPathElementRecursive(File clsPathEntry, SB clsPathContent) {
         if (clsPathEntry.isDirectory()) {
             String[] list = clsPathEntry.list();
@@ -777,7 +833,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** */
+    /**
+     * @param clsPathEntry Classpath string to process.
+     * @param clsPathContent StringBuilder to attach path to.
+     */
     private void ackClassPathEntry(String clsPathEntry, SB clsPathContent) {
         File clsPathElementFile = new File(clsPathEntry);
 
@@ -793,7 +852,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** */
+    /**
+     * @param clsPathEntry Classpath string to process.
+     * @param clsPathContent StringBuilder to attach path to.
+     */
     private void ackClassPathWildCard(String clsPathEntry, SB clsPathContent) {
         final int lastSeparatorIdx = clsPathEntry.lastIndexOf(File.separator);
 
@@ -832,7 +894,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Prints the list of *.jar and *.class files containing in classpath.
+     * Prints the list of {@code *.jar} and {@code *.class} files containing in the classpath.
      */
     private void ackClassPathContent() {
         assert log != null;
@@ -865,21 +927,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param cfg Configuration to use.
+     * @param cfg Ignite configuration to use.
      * @param utilityCachePool Utility cache pool.
      * @param execSvc Executor service.
+     * @param svcExecSvc Services executor service.
      * @param sysExecSvc System executor service.
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
-     * @param dataStreamExecSvc data stream executor service.
+     * @param dataStreamExecSvc Data streamer executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
+     * @param rebalanceExecSvc Rebalance excutor service.
+     * @param rebalanceStripedExecSvc Striped rebalance excutor service.
      * @param customExecSvcs Custom named executors.
      * @param errHnd Error handler to use for notification about startup problems.
      * @param workerRegistry Worker registry.
@@ -903,6 +968,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
+        ExecutorService rebalanceExecSvc,
+        IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd,
         WorkersRegistry workerRegistry,
@@ -1027,6 +1094,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 callbackExecSvc,
                 qryExecSvc,
                 schemaExecSvc,
+                rebalanceExecSvc,
+                rebalanceStripedExecSvc,
                 customExecSvcs,
                 plugins,
                 MarshallerUtils.classNameFilter(this.getClass().getClassLoader()),
@@ -1103,6 +1172,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
             startManager(new GridMetricManager(ctx));
+            startManager(new GridSystemViewManager(ctx));
             startManager(new GridIoManager(ctx));
             startManager(new GridCheckpointManager(ctx));
 
@@ -1126,6 +1196,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // be able to start receiving messages once discovery completes.
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
+                startProcessor(new GridMarshallerMappingProcessor(ctx));
                 startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
@@ -1148,14 +1219,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridJobProcessor(ctx));
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
-                startProcessor(new GridRestProcessor(ctx));
+                startProcessor(createComponent(IgniteRestProcessor.class, ctx));
                 startProcessor(new DataStreamProcessor(ctx));
                 startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(createHadoopComponent());
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
-                startProcessor(new GridMarshallerMappingProcessor(ctx));
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
 
@@ -1301,12 +1371,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
                 p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
-                callbackExecSvc, qryExecSvc, schemaExecSvc, customExecSvcs);
+                callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
 
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
-                qryExecSvc, schemaExecSvc, customExecSvcs, ctx.workersRegistry());
+                qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
@@ -1442,7 +1512,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @return IgniteSecurity.
+     * @return Ignite security processor. See {@link IgniteSecurity} for details.
      */
     private GridProcessor securityProcessor() throws IgniteCheckedException {
         GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
@@ -1455,8 +1525,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Create description of an executor service for logging.
      *
-     * @param execSvcName name of the service
-     * @param execSvc service to create a description for
+     * @param execSvcName Name of the service.
+     * @param execSvc Service to create a description for.
      */
     private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
         int poolActiveThreads = 0;
@@ -1527,7 +1597,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates service processor depend on {@link IgniteSystemProperties#IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED}.
      *
-     * @return Service processor.
+     * @return The service processor. See {@link IgniteServiceProcessor} for details.
      */
     private GridProcessorAdapter createServiceProcessor() {
         final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
@@ -1541,7 +1611,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Validates common configuration parameters.
      *
-     * @param cfg Configuration.
+     * @param cfg Ignite configuration to validate.
      */
     private void validateCommon(IgniteConfiguration cfg) {
         A.notNull(cfg.getNodeId(), "cfg.getNodeId()");
@@ -1627,7 +1697,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param cfg Configuration to check for possible performance issues.
+     * @param cfg Ignite configuration to check for possible performance issues.
      */
     private void suggestOptimizations(IgniteConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
@@ -1845,7 +1915,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * @throws IgniteCheckedException If duplicated SPI name found.
      */
     private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {
         MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
@@ -1914,9 +1984,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Add helper.
-     *
-     * @param helper Helper.
+     * @param helper Helper to attach to kernal context.
      */
     private void addHelper(Object helper) {
         ctx.addHelper(helper);
@@ -1933,7 +2001,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @return Whether or not REST is enabled.
+     * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     private boolean isRestEnabled() {
         assert cfg != null;
@@ -2000,7 +2068,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Acks configuration.
+     * @param cfg Ignite configuration to ack.
      */
     private void ackConfiguration(IgniteConfiguration cfg) {
         assert log != null;
@@ -2420,7 +2488,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Stops grid instance.
+     * Stops Ignite instance.
      *
      * @param cancel Whether or not to cancel running jobs.
      */
@@ -2781,7 +2849,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Acknowledge that the rebalance configuration properties are setted correctly.
      *
+     * @throws IgniteCheckedException If rebalance configuration validation fail.
      */
     private void ackRebalanceConfiguration() throws IgniteCheckedException {
         if (cfg.isClientMode()) {
@@ -2823,7 +2893,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * Acknowledge the Ignite configuration related to the data storage.
      */
     private void ackMemoryConfiguration() {
         DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
@@ -2837,7 +2907,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * Acknowledge all caches configurations presented in the IgniteConfiguration.
      */
     private void ackCacheConfiguration() {
         CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
@@ -2881,7 +2951,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * Acknowledge configuration related to the peer class loading.
      */
     private void ackP2pConfiguration() {
         assert cfg != null;
@@ -2954,7 +3024,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param cfg Grid configuration.
+     * @param cfg Ignite configuration to use.
      * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
@@ -3097,7 +3167,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param name Cache name.
-     * @return Cache.
+     * @return Ignite internal cache instance related to the given name.
      */
     public <K, V> IgniteInternalCache<K, V> getCache(String name) {
         CU.validateCacheName(name);
@@ -3438,7 +3508,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param cache Cache.
+     * @param cache Ignite cache instance to check.
      * @throws IgniteCheckedException If cache without near cache was already started.
      */
     private void checkNearCacheStarted(IgniteCacheProxy<?, ?> cache) throws IgniteCheckedException {
@@ -3504,7 +3574,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param cacheNames Collection of cache names.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @return Ignite future.
+     * @return Ignite future which will be completed when cache is destored.
      */
     public IgniteInternalFuture<?> destroyCachesAsync(Collection<String> cacheNames, boolean checkThreadTx) {
         CU.validateCacheNames(cacheNames);
@@ -3595,7 +3665,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @return Public caches.
+     * @return Collection of public cache instances.
      */
     public Collection<IgniteCacheProxy<?, ?>> caches() {
         guard();
@@ -3802,6 +3872,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
+    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         CU.validateCacheName(cacheName);
         checkClusterState();
@@ -4112,7 +4183,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * <tt>ctx.gateway().readLock()</tt>
+     * The {@code ctx.gateway().readLock()} is used underneath.
      */
     private void guard() {
         assert ctx != null;
@@ -4121,7 +4192,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * <tt>ctx.gateway().readUnlock()</tt>
+     * The {@code ctx.gateway().readUnlock()} is used underneath.
      */
     private void unguard() {
         assert ctx != null;
@@ -4132,7 +4203,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Validate operation on cluster. Check current cluster state.
      *
-     * @throws IgniteException if cluster in inActive state
+     * @throws IgniteException If cluster in inActive state.
      */
     private void checkClusterState() throws IgniteException {
         if (!ctx.state().publicApiActiveState(true)) {
@@ -4143,7 +4214,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * Method is responsible for handling the {@link EventType#EVT_CLIENT_NODE_DISCONNECTED} event. Notify all the
+     * GridComponents that the such even has been occurred (e.g. if the local client node disconnected from the cluster
+     * components will be notified with a future which will be completed when the client is reconnected).
      */
     public void onDisconnected() {
         Throwable err = null;
@@ -4325,6 +4398,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if(cls.equals(GridSecurityProcessor.class))
             return null;
 
+        if (cls.equals(IgniteRestProcessor.class))
+            return (T)new GridRestProcessor(ctx);
+
         Class<T> implCls = null;
 
         try {
@@ -4460,16 +4536,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
+     * Class holds client reconnection event handling state.
      */
     private class ReconnectState {
-        /** */
+        /** Future will be completed when the client node connected the first time. */
         private final GridFutureAdapter firstReconnectFut = new GridFutureAdapter();
 
-        /** */
+        /**
+         * Composed future of all {@link GridComponent#onReconnected(boolean)} callbacks.
+         * The future completes when all Ignite components are finished handle given client reconnect event.
+         */
         private GridCompoundFuture<?, Object> curReconnectFut;
 
-        /** */
+        /** Future completes when reconnection handling is done (doesn't matter successfully or not). */
         private GridFutureAdapter<?> reconnectDone;
 
         /**
@@ -4480,7 +4559,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         /**
-         *
+         * Wait for the previous reconnection handling finished or force completion if not.
          */
         void waitPreviousReconnect() {
             if (curReconnectFut != null && !curReconnectFut.isDone()) {
@@ -4491,7 +4570,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     reconnectDone.get();
                 }
-                catch (IgniteCheckedException ignote) {
+                catch (IgniteCheckedException ignore) {
                     // No-op.
                 }
             }
@@ -4567,6 +4646,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             throw e;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readOnlyMode() {
+        return ctx.state().publicApiReadOnlyMode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readOnlyMode(boolean readOnly) {
+        ctx.state().changeGlobalState(readOnly);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getReadOnlyModeDuration() {
+        if (ctx.state().publicApiReadOnlyMode())
+            return U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime();
+        else
+            return 0;
     }
 
     /** {@inheritDoc} */

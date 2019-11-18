@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheIgniteOutOfMemoryExceptionTest;
 import org.apache.ignite.internal.processors.cache.CacheNoAffinityExchangeTest;
 import org.apache.ignite.internal.processors.cache.ClientFastReplyCoordinatorFailureTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrep
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutOnePhaseCommitTest;
@@ -111,6 +113,7 @@ public class IgniteCacheTestSuite6 {
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        GridTestUtils.addTestIfNeeded(suite, IgniteOutOfMemoryPropagationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheIgniteOutOfMemoryExceptionTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, ReplicatedAtomicCacheGetsDistributionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class, ignoredTests);
@@ -138,6 +141,8 @@ public class IgniteCacheTestSuite6 {
         //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxRollbackOnMapOnInvalidTopologyTest.class, ignoredTests);
 
         return suite;
     }

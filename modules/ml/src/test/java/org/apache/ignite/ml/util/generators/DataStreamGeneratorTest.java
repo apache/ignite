@@ -163,7 +163,7 @@ public class DataStreamGeneratorTest {
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
         Predicate<LabeledVector> labelCheck) throws Exception {
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = buildDataset(datasetBuilder)) {
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = buildDataset(datasetBuilder)) {
             List<LabeledVector> res = dataset.compute(this::map, this::reduce);
             assertEquals(sampleSize, res.size());
 
@@ -172,27 +172,24 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    private Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>((Preprocessor<Vector, Double>)LabeledVector::new)
+            new LabeledDatasetPartitionDataBuilderOnHeap<>((Preprocessor<Vector, Double>)LabeledVector::new),
+            LearningEnvironmentBuilder.defaultBuilder().buildForTrainer()
         );
     }
 
     /** */
-    private List<LabeledVector> map(LabeledVectorSet<Double, LabeledVector> d) {
+    private List<LabeledVector> map(LabeledVectorSet<LabeledVector> d) {
         return IntStream.range(0, d.rowSize()).mapToObj(d::getRow).collect(Collectors.toList());
     }
 
     /** */
     private List<LabeledVector> reduce(List<LabeledVector> l, List<LabeledVector> r) {
-        if (l == null) {
-            if (r == null)
-                return Collections.emptyList();
-            else
-                return r;
-        }
+        if (l == null)
+            return r == null ? Collections.emptyList() : r;
         else {
             List<LabeledVector> res = new ArrayList<>();
             res.addAll(l);
@@ -203,6 +200,7 @@ public class DataStreamGeneratorTest {
 
     /** */
     private static class UpstreamTransformerForTest implements UpstreamTransformer {
+        /** {@inheritDoc} */
         @Override public Stream<UpstreamEntry> transform(
             Stream<UpstreamEntry> upstream) {
             return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));

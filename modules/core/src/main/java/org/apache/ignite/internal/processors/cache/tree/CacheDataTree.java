@@ -98,6 +98,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         super(
             name,
             grp.groupId(),
+            grp.name(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),

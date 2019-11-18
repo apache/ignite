@@ -37,13 +37,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class GAGridCalculateFitnessTest {
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAGrid **/
-    private GAGrid gaGrid = null;
+    private GAGrid gaGrid;
 
     /** GAConfiguraton */
-    private GAConfiguration gaCfg = null;
+    private GAConfiguration gaCfg;
 
     /**
      * Setup test
@@ -76,7 +76,7 @@ public class GAGridCalculateFitnessTest {
 
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -110,7 +110,7 @@ public class GAGridCalculateFitnessTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
