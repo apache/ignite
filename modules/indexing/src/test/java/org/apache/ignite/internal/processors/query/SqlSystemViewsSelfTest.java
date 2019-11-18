@@ -109,6 +109,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         cleanPersistenceDir();
 
         isPersistenceEnabled = false;
+
+        GridQueryProcessor.idxCls = null;
     }
 
     /** @return System schema name. */

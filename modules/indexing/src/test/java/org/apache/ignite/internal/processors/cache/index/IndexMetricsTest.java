@@ -65,6 +65,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        GridQueryProcessor.idxCls = null;
     }
 
     /**
