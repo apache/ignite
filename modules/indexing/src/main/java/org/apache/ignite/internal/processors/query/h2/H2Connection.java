@@ -20,13 +20,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcStatement;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,13 +54,17 @@ public class H2Connection implements AutoCloseable {
     /** Logger. */
     private IgniteLogger log;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * @param conn Connection to use.
      * @param log Logger.
      */
-    H2Connection(Connection conn, IgniteLogger log) {
+    H2Connection(Connection conn, IgniteLogger log, GridKernalContext ctx) {
         this.conn = conn;
         this.log = log;
+        this.ctx = ctx;
 
         initStatementCache();
     }
@@ -177,7 +186,43 @@ public class H2Connection implements AutoCloseable {
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    PreparedStatement prepareStatementNoCache(String sql) throws SQLException {
+    public PreparedStatement prepareStatementNoCache(String sql) throws SQLException {
+        boolean cachesCreated = false;
+
+        while (true) {
+            try {
+                return prepareStatementNoCache0(sql);
+            }
+            catch (SQLException e) {
+                if (!cachesCreated && (
+                    e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                        e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                ) {
+                    try {
+                        ctx.cache().createMissingQueryCaches();
+                    }
+                    catch (IgniteCheckedException ignored) {
+                        throw new CacheException("Failed to create missing caches.", e);
+                    }
+
+                    cachesCreated = true;
+                }
+                else
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                        IgniteQueryErrorCode.PARSING, e);
+            }
+        }
+    }
+
+    /**
+     * Get prepared statement without caching.
+     *
+     * @param sql SQL.
+     * @return Prepared statement.
+     * @throws SQLException If failed.
+     */
+    private PreparedStatement prepareStatementNoCache0(String sql) throws SQLException {
         boolean insertHack = GridH2Table.insertHackRequired(sql);
 
         if (insertHack) {

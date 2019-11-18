@@ -2341,22 +2341,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cmdProc.doRollback(tx);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
-        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
-
-        if (cacheInfo != null) {
-            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
-            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
-
-            cacheInfo.initCacheContext(cacheCtx);
-
-            return true;
-        }
-
-        return false;
-    }
+//    /** {@inheritDoc} */
+//    @SuppressWarnings("unchecked")
+//    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
+//        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
+//
+//        if (cacheInfo != null) {
+//            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
+//            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
+//
+//            cacheInfo.initCacheContext(cacheCtx);
+//
+//            return true;
+//        }
+//
+//        return false;
+//    }
 
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)

@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.management.MBeanServer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -860,7 +860,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cache.context().userCache()) {
                     // Re-create cache structures inside indexing in order to apply recent schema changes.
-                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context(), false);
+                    GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cache.context());
 
                     DynamicCacheDescriptor desc = cacheDescriptor(cacheInfo.name());
 
@@ -918,7 +918,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
+            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx);
 
             ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
 
@@ -1594,15 +1594,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             .map(cacheInfo -> new StartCacheInfo(cacheInfo.get1(), cacheInfo.get2(), exchTopVer, false))
             .collect(Collectors.toList());
 
-        locJoinCtx.initCaches()
-            .forEach(cacheDesc -> {
-                try {
-                    ctx.query().initQueryStructuresForNotStartedCache(cacheDesc);
-                }
-                catch (Exception e) {
-                    log.error("Can't initialize query structures for not started cache [cacheName=" + cacheDesc.cacheName() + "]");
-                }
-            });
+//        locJoinCtx.initCaches()
+//            .forEach(cacheDesc -> {
+//                try {
+//                    ctx.query().initQueryStructuresForNotStartedCache(cacheDesc);
+//                }
+//                catch (Exception e) {
+//                    log.error("Can't initialize query structures for not started cache [cacheName=" + cacheDesc.cacheName() + "]");
+//                }
+//            });
 
         prepareStartCaches(startCacheInfos);
 
@@ -1711,8 +1711,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             cacheInfo.getCacheDescriptor(),
                             cacheInfo.getReqNearCfg(),
                             cacheInfo.getExchangeTopVer(),
-                            cacheInfo.isDisabledAfterStart(),
-                            cacheInfo.isClientCache()
+                            cacheInfo.isDisabledAfterStart()
+//                            cacheInfo.isClientCache()
                         );
 
                         return null;
@@ -1775,7 +1775,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         if (!cctx.isRecoveryMode()) {
                             ctx.query().onCacheStart(
-                                new GridCacheContextInfo(cctx, cacheInfo.isClientCache()),
+                                new GridCacheContextInfo(cctx),
                                 cacheInfo.getCacheDescriptor().schema() != null
                                     ? cacheInfo.getCacheDescriptor().schema()
                                     : new QuerySchema(),
@@ -1829,8 +1829,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DynamicCacheDescriptor desc,
         @Nullable NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer,
-        boolean disabledAfterStart,
-        boolean clientCache
+        boolean disabledAfterStart
+//        boolean clientCache
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = prepareCacheContext(desc, reqNearCfg, exchTopVer, disabledAfterStart);
 
@@ -1838,7 +1838,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             finishRecovery(exchTopVer, cacheCtx);
         else {
             ctx.query().onCacheStart(
-                    new GridCacheContextInfo(cacheCtx, clientCache),
+                    new GridCacheContextInfo(cacheCtx),
                     desc.schema() != null ? desc.schema() : new QuerySchema(),
                     desc.sql()
             );
@@ -2224,7 +2224,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         grpCtx.onCacheStarted(cacheCtx);
 
-        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx, false),
+        ctx.query().onCacheStart(new GridCacheContextInfo(cacheCtx),
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
@@ -2483,9 +2483,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             return ctx;
         }
-        else
-            //Try to unregister query structures for not started caches.
-            ctx.query().onCacheStop(cacheName);
+//        else
+//            //Try to unregister query structures for not started caches.
+//            ctx.query().onCacheStop(cacheName);
 
         return null;
     }
@@ -4524,6 +4524,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteTransactionsEx transactions() {
         return transactions;
+    }
+
+    /**
+     * Starts client caches that do not exist yet.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void createMissingQueryCaches() throws IgniteCheckedException {
+        for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
+            DynamicCacheDescriptor desc = e.getValue();
+
+            if (isMissingQueryCache(desc))
+                dynamicStartCache(null, desc.cacheConfiguration().getName(), null, false, true, true).get();
+        }
+    }
+
+    /**
+     * Whether cache defined by provided descriptor is not yet started and has queries enabled.
+     *
+     * @param desc Descriptor.
+     * @return {@code True} if this is missing query cache.
+     */
+    private boolean isMissingQueryCache(DynamicCacheDescriptor desc) {
+        CacheConfiguration ccfg = desc.cacheConfiguration();
+
+        return !caches.containsKey(ccfg.getName()) && QueryUtils.isEnabled(ccfg);
     }
 
     /**

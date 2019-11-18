@@ -606,10 +606,10 @@ public class QueryParser {
 
         List<GridH2Table> tbls = parser.tablesForDml();
 
-        // Check if caches are started because we may need to collect affinity info later on, so they needs to be
-        // available on local node.
-        for (GridH2Table h2tbl : tbls)
-            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
+//        // Check if caches are started because we may need to collect affinity info later on, so they needs to be
+//        // available on local node.
+//        for (GridH2Table h2tbl : tbls)
+//            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
 
         // Check MVCC mode.
         GridCacheContextInfo ctx = null;

@@ -87,6 +87,9 @@ public class ConnectionManager {
     /** H2 connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
     private volatile Connection sysConn;
 
+    /** */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
@@ -102,6 +105,8 @@ public class ConnectionManager {
             ";LOCAL_RESULT_FACTORY=\"" + localResultFactoryClass + "\"";
 
         log = ctx.log(ConnectionManager.class);
+
+        this.ctx = ctx;
 
         org.h2.Driver.load();
 
@@ -279,7 +284,7 @@ public class ConnectionManager {
      */
     private H2Connection newConnection() {
         try {
-            return new H2Connection(DriverManager.getConnection(dbUrl), log);
+            return new H2Connection(DriverManager.getConnection(dbUrl), log, ctx);
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
