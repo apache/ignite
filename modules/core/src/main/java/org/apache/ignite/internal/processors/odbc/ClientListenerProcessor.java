@@ -280,7 +280,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
                 ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
-                if (connCtx != null && connCtx.parser() != null) {
+                if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
                     byte[] inMsg;
 
                     int cmdType;
