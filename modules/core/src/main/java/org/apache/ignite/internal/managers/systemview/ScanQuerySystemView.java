@@ -70,6 +70,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
         QueryDataIterator iter = new QueryDataIterator();
 
+        //Intentionally don't call `next` method to prevent the creation of unused objects and reduce GC pressure.
         while (iter.hasNext())
             sz++;
 
