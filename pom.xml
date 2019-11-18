@@ -568,6 +568,15 @@
         </profile>
 
         <profile>
+            <id>spark-2.4</id>
+            <modules>
+                <module>modules/spark-2.4</module>
+                <module>modules/ml/mleap-model-parser</module>
+                <module>modules/scalar</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>scala-2.10</id>
 
             <activation>
