@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
@@ -38,23 +39,41 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRebalanceEvents()
         {
+            ICollection<int> cacheRebalanceStopStartEvts = new[]
+            {
+                EventType.CacheRebalanceStarted,
+                EventType.CacheRebalanceStopped
+            };
+            
             var listener = new Listener<CacheRebalancingEvent>();
 
-            using (Ignition.Start(GetConfig(listener, EventType.CacheRebalanceAll)))
+            using (IIgnite ignite0 = Ignition.Start(GetConfig(listener, cacheRebalanceStopStartEvts, "TestRebalanceEvents")))
             {
-                var events = listener.GetEvents();
+                var cache = ignite0.GetOrCreateCache<int, int>(CacheName);
 
-                Assert.AreEqual(2, events.Count);
+                for (int i = 0; i < 2000; i++)
+                    cache[i] = i;
+                
+                using (IIgnite ignite1 = Ignition.Start(GetConfig(listener, cacheRebalanceStopStartEvts)))
+                {
+                    AffinityTopologyVersion afterRebalanceTop =  new AffinityTopologyVersion(2, 1);
+                    
+                    Assert.True(ignite1.WaitTopology(afterRebalanceTop, CacheName), "Failed to wait topology " + afterRebalanceTop);
+                    
+                    var events = listener.GetEvents();
 
-                var rebalanceStart = events.First();
+                    Assert.AreEqual(2, events.Count);
 
-                Assert.AreEqual(CacheName, rebalanceStart.CacheName);
-                Assert.AreEqual(EventType.CacheRebalanceStarted, rebalanceStart.Type);
+                    var rebalanceStart = events.First();
 
-                var rebalanceStop = events.Last();
+                    Assert.AreEqual(CacheName, rebalanceStart.CacheName);
+                    Assert.AreEqual(EventType.CacheRebalanceStarted, rebalanceStart.Type);
 
-                Assert.AreEqual(CacheName, rebalanceStop.CacheName);
-                Assert.AreEqual(EventType.CacheRebalanceStopped, rebalanceStop.Type);
+                    var rebalanceStop = events.Last();
+
+                    Assert.AreEqual(CacheName, rebalanceStop.CacheName);
+                    Assert.AreEqual(EventType.CacheRebalanceStopped, rebalanceStop.Type);
+                }
             }
         }
 
@@ -131,11 +150,13 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfig<T>(IEventListener<T> listener, ICollection<int> eventTypes) 
+        private static IgniteConfiguration GetConfig<T>(IEventListener<T> listener, ICollection<int> eventTypes,
+            string instanceName = null) 
             where T : IEvent
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
+                IgniteInstanceName = instanceName,
                 LocalEventListeners = new[]
                 {
                     new LocalEventListener<T>
