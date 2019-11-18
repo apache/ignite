@@ -3154,6 +3154,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return (key & cacheIdShifted) == cacheIdShifted;
     }
 
+    /** */
+    public GridCacheContextInfo registeredCacheInfo(String cacheName) {
+        return idx == null ? null : idx.registeredCacheInfo(cacheName);
+    }
+
     /**
      * Schema operation.
      */

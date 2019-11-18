@@ -998,7 +998,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            GridCacheContextInfo cacheInfo = ctx.kernalContext().query().getIndexing().registeredCacheInfo(cache.name());
+            GridCacheContextInfo cacheInfo = ctx.kernalContext().query().registeredCacheInfo(cache.name());
             cacheInfo = cacheInfo != null ? cacheInfo : new GridCacheContextInfo(ctx, false);
 
             ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy, destroy);
