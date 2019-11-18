@@ -37,11 +37,9 @@ public class LocalJoinCachesContext {
     @GridToStringInclude
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches;
 
-    /**
-     *
-     */
-    @GridToStringInclude
-    private List<DynamicCacheDescriptor> locJoinInitCaches;
+//    /** */
+//    @GridToStringInclude
+//    private List<DynamicCacheDescriptor> locJoinInitCaches;
 
     /** */
     @GridToStringInclude
@@ -53,18 +51,17 @@ public class LocalJoinCachesContext {
 
     /**
      * @param locJoinStartCaches Local caches to start on join.
-     * @param locJoinInitCaches Local caches to initialize query infrastructure without start of caches.
      * @param cacheGrpDescs Cache group descriptors captured during join.
      * @param cacheDescs Cache descriptors captured during join.
      */
     public LocalJoinCachesContext(
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches,
-        List<DynamicCacheDescriptor> locJoinInitCaches,
+//        List<DynamicCacheDescriptor> locJoinInitCaches,
         Map<Integer, CacheGroupDescriptor> cacheGrpDescs,
         Map<String, DynamicCacheDescriptor> cacheDescs
     ) {
         this.locJoinStartCaches = locJoinStartCaches;
-        this.locJoinInitCaches = locJoinInitCaches;
+//        this.locJoinInitCaches = locJoinInitCaches;
         this.cacheGrpDescs = cacheGrpDescs;
         this.cacheDescs = cacheDescs;
     }
@@ -76,12 +73,12 @@ public class LocalJoinCachesContext {
         return locJoinStartCaches;
     }
 
-    /**
-     * @return Cache descriptors to initialize query infrastructure without start of caches.
-     */
-    public List<DynamicCacheDescriptor> initCaches() {
-        return locJoinInitCaches;
-    }
+//    /**
+//     * @return Cache descriptors to initialize query infrastructure without start of caches.
+//     */
+//    public List<DynamicCacheDescriptor> initCaches() {
+//        return locJoinInitCaches;
+//    }
 
     /**
      * @return Group descriptors.
@@ -112,21 +109,23 @@ public class LocalJoinCachesContext {
                 it.remove();
         }
 
-        Iterator<DynamicCacheDescriptor> iter = locJoinInitCaches.iterator();
-
-        for (; iter.hasNext(); ) {
-            DynamicCacheDescriptor desc = iter.next();
-
-            if (cacheNames.contains(desc.cacheName()))
-                iter.remove();
-        }
+//        Iterator<DynamicCacheDescriptor> iter = locJoinInitCaches.iterator();
+//
+//        for (; iter.hasNext(); ) {
+//            DynamicCacheDescriptor desc = iter.next();
+//
+//            if (cacheNames.contains(desc.cacheName()))
+//                iter.remove();
+//        }
     }
 
     /**
      * @return {@code True} if the context is empty.
      */
     public boolean isEmpty() {
-        return F.isEmpty(locJoinStartCaches) && F.isEmpty(locJoinInitCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
+        return F.isEmpty(locJoinStartCaches)
+//            && F.isEmpty(locJoinInitCaches)
+            && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
     }
 
     /** {@inheritDoc} */

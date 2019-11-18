@@ -42,7 +42,6 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -492,29 +491,29 @@ public class H2Utils {
         }
     }
 
-    /**
-     * Check that given table has not started cache and start it for such case.
-     *
-     * @param tbl Table to check on not started cache.
-     * @return {@code true} in case not started and has been started.
-     */
-    @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
-    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
-        if (tbl != null && tbl.isCacheLazy()) {
-            String cacheName = tbl.cacheInfo().config().getName();
-
-            try {
-                Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
-
-                return U.firstNotNull(res, Boolean.FALSE);
-            }
-            catch (IgniteCheckedException ex) {
-                throw U.convertException(ex);
-            }
-        }
-
-        return false;
-    }
+//    /**
+//     * Check that given table has not started cache and start it for such case.
+//     *
+//     * @param tbl Table to check on not started cache.
+//     * @return {@code true} in case not started and has been started.
+//     */
+//    @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
+//    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
+//        if (tbl != null && tbl.isCacheLazy()) {
+//            String cacheName = tbl.cacheInfo().config().getName();
+//
+//            try {
+//                Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
+//
+//                return U.firstNotNull(res, Boolean.FALSE);
+//            }
+//            catch (IgniteCheckedException ex) {
+//                throw U.convertException(ex);
+//            }
+//        }
+//
+//        return false;
+//    }
 
     /**
      * Wraps object to respective {@link Value}.
@@ -825,7 +824,7 @@ public class H2Utils {
                 GridH2Table tbl = idx.schemaManager().dataTable(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
-                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
+//                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
 
                     caches0.add(tbl.cacheId());
                 }

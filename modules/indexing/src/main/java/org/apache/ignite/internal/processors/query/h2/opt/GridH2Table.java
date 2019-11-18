@@ -31,13 +31,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.query.QueryRetryException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -462,12 +461,12 @@ public class GridH2Table extends TableBase {
         return cacheInfo;
     }
 
-    /**
-     * @return {@code true} If Cache is lazy (not full inited).
-     */
-    public boolean isCacheLazy() {
-        return cacheInfo.cacheContext() == null;
-    }
+//    /**
+//     * @return {@code true} If Cache is lazy (not full inited).
+//     */
+//    public boolean isCacheLazy() {
+//        return cacheInfo.cacheContext() == null;
+//    }
 
     /**
      * @return Cache context.

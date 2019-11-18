@@ -301,11 +301,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     @Override public @Nullable GridCacheContextInfo registeredCacheInfo(String cacheName) {
         return null;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
-        return false;
-    }
+//
+//    /** {@inheritDoc} */
+//    @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
+//        return false;
+//    }
 
     /** {@inheritDoc} */
     @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {

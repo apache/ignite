@@ -53,14 +53,14 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
@@ -99,8 +99,8 @@ import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -183,9 +183,9 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
@@ -2316,22 +2316,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cmdProc.doRollback(tx);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
-        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
-
-        if (cacheInfo != null) {
-            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
-            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
-
-            cacheInfo.initCacheContext(cacheCtx);
-
-            return true;
-        }
-
-        return false;
-    }
+//    /** {@inheritDoc} */
+//    @SuppressWarnings("unchecked")
+//    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
+//        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
+//
+//        if (cacheInfo != null) {
+//            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
+//            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
+//
+//            cacheInfo.initCacheContext(cacheCtx);
+//
+//            return true;
+//        }
+//
+//        return false;
+//    }
 
     /** {@inheritDoc} */
     @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)

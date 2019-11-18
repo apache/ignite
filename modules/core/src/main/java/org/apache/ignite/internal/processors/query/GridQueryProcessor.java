@@ -717,8 +717,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ctx.cache().context().database().checkpointReadLock();
 
         try {
-            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.cacheContext()))
-                return;
+//            if (cacheInfo.isClientCache() && cacheInfo.isCacheContextInited() && idx.initCacheContext(cacheInfo.cacheContext()))
+//                return;
 
             synchronized (stateMux) {
                 boolean escape = cacheInfo.config().isSqlEscapeAll();
@@ -912,20 +912,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Destroy H2 structures for not started caches.
-     *
-     * @param cacheName Cache name.
-     */
-    public void onCacheStop(String cacheName) {
-        if (idx == null)
-            return;
-
-        GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
-
-        if (cacheInfo != null)
-            onCacheStop(cacheInfo, true);
-    }
+//    /**
+//     * Destroy H2 structures for not started caches.
+//     *
+//     * @param cacheName Cache name.
+//     */
+//    public void onCacheStop(String cacheName) {
+//        if (idx == null)
+//            return;
+//
+//        GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
+//
+//        if (cacheInfo != null)
+//            onCacheStop(cacheInfo, true);
+//    }
 
     /**
      * @param cacheInfo Cache context info.

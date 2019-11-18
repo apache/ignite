@@ -42,8 +42,8 @@ public class StartCacheInfo {
     /** Disable started cache after start or not. */
     private final boolean disabledAfterStart;
 
-    /** Cache is client or not. */
-    private final boolean clientCache;
+//    /** Cache is client or not. */
+//    private final boolean clientCache;
 
     /**
      * @param desc Cache configuration for start.
@@ -78,7 +78,7 @@ public class StartCacheInfo {
      * @param disabledAfterStart Disable started cache after start or not.
      * @param clientCache {@code true} in case starting cache on client node.
      */
-    public StartCacheInfo(CacheConfiguration conf, DynamicCacheDescriptor desc,
+    private StartCacheInfo(CacheConfiguration conf, DynamicCacheDescriptor desc,
         NearCacheConfiguration reqNearCfg,
         AffinityTopologyVersion exchTopVer, boolean disabledAfterStart, boolean clientCache) {
         startedConf = conf;
@@ -86,7 +86,7 @@ public class StartCacheInfo {
         this.reqNearCfg = reqNearCfg;
         this.exchTopVer = exchTopVer;
         this.disabledAfterStart = disabledAfterStart;
-        this.clientCache = clientCache;
+//        this.clientCache = clientCache;
     }
 
     /**
@@ -124,12 +124,12 @@ public class StartCacheInfo {
         return disabledAfterStart;
     }
 
-    /**
-     * @return Start cache on client or not.
-     */
-    public boolean isClientCache() {
-        return clientCache;
-    }
+//    /**
+//     * @return Start cache on client or not.
+//     */
+//    public boolean isClientCache() {
+//        return clientCache;
+//    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

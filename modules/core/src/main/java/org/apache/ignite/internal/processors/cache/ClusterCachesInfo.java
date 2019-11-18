@@ -53,8 +53,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.spi.systemview.view.CacheGroupView;
-import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -72,6 +70,8 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -188,13 +188,13 @@ public class ClusterCachesInfo {
 
         filterLocalJoinStartCaches(locJoinStartCaches);
 
-        List<DynamicCacheDescriptor> initCaches = locJoinCachesCtx.initCaches();
-
-        filterInitCaches(initCaches);
+//        List<DynamicCacheDescriptor> initCaches = locJoinCachesCtx.initCaches();
+//
+//        filterInitCaches(initCaches);
 
         locJoinCachesCtx = new LocalJoinCachesContext(
             locJoinStartCaches,
-            initCaches,
+//            initCaches,
             registeredCacheGrps,
             registeredCaches);
     }
@@ -1613,7 +1613,7 @@ public class ClusterCachesInfo {
 
         if (joinDiscoData != null) {
             List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = new ArrayList<>();
-            List<DynamicCacheDescriptor> locJoinInitCaches = new ArrayList<>();
+//            List<DynamicCacheDescriptor> locJoinInitCaches = new ArrayList<>();
             locCfgsForActivation = new HashMap<>();
 
             boolean active = ctx.state().clusterState().active();
@@ -1664,13 +1664,13 @@ public class ClusterCachesInfo {
                     else
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
-                else
-                    locJoinInitCaches.add(desc);
+//                else
+//                    locJoinInitCaches.add(desc);
             }
 
             locJoinCachesCtx = new LocalJoinCachesContext(
                 locJoinStartCaches,
-                locJoinInitCaches,
+//                locJoinInitCaches,
                 new HashMap<>(registeredCacheGrps),
                 new HashMap<>(registeredCaches));
         }

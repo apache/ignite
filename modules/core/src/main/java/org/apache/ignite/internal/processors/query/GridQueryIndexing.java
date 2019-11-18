@@ -415,15 +415,15 @@ public interface GridQueryIndexing {
      */
     @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
 
-    /**
-     * Initialize table's cache context created for not started cache.
-     *
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     *
-     * @return {@code true} If context has been initialized.
-     */
-    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+//    /**
+//     * Initialize table's cache context created for not started cache.
+//     *
+//     * @param ctx Cache context.
+//     * @throws IgniteCheckedException If failed.
+//     *
+//     * @return {@code true} If context has been initialized.
+//     */
+//    public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
 
     /**
      * Register SQL JMX beans.
