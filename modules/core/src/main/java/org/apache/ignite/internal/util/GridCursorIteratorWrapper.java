@@ -48,4 +48,9 @@ public class GridCursorIteratorWrapper<V> implements GridCursor<V> {
 
         return next != null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        // No-op.
+    }
 }

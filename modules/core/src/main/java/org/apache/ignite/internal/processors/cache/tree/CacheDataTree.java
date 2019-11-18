@@ -296,6 +296,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             @Override public CacheDataRow get() {
                 return rows[curRow];
             }
+
+            /** {@inheritDoc} */
+            @Override public void close() {
+                rows = null;
+            }
         }
 
         return new DataPageScanCursor();

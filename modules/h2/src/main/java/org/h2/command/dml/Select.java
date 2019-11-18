@@ -1859,6 +1859,8 @@ public class Select extends Query {
                 resetJoinBatchAfterQuery();
 
                 clearHashJoinIndexAfterQuery();
+
+                cleanupResources();
             }
         }
 
@@ -2005,5 +2007,14 @@ public class Select extends Query {
                     ((HashJoinIndex)f.getIndex()).clearHashTable(session);
             }
         });
+    }
+
+    /**
+     * Cleanups cached rows.
+     */
+    private void cleanupResources() {
+        for (TableFilter f : filters) {
+            f.cleanup();
+        }
     }
 }
