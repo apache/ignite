@@ -53,7 +53,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
     public static final String SCAN_QRY_SYS_VIEW_DESC = "Scan queries";
 
     /** Cache data. */
-    private Collection<GridCacheContext<K, V>> cctxs;
+    private final Collection<GridCacheContext<K, V>> cctxs;
 
     /**
      * @param cctxs Cache data.
@@ -68,9 +68,9 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
     @Override public int size() {
         int sz = 0;
 
-        Iterator<ScanQueryView> iter = new QueryDataIterator();
+        QueryDataIterator iter = new QueryDataIterator();
 
-        while(iter.hasNext())
+        while (iter.hasNext())
             sz++;
 
         return sz;
@@ -92,7 +92,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
         /** Node requests iterator. */
         private Iterator<Map.Entry<UUID, GridCacheQueryManager<K, V>.RequestFutureMap>> nodeQryIter;
 
-        /** Loca query iterator. */
+        /** Local query iterator. */
         private Iterator<GridCacheQueryManager.ScanQueryIterator> localQryIter;
 
         /** Current node id. */
@@ -115,10 +115,10 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
         /** */
         public QueryDataIterator() {
-            this.cctxsIter = cctxs.iterator();
-            this.nodeQryIter = Collections.emptyIterator();
-            this.qriesIter = Collections.emptyIterator();
-            this.localQryIter = Collections.emptyIterator();
+            cctxsIter = cctxs.iterator();
+            nodeQryIter = Collections.emptyIterator();
+            qriesIter = Collections.emptyIterator();
+            localQryIter = Collections.emptyIterator();
         }
 
         /** {@inheritDoc} */
@@ -155,7 +155,6 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
 
                     qriesIter = null;
                 }
-
             }
 
             return true;
@@ -176,7 +175,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
          */
         private boolean nextScanIter() {
             try {
-                while(qriesIter != null && qriesIter.hasNext()) {
+                while (qriesIter != null && qriesIter.hasNext()) {
                     Map.Entry<Long, GridFutureAdapter<GridCacheQueryManager.QueryResult<K, V>>> qryRes =
                         qriesIter.next();
 

@@ -47,8 +47,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.MyPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.MyTransformer;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -60,8 +60,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.MY_PREDICATE;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.MY_TRANSFORMER;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
@@ -624,11 +624,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         QueryCursor<Integer> qryRes1 = cache1.query(
             new ScanQuery<Integer, Integer>()
-                .setFilter(new MyPredicate())
+                .setFilter(new TestPredicate())
                 .setLocal(true)
                 .setPartition(part)
                 .setPageSize(10),
-            new MyTransformer());
+            new TestTransformer());
 
         assertTrue(qryRes1.iterator().hasNext());
 
@@ -647,11 +647,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue((Long)view.get(6) <= System.currentTimeMillis());
         assertTrue((Long)view.get(7) >= 0);
         assertFalse((Boolean)view.get(8));
-        assertEquals(MY_PREDICATE, view.get(9));
+        assertEquals(TEST_PREDICATE, view.get(9));
         assertTrue((Boolean)view.get(10));
         assertEquals(part, view.get(11));
         assertEquals(toStringSafe(ignite0.context().discovery().topologyVersionEx()), view.get(12));
-        assertEquals(MY_TRANSFORMER, view.get(13));
+        assertEquals(TEST_TRANSFORMER, view.get(13));
         assertFalse((Boolean)view.get(14));
         assertNull(view.get(15));
         assertNull(view.get(16));
@@ -685,9 +685,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
             QueryCursor<Integer> qryRes1 = cache1.query(
                 new ScanQuery<Integer, Integer>()
-                    .setFilter(new MyPredicate())
+                    .setFilter(new TestPredicate())
                     .setPageSize(10),
-                new MyTransformer());
+                new TestTransformer());
 
             QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
                 .setPageSize(20));
@@ -725,11 +725,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             assertTrue((Long)view.get(6) <= System.currentTimeMillis());
             assertTrue((Long)view.get(7) >= 0);
             assertFalse((Boolean)view.get(8));
-            assertEquals(MY_PREDICATE, view.get(9));
+            assertEquals(TEST_PREDICATE, view.get(9));
             assertFalse((Boolean)view.get(10));
             assertEquals(-1, view.get(11));
             assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.get(12));
-            assertEquals(MY_TRANSFORMER, view.get(13));
+            assertEquals(TEST_TRANSFORMER, view.get(13));
             assertFalse((Boolean)view.get(14));
             assertNull(view.get(15));
             assertNull(view.get(16));

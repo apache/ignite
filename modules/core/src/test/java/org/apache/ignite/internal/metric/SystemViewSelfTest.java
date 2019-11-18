@@ -104,10 +104,10 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
-    public static final String MY_PREDICATE = "MyPredicate";
+    public static final String TEST_PREDICATE = "TestPredicate";
 
     /** */
-    public static final String MY_TRANSFORMER = "MyTransformer";
+    public static final String TEST_TRANSFORMER = "TestTransformer";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -714,7 +714,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     @Test
     public void testLocalScanQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0)) {
-
             IgniteCache<Integer, Integer> cache1 = g0.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
                     .setGroupName("group1"));
@@ -734,11 +733,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             QueryCursor<Integer> qryRes1 = cache1.query(
                 new ScanQuery<Integer, Integer>()
-                    .setFilter(new MyPredicate())
+                    .setFilter(new TestPredicate())
                     .setLocal(true)
                     .setPartition(part)
                     .setPageSize(10),
-                new MyTransformer());
+                new TestTransformer());
 
             assertTrue(qryRes1.iterator().hasNext());
 
@@ -757,11 +756,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(view.startTime() <= System.currentTimeMillis());
             assertTrue(view.duration() >= 0);
             assertFalse(view.canceled());
-            assertEquals(MY_PREDICATE, view.filter());
+            assertEquals(TEST_PREDICATE, view.filter());
             assertTrue(view.local());
             assertEquals(part, view.partition());
             assertEquals(toStringSafe(g0.context().discovery().topologyVersionEx()), view.topology());
-            assertEquals(MY_TRANSFORMER, view.transformer());
+            assertEquals(TEST_TRANSFORMER, view.transformer());
             assertFalse(view.keepBinary());
             assertNull(view.subjectId());
             assertNull(view.taskName());
@@ -804,9 +803,9 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             QueryCursor<Integer> qryRes1 = cache1.query(
                 new ScanQuery<Integer, Integer>()
-                    .setFilter(new MyPredicate())
+                    .setFilter(new TestPredicate())
                     .setPageSize(10),
-                new MyTransformer());
+                new TestTransformer());
 
             QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
                 .setPageSize(20));
@@ -844,11 +843,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(view.startTime() <= System.currentTimeMillis());
             assertTrue(view.duration() >= 0);
             assertFalse(view.canceled());
-            assertEquals(MY_PREDICATE, view.filter());
+            assertEquals(TEST_PREDICATE, view.filter());
             assertFalse(view.local());
             assertEquals(-1, view.partition());
             assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.topology());
-            assertEquals(MY_TRANSFORMER, view.transformer());
+            assertEquals(TEST_TRANSFORMER, view.transformer());
             assertFalse(view.keepBinary());
             assertNull(view.subjectId());
             assertNull(view.taskName());
@@ -894,7 +893,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class MyPredicate implements IgniteBiPredicate<Integer, Integer> {
+    public static class TestPredicate implements IgniteBiPredicate<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean apply(Integer integer, Integer integer2) {
             return true;
@@ -902,12 +901,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return MY_PREDICATE;
+            return TEST_PREDICATE;
         }
     }
 
     /** */
-    public static class MyTransformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
+    public static class TestTransformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
         /** {@inheritDoc} */
         @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
             return entry.getKey();
@@ -915,7 +914,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return MY_TRANSFORMER;
+            return TEST_TRANSFORMER;
         }
     }
 

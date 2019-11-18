@@ -59,8 +59,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.MyPredicate;
-import org.apache.ignite.internal.metric.SystemViewSelfTest.MyTransformer;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -76,8 +76,8 @@ import org.junit.Test;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.MY_PREDICATE;
-import static org.apache.ignite.internal.metric.SystemViewSelfTest.MY_TRANSFORMER;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
@@ -639,11 +639,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         QueryCursor<Integer> qryRes1 = cache1.query(
             new ScanQuery<Integer, Integer>()
-                .setFilter(new MyPredicate())
+                .setFilter(new TestPredicate())
                 .setLocal(true)
                 .setPartition(part)
                 .setPageSize(10),
-            new MyTransformer());
+            new TestTransformer());
 
         assertTrue(qryRes1.iterator().hasNext());
 
@@ -662,11 +662,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue((Long)view.get("startTime") <= System.currentTimeMillis());
         assertTrue((Long)view.get("duration") >= 0);
         assertFalse((Boolean)view.get("canceled"));
-        assertEquals(MY_PREDICATE, view.get("filter"));
+        assertEquals(TEST_PREDICATE, view.get("filter"));
         assertTrue((Boolean)view.get("local"));
         assertEquals(part, view.get("partition"));
         assertEquals(toStringSafe(ignite.context().discovery().topologyVersionEx()), view.get("topology"));
-        assertEquals(MY_TRANSFORMER, view.get("transformer"));
+        assertEquals(TEST_TRANSFORMER, view.get("transformer"));
         assertFalse((Boolean)view.get("keepBinary"));
         assertEquals("null", view.get("subjectId"));
         assertNull(view.get("taskName"));
@@ -705,9 +705,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             QueryCursor<Integer> qryRes1 = cache1.query(
                 new ScanQuery<Integer, Integer>()
-                    .setFilter(new MyPredicate())
+                    .setFilter(new TestPredicate())
                     .setPageSize(10),
-                new MyTransformer());
+                new TestTransformer());
 
             QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
                 .setPageSize(20));
@@ -742,11 +742,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertTrue((Long)view.get("startTime") <= System.currentTimeMillis());
             assertTrue((Long)view.get("duration") >= 0);
             assertFalse((Boolean)view.get("canceled"));
-            assertEquals(MY_PREDICATE, view.get("filter"));
+            assertEquals(TEST_PREDICATE, view.get("filter"));
             assertFalse((Boolean)view.get("local"));
             assertEquals(-1, view.get("partition"));
             assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.get("topology"));
-            assertEquals(MY_TRANSFORMER, view.get("transformer"));
+            assertEquals(TEST_TRANSFORMER, view.get("transformer"));
             assertFalse((Boolean)view.get("keepBinary"));
             assertEquals("null", view.get("subjectId"));
             assertNull(view.get("taskName"));

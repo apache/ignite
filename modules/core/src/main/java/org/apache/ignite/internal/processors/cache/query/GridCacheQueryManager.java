@@ -2910,9 +2910,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final int pageSize;
 
         /** */
-        @Nullable
-        private final GridConcurrentHashSet<ScanQueryIterator> locIters;
-
+        @Nullable private final GridConcurrentHashSet<ScanQueryIterator> locIters;
 
         /**
          * @param it Iterator.
@@ -2922,6 +2920,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param scanFilter Scan filter.
          * @param transformer Transformer.
          * @param locNode Local node flag.
+         * @param locIters Local iterators set.
          * @param cctx Cache context.
          * @param log Logger.
          */

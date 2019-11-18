@@ -45,7 +45,14 @@ public class ScanQueryView {
     /** Scan query iterator. */
     private final ScanQueryIterator iter;
 
-    /** */
+    /**
+     * @param nodeId Originating node id.
+     * @param qryId Query id.
+     * @param canceled {@code True} if query canceled.
+     * @param iter Query iterator.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     */
     public <K, V> ScanQueryView(UUID nodeId, long qryId, boolean canceled,
         IgniteSpiCloseableIterator<IgniteBiTuple<K, V>> iter) {
         this.nodeId = nodeId;
@@ -66,7 +73,7 @@ public class ScanQueryView {
         return qryId;
     }
 
-    /** @return {@True} if query canceled. */
+    /** @return {@code True} if query canceled. */
     public boolean canceled() {
         return canceled;
     }
@@ -116,7 +123,6 @@ public class ScanQueryView {
 
     /** @return Cache partition. */
     public int partition() {
-
         GridDhtLocalPartition part = iter.localPartition();
 
         if (part == null)
@@ -125,7 +131,7 @@ public class ScanQueryView {
         return part.id();
     }
 
-    /** @return {@True} if query local. */
+    /** @return {@code True} if query local. */
     public boolean local() {
         return iter.local();
     }
