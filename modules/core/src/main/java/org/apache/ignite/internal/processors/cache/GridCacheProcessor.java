@@ -934,7 +934,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
-                    ctx.query().onCacheStop0(cacheInfo, rmvIdx);
+                    ctx.query().onCacheStop0(cacheInfo, rmvIdx, false);
                     ctx.query().onCacheStart0(cacheInfo, desc.schema(), desc.sql());
                 }
             }
@@ -998,9 +998,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
+            GridCacheContextInfo cacheInfo = ctx.kernalContext().query().getIndexing().registeredCacheInfo(cache.name());
+            cacheInfo = cacheInfo != null ? cacheInfo : new GridCacheContextInfo(ctx, false);
 
-            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
+            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy, destroy);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();
@@ -1787,13 +1788,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cacheStartFailHandler.handle(
                     startCacheInfo,
                     cacheInfo -> {
-                        prepareCacheStart(
-                            cacheInfo.getCacheDescriptor(),
-                            cacheInfo.getReqNearCfg(),
-                            cacheInfo.getExchangeTopVer(),
-                            cacheInfo.isDisabledAfterStart(),
-                            cacheInfo.isClientCache()
-                        );
+                        prepareCacheStart(cacheInfo);
 
                         return null;
                     }
@@ -1854,13 +1849,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         GridCacheContext cctx = cacheContexts.get(cacheInfo);
 
                         if (!cctx.isRecoveryMode()) {
-                            ctx.query().onCacheStart(
-                                new GridCacheContextInfo(cctx, cacheInfo.isClientCache()),
-                                cacheInfo.getCacheDescriptor().schema() != null
-                                    ? cacheInfo.getCacheDescriptor().schema()
-                                    : new QuerySchema(),
-                                cacheInfo.getCacheDescriptor().sql()
-                            );
+                            fireCacheStart(cacheInfo, cctx);
                         }
 
                         context().exchange().exchangerUpdateHeartbeat();
@@ -1897,34 +1886,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * @param desc Cache descriptor.
-     * @param reqNearCfg Near configuration if specified for client cache start request.
-     * @param exchTopVer Current exchange version.
-     * @param disabledAfterStart If true, then we will discard restarting state from proxies. If false then we will
-     * change state of proxies to restarting
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareCacheStart(
-        DynamicCacheDescriptor desc,
-        @Nullable NearCacheConfiguration reqNearCfg,
-        AffinityTopologyVersion exchTopVer,
-        boolean disabledAfterStart,
-        boolean clientCache
-    ) throws IgniteCheckedException {
-        GridCacheContext cacheCtx = prepareCacheContext(desc, reqNearCfg, exchTopVer, disabledAfterStart);
+    /** */
+    public void prepareCacheStart(StartCacheInfo info) throws IgniteCheckedException {
+        @Nullable NearCacheConfiguration reqNearCfg = info.getReqNearCfg();
+        AffinityTopologyVersion exchTopVer = info.getExchangeTopVer();
+        boolean disabledAfterStart = info.isDisabledAfterStart();
+
+        GridCacheContext cacheCtx = prepareCacheContext(info.getCacheDescriptor(), reqNearCfg, exchTopVer, disabledAfterStart);
 
         if (cacheCtx.isRecoveryMode())
             finishRecovery(exchTopVer, cacheCtx);
         else {
-            ctx.query().onCacheStart(
-                    new GridCacheContextInfo(cacheCtx, clientCache),
-                    desc.schema() != null ? desc.schema() : new QuerySchema(),
-                    desc.sql()
-            );
+            fireCacheStart(info, cacheCtx);
 
             onCacheStarted(cacheCtx);
         }
+    }
+
+    private void fireCacheStart(StartCacheInfo info, GridCacheContext cacheCtx) throws IgniteCheckedException {
+        ctx.query().onCacheStart(
+                new GridCacheContextInfo(cacheCtx, info.isClientCache()),
+                info.getCacheDescriptor().schema() != null ? info.getCacheDescriptor().schema() : new QuerySchema(),
+                info.getCacheDescriptor().sql()
+        );
     }
 
     /**
@@ -2564,7 +2548,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         else
             //Try to unregister query structures for not started caches.
-            ctx.query().onCacheStop(cacheName);
+            ctx.query().onCacheStop(cacheName, true, true);
 
         return null;
     }

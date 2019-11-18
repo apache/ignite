@@ -912,26 +912,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
-    /**
-     * Destroy H2 structures for not started caches.
-     *
-     * @param cacheName Cache name.
-     */
-    public void onCacheStop(String cacheName) {
+    /** */
+    public void onCacheStop(String cacheName, boolean removeIdx, boolean destroy) {
         if (idx == null)
             return;
 
         GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
 
         if (cacheInfo != null)
-            onCacheStop(cacheInfo, true);
+            onCacheStop(cacheInfo, removeIdx, destroy);
     }
 
-    /**
-     * @param cacheInfo Cache context info.
-     * @param removeIdx If {@code true}, will remove index.
-     */
-    public void onCacheStop(GridCacheContextInfo cacheInfo, boolean removeIdx) {
+    /** */
+    public void onCacheStop(GridCacheContextInfo cacheInfo, boolean removeIdx, boolean destroy) {
         if (idx == null)
             return;
 
@@ -939,7 +932,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cacheInfo, removeIdx);
+            onCacheStop0(cacheInfo, removeIdx, destroy);
         }
         finally {
             busyLock.leaveBusy();
@@ -1808,23 +1801,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                onCacheStop0(cacheInfo, true);
+                onCacheStop0(cacheInfo, true, true);
 
                 throw e;
             }
         }
     }
 
-    /**
-     * Unregister cache.<p>
-     * Use with {@link #busyLock} where appropriate.
-     *
-     * @param cacheInfo Cache context info.
-     * @param destroy Destroy flag.
-     */
-    public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
+    /** */
+    public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean destroy) {
         if (idx == null || !cacheSupportSql(cacheInfo.config()))
             return;
+
+        // t0d0 check real destroy
+        if (cacheInfo.isClientCache() && !destroy) {
+            idx.registeredCacheInfo(cacheInfo.name()).setCctx(null);
+
+            return;
+        }
 
         String cacheName = cacheInfo.name();
 
@@ -1862,7 +1856,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cacheInfo, destroy);
+                idx.unregisterCache(cacheInfo, rmvIdx);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);

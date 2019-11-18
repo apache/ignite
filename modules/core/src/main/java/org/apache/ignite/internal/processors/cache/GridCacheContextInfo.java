@@ -119,6 +119,10 @@ public class GridCacheContextInfo<K, V> {
         return cctx;
     }
 
+    public void setCctx(GridCacheContext cctx) {
+        this.cctx = cctx;
+    }
+
     /**
      * @return Dynamic deployment ID.
      */
