@@ -348,7 +348,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEWS",
                 "SYS.TABLE_COLUMNS",
                 "SYS.VIEW_COLUMNS",
-                "SYS.QUERY_CONTINUOUS"
+                "SYS.CONTINUOUS_QUERIES"
             ))
         );
     }
@@ -813,25 +813,25 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEW_COLUMNS.DEFAULT_VALUE.null.2147483647",
                 "SYS.VIEW_COLUMNS.SCALE.null.10",
                 "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.NOTIFY_EXISTING.null.1",
-                "SYS.QUERY_CONTINUOUS.OLD_VALUE_REQUIRED.null.1",
-                "SYS.QUERY_CONTINUOUS.KEEP_BINARY.null.1",
-                "SYS.QUERY_CONTINUOUS.IS_MESSAGING.null.1",
-                "SYS.QUERY_CONTINUOUS.AUTO_UNSUBSCRIBE.null.1",
-                "SYS.QUERY_CONTINUOUS.LAST_SEND_TIME.null.19",
-                "SYS.QUERY_CONTINUOUS.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.TOPIC.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.BUFFER_SIZE.null.10",
-                "SYS.QUERY_CONTINUOUS.REMOTE_TRANSFORMER.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.DELAYED_REGISTER.null.1",
-                "SYS.QUERY_CONTINUOUS.IS_QUERY.null.1",
-                "SYS.QUERY_CONTINUOUS.NODE_ID.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.INTERVAL.null.19",
-                "SYS.QUERY_CONTINUOUS.IS_EVENTS.null.1",
-                "SYS.QUERY_CONTINUOUS.ROUTINE_ID.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.REMOTE_FILTER.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.CACHE_NAME.null.2147483647",
-                "SYS.QUERY_CONTINUOUS.LOCAL_LISTENER.null.2147483647"
+                "SYS.CONTINUOUS_QUERIES.NOTIFY_EXISTING.null.1",
+                "SYS.CONTINUOUS_QUERIES.OLD_VALUE_REQUIRED.null.1",
+                "SYS.CONTINUOUS_QUERIES.KEEP_BINARY.null.1",
+                "SYS.CONTINUOUS_QUERIES.IS_MESSAGING.null.1",
+                "SYS.CONTINUOUS_QUERIES.AUTO_UNSUBSCRIBE.null.1",
+                "SYS.CONTINUOUS_QUERIES.LAST_SEND_TIME.null.19",
+                "SYS.CONTINUOUS_QUERIES.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.TOPIC.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.BUFFER_SIZE.null.10",
+                "SYS.CONTINUOUS_QUERIES.REMOTE_TRANSFORMER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.DELAYED_REGISTER.null.1",
+                "SYS.CONTINUOUS_QUERIES.IS_QUERY.null.1",
+                "SYS.CONTINUOUS_QUERIES.NODE_ID.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.INTERVAL.null.19",
+                "SYS.CONTINUOUS_QUERIES.IS_EVENTS.null.1",
+                "SYS.CONTINUOUS_QUERIES.ROUTINE_ID.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.REMOTE_FILTER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.CACHE_NAME.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
