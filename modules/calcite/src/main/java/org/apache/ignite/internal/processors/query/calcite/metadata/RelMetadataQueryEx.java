@@ -50,7 +50,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     }
 
     private IgniteMetadata.DistributionTraitMetadata.Handler distributionTraitHandler;
-    private IgniteMetadata.FragmentLocationMetadata.Handler sourceDistributionHandler;
+    private IgniteMetadata.FragmentMetadata.Handler sourceDistributionHandler;
 
     @SuppressWarnings("MethodOverridesStaticMethodOfSuperclass")
     public static RelMetadataQueryEx instance() {
@@ -82,15 +82,15 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         super(JaninoRelMetadataProvider.DEFAULT, RelMetadataQuery.EMPTY);
 
         distributionTraitHandler = initialHandler(IgniteMetadata.DistributionTraitMetadata.Handler.class);
-        sourceDistributionHandler = initialHandler(IgniteMetadata.FragmentLocationMetadata.Handler.class);
+        sourceDistributionHandler = initialHandler(IgniteMetadata.FragmentMetadata.Handler.class);
     }
 
-    public FragmentLocation getFragmentLocation(RelNode rel) {
+    public FragmentInfo getFragmentLocation(RelNode rel) {
         for (;;) {
             try {
-                return sourceDistributionHandler.getLocation(rel, this);
+                return sourceDistributionHandler.getFragmentInfo(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
-                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentLocationMetadata.DEF);
+                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMetadata.DEF);
             }
         }
     }

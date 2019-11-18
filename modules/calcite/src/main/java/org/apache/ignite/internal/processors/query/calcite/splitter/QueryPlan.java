@@ -26,7 +26,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPl
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.Edge;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -45,17 +47,13 @@ public class QueryPlan {
 
         while (true) {
             try {
-                for (Fragment fragment : fragments)
-                    fragment.init(ctx, mq);
+                F.first(fragments).init(ctx, mq);
 
                 break;
             }
             catch (OptimisticPlanningException e) {
                 if (++i > 3)
                     throw new IgniteSQLException("Failed to map query.", e);
-
-                for (Fragment fragment0 : fragments)
-                    fragment0.reset();
 
                 Edge edge = e.edge();
 
@@ -65,10 +63,11 @@ public class QueryPlan {
                 RelOptCluster cluster = child.getCluster();
                 RelTraitSet traitSet = child.getTraitSet();
 
-                Sender sender = new Sender(cluster, traitSet, child);
-                parent.replaceInput(edge.childIdx(), new Receiver(cluster, traitSet, sender));
+                Sender sender = new Sender(cluster, traitSet, child, traitSet.getTrait(DistributionTraitDef.INSTANCE));
+                Fragment fragment = new Fragment(sender);
+                fragments.add(fragment);
 
-                fragments.add(new Fragment(sender));
+                parent.replaceInput(edge.childIdx(), new Receiver(cluster, traitSet, sender.getRowType(), fragment));
             }
         }
     }

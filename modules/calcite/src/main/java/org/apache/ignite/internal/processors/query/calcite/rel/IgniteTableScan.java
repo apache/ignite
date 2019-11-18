@@ -22,7 +22,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
@@ -42,7 +42,8 @@ public final class IgniteTableScan extends TableScan implements IgniteRel {
     return implementor.implement(this);
   }
 
-  public FragmentLocation location() {
-    return getTable().unwrap(IgniteTable.class).location(getCluster().getPlanner().getContext());
+  public FragmentInfo fragmentInfo() {
+    return getTable().unwrap(IgniteTable.class)
+        .fragmentInfo(getCluster().getPlanner().getContext());
   }
 }

@@ -16,40 +16,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentLocation;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
 public final class Sender extends SingleRel implements IgniteRel {
-    private FragmentLocation location;
-    private FragmentLocation targetLocation;
-    private DistributionTrait targetDistribution;
-    private DestinationFunction destinationFunction;
+    private final DistributionTrait targetDistr;
+
+    private NodesMapping targetMapping;
 
     /**
      * Creates a <code>SingleRel</code>.
-     *
-     * @param cluster Cluster this relational expression belongs to
+     *  @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
      * @param input Input relational expression
+     * @param targetDistr Target distribution
      */
-    public Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    public Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input, @NotNull DistributionTrait targetDistr) {
         super(cluster, traits, input);
-    }
 
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new Sender(getCluster(), traitSet, sole(inputs));
+        this.targetDistr = targetDistr;
     }
 
     /** {@inheritDoc} */
@@ -57,32 +52,11 @@ public final class Sender extends SingleRel implements IgniteRel {
         return implementor.implement(this);
     }
 
-    public void init(FragmentLocation targetLocation, DistributionTrait targetDistribution) {
-        this.targetLocation = targetLocation;
-        this.targetDistribution = targetDistribution;
+    public void init(NodesMapping mapping) {
+        targetMapping = mapping;
     }
 
-    public DestinationFunction targetFunction() {
-        if (destinationFunction == null) {
-            assert targetLocation != null && targetLocation.mapping() != null && targetDistribution != null;
-
-            destinationFunction = targetDistribution.destinationFunctionFactory().create(targetLocation, targetDistribution.keys());
-        }
-
-        return destinationFunction;
-    }
-
-    public FragmentLocation location(RelMetadataQuery mq) {
-        if (location == null)
-            location = IgniteMdFragmentLocation.location(getInput(), mq);
-
-        return location;
-    }
-
-    public void reset() {
-        location = null;
-        targetLocation = null;
-        targetDistribution = null;
-        destinationFunction = null;
+    public DestinationFunction targetFunction(org.apache.calcite.plan.Context ctx) {
+        return targetDistr.destinationFunctionFactory().create(ctx, targetMapping, targetDistr.keys());
     }
 }

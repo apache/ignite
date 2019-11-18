@@ -37,9 +37,9 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
  *
  */
 public class IgniteDistributions {
-    private static final DestinationFunctionFactory NO_OP_FACTORY = (t,k) -> null;
-    private static final DestinationFunctionFactory HASH_FACTORY = (t,k) -> {
-        assert t.mapping() != null && !F.isEmpty(t.mapping().assignments());
+    private static final DestinationFunctionFactory NO_OP_FACTORY = (ctx, m, k) -> null;
+    private static final DestinationFunctionFactory HASH_FACTORY = (ctx, m, k) -> {
+        assert m != null && !F.isEmpty(m.assignments());
 
         int[] fields = k.toIntArray();
 
@@ -57,7 +57,7 @@ public class IgniteDistributions {
             return hash;
         };
 
-        List<List<ClusterNode>> assignments = t.mapping().assignments();
+        List<List<ClusterNode>> assignments = m.assignments();
 
         if (U.assertionsEnabled()) {
             for (List<ClusterNode> assignment : assignments) {
@@ -99,24 +99,24 @@ public class IgniteDistributions {
     }
 
     public static DestinationFunctionFactory singleTargetFunction() {
-        return (t, k) -> {
-            List<ClusterNode> nodes = t.mapping().nodes().subList(0, 1);
+        return (ctx, m, k) -> {
+            List<ClusterNode> nodes = m.nodes().subList(0, 1);
 
             return r -> nodes;
         };
     }
 
     public static DestinationFunctionFactory allTargetsFunction() {
-        return (t, k) -> {
-            List<ClusterNode> nodes = t.mapping().nodes();
+        return (ctx, m, k) -> {
+            List<ClusterNode> nodes = m.nodes();
 
             return r -> nodes;
         };
     }
 
     public static DestinationFunctionFactory randomTargetFunction() {
-        return (t, k) -> {
-            List<ClusterNode> nodes = t.mapping().nodes();
+        return (ctx, m, k) -> {
+            List<ClusterNode> nodes = m.nodes();
 
             return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
         };

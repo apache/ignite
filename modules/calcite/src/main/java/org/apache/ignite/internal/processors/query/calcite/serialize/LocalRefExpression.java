@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLocalRef;
+import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public interface DestinationFunctionFactory {
-    DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys);
+public class LocalRefExpression implements Expression {
+    private final RelDataType type;
+    private final int index;
 
-    default Object key() {
-        return getClass();
+    public LocalRefExpression(RelDataType type, int index) {
+        this.type = type;
+        this.index = index;
+    }
+
+    @Override public RexNode toRex(RexBuilder builder) {
+        return new RexLocalRef(index, type);
     }
 }

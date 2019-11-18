@@ -16,11 +16,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public interface Node {
-    IgniteRel toRel(SerializationContext ctx);
+public class InputRefExpression implements Expression {
+    private final RelDataType type;
+    private final int index;
+
+    public InputRefExpression(RelDataType type, int index) {
+        this.type = type;
+        this.index = index;
+    }
+
+    @Override public RexNode toRex(RexBuilder builder) {
+        return builder.makeInputRef(type, index);
+    }
 }

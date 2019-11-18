@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteRelShuttle;
 
 /**
@@ -45,12 +47,14 @@ public class Splitter extends IgniteRelShuttle {
 
     @Override public RelNode visit(IgniteExchange rel) {
         RelOptCluster cluster = rel.getCluster();
+        RelTraitSet inputTraits = rel.getInput().getTraitSet();
+        RelTraitSet outputTraits = rel.getTraitSet();
 
-        Sender sender = new Sender(cluster, rel.getInput().getTraitSet(), visit(rel.getInput()));
+        Sender sender = new Sender(cluster, inputTraits, visit(rel.getInput()), outputTraits.getTrait(DistributionTraitDef.INSTANCE));
+        Fragment fragment = new Fragment(sender);
+        fragments.add(fragment);
 
-        fragments.add(new Fragment(sender));
-
-        return new Receiver(cluster, rel.getTraitSet(), sender);
+        return new Receiver(cluster, outputTraits, sender.getRowType(), fragment);
     }
 
     @Override public RelNode visit(Receiver rel) {

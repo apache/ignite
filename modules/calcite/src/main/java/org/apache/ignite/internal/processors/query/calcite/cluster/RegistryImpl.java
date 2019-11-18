@@ -20,15 +20,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.ToIntFunction;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
@@ -50,13 +51,14 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
     }
 
     @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
-        if (ctx.cache().context().cacheContext(cacheId).isReplicated())
+        CacheGroupContext grp = ctx.cache().context().cacheContext(cacheId).group();
+
+        if (grp.isReplicated())
             return IgniteDistributions.broadcast();
 
-        Object key = ctx.cache().context().affinity().affinity(cacheId).similarAffinityKey();
-        ToIntFunction<Object> partFun = ctx.cache().context().cacheContext(cacheId).affinity()::partition;
+        Object key = grp.affinity().similarAffinityKey();
 
-        return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(partFun, key));
+        return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(cacheId, key));
     }
 
     @Override public NodesMapping local() {
@@ -140,18 +142,18 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
     }
 
     private static class AffinityFactory implements DestinationFunctionFactory {
-        private final ToIntFunction<Object> partFun;
+        private final int cacheId;
         private final Object key;
 
-        AffinityFactory(ToIntFunction<Object> partFun, Object key) {
-            this.partFun = partFun;
+        AffinityFactory(int cacheId, Object key) {
+            this.cacheId = cacheId;
             this.key = key;
         }
 
-        @Override public DestinationFunction create(FragmentLocation targetLocation, ImmutableIntList keys) {
-            assert keys.size() == 1 && targetLocation.mapping() != null && !F.isEmpty(targetLocation.mapping().assignments());
+        @Override public DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys) {
+            assert keys.size() == 1 && mapping != null && !F.isEmpty(mapping.assignments());
 
-            List<List<ClusterNode>> assignments = targetLocation.mapping().assignments();
+            List<List<ClusterNode>> assignments = mapping.assignments();
 
             if (U.assertionsEnabled()) {
                 for (List<ClusterNode> assignment : assignments) {
@@ -159,24 +161,14 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
                 }
             }
 
-            return create(assignments, partFun, keys.getInt(0));
+            ToIntFunction<Object> rowToPart = ctx.unwrap(GridKernalContext.class)
+                .cache().context().cacheContext(cacheId).affinity()::partition;
+
+            return row -> assignments.get(rowToPart.applyAsInt(((Object[]) row)[keys.getInt(0)]));
         }
 
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            return key.equals(((AffinityFactory) o).key);
-        }
-
-        @Override public int hashCode() {
-            return key.hashCode();
-        }
-
-        private static DestinationFunction create(List<List<ClusterNode>> assignments, ToIntFunction<Object> partFun, int affField) {
-            return row -> assignments.get(partFun.applyAsInt(((Object[]) row)[affField]));
+        @Override public Object key() {
+            return key;
         }
     }
 }

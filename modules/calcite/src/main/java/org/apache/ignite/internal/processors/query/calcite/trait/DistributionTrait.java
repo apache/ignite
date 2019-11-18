@@ -90,7 +90,7 @@ public final class DistributionTrait implements RelTrait {
         if (type() == other.type())
             return type() != DistributionType.HASH
                 || (Objects.equals(keys(), other.keys())
-                    && Objects.equals(destinationFunctionFactory(), other.destinationFunctionFactory()));
+                    && Objects.equals(destinationFunctionFactory().key(), other.destinationFunctionFactory().key()));
 
         return other.type() == DistributionType.RANDOM && type() == DistributionType.HASH;
     }

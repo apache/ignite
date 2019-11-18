@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
-
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 /**
  *
  */
-public interface DestinationFunctionFactory {
-    DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys);
-
-    default Object key() {
-        return getClass();
-    }
+public interface GraphNode {
 }

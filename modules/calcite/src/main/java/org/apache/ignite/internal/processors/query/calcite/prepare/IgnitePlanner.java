@@ -72,7 +72,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
-import org.apache.ignite.internal.processors.query.calcite.serialize.Node;
+import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 
 /**
  *
@@ -219,16 +219,16 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return root;
     }
 
-    public RelNode convert(Node node) {
+    public RelNode convert(Graph graph) {
         ready();
 
-        return null;
+        return null; // TODO
     }
 
-    public Node convert(RelNode node) {
+    public Graph convert(RelNode node) {
         ready();
 
-        return null;
+        return null; // TODO
     }
 
     /** {@inheritDoc} */

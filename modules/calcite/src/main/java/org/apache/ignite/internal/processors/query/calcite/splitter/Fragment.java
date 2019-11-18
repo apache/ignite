@@ -16,16 +16,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentLocation;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
-import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -35,29 +37,44 @@ import org.apache.ignite.internal.util.typedef.F;
 public class Fragment {
     public final RelNode rel;
 
-    public FragmentLocation fragmentLocation;
+    private NodesMapping mapping;
+    private ImmutableIntList localInputs;
+    private ImmutableList<Fragment> remoteInputs;
 
     public Fragment(RelNode rel) {
         this.rel = rel;
     }
 
     public void init(Context ctx, RelMetadataQuery mq) {
-        fragmentLocation = IgniteMdFragmentLocation.location(rel, mq);
+        init(null, ctx, mq);
+    }
 
-        if (fragmentLocation.mapping() == null)
-            fragmentLocation.mapping(remote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local());
+    public void init(Fragment parent, Context ctx, RelMetadataQuery mq) {
+        FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(rel, mq);
+
+        remoteInputs = info.remoteInputs();
+        localInputs = info.localInputs();
+
+        if (info.mapping() == null)
+            mapping = remote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local();
         else {
             try {
-                fragmentLocation.mapping(fragmentLocation.mapping().deduplicate());
+                mapping = info.mapping().deduplicate();
             }
             catch (LocationMappingException e) {
                 throw new IgniteSQLException("Failed to map fragment to location, partition lost.", e);
             }
         }
 
-        if (!F.isEmpty(fragmentLocation.remoteInputs())) {
-            for (Receiver input : fragmentLocation.remoteInputs())
-                input.init(fragmentLocation, mq);
+        if (parent != null) {
+            assert remote();
+
+            ((Sender)rel).init(parent.mapping);
+        }
+
+        if (!F.isEmpty(remoteInputs)) {
+            for (Fragment input : remoteInputs)
+                input.init(this, ctx, mq);
         }
     }
 
@@ -71,17 +88,5 @@ public class Fragment {
 
     private AffinityTopologyVersion topologyVersion(Context ctx) {
         return ctx.unwrap(AffinityTopologyVersion.class);
-    }
-
-    public void reset() {
-        if (remote())
-            ((Sender) rel).reset();
-
-        if (fragmentLocation != null && !F.isEmpty(fragmentLocation.remoteInputs())) {
-            for (Receiver receiver : fragmentLocation.remoteInputs())
-                receiver.reset();
-        }
-
-        fragmentLocation = null;
     }
 }

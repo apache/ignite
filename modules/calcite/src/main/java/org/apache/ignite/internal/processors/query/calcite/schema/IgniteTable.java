@@ -26,12 +26,10 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
+import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -81,12 +79,10 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         return distributionRegistry(context).distribution(CU.cacheId(cacheName), rowType);
     }
 
-    public FragmentLocation location(Context ctx) {
+    public FragmentInfo fragmentInfo(Context ctx) {
         int cacheId = CU.cacheId(cacheName);
-        AffinityTopologyVersion topVer = topologyVersion(ctx);
-        NodesMapping mapping = locationRegistry(ctx).distributed(cacheId, topVer);
 
-        return new FragmentLocation(mapping, ImmutableIntList.of(cacheId), topVer);
+        return new FragmentInfo(cacheId, locationRegistry(ctx).distributed(cacheId, topologyVersion(ctx)));
     }
 
     private LocationRegistry locationRegistry(Context ctx) {

@@ -16,40 +16,27 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentLocation;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
 
 /**
  *
  */
-public final class Receiver extends SingleRel implements IgniteRel {
-    private FragmentLocation sourceDistribution;
+public final class Receiver extends AbstractRelNode implements IgniteRel {
+    private final Fragment source;
 
     /**
      * @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
-     * @param sender Corresponding sender.
      */
-    public Receiver(RelOptCluster cluster, RelTraitSet traits, Sender sender) {
-        super(cluster, traits, sender);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Sender getInput() {
-        return (Sender) input;
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new Receiver(getCluster(), traitSet, (Sender) sole(inputs));
+    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment source) {
+        super(cluster, traits);
+        this.rowType = rowType;
+        this.source = source;
     }
 
     /** {@inheritDoc} */
@@ -57,17 +44,7 @@ public final class Receiver extends SingleRel implements IgniteRel {
         return implementor.implement(this);
     }
 
-    public void init(FragmentLocation targetDistribution, RelMetadataQuery mq) {
-        sourceDistribution = IgniteMdFragmentLocation.location(getInput(), mq);
-
-        getInput().init(targetDistribution, getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
-    }
-
-    public FragmentLocation sourceDistribution() {
-        return sourceDistribution;
-    }
-
-    public void reset() {
-        sourceDistribution = null;
+    public Fragment source() {
+        return source;
     }
 }

@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public interface DestinationFunctionFactory {
-    DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys);
+public class LiteralExpression implements Expression {
+    private final Comparable value;
+    private final RelDataType type;
 
-    default Object key() {
-        return getClass();
+    public LiteralExpression(RelDataType type, Comparable value) {
+        this.value = value;
+        this.type = type;
+    }
+
+    @Override public RexNode toRex(RexBuilder builder) {
+        return builder.makeLiteral(value, type, false);
     }
 }

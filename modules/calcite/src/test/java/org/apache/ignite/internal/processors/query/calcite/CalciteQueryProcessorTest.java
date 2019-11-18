@@ -29,6 +29,7 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
@@ -45,6 +46,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.Expression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -333,6 +336,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(relRoot.rel);
+
+        RexToExpTranslator translator = new RexToExpTranslator();
+
+        Project proj = (Project) relRoot.rel.getInput(0);
+
+        List<Expression> expressions = translator.visitList(proj.getProjects());
+
+        assertNotNull(expressions);
     }
 
     @Test

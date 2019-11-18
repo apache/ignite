@@ -36,7 +36,7 @@ public class IgniteMetadata {
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
                 IgniteMdDistribution.SOURCE,
-                IgniteMdFragmentLocation.SOURCE,
+                IgniteMdFragmentInfo.SOURCE,
                 DefaultRelMetadataProvider.INSTANCE));
 
     public interface DistributionTraitMetadata extends Metadata {
@@ -52,16 +52,16 @@ public class IgniteMetadata {
         }
     }
 
-    public interface FragmentLocationMetadata extends Metadata {
-        MetadataDef<FragmentLocationMetadata> DEF = MetadataDef.of(FragmentLocationMetadata.class,
-            FragmentLocationMetadata.Handler.class, IgniteMethod.FRAGMENT_LOCATION.method());
+    public interface FragmentMetadata extends Metadata {
+        MetadataDef<FragmentMetadata> DEF = MetadataDef.of(FragmentMetadata.class,
+            FragmentMetadata.Handler.class, IgniteMethod.FRAGMENT_INFO.method());
 
         /** Determines how the rows are distributed. */
-        FragmentLocation getLocation();
+        FragmentInfo getFragmentInfo();
 
         /** Handler API. */
-        interface Handler extends MetadataHandler<FragmentLocationMetadata> {
-            FragmentLocation getLocation(RelNode r, RelMetadataQuery mq);
+        interface Handler extends MetadataHandler<FragmentMetadata> {
+            FragmentInfo getFragmentInfo(RelNode r, RelMetadataQuery mq);
         }
     }
 }

@@ -43,7 +43,7 @@ public class IgniteRelShuttle extends RelShuttleImpl {
     }
 
     public RelNode visit(Receiver rel) {
-        return visitChild(rel, 0, rel.getInput());
+        return rel;
     }
 
     public RelNode visit(Sender rel) {
