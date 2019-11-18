@@ -61,6 +61,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setReconnectThrottlingRetries(0) // Disable throttling.
                  .setAddresses(cluster.clientAddresses().toArray(new String[CLUSTER_SIZE]))
              )
         ) {
@@ -258,6 +259,51 @@ public class ReliabilityTest extends GridCommonAbstractTest {
             barrier.await(1, TimeUnit.SECONDS);
 
             assertFalse(cache.containsKey(0));
+        }
+    }
+
+    /**
+     * Test reconnection throttling.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testReconnectionThrottling() throws Exception {
+        int throttlingRetries = 5;
+        long throttlingPeriod = 3_000L;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setReconnectThrottlingPeriod(throttlingPeriod)
+                 .setReconnectThrottlingRetries(throttlingRetries)
+                 .setAddresses(cluster.clientAddresses().toArray(new String[1])))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            for (int i = 0; i < throttlingRetries; i++) {
+                // Attempts to reconnect within throttlingRetries should pass.
+                cache.put(0, 0);
+
+                dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+            }
+
+            for (int i = 0; i < 10; i++) // Attempts to reconnect after throttlingRetries should fail.
+                GridTestUtils.assertThrowsWithCause(() -> cache.put(0, 0), ClientConnectionException.class);
+
+            doSleep(throttlingPeriod);
+
+            // Attempt to reconnect after throttlingPeriod should pass.
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                try {
+                    cache.put(0, 0);
+
+                    return true;
+                }
+                catch (ClientConnectionException e) {
+                    return false;
+                }
+            }, throttlingPeriod));
         }
     }
 

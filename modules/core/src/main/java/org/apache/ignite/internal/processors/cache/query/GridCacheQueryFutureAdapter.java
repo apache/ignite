@@ -50,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
  * Query future adapter.
  *
  * @param <R> Result type.
- *
  */
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
     implements CacheQueryFuture<R>, GridTimeoutObject {
@@ -68,6 +67,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** */
     protected final GridCacheQueryBean qry;
+
+    /** */
+    private int capacity;
+
+    /** */
+    private boolean limitDisabled;
 
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
@@ -93,9 +98,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected boolean loc;
 
-    /**
-     *
-     */
+    /** */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
         keys = null;
@@ -117,6 +120,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
+        capacity = query().query().limit();
+        limitDisabled = capacity <= 0;
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -327,15 +332,31 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
 
-        queue.add((Collection<R>)col);
+        if (limitDisabled) {
+            queue.add((Collection<R>)col);
 
-        cnt.addAndGet(col.size());
+            cnt.addAndGet(col.size());
+        }
+        else {
+            if (capacity >= col.size()) {
+                queue.add((Collection<R>)col);
+                capacity -= col.size();
+
+                cnt.addAndGet(col.size());
+            }
+            else if (capacity > 0) {
+                queue.add(new ArrayList<>((Collection<R>)col).subList(0, capacity));
+                capacity = 0;
+
+                cnt.addAndGet(capacity);
+            }
+        }
     }
 
     /**
      * @param col Query data collection.
-     * @return If dedup flag is {@code true} deduplicated collection (considering keys),
-     *      otherwise passed in collection without any modifications.
+     * @return If dedup flag is {@code true} deduplicated collection (considering keys), otherwise passed in collection
+     * without any modifications.
      */
     private Collection<?> dedupIfRequired(Collection<?> col) {
         if (!qry.query().enableDedup())
@@ -568,7 +589,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return S.toString(GridCacheQueryFutureAdapter.class, this);
     }
 
-    /** */
+    /**
+     *
+     */
     public void printMemoryStats() {
         X.println(">>> Query future memory statistics.");
         X.println(">>>  queueSize: " + queue.size());
