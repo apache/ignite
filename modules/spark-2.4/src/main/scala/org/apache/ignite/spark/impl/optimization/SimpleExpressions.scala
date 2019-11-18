@@ -88,7 +88,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)
-                    ar.qualifier.map(_ + "." + ar.name).getOrElse(ar.name)
+                    // TODO: add ticket to handle seq with two elements with qualifier for database name: related to the [SPARK-19602][SQL] ticket
+                    ar.qualifier.map(_ + "." + ar.name).seq.last
                 else
                     ar.name
 

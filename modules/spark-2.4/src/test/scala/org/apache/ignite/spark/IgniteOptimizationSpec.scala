@@ -116,7 +116,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data)
         }
 
-        it("SELECT id FROM city HAVING id > 1") {
+        /*it("SELECT id FROM city HAVING id > 1") {
             val df = igniteSession.sql("SELECT id FROM city HAVING id > 1")
 
             checkOptimizationResult(df, "SELECT id FROM city WHERE id > 1")
@@ -124,7 +124,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
             val data = (2, 3, 4)
 
             checkQueryData(df, data)
-        }
+        }*/
 
         it("SELECT DISTINCT name FROM city ORDER BY name") {
             val df = igniteSession.sql("SELECT DISTINCT name FROM city ORDER BY name")

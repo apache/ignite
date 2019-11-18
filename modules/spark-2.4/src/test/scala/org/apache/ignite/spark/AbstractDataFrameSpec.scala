@@ -213,7 +213,7 @@ object AbstractDataFrameSpec {
             case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _, _) ⇒
                 if (qry != "")
                     assert(qry.toLowerCase == relation.acc.compileQuery().toLowerCase,
-                        s"Generated query should be equal to expected.\nexpected  - $qry\ngenerated - ${relation.acc.compileQuery()}")
+                        s"Generated query should be equal to expected.\nexpected  - ${qry.toLowerCase}\ngenerated - ${relation.acc.compileQuery().toLowerCase}")
 
                 true
 
