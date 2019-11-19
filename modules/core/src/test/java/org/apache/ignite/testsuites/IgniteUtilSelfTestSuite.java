@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
-import org.apache.ignite.internal.util.distributed.DistributedProcessTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKeySelfTest;
@@ -131,9 +130,7 @@ import org.junit.runners.Suite;
     // control.sh
     CommandHandlerParsingTest.class,
 
-    GridCountDownCallbackTest.class,
-
-    DistributedProcessTest.class
+    GridCountDownCallbackTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

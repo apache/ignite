@@ -18,20 +18,32 @@
 package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Distributed process factory.
+ * Distributed process action.
+ *
+ * @see DistributedProcess
  *
  * @param <I> Request type.
  * @param <R> Result type.
- *
- * @see DistributedProcessAction
  */
-public interface DistributedProcessFactory<I extends Serializable, R extends Serializable> {
+public interface DistributedProcessAction<I extends Serializable, R extends Serializable> {
     /**
-     * Creates distributed process instance.
+     * Executes some action and returns future with the single node result to send to the coordinator.
      *
-     * @return Distributed process instance.
+     * @param req Init request.
+     * @return Future for this operation.
      */
-    DistributedProcessAction<I, R> create();
+    IgniteInternalFuture<R> execute(I req);
+
+    /**
+     * Called when all single nodes results received.
+     *
+     * @param res Map of single nodes result.
+     * @param err Map of single nodes errors.
+     */
+    void finish(Map<UUID, R> res, Map<UUID, Exception> err);
 }

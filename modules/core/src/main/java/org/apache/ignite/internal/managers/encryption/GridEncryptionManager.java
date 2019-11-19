@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -52,8 +53,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.distributed.DistributedProcessAction;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.DistributedProcessManager;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -79,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.ENCRYPTION_MGR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
@@ -178,8 +180,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
 
-    /** Distributed process manager. */
-    private DistributedProcessManager dpMgr;
+    /** Master key change prepare process. */
+    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> prepareProc;
+
+    /** Master key change finish process. */
+    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> finishProc;
 
     /**
      * @param ctx Kernel context.
@@ -270,10 +275,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        dpMgr = new DistributedProcessManager(ctx);
-
-        dpMgr.register(MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
-        dpMgr.register(MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
+        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
+        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
     }
 
     /** {@inheritDoc} */
@@ -587,7 +590,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
         }
 
-        dpMgr.start(MASTER_KEY_CHANGE_PREPARE, request);
+        prepareProc.start(request);
 
         return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
@@ -1075,12 +1078,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
                 log.info("Master key successfully changed [masterKeyName=" + name + ']');
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Unable to write re-encrypted group keys.", e);
-            }
             finally {
                 ctx.cache().context().database().checkpointReadUnlock();
             }
+        }
+        catch (Exception e) {
+            U.error(log, "Unable to change master key locally.", e);
+
+            ctx.failure().process(new FailureContext(CRITICAL_ERROR,
+                new Exception("Unable to change master key locally.", e)));
         }
         finally {
             masterKeyChangeLock.writeLock().unlock();
@@ -1155,8 +1161,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * {@link MasterKeyChangeFinishProcess}.
      */
-    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult,
-        PendingMasterKey> {
+    private class MasterKeyChangePrepareProcess implements DistributedProcessAction<PendingMasterKey, MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1165,8 +1170,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reqId = req.requestId();
 
             if (pendingMasterKey != null) {
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected due to previous " +
-                    "change was not completed."));
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                    "Previous change was not completed."));
             }
 
             pendingMasterKey = req;
@@ -1178,8 +1183,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
 
                 if (!Arrays.equals(req.digest, digest)) {
-                    throw new IgniteException("Master key digest consistency check failed. Make sure that " +
-                        "a new master key is the same at all server nodes.");
+                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master key " +
+                        "digest consistency check failed. Make sure that a new master key is the same at all server " +
+                        "nodes [nodeId=" + ctx.localNodeId() + ']'));
                 }
             }
             catch (Exception e) {
@@ -1193,27 +1199,23 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public PendingMasterKey buildResult(Map<UUID, MasterKeyChangeResult> map) {
-            return pendingMasterKey;
-        }
+        @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
+            if (err.isEmpty()) {
+                if (isCoordinator())
+                    finishProc.start(pendingMasterKey);
+            }
+            else {
+                Exception e = err.values().stream().findFirst().get();
 
-        /** {@inheritDoc} */
-        @Override public void finish(PendingMasterKey req) {
-            if (isCoordinator())
-                dpMgr.start(MASTER_KEY_CHANGE_FINISH, req);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void error(Exception e) {
-            finishMasterKeyChange(reqId, e);
+                finishMasterKeyChange(reqId, e);
+            }
         }
     }
 
     /**
      * Master key change finish process. Changes master key.
      */
-    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult,
-        MasterKeyChangeResult> {
+    private class MasterKeyChangeFinishProcess implements DistributedProcessAction<PendingMasterKey, MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1222,7 +1224,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             reqId = msg.requestId();
 
             if (pendingMasterKey == null || !pendingMasterKey.equals(msg))
-                return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected"));
+                return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
             boolean active = ctx.state().clusterState().active();
 
@@ -1240,18 +1242,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         /** {@inheritDoc} */
-        @Override public MasterKeyChangeResult buildResult(Map<UUID, MasterKeyChangeResult> map) {
-            return new MasterKeyChangeResult();
-        }
+        @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
+            if (err.isEmpty()) {
+                finishMasterKeyChange(reqId, null);
+            }
+            else {
+                Exception e = err.values().stream().findFirst().get();
 
-        /** {@inheritDoc} */
-        @Override public void finish(MasterKeyChangeResult res) {
-            finishMasterKeyChange(reqId, null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void error(Exception e) {
-            finishMasterKeyChange(reqId, e);
+                finishMasterKeyChange(reqId, e);
+            }
         }
     }
 

@@ -27,16 +27,24 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Single node result message.
+ *
+ * @param <R> Result type.
  */
-public class SingleNodeMessage implements Message {
+public class SingleNodeMessage<R extends Serializable> implements Message {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** Initial channel message type (value is {@code 177}). */
+    public static final short TYPE_CODE = 177;
 
     /** Process id. */
     private UUID processId;
 
+    /** Process type. */
+    private int type;
+
     /** Single node response. */
-    private Serializable response;
+    private R resp;
 
     /** Error. */
     private Exception err;
@@ -47,12 +55,14 @@ public class SingleNodeMessage implements Message {
 
     /**
      * @param processId Process id.
-     * @param response Single node response.
+     * @param type Process type.
+     * @param resp Single node response.
      * @param err Error.
      */
-    public SingleNodeMessage(UUID processId, Serializable response, Exception err) {
+    public SingleNodeMessage(UUID processId, DistributedProcesses type, R resp, Exception err) {
         this.processId = processId;
-        this.response = response;
+        this.type = type.ordinal();
+        this.resp = resp;
         this.err = err;
     }
 
@@ -75,12 +85,18 @@ public class SingleNodeMessage implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("data", U.toBytes(response)))
+                if (!writer.writeInt("type", type))
                     return false;
 
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeByteArray("data", U.toBytes(resp)))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeByteArray("err", U.toBytes(err)))
                     return false;
 
@@ -107,7 +123,7 @@ public class SingleNodeMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                response = U.fromBytes(reader.readByteArray("data"));
+                type = reader.readInt("type");
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,6 +131,14 @@ public class SingleNodeMessage implements Message {
                 reader.incrementState();
 
             case 2:
+                resp = U.fromBytes(reader.readByteArray("data"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 err = U.fromBytes(reader.readByteArray("err"));
 
                 if (!reader.isLastRead())
@@ -128,12 +152,12 @@ public class SingleNodeMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 177;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -146,9 +170,14 @@ public class SingleNodeMessage implements Message {
         return processId;
     }
 
+    /** @return Process type. */
+    public DistributedProcesses type() {
+        return DistributedProcesses.values()[type];
+    }
+
     /** @return Single node response. */
-    public Serializable response() {
-        return response;
+    public R response() {
+        return resp;
     }
 
     /** @return {@code True} if finished with error. */

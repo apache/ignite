@@ -20,31 +20,12 @@ package org.apache.ignite.internal.util.distributed;
 /**
  * Defines distributed processes.
  *
- * @see DistributedProcess
+ * @see DistributedProcessAction
  */
 public enum DistributedProcesses {
     /** */
-    MASTER_KEY_CHANGE_PREPARE(0),
+    MASTER_KEY_CHANGE_PREPARE,
 
     /** */
-    MASTER_KEY_CHANGE_FINISH(1);
-
-    /**
-     * Unique process type identifier.
-     */
-    private final int procTypeId;
-
-    /**
-     * @param procTypeId Process type ID.
-     */
-    DistributedProcesses(int procTypeId) {
-        this.procTypeId = procTypeId;
-    }
-
-    /**
-     * @return Process type ID.
-     */
-    public int processTypeId() {
-        return procTypeId;
-    }
+    MASTER_KEY_CHANGE_FINISH;
 }

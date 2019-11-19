@@ -30,8 +30,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Initiate message.
+ *
+ * @param <I> Request type.
  */
-public class InitMessage implements DiscoveryCustomMessage {
+public class InitMessage<I extends Serializable>  implements DiscoveryCustomMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -41,21 +43,20 @@ public class InitMessage implements DiscoveryCustomMessage {
     /** Process id. */
     private final UUID processId;
 
-    /** Process type id. */
-    private final int typeId;
+    /** Process type. */
+    private final int type;
 
     /** Request. */
-    @GridToStringInclude
-    private final Serializable req;
+    private final I req;
 
     /**
      * @param processId Process id.
-     * @param typeId Process type id.
+     * @param type Process type.
      * @param req Request.
      */
-    public InitMessage(UUID processId, int typeId, Serializable req) {
+    public InitMessage(UUID processId, DistributedProcesses type, I req) {
         this.processId = processId;
-        this.typeId = typeId;
+        this.type = type.ordinal();
         this.req = req;
     }
 
@@ -90,13 +91,13 @@ public class InitMessage implements DiscoveryCustomMessage {
         return processId;
     }
 
-    /** @return Process type id. */
-    public int typeId() {
-        return typeId;
+    /** @return Process type. */
+    public DistributedProcesses type() {
+        return DistributedProcesses.values()[type];
     }
 
     /** @return Request. */
-    public Serializable request() {
+    public I request() {
         return req;
     }
 

@@ -1173,7 +1173,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 177:
+            case SingleNodeMessage.TYPE_CODE:
                 msg = new SingleNodeMessage();
 
                 break;

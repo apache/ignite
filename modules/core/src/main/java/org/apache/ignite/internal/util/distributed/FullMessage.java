@@ -18,20 +18,22 @@
 package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Finish process message.
- */
-public class FinishMessage implements DiscoveryCustomMessage {
+ * Full process message. Contains single nodes results.
+ *
+ * @param <R> Result type.
+  */
+public class FullMessage<R extends Serializable> implements DiscoveryCustomMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -41,28 +43,25 @@ public class FinishMessage implements DiscoveryCustomMessage {
     /** Process id. */
     private final UUID processId;
 
+    /** Process type. */
+    private final int type;
+
     /** Result. */
-    @GridToStringInclude
-    private Serializable res;
+    private Map<UUID, R> res;
 
     /** Error. */
-    private Exception err;
+    private Map<UUID, Exception> err;
 
     /**
      * @param processId Process id.
-     * @param res Result.
+     * @param type Process type.
+     * @param res Results.
+     * @param err Errors
      */
-    public FinishMessage(UUID processId, Serializable res) {
+    public FullMessage(UUID processId, DistributedProcesses type, Map<UUID, R> res, Map<UUID, Exception> err) {
         this.processId = processId;
+        this.type = type.ordinal();
         this.res = res;
-    }
-
-    /**
-     * @param processId Request id.
-     * @param err Error.
-     */
-    public FinishMessage(UUID processId, Exception err) {
-        this.processId = processId;
         this.err = err;
     }
 
@@ -97,23 +96,23 @@ public class FinishMessage implements DiscoveryCustomMessage {
         return processId;
     }
 
-    /** @return Result. */
-    public Serializable result() {
+    /** @return Process type. */
+    public DistributedProcesses type() {
+        return DistributedProcesses.values()[type];
+    }
+
+    /** @return Results. */
+    public Map<UUID, R> result() {
         return res;
     }
 
-    /** @return {@code True} if process finished with error. */
-    public boolean hasError() {
-        return err != null;
-    }
-
-    /** @return Error. */
-    public Exception error() {
+    /** @return Errors. */
+    public Map<UUID, Exception> error() {
         return err;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FinishMessage.class, this);
+        return S.toString(FullMessage.class, this);
     }
 }

@@ -18,26 +18,38 @@
 package org.apache.ignite.internal.encryption;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.junit.Test;
 
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests master key change process with master key consistency problems.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest {
     /** */
     private final AtomicBoolean simulateOtherDigest = new AtomicBoolean();
 
     /** */
     private final AtomicBoolean simulateSetMasterKeyError = new AtomicBoolean();
+
+    /** */
+    private final AtomicReference<Throwable> failure = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -49,6 +61,8 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         encSpi.setKeyStorePassword(keystorePassword());
 
         cfg.setEncryptionSpi(encSpi);
+
+        cfg.setFailureHandler(new TestFailureHandler());
 
         return cfg;
     }
@@ -83,6 +97,23 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testFinishPhaseFailed() throws Exception {
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
+
+        grids.get2().context().discovery().setCustomEventListener(FullMessage.class,
+            (topVer, snd, msg) -> simulateSetMasterKeyError.set(true));
+
+        grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
+
+        assertNotNull(failure.get());
+
+        assertTrue(X.hasCause(failure.get(), "Test error.", IgniteSpiException.class));
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
@@ -109,12 +140,21 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void setMasterKeyName(String masterKeyName) {
-            if (simulateSetMasterKeyError.get()
-                && ignite.name().equals(GRID_1) && masterKeyName.equals(MASTER_KEY_NAME_2))
+        @Override public void setMasterKeyName(String name) {
+            if (simulateSetMasterKeyError.get() && ignite.name().equals(GRID_1))
                 throw new IgniteSpiException("Test error.");
 
-            super.setMasterKeyName(masterKeyName);
+            super.setMasterKeyName(name);
+        }
+    }
+
+    /** */
+    private class TestFailureHandler extends AbstractFailureHandler {
+        /** {@inheritDoc} */
+        @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+            failure.compareAndSet(null, failureCtx.error());
+
+            return true;
         }
     }
 }
