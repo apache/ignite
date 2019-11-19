@@ -511,6 +511,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
+            // Inject resources.
             ctx.resource().inject(dep, task, ses, balancer, mapper);
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),

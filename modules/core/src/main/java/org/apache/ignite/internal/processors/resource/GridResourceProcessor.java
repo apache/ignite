@@ -243,9 +243,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             log.debug(S.toString("Injecting resources", "obj", obj, true));
 
         // Unwrap Proxy object.
-        final Object target = unwrapTarget(obj);
+        obj = unwrapTarget(obj);
 
-        inject(target, annSet, null, null, params);
+        inject(obj, annSet, null, null, params);
     }
 
     /**

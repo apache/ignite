@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 public abstract class PagesList extends DataStructure {
     /** */
     private static final int TRY_LOCK_ATTEMPTS =
-        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
+            IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
 
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
