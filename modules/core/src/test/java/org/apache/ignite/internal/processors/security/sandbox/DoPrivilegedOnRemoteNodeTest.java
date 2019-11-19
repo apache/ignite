@@ -72,23 +72,6 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
             "}";
 
     /** */
-    private static final String CALLABLE_IGNITE_COMPONENT_PROXY_SRC =
-        "import org.apache.ignite.Ignite;\n" +
-            "import org.apache.ignite.lang.IgniteCallable;\n" +
-            "import org.apache.ignite.resources.IgniteInstanceResource;\n" +
-            "\n" +
-            "public class TestIgniteComponentProxyCallable implements IgniteCallable<String> {\n" +
-            "    @IgniteInstanceResource\n" +
-            "    private Ignite ignite;\n" +
-            "\n" +
-            "    @Override public String call() throws Exception {\n" +
-            "        return ignite != null \n" +
-            "          ? ignite.compute(ignite.cluster().forLocal()).call(() -> System.getProperty(\"user.home\")) \n" +
-            "          : System.getProperty(\"user.home\");\n" +
-            "    }\n" +
-            "}";
-
-    /** */
     private Path srcTmpDir;
 
     /** {@inheritDoc} */
@@ -122,8 +105,6 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
         checkCallable(compute, callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
         checkCallable(compute, callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
-        checkCallable(compute, callable("TestIgniteComponentProxyCallable",
-            CALLABLE_IGNITE_COMPONENT_PROXY_SRC));
     }
 
     /** */
