@@ -105,7 +105,7 @@ public class ManagementConsoleMessagesProcessorTest extends AgentCommonAbstractT
     }
 
     /**
-     * Should send changed baseline topology.
+     * Should send spans.
      */
     @Test
     public void shouldSendSpans() throws Exception {
@@ -119,7 +119,7 @@ public class ManagementConsoleMessagesProcessorTest extends AgentCommonAbstractT
 
         assertWithPoll(
             () -> {
-                List<Span> spans = interceptor.getPayload(buildSaveSpanDest(cluster.id()), List.class);
+                List<Span> spans = interceptor.getListPayload(buildSaveSpanDest(cluster.id()), Span.class);
 
                 return spans != null && !spans.isEmpty();
             }

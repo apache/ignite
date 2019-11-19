@@ -36,7 +36,7 @@ import static org.apache.ignite.agent.utils.AgentUtils.quiteStop;
  */
 public class ManagementConsoleMessagesProcessor extends GridProcessorAdapter {
     /** Sender. */
-    private final RetryableSender<Object> snd;
+    private final RetryableSender snd;
 
     /** On node traces listener. */
     private final IgniteBiPredicate<UUID, Object> lsnr = this::processMessage;
@@ -47,7 +47,7 @@ public class ManagementConsoleMessagesProcessor extends GridProcessorAdapter {
     public ManagementConsoleMessagesProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        this.snd = new RetryableSender<>(ctx);
+        this.snd = new RetryableSender(ctx);
 
         ctx.grid().message().localListen(TOPIC_MANAGEMENT_CONSOLE, lsnr);
     }
@@ -69,7 +69,7 @@ public class ManagementConsoleMessagesProcessor extends GridProcessorAdapter {
         else if (msg instanceof VisorGridEvent)
             snd.send(buildEventsDest(ctx.cluster().get().id()), msg);
         else if (msg instanceof SpanBatch)
-            snd.send(buildSaveSpanDest(ctx.cluster().get().id()), ((SpanBatch)msg).list());
+            snd.sendList(buildSaveSpanDest(ctx.cluster().get().id()), ((SpanBatch)msg).list());
 
         return true;
     }

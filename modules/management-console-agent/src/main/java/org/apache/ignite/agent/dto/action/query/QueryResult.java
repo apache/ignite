@@ -50,7 +50,7 @@ public class QueryResult {
 
     /**
      * @param resNodeId Response node id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setResultNodeId(String resNodeId) {
         this.resNodeId = resNodeId;
@@ -67,7 +67,7 @@ public class QueryResult {
 
     /**
      * @param cols Columns.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setColumns(List<QueryField> cols) {
         this.cols = cols;
@@ -84,7 +84,7 @@ public class QueryResult {
 
     /**
      * @param rows Rows.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setRows(List<Object[]> rows) {
         this.rows = rows;
@@ -101,7 +101,7 @@ public class QueryResult {
 
     /**
      * @param hasMore Has more.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setHasMore(boolean hasMore) {
         this.hasMore = hasMore;
@@ -118,7 +118,7 @@ public class QueryResult {
 
     /**
      * @param duration Duration.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setDuration(long duration) {
         this.duration = duration;
@@ -135,7 +135,7 @@ public class QueryResult {
 
     /**
      * @param cursorId Cursor ID.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryResult setCursorId(String cursorId) {
         this.cursorId = cursorId;

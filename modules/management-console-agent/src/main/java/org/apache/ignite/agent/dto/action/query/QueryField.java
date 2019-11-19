@@ -43,7 +43,7 @@ public class QueryField {
 
     /**
      * @param schemaName Schema name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryField setSchemaName(String schemaName) {
         this.schemaName = schemaName;
@@ -60,7 +60,7 @@ public class QueryField {
 
     /**
      * @param typeName Type name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryField setTypeName(String typeName) {
         this.typeName = typeName;
@@ -77,7 +77,7 @@ public class QueryField {
 
     /**
      * @param fieldName Field name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryField setFieldName(String fieldName) {
         this.fieldName = fieldName;
@@ -94,7 +94,7 @@ public class QueryField {
 
     /**
      * @param fieldTypeName Field type name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryField setFieldTypeName(String fieldTypeName) {
         this.fieldTypeName = fieldTypeName;

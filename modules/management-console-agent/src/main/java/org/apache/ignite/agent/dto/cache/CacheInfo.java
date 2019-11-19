@@ -41,7 +41,7 @@ public class CacheInfo {
 
     /**
      * @param name Name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheInfo setName(String name) {
         this.name = name;
@@ -58,7 +58,7 @@ public class CacheInfo {
 
     /**
      * @param deploymentId Deployment id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheInfo setDeploymentId(IgniteUuid deploymentId) {
         this.deploymentId = deploymentId;
@@ -75,7 +75,7 @@ public class CacheInfo {
 
     /**
      * @param grp Group.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheInfo setGroup(String grp) {
         this.grp = grp;

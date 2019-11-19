@@ -62,7 +62,7 @@ public class QueryArgument {
 
     /**
      * @param qryId Query ID.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setQueryId(String qryId) {
         this.qryId = qryId;
@@ -79,7 +79,7 @@ public class QueryArgument {
 
     /**
      * @param cacheName Cache name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setCacheName(String cacheName) {
         this.cacheName = cacheName;
@@ -96,7 +96,7 @@ public class QueryArgument {
 
     /**
      * @param qryTxt Query txt.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setQueryText(String qryTxt) {
         this.qryTxt = qryTxt;
@@ -113,7 +113,7 @@ public class QueryArgument {
 
     /**
      * @param parameters Parameters.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setParameters(Object[] parameters) {
         this.parameters = parameters;
@@ -130,7 +130,7 @@ public class QueryArgument {
 
     /**
      * @param distributedJoins Distributed joins.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setDistributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
@@ -147,7 +147,7 @@ public class QueryArgument {
 
     /**
      * @param enforceJoinOrder Enforce join order.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setEnforceJoinOrder(boolean enforceJoinOrder) {
         this.enforceJoinOrder = enforceJoinOrder;
@@ -164,7 +164,7 @@ public class QueryArgument {
 
     /**
      * @param targetNodeId Target node id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public QueryArgument setTargetNodeId(UUID targetNodeId) {
         this.targetNodeId = targetNodeId;

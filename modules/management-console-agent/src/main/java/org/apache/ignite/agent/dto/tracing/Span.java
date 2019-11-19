@@ -59,7 +59,7 @@ public class Span {
 
     /**
      * @param traceId Trace id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setTraceId(String traceId) {
         this.traceId = traceId;
@@ -76,7 +76,7 @@ public class Span {
 
     /**
      * @param parentId Parent id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setParentId(String parentId) {
         this.parentId = parentId;
@@ -93,7 +93,7 @@ public class Span {
 
     /**
      * @param spanId Span id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setSpanId(String spanId) {
         this.spanId = spanId;
@@ -110,7 +110,7 @@ public class Span {
 
     /**
      * @param name Name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setName(String name) {
         this.name = name;
@@ -127,7 +127,7 @@ public class Span {
 
     /**
      * @param ts Timestamp.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setTimestamp(long ts) {
         this.ts = ts;
@@ -144,7 +144,7 @@ public class Span {
 
     /**
      * @param duration Duration.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setDuration(long duration) {
         this.duration = duration;
@@ -161,7 +161,7 @@ public class Span {
 
     /**
      * @param tags Tags.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setTags(Map<String, String> tags) {
         this.tags = tags;
@@ -178,7 +178,7 @@ public class Span {
 
     /**
      * @param annotations Annotations.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Span setAnnotations(List<Annotation> annotations) {
         this.annotations = annotations;

@@ -47,7 +47,7 @@ public class Request {
 
     /**
      * @param id Request id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Request setId(UUID id) {
         this.id = id;
@@ -64,7 +64,7 @@ public class Request {
 
     /**
      * @param act Action name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Request setAction(String act) {
         this.act = act;
@@ -81,7 +81,7 @@ public class Request {
 
     /**
      * @param arg Action argument.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Request setArgument(Object arg) {
         this.arg = arg;

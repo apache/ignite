@@ -35,21 +35,77 @@ import static org.awaitility.Awaitility.with;
  */
 public class RetryableSenderTest {
     /**
-     * Should split list of elements into batches and send.
+     * Should send single element.
      */
     @Test
-    public void shouldSendInBatches() throws Exception {
-        List<List<Integer>> results = new ArrayList<>();
+    public void shouldSendSingleElement() throws Exception {
+        List<List<Object>> results = new ArrayList<>();
 
-        RetryableSender<Integer> snd = new RetryableSender<Integer>(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
-            @Override boolean sendInternal(String dest, List<Integer> elements) {
+        RetryableSender snd = new RetryableSender(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
+            @Override boolean sendInternal(String dest, List<Object> elements) {
                 results.add(elements);
 
                 return true;
             }
         };
 
-        snd.send("dest", IntStream.range(0, 17).boxed().collect(Collectors.toList()));
+        snd.send("dest", 1);
+
+        with().pollInterval(100, MILLISECONDS).await().atMost(1, SECONDS)
+            .until(() -> !results.isEmpty() && results.get(0).size() == 1);
+    }
+
+    /**
+     * Should retry send element if we can't send.
+     */
+    @Test
+    public void shouldRetrySendSingleElement() throws Exception {
+        List<List<Object>> results = new ArrayList<>();
+
+        AtomicBoolean shouldSnd = new AtomicBoolean(false);
+
+        AtomicInteger retryCnt = new AtomicInteger();
+
+        RetryableSender snd = new RetryableSender(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
+            @Override boolean sendInternal(String dest, List<Object> elements) {
+                if (!shouldSnd.get()) {
+                    retryCnt.incrementAndGet();
+
+                    return false;
+                }
+
+                results.add(elements);
+
+                return true;
+            }
+        };
+
+        snd.send("dest", 1);
+        snd.send("dest", 2);
+
+        with().pollInterval(500, MILLISECONDS).await().atMost(10, SECONDS).until(() -> retryCnt.get() >= 2);
+
+        shouldSnd.set(true);
+
+        with().pollInterval(100, MILLISECONDS).await().atMost(10, SECONDS).until(() -> results.size() == 2);
+    }
+
+    /**
+     * Should split list of elements into batches and send.
+     */
+    @Test
+    public void shouldSendInBatches() throws Exception {
+        List<List<Object>> results = new ArrayList<>();
+
+        RetryableSender snd = new RetryableSender(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
+            @Override boolean sendInternal(String dest, List<Object> elements) {
+                results.add(elements);
+
+                return true;
+            }
+        };
+
+        snd.sendList("dest", IntStream.range(0, 17).boxed().collect(Collectors.toList()));
 
         with().pollInterval(100, MILLISECONDS).await().atMost(1, SECONDS)
             .until(() -> !results.isEmpty() && results.get(0).size() == 10);
@@ -63,14 +119,14 @@ public class RetryableSenderTest {
      */
     @Test
     public void shouldRetrySend() throws Exception {
-        List<List<Integer>> results = new ArrayList<>();
+        List<List<Object>> results = new ArrayList<>();
 
         AtomicBoolean shouldSnd = new AtomicBoolean(false);
 
         AtomicInteger retryCnt = new AtomicInteger();
 
-        RetryableSender<Integer> snd = new RetryableSender<Integer>(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
-            @Override boolean sendInternal(String dest, List<Integer> elements) {
+        RetryableSender snd = new RetryableSender(new StandaloneGridKernalContext(new NullLogger(), null, null)) {
+            @Override boolean sendInternal(String dest, List<Object> elements) {
                 if (!shouldSnd.get()) {
                     retryCnt.incrementAndGet();
 
@@ -83,7 +139,7 @@ public class RetryableSenderTest {
             }
         };
 
-        snd.send("dest", IntStream.range(0, 17).boxed().collect(Collectors.toList()));
+        snd.sendList("dest", IntStream.range(0, 17).boxed().collect(Collectors.toList()));
 
         with().pollInterval(500, MILLISECONDS).await().atMost(10, SECONDS).until(() -> retryCnt.get() >= 2);
 

@@ -44,7 +44,7 @@ public class NextPageQueryArgument {
 
     /**
      * @param qryId Query id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public NextPageQueryArgument setQueryId(String qryId) {
         this.qryId = qryId;
@@ -61,7 +61,7 @@ public class NextPageQueryArgument {
 
     /**
      * @param cursorId Cursor id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public NextPageQueryArgument setCursorId(String cursorId) {
         this.cursorId = cursorId;
@@ -78,7 +78,7 @@ public class NextPageQueryArgument {
 
     /**
      * @param pageSize Page size.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public NextPageQueryArgument setPageSize(int pageSize) {
         this.pageSize = pageSize;
@@ -95,7 +95,7 @@ public class NextPageQueryArgument {
 
     /**
      * @param targetNodeId Target node id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public NextPageQueryArgument setTargetNodeId(UUID targetNodeId) {
         this.targetNodeId = targetNodeId;

@@ -44,7 +44,7 @@ public class CacheSqlIndexMetadata {
 
     /**
      * @param name Index name.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheSqlIndexMetadata setName(String name) {
         this.name = name;
@@ -61,7 +61,7 @@ public class CacheSqlIndexMetadata {
 
     /**
      * @param fields Fields.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheSqlIndexMetadata setFields(Collection<String> fields) {
         this.fields = fields;
@@ -78,7 +78,7 @@ public class CacheSqlIndexMetadata {
 
     /**
      * @param descendings Descendings.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheSqlIndexMetadata setDescendings(Collection<String> descendings) {
         this.descendings = descendings;
@@ -95,7 +95,7 @@ public class CacheSqlIndexMetadata {
 
     /**
      * @param unique Unique.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public CacheSqlIndexMetadata setUnique(boolean unique) {
         this.unique = unique;

@@ -47,7 +47,7 @@ public class Response {
 
     /**
      * @param id Response id.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Response setId(UUID id) {
         this.id = id;
@@ -64,7 +64,7 @@ public class Response {
 
     /**
      * @param res Response.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Response setResult(Object res) {
         this.res = res;
@@ -81,7 +81,7 @@ public class Response {
 
     /**
      * @param error Response error.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Response setError(ResponseError error) {
         this.error = error;
@@ -98,7 +98,7 @@ public class Response {
 
     /**
      * @param status Action status.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Response setStatus(ActionStatus status) {
         this.status = status;

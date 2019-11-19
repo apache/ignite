@@ -34,7 +34,7 @@ public class InvalidRequest extends Request {
 
     /**
      * @param cause Cause.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public InvalidRequest setCause(Throwable cause) {
         this.cause = cause;

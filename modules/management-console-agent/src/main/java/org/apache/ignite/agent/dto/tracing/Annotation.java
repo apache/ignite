@@ -53,7 +53,7 @@ public class Annotation {
 
     /**
      * @param ts Timestamp.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Annotation setTimestamp(long ts) {
         this.ts = ts;
@@ -70,7 +70,7 @@ public class Annotation {
 
     /**
      * @param val Value.
-     * @return @{code This} for chaining method calls.
+     * @return {@code This} for chaining method calls.
      */
     public Annotation setValue(String val) {
         this.val = val;
