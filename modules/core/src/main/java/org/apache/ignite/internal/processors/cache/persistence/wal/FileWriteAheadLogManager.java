@@ -1241,7 +1241,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 metrics.onWallRollOver();
 
             if (switchSegmentRecordOffset != null) {
-                int idx = (int)((cur.getSegmentId() + 1) % dsCfg.getWalSegments());
+                int idx = (int)(cur.getSegmentId() % dsCfg.getWalSegments());
 
                 switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
             }
