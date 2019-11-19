@@ -326,6 +326,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "LOCAL_CACHE_GROUPS_IO",
             "LOCAL_SQL_QUERY_HISTORY",
             "LOCAL_SQL_RUNNING_QUERIES",
+            "SCAN_QUERIES",
             "NODES",
             "NODE_ATTRIBUTES",
             "NODE_METRICS",
