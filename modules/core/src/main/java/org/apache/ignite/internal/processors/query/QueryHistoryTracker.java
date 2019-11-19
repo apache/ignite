@@ -21,7 +21,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  *
@@ -71,7 +73,7 @@ class QueryHistoryTracker {
      * @return {@code true} In case entry is new and has been added, {@code false} otherwise.
      */
     private boolean touch(QueryHistory entry) {
-        ConcurrentLinkedDeque8.Node<QueryHistory> node = entry.link();
+        Node<QueryHistory> node = entry.link();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -95,7 +97,7 @@ class QueryHistoryTracker {
         }
         else if (removeLink(node)) {
             // Move node to tail.
-            ConcurrentLinkedDeque8.Node<QueryHistory> newNode = evictionQueue.offerLastx(entry);
+            Node<QueryHistory> newNode = evictionQueue.offerLastx(entry);
 
             if (!entry.replaceLink(node, newNode)) {
                 // Was concurrently added, need to clear it from queue.
@@ -129,7 +131,7 @@ class QueryHistoryTracker {
      * @param node Node which should be unlinked from eviction queue.
      * @return {@code true} If node was unlinked.
      */
-    private boolean removeLink(ConcurrentLinkedDeque8.Node<QueryHistory> node) {
+    private boolean removeLink(Node<QueryHistory> node) {
         return evictionQueue.unlinkx(node);
     }
 
