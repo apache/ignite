@@ -205,6 +205,14 @@ public interface CacheQuery<T> {
     public CacheQuery<T> timeout(long timeout);
 
     /**
+     * Sets limit of returned records. {@code 0} means there is no limit
+     *
+     * @param limit Records limit.
+     * @return {@code this} query instance for chaining.
+     */
+    public CacheQuery<T> limit(int limit);
+
+    /**
      * Sets whether or not to include backup entries into query result. This flag
      * is {@code false} by default.
      *

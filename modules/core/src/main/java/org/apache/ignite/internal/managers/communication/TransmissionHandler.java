@@ -41,11 +41,15 @@ import java.util.function.Consumer;
  */
 public interface TransmissionHandler {
     /**
+     * @param nodeId Remote node id on which the error occurred.
      * @param err The err of fail handling process.
      */
     public void onException(UUID nodeId, Throwable err);
 
     /**
+     * Absolute path of a file to receive remote transmission data into. The {@link TransmissionCancelledException}
+     * can be thrown if it is necessary to gracefully interrupt current transmission session on the node-sender.
+     *
      * @param nodeId Remote node id from which request has been received.
      * @param fileMeta File meta info.
      * @return Absolute pathname denoting a file.
@@ -56,6 +60,9 @@ public interface TransmissionHandler {
      * <em>Chunk handler</em> represents by itself the way of input data stream processing.
      * It accepts within each chunk a {@link ByteBuffer} with data from input for further processing.
      * Activated when the {@link TransmissionPolicy#CHUNK} policy sent.
+     * <p>
+     * The {@link TransmissionCancelledException} can be thrown to gracefully interrupt the local transmission and
+     * the node-senders transmission session.
      *
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.
@@ -67,6 +74,9 @@ public interface TransmissionHandler {
      * <em>File handler</em> represents by itself the way of input data stream processing. All the data will
      * be processed under the hood using zero-copy transferring algorithm and only start file processing and
      * the end of processing will be provided. Activated when the {@link TransmissionPolicy#FILE} policy sent.
+     * <p>
+     * The {@link TransmissionCancelledException} can be thrown to gracefully interrupt the local transmission and
+     * the node-senders transmission session.
      *
      * @param nodeId Remote node id from which request has been received.
      * @param initMeta Initial handler meta info.

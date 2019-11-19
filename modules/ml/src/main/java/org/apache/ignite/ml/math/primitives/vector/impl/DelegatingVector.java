@@ -374,11 +374,6 @@ public class DelegatingVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return dlg.isDistributed();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isNumeric() {
         return dlg.isNumeric();
     }

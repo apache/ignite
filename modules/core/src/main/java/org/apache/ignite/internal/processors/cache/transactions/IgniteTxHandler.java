@@ -1509,7 +1509,6 @@ public class IgniteTxHandler {
             try {
                 // Mark transaction for invalidate.
                 tx.invalidate(true);
-
                 tx.systemInvalidate(true);
 
                 try {
@@ -1835,7 +1834,7 @@ public class IgniteTxHandler {
                             }
                         }
                         catch (GridDhtInvalidPartitionException e) {
-                            tx.addInvalidPartition(cacheCtx, e.partition());
+                            tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
 
                             tx.clearEntry(entry.txKey());
                         }
@@ -1844,7 +1843,7 @@ public class IgniteTxHandler {
                         }
                     }
                     else
-                        tx.addInvalidPartition(cacheCtx, part);
+                        tx.addInvalidPartition(cacheCtx.cacheId(), part);
 
                     idx++;
                 }
@@ -1913,7 +1912,7 @@ public class IgniteTxHandler {
                     try {
                         // do not process renting partitions.
                         if (locPart.state() == GridDhtPartitionState.RENTING) {
-                            tx.addInvalidPartition(ctx, part);
+                            tx.addInvalidPartition(ctx.cacheId(), part);
 
                             continue;
                         }
@@ -2027,12 +2026,11 @@ public class IgniteTxHandler {
                         locPart.release();
                     }
                 }
-                else {
-                    tx.addInvalidPartition(ctx, part);
-                }
+                else
+                    tx.addInvalidPartition(ctx.cacheId(), part);
             }
             catch (GridDhtInvalidPartitionException e) {
-                tx.addInvalidPartition(ctx, e.partition());
+                tx.addInvalidPartition(ctx.cacheId(), e.partition());
             }
         }
     }

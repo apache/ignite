@@ -91,6 +91,12 @@ namespace Apache.Ignite.Core.Client
         ICollection<string> GetCacheNames();
 
         /// <summary>
+        /// Gets Ignite cluster.
+        /// </summary>
+        /// <returns>Instance of <see cref="IClientCluster" /> interface.</returns>
+        IClientCluster GetCluster();
+
+        /// <summary>
         /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
         /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
         /// </summary>
