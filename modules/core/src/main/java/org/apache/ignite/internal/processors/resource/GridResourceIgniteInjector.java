@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.spi.IgniteSpi;
 
 import static org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy.proxy;
 
@@ -45,7 +46,9 @@ public class GridResourceIgniteInjector extends GridResourceBasicInjector<Ignite
      * @return Proxed instance of Ignite.
      */
     private Ignite ignite(Object target) {
-        return SecurityUtils.isInternalPkgClass(target) ? getResource() : proxy(Ignite.class, getResource());
+        return SecurityUtils.isInternalPkgClass(target) || target instanceof IgniteSpi
+            ? getResource()
+            : proxy(Ignite.class, getResource());
     }
 
     /** {@inheritDoc} */
