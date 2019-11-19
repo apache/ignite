@@ -200,12 +200,12 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         // Check that collected metrics contains correct items: metrics for last N queries.
 
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
+        Collection<QueryHistory> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
             .runningQueryManager().queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
-        Set<String> qries = metrics.stream().map(QueryHistoryMetrics::query).collect(Collectors.toSet());
+        Set<String> qries = metrics.stream().map(QueryHistory::query).collect(Collectors.toSet());
 
         for (int i = 0; i < cmds.size(); i++)
             assertTrue(qries.contains(cmds.get(QUERY_HISTORY_SIZE - 1 - i)));
@@ -291,12 +291,12 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             checkMetrics(QUERY_HISTORY_SIZE, i, 1, 0, false);
 
         // Check that collected metrics contains correct items: metrics for last N queries.
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
+        Collection<QueryHistory> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
             .runningQueryManager().queryHistoryMetrics().values();
 
         assertEquals(QUERY_HISTORY_SIZE, metrics.size());
 
-        Set<String> qries = metrics.stream().map(QueryHistoryMetrics::query).collect(Collectors.toSet());
+        Set<String> qries = metrics.stream().map(QueryHistory::query).collect(Collectors.toSet());
 
         assertTrue(qries.contains("SELECT \"A\".\"STRING\"._KEY, \"A\".\"STRING\"._VAL from String"));
         assertTrue(qries.contains("select * from String limit 2"));
@@ -423,7 +423,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     private void checkMetrics(int sz, int idx, int execs, int failures,
         boolean first) {
 
-        Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
+        Collection<QueryHistory> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
             .runningQueryManager().queryHistoryMetrics().values();
 
         assertNotNull(metrics);
@@ -432,7 +432,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         if (sz == 0)
             return;
 
-        QueryHistoryMetrics m = new ArrayList<>(metrics).get(idx);
+        QueryHistory m = new ArrayList<>(metrics).get(idx);
 
         info("Metrics: " + m);
 
@@ -564,7 +564,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     private void waitingFor(final String cond, final int exp) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(() -> {
-            Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
+            Collection<QueryHistory> metrics = ((IgniteH2Indexing)queryNode().context().query().getIndexing())
                 .runningQueryManager().queryHistoryMetrics().values();
 
             switch (cond) {
@@ -574,7 +574,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
                 case "executions":
                     int executions = 0;
 
-                    for (QueryHistoryMetrics m : metrics)
+                    for (QueryHistory m : metrics)
                         executions += m.executions();
 
                     return executions == exp;
