@@ -20,16 +20,21 @@ import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -41,8 +46,11 @@ import org.junit.Test;
  *
  */
 public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest {
-    /** Test class loader. */
-    private static final ClassLoader TEST_CLASS_LOADER;
+    /** Test class loader 1. */
+    private static final ClassLoader TEST_CLASS_LOADER_1;
+
+    /** Test class loader 2. */
+    private static final ClassLoader TEST_CLASS_LOADER_2;
 
     /** Name of explicit class used as a Transformer for Scan Query. */
     private static final String TRANSFORMER_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.ScanQueryTestTransformer";
@@ -60,12 +68,21 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
     /** Initialize ClassLoader. */
     static {
         try {
-            TEST_CLASS_LOADER = new URLClassLoader(
+            TEST_CLASS_LOADER_1 = new URLClassLoader(
                 new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))},
                 GridP2PScanQueryWithTransformerTest.class.getClassLoader());
         }
         catch (MalformedURLException e) {
             throw new RuntimeException("Define property p2p.uri.cls", e);
+        }
+
+        try {
+            TEST_CLASS_LOADER_2 = new URLClassLoader(
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls.second"))},
+                GridP2PScanQueryWithTransformerTest.class.getClassLoader());
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException("Define property p2p.uri.cls.2", e);
         }
     }
 
@@ -77,6 +94,12 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
     /** */
     private IgniteLogger logger;
+
+    /** */
+    private Integer localDiscoPort;
+
+    /** */
+    private Integer remoteDiscoPort;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -92,12 +115,157 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        if (localDiscoPort != null) {
+            TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+            disco.setLocalPort(localDiscoPort);
+        }
+
+        if (remoteDiscoPort != null) {
+            TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+            TcpDiscoveryVmIpFinder finder = (TcpDiscoveryVmIpFinder)disco.getIpFinder();
+
+            finder.setAddresses(Collections.singleton("127.0.0.1:" + remoteDiscoPort));
+        }
+
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
         cfg.setClassLoader(clsLoader);
         if (logger != null)
             cfg.setGridLogger(logger);
 
         return cfg;
+    }
+
+    /**
+     * Verifies that different versions of the same class could be deployed for Scan Query Transformer.
+     * Deploying new version at the particular server node doesn't replace old version on other servers.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeployDiffVersions() throws Exception {
+        p2pEnabled = true;
+
+        //prime number bigger than the biggest key in cache
+        int scaleFactor = 13;
+
+        localDiscoPort = 47500;
+        IgniteEx ig0 = startGrid(0);
+
+        IgniteCache<Object, Object> cache = ig0.createCache(DEFAULT_CACHE_NAME);
+        int initSum = populateCache(cache);
+
+        localDiscoPort = null;
+        remoteDiscoPort = 47500;
+        IgniteEx cl0 = startClientGrid(1);
+        remoteDiscoPort = null;
+
+        QueryCursor query0 = cl0.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(), loadTransformerClass(TEST_CLASS_LOADER_2, scaleFactor));
+        query0.getAll();
+
+        localDiscoPort = 47505;
+        IgniteEx ig1 = startGrid(2);
+        localDiscoPort = null;
+
+        awaitPartitionMapExchange();
+
+        remoteDiscoPort = 47505;
+        IgniteEx cl1 = startClientGrid(3);
+
+        QueryCursor query1 = cl1.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(), loadTransformerClass(TEST_CLASS_LOADER_1, scaleFactor));
+        List all = query1.getAll();
+
+        assertBothTransformersApplied(all, initSum, scaleFactor);
+    }
+
+    /**
+     * Verifies that when p2p deployment is disabled client transformes is ignored,
+     * classes available on server classpath are used.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeployDifferentVersionsOfClass() throws Exception {
+        p2pEnabled = false;
+
+        clsLoader = TEST_CLASS_LOADER_1;
+
+        IgniteEx ig0 = startGrid(0);
+
+        int initialSum = populateCache(ig0.createCache(DEFAULT_CACHE_NAME));
+
+        clsLoader = null;
+
+        IgniteEx cl = startClientGrid(2);
+
+        QueryCursor<Integer> query = cl.cache(DEFAULT_CACHE_NAME).query(
+            new ScanQuery<>(),
+            loadTransformerClass(TEST_CLASS_LOADER_2, SCALE_FACTOR));
+
+        assertTransformerVer1Applied(query.getAll(), initialSum, SCALE_FACTOR);
+    }
+
+    /**
+     * @param values Values received from cache.
+     * @param initialSum Sum of initial (before transformation) values of cache.
+     * @param scaleFactorUsed Scale factor used to transform values of cache.
+     */
+    private void assertTransformerVer1Applied(List<Integer> values, int initialSum, int scaleFactorUsed) {
+        int sum = values.stream().mapToInt(i -> i).sum();
+
+        //Transformer version1 is multiplying transformer,
+        // so sum of all keys must be initial sum multiplied by scale factor (the same as used in transformer).
+        assertTrue(sum == initialSum * scaleFactorUsed);
+    }
+
+    /**
+     * @param values Values received from cache.
+     * @param initialSum Sum of initial (before transformation) values of cache.
+     * @param scaleFactorUsed Scale factor used to transform values of cache.
+     */
+    private void assertBothTransformersApplied(List<Integer> values, int initialSum, int scaleFactorUsed) {
+        int sum = values.stream().mapToInt(i -> i).sum();
+
+        //False that none of transformers applied.
+        assertFalse(sum == initialSum);
+        //False that only ver1 transformer is applied.
+        assertFalse(sum == initialSum * scaleFactorUsed);
+        //False that only ver2 transformer is applied.
+        assertFalse(sum == initialSum + values.size() * scaleFactorUsed);
+        //All values should be transformed,
+        // and as scale factor was used bigger than the biggest key (which is CACHE_SIZE - 1)
+        // the following checks must hold
+        for (Integer val : values) {
+            if (val != 0) {
+                assertTrue(val > CACHE_SIZE);
+            }
+        }
+    }
+
+    /**
+     * Verifies that class on server's local classpath has a priority over p2p-deployed class:
+     * when p2p deployment is enabled and client submits a Scan Query with another version of the same class,
+     * server version is used.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testP2PClassDoesNotOverriteLocalServerClasspathClass() throws Exception {
+        p2pEnabled = true;
+
+        clsLoader = TEST_CLASS_LOADER_1;
+
+        IgniteEx ig0 = startGrid(0);
+
+        clsLoader = null;
+
+        int initialSum = populateCache(ig0.createCache(DEFAULT_CACHE_NAME));
+
+        IgniteEx cl = startClientGrid(1);
+
+        QueryCursor query = cl.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(), loadTransformerClass(TEST_CLASS_LOADER_2, SCALE_FACTOR));
+
+        assertTransformerVer1Applied(query.getAll(), initialSum, SCALE_FACTOR);
     }
 
     /**
@@ -152,7 +320,10 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
 
         IgniteCache<Object, Object> clientCache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = clientCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> query = clientCache.query(
+            new ScanQuery<Integer, Integer>(),
+            loadTransformerClass(TEST_CLASS_LOADER_1, SCALE_FACTOR)
+        );
 
         List<Integer> results = query.getAll();
 
@@ -275,13 +446,16 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
         if (withClientNode)
              requestingNode = startClientGrid(1);
         else {
-            clsLoader = TEST_CLASS_LOADER;
+            clsLoader = TEST_CLASS_LOADER_1;
             requestingNode = startGrid(1);
         }
 
         IgniteCache<Object, Object> reqNodeCache = requestingNode.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        QueryCursor<Integer> query = reqNodeCache.query(new ScanQuery<Integer, Integer>(), loadTransformerClass());
+        QueryCursor<Integer> query = reqNodeCache.query(
+            new ScanQuery<Integer, Integer>(),
+            loadTransformerClass(TEST_CLASS_LOADER_1, SCALE_FACTOR)
+        );
 
         int sumQueried = 0;
 
@@ -321,7 +495,7 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
         if (withClientNode)
             requestNode = startClientGrid(1);
         else {
-            clsLoader = TEST_CLASS_LOADER;
+            clsLoader = TEST_CLASS_LOADER_1;
             requestNode = startGrid(1);
         }
 
@@ -354,7 +528,19 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
         for (int i = 0; i < CACHE_SIZE; i++) {
             sum += i;
 
-            cache.put(i, i);
+            cache.put(i * 1017, i);
+        }
+
+        return sum;
+    }
+
+    private int repopulateCache(IgniteCache cache) {
+        int sum = 0;
+
+        for (int i = CACHE_SIZE; i < 2 * CACHE_SIZE; i++) {
+            sum += i;
+
+            cache.put(i * 1017, i);
         }
 
         return sum;
@@ -366,10 +552,10 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @return Instance of transformer class.
      * @throws Exception If load has failed.
      */
-    private IgniteClosure loadTransformerClass() throws Exception {
-        Constructor ctor = TEST_CLASS_LOADER.loadClass(TRANSFORMER_CLASS_NAME).getConstructor(int.class);
+    private IgniteClosure loadTransformerClass(ClassLoader clsLdr, int scaleFactor) throws Exception {
+        Constructor ctor = clsLdr.loadClass(TRANSFORMER_CLASS_NAME).getConstructor(int.class);
 
-        return (IgniteClosure)ctor.newInstance(SCALE_FACTOR);
+        return (IgniteClosure)ctor.newInstance(scaleFactor);
     }
 
     /**
@@ -380,7 +566,7 @@ public class GridP2PScanQueryWithTransformerTest extends GridCommonAbstractTest 
      * @throws Exception If load has failed.
      */
     private IgniteClosure loadTransformerClosure() throws Exception {
-        Constructor<?> ctor = TEST_CLASS_LOADER.loadClass(TRANSFORMER_CLO_WRAPPER_CLASS_NAME).getConstructor(int.class);
+        Constructor<?> ctor = TEST_CLASS_LOADER_1.loadClass(TRANSFORMER_CLO_WRAPPER_CLASS_NAME).getConstructor(int.class);
 
         Object wrapper = ctor.newInstance(SCALE_FACTOR);
 
