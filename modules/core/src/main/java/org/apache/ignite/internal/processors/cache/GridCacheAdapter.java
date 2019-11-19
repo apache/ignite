@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -6074,13 +6075,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
+        @Override public @Nullable Object localExecute(@Nullable IgniteInternalCache cache) {
             assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
 
-            if (keepBinary)
-                cache = cache.keepBinary();
+            final IgniteInternalCache targetCache = keepBinary ? cache.keepBinary() : cache;
 
-            return super.localExecute(cache);
+            return SecurityUtils.hasSecurityManager()
+                ? SecurityUtils.doPrivileged(() -> super.localExecute(targetCache))
+                : super.localExecute(targetCache);
         }
 
         /** {@inheritDoc} */

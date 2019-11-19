@@ -25,7 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -120,6 +120,8 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     public void test() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
+        startGrid("srv_2", ALLOW_ALL, false);
+
         Ignite clnt = startGrid(CLNT_ALLOWED_THREAD_START, ALLOW_ALL, true);
 
         srv.cluster().active(true);
@@ -136,26 +138,26 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
      */
     private void testComputeOperations(Ignite clnt) {
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
-            () -> {
-                Ignite node = Ignition.localIgnite();
-
-                node.compute().execute(TEST_COMPUTE_TASK, 0);
-                node.compute().broadcast(TEST_CALLABLE);
-                node.compute().call(TEST_CALLABLE);
-                node.compute().run(TEST_RUNNABLE);
-                node.compute().apply(TEST_CLOSURE, new Object());
-                node.compute().executeAsync(TEST_COMPUTE_TASK, 0).get();
-                node.compute().broadcastAsync(TEST_CALLABLE).get();
-                node.compute().callAsync(TEST_CALLABLE).get();
-                node.compute().runAsync(TEST_RUNNABLE).get();
-                node.compute().applyAsync(TEST_CLOSURE, new Object()).get();
-                try {
-                    node.executorService().invokeAll(singletonList(TEST_CALLABLE));
-                    node.executorService().invokeAny(singletonList(TEST_CALLABLE));
-                    node.executorService().submit(TEST_CALLABLE).get();
-                }
-                catch (InterruptedException | ExecutionException e) {
-                    throw new IgniteException(e);
+            new TestRunnable() {
+                @Override public void run() {
+                    ignite.compute().execute(TEST_COMPUTE_TASK, 0);
+                    ignite.compute().broadcast(TEST_CALLABLE);
+                    ignite.compute().call(TEST_CALLABLE);
+                    ignite.compute().run(TEST_RUNNABLE);
+                    ignite.compute().apply(TEST_CLOSURE, new Object());
+                    ignite.compute().executeAsync(TEST_COMPUTE_TASK, 0).get();
+                    ignite.compute().broadcastAsync(TEST_CALLABLE).get();
+                    ignite.compute().callAsync(TEST_CALLABLE).get();
+                    ignite.compute().runAsync(TEST_RUNNABLE).get();
+                    ignite.compute().applyAsync(TEST_CLOSURE, new Object()).get();
+                    try {
+                        ignite.executorService().invokeAll(singletonList(TEST_CALLABLE));
+                        ignite.executorService().invokeAny(singletonList(TEST_CALLABLE));
+                        ignite.executorService().submit(TEST_CALLABLE).get();
+                    }
+                    catch (InterruptedException | ExecutionException e) {
+                        throw new IgniteException(e);
+                    }
                 }
             }
         );
@@ -166,29 +168,31 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
      */
     private void testCacheOperations(Ignite clnt) {
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
-            () -> {
-                IgniteCache<String, String> cache = Ignition.localIgnite().cache(TEST_CACHE);
+            new TestRunnable() {
+                @Override public void run() {
+                    IgniteCache<String, String> cache = ignite.cache(TEST_CACHE);
 
-                cache.put("key", "val");
-                cache.putAll(singletonMap("key", "value"));
-                cache.get("key");
-                cache.getAll(Collections.singleton("key"));
-                cache.containsKey("key");
-                cache.remove("key");
-                cache.removeAll(Collections.singleton("key"));
-                cache.clear();
-                cache.replace("key", "value");
-                cache.putIfAbsent("key", "value");
-                cache.getAndPut("key", "value");
-                cache.getAndRemove("key");
-                cache.getAndReplace("key", "value");
+                    cache.put("key", "val");
+                    cache.putAll(singletonMap("key", "value"));
+                    cache.get("key");
+                    cache.getAll(Collections.singleton("key"));
+                    cache.containsKey("key");
+                    cache.remove("key");
+                    cache.removeAll(Collections.singleton("key"));
+                    cache.clear();
+                    cache.replace("key", "value");
+                    cache.putIfAbsent("key", "value");
+                    cache.getAndPut("key", "value");
+                    cache.getAndRemove("key");
+                    cache.getAndReplace("key", "value");
 
-                cache.invoke("key", processor());
-                cache.invokeAll(singleton("key"), processor());
-                cache.invokeAsync("key", processor()).get();
-                cache.invokeAllAsync(singleton("key"), processor()).get();
+                    cache.invoke("key", processor());
+                    cache.invokeAll(singleton("key"), processor());
+                    cache.invokeAsync("key", processor()).get();
+                    cache.invokeAllAsync(singleton("key"), processor()).get();
 
-                cache.query(new ScanQuery<String, Integer>()).getAll();
+                    cache.query(new ScanQuery<String, Integer>()).getAll();
+                }
             }
         );
     }
@@ -196,14 +200,17 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** */
     private void testDataStreamerOperations(Ignite clnt) {
         clnt.compute(clnt.cluster().forRemotes())
-            .broadcast(() -> {
-                try (IgniteDataStreamer<String, String> s = Ignition.localIgnite().dataStreamer(TEST_CACHE)) {
-                    s.addData("k", "val");
-                    s.addData(singletonMap("key", "val"));
-                    s.addData((Map.Entry<String, String>)entry());
-                    s.addData(singletonList(entry()));
-                }
-            });
+            .broadcast(
+                new TestRunnable() {
+                    @Override public void run() {
+                        try (IgniteDataStreamer<String, String> s = ignite.dataStreamer(TEST_CACHE)) {
+                            s.addData("k", "val");
+                            s.addData(singletonMap("key", "val"));
+                            s.addData((Map.Entry<String, String>)entry());
+                            s.addData(singletonList(entry()));
+                        }
+                    }
+                });
     }
 
     /**
@@ -220,7 +227,12 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /**
      * @return Cache entry for test.
      */
-    protected T2<String, String> entry() {
+    private T2<String, String> entry() {
         return new T2<>("key", "val");
+    }
+
+    private abstract class TestRunnable implements IgniteRunnable {
+        @IgniteInstanceResource
+        protected Ignite ignite;
     }
 }

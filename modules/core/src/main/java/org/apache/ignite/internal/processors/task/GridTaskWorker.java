@@ -69,7 +69,6 @@ import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.CO;
@@ -512,10 +511,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
 
-            if (SecurityUtils.hasSecurityManager())
-                SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, task, ses, balancer, mapper));
-            else
-                ctx.resource().inject(dep, task, ses, balancer, mapper);
+            ctx.resource().inject(dep, task, ses, balancer, mapper);
 
             Map<? extends ComputeJob, ClusterNode> mappedJobs = U.wrapThreadLoader(dep.classLoader(),
                 new Callable<Map<? extends ComputeJob, ClusterNode>>() {
@@ -1391,9 +1387,38 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                     try {
                         MarshallerUtils.jobReceiverVersion(node.version());
 
-                        req = SecurityUtils.hasSecurityManager() ? SecurityUtils.doPrivileged(
-                            () -> gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout))
-                            : gridJobExecuteRequest(loc, res, sesAttrs, jobAttrs, forceLocDep, timeout);
+                        req = new GridJobExecuteRequest(
+                            ses.getId(),
+                            res.getJobContext().getJobId(),
+                            ses.getTaskName(),
+                            ses.getUserVersion(),
+                            ses.getTaskClassName(),
+                            loc ? null : U.marshal(marsh, res.getJob()),
+                            loc ? res.getJob() : null,
+                            ses.getStartTime(),
+                            timeout,
+                            ses.getTopology(),
+                            loc ? ses.getTopologyPredicate() : null,
+                            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
+                            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
+                            loc ? ses.getJobSiblings() : null,
+                            loc ? null : U.marshal(marsh, sesAttrs),
+                            loc ? sesAttrs : null,
+                            loc ? null : U.marshal(marsh, jobAttrs),
+                            loc ? jobAttrs : null,
+                            ses.getCheckpointSpi(),
+                            dep.classLoaderId(),
+                            dep.deployMode(),
+                            continuous,
+                            dep.participants(),
+                            forceLocDep,
+                            ses.isFullSupport(),
+                            internal,
+                            subjId,
+                            affCacheIds,
+                            affPartId,
+                            mapTopVer,
+                            ses.executorName());
                     }
                     finally {
                         MarshallerUtils.jobReceiverVersion(null);
@@ -1466,47 +1491,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             onResponse(fakeRes);
         }
-    }
-
-    private GridJobExecuteRequest gridJobExecuteRequest(
-        boolean loc,
-        ComputeJobResult res,
-        Map<Object, Object> sesAttrs,
-        Map<? extends Serializable, ? extends Serializable> jobAttrs,
-        boolean forceLocDep,
-        long timeout) throws IgniteCheckedException {
-        return new GridJobExecuteRequest(
-            ses.getId(),
-            res.getJobContext().getJobId(),
-            ses.getTaskName(),
-            ses.getUserVersion(),
-            ses.getTaskClassName(),
-            loc ? null : U.marshal(marsh, res.getJob()),
-            loc ? res.getJob() : null,
-            ses.getStartTime(),
-            timeout,
-            ses.getTopology(),
-            loc ? ses.getTopologyPredicate() : null,
-            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
-            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
-            loc ? ses.getJobSiblings() : null,
-            loc ? null : U.marshal(marsh, sesAttrs),
-            loc ? sesAttrs : null,
-            loc ? null : U.marshal(marsh, jobAttrs),
-            loc ? jobAttrs : null,
-            ses.getCheckpointSpi(),
-            dep.classLoaderId(),
-            dep.deployMode(),
-            continuous,
-            dep.participants(),
-            forceLocDep,
-            ses.isFullSupport(),
-            internal,
-            subjId,
-            affCacheIds,
-            affPartId,
-            mapTopVer,
-            ses.executorName());
     }
 
     /**

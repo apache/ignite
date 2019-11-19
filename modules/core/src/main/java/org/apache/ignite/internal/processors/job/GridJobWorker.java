@@ -450,10 +450,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
 
             // Inject resources.
-            if (SecurityUtils.hasSecurityManager())
-                SecurityUtils.doPrivileged(() -> ctx.resource().inject(dep, taskCls, job, ses, jobCtx));
-            else
-                ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
+            ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");

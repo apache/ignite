@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,18 +71,17 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  */
 public abstract class PagesList extends DataStructure {
     /** */
-    private static final int TRY_LOCK_ATTEMPTS = SecurityUtils.doPrivileged(
-        () -> IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10));
+    private static final int TRY_LOCK_ATTEMPTS =
+        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_TRY_LOCK_ATTEMPTS", 10);
 
     /** */
-    private static final int MAX_STRIPES_PER_BUCKET = SecurityUtils.doPrivileged(
-        () -> IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
-            Math.max(8, Runtime.getRuntime().availableProcessors())));
+    private static final int MAX_STRIPES_PER_BUCKET =
+        IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
+            Math.max(8, Runtime.getRuntime().availableProcessors()));
 
     /** */
-    private final boolean pagesListCachingDisabledSysProp = SecurityUtils.doPrivileged(
-        () -> IgniteSystemProperties.getBoolean(
-            IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, false));
+    private final boolean pagesListCachingDisabledSysProp =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, false);
 
     /** */
     protected final AtomicLong[] bucketsSize;

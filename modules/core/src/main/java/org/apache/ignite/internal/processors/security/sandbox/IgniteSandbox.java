@@ -40,22 +40,6 @@ public interface IgniteSandbox {
     public <T> T execute(Callable<T> call) throws IgniteException;
 
     /**
-     * Executes {@code runnable} with constraints defined by current {@code SecuritySubject}.
-     *
-     * @param runnable Runnable to execute.
-     * @see IgniteSecurity#withContext(UUID)
-     * @see IgniteSecurity#withContext(SecurityContext)
-     * @see SecuritySubject#sandboxPermissions()
-     */
-    public default void execute(Runnable runnable) throws IgniteException {
-        execute(() -> {
-            runnable.run();
-
-            return null;
-        });
-    }
-
-    /**
      * @return True if the sandbox is enabled.
      */
     public boolean enabled();

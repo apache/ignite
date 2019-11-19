@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSe
  */
 public class AccessControllerSandbox implements IgniteSandbox {
     /** */
-    private static final ProtectionDomain[] NULL_PD_ARRAY = new ProtectionDomain[0];
+    private static final AccessControlContext NULL_PD_ARRAY_CONTEXT = new AccessControlContext(new ProtectionDomain[0]);
 
     /** Instance of IgniteSecurity. */
     private final IgniteSecurity security;
@@ -59,8 +59,7 @@ public class AccessControllerSandbox implements IgniteSandbox {
         assert secCtx != null;
 
         final AccessControlContext acc = AccessController.doPrivileged(
-            (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(
-                new AccessControlContext(NULL_PD_ARRAY),
+            (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(NULL_PD_ARRAY_CONTEXT,
                 new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()))
         );
 

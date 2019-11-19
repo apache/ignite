@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.lang.ref.WeakReference;
 import java.security.DomainCombiner;
 import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
-import java.util.WeakHashMap;
 
 /**
  * A {@code IgniteSubjectDomainCombainer} updates ProtectionDomains with passed {@code Permissions}.
  */
 public class IgniteDomainCombiner implements DomainCombiner {
     /** */
-    private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
-
-    /** */
-    private final PermissionCollection perms;
+    private final ProtectionDomain pd;
 
     /** */
     public IgniteDomainCombiner(PermissionCollection perms) {
-        this.perms = perms;
+        pd = new ProtectionDomain(null, perms);
     }
 
     /** {@inheritDoc} */
@@ -43,46 +38,6 @@ public class IgniteDomainCombiner implements DomainCombiner {
         if (currDomains == null || currDomains.length == 0)
             return assignedDomains;
 
-        if (currDomains == null && assignedDomains == null)
-            return null;
-
-        ProtectionDomain[] newDomains = null;
-
-        if (currDomains != null && currDomains.length > 0) {
-            newDomains = new ProtectionDomain[1];
-
-            synchronized (cachedPDs) {
-                ProtectionDomain pd = currDomains[0];
-
-                ProtectionDomain subjectPd = cachedPDs.getValue(pd);
-
-                if (subjectPd == null) {
-                    subjectPd = new ProtectionDomain(pd.getCodeSource(), perms);
-
-                    cachedPDs.putValue(pd, subjectPd);
-                }
-
-                newDomains[0] = subjectPd;
-            }
-        }
-
-        return newDomains == null || newDomains.length == 0 ? null : newDomains;
-    }
-
-    /** */
-    private static class WeakKeyValueMap<K, V> extends WeakHashMap<K, WeakReference<V>> {
-        /** */
-        public V getValue(K key) {
-            WeakReference<V> wr = get(key);
-
-            return wr != null ? wr.get() : null;
-        }
-
-        /** */
-        public V putValue(K key, V val) {
-            WeakReference<V> wr = put(key, new WeakReference<>(val));
-
-            return wr != null ? wr.get() : null;
-        }
+        return new ProtectionDomain[] {pd};
     }
 }

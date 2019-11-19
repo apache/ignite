@@ -51,6 +51,9 @@ public class SecurityUtils {
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
+    /** Ignite internal package name. */
+    public static final String INTERNAL_PKG_NAME = "org.apache.ignite.internal";
+
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
@@ -186,6 +189,17 @@ public class SecurityUtils {
      */
     public static boolean hasSecurityManager() {
         return System.getSecurityManager() != null;
+    }
+
+    /**
+     * @return True if a class of the {@code obj} belongs to the internal package.
+     */
+    public static boolean isInternalPkgClass(Object obj) {
+        Class objCls = obj.getClass();
+
+        return objCls.getPackage().getName().startsWith(INTERNAL_PKG_NAME) &&
+            SecurityUtils.class.getProtectionDomain().getCodeSource()
+                .equals(objCls.getProtectionDomain().getCodeSource());
     }
 
     /**
