@@ -38,6 +38,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionVie
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
@@ -48,6 +49,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -88,6 +90,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
+        registerWalker(ScanQueryView.class, new ScanQueryViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -101,6 +104,16 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
+    }
+
+    /**
+     * Registers {@link SystemView} instance.
+     *
+     * @param sysView System view.
+     * @param <R> Row type.
+     */
+    public <R> void registerView(SystemView<R> sysView) {
+        registerView0(sysView.name(), sysView);
     }
 
     /**
