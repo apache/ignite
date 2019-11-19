@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  *
@@ -73,7 +74,7 @@ class QueryHistoryTracker {
      * @return {@code true} In case entry is new and has been added, {@code false} otherwise.
      */
     private boolean touch(QueryHistoryMetrics entry) {
-        ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node = entry.link();
+        Node<QueryHistoryMetrics> node = entry.link();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -97,7 +98,7 @@ class QueryHistoryTracker {
         }
         else if (removeLink(node)) {
             // Move node to tail.
-            ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> newNode = evictionQueue.offerLastx(entry);
+            Node<QueryHistoryMetrics> newNode = evictionQueue.offerLastx(entry);
 
             if (!entry.replaceLink(node, newNode)) {
                 // Was concurrently added, need to clear it from queue.
@@ -131,13 +132,13 @@ class QueryHistoryTracker {
      * @param node Node wchi should be unlinked from eviction queue.
      * @return {@code true} If node was unlinked.
      */
-    private boolean removeLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node) {
+    private boolean removeLink(Node<QueryHistoryMetrics> node) {
         return evictionQueue.unlinkx(node);
     }
 
     /**
-     * Gets SQL query history. Size of history could be configured via {@link
-     * IgniteConfiguration#setSqlQueryHistorySize(int)}
+     * Gets SQL query history. Size of history could be configured via
+     * {@link IgniteConfiguration#setSqlQueryHistorySize(int)}
      *
      * @return SQL queries history aggregated by query text, schema and local flag.
      */
