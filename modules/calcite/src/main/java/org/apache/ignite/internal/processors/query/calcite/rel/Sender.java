@@ -23,7 +23,7 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
-import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -48,12 +48,20 @@ public final class Sender extends SingleRel implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T implement(Implementor<T> implementor) {
+    @Override public <T> T implement(RelImplementor<T> implementor) {
         return implementor.implement(this);
     }
 
     public void init(NodesMapping mapping) {
         targetMapping = mapping;
+    }
+
+    public DistributionTrait targetDistribution() {
+        return targetDistr;
+    }
+
+    public NodesMapping targetMapping() {
+        return targetMapping;
     }
 
     public DestinationFunction targetFunction(org.apache.calcite.plan.Context ctx) {

@@ -21,7 +21,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 /**
  *
@@ -40,7 +40,7 @@ public final class Receiver extends AbstractRelNode implements IgniteRel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T implement(Implementor<T> implementor) {
+    @Override public <T> T implement(RelImplementor<T> implementor) {
         return implementor.implement(this);
     }
 

@@ -32,11 +32,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
+import org.apache.ignite.internal.processors.query.calcite.trait.AbstractDestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -141,7 +141,7 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         return new NodesMapping(nodes, null, flags);
     }
 
-    private static class AffinityFactory implements DestinationFunctionFactory {
+    private static class AffinityFactory extends AbstractDestinationFunctionFactory {
         private final int cacheId;
         private final Object key;
 

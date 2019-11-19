@@ -16,12 +16,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
+import java.io.Serializable;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 /**
  *
  */
-public interface Expression {
-    RexNode toRex(RexBuilder builder);
+public interface ExpressionType extends Serializable {
+    static ExpressionType fromType(RelDataType type) {
+        return type.isStruct() ? StructType.fromType(type) : FieldType.fromType(type);
+    }
+
+    RelDataType toRelDataType(RelDataTypeFactory factory);
 }

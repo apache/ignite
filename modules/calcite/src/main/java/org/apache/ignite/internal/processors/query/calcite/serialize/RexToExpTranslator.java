@@ -36,62 +36,66 @@ import org.apache.calcite.rex.RexVisitor;
 /**
  *
  */
-public class RexToExpTranslator implements RexVisitor<Expression> {
-     @Override public Expression visitInputRef(RexInputRef inputRef) {
-        return new InputRefExpression(inputRef.getType(), inputRef.getIndex());
-    }
-
-    @Override public Expression visitLocalRef(RexLocalRef localRef) {
-        return new LocalRefExpression(localRef.getType(), localRef.getIndex());
-    }
-
-    @Override public Expression visitLiteral(RexLiteral literal) {
-        return new LiteralExpression(literal.getType(), literal.getValue());
-    }
-
-    @Override public Expression visitCall(RexCall call) {
-        return new CallExpression(call.getType(), call.getOperator(), visitList(call.getOperands()));
-    }
-
-    @Override public Expression visitOver(RexOver over) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitCorrelVariable(RexCorrelVariable correlVariable) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitDynamicParam(RexDynamicParam dynamicParam) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitRangeRef(RexRangeRef rangeRef) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitFieldAccess(RexFieldAccess fieldAccess) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitSubQuery(RexSubQuery subQuery) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitTableInputRef(RexTableInputRef fieldRef) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Expression visitPatternFieldRef(RexPatternFieldRef fieldRef) {
-        throw new UnsupportedOperationException();
-    }
-
-    public List<Expression> visitList(List<RexNode> operands) {
-        ArrayList<Expression> res = new ArrayList<>(operands.size());
+public class RexToExpTranslator implements RexVisitor<LogicalExpression> {
+    public List<LogicalExpression> translate(List<RexNode> operands) {
+        ArrayList<LogicalExpression> res = new ArrayList<>(operands.size());
 
         for (RexNode operand : operands) {
-            res.add(operand.accept(this));
+            res.add(translate(operand));
         }
 
         return res;
+    }
+
+    public LogicalExpression translate(RexNode rex) {
+        return rex.accept(this);
+    }
+
+     @Override public LogicalExpression visitInputRef(RexInputRef inputRef) {
+        return new InputRefExpression(inputRef.getType(), inputRef.getIndex());
+    }
+
+    @Override public LogicalExpression visitLocalRef(RexLocalRef localRef) {
+        return new LocalRefExpression(localRef.getType(), localRef.getIndex());
+    }
+
+    @Override public LogicalExpression visitLiteral(RexLiteral literal) {
+        return new LiteralExpression(literal.getType(), literal.getValue());
+    }
+
+    @Override public LogicalExpression visitCall(RexCall call) {
+        return new CallExpression(call.getOperator(), translate(call.getOperands()));
+    }
+
+    @Override public LogicalExpression visitOver(RexOver over) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitCorrelVariable(RexCorrelVariable correlVariable) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitDynamicParam(RexDynamicParam dynamicParam) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitRangeRef(RexRangeRef rangeRef) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitFieldAccess(RexFieldAccess fieldAccess) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitSubQuery(RexSubQuery subQuery) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitTableInputRef(RexTableInputRef fieldRef) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override public LogicalExpression visitPatternFieldRef(RexPatternFieldRef fieldRef) {
+        throw new UnsupportedOperationException();
     }
 }

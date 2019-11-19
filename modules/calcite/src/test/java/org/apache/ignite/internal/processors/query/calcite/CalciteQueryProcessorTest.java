@@ -33,7 +33,16 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
@@ -45,15 +54,21 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.schema.RowType;
-import org.apache.ignite.internal.processors.query.calcite.serialize.Expression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.LogicalExpression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -341,7 +356,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         Project proj = (Project) relRoot.rel.getInput(0);
 
-        List<Expression> expressions = translator.visitList(proj.getProjects());
+        List<LogicalExpression> expressions = translator.translate(proj.getProjects());
 
         assertNotNull(expressions);
     }
@@ -412,7 +427,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     @Test
     public void testSplitterCollocatedReplicatedReplicated() throws Exception {
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+        String sql = "SELECT d.id, (d.id + 1) as id2, d.name, d.projectId, p.id0, p.ver0 " +
             "FROM PUBLIC.Developer d JOIN (" +
             "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
             ") p " +
@@ -504,7 +519,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
-                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+                return IgniteDistributions.hash(rowType.distributionKeys());
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -592,7 +607,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
-                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+                return IgniteDistributions.hash(rowType.distributionKeys());
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -761,7 +776,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
-                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+                return IgniteDistributions.hash(rowType.distributionKeys());
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -850,7 +865,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
-                return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+                return IgniteDistributions.hash(rowType.distributionKeys());
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -943,7 +958,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
 
         @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
-            return IgniteDistributions.hash(rowType.distributionKeys(), IgniteDistributions.hashFunction());
+            return IgniteDistributions.hash(rowType.distributionKeys());
         }
 
         @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -966,5 +981,41 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             throw new AssertionError("Unexpected cache id:" + cacheId);
         }
+    }
+
+    /**
+     * @return Binary marshaller.
+     */
+    private BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+
+        BinaryConfiguration bCfg = new BinaryConfiguration();
+        iCfg.setBinaryConfiguration(bCfg);
+        iCfg.setClientMode(false);
+        iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                //No-op.
+            }
+        });
+        iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, null);
+
+        GridTestKernalContext kernCtx = new GridTestKernalContext(log, iCfg);
+
+        kernCtx.add(new GridSystemViewManager(kernCtx));
+        kernCtx.add(new GridDiscoveryManager(kernCtx));
+
+        marshCtx.onMarshallerProcessorStarted(kernCtx, null);
+
+        marsh.setContext(marshCtx);
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+
+        return marsh;
     }
 }

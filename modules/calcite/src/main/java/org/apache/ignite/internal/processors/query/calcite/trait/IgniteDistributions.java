@@ -20,15 +20,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.ToIntFunction;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
@@ -37,42 +32,11 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
  *
  */
 public class IgniteDistributions {
-    private static final DestinationFunctionFactory NO_OP_FACTORY = (ctx, m, k) -> null;
-    private static final DestinationFunctionFactory HASH_FACTORY = (ctx, m, k) -> {
-        assert m != null && !F.isEmpty(m.assignments());
-
-        int[] fields = k.toIntArray();
-
-        ToIntFunction<Object> hashFun = r -> {
-            Object[] row = (Object[]) r;
-
-            if (row == null)
-                return 0;
-
-            int hash = 1;
-
-            for (int i : fields)
-                hash = 31 * hash + (row[i] == null ? 0 : row[i].hashCode());
-
-            return hash;
-        };
-
-        List<List<ClusterNode>> assignments = m.assignments();
-
-        if (U.assertionsEnabled()) {
-            for (List<ClusterNode> assignment : assignments) {
-                assert F.isEmpty(assignment) || assignment.size() == 1;
-            }
-        }
-
-        return r -> assignments.get(hashFun.applyAsInt(r) % assignments.size());
-    };
-
-
-    private static final DistributionTrait BROADCAST = new DistributionTrait(DistributionType.BROADCAST, ImmutableIntList.of(), allTargetsFunction());
-    private static final DistributionTrait SINGLE = new DistributionTrait(DistributionType.SINGLE, ImmutableIntList.of(), singleTargetFunction());
-    private static final DistributionTrait RANDOM = new DistributionTrait(DistributionType.RANDOM, ImmutableIntList.of(), randomTargetFunction());
-    private static final DistributionTrait ANY    = new DistributionTrait(DistributionType.ANY, ImmutableIntList.of(), noOpFunction());
+    private static final int[] EMPTY_KEYS = new int[0];
+    private static final DistributionTrait BROADCAST = new DistributionTrait(DistributionType.BROADCAST, EMPTY_KEYS, AllTargetsFactory.INSTANCE);
+    private static final DistributionTrait SINGLE = new DistributionTrait(DistributionType.SINGLE, EMPTY_KEYS, SingleTargetFactory.INSTANCE);
+    private static final DistributionTrait RANDOM = new DistributionTrait(DistributionType.RANDOM, EMPTY_KEYS, RandomTargetFactory.INSTANCE);
+    private static final DistributionTrait ANY    = new DistributionTrait(DistributionType.ANY, EMPTY_KEYS, NoOpFactory.INSTANCE);
 
     public static DistributionTrait any() {
         return ANY;
@@ -90,40 +54,12 @@ public class IgniteDistributions {
         return BROADCAST;
     }
 
+    public static DistributionTrait hash(List<Integer> keys) {
+        return new DistributionTrait(HASH, U.toIntArray(keys), HashFunctionFactory.INSTANCE);
+    }
+
     public static DistributionTrait hash(List<Integer> keys, DestinationFunctionFactory factory) {
-        return new DistributionTrait(HASH, ImmutableIntList.copyOf(keys), factory);
-    }
-
-    public static DestinationFunctionFactory noOpFunction() {
-        return NO_OP_FACTORY;
-    }
-
-    public static DestinationFunctionFactory singleTargetFunction() {
-        return (ctx, m, k) -> {
-            List<ClusterNode> nodes = m.nodes().subList(0, 1);
-
-            return r -> nodes;
-        };
-    }
-
-    public static DestinationFunctionFactory allTargetsFunction() {
-        return (ctx, m, k) -> {
-            List<ClusterNode> nodes = m.nodes();
-
-            return r -> nodes;
-        };
-    }
-
-    public static DestinationFunctionFactory randomTargetFunction() {
-        return (ctx, m, k) -> {
-            List<ClusterNode> nodes = m.nodes();
-
-            return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
-        };
-    }
-
-    public static DestinationFunctionFactory hashFunction() {
-        return HASH_FACTORY;
+        return new DistributionTrait(HASH, U.toIntArray(keys), factory);
     }
 
     public static List<DistributionTrait> deriveDistributions(RelNode rel, RelMetadataQuery mq) {

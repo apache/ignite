@@ -17,22 +17,20 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public class InputRefExpression implements Expression {
-    private final RelDataType type;
-    private final int index;
+public class InputRefExpression implements LogicalExpression {
+    public final ExpressionType type;
+    public final int index;
 
     public InputRefExpression(RelDataType type, int index) {
-        this.type = type;
+        this.type = ExpressionType.fromType(type);
         this.index = index;
     }
 
-    @Override public RexNode toRex(RexBuilder builder) {
-        return builder.makeInputRef(type, index);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
     }
 }

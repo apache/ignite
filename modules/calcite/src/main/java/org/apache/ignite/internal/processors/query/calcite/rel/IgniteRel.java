@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 /**
  *
@@ -34,5 +34,5 @@ public interface IgniteRel extends RelNode {
         }
     };
 
-    <T> T implement(Implementor<T> implementor);
+    <T> T implement(RelImplementor<T> implementor);
 }

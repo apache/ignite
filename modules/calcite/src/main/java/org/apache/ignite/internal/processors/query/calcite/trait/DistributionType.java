@@ -26,9 +26,7 @@ public enum DistributionType {
     SINGLE("single"),
     ANY("any");
 
-    /**
-     *
-     */
+    /** */
     private final String description;
 
     /**

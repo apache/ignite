@@ -23,7 +23,6 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryExecution;
 import org.apache.ignite.internal.processors.query.calcite.schema.CalciteSchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.resources.LoggerResource;
@@ -83,7 +83,7 @@ public class CalciteQueryProcessor implements QueryEngine {
             .context(Contexts.of(this))
             // Custom cost factory to use during optimization
             .costFactory(null)
-            .typeSystem(RelDataTypeSystem.DEFAULT)
+            .typeSystem(IgniteTypeSystem.DEFAULT)
             .build();
     }
 

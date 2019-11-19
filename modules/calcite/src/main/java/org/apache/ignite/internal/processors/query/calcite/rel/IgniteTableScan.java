@@ -24,7 +24,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 public final class IgniteTableScan extends TableScan implements IgniteRel {
   public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
@@ -38,7 +38,7 @@ public final class IgniteTableScan extends TableScan implements IgniteRel {
   }
 
   /** {@inheritDoc} */
-  @Override public <T> T implement(Implementor<T> implementor) {
+  @Override public <T> T implement(RelImplementor<T> implementor) {
     return implementor.implement(this);
   }
 

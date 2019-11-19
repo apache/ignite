@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Objects;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTrait;
@@ -25,12 +27,15 @@ import org.apache.calcite.util.ImmutableIntList;
 /**
  *
  */
-public final class DistributionTrait implements RelTrait {
-    private final DistributionType type;
-    private final ImmutableIntList keys;
-    private final DestinationFunctionFactory functionFactory;
+public final class DistributionTrait implements RelTrait, Serializable {
+    private DistributionType type;
+    private int[] keys;
+    private DestinationFunctionFactory functionFactory;
 
-    public DistributionTrait(DistributionType type, ImmutableIntList keys, DestinationFunctionFactory functionFactory) {
+    public DistributionTrait() {
+    }
+
+    public DistributionTrait(DistributionType type, int[] keys, DestinationFunctionFactory functionFactory) {
         this.type = type;
         this.keys = keys;
         this.functionFactory = functionFactory;
@@ -45,7 +50,7 @@ public final class DistributionTrait implements RelTrait {
     }
 
     public ImmutableIntList keys() {
-        return keys;
+        return ImmutableIntList.of(keys);
     }
 
     @Override public void register(RelOptPlanner planner) {}
@@ -57,18 +62,18 @@ public final class DistributionTrait implements RelTrait {
         if (o instanceof DistributionTrait) {
             DistributionTrait that = (DistributionTrait) o;
 
-            return type == that.type() && keys.equals(that.keys());
+            return type == that.type() && Arrays.equals(keys, that.keys);
         }
 
         return false;
     }
 
     @Override public int hashCode() {
-        return Objects.hash(type, keys);
+        return Objects.hash(type, Arrays.hashCode(keys));
     }
 
     @Override public String toString() {
-        return type + (type == DistributionType.HASH ? keys.toString()  : "");
+        return type + (type == DistributionType.HASH ? Arrays.toString(keys) : "");
     }
 
     @Override public RelTraitDef getTraitDef() {
@@ -89,10 +94,9 @@ public final class DistributionTrait implements RelTrait {
 
         if (type() == other.type())
             return type() != DistributionType.HASH
-                || (Objects.equals(keys(), other.keys())
-                    && Objects.equals(destinationFunctionFactory().key(), other.destinationFunctionFactory().key()));
+                || (Arrays.equals(keys, other.keys)
+                    && Objects.equals(functionFactory, other.functionFactory));
 
         return other.type() == DistributionType.RANDOM && type() == DistributionType.HASH;
     }
-
 }

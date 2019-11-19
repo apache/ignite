@@ -16,16 +16,28 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
  *
  */
-public interface DestinationFunctionFactory extends Serializable {
-    DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys);
+class RandomTargetFactory extends AbstractDestinationFunctionFactory {
+    static final DestinationFunctionFactory INSTANCE = new RandomTargetFactory();
 
-    Object key();
+    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+        List<ClusterNode> nodes = m.nodes();
+
+        return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
+    }
+
+    @Override public Object key() {
+        return "RandomTargetFactory";
+    }
+
 }

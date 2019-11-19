@@ -74,10 +74,10 @@ public class IgniteJoinRule extends RelOptRule {
         }
 
         List<DistributionTrait> leftDists = Commons.concat(leftDerived,
-            IgniteDistributions.hash(join.analyzeCondition().leftKeys, IgniteDistributions.hashFunction()));
+            IgniteDistributions.hash(join.analyzeCondition().leftKeys));
 
         List<DistributionTrait> rightDists = Commons.concat(rightDerived,
-            IgniteDistributions.hash(join.analyzeCondition().rightKeys, IgniteDistributions.hashFunction()));
+            IgniteDistributions.hash(join.analyzeCondition().rightKeys));
 
         for (DistributionTrait leftDist0 : leftDists) {
             for (DistributionTrait rightDist0 : rightDists) {

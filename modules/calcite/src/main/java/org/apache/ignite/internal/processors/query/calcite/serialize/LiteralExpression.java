@@ -17,22 +17,20 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public class LiteralExpression implements Expression {
-    private final Comparable value;
-    private final RelDataType type;
+public class LiteralExpression implements LogicalExpression {
+    public final ExpressionType type;
+    public final Comparable value;
 
     public LiteralExpression(RelDataType type, Comparable value) {
+        this.type = ExpressionType.fromType(type);
         this.value = value;
-        this.type = type;
     }
 
-    @Override public RexNode toRex(RexBuilder builder) {
-        return builder.makeLiteral(value, type, false);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
     }
 }

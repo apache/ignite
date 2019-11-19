@@ -16,25 +16,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSyntax;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 
 /**
  *
  */
-public class CallExpression implements LogicalExpression {
-    public final String opName;
-    public final SqlSyntax opSyntax;
-    public final List<LogicalExpression> operands;
+public class SenderNode extends RelGraphNode {
+    private DistributionTrait targetDistr;
+    private NodesMapping targetMapping;
 
-    public CallExpression(SqlOperator op, List<LogicalExpression> operands) {
-        this.operands = operands;
-        opName = op.getName();
-        opSyntax = op.getSyntax();
-    }
+    public SenderNode(Sender sender) {
+        super(sender.getTraitSet());
 
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
+        targetDistr = sender.targetDistribution();
+        targetMapping = sender.targetMapping();
     }
 }

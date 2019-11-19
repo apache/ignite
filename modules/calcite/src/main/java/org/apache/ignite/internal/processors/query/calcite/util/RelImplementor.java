@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 /**
  *
  */
-public interface Implementor<T> {
+public interface RelImplementor<T> {
     T implement(IgniteExchange rel);
     T implement(IgniteFilter rel);
     T implement(IgniteJoin rel);

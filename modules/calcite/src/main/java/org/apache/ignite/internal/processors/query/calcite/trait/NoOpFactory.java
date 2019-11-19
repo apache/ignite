@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.List;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
  *
  */
-public class CallExpression implements LogicalExpression {
-    public final String opName;
-    public final SqlSyntax opSyntax;
-    public final List<LogicalExpression> operands;
+class NoOpFactory extends AbstractDestinationFunctionFactory {
+    static final DestinationFunctionFactory INSTANCE = new NoOpFactory();
 
-    public CallExpression(SqlOperator op, List<LogicalExpression> operands) {
-        this.operands = operands;
-        opName = op.getName();
-        opSyntax = op.getSyntax();
+    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+        return null;
     }
 
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
+    @Override public Object key() {
+        return "NoOpFactory";
     }
 }

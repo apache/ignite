@@ -17,23 +17,20 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexLocalRef;
-import org.apache.calcite.rex.RexNode;
 
 /**
  *
  */
-public class LocalRefExpression implements Expression {
-    private final RelDataType type;
-    private final int index;
+public class LocalRefExpression implements LogicalExpression {
+    public final ExpressionType type;
+    public final int index;
 
     public LocalRefExpression(RelDataType type, int index) {
-        this.type = type;
+        this.type = ExpressionType.fromType(type);
         this.index = index;
     }
 
-    @Override public RexNode toRex(RexBuilder builder) {
-        return new RexLocalRef(index, type);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
     }
 }

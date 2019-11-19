@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.type;
 
-import java.util.List;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSyntax;
+import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 
 /**
  *
  */
-public class CallExpression implements LogicalExpression {
-    public final String opName;
-    public final SqlSyntax opSyntax;
-    public final List<LogicalExpression> operands;
-
-    public CallExpression(SqlOperator op, List<LogicalExpression> operands) {
-        this.operands = operands;
-        opName = op.getName();
-        opSyntax = op.getSyntax();
+public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+    public IgniteTypeFactory() {
+        super(IgniteTypeSystem.DEFAULT);
     }
 
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
+    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
+        super(typeSystem);
     }
 }

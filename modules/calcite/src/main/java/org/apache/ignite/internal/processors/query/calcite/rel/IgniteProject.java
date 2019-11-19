@@ -28,7 +28,7 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
-import org.apache.ignite.internal.processors.query.calcite.util.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 public final class IgniteProject extends Project implements IgniteRel {
   public IgniteProject(
@@ -46,7 +46,7 @@ public final class IgniteProject extends Project implements IgniteRel {
   }
 
   /** {@inheritDoc} */
-  @Override public <T> T implement(Implementor<T> implementor) {
+  @Override public <T> T implement(RelImplementor<T> implementor) {
     return implementor.implement(this);
   }
 

@@ -16,17 +16,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptSchema;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import java.io.Serializable;
+import org.apache.calcite.plan.RelTrait;
+import org.apache.calcite.plan.RelTraitSet;
 
 /**
  *
  */
-class SerializationContext {
-    RelOptCluster cluster;
-    RelOptSchema schema;
-    IgnitePlanner planner;
-    Context ctx;
+public class RelGraphNode implements GraphNode, Serializable {
+    protected RelTrait[] traits;
+
+    public RelGraphNode(RelTraitSet traits) {
+        this.traits = traits.toArray(new RelTrait[0]);
+    }
 }

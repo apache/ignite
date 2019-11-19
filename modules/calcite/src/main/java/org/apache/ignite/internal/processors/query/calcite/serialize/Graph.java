@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.GridIntList;
@@ -23,7 +24,7 @@ import org.apache.ignite.internal.util.GridIntList;
 /**
  *
  */
-public class Graph {
+public class Graph implements Serializable {
     private final List<GraphNode> nodes = new ArrayList<>();
     private final List<GridIntList> edges = new ArrayList<>();
 

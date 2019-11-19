@@ -16,25 +16,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.SqlSyntax;
+import java.io.Serializable;
 
 /**
  *
  */
-public class CallExpression implements LogicalExpression {
-    public final String opName;
-    public final SqlSyntax opSyntax;
-    public final List<LogicalExpression> operands;
-
-    public CallExpression(SqlOperator op, List<LogicalExpression> operands) {
-        this.operands = operands;
-        opName = op.getName();
-        opSyntax = op.getSyntax();
-    }
-
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
-    }
+public interface LogicalExpression extends Serializable {
+    <T> T implement(ExpImplementor<T> implementor);
 }

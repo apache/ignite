@@ -26,7 +26,6 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
@@ -73,6 +72,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 
 /**
  *
@@ -114,9 +115,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         connectionConfig = connConfig();
 
         RelDataTypeSystem typeSystem = connectionConfig
-            .typeSystem(RelDataTypeSystem.class, RelDataTypeSystem.DEFAULT);
+            .typeSystem(RelDataTypeSystem.class, IgniteTypeSystem.DEFAULT);
 
-        typeFactory = new JavaTypeFactoryImpl(typeSystem);
+        typeFactory = new IgniteTypeFactory(typeSystem);
     }
 
     private CalciteConnectionConfig connConfig() {
@@ -157,7 +158,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             planner.setExecutor(executor);
             metadataProvider = new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner);
 
-            validator = new IgniteSqlValidator(operatorTable, createCatalogReader(), typeFactory, conformance());
+            validator = new IgniteSqlValidator(operatorTable(), createCatalogReader(), typeFactory, conformance());
             validator.setIdentifierExpansion(true);
 
             for (RelTraitDef def : traitDefs) {
@@ -247,7 +248,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlConformance conformance = conformance();
         CalciteCatalogReader catalogReader =
             createCatalogReader().withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTable, catalogReader, typeFactory, conformance);
+        SqlValidator validator = new IgniteSqlValidator(operatorTable(), catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
 
         RexBuilder rexBuilder = createRexBuilder();
@@ -327,15 +328,19 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return typeFactory;
     }
 
-    private SqlConformance conformance() {
+    public SqlConformance conformance() {
         return connectionConfig.conformance();
     }
 
-    private RexBuilder createRexBuilder() {
+    public SqlOperatorTable operatorTable() {
+        return operatorTable;
+    }
+
+    public RexBuilder createRexBuilder() {
         return new RexBuilder(typeFactory);
     }
 
-    private CalciteCatalogReader createCatalogReader() {
+    public CalciteCatalogReader createCatalogReader() {
         SchemaPlus rootSchema = rootSchema(defaultSchema);
 
         return new CalciteCatalogReader(

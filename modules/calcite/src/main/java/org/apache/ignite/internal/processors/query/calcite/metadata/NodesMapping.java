@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,12 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class NodesMapping {
-    public static final byte HAS_MOVING_PARTITIONS = 0x1;
-    public static final byte HAS_REPLICATED_CACHES = 0x2;
-    public static final byte HAS_PARTITIONED_CACHES = 0x4;
-    public static final byte PARTIALLY_REPLICATED = 0x8;
-    public static final byte DEDUPLICATED = 0x16;
+public class NodesMapping implements Serializable {
+    public static final byte HAS_MOVING_PARTITIONS = 1;
+    public static final byte HAS_REPLICATED_CACHES = 1 << 1;
+    public static final byte HAS_PARTITIONED_CACHES = 1 << 2;
+    public static final byte PARTIALLY_REPLICATED = 1 << 3;
+    public static final byte DEDUPLICATED = 1 << 4;
 
     private final List<ClusterNode> nodes;
     private final List<List<ClusterNode>> assignments;
