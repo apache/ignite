@@ -41,7 +41,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     private UUID processId;
 
     /** Process type. */
-    private int type;
+    private DistributedProcesses type;
 
     /** Single node response. */
     private R resp;
@@ -61,7 +61,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
      */
     public SingleNodeMessage(UUID processId, DistributedProcesses type, R resp, Exception err) {
         this.processId = processId;
-        this.type = type.ordinal();
+        this.type = type;
         this.resp = resp;
         this.err = err;
     }
@@ -85,7 +85,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("type", type))
+                if (!writer.writeInt("type", type.ordinal()))
                     return false;
 
                 writer.incrementState();
@@ -123,7 +123,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 1:
-                type = reader.readInt("type");
+                type = DistributedProcesses.values()[reader.readInt("type")];
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +172,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
 
     /** @return Process type. */
     public DistributedProcesses type() {
-        return DistributedProcesses.values()[type];
+        return type;
     }
 
     /** @return Single node response. */

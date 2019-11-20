@@ -25,7 +25,7 @@ import java.io.Serializable;
  * @param <I> Request type.
  * @param <R> Result type.
  *
- * @see DistributedProcessAction
+ * @see DistributedProcess
  */
 public interface DistributedProcessFactory<I extends Serializable, R extends Serializable> {
     /**
@@ -33,5 +33,5 @@ public interface DistributedProcessFactory<I extends Serializable, R extends Ser
      *
      * @return Distributed process instance.
      */
-    DistributedProcessAction<I, R> create();
+    DistributedProcess<I, R> create();
 }

@@ -53,8 +53,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.distributed.DistributedProcessAction;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.DistributedProcessHandler;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -180,11 +180,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
 
-    /** Master key change prepare process. */
-    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> prepareProc;
+    /** Master key change prepare process handler. */
+    private DistributedProcessHandler<PendingMasterKey, MasterKeyChangeResult> prepareHnd;
 
-    /** Master key change finish process. */
-    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> finishProc;
+    /** Master key change finish process handler. */
+    private DistributedProcessHandler<PendingMasterKey, MasterKeyChangeResult> finishHnd;
 
     /**
      * @param ctx Kernel context.
@@ -275,8 +275,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, MasterKeyChangePrepareProcess::new);
-        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
+        prepareHnd = new DistributedProcessHandler<>(ctx, MASTER_KEY_CHANGE_PREPARE,
+            MasterKeyChangePrepareProcess::new);
+
+        finishHnd = new DistributedProcessHandler<>(ctx, MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
     }
 
     /** {@inheritDoc} */
@@ -590,7 +592,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
         }
 
-        prepareProc.start(request);
+        prepareHnd.start(request);
 
         return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
@@ -1161,7 +1163,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * {@link MasterKeyChangeFinishProcess}.
      */
-    private class MasterKeyChangePrepareProcess implements DistributedProcessAction<PendingMasterKey, MasterKeyChangeResult> {
+    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey,
+                MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1189,8 +1192,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 }
             }
             catch (Exception e) {
-                log.warning("Master key change was rejected.", e);
-
                 return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
                     ctx.localNodeId() + ']', e));
             }
@@ -1200,22 +1201,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         /** {@inheritDoc} */
         @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
-            if (err.isEmpty()) {
-                if (isCoordinator())
-                    finishProc.start(pendingMasterKey);
-            }
-            else {
+            if (!err.isEmpty()) {
                 Exception e = err.values().stream().findFirst().get();
 
                 finishMasterKeyChange(reqId, e);
             }
+            else if (isCoordinator())
+                finishHnd.start(pendingMasterKey);
         }
     }
 
     /**
      * Master key change finish process. Changes master key.
      */
-    private class MasterKeyChangeFinishProcess implements DistributedProcessAction<PendingMasterKey, MasterKeyChangeResult> {
+    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey,
+                MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1243,9 +1243,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         /** {@inheritDoc} */
         @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
-            if (err.isEmpty()) {
+            if (err.isEmpty())
                 finishMasterKeyChange(reqId, null);
-            }
             else {
                 Exception e = err.values().stream().findFirst().get();
 

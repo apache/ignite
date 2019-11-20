@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 /**
  * Defines distributed processes.
  *
- * @see DistributedProcessAction
+ * @see DistributedProcess
  */
 public enum DistributedProcesses {
     /** */

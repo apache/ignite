@@ -44,7 +44,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     private final UUID processId;
 
     /** Process type. */
-    private final int type;
+    private final DistributedProcesses type;
 
     /** Result. */
     private Map<UUID, R> res;
@@ -60,7 +60,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
      */
     public FullMessage(UUID processId, DistributedProcesses type, Map<UUID, R> res, Map<UUID, Exception> err) {
         this.processId = processId;
-        this.type = type.ordinal();
+        this.type = type;
         this.res = res;
         this.err = err;
     }
@@ -98,15 +98,15 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
 
     /** @return Process type. */
     public DistributedProcesses type() {
-        return DistributedProcesses.values()[type];
+        return type;
     }
 
-    /** @return Results. */
+    /** @return Nodes results map. */
     public Map<UUID, R> result() {
         return res;
     }
 
-    /** @return Errors. */
+    /** @return Nodes errors map. */
     public Map<UUID, Exception> error() {
         return err;
     }
