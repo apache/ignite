@@ -111,6 +111,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /** Ignite instance which sends files. */
     private IgniteEx snd;
 
+    /** {@code false} for most of tests persistence can be disabled. */
+    private boolean enablePersistence;
+
     /** Called before tests started. */
     @BeforeClass
     public static void beforeAll() {
@@ -155,7 +158,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)
+                    .setPersistenceEnabled(enablePersistence)
                     .setMaxSize(500L * 1024 * 1024)))
             .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
             .setCommunicationSpi(new BlockingOpenChannelCommunicationSpi())
@@ -169,6 +172,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testFileHandlerBase() throws Exception {
+        enablePersistence = true;
+
         snd = startGrid(0);
         rcv = startGrid(1);
 
@@ -253,8 +258,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
-
         File fileToSend = createFileRandomData("1Mb", 1024 * 1024);
 
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
@@ -296,8 +299,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         snd = startGrid(0);
         rcv = startGrid(1);
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("testFile", fileSizeBytes);
 
@@ -342,8 +343,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             .config()
             .getCommunicationSpi()).latch;
         final AtomicReference<Throwable> refErr = new AtomicReference<>();
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
 
@@ -400,8 +399,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     public void testFileHandlerCleanedUpIfSenderLeft() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("tempFile15Mb", 15 * 1024 * 1024);
         File downloadTo = U.resolveWorkDirectory(tempStore.getAbsolutePath(), "download", true);
@@ -460,8 +457,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
-
         File fileToSend = createFileRandomData("testFile", 5 * 1024 * 1024);
         final AtomicInteger readChunks = new AtomicInteger();
 
@@ -507,8 +502,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
-
         File fileToSend = createFileRandomData("testFile", fileSizeBytes);
         File rcvFile = new File(tempStore, "testFile" + "_" + rcv.localNode().id());
 
@@ -541,8 +534,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         snd = startGrid(0);
         rcv = startGrid(1);
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("File_5MB", fileSizeBytes);
         File rcvFile = new File(tempStore, "File_5MB" + "_" + rcv.localNode().id());
@@ -593,8 +584,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
-
         // Ensure topic handler is empty.
         rcv.context().io().removeTransmissionHandler(topic);
 
@@ -617,8 +606,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         snd = startGrid(0);
         rcv = startGrid(1);
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData("file5MBSize", fileSizeBytes);
 
@@ -688,8 +675,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         final AtomicInteger cnt = new AtomicInteger();
         final AtomicInteger acceptedChunks = new AtomicInteger();
         final File file = new File(tempStore, filePrefix + "_" + rcv.localNode().id());
-
-        snd.cluster().active(true);
 
         File fileToSend = createFileRandomData(filePrefix, 10 * 1024 * 1024);
 
@@ -787,8 +772,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
-
         File fileToSend = createFileRandomData("testFile", 1024 * 1024);
 
         rcv.context().io().addTransmissionHandler(topic, new TransmissionHandlerAdapter() {
@@ -847,8 +830,6 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     public void testFileHandlerCrossConnections() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
-
-        snd.cluster().active(true);
 
         File from0To1 = createFileRandomData("1Mb_1_0", 1024 * 1024);
         File from1To0 = createFileRandomData("1Mb_0_1", 1024 * 1024);
