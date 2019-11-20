@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -45,7 +44,7 @@ public class RequestSnapshotMessage implements Message {
     private String snpName;
 
     /** Map of requested partitions to be snapshotted. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridLongList.class)
+    @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
     private Map<Integer, GridIntList> parts;
 
     /**
