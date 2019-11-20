@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -49,6 +48,7 @@ public class JdbcConnectionWithoutCacheNameTest extends GridCommonAbstractTest {
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setSqlSchema("\"default\"");
+        cache.setIndexedTypes(Integer.class, Integer.class);
 
         cfg.setCacheConfiguration(cache);
 
@@ -89,8 +89,6 @@ public class JdbcConnectionWithoutCacheNameTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    // t0d0 ticket number here
-    @Ignore
     public void testSchemaParameter() throws Exception {
         try (Connection c = DriverManager.getConnection(CFG_URL_PREFIX + "schema=\"default\"@" + CFG_PATH)) {
             try (Statement stmt = c.createStatement()) {
