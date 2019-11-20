@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -65,10 +65,10 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     private void checkPageEvictionMetric(CacheAtomicityMode atomicityMode) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics =
-            ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
+        DataRegionMetricSource metrics =
+            ignite.context().cache().context().database().dataRegion(null).metricSource();
 
-        metrics.enableMetrics();
+        metrics.enable();
 
         CacheConfiguration<Object, Object> cfg = cacheConfig("evict-metric", null,
             CacheMode.PARTITIONED, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -83,6 +83,6 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
                 System.out.println(">>> Entries put: " + i);
         }
 
-        assertTrue(metrics.getEvictionRate() > 0);
+        assertTrue(metrics.evictionRate() > 0);
     }
 }

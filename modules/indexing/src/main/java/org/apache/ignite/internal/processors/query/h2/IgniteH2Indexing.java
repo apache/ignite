@@ -697,7 +697,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Number of rows in given INSERT statement.
      * @throws IgniteCheckedException if failed.
      */
-    @SuppressWarnings({"unchecked", "Anonymous2MethodRef"})
+    @SuppressWarnings({"unchecked"})
     private long streamQuery0(String qry, String schemaName, IgniteDataStreamer streamer, QueryParserResultDml dml,
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
@@ -1072,7 +1072,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"StringEquality", "unchecked"})
+    @SuppressWarnings({"StringEquality"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
         String schemaName,
         SqlFieldsQuery qry,
@@ -1233,7 +1233,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 );
 
                 return singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
-                    @SuppressWarnings("NullableProblems")
                     @Override public Iterator<List<?>> iterator() {
                         return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
@@ -1675,7 +1674,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return res.iterator();
@@ -1702,7 +1700,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param timeout Timeout.
      * @return Cursor representing distributed query result.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private Iterable<List<?>> executeSelectDistributed(
         final QueryDescriptor qryDesc,
         final QueryParameters qryParams,
@@ -1725,7 +1722,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (parts != null && parts.length == 0) {
             iter = new Iterable<List<?>>() {
-                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     return new Iterator<List<?>>() {
                         @Override public boolean hasNext() {
@@ -1745,7 +1741,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             assert twoStepQry.mvccEnabled() == (mvccTracker != null);
 
             iter = new Iterable<List<?>>() {
-                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try (TraceSurroundings ignored = MTC.support(ctx.tracing().create(SQL_ITER_OPEN, MTC.span()))) {
                         return IgniteH2Indexing.this.rdcQryExec.query(
@@ -2031,6 +2026,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         //to avoid possible data race
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
+
+        cctx.group().metricSource().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
@@ -2916,7 +2913,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             );
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @SuppressWarnings("NullableProblems")
                 @Override public Iterator<List<?>> iterator() {
                     try {
                         return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), true);

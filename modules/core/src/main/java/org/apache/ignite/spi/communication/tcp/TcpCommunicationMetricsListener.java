@@ -48,15 +48,11 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_M
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_METRIC_NAME;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
-import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_TYPE_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_TYPE_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_METRIC_DESC;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_METRIC_NAME;
@@ -92,6 +88,7 @@ public class TcpCommunicationMetricsListener {
     /** Function to be used in {@link Map#computeIfAbsent(Object, Function)} of {@code #rcvdMsgsMetricsByConsistentId}. */
     private final Function<Object, LongAdderMetric> rcvdMsgsCntByConsistentIdMetricFactory;
 
+    //TODO: use metric source for metrics
     /** Sent bytes count metric.*/
     private final LongAdderMetric sentBytesMetric;
 
@@ -118,6 +115,7 @@ public class TcpCommunicationMetricsListener {
         this.ignite = ignite;
         this.spiCtx = spiCtx;
 
+        //TODO: use corresponding metric source
         mreg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(COMMUNICATION_METRICS_GROUP_NAME);
 
         msgCntrsByType = createMessageCounters((IgniteMessageFactory)spiCtx.messageFactory());
@@ -136,17 +134,27 @@ public class TcpCommunicationMetricsListener {
                     .findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
         };
 
+/*
         sentBytesMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
         rcvdBytesMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
         sentMsgsMetric = mreg.longAdderMetric(SENT_MESSAGES_METRIC_NAME, SENT_MESSAGES_METRIC_DESC);
         rcvdMsgsMetric = mreg.longAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
+*/
+
+        sentBytesMetric = new LongAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+        rcvdBytesMetric = new LongAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+
+        sentMsgsMetric = new LongAdderMetric(SENT_MESSAGES_METRIC_NAME, SENT_MESSAGES_METRIC_DESC);
+        rcvdMsgsMetric = new LongAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
 
         spiCtx.addMetricRegistryCreationListener(mreg -> {
             // Metrics for the specific nodes.
             if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
                 return;
 
+            //TODO: implement metrics by message type
+/*
             ((MetricRegistry)mreg).longAdderMetric(
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
@@ -156,6 +164,7 @@ public class TcpCommunicationMetricsListener {
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME,
                     RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC
             );
+*/
         });
     }
 
@@ -172,6 +181,8 @@ public class TcpCommunicationMetricsListener {
 
         IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> msgCntrsByType = new IntHashMap<>(directTypes.length);
 
+        //TODO: Replace by metric source
+/*
         for (short type : directTypes) {
             LongAdderMetric sentCnt =
                     mreg.longAdderMetric(sentMessagesByTypeMetricName(type), SENT_MESSAGES_BY_TYPE_METRIC_DESC);
@@ -181,6 +192,7 @@ public class TcpCommunicationMetricsListener {
 
             msgCntrsByType.put(type, new IgniteBiTuple<>(sentCnt, rcvCnt));
         }
+*/
 
         return msgCntrsByType;
     }
@@ -368,6 +380,8 @@ public class TcpCommunicationMetricsListener {
         sentBytesMetric.reset();
         rcvdBytesMetric.reset();
 
+        //TODO: use corresponding metric source
+/*
         for (Metric metric : mreg) {
             if (metric.name().startsWith(SENT_MESSAGES_BY_TYPE_METRIC_NAME))
                 metric.reset();
@@ -382,6 +396,7 @@ public class TcpCommunicationMetricsListener {
                 mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();
             }
         }
+*/
     }
 
     /**

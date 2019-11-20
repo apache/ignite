@@ -1881,7 +1881,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 SchemaIndexCacheVisitor visitor;
 
                 if (cacheInfo.isCacheContextInited()) {
-                    GridCacheContext cctx = cacheInfo.cacheContext();
+                    GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
+
+                    cctx.group().metricSource().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
                     int buildIdxPoolSize = ctx.config().getBuildIndexThreadPoolSize();
                     int parallel = op0.parallel();

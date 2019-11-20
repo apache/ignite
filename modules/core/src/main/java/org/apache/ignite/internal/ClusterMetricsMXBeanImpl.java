@@ -34,7 +34,6 @@ import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACT
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Cluster metrics MBean.
@@ -73,7 +72,8 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
 
         this.cluster = cluster;
 
-        MetricRegistry clusterReg = ctx.metric().registry(CLUSTER_METRICS);
+        //TODO: use metric source
+        MetricRegistry clusterReg = ctx.metric().getRegistry(/*CLUSTER_METRICS*/ "cluster");
 
         srvNodes = clusterReg.findMetric(TOTAL_SERVER_NODES);
         clientNodes = clusterReg.findMetric(TOTAL_CLIENT_NODES);

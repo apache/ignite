@@ -924,10 +924,14 @@ public class GridNioServerWrapper {
                     .tracing(tracing)
                     .readWriteSelectorsAssign(cfg.usePairedConnections());
 
+                //TODO: use corersponding metric source
+
+/*
                 if (metricMgr != null) {
                     builder.workerListener(workersRegistry)
                         .metricRegistry(metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
                 }
+*/
 
                 GridNioServer<Message> srvr = builder.build();
 

@@ -25,7 +25,6 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -74,7 +73,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testEmptyProjection() throws Exception {
         try {
-            grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
+            grid(0).cluster().forPredicate(F.alwaysFalse()).metrics();
 
             assert false;
         }

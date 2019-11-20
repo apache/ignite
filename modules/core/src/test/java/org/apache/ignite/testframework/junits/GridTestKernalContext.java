@@ -35,9 +35,9 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -52,7 +52,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this(log, new IgniteConfiguration());
 
         try {
-            add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
+            add(new IgnitePluginProcessor(this, config(), Collections.emptyList()));
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException("Must not fail for empty plugins list.", e);
@@ -102,6 +102,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
             cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
+        add(new GridTimeoutProcessor(this));
         add(new GridMetricManager(this));
         add(new GridResourceProcessor(this));
         add(new GridInternalSubscriptionProcessor(this));

@@ -61,9 +61,9 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource.DATAREGION_METRICS_PREFIX;
 
 /**
  * Cache group JMX metrics test.
@@ -142,30 +142,34 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cCfg1 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cCfg1 = new CacheConfiguration<>()
             .setName("cache1")
             .setGroupName("group1")
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(3)
             .setAffinity(new RoundRobinVariableSizeAffinityFunction())
-            .setAtomicityMode(atomicityMode());
+            .setAtomicityMode(atomicityMode())
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration cCfg2 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cCfg2 = new CacheConfiguration<>()
             .setName("cache2")
             .setGroupName("group2")
             .setCacheMode(CacheMode.REPLICATED)
-            .setAtomicityMode(atomicityMode());
+            .setAtomicityMode(atomicityMode())
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration cCfg3 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cCfg3 = new CacheConfiguration<>()
             .setName("cache3")
             .setGroupName("group2")
             .setCacheMode(CacheMode.REPLICATED)
-            .setAtomicityMode(atomicityMode());
+            .setAtomicityMode(atomicityMode())
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration cCfg4 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cCfg4 = new CacheConfiguration<>()
             .setName("cache4")
             .setCacheMode(CacheMode.PARTITIONED)
-            .setAtomicityMode(atomicityMode());
+            .setAtomicityMode(atomicityMode())
+            .setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cCfg1, cCfg2, cCfg3, cCfg4);
 
@@ -208,7 +212,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
     protected T2<CacheGroupMetricsMXBean, MetricRegistry> cacheGroupMetrics(int nodeIdx, String cacheOrGrpName) {
         return new T2<>(
             getMxBean(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName, CacheGroupMetricsMXBean.class),
-            grid(nodeIdx).context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName))
+            grid(nodeIdx).context().metric().getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName))
         );
     }
 
@@ -353,15 +357,15 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             assertTrue("Renting partitions count when node returns not equals to moved partitions when node left",
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        IntMetric localNodeRentingPartitionsCount =
+                        IntMetric locNodeRentingPartitionsCnt =
                             mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount");
 
                         log.info("Renting partitions count: " +
-                            localNodeRentingPartitionsCount.value());
+                            locNodeRentingPartitionsCnt.value());
                         log.info("Renting entries count: " +
                             mxBean0Grp1.get2().findMetric("LocalNodeRentingEntriesCount").getAsString());
 
-                        return localNodeRentingPartitionsCount.value() == movingCnt;
+                        return locNodeRentingPartitionsCnt.value() == movingCnt;
                     }
                 }, 10_000L)
             );
@@ -393,7 +397,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         GridMetricManager mmgr = ignite.context().metric();
 
-        LongMetric totalPages = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, "default"))
+        LongMetric totalPages = mmgr.getRegistry(metricName(DATAREGION_METRICS_PREFIX, "default"))
             .findMetric("TotalAllocatedPages");
 
         assertEquals(totalPages.value(),
@@ -402,7 +406,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
             mxBean0Grp3.get2().<LongMetric>findMetric("TotalAllocatedPages").value());
 
         for (int cacheIdx = 1; cacheIdx <= 4; cacheIdx++) {
-            IgniteCache cache = ignite.cache("cache" + cacheIdx);
+            IgniteCache<Integer, byte[]> cache = ignite.cache("cache" + cacheIdx);
 
             for (int i = 0; i < 10 * cacheIdx; i++)
                 cache.put(i, new byte[100]);

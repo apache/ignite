@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -81,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -100,6 +100,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
 
 /**
  * File page store manager.
@@ -191,7 +192,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final long metaPageId = PageIdUtils.pageId(-1, PageMemory.FLAG_IDX, 0);
 
     /** */
-    private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+    private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** */
     private final GridStripedReadWriteLock initDirLock =
@@ -261,7 +262,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
+    @Override public void cleanupPersistentSpace(CacheConfiguration<?, ?> cacheConfiguration) throws IgniteCheckedException {
         try {
             File cacheWorkDir = cacheWorkDir(cacheConfiguration);
 
@@ -493,7 +494,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 new File(storeWorkDir, META_STORAGE_NAME),
                 grpId,
                 PageIdAllocator.METASTORE_PARTITION + 1,
-                dataRegion.memoryMetrics().totalAllocatedPages(),
+                dataRegion.metricSource().totalAllocatedPagesMetric(),
                 false);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
@@ -678,7 +679,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             int pageSize = store.getPageSize();
             int compressedPageSize = pageSize;
 
-            GridCacheContext cctx0 = cctx.cacheContext(cacheId);
+            GridCacheContext<?, ?> cctx0 = cctx.cacheContext(cacheId);
 
             if (cctx0 != null) {
                 assert pageBuf.position() == 0 && pageBuf.limit() == pageSize : pageBuf;
@@ -715,8 +716,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      *
      */
-    public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
-        return getPartitionFilePath(cacheWorkDir(isSharedGroup, cacheOrGroupName), partId);
+    public Path getPath(boolean isSharedGrp, String cacheOrGrpName, int partId) {
+        return getPartitionFilePath(cacheWorkDir(isSharedGrp, cacheOrGrpName), partId);
     }
 
     /**
@@ -725,17 +726,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
-    private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
+    private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
         File cacheWorkDir = cacheWorkDir(ccfg);
 
         String dataRegionName = grpDesc.config().getDataRegionName();
 
-        DataRegionMetricsImpl regionMetrics = cctx.database().dataRegion(dataRegionName).memoryMetrics();
+        DataRegionMetricSource metricSrc = cctx.database().dataRegion(dataRegionName).metricSource();
 
         LongAdderMetric allocatedTracker =
-            regionMetrics.getOrAllocateGroupPageAllocationTracker(grpDesc.cacheOrGroupName());
+            metricSrc.getOrCreateGroupPageAllocationTracker(
+                    CACHE_GROUP_METRICS_PREFIX + '.' + U.maskName(grpDesc.cacheOrGroupName()) + '.',
+                    grpDesc.groupId()
+            );
 
         return initDir(
             cacheWorkDir,
@@ -777,12 +781,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             igniteCfg.getDataStorageConfiguration()
         );
 
-        if (encrypted) {
-            int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
+            if (encrypted) {
+                int hdrSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
 
-            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
-            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
-        }
+                ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(hdrSize);
+                ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(hdrSize);
+            }
 
         return pageStoreFactory;
     }
@@ -870,7 +874,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException {
         return checkAndInitCacheWorkDir(cacheWorkDir(cacheCfg));
     }
 
@@ -1492,14 +1496,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * {@link LongOperationAsyncExecutor#async}. Uses read lock as such closures can run in parallel with
          * each other.
          *
-         * @param closure closure.
+         * @param c closure.
          * @param <T> return type.
          * @return value that is returned by {@code closure}.
          */
-        public <T> T afterAsyncCompletion(IgniteOutClosure<T> closure) {
+        public <T> T afterAsyncCompletion(IgniteOutClosure<T> c) {
             readWriteLock.readLock().lock();
             try {
-                return closure.apply();
+                return c.apply();
             }
             finally {
                 readWriteLock.readLock().unlock();

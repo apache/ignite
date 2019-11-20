@@ -574,6 +574,8 @@ public class Checkpointer extends GridWorker {
      * @param tracker Tracker.
      */
     private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
+        //TODO: replace by metric source
+/*
         if (persStoreMetrics.metricsEnabled()) {
             persStoreMetrics.onCheckpoint(
                 tracker.lockWaitDuration(),
@@ -586,6 +588,7 @@ public class Checkpointer extends GridWorker {
                 tracker.cowPagesWritten()
             );
         }
+*/
     }
 
     /**
@@ -643,7 +646,8 @@ public class Checkpointer extends GridWorker {
 
                     req.onDone(null);
 
-                    grp.metrics().decrementInitializedLocalPartitions();
+                    //TODO: fix compilation
+                    //grp.metricSource().decrementInitializedLocalPartitions();
 
                     if (log.isDebugEnabled())
                         log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");
@@ -860,7 +864,6 @@ public class Checkpointer extends GridWorker {
     /**
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings("unused")
     public void shutdownCheckpointer(boolean cancel) {
         if (cancel)
             shutdownNow();

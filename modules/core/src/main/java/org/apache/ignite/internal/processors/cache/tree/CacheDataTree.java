@@ -421,7 +421,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
     /** {@inheritDoc} */
     @Override protected IoStatisticsHolder statisticsHolder() {
-        return grp.statisticsHolderIdx();
+        return grp.indexStatisticsHolder();
     }
 
     /**

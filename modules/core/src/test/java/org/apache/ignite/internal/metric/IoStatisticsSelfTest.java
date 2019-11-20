@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -35,17 +34,19 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_INNER;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL_READS_LEAF;
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.LOGICAL_READS;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.PHYSICAL_READS;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_IDX;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.LOGICAL_READS_INNER;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.LOGICAL_READS_LEAF;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.PHYSICAL_READS_INNER;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.PHYSICAL_READS_LEAF;
 
 /**
  * Tests for IO statistic manager.
@@ -79,10 +80,9 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         GridMetricManager mmgr = ign.context().metric();
 
-        checkEmptyStat(mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
+        checkEmptyStat(mmgr.getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, DEFAULT_CACHE_NAME)), CACHE_GROUP);
 
-        checkEmptyStat(mmgr.registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
-            HASH_INDEX);
+        checkEmptyStat(mmgr.getRegistry(metricName(HASH_IDX, DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)), HASH_INDEX);
     }
 
     /**
@@ -92,15 +92,11 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         assertNotNull(mreg);
 
         if (type == CACHE_GROUP) {
-            assertEquals(5, Iterators.size(mreg.iterator()));
-
             assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).value());
 
             assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).value());
         }
         else {
-            assertEquals(7, Iterators.size(mreg.iterator()));
-
             assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
 
             assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
@@ -166,7 +162,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     @NotNull private IgniteEx prepareData(boolean isPersistent) throws Exception {
         IgniteEx grid = prepareIgnite(isPersistent);
 
-        IgniteCache cache = grid.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, String> cache = grid.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         resetAllIoMetrics(grid);
 
@@ -184,7 +180,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of failure.
      */
     private IgniteConfiguration getConfiguration(boolean isPersist) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+        IgniteConfiguration cfg = getConfiguration();
 
         if (isPersist) {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
@@ -212,7 +208,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        ignite.createCache(new CacheConfiguration<String, String>(DEFAULT_CACHE_NAME));
+        ignite.createCache(new CacheConfiguration<String, String>(DEFAULT_CACHE_NAME).setStatisticsEnabled(true));
 
         return ignite;
     }
@@ -226,7 +222,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
+        MetricRegistry mreg = mmgr.getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, fullName));
 
         if (mreg == null)
             return null;

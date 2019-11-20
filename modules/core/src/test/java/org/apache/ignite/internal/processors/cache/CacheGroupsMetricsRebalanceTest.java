@@ -68,8 +68,8 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
 import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
-import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -123,11 +123,10 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cfg1 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cfg1 = new CacheConfiguration<>()
             .setName(CACHE1)
             .setGroupName(GROUP)
             .setCacheMode(CacheMode.PARTITIONED)
@@ -136,10 +135,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setRebalanceBatchSize(100)
             .setStatisticsEnabled(true);
 
-        CacheConfiguration cfg2 = new CacheConfiguration(cfg1)
-            .setName(CACHE2);
+        CacheConfiguration<?, ?> cfg2 = new CacheConfiguration<>(cfg1)
+            .setName(CACHE2)
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration cfg3 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cfg3 = new CacheConfiguration<>()
             .setName(CACHE3)
             .setCacheMode(CacheMode.PARTITIONED)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -148,15 +148,17 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setStatisticsEnabled(true)
             .setRebalanceDelay(rebalanceDelay);
 
-        CacheConfiguration cfg4 = new CacheConfiguration()
+        CacheConfiguration<?, ?> cfg4 = new CacheConfiguration<>()
             .setAffinity(new RendezvousAffinityFunction())
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setName(CACHE4)
             .setCacheMode(CacheMode.REPLICATED)
-            .setGroupName(GROUP2);
+            .setGroupName(GROUP2)
+            .setStatisticsEnabled(true);
 
-        CacheConfiguration cfg5 = new CacheConfiguration(cfg4)
-            .setName(CACHE5);
+        CacheConfiguration<?, ?> cfg5 = new CacheConfiguration<>(cfg4)
+            .setName(CACHE5)
+            .setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4, cfg5);
 
@@ -241,7 +243,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
 
-        int allKeysCount = 0;
+        int allKeysCnt = 0;
 
         for (String cacheName : cacheNames) {
             Map<Integer, Long> data = new Random().ints(KEYS_COUNT).distinct().boxed()
@@ -249,7 +251,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
             ignite0.getOrCreateCache(cacheName).putAll(data);
 
-            allKeysCount += data.size();
+            allKeysCnt += data.size();
         }
 
         TestRecordingCommunicationSpi.spi(ignite0)
@@ -265,7 +267,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
         MetricRegistry mreg = ignite1.context().metric()
-            .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+            .getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
@@ -337,11 +339,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         String wrongReceivedKeyCntMsg = "The number of currently rebalanced keys for the whole cache group should " +
             "be equal to the number of entries in the caches.";
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, receivedKeys.value());
-        assertEquals(wrongReceivedKeyCntMsg, allKeysCount, sumFunc.applyAsLong(fullReceivedKeys.value()));
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, receivedKeys.value());
+        assertEquals(wrongReceivedKeyCntMsg, allKeysCnt, sumFunc.applyAsLong(fullReceivedKeys.value()));
         assertEquals(0, sumFunc.applyAsLong(histReceivedKeys.value()));
 
-        int estimateByteCnt = allKeysCount * (Integer.BYTES + Long.BYTES);
+        int estimateByteCnt = allKeysCnt * (Integer.BYTES + Long.BYTES);
 
         String wrongReceivedByteCntMsg = "The number of currently rebalanced bytes of this cache group was expected " +
             "more " + estimateByteCnt + " bytes.";
@@ -383,7 +385,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+        MetricRegistry mreg = ignite1.context().metric().getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
         LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
@@ -407,7 +409,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertEquals("Before the rebalancing is completed, the end time metric must be undefined.",
             -1, endTime.value());
 
-        IgniteInternalFuture chain = ignite1.context().cache().internalCache(CACHE5).preloader().rebalanceFuture()
+        IgniteInternalFuture<Boolean> chain = ignite1.context().cache().internalCache(CACHE5).preloader().rebalanceFuture()
             .chain(f -> {
                 assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to " +
                         "the start time measured immediately after the rebalancing start.",

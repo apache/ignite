@@ -2273,7 +2273,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue("Waiting for snapshot operation end failed.",
             waitForCondition(() ->
-                    ig.context().metric().registry(SNAPSHOT_METRICS)
+                    ig.context().metric().getRegistry(SNAPSHOT_METRICS)
                         .<LongMetric>findMetric("LastSnapshotEndTime").value() > 0,
                 getTestTimeout()));
 

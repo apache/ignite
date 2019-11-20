@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -176,7 +175,8 @@ public class CheckpointPagesWriter implements Runnable {
     ) throws IgniteCheckedException {
         Map<PageMemoryEx, List<FullPageId>> pagesToRetry = new HashMap<>();
 
-        CheckpointMetricsTracker tracker = persStoreMetrics.metricsEnabled() ? this.tracker : null;
+        //TODO: use metric source
+        CheckpointMetricsTracker tracker = null; //persStoreMetrics.metricsEnabled() ? this.tracker : null;
 
         PageStoreWriter pageStoreWriter = createPageStoreWriter(pagesToRetry);
 
@@ -243,18 +243,20 @@ public class CheckpointPagesWriter implements Runnable {
                     return;
                 }
 
-                int groupId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
                 assert getType(buf) != 0 : "Invalid state. Type is 0! pageId = " + hexLong(pageId);
                 assert getVersion(buf) != 0 : "Invalid state. Version is 0! pageId = " + hexLong(pageId);
 
+                //TODO: use metric source
+/*
                 if (persStoreMetrics.metricsEnabled()) {
                     int pageType = getType(buf);
 
                     if (PageIO.isDataPageType(pageType))
                         tracker.onDataPageWritten();
                 }
+*/
 
                 curCpProgress.updateWrittenPages(1);
 

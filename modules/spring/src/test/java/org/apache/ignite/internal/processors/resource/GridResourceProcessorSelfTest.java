@@ -343,7 +343,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert taskLog != null;
 
-            final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {
+            final IgniteOutClosure<Object> call = new IgniteOutClosure<Object>() {
                 /** Should be injected despite this is a {@link Callable} instance nested in a job. */
                 @IgniteInstanceResource
                 private Ignite grid;
@@ -371,7 +371,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
-                    return callable.apply();
+                    return call.apply();
                 }
             });
         }
@@ -428,39 +428,28 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         final int threadsCnt = 100;
         final int iters = 2000000;
 
-        ctx = newContext();
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                try {
+                    Test1 obj = new Test1();
 
-        ctx.add(new GridResourceProcessor(ctx));
+                    long start = System.currentTimeMillis();
 
-        ctx.start();
+                    for (int i = 0; i < iters; i++)
+                        ctx.resource().injectBasicResource(obj, TestAnnotation1.class, "value");
 
-        try {
-            GridTestUtils.runMultiThreaded(new Runnable() {
-                @Override public void run() {
-                    try {
-                        Test1 obj = new Test1();
+                    long duration = (System.currentTimeMillis() - start);
 
-                        long start = System.currentTimeMillis();
+                    float avgInjectTime = Math.round(1000.0f * duration / iters) / 1000.0f;
 
-                        for (int i = 0; i < iters; i++)
-                            ctx.resource().injectBasicResource(obj, TestAnnotation1.class, "value");
-
-                        long duration = (System.currentTimeMillis() - start);
-
-                        float avgInjectTime = Math.round(1000.0f * duration / iters) / 1000.0f;
-
-                        info("Finished load test [avgInjectTime=" + avgInjectTime +
-                            "ms, duration=" + duration + "ms, count=" + iters + ']');
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail("Failed to inject resources: " + e.getMessage());
-                    }
+                    info("Finished load test [avgInjectTime=" + avgInjectTime +
+                        "ms, duration=" + duration + "ms, count=" + iters + ']');
                 }
-            }, threadsCnt, "grid-ioc-test");
-        }
-        finally {
-            ctx.stop(true);
-        }
+                catch (IgniteCheckedException e) {
+                    fail("Failed to inject resources: " + e.getMessage());
+                }
+            }
+        }, threadsCnt, "grid-ioc-test");
     }
 
     /**

@@ -17,8 +17,10 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 
 /**
  * Data region provides access to objects configured with {@link DataRegionConfiguration} configuration.
@@ -30,6 +32,9 @@ public class DataRegion {
     /** */
     private final DataRegionMetricsImpl memMetrics;
 
+    /** Data region metric source. */
+    private final DataRegionMetricSource metricSrc;
+
     /** */
     private final DataRegionConfiguration cfg;
 
@@ -38,18 +43,19 @@ public class DataRegion {
 
     /**
      * @param pageMem PageMemory instance.
-     * @param memMetrics DataRegionMetrics instance.
      * @param cfg Configuration of given DataRegion.
      * @param evictionTracker Eviction tracker.
      */
     public DataRegion(
+        GridKernalContext ctx,
         PageMemory pageMem,
         DataRegionConfiguration cfg,
-        DataRegionMetricsImpl memMetrics,
+        DataRegionMetricSource metricSrc,
         PageEvictionTracker evictionTracker
     ) {
         this.pageMem = pageMem;
-        this.memMetrics = memMetrics;
+        this.metricSrc = metricSrc;
+        this.memMetrics = new DataRegionMetricsImpl(ctx, cfg.getName(), metricSrc, pageMem.pageSize());
         this.cfg = cfg;
         this.evictionTracker = evictionTracker;
     }
@@ -70,9 +76,18 @@ public class DataRegion {
 
     /**
      * @return Memory Metrics.
+     * @deprecated Use {@link #metricSource()} method instead. Should be removed in Apache Ignote 3.0.
      */
+    @Deprecated
     public DataRegionMetricsImpl memoryMetrics() {
         return memMetrics;
+    }
+
+    /**
+     * @return Data region metric source.
+     */
+    public DataRegionMetricSource metricSource() {
+        return metricSrc;
     }
 
     /**

@@ -608,7 +608,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
-                        return ctx.metric().registry(name);
+                        return ctx.metric().getRegistry(name);
                     }
 
                     @Override public void removeMetricRegistry(String name) {

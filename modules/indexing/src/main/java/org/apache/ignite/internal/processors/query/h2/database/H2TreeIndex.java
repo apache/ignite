@@ -36,8 +36,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -48,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.sources.IndexMetricSource;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.DurableBackgroundCleanupIndexTreeTask;
@@ -105,7 +104,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
+import static org.apache.ignite.internal.processors.metric.sources.IndexMetricSource.SORTED_IDX;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_NOT_FOUND;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse.STATUS_OK;
@@ -162,8 +161,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** Query context registry. */
     private final QueryContextRegistry qryCtxRegistry;
 
-    /** IO statistics holder. */
-    private final IoStatisticsHolderIndex stats;
+    /** Metric source. */
+    private final IndexMetricSource metricSrc;
 
     /** If {code true} then this index is already marked as destroyed. */
     private final AtomicBoolean destroyed = new AtomicBoolean();
@@ -185,7 +184,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         boolean pk,
         String treeName,
         H2Tree[] segments,
-        IoStatisticsHolderIndex stats,
+        IndexMetricSource metricSrc,
         IndexColumn[] cols,
         IgniteLogger log
     ) {
@@ -203,7 +202,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         this.treeName = treeName;
 
         this.segments = segments;
-        this.stats = stats;
+        this.metricSrc = metricSrc;
 
         qryCtxRegistry = ((IgniteH2Indexing)(ctx.query().getIndexing())).queryContextRegistry();
 
@@ -259,6 +258,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
     ) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
+        GridKernalContext ctx = cctx.kernalContext();
+
         GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
@@ -273,12 +274,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-        IoStatisticsHolderIndex stats = new IoStatisticsHolderIndex(
-            SORTED_INDEX,
-            cctx.name(),
-            idxName,
-            cctx.kernalContext().metric()
-        );
+        IndexMetricSource metricSrc =
+                new IndexMetricSource(SORTED_IDX, cctx.name(), String.join(".", tbl.getName(), idxName), ctx);
+
+        ctx.metric().registerSource(metricSrc);
+        ctx.metric().enableMetrics(metricSrc);
 
         InlineIndexColumnFactory idxHelperFactory = new InlineIndexColumnFactory(tbl.getCompareMode());
 
@@ -312,7 +312,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                     rowCache,
                     cctx.kernalContext().failure(),
                     log,
-                    stats,
+                    metricSrc,
                     idxHelperFactory,
                     inlineSize
                 );
@@ -326,7 +326,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         IndexColumn.mapColumns(cols, tbl);
 
-        return new H2TreeIndex(cctx, tbl, idxName, pk, treeName, segments, stats, cols, log);
+        return new H2TreeIndex(cctx, tbl, idxName, pk, treeName, segments, metricSrc, cols, log);
     }
 
     /** {@inheritDoc} */
@@ -543,6 +543,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         if (!markDestroyed())
             return;
 
+        ctx.metric().disableMetrics(metricSrc);
+        ctx.metric().unregisterSource(metricSrc);
+
         try {
             if (cctx.affinityNode() && rmvIdx) {
                 List<Long> rootPages = new ArrayList<>(segments.length);
@@ -565,8 +568,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 finally {
                     cctx.shared().database().checkpointReadUnlock();
                 }
-
-                ctx.metric().remove(stats.metricRegistryName());
 
                 DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
                     rootPages,
@@ -883,7 +884,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
         SearchRow first = toSearchRow(bounds.first());
         SearchRow last = toSearchRow(bounds.last());
 
-        IgniteTree t = treeForRead(segment);
+        IgniteTree<?, ?> t = treeForRead(segment);
 
         try {
             GridCursor<H2Row> range = ((BPlusTree)t).find(first, last, filter, null);
@@ -1016,7 +1017,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             @Nullable H2RowCache rowCache,
             @Nullable FailureProcessor failureProcessor,
             IgniteLogger log,
-            IoStatisticsHolder stats,
+            IndexMetricSource metricSrc,
             InlineIndexColumnFactory factory,
             int configuredInlineSize
         ) throws IgniteCheckedException;

@@ -65,8 +65,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalk
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -95,7 +94,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.ComputeMetricSource.COMPUTE_METRICS;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID_PREDICATE;
@@ -138,9 +137,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** */
     private final GridLocalEventListener discoLsnr;
 
-    /** Total executed tasks metric. */
-    private final LongAdderMetric execTasks;
-
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
 
@@ -158,6 +154,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      */
     private final boolean isPersistenceEnabled;
 
+    /** Compute metric source. */
+    private ComputeMetricSource metricSrc;
+
     /**
      * @param ctx Kernal context.
      */
@@ -167,10 +166,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
-
-        MetricRegistry sysreg = ctx.metric().registry(SYS_METRICS);
-
-        execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
         ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
             new ComputeTaskViewWalker(),
@@ -182,6 +177,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void start() {
+        metricSrc = (ComputeMetricSource)ctx.metric().source(COMPUTE_METRICS);
+
         ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
@@ -197,8 +194,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (!active)
             return;
 
-        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
-            ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
+        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ? ctx.cache().utilityCache() : null;
 
         startLatch.countDown();
     }
@@ -1001,7 +997,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @param ses Task session.
      * @throws IgniteCheckedException If send to any of the jobs failed.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "BusyWait"})
+    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void sendSessionAttributes(Map<?, ?> attrs, GridTaskSessionImpl ses)
         throws IgniteCheckedException {
         assert attrs != null;
@@ -1258,7 +1254,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * Resets processor metrics.
      */
     public void resetMetrics() {
-        execTasks.reset();
+        metricSrc.resetExecutedTasks();
     }
 
     /** {@inheritDoc} */
@@ -1348,7 +1344,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             release(worker.getDeployment());
 
             if (!worker.isInternal())
-                execTasks.increment();
+                metricSrc.incrementExecutedTasks();
 
             // Unregister job message listener from all job topics.
             if (ses.isFullSupport()) {

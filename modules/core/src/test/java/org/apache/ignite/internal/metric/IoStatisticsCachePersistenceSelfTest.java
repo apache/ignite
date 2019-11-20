@@ -22,7 +22,6 @@ package org.apache.ignite.internal.metric;
  * Tests for cache IO statistics for persistence mode.
  */
 public class IoStatisticsCachePersistenceSelfTest extends IoStatisticsCacheSelfTest {
-
     /** {@inheritDoc} */
     @Override protected boolean persist() {
         return true;

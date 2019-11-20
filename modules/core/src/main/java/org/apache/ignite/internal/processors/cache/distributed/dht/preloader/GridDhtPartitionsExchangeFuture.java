@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -149,6 +150,7 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
+import static org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource.PME_METRICS;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -2673,16 +2675,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Updates the {@link GridMetricManager#PME_OPS_BLOCKED_DURATION_HISTOGRAM} and {@link
-     * GridMetricManager#PME_DURATION_HISTOGRAM} metrics if needed.
+     * Updates the metrics if needed.
      *
      * @param duration The total duration of the current PME.
      */
     private void updateDurationHistogram(long duration) {
-        cctx.exchange().durationHistogram().value(duration);
+        GridMetricManager metric = cctx.kernalContext().metric();
 
-        if (changedAffinity())
-            cctx.exchange().blockingDurationHistogram().value(duration);
+        //TODO: Change to direct source instance access.
+        PartitionExchangeMetricSource src = (PartitionExchangeMetricSource) metric.source(PME_METRICS);
+
+        src.updateDurationHistogram(duration, changedAffinity());
     }
 
     /**

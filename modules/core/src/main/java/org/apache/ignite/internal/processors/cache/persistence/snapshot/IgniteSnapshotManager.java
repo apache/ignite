@@ -321,6 +321,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
 
+        //TODO: use metric source
+
+/*
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
         mreg.register("LastSnapshotStartTime", () -> lastSeenSnpFut.startTime,
@@ -337,6 +340,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("LocalSnapshotNames", this::localSnapshotNames, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
+*/
 
         storeFactory = storeMgr::getPageStoreFactory;
 

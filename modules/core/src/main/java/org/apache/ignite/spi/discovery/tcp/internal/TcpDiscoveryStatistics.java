@@ -85,6 +85,8 @@ public class TcpDiscoveryStatistics {
      * @param discoReg Discovery metric registry.
      */
     public void registerMetrics(MetricRegistry discoReg) {
+        //TODO: Replace by metric source
+/*
         discoReg.register("TotalProcessedMessages", this::totalProcessedMessages, "Total processed messages count");
 
         discoReg.register("TotalReceivedMessages", this::totalReceivedMessages, "Total received messages count");
@@ -93,6 +95,7 @@ public class TcpDiscoveryStatistics {
         discoReg.register(failedNodesCnt);
         discoReg.register(leftNodesCnt);
         discoReg.register(pendingMsgsRegistered);
+*/
     }
 
     /**

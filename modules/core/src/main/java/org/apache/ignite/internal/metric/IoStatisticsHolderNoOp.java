@@ -22,7 +22,7 @@ package org.apache.ignite.internal.metric;
  * No Operation IO statistics holder. Use in case statistics shouldn't be gathered.
  */
 public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
-    /** No-op statistics. */
+    /** No-op statistics holder. */
     public static final IoStatisticsHolderNoOp INSTANCE = new IoStatisticsHolderNoOp();
 
     /**
@@ -48,10 +48,5 @@ public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public long physicalReads() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String metricRegistryName() {
-        return null;
     }
 }

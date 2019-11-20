@@ -41,7 +41,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.PageReplacementStartedEvent;
 import org.apache.ignite.failure.FailureContext;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -81,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
@@ -264,8 +263,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private long[] sizes;
 
-    /** Memory metrics to track dirty pages count and page replace rate. */
-    private final DataRegionMetricsImpl memMetrics;
+    /** Data region metric source to track dirty pages count and page replace rate. */
+    private final DataRegionMetricSource metricSrc;
+
+    /** Data region configuration. */
+    private final DataRegionConfiguration dataRegionCfg;
 
     /**
      * {@code False} if memory was not started or already stopped and is not supposed for any usage.
@@ -273,6 +275,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private volatile boolean started;
 
     /**
+     * @param dataRegionCfg Data region configuration.
      * @param directMemoryProvider Memory allocator to use.
      * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
@@ -280,11 +283,12 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
-     * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
+     * @param metricSrc Data region metric source.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
      */
     public PageMemoryImpl(
+        DataRegionConfiguration dataRegionCfg,
         DirectMemoryProvider directMemoryProvider,
         long[] sizes,
         GridCacheSharedContext<?, ?> ctx,
@@ -292,16 +296,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         PageStoreWriter flushDirtyPage,
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
-        DataRegionMetricsImpl memMetrics,
+        DataRegionMetricSource metricSrc,
         @Nullable ThrottlingPolicy throttlingPlc,
         IgniteOutClosure<CheckpointProgress> cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
-        assert memMetrics != null;
 
         log = ctx.logger(PageMemoryImpl.class);
-
+        this.dataRegionCfg = dataRegionCfg;
         this.ctx = ctx;
         this.directMemoryProvider = directMemoryProvider;
         this.sizes = sizes;
@@ -314,6 +317,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
+        this.metricSrc = metricSrc;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -329,8 +333,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         encPageSize = CU.encryptedPageSize(pageSize, ctx.kernalContext().config().getEncryptionSpi());
 
         rwLock = new OffheapReadWriteLock(128);
-
-        this.memMetrics = memMetrics;
 
         asyncRunner = new ThreadPoolExecutor(
             0,
@@ -605,7 +607,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+            DataRegionConfiguration dataRegionCfg = dataRegionConfiguration();
 
             IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
@@ -638,26 +640,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * @return Data region configuration.
      */
-    private DataRegionConfiguration getDataRegionConfiguration() {
-        DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
-
-        assert memCfg != null;
-
-        String dataRegionName = memMetrics.getName();
-
-        if (memCfg.getDefaultDataRegionConfiguration().getName().equals(dataRegionName))
-            return memCfg.getDefaultDataRegionConfiguration();
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (DataRegionConfiguration reg : dataRegions) {
-                if (reg != null && reg.getName().equals(dataRegionName))
-                    return reg;
-            }
-        }
-
-        return null;
+    private DataRegionConfiguration dataRegionConfiguration() {
+        return dataRegionCfg;
     }
 
     /** {@inheritDoc} */
@@ -887,7 +871,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     actualPageId = PageIO.getPageId(buf);
 
-                    memMetrics.onPageRead();
+                    metricSrc.onPageRead();
                 }
                 catch (IgniteDataIntegrityViolationException e) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -899,7 +883,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     statHolder.trackPhysicalAndLogicalRead(pageAddr);
 
-                    memMetrics.onPageRead();
+                    metricSrc.onPageRead();
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET,
@@ -1158,7 +1142,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         safeToUpdate.set(true);
 
-        memMetrics.resetDirtyPages();
+        metricSrc.resetDirtyPages();
 
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onBeginCheckpoint();
@@ -1355,7 +1339,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 pageStoreWriter.writePage(fullId, buf, tag);
 
-                memMetrics.onPageWritten();
+                metricSrc.onPageWritten();
 
                 buf.rewind();
             }
@@ -1654,7 +1638,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (tmpRelPtr == INVALID_REL_PTR) {
                 rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-                throw new IgniteException(CHECKPOINT_POOL_OVERFLOW_ERROR_MSG + ": " + memMetrics.getName());
+                throw new IgniteException(CHECKPOINT_POOL_OVERFLOW_ERROR_MSG +
+                        ": " + U.maskName(dataRegionCfg.getName()));
             }
 
             // Pin the page until checkpoint is not finished.
@@ -1861,7 +1846,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     if (dirtyPagesCnt >= seg.maxDirtyPages)
                         safeToUpdate.set(false);
 
-                    memMetrics.incrementDirtyPages();
+                    metricSrc.incrementDirtyPages();
                 }
             }
         }
@@ -1871,7 +1856,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (seg.dirtyPages.remove(pageId)) {
                 seg.dirtyPagesCntr.decrementAndGet();
 
-                memMetrics.decrementDirtyPages();
+                metricSrc.decrementDirtyPages();
             }
         }
     }
@@ -1911,9 +1896,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         return U.safeAbs(hash) % segments;
     }
 
-    /** @return Data region metrics. */
-    public DataRegionMetricsImpl metrics() {
-        return memMetrics;
+    /**
+     * Returns data region metric source.
+     *
+     * @return Data region metric source.
+     */
+    public DataRegionMetricSource metricSource() {
+        return metricSrc;
     }
 
     /** {@inheritDoc} */
@@ -2163,7 +2152,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (checkpointPages != null && checkpointPages.allowToSave(fullPageId)) {
                     assert storeMgr != null;
 
-                    memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
+                    metricSrc.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
 
                     saveDirtyPage.writePage(
                         fullPageId,
@@ -2184,7 +2173,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 return false;
             }
             else {
-                memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
+                metricSrc.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
 
                 // Page was not modified, ok to evict.
                 return true;
@@ -2243,7 +2232,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (pageReplacementWarnedFieldUpdater.compareAndSet(PageMemoryImpl.this, 0, 1)) {
                     String msg = "Page replacements started, pages will be rotated with disk, this will affect " +
                         "storage performance (consider increasing DataRegionConfiguration#setMaxSize for " +
-                        "data region): " + memMetrics.getName();
+                        "data region): " + metricSrc.name();
 
                     U.warn(log, msg);
 
@@ -2253,7 +2242,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                                 ctx.gridEvents().record(new PageReplacementStartedEvent(
                                     ctx.localNode(),
                                     msg,
-                                    memMetrics.getName()));
+                                    metricSrc.name()));
                             }
                         });
                     }
@@ -2265,7 +2254,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             final int cap = loadedPages.capacity();
 
             if (acquiredPages() >= loadedPages.size()) {
-                DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+                DataRegionConfiguration dataRegionCfg = dataRegionConfiguration();
 
                 throw new IgniteOutOfMemoryException("Failed to evict page from segment (all pages are acquired)."
                     + U.nl() + "Out of memory in data region [" +
@@ -2477,7 +2466,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 prevAddr = addr;
             }
 
-            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+            DataRegionConfiguration dataRegionCfg = dataRegionConfiguration();
 
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +

@@ -91,9 +91,16 @@ public class IpcToNioAdapter<T> {
     ) {
         assert mreg != null;
 
+        //TODO: use corresponding metric source
+/*
         rcvdBytesCntMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
         sentBytesCntMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+*/
+
+        rcvdBytesCntMetric = new LongAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+
+        sentBytesCntMetric = new LongAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
         this.endp = endp;
         this.writerFactory = writerFactory;

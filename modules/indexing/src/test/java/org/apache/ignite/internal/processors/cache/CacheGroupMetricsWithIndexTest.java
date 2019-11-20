@@ -86,8 +86,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        for (CacheConfiguration cacheCfg : cfg.getCacheConfiguration()) {
+        for (CacheConfiguration<?, ?> cacheCfg : cfg.getCacheConfiguration()) {
             if (GROUP_NAME.equals(cacheCfg.getGroupName()) || GROUP_NAME_2.equals(cacheCfg.getGroupName())) {
+
                 QueryEntity qryEntity = new QueryEntity(Long.class.getCanonicalName(), OBJECT_NAME);
 
                 qryEntity.setKeyFieldName(KEY_NAME);
@@ -178,21 +179,21 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric idxBuildCntPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
-        assertEquals(parts2 + parts3, indexBuildCountPartitionsLeft.value());
+        assertEquals(parts2 + parts3, idxBuildCntPartitionsLeft.value());
 
         blockingIndexing.stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
-        assertEquals(parts3, indexBuildCountPartitionsLeft.value());
+        assertEquals(parts3, idxBuildCntPartitionsLeft.value());
 
         blockingIndexing.stopBlock(cacheName3);
 
         ignite.cache(cacheName3).indexReadyFuture().get(30_000);
 
-        assertEquals(0, indexBuildCountPartitionsLeft.value());
+        assertEquals(0, idxBuildCntPartitionsLeft.value());
     }
 
     /**
@@ -238,12 +239,12 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             Assert.assertEquals("Index not found", 1, all.size());
         });
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric idxBuildCntPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         Assert.assertTrue("Timeout wait start rebuild index",
-            waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));
+            waitForCondition(() -> idxBuildCntPartitionsLeft.value() > 0, 30_000));
 
         Assert.assertTrue("Timeout wait finished rebuild index",
-            waitForCondition(() -> indexBuildCountPartitionsLeft.value() == 0, 30_000));
+            waitForCondition(() -> idxBuildCntPartitionsLeft.value() == 0, 30_000));
     }
 }

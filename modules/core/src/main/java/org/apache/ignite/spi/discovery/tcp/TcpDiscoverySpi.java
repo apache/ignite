@@ -128,7 +128,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * Nodes are organized in ring. So almost all network exchange (except few cases) is
  * done across it.
  * <p>
- * If node is configured as client node (see {@link IgniteConfiguration#clientMode})
+ * If node is configured as client node (see {@link IgniteConfiguration#2clientMode})
  * TcpDiscoverySpi starts in client mode as well. In this case node does not take its place in the ring,
  * but it connects to random node in the ring (IP taken from IP finder configured) and
  * use it as a router for discovery traffic.
@@ -1467,6 +1467,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         stats.registerMetrics(discoReg);
 
+        //TODO: use metric source
+/*
         discoReg.register("MessageWorkerQueueSize", () -> impl.getMessageWorkerQueueSize(),
             "Message worker queue current size");
 
@@ -1478,6 +1480,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             discoReg.register("CoordinatorSince", stats::coordinatorSinceTimestamp, "Coordinator since timestamp");
         }
+*/
 
     }
 

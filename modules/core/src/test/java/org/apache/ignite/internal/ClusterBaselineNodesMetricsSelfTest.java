@@ -34,7 +34,6 @@ import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.ACT
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_BASELINE_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_CLIENT_NODES;
 import static org.apache.ignite.internal.processors.cluster.ClusterProcessor.TOTAL_SERVER_NODES;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Baseline nodes metrics self test.
@@ -60,7 +59,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         // Cluster metrics.
         ClusterMetricsMXBean mxBeanCluster = mxBean(0, ClusterMetricsMXBeanImpl.class);
 
-        MetricRegistry mreg = ignite0.context().metric().registry(CLUSTER_METRICS);
+        MetricRegistry mreg = ignite0.context().metric().getRegistry(/*CLUSTER_METRICS*/"cluster");
 
         ignite0.cluster().active(true);
 

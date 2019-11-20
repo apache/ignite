@@ -25,12 +25,11 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.sources.SystemMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.SYS_METRICS;
 
 /**
  * Makes sure that cache lock order values come in proper sequence.
@@ -45,12 +44,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** Timestamp used as base time for cache topology version (January 1, 2014). */
     public static final long TOP_VER_BASE_TIME = 1388520000000L;
-
-    /** Last data version metric name. */
-    public static final String LAST_DATA_VER = "LastDataVersion";
-
-    /** Last version metric. */
-    protected AtomicLongMetric lastDataVer;
 
     /**
      * Current order. Initialize to current time to make sure that
@@ -79,6 +72,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** */
     private volatile GridCacheVersion isolatedStreamerVer;
 
+    /** System metric source. */
+    private SystemMetricSource sysMetricSrc;
+
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -95,9 +91,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
-
-        lastDataVer = sysreg.longMetric(LAST_DATA_VER, "The latest data version on the node.");
+        sysMetricSrc = cctx.kernalContext().metric().source(SYS_METRICS);
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
@@ -120,7 +114,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
-        lastDataVer.value(last.order());
+        sysMetricSrc.lastDataVersion(last.order());
 
         isolatedStreamerVer = new GridCacheVersion(1 + offset, 0, 1, dataCenterId);
     }
@@ -291,7 +285,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = next;
 
-        lastDataVer.value(ord);
+        sysMetricSrc.lastDataVersion(last.order());
 
         return next;
     }
@@ -312,7 +306,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         last = next;
 
-        lastDataVer.value(ord);
+        sysMetricSrc.lastDataVersion(last.order());
 
         return next;
     }

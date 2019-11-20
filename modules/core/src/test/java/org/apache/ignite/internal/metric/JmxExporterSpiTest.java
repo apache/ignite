@@ -71,12 +71,14 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryBuilder;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -93,7 +95,6 @@ import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.FIL
 import static org.apache.ignite.internal.managers.systemview.SystemViewMBean.VIEWS;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
@@ -104,13 +105,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheMetricSource.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.CPU_LOAD_DESCRIPTION;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.GC_CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.GC_CPU_LOAD_DESCRIPTION;
+import static org.apache.ignite.internal.processors.metric.sources.SystemMetricSource.SYS_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
@@ -139,7 +140,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)));
 
         JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
 
@@ -231,7 +233,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     public void testUnregisterRemovedRegistry() throws Exception {
         String n = "cache-for-remove";
 
-        IgniteCache c = ignite.createCache(n);
+        IgniteCache<?, ?> c = ignite.createCache(n);
+
+        c.enableStatistics(true);
 
         DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, n);
 
@@ -245,22 +249,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testFilterAndExport() throws Exception {
-        createAdditionalMetrics(ignite);
-
         assertThrowsWithCause(new RunnableX() {
             @Override public void runx() throws Exception {
                 metricRegistry(ignite.name(), "filtered", "metric");
             }
         }, IgniteException.class);
-
-        DynamicMBean bean1 = metricRegistry(ignite.name(), "other", "prefix");
-
-        assertEquals(42L, bean1.getAttribute("test"));
-        assertEquals(43L, bean1.getAttribute("test2"));
-
-        DynamicMBean bean2 = metricRegistry(ignite.name(), "other", "prefix2");
-
-        assertEquals(44L, bean2.getAttribute("test3"));
     }
 
     /** */
@@ -296,7 +289,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(ignite.context().cache().cacheGroupDescriptors().size(), grps.size());
 
-        for (Map.Entry entry : grps.entrySet()) {
+        for (Map.Entry<?, ?> entry : grps.entrySet()) {
             CompositeData row = (CompositeData)entry.getValue();
 
             grpNames.remove(row.get("cacheGroupName"));
@@ -517,9 +510,11 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
+        MetricRegistryBuilder bldr = MetricRegistryBuilder.newInstance("test", new NullLogger());
 
-        createTestHistogram(mreg);
+        createTestHistogram(bldr);
+
+        MetricRegistry mreg = bldr.build();
 
         assertEquals(Long.valueOf(1), searchHistogram("histogram_0_50", mreg));
         assertEquals(Long.valueOf(2), searchHistogram("histogram_50_500", mreg));
@@ -552,9 +547,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramExport() throws Exception {
-        MetricRegistry mreg = ignite.context().metric().registry("histogramTest");
+        MetricRegistryBuilder bldr = MetricRegistryBuilder.newInstance("histogramTest", new NullLogger());
 
-        createTestHistogram(mreg);
+        createTestHistogram(bldr);
+
+        MetricRegistry mreg = bldr.build();
+
+        ignite.context().metric().addRegistry(mreg);
 
         DynamicMBean bean = metricRegistry(ignite.name(), null, "histogramTest");
 
@@ -574,13 +573,16 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testJmxHistogramNamesExport() throws Exception {
-        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+        MetricRegistry reg = ignite.context().metric().getRegistry(REGISTRY_NAME);
 
         String simpleName = "testhist";
         String nameWithUnderscore = "test_hist";
 
+        //TODO: Use metric source
+/*
         reg.histogram(simpleName, new long[] {10, 100}, null);
         reg.histogram(nameWithUnderscore, new long[] {10, 100}, null);
+*/
 
         DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
 
@@ -766,9 +768,12 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
-                    .setGroupName("group1"));
+                    .setGroupName("group1")
+                    .setStatisticsEnabled(true));
 
             IgniteCache<Integer, Integer> cache2 = client2.createCache("cache2");
+
+            cache2.enableStatistics(true);
 
             awaitPartitionMapExchange();
 
@@ -809,7 +814,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** @throws Exception If failed. */
     @Test
     public void testIgniteKernal() throws Exception {
-        DynamicMBean mbn = metricRegistry(ignite.name(), null, IGNITE_METRICS);
+        //TODO: Use corresponding metric source
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, /*IGNITE_METRICS*/ "ignite");
 
         assertNotNull(mbn);
 
@@ -1145,10 +1151,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    private void createTestHistogram(MetricRegistry mreg) {
+    private void createTestHistogram(MetricRegistryBuilder bldr) {
         long[] bounds = new long[] {50, 500};
 
-        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
+        HistogramMetricImpl histogram = bldr.histogram("histogram", bounds, null);
 
         histogram.value(10);
         histogram.value(51);
@@ -1157,7 +1163,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         histogram.value(600);
         histogram.value(600);
 
-        histogram = mreg.histogram("histogram_with_underscore", bounds, null);
+        histogram = bldr.histogram("histogram_with_underscore", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

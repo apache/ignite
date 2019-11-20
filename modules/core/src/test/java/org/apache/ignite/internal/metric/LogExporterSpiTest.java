@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -33,7 +34,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class LogExporterSpiTest extends AbstractExporterSpiTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(false, GridCommonAbstractTest.log);
 
     /** */
     private IgniteEx ignite;

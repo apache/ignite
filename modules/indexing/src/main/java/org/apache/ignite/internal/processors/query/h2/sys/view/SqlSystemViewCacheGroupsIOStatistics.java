@@ -23,10 +23,7 @@ import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -34,10 +31,8 @@ import org.h2.value.Value;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singleton;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
-import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 
 /**
@@ -61,23 +56,19 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GROUP_NAME", first, last);
 
         if (nameCond.isEquality()) {
-            String cacheGrpName = nameCond.valueForEquality().getString();
+            String grpName = nameCond.valueForEquality().getString();
 
-            MetricRegistry mreg = ctx.metric().registry(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
+            String srcName = metricName(CACHE_GROUP_METRICS_PREFIX, grpName);
 
-            IntMetric grpId = mreg.findMetric("grpId");
-            ObjectMetric<String> grpName = mreg.findMetric("name");
+            CacheGroupMetricSource src = ctx.metric().source(srcName);
 
-            if (grpId == null)
-                emptyIterator();
+            if (src == null)
+                return emptyIterator();
 
-            if (mreg != null) {
-                return singleton(toRow(ses,
-                    grpId.value(),
-                    grpName.value(),
-                    mreg)
-                ).iterator();
-            }
+            int grpId = src.groupId();
+
+            return singleton(toRow(ses, grpId, grpName, src)).iterator();
+
         }
         else {
             Collection<CacheGroupContext> grpCtxs = ctx.cache().cacheGroups();
@@ -85,30 +76,26 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             GridMetricManager mmgr = ctx.metric();
 
             return iterator(grpCtxs,
-                grpCtx -> toRow(ses,
-                    grpCtx.groupId(),
-                    grpCtx.cacheOrGroupName(),
-                    mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
+                grpCtx -> {
+                    String metricName = metricName(CACHE_GROUP_METRICS_PREFIX, grpCtx.cacheOrGroupName());
+
+                    CacheGroupMetricSource src = mmgr.source(metricName);
+
+                    return toRow(ses, grpCtx.groupId(), grpCtx.cacheOrGroupName(), src);
+                },
                 true,
                 grpCtx -> !grpCtx.systemCache());
         }
-
-        return emptyIterator();
     }
 
     /** */
-    private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mreg) {
-        IntMetric grpIdMetric = mreg.findMetric("grpId");
-
-        if (grpIdMetric == null)
-            return createRow(ses, grpId, grpName, 0, 0);
-
+    private Row toRow(Session ses, int grpId, String grpName, CacheGroupMetricSource src) {
         return createRow(
             ses,
             grpId,
             grpName,
-            mreg.<LongMetric>findMetric(PHYSICAL_READS).value(),
-            mreg.<LongMetric>findMetric(LOGICAL_READS).value()
+            src.physicalReads(),
+            src.logicalReads()
         );
     }
 

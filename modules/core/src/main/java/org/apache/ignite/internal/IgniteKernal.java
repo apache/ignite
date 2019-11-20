@@ -163,7 +163,6 @@ import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksPro
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -2351,7 +2350,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metricSource().offHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2391,7 +2390,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metricSource().totalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;
@@ -4474,7 +4473,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Registers metrics.
      */
+    //TODO: Move to corresponding metric source
     private void registerMetrics() {
+/*
         if (!ctx.metric().enabled())
             return;
 
@@ -4559,6 +4560,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         reg.register("loadBalancingSpiFormatted", this::getLoadBalancingSpiFormatted, String.class,
             LOAD_BALANCING_SPI_FORMATTED_DESC);
+*/
     }
 
     /**

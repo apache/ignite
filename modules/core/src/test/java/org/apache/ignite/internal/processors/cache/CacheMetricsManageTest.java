@@ -352,8 +352,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                             assertEquals("CacheGets", 0L, cache.mxBean().getCacheGets());
                             assertEquals("CacheRemovals", 0L, cache.mxBean().getCacheRemovals());
                             assertEquals("CacheMisses", 0L, cache.mxBean().getCacheMisses());
-                            assertEquals("AverageGetTime", 0f, cache.mxBean().getAveragePutTime());
-                            assertEquals("AveragePutTime", 0f, cache.mxBean().getAverageGetTime());
+                            assertEquals("AverageGetTime", 0f, cache.mxBean().getAverageGetTime());
+                            assertEquals("AveragePutTime", 0f, cache.mxBean().getAveragePutTime());
                             assertEquals("AverageRemoveTime", 0f, cache.mxBean().getAverageRemoveTime());
                         }
                         catch (AssertionError e) {

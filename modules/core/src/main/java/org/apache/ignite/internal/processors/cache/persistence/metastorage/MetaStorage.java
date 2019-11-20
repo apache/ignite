@@ -49,12 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.*;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -64,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -113,7 +109,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     private AtomicLong rmvId = new AtomicLong();
 
     /** */
-    private DataRegionMetricsImpl regionMetrics;
+    private DataRegionMetricSource regionMetrics;
 
     /** */
     private final boolean readOnly;
@@ -149,7 +145,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     public MetaStorage(
         GridCacheSharedContext<?, ?> cctx,
         DataRegion dataRegion,
-        DataRegionMetricsImpl regionMetrics,
+        DataRegionMetricSource regionMetrics,
         boolean readOnly
     ) {
         this.cctx = cctx;
@@ -163,7 +159,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     public void init(GridCacheDatabaseSharedManager db) throws IgniteCheckedException {
-        regionMetrics.clear();
+        regionMetrics.reset();
         initInternal(db);
 
         if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {

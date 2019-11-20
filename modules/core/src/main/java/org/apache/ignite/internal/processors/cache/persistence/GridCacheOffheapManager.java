@@ -341,7 +341,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      */
     private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
         if (execSvc == null) {
-            reuseList.saveMetadata(grp.statisticsHolderData());
+            reuseList.saveMetadata(grp.cacheStatisticsHolder());
 
             for (CacheDataStore store : partDataStores.values())
                 saveStoreMetadata(store, ctx, false, needSnapshot);
@@ -349,7 +349,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         else {
             execSvc.execute(() -> {
                 try {
-                    reuseList.saveMetadata(grp.statisticsHolderData());
+                    reuseList.saveMetadata(grp.cacheStatisticsHolder());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -384,7 +384,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            ((CacheFreeList)rowStore0.freeList()).saveMetadata(grp.statisticsHolderData());
+            ((CacheFreeList)rowStore0.freeList()).saveMetadata(grp.cacheStatisticsHolder());
 
             PartitionMetaStorage<SimpleDataRow> partStore = store.partStorage();
 
@@ -443,7 +443,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         long link = io.getGapsLink(partMetaPageAddr);
 
                         if (updCntrsBytes == null && link != 0) {
-                            partStore.removeDataRowByLink(link, grp.statisticsHolderData());
+                            //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
+                            partStore.removeDataRowByLink(link, grp.cacheStatisticsHolder());
 
                             io.setGapsLink(partMetaPageAddr, (link = 0));
 
@@ -452,7 +453,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else if (updCntrsBytes != null && link == 0) {
                             SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
-                            partStore.insertDataRow(row, grp.statisticsHolderData());
+                            //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
+                            partStore.insertDataRow(row, grp.cacheStatisticsHolder());
 
                             io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
@@ -464,11 +466,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             assert prev != null : "Read null gaps using link=" + link;
 
                             if (!Arrays.equals(prev, updCntrsBytes)) {
-                                partStore.removeDataRowByLink(link, grp.statisticsHolderData());
+                                //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
+                                partStore.removeDataRowByLink(link, grp.cacheStatisticsHolder());
 
                                 SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
-                                partStore.insertDataRow(row, grp.statisticsHolderData());
+                                //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
+                                partStore.insertDataRow(row, grp.cacheStatisticsHolder());
 
                                 io.setGapsLink(partMetaPageAddr, (link = row.link()));
 
@@ -476,8 +480,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             }
                         }
 
+                        //TODO: may be cacheStatisticsHolder() should be renamed to statisticsHolderData()
                         if (changed)
-                            partStore.saveMetadata(grp.statisticsHolderData());
+                            partStore.saveMetadata(grp.cacheStatisticsHolder());
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
@@ -1918,7 +1923,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     freeList = new CacheFreeList(
                         grp.groupId(),
                         freeListName,
-                        grp.dataRegion().memoryMetrics(),
+                        grp.dataRegion().metricSource(),
                         grp.dataRegion(),
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
@@ -1942,7 +1947,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
                         partitionMetaStoreName,
-                        grp.dataRegion().memoryMetrics(),
+                        grp.dataRegion().metricSource(),
                         grp.dataRegion(),
                         freeList,
                         ctx.wal(),
@@ -2125,8 +2130,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             long partMetaPage = pageMem.acquirePage(grpId, partMetaId, metaPageAllocated);
 
+            //TODO: fix compilation
+/*
             if (metaPageAllocated.get())
-                grp.metrics().incrementInitializedLocalPartitions();
+                grp.metricSource().incrementInitializedLocalPartitions();
+*/
 
             try {
                 boolean allocated = false;

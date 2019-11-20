@@ -53,7 +53,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tracker Allocation tracker.
      * @throws IgniteCheckedException If failed.
      */
-    void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
+    public void initialize(int cacheId, int partitions, String workingDir, LongAdderMetric tracker)
         throws IgniteCheckedException;
 
     /**
@@ -236,7 +236,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      *
      * @param cacheConfiguration Cache configuration of cache which should be cleanup.
      */
-    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
+    public void cleanupPersistentSpace(CacheConfiguration<?, ?> cacheConfiguration) throws IgniteCheckedException;
 
     /**
      * Cleanup persistent space for all caches except metastore.
@@ -260,5 +260,5 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      *
      * @throws IgniteCheckedException If failed.
      */
-    public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException;
+    public boolean checkAndInitCacheWorkDir(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException;
 }

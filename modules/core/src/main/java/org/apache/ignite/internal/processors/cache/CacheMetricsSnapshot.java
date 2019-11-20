@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
+import org.apache.ignite.internal.processors.metric.sources.CacheMetricSource;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -357,7 +358,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
 
-        CacheMetricsImpl.EntriesStatMetrics entriesStat = m.getEntriesStat();
+        CacheMetricSource.EntriesStatMetrics entriesStat = m.getEntriesStat();
 
         offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
         heapEntriesCnt = entriesStat.heapEntriesCount();
@@ -366,10 +367,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        cacheSize = entriesStat.cacheSize();
-        keySize = entriesStat.keySize();
-        size = entriesStat.size();
-        isEmpty = entriesStat.isEmpty();
+        cacheSize = 0;
+        keySize = 0;
+        size = 0;
+        isEmpty = false;
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();

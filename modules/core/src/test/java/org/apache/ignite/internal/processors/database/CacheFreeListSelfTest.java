@@ -45,14 +45,13 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -69,9 +68,6 @@ import static org.apache.ignite.internal.processors.database.DataRegionMetricsSe
  *
  */
 public class CacheFreeListSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
-
     /** */
     private static final long MB = 1024L * 1024L;
 
@@ -484,7 +480,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) throws Exception {
+    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) {
         PageMemory pageMem = new PageMemoryNoStoreImpl(log,
             new UnsafeMemoryProvider(log),
             null,
@@ -514,16 +510,20 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
-        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg,
-            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)),
-            NO_OP_METRICS);
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
 
-        DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
+        DataRegionMetricSource metricSrc = new DataRegionMetricSource(
+                "test",
+                ctx,
+                plcCfg,
+                NO_OP_METRICS);
+
+        DataRegion dataRegion = new DataRegion(ctx, pageMem, plcCfg, metricSrc, new NoOpPageEvictionTracker());
 
         return new CacheFreeList(
             1,
             "freelist",
-            regionMetrics,
+            metricSrc,
             dataRegion,
             null,
             metaPageId,

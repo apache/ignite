@@ -31,7 +31,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -113,6 +112,8 @@ public class RunningQueryManager {
             qryHistTracker.queryHistory().values(),
             SqlQueryHistoryView::new);
 
+        //TODO: use metric source
+/*
         MetricRegistry userMetrics = ctx.metric().registry(SQL_USER_QUERIES_REG_NAME);
 
         successQrsCnt = userMetrics.longAdderMetric("success",
@@ -123,6 +124,16 @@ public class RunningQueryManager {
 
         canceledQrsCnt = userMetrics.longMetric("canceled", "Number of canceled queries that have been started " +
             "on this node. This metric number included in the general 'failed' metric.");
+*/
+        successQrsCnt = new LongAdderMetric("success",
+                "Number of successfully executed user queries that have been started on this node.");
+
+        failedQrsCnt = new AtomicLongMetric("failed", "Total number of failed by any reason (cancel, etc)" +
+                " queries that have been started on this node.");
+
+        canceledQrsCnt = new AtomicLongMetric("canceled", "Number of canceled queries that have been started " +
+                "on this node. This metric number included in the general 'failed' metric.");
+
     }
 
     /**

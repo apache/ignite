@@ -32,10 +32,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
@@ -99,8 +99,8 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         IgniteInternalCache<Long, String> cache = ignite.cachex(CACHE);
-        CacheGroupMetricsImpl metrics = cache.context().group().metrics();
-        DataRegionMetricsImpl rmx = cache.context().dataRegion().memoryMetrics();
+        CacheGroupMetricSource metrics = cache.context().group().metricSource();
+        DataRegionMetricSource dataRegMetricSrc = cache.context().dataRegion().metricSource();
 
         long maxKey = 10_000;
 
@@ -126,9 +126,9 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
 
         assertEquals(map.size(), cache.size());
 
-        info("Page mem  : " + rmx.getPhysicalMemorySize());
-        info("Alloc size: " + metrics.getTotalAllocatedSize());
-        info("Store size: " + metrics.getStorageSize());
+        info("Page mem  : " + dataRegMetricSrc.physicalMemorySize());
+        info("Alloc size: " + metrics.totalAllocatedSize());
+        info("Store size: " + metrics.storageSize());
 
         HashMap<Long,String> map2 = new HashMap<>(map);
 

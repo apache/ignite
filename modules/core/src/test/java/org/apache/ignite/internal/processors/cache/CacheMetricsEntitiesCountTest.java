@@ -29,14 +29,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * This test checks that entries count metrics, calculated by method
@@ -65,7 +61,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        Collection<CacheConfiguration> ccfgs = new ArrayList<>(4);
+        Collection<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>(4);
 
         ccfgs.add(new CacheConfiguration<>()
             .setName(CACHE_PREFIX + 0)
@@ -124,12 +120,13 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
      * Test entities count, calculated by different implementations.
      */
     @Test
-    public void testEnitiesCount() throws Exception {
+    public void testEntitiesCount() throws Exception {
         awaitPartitionMapExchange();
 
-        for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
+        for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++) {
             for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 fillCache(igniteIdx, cacheIdx);
+        }
 
         awaitMetricsUpdate(1);
 
@@ -176,9 +173,10 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
                 0,
                 0);
 
-        for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++)
+        for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++) {
             for (int cacheIdx = 0; cacheIdx < cacheCnt; cacheIdx++)
                 checkCacheLocalMetrics(igniteIdx, cacheIdx);
+        }
     }
 
     /**
@@ -188,7 +186,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     private void fillCache(int igniteIdx, int cacheIdx) {
         log.info("Filling cache, igniteIdx=" + igniteIdx + ", cacheIdx=" + cacheIdx);
 
-        IgniteCache cache = grid(igniteIdx).cache(CACHE_PREFIX + cacheIdx);
+        IgniteCache<String, Integer> cache = grid(igniteIdx).cache(CACHE_PREFIX + cacheIdx);
 
         for (int i = 0; i < ENTITIES_CNT; i++)
             cache.put("key" + igniteIdx + "-" + i, i);
@@ -199,30 +197,29 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
      * @param cacheIdx Cache index.
      */
     private void checkCacheLocalMetrics(int igniteIdx, int cacheIdx) throws IgniteCheckedException {
-        IgniteInternalCache internalCache = grid(igniteIdx).cachex(CACHE_PREFIX + cacheIdx);
+        IgniteInternalCache<?, ?> internalCache = grid(igniteIdx).cachex(CACHE_PREFIX + cacheIdx);
 
-        GridCacheContext cctx = internalCache.context();
+        GridCacheContext<?, ?> cctx = internalCache.context();
 
-        GridCacheAdapter cache = cctx.cache();
+        GridCacheAdapter<?, ?> cache = cctx.cache();
 
         CacheMetricsImpl metrics = cache.metrics0();
 
-        long offHeapEntriesCount = cache.offHeapEntriesCount();
+        long offHeapEntriesCnt = cache.offHeapEntriesCount();
 
-        long offHeapPrimaryEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapPrimaryEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             true,
             false,
             cctx.affinity().affinityTopologyVersion());
 
-        long offHeapBackupEntriesCount = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
+        long offHeapBackupEntriesCnt = cctx.offheap().cacheEntriesCount(cctx.cacheId(),
             false,
             true,
             cctx.affinity().affinityTopologyVersion());
 
-        long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
+        long heapEntriesCnt = cache.localSizeLong(ONHEAP_PEEK_MODES);
 
         long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
-        int size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
 
         boolean isEmpty = cache.isEmpty();
 
@@ -231,17 +228,19 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         log.info("Checking cache,  " + cacheInfo);
 
         assertEquals(cacheInfo + " offHeapEntriesCount",
-            offHeapEntriesCount, metrics.getOffHeapEntriesCount());
+                offHeapEntriesCnt, metrics.getOffHeapEntriesCount());
         assertEquals(cacheInfo + " offHeapBackupEntriesCount",
-            offHeapBackupEntriesCount, metrics.getOffHeapBackupEntriesCount());
+                offHeapBackupEntriesCnt, metrics.getOffHeapBackupEntriesCount());
         assertEquals(cacheInfo + " offHeapPrimaryEntriesCount",
-            offHeapPrimaryEntriesCount, metrics.getOffHeapPrimaryEntriesCount());
-        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCount, metrics.getHeapEntriesCount());
-        assertEquals(cacheInfo + " size", size, metrics.getSize());
-        assertEquals(cacheInfo + " keySize", size, metrics.getKeySize());
+                offHeapPrimaryEntriesCnt, metrics.getOffHeapPrimaryEntriesCount());
+        assertEquals(cacheInfo + " heapEntriesCount", heapEntriesCnt, metrics.getHeapEntriesCount());
         assertEquals(cacheInfo + " cacheSize", cacheSize, metrics.getCacheSize());
         assertEquals(cacheInfo + " isEmpty", isEmpty, metrics.isEmpty());
 
+        //TODO: Use metric source
+
+        fail("IGNITE-11927");
+/*
         MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(),
             cache.isNear()));
 
@@ -252,6 +251,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         assertEquals(offHeapPrimaryEntriesCount, ((LongMetric)mreg.findMetric("OffHeapPrimaryEntriesCount")).value());
         assertEquals(heapEntriesCount, ((LongMetric)mreg.findMetric("HeapEntriesCount")).value());
         assertEquals(cacheSize, ((LongMetric)mreg.findMetric("CacheSize")).value());
+*/
     }
 
     /**
@@ -272,7 +272,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         boolean isEmptySum = true;
 
         for (int igniteIdx = 0; igniteIdx < GRID_CNT; igniteIdx++) {
-            IgniteCache cache = grid(igniteIdx).cache(CACHE_PREFIX + cacheIdx);
+            IgniteCache<?, ?> cache = grid(igniteIdx).cache(CACHE_PREFIX + cacheIdx);
 
             CacheMetrics metrics = cache.metrics();
 
@@ -289,8 +289,6 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             if (!MvccFeatureChecker.forcedMvcc()) // Onheap cache is not supported in Mvcc mode.
                 assertEquals(cacheInfo + " heapEntriesCnt", heapEntriesCnt, metrics.getHeapEntriesCount());
 
-            assertEquals(cacheInfo + " size", cacheSize, metrics.getSize());
-            assertEquals(cacheInfo + " keySize", cacheSize, metrics.getKeySize());
             assertEquals(cacheInfo + " isEmpty", cacheSize == 0, metrics.isEmpty());
 
             metrics = cache.localMetrics();

@@ -49,6 +49,9 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
 
+    /** Default data region name. */
+    private static final String DFLT_DATA_REGION_NAME = "dfltDataRegion";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -57,7 +60,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(4000L * 1024 * 1024)
                 .setCheckpointPageBufferSize(1000L * 1000 * 1000)
-                .setName("dfltDataRegion")
+                .setName(DFLT_DATA_REGION_NAME)
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
@@ -66,7 +69,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>();
 
         ccfg1.setName(CACHE_NAME);
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -139,7 +142,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                         long dirtyPages = 0;
 
                         for (DataRegionMetrics m : ig.dataRegionMetrics())
-                            if (m.getName().equals("dfltDataRegion"))
+                            if (m.getName().equals(DFLT_DATA_REGION_NAME))
                                 dirtyPages = m.getDirtyPages();
 
                         long cpBufPages = 0;
@@ -156,10 +159,10 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                                 .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
-                            e.printStackTrace();
+                            log.error("Unexpected exception:", e);
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
+                        log.info("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
 
                         try {
                             Thread.sleep(1000);
@@ -200,6 +203,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         private final int v2;
 
         /** */
+        @SuppressWarnings("unused")
         private byte[] payload = new byte[400 + ThreadLocalRandom.current().nextInt(20)];
 
         /**

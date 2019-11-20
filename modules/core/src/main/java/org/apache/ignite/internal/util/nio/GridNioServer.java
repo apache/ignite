@@ -56,7 +56,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -232,17 +231,28 @@ public class GridNioServer<T> {
     /** Whether direct mode is used. */
     private final boolean directMode;
 
-    /** */
+    //TODO: Move to corresponding metric source
+/*
+    */
+/** *//*
+
     @Nullable private final MetricRegistry mreg;
 
-    /** Received bytes count metric. */
+    */
+/** Received bytes count metric. *//*
+
     @Nullable private final LongAdderMetric rcvdBytesCntMetric;
 
-    /** Sent bytes count metric. */
+    */
+/** Sent bytes count metric. *//*
+
     @Nullable private final LongAdderMetric sentBytesCntMetric;
 
-    /** Outbound messages queue size. */
+    */
+/** Outbound messages queue size. *//*
+
     @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+*/
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -438,6 +448,8 @@ public class GridNioServer<T> {
 
         this.balancer = balancer0;
 
+        //TODO: Move to corresponding metric source.
+/*
         this.mreg = mreg;
 
         rcvdBytesCntMetric = mreg == null ?
@@ -450,6 +462,7 @@ public class GridNioServer<T> {
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
+*/
     }
 
     /**
@@ -1181,8 +1194,11 @@ public class GridNioServer<T> {
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+            //TODO: Move to corresponding metric source
+/*
             if (rcvdBytesCntMetric != null)
                 rcvdBytesCntMetric.add(cnt);
+*/
 
             ses.bytesReceived(cnt);
 
@@ -1246,8 +1262,11 @@ public class GridNioServer<T> {
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+                        //TODO: Move to corresponding metric source
+    /*
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
+    */
 
                         ses.bytesSent(cnt);
                     }
@@ -1348,8 +1367,11 @@ public class GridNioServer<T> {
             if (cnt == 0)
                 return;
 
+            //TODO: Move to corresponding metric source
+/*
             if (rcvdBytesCntMetric != null)
                 rcvdBytesCntMetric.add(cnt);
+*/
 
             ses.bytesReceived(cnt);
             onRead(cnt);
@@ -1420,8 +1442,11 @@ public class GridNioServer<T> {
                 if (sslNetBuf != null) {
                     int cnt = sockCh.write(sslNetBuf);
 
+                    //TODO: Move to corresponding metric source
+/*
                     if (sentBytesCntMetric != null)
                         sentBytesCntMetric.add(cnt);
+*/
 
                     ses.bytesSent(cnt);
 
@@ -1508,8 +1533,11 @@ public class GridNioServer<T> {
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+                        //TODO: Move to corresponding metric source
+/*
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
+*/
 
                         ses.bytesSent(cnt);
                     }
@@ -1605,8 +1633,11 @@ public class GridNioServer<T> {
             while ((buf = queue.peek()) != null) {
                 int cnt = sockCh.write(buf);
 
+                //TODO: Move to corresponding metric source
+/*
                 if (sentBytesCntMetric != null)
                     sentBytesCntMetric.add(cnt);
+*/
 
                 ses.bytesSent(cnt);
 
@@ -1696,8 +1727,11 @@ public class GridNioServer<T> {
                 if (log.isTraceEnabled())
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
+                //TODO: Move to corresponding metric source
+/*
                 if (sentBytesCntMetric != null)
                     sentBytesCntMetric.add(cnt);
+*/
 
                 ses.bytesSent(cnt);
                 onWrite(cnt);
@@ -2659,7 +2693,7 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
-                    mreg,
+                    null, //mreg, //TODO: Move to corresponding metric source
                     writeBuf,
                     readBuf);
 
@@ -2940,10 +2974,15 @@ public class GridNioServer<T> {
      * @return Write queue size.
      */
     public int outboundMessagesQueueSize() {
+        return -1;
+
+        //TODO: Move to corresponding metric source
+/*
         if (outboundMessagesQueueSizeMetric == null)
             return -1;
 
         return (int) outboundMessagesQueueSizeMetric.value();
+*/
     }
 
     /**

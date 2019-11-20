@@ -42,8 +42,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource.CACHE_GROUP_METRICS_PREFIX;
 
 /**
  * Tests cache group metrics for index build fail case.
@@ -53,7 +53,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
     private static final String GROUP_NAME = "TEST_GROUP";
 
     /** {@code True} if fail index build. */
-    private final AtomicBoolean failIndexRebuild = new AtomicBoolean();
+    private final AtomicBoolean failIdxRebuild = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,6 +74,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         ccfg.setGroupName(GROUP_NAME);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setStatisticsEnabled(true);
 
         return ccfg;
     }
@@ -123,28 +124,28 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         ignite.cluster().active(true);
 
-        MetricRegistry grpMreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
+        MetricRegistry grpMreg = ignite.context().metric().getRegistry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric idxBuildCntPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
-        assertEquals(parts1 + parts2, indexBuildCountPartitionsLeft.value());
+        assertEquals(parts1 + parts2, idxBuildCntPartitionsLeft.value());
 
-        failIndexRebuild.set(true);
+        failIdxRebuild.set(true);
 
         ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName1);
 
         GridTestUtils.assertThrows(log, () -> ignite.cache(cacheName1).indexReadyFuture().get(30_000),
             IgniteSpiException.class, "Test exception.");
 
-        assertEquals(parts2, indexBuildCountPartitionsLeft.value());
+        assertEquals(parts2, idxBuildCntPartitionsLeft.value());
 
-        failIndexRebuild.set(false);
+        failIdxRebuild.set(false);
 
         ((AbstractIndexingCommonTest.BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
-        assertEquals(0, indexBuildCountPartitionsLeft.value());
+        assertEquals(0, idxBuildCntPartitionsLeft.value());
     }
 
     /** */
@@ -158,7 +159,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
         /** {@inheritDoc} */
         @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
-            if (failIndexRebuild.get())
+            if (failIdxRebuild.get())
                 throw new IgniteSpiException("Test exception.");
         }
 

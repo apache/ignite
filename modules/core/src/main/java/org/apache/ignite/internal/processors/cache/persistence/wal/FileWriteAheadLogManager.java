@@ -81,7 +81,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -108,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -293,7 +293,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private IgniteConfiguration igCfg;
 
     /** Persistence metrics tracker. */
-    private DataStorageMetricsImpl metrics;
+    private DataStorageMetricSource metricSrc;
 
     /** */
     private File walWorkDir;
@@ -463,24 +463,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-            metrics = dbMgr.persistentStoreMetricsImpl();
+            metricSrc = dbMgr.metricSource();
 
             checkOrPrepareFiles();
 
-            if (metrics != null)
-                metrics.setWalSizeProvider(new CO<Long>() {
-                    @Override public Long apply() {
-                        long size = 0;
+            metricSrc.walSizeProvider(new CO<Long>() {
+                @Override public Long apply() {
+                    long size = 0;
 
-                        for (File f : walWorkDir0.listFiles())
-                            size += f.length();
+                    for (File f : walWorkDir0.listFiles())
+                        size += f.length();
 
-                        for (File f : walArchiveDir0.listFiles())
-                            size += f.length();
+                    for (File f : walArchiveDir0.listFiles())
+                        size += f.length();
 
-                        return size;
-                    }
-                });
+                    return size;
+                }
+            });
 
             segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
@@ -500,7 +499,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
             fileHandleManager = fileHandleManagerFactory.build(
-                cctx, metrics, mmap, serializer, this::currentHandle
+                cctx, metricSrc, mmap, serializer, this::currentHandle
             );
 
             lockedSegmentFileInputFactory = new LockedSegmentFileInputFactory(
@@ -880,7 +879,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             if (ptr != null) {
-                metrics.onWalRecordLogged();
+                metricSrc.onWalRecordLogged();
 
                 if (walAutoArchiveAfterInactivity > 0)
                     lastRecordLoggedMs.set(U.currentTimeMillis());
@@ -1254,8 +1253,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return hnd;
 
         if (hnd.close(true)) {
-            if (metrics.metricsEnabled())
-                metrics.onWallRollOver();
+            if (metricSrc.enabled())
+                metricSrc.onWallRollOver();
 
             if (switchSegmentRecordOffset != null) {
                 int idx = (int)(cur.getSegmentId() % dsCfg.getWalSegments());
@@ -1762,7 +1761,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 // Try to find min and max if we have skipped range semgnets in archive. Find firs gap.
                 for (Long idx : archiveIndices.descendingKeySet()) {
-                    if (!archiveIndices.keySet().contains(idx - 1))
+                    if (!archiveIndices.containsKey(idx - 1))
                         return F.t(idx, max);
                 }
 

@@ -49,8 +49,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.sources.DataRegionMetricSource.DATAREGION_METRICS_PREFIX;
 
 /**
  *
@@ -81,7 +81,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration<?, ?> ccfg1 = new CacheConfiguration<>();
 
         ccfg1.setName(CACHE_NAME);
         ccfg1.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -192,10 +192,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
             if (zeroDropdown.get()) {
                 slowCheckpointEnabled.set(false);
 
-                IgniteInternalFuture cpFut1 = ((IgniteEx)ignite(0)).context().cache().context().database()
+                IgniteInternalFuture cpFut1 = ignite(0).context().cache().context().database()
                     .wakeupForCheckpoint("test");
 
-                IgniteInternalFuture cpFut2 = ((IgniteEx)ignite(1)).context().cache().context().database()
+                IgniteInternalFuture cpFut2 = ignite(1).context().cache().context().database()
                     .wakeupForCheckpoint("test");
 
                 cpFut1.get();
@@ -219,7 +219,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
      * @return {@code totalThrottlingTime} metric for the default region.
      */
     private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
-        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+        MetricRegistry mreg = ignite.context().metric().getRegistry(metricName(DATAREGION_METRICS_PREFIX,
             ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
 
         LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");

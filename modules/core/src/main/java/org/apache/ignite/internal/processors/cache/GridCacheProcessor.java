@@ -135,6 +135,8 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.metric.sources.CacheGroupMetricSource;
+import org.apache.ignite.internal.processors.metric.sources.DataStorageMetricSource;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
@@ -192,7 +194,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -544,11 +545,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (destroy) {
-            grp.metrics().remove();
+        CacheGroupMetricSource metricSrc = grp.metricSource();
 
+        ctx.metric().disableMetrics(metricSrc);
+
+        //TODO: reimplement removal of metric configuration
+/*
+        if (destroy) {
             grp.removeIOStatistic();
         }
+*/
 
         sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
 
@@ -597,6 +603,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
         transactions = new IgniteTransactionsImpl(sharedCtx, null, false);
+
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (!ctx.clientNode() && dsCfg != null && dsCfg.isMetricsEnabled() && CU.isPersistenceEnabled(dsCfg)) {
+            GridCacheDatabaseSharedManager dbSharedMgr = (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+            DataStorageMetricSource metricSrc = dbSharedMgr.metricSource();
+
+            ctx.metric().enableMetrics(metricSrc);
+        }
 
         // Start shared managers.
         for (GridCacheSharedManager mgr : sharedCtx.managers())

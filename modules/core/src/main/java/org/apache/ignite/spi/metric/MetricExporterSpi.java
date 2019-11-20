@@ -46,6 +46,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      *
      * @param registry Metric registry.
      */
+    @Deprecated
     public void setMetricRegistry(ReadOnlyMetricManager registry);
 
     /**

@@ -25,6 +25,7 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryBuilder;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -54,19 +56,22 @@ import static org.junit.Assert.assertArrayEquals;
 
 /** */
 public class MetricsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private MetricRegistry mreg;
+    /** Null logger. */
+    private static final NullLogger NULL_LOG = new NullLogger();
+
+    /** Metric registry builder. */
+    private MetricRegistryBuilder bldr;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        bldr = MetricRegistryBuilder.newInstance("group", NULL_LOG);
     }
 
     /** */
     @Test
     public void testLongCounter() throws Exception {
-        AtomicLongMetric l = mreg.longMetric("ltest", "test");
+        AtomicLongMetric l = bldr.longMetric("ltest", "test");
 
         run(l::increment, 100);
 
@@ -80,7 +85,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLongAdderCounter() throws Exception {
-        LongAdderMetric l = mreg.longAdderMetric("latest", "test");
+        LongAdderMetric l = bldr.longAdderMetric("latest", "test");
 
         run(l::increment, 100);
 
@@ -94,7 +99,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDoubleCounter() throws Exception {
-        DoubleMetricImpl l = mreg.doubleMetric("dtest", "test");
+        DoubleMetricImpl l = bldr.doubleMetric("dtest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -108,7 +113,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testIntCounter() throws Exception {
-        IntMetricImpl l = mreg.intMetric("itest", "test");
+        IntMetricImpl l = bldr.intMetric("itest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -121,26 +126,10 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRegister() throws Exception {
-        AtomicLongMetric l = new AtomicLongMetric("rtest", "test");
-
-        mreg.register(l);
-
-        assertEquals(l, mreg.findMetric("rtest"));
-
-        l.reset();
-
-        assertEquals(0, l.value());
-    }
-
-    /** */
-    @Test
     public void testBooleanMetric() throws Exception {
         final boolean[] v = new boolean[1];
 
-        mreg.register("bmtest", () -> v[0], "test");
-
-        BooleanMetric m = mreg.findMetric("bmtest");
+        BooleanMetric m = bldr.register("bmtest", () -> v[0], "test");
 
         assertEquals(v[0], m.value());
 
@@ -154,9 +143,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testDoubleMetric() throws Exception {
         final double[] v = new double[] {42};
 
-        mreg.register("dmtest", () -> v[0], "test");
-
-        DoubleMetric m = mreg.findMetric("dmtest");
+        DoubleMetric m = bldr.register("dmtest", () -> v[0], "test");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -170,9 +157,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testIntMetric() throws Exception {
         final int[] v = new int[] {42};
 
-        mreg.register("imtest", () -> v[0], "test");
-
-        IntMetric m = mreg.findMetric("imtest");
+        IntMetric m = bldr.register("imtest", () -> v[0], "test");
 
         assertEquals(v[0], m.value());
 
@@ -186,9 +171,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testLongMetric() throws Exception {
         final long[] v = new long[] {42};
 
-        mreg.register("lmtest", () -> v[0], "test");
-
-        LongMetric m = mreg.findMetric("lmtest");
+        LongMetric m = bldr.register("lmtest", () -> v[0], "test");
 
         assertEquals(v[0], m.value());
 
@@ -202,9 +185,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testObjectMetric() throws Exception {
         final String[] v = new String[] {"42"};
 
-        mreg.register("omtest", () -> v[0], String.class, "test");
-
-        ObjectMetric<String> m = mreg.findMetric("omtest");
+        ObjectMetric<String> m = bldr.register("omtest", () -> v[0], String.class, "test");
 
         assertEquals(v[0], m.value());
 
@@ -216,7 +197,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testBooleanGauges() throws Exception {
-        BooleanMetricImpl bg = mreg.booleanMetric("bg", "test");
+        BooleanMetricImpl bg = bldr.booleanMetric("bg", "test");
 
         bg.value(true);
 
@@ -230,7 +211,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetricImpl h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetricImpl h = bldr.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -270,13 +251,15 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        MetricRegistryBuilder bldr = MetricRegistryBuilder.newInstance("group", NULL_LOG);
 
-        mreg.longMetric("test1", "");
-        mreg.longMetric("test2", "");
-        mreg.longMetric("test3", "");
-        mreg.longMetric("test4", "");
-        mreg.longMetric("test5", "");
+        bldr.longMetric("test1", "");
+        bldr.longMetric("test2", "");
+        bldr.longMetric("test3", "");
+        bldr.longMetric("test4", "");
+        bldr.longMetric("test5", "");
+
+        MetricRegistry mreg = bldr.build();
 
         Set<String> names = new HashSet<>(asList("group.test1", "group.test2", "group.test3", "group.test4",
             "group.test5"));
@@ -291,25 +274,18 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
+        MetricRegistryBuilder bldr = MetricRegistryBuilder.newInstance("group", NULL_LOG);
 
-        AtomicLongMetric cntr = mreg.longMetric("my.name", null);
-        AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
+        AtomicLongMetric cntr = bldr.longMetric("my.name", null);
+        AtomicLongMetric cntr2 = bldr.longMetric("my.name.x", null);
+
+        MetricRegistry mreg = bldr.build();
 
         assertNotNull(cntr);
         assertNotNull(cntr2);
 
         assertNotNull(mreg.findMetric("my.name"));
         assertNotNull(mreg.findMetric("my.name.x"));
-
-        mreg.remove("my.name");
-
-        assertNull(mreg.findMetric("my.name"));
-        assertNotNull(mreg.findMetric("my.name.x"));
-
-        cntr = mreg.longMetric("my.name", null);
-
-        assertNotNull(mreg.findMetric("my.name"));
     }
 
     /** */
@@ -317,7 +293,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testHitRateMetric() throws Exception {
         long rateTimeInterval = 500;
 
-        HitRateMetric metric = mreg.hitRateMetric("testHitRate", null, rateTimeInterval, 10);
+        HitRateMetric metric = bldr.hitRateMetric("testHitRate", null, rateTimeInterval, 10);
 
         assertEquals(0, metric.value());
 

@@ -25,19 +25,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.sources.PartitionExchangeMetricSource.PME_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -77,13 +71,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     private void checkPmeMetricsOnNodeJoin(boolean client) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        MetricRegistry reg = ignite.context().metric().registry(PME_METRICS);
-
-        LongMetric currentPMEDuration = reg.findMetric(PME_DURATION);
-        LongMetric currentBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);
-
-        HistogramMetricImpl durationHistogram = reg.findMetric(PME_DURATION_HISTOGRAM);
-        HistogramMetricImpl blockindDurationHistogram = reg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+        PartitionExchangeMetricSource src = (PartitionExchangeMetricSource)ignite.context().metric().source(PME_METRICS);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -95,12 +83,12 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         int timeout = 5000;
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
-        assertEquals(0, currentBlockingPMEDuration.value());
+        assertTrue(GridTestUtils.waitForCondition(() -> src.currentPmeDuration() == 0, timeout));
+        assertEquals(0, src.currentBlockingPmeDuration());
 
         // There was two blocking exchange: server node start and cache start.
-        assertEquals(2, Arrays.stream(durationHistogram.value()).sum());
-        assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
+        assertEquals(2, Arrays.stream(src.durationHistogram().value()).sum());
+        assertEquals(2, Arrays.stream(src.blockingDurationHistogram().value()).sum());
 
         Lock lock = cache.lock(1);
 
@@ -117,9 +105,9 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
             timeout));
 
         if (client)
-            assertEquals(0, currentBlockingPMEDuration.value());
+            assertEquals(0, src.currentBlockingPmeDuration());
         else
-            assertTrue(currentBlockingPMEDuration.value() > 0);
+            assertTrue(src.currentBlockingPmeDuration() > 0);
 
         lock.unlock();
 
@@ -128,18 +116,18 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue(GridTestUtils.waitForCondition(() -> currentPMEDuration.value() == 0, timeout));
-        assertEquals(0, currentBlockingPMEDuration.value());
+        assertTrue(GridTestUtils.waitForCondition(() -> src.currentPmeDuration() == 0, timeout));
+        assertEquals(0, src.currentBlockingPmeDuration());
 
         if (client) {
             // There was non-blocking exchange: client node start.
-            assertEquals(3, Arrays.stream(durationHistogram.value()).sum());
-            assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
+            assertEquals(3, Arrays.stream(src.durationHistogram().value()).sum());
+            assertEquals(2, Arrays.stream(src.blockingDurationHistogram().value()).sum());
         }
         else {
             // There was two blocking exchange: server node start and rebalance completing.
-            assertEquals(4, Arrays.stream(durationHistogram.value()).sum());
-            assertEquals(4, Arrays.stream(blockindDurationHistogram.value()).sum());
+            assertEquals(4, Arrays.stream(src.durationHistogram().value()).sum());
+            assertEquals(4, Arrays.stream(src.blockingDurationHistogram().value()).sum());
         }
     }
 }

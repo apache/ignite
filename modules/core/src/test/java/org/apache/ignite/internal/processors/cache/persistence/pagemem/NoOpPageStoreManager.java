@@ -226,7 +226,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
+    @Override public void cleanupPersistentSpace(CacheConfiguration<?, ?> cacheConfiguration) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -241,7 +241,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration<?, ?> cacheCfg) throws IgniteCheckedException {
         return false;
     }
 }
