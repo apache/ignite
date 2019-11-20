@@ -1291,7 +1291,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     locBuf.clear();
 
-                    if (store.readPage(pageId, locBuf, true) < 0)
+                    if (!store.read(pageId, locBuf, true))
                         return;
 
                     locBuf.flip();

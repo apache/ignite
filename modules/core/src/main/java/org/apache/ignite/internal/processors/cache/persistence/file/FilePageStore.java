@@ -463,7 +463,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -483,7 +483,7 @@ public class FilePageStore implements PageStore {
             if (n < 0) {
                 pageBuf.put(new byte[pageBuf.remaining()]);
 
-                return n;
+                return false;
             }
 
             int savedCrc32 = PageIO.getCrc(pageBuf);
@@ -509,7 +509,7 @@ public class FilePageStore implements PageStore {
             if (keepCrc)
                 PageIO.setCrc(pageBuf, savedCrc32);
 
-            return n;
+            return true;
         }
         catch (IOException e) {
             throw new StorageException("Failed to read page [file=" + getFileAbsolutePath() + ", pageId=" + pageId + "]", e);
