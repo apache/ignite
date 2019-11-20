@@ -417,22 +417,6 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            updateAllocatedPages();
-
-            recover = false;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * @throws StorageException If fails.
-     */
-    private void updateAllocatedPages() throws StorageException {
-        assert lock.isWriteLockedByCurrentThread();
-
-        try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than page.
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
@@ -447,10 +431,14 @@ public class FilePageStore implements PageStore {
 
                 allocatedTracker.add(delta / pageSize);
             }
+
+            recover = false;
         }
         catch (IOException e) {
-            throw new StorageException("Failed to update partition file allocated pages " +
-                "[file=" + getFileAbsolutePath() + "]", e);
+            throw new StorageException("Failed to finish recover partition file [file=" + getFileAbsolutePath() + "]", e);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
