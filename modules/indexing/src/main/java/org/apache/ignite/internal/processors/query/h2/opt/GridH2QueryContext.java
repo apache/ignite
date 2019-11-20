@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -90,7 +90,7 @@ public class GridH2QueryContext {
     private MapQueryLazyWorker lazyWorker;
 
     /** */
-    private List<AutoCloseable> resources;
+    private Set<AutoCloseable> resources;
 
     /**
      * @param locNodeId Local node ID.
@@ -186,7 +186,7 @@ public class GridH2QueryContext {
      */
     public void addResource(AutoCloseable rsrc) {
         if (resources == null)
-            resources = new ArrayList<>();
+            resources = new HashSet<>();
 
         resources.add(rsrc);
     }
