@@ -62,7 +62,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -74,9 +73,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridStripedReadWriteLock;
@@ -725,9 +722,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     idxFile,
                     allocatedTracker);
 
-            if (cctx.snapshotMgr() != null)
-                idxStore.setListener(new SnapshotPageStoreListener(grpId, INDEX_PARTITION, cctx.snapshotMgr(), idxStore));
-
             PageStore[] partStores = new PageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
@@ -739,11 +733,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         () -> getPartitionFilePath(cacheWorkDir, p),
                         allocatedTracker);
 
-                if (cctx.snapshotMgr() != null)
-                    partStore.setListener(new SnapshotPageStoreListener(grpId, partId, cctx.snapshotMgr(), partStore));
-
-                partStores[partId] = partStore;
-            }
+                    partStores[partId] = partStore;
+                }
 
             return new CacheStoreHolder(idxStore, partStores);
         }
@@ -1507,42 +1498,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** {@inheritDoc} */
         @Override public V merge(K key, V val, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
             return longOperationAsyncExecutor.afterAsyncCompletion(() -> super.merge(key, val, remappingFunction));
-        }
-    }
-
-    /** */
-    private static class SnapshotPageStoreListener implements PageStoreListener {
-        /** Pair of group id and its partiton id. */
-        private final GroupPartitionId key;
-
-        /** Backup manager. */
-        private final IgniteSnapshotManager snapshotMgr;
-
-        /** Page store the listener associated with. */
-        private final PageStore store;
-
-        /**
-         * @param grpId Cache group id.
-         * @param partId Partition id.
-         * @param snapshotMgr Backup manager.
-         * @param store Page store the listener associated with.
-         */
-        public SnapshotPageStoreListener(
-            int grpId,
-            int partId,
-            IgniteSnapshotManager snapshotMgr,
-            PageStore store
-        ) {
-            assert snapshotMgr != null;
-
-            key = new GroupPartitionId(grpId, partId);
-            this.snapshotMgr = snapshotMgr;
-            this.store = store;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onPageWrite(long pageId, ByteBuffer buf) {
-            snapshotMgr.beforeStoreWrite(key, pageId, buf, store);
         }
     }
 }

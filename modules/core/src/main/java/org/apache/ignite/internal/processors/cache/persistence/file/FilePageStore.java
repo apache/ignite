@@ -25,6 +25,8 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,7 +35,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreListener;
+import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -87,8 +89,8 @@ public class FilePageStore implements PageStore {
     /** Region metrics updater. */
     private final LongAdderMetric allocatedTracker;
 
-    /** Page storage listener. */
-    private volatile PageStoreListener lsnr = PageStoreListener.NO_OP;
+    /** List of listeners for current page store to handle. */
+    private final List<PageWriteListener> lsnrs = new CopyOnWriteArrayList<>();
 
     /** */
     protected final int pageSize;
@@ -126,8 +128,13 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(PageStoreListener lsnr) {
-        this.lsnr = lsnr;
+    @Override public void addWriteListener(PageWriteListener lsnr) {
+        lsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeWriteListener(PageWriteListener lsnr) {
+        lsnrs.remove(lsnr);
     }
 
     /** {@inheritDoc} */
@@ -712,9 +719,11 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    lsnr.onPageWrite(pageId, pageBuf);
+                    for (PageWriteListener lsnr : lsnrs) {
+                        lsnr.accept(pageId, pageBuf);
 
-                    assert pageBuf.position() == 0 : pageBuf.position();
+                        pageBuf.rewind();
+                    }
 
                     fileIO.writeFully(pageBuf, off);
 

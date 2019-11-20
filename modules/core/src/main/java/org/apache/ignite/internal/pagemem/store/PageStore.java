@@ -27,9 +27,14 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
  */
 public interface PageStore extends Closeable {
     /**
-     * @param lsnr Page store listener to set.
+     * @param lsnr Page write listener to set.
      */
-    public void setListener(PageStoreListener lsnr);
+    public void addWriteListener(PageWriteListener lsnr);
+
+    /**
+     * @param lsnr Page write listenter to remove.
+     */
+    public void removeWriteListener(PageWriteListener lsnr);
 
     /**
      * Checks if page exists.

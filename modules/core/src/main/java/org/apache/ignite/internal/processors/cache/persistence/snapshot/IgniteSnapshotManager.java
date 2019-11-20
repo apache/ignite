@@ -75,6 +75,7 @@ import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -953,10 +954,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 while (iter.hasNext()) {
                     int partId = iter.next();
 
-                    final GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
+                    GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
+                    PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(),
+                        pair.getPartitionId());
 
                     sctx.partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(log,
+                            store,
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
                             sctx.snpFut,
                             getPartionDeltaFile(grpDir, partId),
@@ -1090,32 +1094,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param pairId Cache group, partition identifiers pair.
-     * @param pageId Tracked page id.
-     * @param buf Buffer with page data.
-     */
-    public void beforeStoreWrite(GroupPartitionId pairId, long pageId, ByteBuffer buf, PageStore store) {
-        assert buf.position() == 0 : buf.position();
-        assert buf.order() == ByteOrder.nativeOrder() : buf.order();
-
-        if (!busyLock.enterBusy())
-            return;
-
-        try {
-            List<PageStoreSerialWriter> writers = partWriters.get(pairId);
-
-            if (writers == null || writers.isEmpty())
-                return;
-
-            for (PageStoreSerialWriter writer : writers)
-                writer.write(pageId, buf, store);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
      * @param ioFactory Factory to create IO interface over a page stores.
      */
     void ioFactory(FileIOFactory ioFactory) {
@@ -1192,10 +1170,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class PageStoreSerialWriter implements Closeable {
+    private static class PageStoreSerialWriter implements PageWriteListener, Closeable {
         /** Ignite logger to use. */
         @GridToStringExclude
         private final IgniteLogger log;
+
+        /** Page store to which current writer is related to. */
+        private final PageStore store;
 
         /** Busy lock to protect write opertions. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -1215,6 +1196,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
 
+        /** {@code true} means current writer is allowed to handle page writes. */
+        private volatile boolean inited;
         /**
          * Array of bits. 1 - means pages written, 0 - the otherwise.
          * Size of array can be estimated only under checkpoint write lock.
@@ -1230,12 +1213,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          */
         public PageStoreSerialWriter(
             IgniteLogger log,
+            PageStore store,
             BooleanSupplier checkpointComplete,
             GridFutureAdapter<?> snpFut,
             File cfgFile,
             FileIOFactory factory,
             int pageSize
         ) throws IOException {
+            assert store != null;
+
             this.checkpointComplete = checkpointComplete;
             this.snpFut = snpFut;
             this.log = log.getLogger(PageStoreSerialWriter.class);
@@ -1244,16 +1230,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
 
             fileIo = factory.create(cfgFile);
+
+            this.store = store;
+
+            store.addWriteListener(this);
         }
 
         /**
          * @param allocPages Total number of tracking pages.
-         * @return This for chaining.
          */
-        public PageStoreSerialWriter init(int allocPages) {
-            pagesWrittenBits = new AtomicIntegerArray(allocPages);
+        public void init(int allocPages) {
+            lock.writeLock().lock();
 
-            return this;
+            try {
+                pagesWrittenBits = new AtomicIntegerArray(allocPages);
+                inited = true;
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
         }
 
         /**
@@ -1277,19 +1272,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        /**
-         * @param pageId Page id to write.
-         * @param buf Page buffer.
-         * @param store Storage to write to.
-         */
-        public void write(long pageId, ByteBuffer buf, PageStore store) {
-            assert pagesWrittenBits != null;
+        /** {@inheritDoc} */
+        @Override public void accept(long pageId, ByteBuffer buf) {
+            assert buf.position() == 0 : buf.position();
+            assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
             Throwable t = null;
 
             lock.readLock().lock();
 
             try {
+                if (!inited)
+                    return;
+
                 if (stopped())
                     return;
 
@@ -1320,8 +1315,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 else {
                     // Direct buffre is needs to be written, associated checkpoint not finished yet.
                     writePage0(pageId, buf);
-
-                    buf.rewind();
                 }
             }
             catch (Throwable ex) {
@@ -1371,6 +1364,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 U.closeQuiet(fileIo);
 
                 fileIo = null;
+
+                store.removeWriteListener(this);
+
+                inited = false;
             }
             finally {
                 lock.writeLock().unlock();
