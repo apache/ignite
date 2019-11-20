@@ -43,7 +43,7 @@ public class RequestSnapshotMessage implements Message {
     /** Unique snapshot name. */
     private String snpName;
 
-    /** Map of requested partitions to be snapshotted. */
+    /** Map of cache group ids and corresponding set of its partition ids to be snapshotted. */
     @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
     private Map<Integer, GridIntList> parts;
 
@@ -56,7 +56,7 @@ public class RequestSnapshotMessage implements Message {
 
     /**
      * @param snpName Unique snapshot name.
-     * @param parts Map of requested partitions to be snapshotted.
+     * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
      */
     public RequestSnapshotMessage(
         String snpName,

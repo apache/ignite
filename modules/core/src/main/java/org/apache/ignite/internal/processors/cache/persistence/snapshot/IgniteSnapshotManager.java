@@ -337,9 +337,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     FilePageStoreManager storeMgr = (FilePageStoreManager) cctx.pageStore();
 
                     if (log.isInfoEnabled())
-                        log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx0.partFileLengths);
+                        log.info("Submit partition processings tasks with partition allocated lengths: " + sctx0.partFileLengths);
 
-                    // Process binary meta
+                    // Process binary meta.
                     futs.add(CompletableFuture.runAsync(
                         wrapExceptionally(() ->
                                 sctx0.snpSndr.sendBinaryMeta(cctx.kernalContext()
@@ -366,7 +366,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         try {
                             // Initialize empty partition file.
                             if (partLen == 0) {
-                                FilePageStore filePageStore = (FilePageStore) storeMgr.getStore(pair.getGroupId(),
+                                FilePageStore filePageStore = (FilePageStore)storeMgr.getStore(pair.getGroupId(),
                                     pair.getPartitionId());
 
                                 filePageStore.init();
