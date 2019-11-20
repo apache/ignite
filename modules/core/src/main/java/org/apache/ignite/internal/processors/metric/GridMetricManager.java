@@ -322,7 +322,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (!(m instanceof HitRateMetric)) {
             logAndThrow("Metric '" + metricName(registry, name) +
-                "' should be a hitrate[type=" + m.getClass().getSimpleName() + ']');
+                "' should be a HitRate[type=" + m.getClass().getSimpleName() + ']');
         }
 
         ((HitRateMetric)m).reset(rateTimeInterval);
@@ -344,16 +344,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (!(m instanceof HistogramMetric)) {
             logAndThrow("Metric '" + metricName(registry, name) +
-                "' should be a histogram[type=" + m.getClass().getSimpleName() + ']');
+                "' should be a Histogram[type=" + m.getClass().getSimpleName() + ']');
         }
 
         ((HistogramMetric)m).reset(bounds);
     }
 
     /**
-     *
-     * @param registry
-     * @param name
+     * @param registry Registry name.
+     * @param name Metric name.
+     * @return Metric.
+     * @throws IgniteException If metric or registry not found.
      */
     private Metric find(String registry, String name) {
         A.notNull(registry, "registry");

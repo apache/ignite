@@ -58,7 +58,7 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     }
 
     /**
-     * Resets metric with the new paramters.
+     * Resets metric with the new parametes.
      *
      * @param rateTimeInterval New rate time interval.
      */
@@ -67,7 +67,7 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     }
 
     /**
-     * Resets metric with the new paramters.
+     * Resets metric with the new parameters.
      *
      * @param rateTimeInterval New rate time interval.
      * @param size New counters array size.
