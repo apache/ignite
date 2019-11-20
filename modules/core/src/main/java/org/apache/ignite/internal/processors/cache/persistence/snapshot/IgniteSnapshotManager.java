@@ -404,9 +404,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                     sctx0.snpFut),
                                 sctx0.exec)
                             .thenRunAsync(
-                                wrapExceptionally(() ->
-                                        sctx0.snpSndr
-                                            .sendCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair),
+                                wrapExceptionally(() -> {
+                                        List<File> ccfgs = storeMgr.configurationFiles(ccfg);
+
+                                        if (ccfgs == null)
+                                            return;
+
+                                        for (File ccfg0 : ccfgs)
+                                            sctx0.snpSndr.sendCacheConfig(ccfg0, cacheDirName, pair);
+                                    },
                                     sctx0.snpFut),
                                 sctx0.exec);
 

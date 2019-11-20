@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -920,17 +921,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param ccfg Cache configuration to find an approriate stored configuration file.
      * @return File of stored cache configuration or {@code null} if doesn't exists.
      */
-    public File cacheConfiguration(CacheConfiguration ccfg) {
+    public List<File> configurationFiles(CacheConfiguration ccfg) {
         File cacheDir = new File(storeWorkDir, cacheDirName(ccfg));
 
         if (!cacheDir.exists())
             return null;
 
-        File[] ccfgFile = cacheDir.listFiles((dir, name) -> CACHE_DATA_FILENAME.equals(name));
+        File[] ccfgFile = cacheDir.listFiles((dir, name) -> name.endsWith(CACHE_DATA_FILENAME));
 
-        assert ccfgFile.length <= 1 : "Too many configurations file found: " + ccfgFile.length;
-
-        return ccfgFile.length == 0 ? null : ccfgFile[0];
+        return Arrays.asList(ccfgFile);
     }
 
     /** {@inheritDoc} */
