@@ -115,7 +115,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
     /** */
-    public static final String CQ_SYS_VIEW = metricName("query", "continuous");
+    public static final String CQ_SYS_VIEW = metricName("continuous", "queries");
 
     /** */
     public static final String CQ_SYS_VIEW_DESC = "Continuous queries";
