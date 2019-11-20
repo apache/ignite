@@ -1163,8 +1163,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * {@link MasterKeyChangeFinishProcess}.
      */
-    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey,
-                MasterKeyChangeResult> {
+    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1214,8 +1213,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /**
      * Master key change finish process. Changes master key.
      */
-    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey,
-                MasterKeyChangeResult> {
+    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult> {
         /** Request id. */
         private UUID reqId;
 
@@ -1229,8 +1227,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             boolean active = ctx.state().clusterState().active();
 
             if (!active) {
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected " +
-                    "(the cluster is inactive)"));
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                    "The cluster is inactive."));
             }
 
             if (!ctx.clientNode())
@@ -1266,7 +1264,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** Master key digest. */
         private final byte[] digest;
 
-        /** Master key digest. */
+        /** Request id. */
         private final UUID reqId;
 
         /**
