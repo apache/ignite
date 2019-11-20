@@ -55,9 +55,9 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
 
         List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
 
-        List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
+        List<List<?>> clientNodeIndexes = execSql(client, idxSql);
 
-        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+        Assert.assertTrue("Only affinity nodes know about their indexes", clientNodeIndexes.isEmpty());
 
         String[][] expectedResults = {
             {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", "false", "false", "null"},
