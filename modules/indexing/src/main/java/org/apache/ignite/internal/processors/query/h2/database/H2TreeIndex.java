@@ -88,6 +88,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @param tbl Table.
      * @param name Index name.
      * @param pk Primary key.
+     * @param affinityKey {@code true} for affinity key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
      * @param segmentsCnt number of tree's segments.
@@ -100,6 +101,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         GridH2Table tbl,
         String name,
         boolean pk,
+        boolean affinityKey,
         List<IndexColumn> colsList,
         int inlineSize,
         int segmentsCnt,
@@ -152,6 +154,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
+                        pk,
+                        affinityKey,
                         rowCache,
                         cctx.kernalContext().failure(),
                         log) {

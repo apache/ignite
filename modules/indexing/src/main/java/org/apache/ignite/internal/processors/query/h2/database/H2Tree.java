@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -57,6 +60,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
+    /** */
     private final H2RowFactory rowStore;
 
     /** */
@@ -70,6 +76,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /** */
     private final int[] columnIds;
+
+    /** */
+    private final boolean pk;
+
+    /** */
+    private final boolean affinityKey;
 
     /** */
     private final IgniteLogger log;
@@ -96,6 +108,16 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** Whether index was created from scratch during owning node lifecycle. */
     private final boolean created;
 
+    /** How often real invocation of inline size calculation will be skipped. */
+    private final int THROTTLE_INLINE_SIZE_CALCULATION =
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
+
+    /** Counter of inline size calculation for throttling real invocations. */
+    private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
+
+    /** Keep max calculated inline size for current index. */
+    private final AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
+
     /**
      * Constructor.
      *
@@ -109,6 +131,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param rowStore Row data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param pk {@code true} for primary key.
+     * @param affinityKey {@code true} for affinity key.
      * @param rowCache Row cache.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
@@ -131,6 +155,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
+        boolean pk,
+        boolean affinityKey,
         @Nullable H2RowCache rowCache,
         @Nullable FailureProcessor failureProcessor,
         IgniteLogger log
@@ -156,6 +182,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
         this.rowStore = rowStore;
         this.cols = cols;
+
+        this.pk = pk;
+        this.affinityKey = affinityKey;
 
         this.columnIds = new int[cols.length];
 
@@ -380,6 +409,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             if (lastIdxUsed == cols.length)
                 return 0;
 
+            inlineSizeRecomendation(row);
+
             SearchRow rowData = getRow(io, pageAddr, idx);
 
             for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
@@ -402,6 +433,91 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             }
 
             return 0;
+        }
+    }
+
+    /**
+     * Calculate aggregate inline size for given indexes and log recommendation in case calculated size more than
+     * current inline size.
+     *
+     * @param row Grid H2 row related to given inline indexes.
+     */
+    @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
+    private void inlineSizeRecomendation(SearchRow row) {
+        //Do the check only for put operations.
+        if (!(row instanceof GridH2KeyValueRowOnheap))
+            return;
+
+        Long invokeCnt = inlineSizeCalculationCntr.get();
+
+        inlineSizeCalculationCntr.set(++invokeCnt);
+
+        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+
+        if (throttle)
+            return;
+
+        int newSize = 0;
+
+        InlineIndexHelper idx;
+
+        List<String> colNames = new ArrayList<>();
+
+        List<Integer> colTypes = new ArrayList<>();
+
+        for (InlineIndexHelper index : inlineIdxs) {
+            idx = index;
+
+            newSize += idx.inlineSizeOf(row.getValue(idx.columnIndex()));
+
+            colNames.add(index.colName());
+
+            colTypes.add(row.getValue(idx.columnIndex()).getType());
+        }
+
+        if (newSize > inlineSize()) {
+            int oldSize;
+
+            while (true) {
+                oldSize = maxCalculatedInlineSize.get();
+
+                if (oldSize >= newSize)
+                    return;
+
+                if (maxCalculatedInlineSize.compareAndSet(oldSize, newSize))
+                    break;
+            }
+
+            String cols = colNames.stream().collect(Collectors.joining(", ", "[", "]"));
+
+            String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
+
+            String recommendation;
+
+            if (pk || affinityKey) {
+                recommendation = "set system property "
+                    + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
+                    "(be aware it will be used by default for all indexes without explicit inline size)";
+            }
+            else {
+                recommendation = "use INLINE_SIZE option for CREATE INDEX command, " +
+                    "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
+                    "QueryEntity configuration";
+            }
+
+            String warn = "Indexed columns of a row cannot be fully inlined into index " +
+                "what may lead to slowdown due to additional data page reads, increase index inline size if needed " +
+                "(" + recommendation + ") " +
+                "[cacheName=" + cacheName +
+                ", tableName=" + tblName +
+                ", idxName=" + idxName +
+                ", idxCols=" + cols +
+                ", idxTypes=" + colTypes +
+                ", curSize=" + inlineSize() +
+                ", idxType=" + idxType +
+                ", recommendedInlineSize=" + newSize + "]";
+
+            U.warn(log, warn);
         }
     }
 

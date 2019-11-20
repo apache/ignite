@@ -237,6 +237,47 @@ public class InlineIndexHelper {
     }
 
     /**
+     * Calculate size to inline given value.
+     *
+     * @param val Value to calculate inline size.
+     * @return Calculated inline size for given value.
+     */
+    public int inlineSizeOf(Value val){
+        if (val.getType() == Value.NULL)
+            return 1;
+
+        if (val.getType() != type)
+            throw new UnsupportedOperationException("value type doesn't match");
+
+        switch (type) {
+            case Value.BOOLEAN:
+            case Value.BYTE:
+            case Value.SHORT:
+            case Value.INT:
+            case Value.LONG:
+            case Value.FLOAT:
+            case Value.DOUBLE:
+            case Value.TIME:
+            case Value.DATE:
+            case Value.TIMESTAMP:
+            case Value.UUID:
+                return size + 1;
+
+            case Value.STRING:
+            case Value.STRING_FIXED:
+            case Value.STRING_IGNORECASE:
+                return val.getString().getBytes(CHARSET).length + 3;
+
+            case Value.BYTES:
+            case Value.JAVA_OBJECT:
+                return val.getBytes().length + 3;
+
+            default:
+                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+        }
+    }
+
+    /**
      * @param pageAddr Page address.
      * @param off Offset.
      * @return Full size in page.
