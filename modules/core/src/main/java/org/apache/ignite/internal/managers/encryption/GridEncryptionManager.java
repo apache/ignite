@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.DistributedProcessHandler;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -180,11 +179,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
 
-    /** Master key change prepare process handler. */
-    private DistributedProcessHandler<PendingMasterKey, MasterKeyChangeResult> prepareHnd;
+    /**
+     * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
+     * finish process.
+     */
+    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> prepareProc;
 
-    /** Master key change finish process handler. */
-    private DistributedProcessHandler<PendingMasterKey, MasterKeyChangeResult> finishHnd;
+    /** Master key change finish process. Changes master key. */
+    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> finishProc;
 
     /**
      * @param ctx Kernel context.
@@ -275,10 +277,63 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        prepareHnd = new DistributedProcessHandler<>(ctx, MASTER_KEY_CHANGE_PREPARE,
-            MasterKeyChangePrepareProcess::new);
+        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE,
+            (req) -> {
+                if (pendingMasterKey != null) {
+                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                        "Previous change was not completed."));
+                }
 
-        finishHnd = new DistributedProcessHandler<>(ctx, MASTER_KEY_CHANGE_FINISH, MasterKeyChangeFinishProcess::new);
+                pendingMasterKey = req;
+
+                if (ctx.clientNode())
+                    return new GridFinishedFuture<>();
+
+                try {
+                    byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
+
+                    if (!Arrays.equals(req.digest, digest)) {
+                        return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master " +
+                            "key digest consistency check failed. Make sure that a new master key is the same at " +
+                            "all server nodes [nodeId=" + ctx.localNodeId() + ']'));
+                    }
+                }
+                catch (Exception e) {
+                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
+                        ctx.localNodeId() + ']', e));
+                }
+
+                return new GridFinishedFuture<>(new MasterKeyChangeResult());
+            },
+            (id, res, err) -> {
+                if (!err.isEmpty())
+                    finishMasterKeyChange(id, err);
+                else if (isCoordinator())
+                    finishProc.start(id, pendingMasterKey);
+            }
+        );
+
+        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH,
+            (req) -> {
+                if (pendingMasterKey == null || !pendingMasterKey.equals(req))
+                    return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
+
+                boolean active = ctx.state().clusterState().active();
+
+                if (!active) {
+                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                        "The cluster is inactive."));
+                }
+
+                if (!ctx.clientNode())
+                    changeMasterKeyAndReencryptGroupKeys(decryptKeyName(req.encKeyName()));
+
+                lastChangedMasterKeyDigest = req.digest();
+
+                return new GridFinishedFuture<>(new MasterKeyChangeResult());
+            },
+            (id, res, err) -> finishMasterKeyChange(id, err)
+        );
     }
 
     /** {@inheritDoc} */
@@ -581,7 +636,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         byte[] digest = masterKeyDigest(masterKeyName);
 
-        PendingMasterKey request = new PendingMasterKey(encryptKeyName(masterKeyName), digest, UUID.randomUUID());
+        PendingMasterKey request = new PendingMasterKey(UUID.randomUUID(), encryptKeyName(masterKeyName), digest);
 
         synchronized (opsMux) {
             checkState();
@@ -592,7 +647,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
         }
 
-        prepareHnd.start(request);
+        prepareProc.start(request.requestId(), request);
 
         return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
@@ -1115,15 +1170,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void finishMasterKeyChange(UUID reqId, Exception err) {
+    private void finishMasterKeyChange(UUID reqId, Map<UUID, Exception> err) {
         if (pendingMasterKey != null && pendingMasterKey.requestId().equals(reqId))
             pendingMasterKey = null;
 
         synchronized (opsMux) {
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
                 masterKeyChangeFut.id().equals(reqId)) {
-                if (err != null)
-                    masterKeyChangeFut.onDone(err);
+                if (err != null && !err.isEmpty()) {
+                    Exception e = err.values().stream().findFirst().get();
+
+                    masterKeyChangeFut.onDone(e);
+                }
                 else
                     masterKeyChangeFut.onDone();
             }
@@ -1160,103 +1218,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
-     * {@link MasterKeyChangeFinishProcess}.
-     */
-    private class MasterKeyChangePrepareProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult> {
-        /** Request id. */
-        private UUID reqId;
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<MasterKeyChangeResult> execute(PendingMasterKey req) {
-            reqId = req.requestId();
-
-            if (pendingMasterKey != null) {
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                    "Previous change was not completed."));
-            }
-
-            pendingMasterKey = req;
-
-            if (ctx.clientNode())
-                return new GridFinishedFuture<>();
-
-            try {
-                byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
-
-                if (!Arrays.equals(req.digest, digest)) {
-                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master key " +
-                        "digest consistency check failed. Make sure that a new master key is the same at all server " +
-                        "nodes [nodeId=" + ctx.localNodeId() + ']'));
-                }
-            }
-            catch (Exception e) {
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
-                    ctx.localNodeId() + ']', e));
-            }
-
-            return new GridFinishedFuture<>(new MasterKeyChangeResult());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
-            if (!err.isEmpty()) {
-                Exception e = err.values().stream().findFirst().get();
-
-                finishMasterKeyChange(reqId, e);
-            }
-            else if (isCoordinator())
-                finishHnd.start(pendingMasterKey);
-        }
-    }
-
-    /**
-     * Master key change finish process. Changes master key.
-     */
-    private class MasterKeyChangeFinishProcess implements DistributedProcess<PendingMasterKey, MasterKeyChangeResult> {
-        /** Request id. */
-        private UUID reqId;
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<MasterKeyChangeResult> execute(PendingMasterKey msg) {
-            reqId = msg.requestId();
-
-            if (pendingMasterKey == null || !pendingMasterKey.equals(msg))
-                return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
-
-            boolean active = ctx.state().clusterState().active();
-
-            if (!active) {
-                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                    "The cluster is inactive."));
-            }
-
-            if (!ctx.clientNode())
-                changeMasterKeyAndReencryptGroupKeys(decryptKeyName(msg.encKeyName()));
-
-            lastChangedMasterKeyDigest = msg.digest();
-
-            return new GridFinishedFuture<>(new MasterKeyChangeResult());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void finish(Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
-            if (err.isEmpty())
-                finishMasterKeyChange(reqId, null);
-            else {
-                Exception e = err.values().stream().findFirst().get();
-
-                finishMasterKeyChange(reqId, e);
-            }
-        }
-    }
-
-    /**
      * Pending master key.
      */
     private static class PendingMasterKey implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
+
+        /** Request id. */
+        private final UUID reqId;
 
         /** Encrypted master key name. */
         private final byte[] encKeyName;
@@ -1264,18 +1233,20 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** Master key digest. */
         private final byte[] digest;
 
-        /** Request id. */
-        private final UUID reqId;
-
         /**
+         * @param reqId Request id.
          * @param encKeyName Encrypted master key name.
          * @param digest Master key digest.
-         * @param reqId Request id.
          */
-        private PendingMasterKey(byte[] encKeyName, byte[] digest, UUID reqId) {
+        private PendingMasterKey(UUID reqId, byte[] encKeyName, byte[] digest) {
+            this.reqId = reqId;
             this.encKeyName = encKeyName;
             this.digest = digest;
-            this.reqId = reqId;
+        }
+
+        /** @return Request id. */
+        UUID requestId() {
+            return reqId;
         }
 
         /** @return Encrypted master key name. */
@@ -1286,11 +1257,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** @return Master key digest. */
         byte[] digest() {
             return digest;
-        }
-
-        /** @return Request id. */
-        UUID requestId() {
-            return reqId;
         }
 
         /** {@inheritDoc} */
