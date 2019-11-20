@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -2600,6 +2601,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         boolean expIdeal,
         boolean checkPublicApi
     ) throws Exception {
+        boolean compatibility = IgniteSystemProperties.getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
+
         List<Ignite> nodes = G.allGrids();
 
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
@@ -2616,23 +2619,25 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             if (fut != null)
                 fut.get();
 
-            List<GridDhtPartitionsExchangeFuture> exchFuts =
-                ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
+            if (!compatibility) {
+                List<GridDhtPartitionsExchangeFuture> exchFuts =
+                    ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
-            for (GridDhtPartitionsExchangeFuture f : exchFuts) {
-                if (f.exchangeDone() && !f.isMerged() && f.topologyVersion().equals(topVer)) {
-                    if (exchFut != null) // Compare with previous node.
-                        assertEquals(f.rebalanced(), exchFut.rebalanced()); // Check homogeneity.
+                for (GridDhtPartitionsExchangeFuture f : exchFuts) {
+                    if (f.exchangeDone() && !f.isMerged() && f.topologyVersion().equals(topVer)) {
+                        if (exchFut != null) // Compare with previous node.
+                            assertEquals(f.rebalanced(), exchFut.rebalanced()); // Check homogeneity.
 
-                    assertNotSame(exchFut, f);
+                        assertNotSame(exchFut, f);
 
-                    exchFut = f;
+                        exchFut = f;
 
-                    break;
+                        break;
+                    }
                 }
-            }
 
-            assertNotNull(exchFut);
+                assertNotNull(exchFut);
+            }
 
             for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
                 if (cctx.startTopologyVersion().compareTo(topVer) > 0)
@@ -2647,10 +2652,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                     assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
-                    assertEquals(
-                        "Rebalance state not as expected [node=" + node.name() + ", top=" + topVer + "]",
-                        true,
-                        exchFut.rebalanced());
+                    if (!compatibility)
+                        assertEquals(
+                            "Rebalance state not as expected [node=" + node.name() + ", top=" + topVer + "]",
+                            true,
+                            exchFut.rebalanced());
 
                     List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
 
@@ -2808,7 +2814,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer, Integer cacheId) {
         Map<Integer, List<List<ClusterNode>>> assignments = idealAff.get(topVer.topologyVersion());
 
-        assert assignments != null : "No assignments [topVer=" + topVer + ']';
+        assert assignments != null : "No assignments [topVer=" + topVer + ", cache=" + cacheId + ']';
 
         List<List<ClusterNode>> cacheAssignments = assignments.get(cacheId);
 

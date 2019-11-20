@@ -3211,8 +3211,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             GridDhtPartitionsFullMessage m = createPartitionsMessage(false, false);
 
-            m.rebalanced(cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this));
-
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 
             if (log.isDebugEnabled())
@@ -3733,6 +3731,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
+            boolean rebalanced = cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this);
+
+            msg.rebalanced(rebalanced);
+
             // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy
             // lost partitions will be moved to OWNING state and after what send to other nodes resulting in
             // wrong lost state calculation (another possibility to consider - calculate lost state only on coordinator).
@@ -3799,9 +3801,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         nodes.addAll(sndResNodes);
                 }
 
-                msg.rebalanced(cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this));
-
-                if (msg.rebalanced())
+                if (rebalanced)
                     markRebalanced();
 
                 if (!nodes.isEmpty())

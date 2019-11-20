@@ -2206,14 +2206,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     List<List<ClusterNode>> ideal = grpHolder.affinity().idealAssignmentRaw();
 
                     for (int p = 0; p < ideal.size(); p++) {
-                        if (top.owners(p).isEmpty()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Skipping lost partition [grp=" + grpHolder.groupId() + ", part=" + p +
-                                    ", owners=" + F.nodeIds(top.owners(p)) + ", ideal=" + F.nodeIds(ideal.get(p)) + "]");
-
-                            continue; // Skipping lost partitions.
-                        }
-
                         if (!top.owners(p).containsAll(ideal.get(p))) {
                             rebInfo.add(grpHolder.groupId());
 
