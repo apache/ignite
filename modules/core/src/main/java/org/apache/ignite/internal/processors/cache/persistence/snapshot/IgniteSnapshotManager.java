@@ -320,9 +320,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                             PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
 
-                            sctx0.partFileLengths.put(pair, allocRange == null ? 0L : store.size());
-                            sctx0.partDeltaWriters.get(pair)
-                                .init(allocRange == null ? 0 : allocRange.getCurrAllocatedPageCnt());
+                            sctx0.partFileLengths.put(pair, store.size());
+                            sctx0.partDeltaWriters.get(pair).init(allocRange.getCurrAllocatedPageCnt());
                         }
 
                         for (Map.Entry<GroupPartitionId, PageStoreSerialWriter> e : sctx0.partDeltaWriters.entrySet()) {
@@ -353,42 +352,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         log.info("Submit partition processings tasks wiht partition allocated lengths: " + sctx0.partFileLengths);
 
                     // Process binary meta
-                    futs.add(CompletableFuture.runAsync(() -> {
-                            if (sctx0.snpFut.isDone())
-                                return;
-
-                            sctx0.snpSndr.sendBinaryMeta(cctx.kernalContext()
-                                .cacheObjects()
-                                .metadataTypes());
-                        },
-                        sctx0.exec)
-                        .whenComplete((res, ex) -> {
-                            if (ex != null) {
-                                log.warning("Binary metadata has not been processed due to an exception " +
-                                    "[snpName=" + sctx0.snpName + ']', ex);
-
-                                sctx0.snpFut.onDone(ex);
-                            }
-                        }));
+                    futs.add(CompletableFuture.runAsync(
+                        wrapExceptionally(() ->
+                                sctx0.snpSndr.sendBinaryMeta(cctx.kernalContext()
+                                    .cacheObjects()
+                                    .metadataTypes()),
+                            sctx0.snpFut),
+                        sctx0.exec));
 
                     // Process marshaller meta
-                    futs.add(CompletableFuture.runAsync(() -> {
-                            if (sctx0.snpFut.isDone())
-                                return;
-
-                            sctx0.snpSndr.sendMarshallerMeta(cctx.kernalContext()
-                                .marshallerContext()
-                                .getCachedMappings());
-                        },
-                        sctx0.exec)
-                        .whenComplete((res, ex) -> {
-                            if (ex != null) {
-                                log.warning("Marshaller metadata has not been processed due to an exception " +
-                                    "[snpName=" + sctx0.snpName + ']', ex);
-
-                                sctx0.snpFut.onDone(ex);
-                            }
-                        }));
+                    futs.add(CompletableFuture.runAsync(
+                        wrapExceptionally(() ->
+                                sctx0.snpSndr.sendMarshallerMeta(cctx.kernalContext()
+                                    .marshallerContext()
+                                    .getCachedMappings()),
+                            sctx0.snpFut),
+                        sctx0.exec));
 
                     // Process partitions
                     for (GroupPartitionId pair : sctx0.parts) {
@@ -409,68 +388,39 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             throw new IgniteException(e);
                         }
 
-                        CompletableFuture<Void> fut0 = CompletableFuture.runAsync(() -> {
-                                if (sctx0.snpFut.isDone())
-                                    return;
+                        CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
+                            wrapExceptionally(() -> {
+                                    sctx0.snpSndr.sendPart(
+                                        getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                                        cacheDirName,
+                                        pair,
+                                        partLen);
 
-                                sctx0.snpSndr.sendPart(
-                                    getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
-                                    cacheDirName,
-                                    pair,
-                                    partLen);
-
-                                // Stop partition writer.
-                                sctx0.partDeltaWriters.get(pair).markPartitionProcessed();
-                            },
+                                    // Stop partition writer.
+                                    sctx0.partDeltaWriters.get(pair).markPartitionProcessed();
+                                },
+                                sctx0.snpFut),
                             sctx0.exec)
-                            // Using this will stop the method on its tracks and not execute the next runAfterBothAsync.
-                            .whenComplete((res, ex) -> {
-                                if (ex != null) {
-                                    log.warning("Partition has not been processed due to an exception " +
-                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
-
-                                    sctx0.snpFut.onDone(ex);
-                                }
-                            })
                             // Wait for the completion of both futures - checkpoint end, copy partition
                             .runAfterBothAsync(sctx0.cpEndFut,
-                                () -> {
-                                    if (sctx0.snpFut.isDone())
-                                        return;
+                                wrapExceptionally(() -> {
+                                        File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
+                                            pair.getPartitionId());
 
-                                    File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
-                                        pair.getPartitionId());
+                                        sctx0.snpSndr.sendDelta(delta, cacheDirName, pair);
 
-                                    sctx0.snpSndr.sendDelta(delta, cacheDirName, pair);
+                                        boolean deleted = delta.delete();
 
-                                    boolean deleted = delta.delete();
-
-                                    assert deleted;
-                                },
+                                        assert deleted;
+                                    },
+                                    sctx0.snpFut),
                                 sctx0.exec)
-                            .whenComplete((res, ex) -> {
-                                if (ex != null) {
-                                    log.warning("Delta pages have not been processed due to an exception " +
-                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
-
-                                    sctx0.snpFut.onDone(ex);
-                                }
-                            })
-                            .thenRunAsync(() -> {
-                                    if (sctx0.snpFut.isDone())
-                                        return;
-
-                                    sctx0.snpSndr.sendCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair);
-                                },
-                                sctx0.exec)
-                            .whenComplete((res, ex) -> {
-                                if (ex != null) {
-                                    log.warning("Сache configuration has not been processed due to an exception " +
-                                        "[snpName=" + sctx0.snpName + ", pair=" + pair + ']', ex);
-
-                                    sctx0.snpFut.onDone(ex);
-                                }
-                            });
+                            .thenRunAsync(
+                                wrapExceptionally(() ->
+                                        sctx0.snpSndr
+                                            .sendCacheConfig(storeMgr.cacheConfiguration(ccfg), cacheDirName, pair),
+                                    sctx0.snpFut),
+                                sctx0.exec);
 
                         futs.add(fut0);
                     }
@@ -1218,6 +1168,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             throw new IgniteException("Snapshot is not supported for these groups [cause=" + errCause +
                 ", grps=" + notAllowdGrps + ']');
         }
+    }
+
+    /**
+     * @param exec Runnable task to execute.
+     * @param fut Future to notify.
+     * @return Wrapped task.
+     */
+    private static Runnable wrapExceptionally(Runnable exec, GridFutureAdapter<?> fut) {
+        return () -> {
+            try {
+                if (fut.isDone())
+                    return;
+
+                exec.run();
+            }
+            catch (Throwable t) {
+                fut.onDone(t);
+            }
+        };
     }
 
     /**
