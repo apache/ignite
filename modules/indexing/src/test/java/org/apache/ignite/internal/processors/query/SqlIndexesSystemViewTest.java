@@ -266,6 +266,9 @@ public class SqlIndexesSystemViewTest extends GridCommonAbstractTest {
     /** */
     private void checkIndexes(Predicate<List<List<?>>> checker) throws Exception {
         for (Ignite ign : G.allGrids()) {
+            if (ign.configuration().isClientMode())
+                continue;
+
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 List<List<?>> indexes = execSql(ign, "SELECT * FROM IGNITE.INDEXES ORDER BY CACHE_NAME, INDEX_NAME");
 

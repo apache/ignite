@@ -84,8 +84,10 @@ public class SqlIndexesSystemViewStaticCfgTest extends GridCommonAbstractTest {
         startGrid(2);
 
         for (Ignite ign : G.allGrids()) {
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME");
+
             GridTestUtils.assertThrowsWithCause(
-                () -> execSql(ign, "SELECT * FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME"),
+                () -> ign.cache("cache").query(qry).getAll(),
                 IgniteException.class);
         }
     }
