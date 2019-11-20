@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import javax.cache.CacheException;
-import javax.management.JMException;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +53,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
@@ -225,7 +225,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -295,7 +294,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
@@ -4614,38 +4612,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void configureMetric(String registry, String name, String config) {
-        assert registry != null;
-        assert name != null;
-        assert config != null;
+    @Override public void configureHitRateMetric(String registry, String name, long rateTimeInterval) {
+        ctx.metric().configureHitRate(registry, name, rateTimeInterval);
+    }
 
-        MetricRegistry mreg = ctx.metric().registry(registry);
-
-        if (mreg == null) {
-            if (log.isInfoEnabled())
-                log.info("\"" + registry + "\" not found.");
-
-            throw new IgniteException("\"" + registry + "\" not found.");
-        }
-
-        Metric m = mreg.findMetric(name);
-
-        if (m == null) {
-            if (log.isInfoEnabled())
-                log.info("\"" + metricName(registry, name) + "\" not found.");
-
-            throw new IgniteException("\"" + metricName(registry, name) + "\" not found.");
-        }
-
-        try {
-            m.configure(config);
-        }
-        catch (IgniteException e) {
-            if (log.isInfoEnabled())
-                log.info(e.getMessage());
-
-            throw e;
-        }
+    /** {@inheritDoc} */
+    @Override public void configureHistogramMetric(String registry, String name, long[] bounds) {
+        ctx.metric().configureHistogram(registry, name, bounds);
     }
 
     /** {@inheritDoc} */

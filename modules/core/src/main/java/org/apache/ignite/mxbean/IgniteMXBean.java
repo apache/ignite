@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 
 /**
  * This interface defines JMX view on kernal.
@@ -507,16 +509,32 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Change metric configuration.
+     * Change {@link HitRateMetric} configuration.
+     * Call of this method will change metric configuration across all cluster nodes.
      *
      * @param registry Metrics registry name.
      * @param name Metric name.
-     * @param config Configuration string.
+     * @param rateTimeInterval New rate time interval.
+     * @throws IgniteException  If some error occured.
      */
-    @MXBeanDescription("Configure metric by name.")
-    @MXBeanParametersNames({"registry", "name", "config"})
-    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "Configuration string."})
-    public void configureMetric(String registry, String name, String config);
+    @MXBeanDescription("Configure hitrate metric by name.")
+    @MXBeanParametersNames({"registry", "name", "cfg"})
+    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "New rate time interval."})
+    public void configureHitRateMetric(String registry, String name, long rateTimeInterval);
+
+    /**
+     * Change {@link HistogramMetric} configuration.
+     * Call of this method will change metric configuration across all cluster nodes.
+     *
+     * @param registry Metrics registry name.
+     * @param name Metric name.
+     * @param bounds New bounds.
+     * @throws IgniteException  If some error occured.
+     */
+    @MXBeanDescription("Configure histogram metric by name.")
+    @MXBeanParametersNames({"registry", "name", "cfg"})
+    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "New bounds."})
+    public void configureHistogramMetric(String registry, String name, long[] bounds);
 
     /**
      * Gets cluster read-only mode status.

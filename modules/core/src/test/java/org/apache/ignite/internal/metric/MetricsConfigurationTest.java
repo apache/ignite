@@ -17,113 +17,104 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.util.Arrays;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.mxbean.IgniteMXBean;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_SYSTEM_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_TOTAL_USER_TIME;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
-/** */
+/** Tests metrics configuration. */
 public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** */
-    @Test
-    public void testHitRateMetric() throws Exception {
-        HitRateMetric hitRateMetric = new HitRateMetric("test", null, 1000, 3);
+    private static IgniteEx g;
 
-        assertThrowsWithCause(() -> hitRateMetric.configure(null), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure(""), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure("1000"), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure("1000, 1"), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure("-1000, 1"), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure("-1000, 1xxx"), IgniteException.class);
-
-        assertThrowsWithCause(() -> hitRateMetric.configure("xxx"), IgniteException.class);
-
-        hitRateMetric.configure("5000, 42");
-
-        checkHitRate(hitRateMetric, 5000, 42);
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        g = startGrid(0);
     }
 
-    /** */
-    private void checkHitRate(HitRateMetric hitRateMetric, long expRateTimeInterval, int expSize) {
-        Object hitRateMetricImpl = getFieldValue(hitRateMetric, "cntr");
-
-        long rateTimeInterval = getFieldValue(hitRateMetricImpl, "rateTimeInterval");
-
-        int size = getFieldValue(hitRateMetricImpl, "size");
-
-        assertEquals(expRateTimeInterval, rateTimeInterval);
-        assertEquals(expSize, size);
-    }
-
-    /** */
+    /** Tests configuration of {@link HitRateMetric}. */
     @Test
-    public void testHistogramConfiguration() throws Exception {
-        HistogramMetric histogramMetric = new HistogramMetric("test", null, new long[] {0, 50, 100, 250});
-
-        assertThrowsWithCause(() -> histogramMetric.configure(null), IgniteException.class);
-
-        assertThrowsWithCause(() -> histogramMetric.configure(""), IgniteException.class);
-
-        assertThrowsWithCause(() -> histogramMetric.configure("44,43"), IgniteException.class);
-
-        assertThrowsWithCause(() -> histogramMetric.configure("-1000"), IgniteException.class);
-
-        assertThrowsWithCause(() -> histogramMetric.configure("1,2,xx"), IgniteException.class);
-
-        assertThrowsWithCause(() -> histogramMetric.configure("xx"), IgniteException.class);
-
-        histogramMetric.configure("42,43 ,44, 45");
-
-        Object histogramHolder = getFieldValue(histogramMetric, "holder");
-
-        long[] bounds = getFieldValue(histogramHolder, "bounds");
-
-        assertTrue(Arrays.equals(new long[] {42, 43, 44, 45}, bounds));
-    }
-
-    /** */
-    @Test
-    public void testJMXConfiguration() throws Exception {
-        Ignite g = startGrid();
-
+    public void testHitRateConfiguration() throws Exception {
         IgniteMXBean bean = (IgniteMXBean)g;
 
-        //Expected exception on LongMetricImpl configuration
+        //Unknown registry.
         assertThrowsWithCause(
-            () -> bean.configureMetric(metricName("io.dataregion.default"), "TotalAllocatedPages", "222"),
+            () -> bean.configureHitRateMetric("unknownreg", "Puts", 1),
             IgniteException.class);
 
-        assertThrowsWithCause(() -> bean.configureMetric("unknownreg", "Puts", "xxx"), IgniteException.class);
-
-        assertThrowsWithCause(() -> bean.configureMetric(metricName("io.dataregion.default"), "UnknonwnMetric", "xxx"),
+        //Uknown metric.
+        assertThrowsWithCause(
+            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "UnknonwnMetric", 1),
             IgniteException.class);
 
-        assertThrowsWithCause(() -> bean.configureMetric(metricName("io.dataregion.default"), "AllocationRate", "1000"),
+        //Wrong metric type.
+        assertThrowsWithCause(
+            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "TotalAllocatedPages", 222),
             IgniteException.class);
 
-        assertThrowsWithCause(() -> bean.configureMetric(metricName("io.dataregion.default"), "AllocationRate", "xxx"),
-            IgniteException.class);
+        //Wrong rateTimeInterval value.
+        assertThrowsWithCause(
+            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", 0),
+            IllegalArgumentException.class);
 
-        bean.configureMetric(metricName("io.dataregion.default"), "AllocationRate", "5000,42");
+        //Wrong rateTimeInterval value.
+        assertThrowsWithCause(
+            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", -1),
+            IllegalArgumentException.class);
 
-        Metric allocationRate = ((IgniteEx)g).context().metric().registry(metricName("io.dataregion.default"))
+        bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", 5000);
+
+        HitRateMetric allocationRate = ((IgniteEx)g).context().metric().registry(metricName("io.dataregion.default"))
             .findMetric("AllocationRate");
 
-        checkHitRate((HitRateMetric)allocationRate, 5000, 42);
+        assertEquals(5000, allocationRate.rateTimeInterval());
+    }
+
+    /** Tests configuration of {@link HistogramMetric}. */
+    @Test
+    public void testHistogramConfiguration() throws Exception {
+        IgniteMXBean bean = (IgniteMXBean)g;
+
+        long[] bounds = new long[] {50, 100};
+
+        //Unknown registry.
+        assertThrowsWithCause(
+            () -> bean.configureHistogramMetric("unknownreg", "Puts", bounds),
+            IgniteException.class);
+
+        //Unknown metric.
+        assertThrowsWithCause(
+            () -> bean.configureHistogramMetric(TX_METRICS, "UnknonwnMetric", bounds),
+            IgniteException.class);
+
+        //Wrong metric type.
+        assertThrowsWithCause(
+            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_TOTAL_USER_TIME, bounds),
+            IgniteException.class);
+
+        //Wrong bounds value.
+        assertThrowsWithCause(
+            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, null),
+            NullPointerException.class);
+
+        assertThrowsWithCause(
+            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, new long[0]),
+            IllegalArgumentException.class);
+
+        bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, bounds);
+
+        HistogramMetric systemTime = ((IgniteEx)g).context().metric().registry(TX_METRICS)
+            .findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
+
+        assertEquals(bounds, systemTime.bounds());
     }
 }

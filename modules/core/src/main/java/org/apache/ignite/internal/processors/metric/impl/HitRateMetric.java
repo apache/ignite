@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongArray;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,8 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateMetric extends AbstractMetric implements LongMetric {
-    /** Exception message with format description. */
-    private static final String EXP_FMT_MSG = "Expected 2 numbers array separated by commas \"rateTimeInterval,size\"";
+    /** Default counters array size. */
+    public static final int DFLT_SZ = 10;
 
     /** Metric instance. */
     private volatile HitRateMetricImpl cntr;
@@ -56,6 +55,15 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     /** {@inheritDoc} */
     @Override public void reset() {
         cntr = new HitRateMetricImpl(cntr.rateTimeInterval, cntr.size);
+    }
+
+    /**
+     * Resets metric with the new paramters.
+     *
+     * @param rateTimeInterval New rate time interval.
+     */
+    public void reset(long rateTimeInterval) {
+        reset(rateTimeInterval, DFLT_SZ);
     }
 
     /**
@@ -90,43 +98,6 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     /** @return Rate time interval in milliseconds. */
     public long rateTimeInterval() {
         return cntr.rateTimeInterval;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configure(String cfg) throws IgniteException {
-        if (cfg == null || "".equals(cfg))
-            throw new IgniteException(name() + ". Config is empty. " + EXP_FMT_MSG);
-
-        String[] numberStr = cfg.split(",");
-
-        if (numberStr.length != 2)
-            throw new IgniteException(name() + ". Wrong numbers array size " + numberStr.length + ". " + EXP_FMT_MSG);
-
-        long rateTimeInterval = 0;
-
-        try {
-            rateTimeInterval = Long.valueOf(numberStr[0].trim());
-
-            if (rateTimeInterval <= 0)
-                throw new IgniteException(name() + ". rateTimeInterval should be positive." + rateTimeInterval + ". " + EXP_FMT_MSG);
-        }
-        catch (NumberFormatException e) {
-            throw new IgniteException(name() + ". Wrong rateTimeInterval parameter " + numberStr[0] + ". " + EXP_FMT_MSG, e);
-        }
-
-        int size = 0;
-
-        try {
-            size = Integer.valueOf(numberStr[1].trim());
-
-            if (size < 2)
-                throw new IgniteException(name() + ". Minimum value for size is 2. " + size + ". " + EXP_FMT_MSG);
-        }
-        catch (NumberFormatException e) {
-            throw new IgniteException(name() + ". Wrong size parameter " + numberStr[1] + ". " + EXP_FMT_MSG, e);
-        }
-
-        reset(rateTimeInterval, size);
     }
 
     /**

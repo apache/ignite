@@ -41,10 +41,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -300,6 +304,80 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+    }
+
+    /**
+     * Change {@link HitRateMetric} configuration if it exists.
+     *
+     * @param registry Registry name.
+     * @param name Metric name.
+     * @param rateTimeInterval New rate time interval.
+     * @throws IgniteException If metric not found or it not {@link HitRateMetric}.
+     * @see HitRateMetric#reset(long, int)
+     */
+    public void configureHitRate(String registry, String name, long rateTimeInterval) throws IgniteException {
+        A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
+
+        Metric m = find(registry, name);
+
+        if (!(m instanceof HitRateMetric)) {
+            logAndThrow("Metric '" + metricName(registry, name) +
+                "' should be a hitrate[type=" + m.getClass().getSimpleName() + ']');
+        }
+
+        ((HitRateMetric)m).reset(rateTimeInterval);
+    }
+
+    /**
+     * Change {@link HistogramMetric} configuration if it exists.
+     *
+     * @param registry Registry name.
+     * @param name Metric name.
+     * @param bounds New bounds.
+     * @throws IgniteException If metric not found or it not {@link HistogramMetric}.
+     * @see HistogramMetric#reset(long[])
+     */
+    public void configureHistogram(String registry, String name, long[] bounds) throws IgniteException {
+        A.notEmpty(bounds, "bounds");
+
+        Metric m = find(registry, name);
+
+        if (!(m instanceof HistogramMetric)) {
+            logAndThrow("Metric '" + metricName(registry, name) +
+                "' should be a histogram[type=" + m.getClass().getSimpleName() + ']');
+        }
+
+        ((HistogramMetric)m).reset(bounds);
+    }
+
+    /**
+     *
+     * @param registry
+     * @param name
+     */
+    private Metric find(String registry, String name) {
+        A.notNull(registry, "registry");
+        A.notNull(name, "name");
+
+        MetricRegistry mreg = registries.get(registry);
+
+        if (mreg == null)
+            logAndThrow("Metric registry not found[registry=" +  registry + ']');
+
+        Metric m = mreg.findMetric(name);
+
+        if (m == null)
+            logAndThrow("Metric not found[registry=" + registry + ", metricName=" + metricName(registry, name) + ']');
+
+        return m;
+    }
+
+    /** Log message and throw an {@link IgniteException} with it. */
+    private void logAndThrow(String msg) {
+        if (log.isInfoEnabled())
+            log.info(msg);
+
+        throw new IgniteException(msg);
     }
 
     /**

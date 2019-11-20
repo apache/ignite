@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongArray;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -30,9 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
 public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
-    /** Exception message with format description. */
-    private static final String EXP_FMT_MSG = "Expected positive numbers array separated by commas \"x,y,z\"";
-
     /** Holder of measurements. */
     private volatile HistogramHolder holder;
 
@@ -103,37 +99,6 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
     /** {@inheritDoc} */
     @Override public Class<long[]> type() {
         return long[].class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configure(String cfg) throws IgniteException {
-        if (cfg == null || "".equals(cfg))
-            throw new IgniteException(name() + ". Config is empty. " + EXP_FMT_MSG);
-
-        String[] boundsStr = cfg.split(",");
-
-        long[] bounds = new long[boundsStr.length];
-
-        for (int i = 0; i < boundsStr.length; i++) {
-            try {
-                long b = Long.valueOf(boundsStr[i].trim());
-
-                if (b <= 0)
-                    throw new IgniteException(name() + ". Bound should be positive " + b + ". " + EXP_FMT_MSG);
-
-                if (i > 0 && bounds[i-1] >= b) {
-                    throw new IgniteException(name() + ". Bound should be increasing " + bounds[i - 1] + ">= " + b +
-                        ". " + EXP_FMT_MSG);
-                }
-
-                bounds[i] = b;
-            }
-            catch (NumberFormatException e) {
-                throw new IgniteException(name() + ". Number parse error. " + EXP_FMT_MSG, e);
-            }
-        }
-
-        reset(bounds);
     }
 
     /** Histogram holder. */
