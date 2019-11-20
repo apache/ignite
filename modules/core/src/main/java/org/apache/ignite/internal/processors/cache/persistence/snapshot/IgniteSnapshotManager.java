@@ -150,7 +150,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
     /** Total number of thread to perform local snapshot. */
-    private static final int SNAPSHOT_THEEAD_POOL_SIZE = 4;
+    private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("0");
@@ -259,8 +259,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         snpRunner = new IgniteThreadPoolExecutor(
             SNAPSHOT_RUNNER_THREAD_PREFIX,
             cctx.igniteInstanceName(),
-            SNAPSHOT_THEEAD_POOL_SIZE,
-            SNAPSHOT_THEEAD_POOL_SIZE,
+            SNAPSHOT_THREAD_POOL_SIZE,
+            SNAPSHOT_THREAD_POOL_SIZE,
             30_000,
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
