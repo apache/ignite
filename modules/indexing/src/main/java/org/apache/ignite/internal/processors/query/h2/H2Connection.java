@@ -81,14 +81,35 @@ public class H2Connection implements AutoCloseable {
      */
     void schema(@Nullable String schema) {
         if (schema != null && !F.eq(this.schema, schema)) {
-            try {
-                this.schema = schema;
+            this.schema = schema;
 
-                conn.setSchema(schema);
-            }
-            catch (SQLException e) {
-                throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
-                    schema + "]", e);
+            boolean cachesCreated = false;
+
+            while (true) {
+                try {
+                    conn.setSchema(schema);
+
+                    return;
+                }
+                catch (SQLException e) {
+                    if (!cachesCreated && (
+                        e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                            e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                            e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                    ) {
+                        try {
+                            ctx.cache().createMissingQueryCaches();
+                        }
+                        catch (IgniteCheckedException ignored) {
+                            throw new CacheException("Failed to create missing caches.", e);
+                        }
+
+                        cachesCreated = true;
+                    }
+                    else
+                        throw new IgniteSQLException("Failed to set schema for DB connection for thread [schema=" +
+                            schema + "]", e);
+                }
             }
         }
     }
