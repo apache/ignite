@@ -59,7 +59,6 @@
     <Compile Include="Impl\IgniteSessionStateStoreData.cs" />
     <Compile Include="Impl\IgniteSessionStateItemCollection.cs" />
     <Compile Include="Impl\SessionStateLockResult.cs" />
-    <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
