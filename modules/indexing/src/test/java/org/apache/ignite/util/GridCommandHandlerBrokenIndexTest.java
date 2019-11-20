@@ -221,7 +221,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         )
             throws IgniteCheckedException
         {
-            super(cctx, rowCache, tbl, name, pk, colsList, inlineSize, segmentsCnt, log);
+            super(cctx, rowCache, tbl, name, pk, false, colsList, inlineSize, segmentsCnt, log);
         }
 
         /** */
