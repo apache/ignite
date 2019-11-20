@@ -203,7 +203,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals(expSchemasSrv, schemasSrv);
 
-        Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName());
+        Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", systemSchemaName());
 
         Set schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
@@ -246,7 +246,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
 
-        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+        Assert.assertTrue(clientNodeNodeIndexes.isEmpty());
 
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
