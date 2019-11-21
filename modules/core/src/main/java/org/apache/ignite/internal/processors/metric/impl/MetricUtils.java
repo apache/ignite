@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
-
-import java.util.Map;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
