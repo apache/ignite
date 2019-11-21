@@ -62,7 +62,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", null);
+        mreg = new MetricRegistry("group", name -> null, name -> null, null);
     }
 
     /** */
@@ -272,7 +272,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         mreg.longMetric("test1", "");
         mreg.longMetric("test2", "");
@@ -293,7 +293,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         AtomicLongMetric cntr = mreg.longMetric("my.name", null);
         AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);

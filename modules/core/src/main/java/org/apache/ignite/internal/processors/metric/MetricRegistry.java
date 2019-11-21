@@ -72,14 +72,6 @@ public class MetricRegistry implements Iterable<Metric> {
 
     /**
      * @param grpName Group name.
-     * @param log Logger.
-     */
-    public MetricRegistry(String grpName, IgniteLogger log) {
-        this(grpName, name -> null, name -> null, log);
-    }
-
-    /**
-     * @param grpName Group name.
      * @param hitRateCfgProvider HitRate config provider.
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
