@@ -241,11 +241,25 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert cctx.kernalContext().discovery().discoCache().oldestServerNode().isLocal(); // This node is a coordinator.
 
         if (top != null) {
-            List<List<ClusterNode>> ideal = affinity(grpId).idealAssignmentRaw();
+            GridAffinityAssignmentCache aff = groupAffinity(grpId);
 
-            for (int p = 0; p < ideal.size(); p++)
-                if (!top.owners(p).containsAll(ideal.get(p)))
-                    return; // Not rebalanced.
+            if (aff != null) {
+                List<List<ClusterNode>> ideal = aff.idealAssignmentRaw();
+
+                if (ideal != null) {
+                    for (int p = 0; p < ideal.size(); p++)
+                        if (!top.owners(p).containsAll(ideal.get(p)))
+                            return; // Not rebalanced.
+                }
+                else { // Removing from wait info.
+                    if (log.isDebugEnabled())
+                        log.debug("Affinity ideal assignment missed (initialization failed?) [grp=" + grpId + "]");
+                }
+            }
+            else { // Removing from wait info.
+                if (log.isDebugEnabled())
+                    log.debug("Affinity assignment cache missed (initialization failed?) [grp=" + grpId + "]");
+            }
         }
 
         CacheAffinityChangeMessage msg = null;
