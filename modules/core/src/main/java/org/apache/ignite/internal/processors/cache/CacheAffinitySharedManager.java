@@ -1087,9 +1087,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 if (crd) {
                     synchronized (mux) {
-                        assert waitInfo.deploymentIds.get(aff.groupId()).equals(deploymentId);
+                        if (waitInfo != null) {
+                            assert waitInfo.deploymentIds.get(aff.groupId()).equals(deploymentId);
 
-                        waitInfo.deploymentIds.remove(aff.groupId()); // Confirmation.
+                            waitInfo.deploymentIds.remove(aff.groupId()); // Confirmation.
+                        }
                     }
 
                     if (log.isDebugEnabled())
