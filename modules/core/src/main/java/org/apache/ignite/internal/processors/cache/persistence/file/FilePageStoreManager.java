@@ -679,11 +679,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 cctx.gridConfig().getEncryptionSpi());
         }
 
-        return new FileVersionCheckingFactory(
+        FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             pageStoreFileIoFactory,
             pageStoreV1FileIoFactory,
             igniteCfg.getDataStorageConfiguration()
         );
+
+        if (encrypted) {
+            int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
+
+            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
+            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
+        }
+
+        return pageStoreFactory;
     }
 
     /**
@@ -708,14 +717,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileVersionCheckingFactory pageStoreFactory = (FileVersionCheckingFactory)getPageStoreFactory(grpId, encrypted);
-
-            if (encrypted) {
-                int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
-
-                ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
-                ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
-            }
+            FileVersionCheckingFactory pageStoreFactory = (FileVersionCheckingFactory)getPageStoreFactory(grpId,
+                encrypted);
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(
