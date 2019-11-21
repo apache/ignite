@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.metric;
 
+import java.io.Serializable;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -201,6 +203,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metastorage. */
     private volatile DistributedMetaStorage metastorage;
 
+    /** Metastorage lock */
+    private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
+
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
 
@@ -272,17 +277,21 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                     try {
-                        metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) ->
-                                onHitRateConfigChanged(name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
+                        metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
 
-                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) ->
-                                onHistgoramConfigChanged(name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
+                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> {
+                            onHistgoramConfigChanged(
+                                name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val);
+                        });
 
-                        metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX), (name, oldVal, newVal) ->
-                                onHitRateConfigChanged(name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+                        metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
+                            (name, oldVal, newVal) -> onHitRateConfigChanged(
+                                name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
 
-                        metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX), (name, oldVal, newVal) ->
-                                onHistgoramConfigChanged(name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                        metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
+                            (name, oldVal, newVal) -> onHistgoramConfigChanged(
+                                name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
                     } catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
@@ -290,7 +299,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
                 /** {@inheritDoc} */
                 @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                    GridMetricManager.this.metastorage = metastorage;
+                    metaLock.writeLock().lock();
+
+                    try {
+                        GridMetricManager.this.metastorage = metastorage;
+                    }
+                    finally {
+                        metaLock.writeLock().unlock();
+                    }
                 }
             });
     }
@@ -311,12 +327,41 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public MetricRegistry registry(String name) {
         return registries.computeIfAbsent(name, n -> {
-            MetricRegistry mreg = new MetricRegistry(name, log);
+            MetricRegistry mreg = new MetricRegistry(name,
+                mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
+                mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)), log);
 
             notifyListeners(mreg, metricRegCreationLsnrs, log);
 
             return mreg;
         });
+    }
+
+    /**
+     * Reads value from {@link #metastorage}.
+     * Converts any exception to runtime one.
+     *
+     * @param key Key.
+     * @param <T> Key type.
+     * @return Value.
+     */
+    private <T extends Serializable> T readFromMetastorage(String key) {
+        metaLock.readLock().lock();
+
+        try {
+            if (metastorage == null)
+                return null;
+
+            try {
+                return metastorage.read(key);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+        finally {
+            metaLock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -355,11 +400,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @see HitRateMetric#reset(long, int)
      */
     public void configureHitRate(String name, long rateTimeInterval) throws IgniteException, IgniteCheckedException {
+        A.notNullOrEmpty(name, "name");
         A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
-
-        //This call will throw in case of any error.
-        find(name, HitRateMetric.class, true);
 
         metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
     }
@@ -376,9 +419,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         A.notEmpty(bounds, "bounds");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        //This call will throw in case of any error.
-        find(name, HistogramMetric.class, true);
-
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }
 
@@ -392,7 +432,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private void onHitRateConfigChanged(String name, long rateTimeInterval) {
         A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
 
-        HitRateMetric m = find(name, HitRateMetric.class, false);
+        HitRateMetric m = find(name, HitRateMetric.class);
 
         if (m == null)
             return;
@@ -407,7 +447,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param bounds New bounds.
      */
     private void onHistgoramConfigChanged(String name, long[] bounds) {
-        HistogramMetric m = find(name, HistogramMetric.class, false);
+        A.notEmpty(bounds, "bounds");
+
+        HistogramMetric m = find(name, HistogramMetric.class);
 
         if (m == null)
             return;
@@ -418,12 +460,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /**
      * @param name Metric name.
      * @param type Metric type.
-     * @param throwIfNotFound If {@code true} then method will throw {@link IgniteException} in case any error.
-     *                        Othewise will return {@code null}.
      * @return Metric.
-     * @throws IgniteException If {@code throwIfNotFound true} and metric not found or have unexpected type.
      */
-    private <T extends Metric> T find(String name, Class<T> type, boolean throwIfNotFound) {
+    private <T extends Metric> T find(String name, Class<T> type) {
         A.notNull(name, "name");
 
         String[] splited = fromFullName(name);
@@ -431,8 +470,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         MetricRegistry mreg = registries.get(splited[0]);
 
         if (mreg == null) {
-            if (throwIfNotFound)
-                logAndThrow("Metric registry not found[registry=" + splited[0] + ']', throwIfNotFound);
+            if (log.isInfoEnabled())
+                log.info("Metric registry not found[registry=" + splited[0] + ']');
 
             return null;
         }
@@ -440,29 +479,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         Metric m = mreg.findMetric(splited[1]);
 
         if (m == null) {
-            if (throwIfNotFound) {
-                logAndThrow("Metric not found[registry=" + splited[0] + ", metricName=" + splited[1] + ']',
-                        throwIfNotFound);
-            }
+            if (log.isInfoEnabled())
+                log.info("Metric not found[registry=" + splited[0] + ", metricName=" + splited[1] + ']');
 
             return null;
         }
 
         if (!m.getClass().isAssignableFrom(type)) {
-            logAndThrow("Metric '" + name +
-                    "' should be a HitRate[type=" + m.getClass().getSimpleName() + ']', throwIfNotFound);
+            log.error("Metric '" + name + "' should be a HitRate[type=" + m.getClass().getSimpleName() + ']');
+
+            return null;
         }
 
         return (T) m;
-    }
-
-    /** Log message and throw an {@link IgniteException} with it. */
-    private void logAndThrow(String msg, boolean doThrow) {
-        if (log.isInfoEnabled())
-            log.info(msg);
-
-        if (doThrow)
-            throw new IgniteException(msg);
     }
 
     /**
