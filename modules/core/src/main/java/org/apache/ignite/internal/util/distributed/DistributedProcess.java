@@ -34,7 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridInClosure3;
+import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -44,8 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
- * A handler for a distributed process.
- * <p>
  * Distributed process is a cluster-wide process that accumulates single nodes results to finish itself.
  * <p>
  * The process consists of the following phases:
@@ -60,15 +58,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  *
  * @param <I> Request type.
  * @param <R> Result type.
- *
- * @see DistributedProcesses
  */
 public class DistributedProcess<I extends Serializable, R extends Serializable> {
     /** Kernal context. */
     private final DistributedProcesses type;
 
-    /** Map of all active processes. */
-    private final ConcurrentHashMap</*processId*/UUID, Process> processes = new ConcurrentHashMap<>(1);
+    /** Active processes. */
+    private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
 
     /** Synchronization mutex for coordinator initializing and the remaining collection operations. */
     private final Object mux = new Object();
@@ -87,7 +83,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public DistributedProcess(GridKernalContext ctx, DistributedProcesses type,
         Function<I, IgniteInternalFuture<R>> exec,
-        GridInClosure3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
         this.ctx = ctx;
         this.type = type;
 
@@ -355,14 +351,14 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /** Init process future. */
         private final GridFutureAdapter<Void> initFut = new GridFutureAdapter<>();
 
-        /** Remaining nodes to received single nodes result. */
-        private final Set</*nodeId*/UUID> remaining = new GridConcurrentHashSet<>();
+        /** Remaining nodes ids to received single nodes result. */
+        private final Set<UUID> remaining = new GridConcurrentHashSet<>();
 
         /** Future for a local action result. */
         private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>();
 
         /** Nodes results. */
-        private final ConcurrentHashMap</*nodeId*/UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<UUID, SingleNodeMessage<R>> singleMsgs = new ConcurrentHashMap<>();
 
         /** @param id Process id. */
         private Process(UUID id) {

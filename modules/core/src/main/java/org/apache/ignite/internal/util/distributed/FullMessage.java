@@ -101,12 +101,12 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
         return type;
     }
 
-    /** @return Nodes results map. */
+    /** @return Nodes results. */
     public Map<UUID, R> result() {
         return res;
     }
 
-    /** @return Nodes errors map. */
+    /** @return Nodes errors. */
     public Map<UUID, Exception> error() {
         return err;
     }

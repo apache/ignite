@@ -175,7 +175,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
         return type;
     }
 
-    /** @return Single node response. */
+    /** @return Response. */
     public R response() {
         return resp;
     }
