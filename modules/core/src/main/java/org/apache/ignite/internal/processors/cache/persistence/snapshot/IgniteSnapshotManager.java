@@ -153,7 +153,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
     /** Default snapshot topic to receive snapshots from remote node. */
-    private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("0");
+    private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
 
     /** File transmission parameter of cache group id. */
     private static final String SNP_GRP_ID_PARAM = "grpId";
