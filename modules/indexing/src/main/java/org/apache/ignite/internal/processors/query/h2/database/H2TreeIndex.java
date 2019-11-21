@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
@@ -262,12 +263,24 @@ public class H2TreeIndex extends GridH2IndexBase {
             else {
                 GridCursor<GridH2Row> cursor = tree.find(lower, upper, filter);
 
+                registerCursor(cursor);
+
                 return new H2Cursor(cursor);
             }
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
+    }
+
+    /**
+     *  @param cursor Cursor to be closed after the query execution.
+     */
+    private void registerCursor(GridCursor<GridH2Row> cursor) {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if(qctx != null)
+            qctx.addResource(cursor);
     }
 
     /** {@inheritDoc} */
@@ -607,7 +620,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             GridCursor<GridH2Row> range = t.find(first, last, pf);
 
             if (range == null)
-                range = GridH2IndexBase.EMPTY_CURSOR;
+                range = GridCursor.EMPTY_CURSOR;
 
             return new H2Cursor(range);
         }
