@@ -338,11 +338,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /**
      * Reads value from {@link #metastorage}.
-     * Converts any exception to runtime one.
      *
      * @param key Key.
      * @param <T> Key type.
-     * @return Value.
+     * @return Value or {@code null} if not found.
      */
     private <T extends Serializable> T readFromMetastorage(String key) {
         metaLock.readLock().lock();
@@ -397,10 +396,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rate time interval.
-     * @throws IgniteException If metric not found or it not {@link HitRateMetric}.
+     * @throws IgniteCheckedException If write of configuration failed.
      * @see HitRateMetric#reset(long, int)
      */
-    public void configureHitRate(String name, long rateTimeInterval) throws IgniteException, IgniteCheckedException {
+    public void configureHitRate(String name, long rateTimeInterval) throws IgniteCheckedException {
         A.notNullOrEmpty(name, "name");
         A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
@@ -413,9 +412,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param bounds New bounds.
-     * @throws IgniteException If metric not found or it not {@link HistogramMetric}.
+     * @throws IgniteCheckedException If write of configuration failed.
      */
-    public void configureHistogram(String name, long[] bounds) throws IgniteException, IgniteCheckedException {
+    public void configureHistogram(String name, long[] bounds) throws IgniteCheckedException {
         A.notNullOrEmpty(name, "name");
         A.notEmpty(bounds, "bounds");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");

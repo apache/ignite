@@ -359,6 +359,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
+    /** */
     @Test
     public void testFromFullName() {
         assertArrayEquals(new String[] {"org.apache", "ignite"}, fromFullName("org.apache.ignite"));
