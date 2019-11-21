@@ -280,10 +280,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
                             name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
 
-                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> {
-                            onHistgoramConfigChanged(
-                                name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val);
-                        });
+                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistgoramConfigChanged(
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
 
                         metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
                             (name, oldVal, newVal) -> onHitRateConfigChanged(
@@ -357,7 +355,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 return metastorage.read(key);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                log.error("Error read from metastore.", e);
+
+                return null;
             }
         }
         finally {
