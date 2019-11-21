@@ -1205,7 +1205,9 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation(Session ses) {
-        if (!localQuery(H2Utils.context(ses)))
+        QueryContext qctx = H2Utils.context(ses);
+
+        if (qctx == null || !localQuery(qctx))
             return 10_000; // Fallback to the previous behaviour.
 
         refreshStatsIfNeeded();

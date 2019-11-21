@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -259,6 +261,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
+        return null;
     }
 
     /** {@inheritDoc} */

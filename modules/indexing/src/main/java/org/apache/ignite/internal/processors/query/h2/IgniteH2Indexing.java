@@ -311,6 +311,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
+        return connMgr.connection(schemaName).prepareStatement(sql);
+    }
+
+    /** {@inheritDoc} */
     @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery qry)
         throws IgniteSQLException {
         assert qry != null;
