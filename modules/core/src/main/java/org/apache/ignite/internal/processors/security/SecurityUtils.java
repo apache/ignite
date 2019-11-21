@@ -34,6 +34,8 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridInternalWrapper;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxRunnable;
@@ -50,9 +52,6 @@ public class SecurityUtils {
     public static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
-
-    /** Ignite internal package name. */
-    public static final String INTERNAL_PKG_NAME = "org.apache.ignite.internal";
 
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
@@ -192,33 +191,43 @@ public class SecurityUtils {
     }
 
     /**
-     * @return True if a class of the {@code obj} belongs to the internal package.
+     * @return True if class of {@code target} is internal.
      */
-    public static boolean isInternalPkgClass(Object obj) {
-        Class objCls = obj.getClass();
+    private static boolean isSystemType(GridKernalContext ctx, Object target) {
+        Class cls = target instanceof GridInternalWrapper
+            ? ((GridInternalWrapper)target).userObject().getClass()
+            : target.getClass();
 
-        return objCls.getPackage().getName().startsWith(INTERNAL_PKG_NAME) &&
-            SecurityUtils.class.getProtectionDomain().getCodeSource()
-                .equals(objCls.getProtectionDomain().getCodeSource());
+        return ctx.getClass().getClassLoader() == cls.getClassLoader()
+            && ctx.marshallerContext().isSystemType(cls.getName());
     }
 
     /**
      * @return Proxy of {@code instance} if the sandbox is enabled otherwise {@code instance}.
      */
-    public static <T> T sandboxedProxy(IgniteSandbox sandbox, Class cls, T instance) {
+    public static <T> T sandboxedProxy(GridKernalContext ctx, final Class cls, final T instance) {
         if (instance == null)
             return null;
 
-        Objects.requireNonNull(sandbox, "Parameter 'sandbox' cannot be null.");
+        Objects.requireNonNull(ctx, "Parameter 'ctx' cannot be null.");
         Objects.requireNonNull(cls, "Parameter 'cls' cannot be null.");
 
-        if (sandbox.enabled()) {
-            return doPrivileged(() -> (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(), new Class[] {cls},
-                new SandboxInvocationHandler(sandbox, instance))
-            );
+        final IgniteSandbox sandbox = ctx.security().sandbox();
+
+        if (sandbox.enabled() && !isSystemType(ctx, instance)) {
+            return doPrivileged(() -> (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(),
+                proxyClasses(cls, instance),
+                new SandboxInvocationHandler(sandbox, instance)));
         }
 
         return instance;
+    }
+
+    /** Array of proxy classes. */
+    private static <T> Class[] proxyClasses(Class cls, T instance) {
+        return instance instanceof GridInternalWrapper
+            ? new Class[] {cls, GridInternalWrapper.class}
+            : new Class[] {cls};
     }
 
     /** */
@@ -243,6 +252,15 @@ public class SecurityUtils {
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+            try {
+                if (proxy instanceof GridInternalWrapper &&
+                    GridInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
+                    return mtd.invoke(original, args);
+            }
+            catch (NoSuchMethodException e) {
+                // Ignore.
+            }
+
             this.mtd = mtd;
             this.args = args;
 

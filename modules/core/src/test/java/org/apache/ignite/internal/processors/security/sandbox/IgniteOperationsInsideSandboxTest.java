@@ -113,9 +113,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
             );
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void test() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
@@ -133,9 +131,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
         testDataStreamerOperations(clnt);
     }
 
-    /**
-     *
-     */
+    /** */
     private void testComputeOperations(Ignite clnt) {
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
             new TestRunnable() {
@@ -163,9 +159,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
         );
     }
 
-    /**
-     *
-     */
+    /** */
     private void testCacheOperations(Ignite clnt) {
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
             new TestRunnable() {
@@ -213,9 +207,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                 });
     }
 
-    /**
-     *
-     */
+    /** */
     private CacheEntryProcessor<String, String, String> processor() {
         return (entry, o) -> {
             entry.setValue("Val");
@@ -231,7 +223,8 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
         return new T2<>("key", "val");
     }
 
-    private abstract class TestRunnable implements IgniteRunnable {
+    /** */
+    private static abstract class TestRunnable implements IgniteRunnable {
         @IgniteInstanceResource
         protected Ignite ignite;
     }

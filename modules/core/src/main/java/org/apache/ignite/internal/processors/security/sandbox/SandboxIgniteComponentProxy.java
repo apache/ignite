@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 /** Create instace of Ignite component proxy to use inside the Ignite Sandbox. */
 public final class SandboxIgniteComponentProxy {
     /** The array of classes that should be proxied. */
-    private static final Class[] PROXED_CLASSES = new Class[] {
+    private static final Class[] PROXIED_CLASSES = new Class[] {
         Ignite.class,
         IgniteCache.class,
         IgniteCompute.class,
@@ -79,16 +79,6 @@ public final class SandboxIgniteComponentProxy {
     }
 
     /** */
-    private static Class proxedClass(Object obj) {
-        for (Class cls : PROXED_CLASSES) {
-            if (cls.isInstance(obj))
-                return cls;
-        }
-
-        return null;
-    }
-
-    /** */
     private static class SandboxIgniteComponentProxyHandler implements InvocationHandler {
         /** */
         private final Object original;
@@ -106,6 +96,15 @@ public final class SandboxIgniteComponentProxy {
 
             return cls != null ? proxy(cls, res) : res;
         }
-    }
 
+        /** */
+        private Class proxedClass(Object obj) {
+            for (Class cls : PROXIED_CLASSES) {
+                if (cls.isInstance(obj))
+                    return cls;
+            }
+
+            return null;
+        }
+    }
 }

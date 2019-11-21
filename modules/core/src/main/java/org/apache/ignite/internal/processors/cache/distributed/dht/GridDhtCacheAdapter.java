@@ -630,8 +630,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (p != null) {
             ctx.kernalContext().resource().injectGeneric(p);
 
-            pred = SecurityUtils.sandboxedProxy(ctx.kernalContext().security().sandbox(),
-                IgniteBiPredicate.class, p);
+            pred = SecurityUtils.sandboxedProxy(ctx.kernalContext(), IgniteBiPredicate.class, p);
         }
         else
             pred = null;

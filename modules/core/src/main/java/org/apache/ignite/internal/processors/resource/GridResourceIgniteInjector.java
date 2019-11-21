@@ -17,17 +17,41 @@
 
 package org.apache.ignite.internal.processors.resource;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 
 import static org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy.proxy;
 
 /** Ignite instance injector. */
 public class GridResourceIgniteInjector extends GridResourceBasicInjector<Ignite> {
+    /** Array of classes that should get a proxied instance of Ignite. */
+    private static final Class[] PROXIED_CLASSES = new Class[]{
+        Runnable.class,
+        IgniteRunnable.class,
+        Callable.class,
+        IgniteCallable.class,
+        ComputeTask.class,
+        ComputeJob.class,
+        IgniteClosure.class,
+        IgniteBiClosure.class,
+        IgniteDataStreamer.class,
+        IgnitePredicate.class,
+        IgniteBiPredicate.class,
+    };
+
     /** Builder method. */
     public static GridResourceBasicInjector<Ignite> create(GridKernalContext ctx) {
         return SecurityUtils.hasSecurityManager()
@@ -46,9 +70,19 @@ public class GridResourceIgniteInjector extends GridResourceBasicInjector<Ignite
      * @return Proxed instance of Ignite.
      */
     private Ignite ignite(Object target) {
-        return SecurityUtils.isInternalPkgClass(target) || target instanceof IgniteSpi
-            ? getResource()
-            : proxy(Ignite.class, getResource());
+        return shouldGetProxy(target) ? proxy(Ignite.class, getResource()) : getResource();
+    }
+
+    /**
+     * @return True if {@code target} should get a proxy instance of Ignite.
+     */
+    private boolean shouldGetProxy(Object target){
+        for(Class cls : PROXIED_CLASSES){
+            if (cls.isInstance(target))
+                return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
