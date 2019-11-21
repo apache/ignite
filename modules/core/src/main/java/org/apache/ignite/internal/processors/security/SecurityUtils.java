@@ -191,7 +191,7 @@ public class SecurityUtils {
     }
 
     /**
-     * @return True if class of {@code target} is internal.
+     * @return True if class of {@code target} is a system type.
      */
     private static boolean isSystemType(GridKernalContext ctx, Object target) {
         Class cls = target instanceof GridInternalWrapper
@@ -203,7 +203,8 @@ public class SecurityUtils {
     }
 
     /**
-     * @return Proxy of {@code instance} if the sandbox is enabled otherwise {@code instance}.
+     * @return Proxy of {@code instance} if the sandbox is enabled and class of {@code instance} is not a system type
+     * otherwise {@code instance}.
      */
     public static <T> T sandboxedProxy(GridKernalContext ctx, final Class cls, final T instance) {
         if (instance == null)

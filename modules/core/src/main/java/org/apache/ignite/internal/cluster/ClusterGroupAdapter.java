@@ -805,7 +805,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         @IgniteInstanceResource
         private void ignite(Ignite ignite) {
             if (ignite != null)
-                this.ignite = IgnitionEx.gridx(ignite.name());
+                this.ignite = ignite instanceof IgniteKernal ? (IgniteKernal)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 

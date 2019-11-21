@@ -6074,12 +6074,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Object localExecute(@Nullable IgniteInternalCache cache) {
+        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
 
-            final IgniteInternalCache targetCache = keepBinary ? cache.keepBinary() : cache;
+            if (keepBinary)
+                cache = cache.keepBinary();
 
-            return super.localExecute(targetCache);
+            return super.localExecute(cache);
         }
 
         /** {@inheritDoc} */
@@ -6758,7 +6759,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @IgniteInstanceResource
         private void ignite(Ignite ignite) {
             if (ignite != null)
-                this.ignite = IgnitionEx.gridx(ignite.name());
+                this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 
