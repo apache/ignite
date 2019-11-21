@@ -224,7 +224,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     }
 
     /** */
-    private static abstract class TestRunnable implements IgniteRunnable {
+    private abstract static class TestRunnable implements IgniteRunnable {
         @IgniteInstanceResource
         protected Ignite ignite;
     }
