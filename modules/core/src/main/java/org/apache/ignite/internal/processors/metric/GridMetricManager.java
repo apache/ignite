@@ -203,7 +203,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metastorage. */
     private volatile DistributedMetaStorage metastorage;
 
-    /** Metastorage lock */
+    /** Metastorage lock. */
     private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
 
     /** Metrics update worker. */
@@ -329,7 +329,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         return registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
                 mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
-                mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)), log);
+                mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
+                log);
 
             notifyListeners(mreg, metricRegCreationLsnrs, log);
 
