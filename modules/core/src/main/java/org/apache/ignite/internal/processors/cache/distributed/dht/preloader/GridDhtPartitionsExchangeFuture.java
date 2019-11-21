@@ -3732,7 +3732,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
+            timeBag.finishGlobalStage("Full message creation");
+
             boolean rebalanced = cctx.affinity().initRebalanceStateBasedOnPartitionsAvailability(this);
+
+            timeBag.finishGlobalStage("Late affinity waitinfo caclulation");
 
             msg.rebalanced(rebalanced);
 
@@ -3741,6 +3745,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // wrong lost state calculation (another possibility to consider - calculate lost state only on coordinator).
             if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
                 detectLostPartitions(resTopVer);
+
+            timeBag.finishGlobalStage("Lost partitions detection");
 
             if (exchCtx.mergeExchanges()) {
                 assert !centralizedAff;
