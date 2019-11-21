@@ -18,6 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
+import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,134 +40,23 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    CacheOperationPermissionCheckTest.class,
-//    DataStreamerPermissionCheckTest.class,
-//    ScanQueryPermissionCheckTest.class,
-//    EntryProcessorPermissionCheckTest.class,
-//    ComputePermissionCheckTest.class,
-//
-//    DistributedClosureRemoteSecurityContextCheckTest.class,
-//    ComputeTaskRemoteSecurityContextCheckTest.class,
-//    ComputeTaskCancelRemoteSecurityContextCheckTest.class,
-//    ExecutorServiceRemoteSecurityContextCheckTest.class,
-//    ScanQueryRemoteSecurityContextCheckTest.class,
-//    EntryProcessorRemoteSecurityContextCheckTest.class,
-//    DataStreamerRemoteSecurityContextCheckTest.class,
-//    CacheLoadRemoteSecurityContextCheckTest.class,
-//    ThinClientPermissionCheckTest.class,
+    CacheOperationPermissionCheckTest.class,
+    DataStreamerPermissionCheckTest.class,
+    ScanQueryPermissionCheckTest.class,
+    EntryProcessorPermissionCheckTest.class,
+    ComputePermissionCheckTest.class,
+
+    DistributedClosureRemoteSecurityContextCheckTest.class,
+    ComputeTaskRemoteSecurityContextCheckTest.class,
+    ComputeTaskCancelRemoteSecurityContextCheckTest.class,
+    ExecutorServiceRemoteSecurityContextCheckTest.class,
+    ScanQueryRemoteSecurityContextCheckTest.class,
+    EntryProcessorRemoteSecurityContextCheckTest.class,
+    DataStreamerRemoteSecurityContextCheckTest.class,
+    CacheLoadRemoteSecurityContextCheckTest.class,
+    ThinClientPermissionCheckTest.class,
 
     InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class,
-    InvalidServerTest.class
-
-
 })
 public class SecurityTestSuite {
 }
