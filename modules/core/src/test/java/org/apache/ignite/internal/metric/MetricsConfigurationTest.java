@@ -30,6 +30,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.Transacti
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assert.assertArrayEquals;
 
 /** Tests metrics configuration. */
 public class MetricsConfigurationTest extends GridCommonAbstractTest {
@@ -48,32 +49,32 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         //Unknown registry.
         assertThrowsWithCause(
-            () -> bean.configureHitRateMetric("unknownreg", "Puts", 1),
+            () -> bean.configureHitRateMetric("unknownreg.Puts", 1),
             IgniteException.class);
 
         //Uknown metric.
         assertThrowsWithCause(
-            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "UnknonwnMetric", 1),
+            () -> bean.configureHitRateMetric("io.dataregion.default.UnknonwnMetric", 1),
             IgniteException.class);
 
         //Wrong metric type.
         assertThrowsWithCause(
-            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "TotalAllocatedPages", 222),
+            () -> bean.configureHitRateMetric("io.dataregion.default.TotalAllocatedPages", 222),
             IgniteException.class);
 
         //Wrong rateTimeInterval value.
         assertThrowsWithCause(
-            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", 0),
+            () -> bean.configureHitRateMetric("io.dataregion.default.AllocationRate", 0),
             IllegalArgumentException.class);
 
         //Wrong rateTimeInterval value.
         assertThrowsWithCause(
-            () -> bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", -1),
+            () -> bean.configureHitRateMetric("io.dataregion.default.AllocationRate", -1),
             IllegalArgumentException.class);
 
-        bean.configureHitRateMetric(metricName("io.dataregion.default"), "AllocationRate", 5000);
+        bean.configureHitRateMetric("io.dataregion.default.AllocationRate", 5000);
 
-        HitRateMetric allocationRate = ((IgniteEx)g).context().metric().registry(metricName("io.dataregion.default"))
+        HitRateMetric allocationRate = g.context().metric().registry(metricName("io.dataregion.default"))
             .findMetric("AllocationRate");
 
         assertEquals(5000, allocationRate.rateTimeInterval());
@@ -88,33 +89,33 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         //Unknown registry.
         assertThrowsWithCause(
-            () -> bean.configureHistogramMetric("unknownreg", "Puts", bounds),
+            () -> bean.configureHistogramMetric("unknownreg.Puts", bounds),
             IgniteException.class);
 
         //Unknown metric.
         assertThrowsWithCause(
-            () -> bean.configureHistogramMetric(TX_METRICS, "UnknonwnMetric", bounds),
+            () -> bean.configureHistogramMetric(metricName(TX_METRICS, "UnknonwnMetric"), bounds),
             IgniteException.class);
 
         //Wrong metric type.
         assertThrowsWithCause(
-            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_TOTAL_USER_TIME, bounds),
+            () -> bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_TOTAL_USER_TIME), bounds),
             IgniteException.class);
 
         //Wrong bounds value.
         assertThrowsWithCause(
-            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, null),
+            () -> bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), null),
             NullPointerException.class);
 
         assertThrowsWithCause(
-            () -> bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, new long[0]),
+            () -> bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), new long[0]),
             IllegalArgumentException.class);
 
-        bean.configureHistogramMetric(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM, bounds);
+        bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), bounds);
 
-        HistogramMetric systemTime = ((IgniteEx)g).context().metric().registry(TX_METRICS)
+        HistogramMetric systemTime = g.context().metric().registry(TX_METRICS)
             .findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
 
-        assertEquals(bounds, systemTime.bounds());
+        assertArrayEquals(bounds, systemTime.bounds());
     }
 }

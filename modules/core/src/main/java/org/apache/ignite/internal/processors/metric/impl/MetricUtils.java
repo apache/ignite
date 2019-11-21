@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.Map;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
+
+import java.util.Map;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -33,7 +34,10 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  */
 public class MetricUtils {
     /** Metric name part separator. */
-    public static final String SEPARATOR = ".";
+    public static final char SEPARATOR_CHAR = '.';
+
+    /** Metric name part separator. */
+    public static final String SEPARATOR = "" + SEPARATOR_CHAR;
 
     /** Histogram metric last interval high bound. */
     public static final String INF = "inf";
@@ -47,7 +51,7 @@ public class MetricUtils {
      * @return Parsed names parts.
      */
     public static MetricName parse(String regName) {
-        int firstDot = regName.indexOf('.');
+        int firstDot = regName.indexOf(SEPARATOR);
 
         if (firstDot == -1)
             return new MetricName(null, regName);
@@ -72,6 +76,19 @@ public class MetricUtils {
             return names[0];
 
         return String.join(SEPARATOR, names);
+    }
+
+    /**
+     * Splits full metric name to registry name and metric name.
+     *
+     * @param name Full metric name.
+     * @return Array consist of registry name and metric name.
+     */
+    public static String[] fromFullName(String name) {
+        return new String[]{
+            name.substring(0, name.lastIndexOf(SEPARATOR)),
+            name.substring(name.lastIndexOf(SEPARATOR) + 1)
+        };
     }
 
     /**

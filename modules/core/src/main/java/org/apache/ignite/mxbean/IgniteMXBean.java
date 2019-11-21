@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 
@@ -512,29 +514,27 @@ public interface IgniteMXBean {
      * Change {@link HitRateMetric} configuration.
      * Call of this method will change metric configuration across all cluster nodes.
      *
-     * @param registry Metrics registry name.
      * @param name Metric name.
      * @param rateTimeInterval New rate time interval.
-     * @throws IgniteException  If some error occured.
+     * @throws IgniteException If some error occured.
      */
     @MXBeanDescription("Configure hitrate metric by name.")
-    @MXBeanParametersNames({"registry", "name", "cfg"})
-    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "New rate time interval."})
-    public void configureHitRateMetric(String registry, String name, long rateTimeInterval);
+    @MXBeanParametersNames({"name", "cfg"})
+    @MXBeanParametersDescriptions({"Metric name.", "New rate time interval."})
+    public void configureHitRateMetric(String name, long rateTimeInterval) throws IgniteException;
 
     /**
      * Change {@link HistogramMetric} configuration.
      * Call of this method will change metric configuration across all cluster nodes.
      *
-     * @param registry Metrics registry name.
      * @param name Metric name.
      * @param bounds New bounds.
-     * @throws IgniteException  If some error occured.
+     * @throws IgniteException If some error occured.
      */
     @MXBeanDescription("Configure histogram metric by name.")
-    @MXBeanParametersNames({"registry", "name", "cfg"})
-    @MXBeanParametersDescriptions({"Registry name.", "Metric name.", "New bounds."})
-    public void configureHistogramMetric(String registry, String name, long[] bounds);
+    @MXBeanParametersNames({"name", "cfg"})
+    @MXBeanParametersDescriptions({"Metric name.", "New bounds."})
+    public void configureHistogramMetric(String name, long[] bounds) throws IgniteException;
 
     /**
      * Gets cluster read-only mode status.

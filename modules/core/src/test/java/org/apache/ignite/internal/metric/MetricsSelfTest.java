@@ -49,6 +49,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
@@ -358,6 +359,12 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
+    @Test
+    public void testFromFullName() {
+        assertArrayEquals(new String[] {"org.apache", "ignite"}, fromFullName("org.apache.ignite"));
+
+        assertArrayEquals(new String[] {"org", "apache"}, fromFullName("org.apache"));
+    }
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {

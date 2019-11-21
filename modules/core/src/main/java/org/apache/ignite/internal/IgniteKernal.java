@@ -4612,13 +4612,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void configureHitRateMetric(String registry, String name, long rateTimeInterval) {
-        ctx.metric().configureHitRate(registry, name, rateTimeInterval);
+    @Override public void configureHitRateMetric(String name, long rateTimeInterval) {
+        try {
+            ctx.metric().configureHitRate(name, rateTimeInterval);
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void configureHistogramMetric(String registry, String name, long[] bounds) {
-        ctx.metric().configureHistogram(registry, name, bounds);
+    @Override public void configureHistogramMetric(String name, long[] bounds) {
+        try {
+            ctx.metric().configureHistogram(name, bounds);
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
