@@ -921,7 +921,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             final LocalSnapshotContext sctx0 = sctx;
 
-            // todo future should be included to context, or context to the future?
             sctx.snpFut.listen(f -> {
                 localSnpCtxs.remove(snpName);
 
@@ -978,7 +977,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             cpFut.beginFuture()
                 .get();
 
-            U.log(log, "Snapshot operation scheduled with the following context: " + sctx);
+            if (log.isInfoEnabled())
+                log.info("Snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
             closeSnapshotResources(sctx);
@@ -1803,8 +1803,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         @Override public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbNodeSnpDir, cacheDirName, pair.getPartitionId());
 
-            U.log(log, "Start partition snapshot recovery with the given delta page file [part=" + snpPart +
-                ", delta=" + delta + ']');
+            if (log.isInfoEnabled()) {
+                log.info("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+                    ", delta=" + delta + ']');
+            }
 
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeFactory
@@ -1835,9 +1837,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     int crc = PageIO.getCrc(pageBuf);
 
-                    U.log(log, "Read page given delta file [path=" + delta.getName() +
-                        ", pageId=" + pageId + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                        ", crcBuff=" + crc32 + ", crcPage=" + crc + ']');
+                    if (log.isDebugEnabled()) {
+                        log.debug("Read page given delta file [path=" + delta.getName() +
+                            ", pageId=" + pageId + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
+                            ", crcBuff=" + crc32 + ", crcPage=" + crc + ']');
+                    }
 
                     pageBuf.rewind();
 
