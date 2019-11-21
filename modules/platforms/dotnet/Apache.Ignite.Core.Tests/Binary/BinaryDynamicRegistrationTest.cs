@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void ClearMarshallerWorkDir()
         {
             // Delete all *.classname files within IGNITE_HOME
-            var home = IgniteHome.Resolve(null);
+            var home = IgniteHome.Resolve();
 
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 
