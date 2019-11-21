@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static java.util.Objects.isNull;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -485,18 +486,26 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                if (isNull(cctx.discovery().getAlive(n.id()))) {
+                    log.error("Unable to send message (node left topology): " + n);
 
-                if (msgLog.isDebugEnabled()) {
-                    msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
-                        ", dhtTxId=" + tx.xidVersion() +
-                        ", node=" + n.id() + ']');
+                    fut.onNodeLeft(new ClusterTopologyCheckedException("Node left grid while sending message to: "
+                        + n.id()));
                 }
+                else {
+                    cctx.io().send(n, req, tx.ioPolicy());
 
-                if (sync)
-                    res = true;
-                else
-                    fut.onDone();
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
+                            ", dhtTxId=" + tx.xidVersion() +
+                            ", node=" + n.id() + ']');
+                    }
+
+                    if (sync)
+                        res = true;
+                    else
+                        fut.onDone();
+                }
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
