@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2StatementCleaner;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -844,8 +845,10 @@ public class GridReduceQueryExecutor {
                                 " Saving query context for switching between queries. [oldCtx=" + oldCtx + ']');
                         }
 
-                        GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
-                            .pageSize(r.pageSize()).distributedJoinMode(OFF));
+                        GridH2QueryContext qctx = new GridH2QueryContext(locNodeId, locNodeId, qryReqId, REDUCE)
+                            .pageSize(r.pageSize()).distributedJoinMode(OFF);
+
+                        GridH2QueryContext.set(qctx);
 
                         try {
                             if (qry.explain())
@@ -857,6 +860,9 @@ public class GridReduceQueryExecutor {
 
                             final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
                                 params0, false);
+
+                            GridH2StatementCleaner stmtCleaner = GridH2StatementCleaner.fromPrepared(stmt);
+                            qctx.addResource(stmtCleaner);
 
                             ReduceH2QueryInfo qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(), qryReqId);
 
@@ -870,6 +876,11 @@ public class GridReduceQueryExecutor {
                             resIter = new H2FieldsIterator(res, null, log, h2, qryInfo, false, qry.pageSize(), null);
                         }
                         finally {
+                            qctx = GridH2QueryContext.get();
+
+                            if (qctx != null)
+                                qctx.closeResources();
+
                             GridH2QueryContext.clearThreadLocal();
 
                             if(oldCtx != null)

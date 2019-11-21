@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker
 import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,6 +88,9 @@ public class GridH2QueryContext {
 
     /** */
     private MapQueryLazyWorker lazyWorker;
+
+    /** */
+    private Set<AutoCloseable> resources;
 
     /**
      * @param locNodeId Local node ID.
@@ -171,6 +177,28 @@ public class GridH2QueryContext {
         this.reserved = reserved;
 
         return this;
+    }
+
+    /**
+     * Add resource to be closed after cursor is closed.
+     *
+     * @param rsrc Resources.
+     */
+    public void addResource(AutoCloseable rsrc) {
+        if (resources == null)
+            resources = new HashSet<>();
+
+        resources.add(rsrc);
+    }
+
+    /**
+     * Closes acquired results.
+     */
+    public void closeResources() {
+        if (resources != null) {
+            for (AutoCloseable rsrc : resources)
+                U.closeQuiet(rsrc);
+        }
     }
 
     /**
