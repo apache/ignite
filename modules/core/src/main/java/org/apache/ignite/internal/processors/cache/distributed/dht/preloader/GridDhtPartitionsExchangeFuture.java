@@ -832,7 +832,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else {
                     assert affChangeMsg != null : this;
 
-                    exchange = onAffinityChangeRequest();
+                    exchange = onAffinityChangeRequest(crdNode);
                 }
 
                 if (forceAffReassignment)
@@ -1350,12 +1350,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @param crd Coordinator flag.
      * @return Exchange type.
      */
-    private ExchangeType onAffinityChangeRequest() {
+    private ExchangeType onAffinityChangeRequest(boolean crd) {
         assert affChangeMsg != null : this;
 
-        cctx.affinity().onChangeAffinityMessage(this, affChangeMsg);
+        cctx.affinity().onChangeAffinityMessage(this, affChangeMsg, crd);
 
         if (cctx.kernalContext().clientNode())
             return ExchangeType.CLIENT;

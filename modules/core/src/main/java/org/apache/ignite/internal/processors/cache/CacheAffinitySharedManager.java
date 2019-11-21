@@ -251,18 +251,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         CacheAffinityChangeMessage msg = null;
 
         synchronized (mux) {
-            if (waitInfo == null)
+            if (waitInfo == null || waitInfo.empty())
                 return;
-
-            assert !waitInfo.empty();
 
             waitInfo.grps.remove(grpId);
 
-            if (waitInfo.empty()) {
+            if (waitInfo.empty())
                 msg = new CacheAffinityChangeMessage(waitInfo.topVer, waitInfo.deploymentIds);
-
-                waitInfo = null;
-            }
         }
 
         try {
@@ -991,9 +986,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert exchFut.exchangeId().equals(msg.exchangeId()) : msg;
 
-        if (msg.partitionsMessage().rebalanced())
-            exchFut.markRebalanced();
-
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
 
         final Map<Integer, Map<Integer, List<UUID>>> assignment = msg.assignmentChange();
@@ -1032,10 +1024,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param exchFut Exchange future.
      * @param msg Message.
+     * @param crd Coordinator flag.
      */
     public void onChangeAffinityMessage(
         final GridDhtPartitionsExchangeFuture exchFut,
-        final CacheAffinityChangeMessage msg
+        final CacheAffinityChangeMessage msg,
+        boolean crd
     ) {
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
 
@@ -1076,6 +1070,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     aff.initialize(topVer, aff.idealAssignmentRaw());
                 else
                     aff.duplicate(exchFut.firstEvent(), topVer);
+
+                if (crd) {
+                    synchronized (mux) {
+                        assert waitInfo.deploymentIds.get(aff.groupId()).equals(deploymentId);
+
+                        waitInfo.deploymentIds.remove(aff.groupId()); // Confirmation.
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Late affinity assignment finished [grp=" + aff.groupId() + "]");
+                }
 
                 cctx.exchange().exchangerUpdateHeartbeat();
 
@@ -2219,7 +2224,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             });
 
-            waitInfo = rebInfo.empty() ? null : rebInfo;
+            waitInfo = rebInfo.empty() && rebInfo.deploymentIds.isEmpty() ? null : rebInfo;
         }
 
         log.info("Rebalance state recalculated on coordinator [topVer=" + rebInfo.topVer +

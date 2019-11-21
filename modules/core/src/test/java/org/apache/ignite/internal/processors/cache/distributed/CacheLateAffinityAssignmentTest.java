@@ -1072,6 +1072,137 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks LAS happens on single owner left.
+     */
+    @Test
+    public void testSinglePartitionCacheOwnerLeft() throws Exception {
+        testSinglePartitionCacheNodeLeft(true);
+    }
+
+    /**
+     * Chackes LAS absent on non owner left.
+     */
+    @Test
+    public void testSinglePartitionCacheNotOwnerLeft() throws Exception {
+        testSinglePartitionCacheNodeLeft(false);
+    }
+
+    /**
+     * @param ownerLeft Kill owner flag.
+     */
+    private void testSinglePartitionCacheNodeLeft(boolean ownerLeft) throws Exception {
+        String cacheName = "single-partitioned";
+
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                AffinityFunction aff;
+
+                ccfg.setName(cacheName);
+                ccfg.setWriteSynchronizationMode(FULL_SYNC);
+                ccfg.setBackups(0);
+
+                aff = ownerLeft ? affinityFunction(1) : new MapSinglePartitionToSecondNodeAffinityFunction();
+
+                ccfg.setAffinity(aff);
+
+                return new CacheConfiguration[] {ccfg};
+            }
+        };
+
+        int top = 0;
+        int nodes = 0;
+
+        startServer(nodes++, ++top);
+
+        checkAffinity(nodes, topVer(top, 0), true);
+
+        checkNoExchange(nodes, topVer(top, 1)); // Checks LAS is absent on initial topology.
+
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+        startServer(nodes++, ++top);
+
+        awaitPartitionMapExchange();
+
+        Ignite primary = primaryNode(0, cacheName);
+
+        boolean lasOnJoin = primary.cluster().localNode().order() != 1;
+
+        boolean leftHappen = false;
+
+        while (nodes > 1) {
+            Map<String, List<List<ClusterNode>>> aff =
+                checkAffinity(nodes,
+                    topVer(top,
+                        leftHappen ?
+                            (ownerLeft ? 1 : 0) :
+                            (lasOnJoin ? 1 : 0)),
+                    true);
+
+            ClusterNode owner = aff.get(cacheName).get(/*part*/0).get(/*primary*/0);
+
+            Ignite actualOwner = primaryNode(0, cacheName);
+
+            assertEquals(actualOwner.cluster().localNode().order(), owner.order());
+
+            for (Ignite node : G.allGrids()) {
+                ClusterNode locNode = node.cluster().localNode();
+
+                boolean equals = locNode.order() == owner.order();
+
+                if (equals == ownerLeft) {
+                    if (!ownerLeft)
+                        assertNotSame(locNode.order(), 2);
+
+                    grid(locNode).close();
+
+                    calculateAffinity(++top);
+
+                    leftHappen = true;
+
+                    break;
+                }
+            }
+
+            checkAffinity(--nodes, topVer(top, ownerLeft ? 1 : 0), true);
+
+            if (!ownerLeft)
+                checkNoExchange(nodes, topVer(top, 1));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MapSinglePartitionToSecondNodeAffinityFunction extends RendezvousAffinityFunction {
+        /**
+         * Default constructor.
+         */
+        public MapSinglePartitionToSecondNodeAffinityFunction() {
+            super(false, 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            for (ClusterNode node : affCtx.currentTopologySnapshot() ) {
+                // Always aims to map to second started node to avoid rebalance.
+                if (node.order() == 2 || affCtx.currentTopologySnapshot().size() == 1)
+                    return Collections.singletonList(Collections.singletonList(node));
+            }
+
+            fail("Should not happen.");
+
+            return null;
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
