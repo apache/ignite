@@ -587,14 +587,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (opsMux) {
             if (disconnected) {
                 throw new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
-                    "Failed to perform operation, client node disconnected.");
+                    "Master key change was rejected. Client node disconnected.");
             }
 
             if (stopped)
-                throw new IgniteException("Failed to perform operation, node is stopping.");
+                throw new IgniteException("Master key change was rejected. Node is stopping.");
 
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
-                throw new IgniteException("Master key change is in progress.");
+                throw new IgniteException("Master key change was rejected. Previous change was not completed.");
 
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
         }
