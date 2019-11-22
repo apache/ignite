@@ -467,7 +467,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 });
 
-            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
+            segmentAware = new SegmentAware(log, dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
             if (isArchiverEnabled())
                 archiver = new FileArchiver(segmentAware, log);

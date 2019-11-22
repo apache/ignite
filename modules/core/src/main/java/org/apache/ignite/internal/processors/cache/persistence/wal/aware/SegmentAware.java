@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentArchivedStorage.buildArchivedStorage;
@@ -28,7 +29,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.
  */
 public class SegmentAware {
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
-    private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
+    private final SegmentReservationStorage reservationStorage;
 
     /** Lock on segment protects from archiving segment. */
     private final SegmentLockStorage segmentLockStorage = new SegmentLockStorage();
@@ -47,6 +48,17 @@ public class SegmentAware {
      * @param compactionEnabled Is wal compaction enabled.
      */
     public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
+        reservationStorage = new SegmentReservationStorage(null);
+        segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
+    }
+
+    /**
+     * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
+     */
+    public SegmentAware(IgniteLogger log, int walSegmentsCnt, boolean compactionEnabled) {
+        reservationStorage = new SegmentReservationStorage(log);
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
         segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
     }

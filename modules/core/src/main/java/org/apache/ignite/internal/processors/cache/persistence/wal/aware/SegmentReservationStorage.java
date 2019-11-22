@@ -16,13 +16,23 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
+import java.util.Arrays;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup.
  */
 class SegmentReservationStorage {
+    /** Logger. */
+    protected IgniteLogger log;
+
+    public SegmentReservationStorage(IgniteLogger log) {
+        this.log = log;
+    }
+
     /**
      * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments which has
      * index >= reserved segment index. Guarded by {@code this}.
@@ -32,8 +42,16 @@ class SegmentReservationStorage {
     /**
      * @param absIdx Index for reservation.
      */
-    synchronized void reserve(long absIdx) {
-        reserved.merge(absIdx, 1, (a, b) -> a + b);
+    void reserve(long absIdx) {
+        synchronized(this) {
+            reserved.merge(absIdx, 1, (a, b) -> a + b);
+        }
+
+        log.info("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
+    }
+
+    private String threadDump() {
+        return Arrays.stream(Thread.currentThread().getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining("\n"));
     }
 
     /**
@@ -42,21 +60,32 @@ class SegmentReservationStorage {
      * @param absIdx Index for check reservation.
      * @return {@code True} if index is reserved.
      */
-    synchronized boolean reserved(long absIdx) {
-        return reserved.floorKey(absIdx) != null;
+    boolean reserved(long absIdx) {
+        boolean reserved;
+        synchronized(this) {
+            reserved = this.reserved.floorKey(absIdx) != null;
+        }
+
+        log.info("RESERVE :: " + absIdx + " :: " + reserved + "\n" + threadDump());
+
+        return reserved;
     }
 
     /**
      * @param absIdx Reserved index.
      */
-    synchronized void release(long absIdx) {
-        Integer cur = reserved.get(absIdx);
+    void release(long absIdx) {
+        synchronized(this) {
+            Integer cur = reserved.get(absIdx);
 
-        assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx;
+            assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx + ", reserved=" + reserved.toString();
 
-        if (cur == 1)
-            reserved.remove(absIdx);
-        else
-            reserved.put(absIdx, cur - 1);
+            if (cur == 1)
+                reserved.remove(absIdx);
+            else
+                reserved.put(absIdx, cur - 1);
+        }
+
+        log.info("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
     }
 }
