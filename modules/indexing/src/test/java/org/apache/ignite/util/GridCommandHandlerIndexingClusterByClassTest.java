@@ -105,6 +105,25 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     }
 
     /**
+     * Checks that missing lines were detected in CacheDataTree with the output
+     * of cache group name and id.
+     */
+    @Test
+    public void testBrokenCacheDataTreeShouldFailValidationWithCacheGroupInfo() {
+        breakCacheDataTree(crd, CACHE_NAME, 1);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
+
+        assertContains(
+            log,
+            testOut.toString(),
+            "[cacheGroup=group1, cacheGroupId=-1237460590, cache=persons-cache-vi, cacheId=-528791027, idx=_key_PK]"
+        );
+    }
+
+    /**
      * Tests that missing rows in H2 indexes are detected.
      */
     @Test
