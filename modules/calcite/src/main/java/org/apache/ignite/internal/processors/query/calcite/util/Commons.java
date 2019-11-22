@@ -52,8 +52,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public final class Commons {
-    private static final int[] EMPTY = new int[0];
-
     private Commons(){}
 
     public static Context convert(QueryContext ctx) {

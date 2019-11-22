@@ -83,7 +83,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     public FragmentInfo fragmentInfo(Context ctx) {
         int cacheId = CU.cacheId(cacheName);
 
-        return new FragmentInfo(cacheId, locationRegistry(ctx).distributed(cacheId, topologyVersion(ctx)));
+        return new FragmentInfo(locationRegistry(ctx).distributed(cacheId, topologyVersion(ctx)));
     }
 
     private LocationRegistry locationRegistry(Context ctx) {

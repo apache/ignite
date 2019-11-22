@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
@@ -38,7 +37,6 @@ public class Fragment {
     private final RelNode rel;
 
     private NodesMapping mapping;
-    private ImmutableIntList localInputs;
     private ImmutableList<Fragment> remoteInputs;
 
     public Fragment(RelNode rel) {
@@ -57,10 +55,6 @@ public class Fragment {
         return mapping;
     }
 
-    public ImmutableIntList localInputs() {
-        return localInputs;
-    }
-
     public ImmutableList<Fragment> remoteInputs() {
         return remoteInputs;
     }
@@ -73,7 +67,6 @@ public class Fragment {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(rel, mq);
 
         remoteInputs = info.remoteInputs();
-        localInputs = info.localInputs();
 
         if (info.mapping() == null)
             mapping = isRemote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local();

@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /**
@@ -26,18 +25,16 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 public class FragmentInfo {
     private final NodesMapping mapping;
     private final ImmutableList<Fragment> remoteInputs;
-    private final ImmutableIntList localInputs;
 
     public FragmentInfo(Fragment remoteInput) {
-        this(null, ImmutableList.of(remoteInput), null);
+        this(ImmutableList.of(remoteInput), null);
     }
 
-    public FragmentInfo(int localInput, NodesMapping mapping) {
-        this(ImmutableIntList.of(localInput), null, mapping);
+    public FragmentInfo(NodesMapping mapping) {
+        this(null, mapping);
     }
 
-    public FragmentInfo(ImmutableIntList localInputs, ImmutableList<Fragment> remoteInputs, NodesMapping mapping) {
-        this.localInputs = localInputs;
+    public FragmentInfo(ImmutableList<Fragment> remoteInputs, NodesMapping mapping) {
         this.remoteInputs = remoteInputs;
         this.mapping = mapping;
     }
@@ -50,13 +47,8 @@ public class FragmentInfo {
         return remoteInputs;
     }
 
-    public ImmutableIntList localInputs() {
-        return localInputs;
-    }
-
     public FragmentInfo merge(FragmentInfo other) throws LocationMappingException {
         return new FragmentInfo(
-            merge(localInputs(), other.localInputs()),
             merge(remoteInputs(), other.remoteInputs()),
             merge(mapping(), other.mapping()));
     }
@@ -77,14 +69,5 @@ public class FragmentInfo {
             return left;
 
         return ImmutableList.<T>builder().addAll(left).addAll(right).build();
-    }
-
-    private static ImmutableIntList merge(ImmutableIntList left, ImmutableIntList right) {
-        if (left == null)
-            return right;
-        if (right == null)
-            return left;
-
-        return left.appendAll(right);
     }
 }

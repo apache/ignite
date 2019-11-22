@@ -24,13 +24,13 @@ import org.apache.calcite.rel.RelNode;
  *
  */
 public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
+    protected SerializedTraits traitSet;
 
     protected RelGraphNode() {
     }
 
     protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
+        traitSet = new SerializedTraits(traits);
     }
 
     public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);

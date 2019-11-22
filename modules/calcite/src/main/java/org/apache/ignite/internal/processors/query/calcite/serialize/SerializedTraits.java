@@ -27,12 +27,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 /**
  *
  */
-public class SerializedTraitSet implements Serializable {
+public class SerializedTraits implements Serializable {
     private static final Byte IGNITE_CONVENTION = 0;
 
     private final List<Serializable> traits;
 
-    public SerializedTraitSet(RelTraitSet traits) {
+    public SerializedTraits(RelTraitSet traits) {
         this.traits = translate(traits);
     }
 
