@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.processors.security.impl;
 
 import static sun.security.util.SecurityConstants.MODIFY_THREADGROUP_PERMISSION;
 import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
 
 /**
- * Default Ignite Security Manager.
+ * Test Security Manager.
  */
-public class IgniteSecurityManager extends SecurityManager {
+public class TestSecurityManager extends SecurityManager {
     /** */
     @Override public void checkAccess(Thread t) {
         super.checkAccess(t);

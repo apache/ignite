@@ -38,7 +38,6 @@ import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
-import org.apache.ignite.internal.processors.security.sandbox.SandboxRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -162,28 +161,6 @@ public class SecurityUtils {
     }
 
     /**
-     * Calls the method <code>run</code> of SandboxRunnable in a privileged action.
-     *
-     * @param r Instance of SandboxRunnable.
-     * @param <E> Type of Exception.
-     * @throws E if the run method is failed.
-     */
-    public static <E extends Exception> void doPrivileged(SandboxRunnable<E> r) throws E {
-        try {
-            AccessController.doPrivileged((PrivilegedExceptionAction<Void>)
-                () -> {
-                    r.run();
-
-                    return null;
-                }
-            );
-        }
-        catch (PrivilegedActionException e) {
-            throw (E)e.getException();
-        }
-    }
-
-    /**
      * @return True if SecurityManager is installed.
      */
     public static boolean hasSecurityManager() {
@@ -216,9 +193,8 @@ public class SecurityUtils {
         final IgniteSandbox sandbox = ctx.security().sandbox();
 
         if (sandbox.enabled() && !isSystemType(ctx, instance)) {
-            return doPrivileged(() -> (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(),
-                proxyClasses(cls, instance),
-                new SandboxInvocationHandler(sandbox, instance)));
+            return (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(),
+                proxyClasses(cls, instance), new SandboxInvocationHandler(sandbox, instance));
         }
 
         return instance;
@@ -232,18 +208,12 @@ public class SecurityUtils {
     }
 
     /** */
-    private static class SandboxInvocationHandler<T> implements InvocationHandler, Callable<T> {
+    private static class SandboxInvocationHandler<T> implements InvocationHandler {
         /** */
         private final IgniteSandbox sandbox;
 
         /** */
         private final Object original;
-
-        /** */
-        private Method mtd;
-
-        /** */
-        private Object[] args;
 
         /** */
         public SandboxInvocationHandler(IgniteSandbox sandbox, Object original) {
@@ -262,15 +232,7 @@ public class SecurityUtils {
                 // Ignore.
             }
 
-            this.mtd = mtd;
-            this.args = args;
-
-            return sandbox.execute(this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public T call() throws Exception {
-            return (T)mtd.invoke(original, args);
+            return sandbox.execute(() -> (T)mtd.invoke(original, args));
         }
     }
 }

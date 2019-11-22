@@ -214,7 +214,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -878,7 +877,7 @@ public abstract class IgniteUtils {
      * @return Exception converters.
      */
     private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters() {
+    exceptionConverters() {
         Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
@@ -4167,7 +4166,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception suppressed) {
-               e.addSuppressed(suppressed);
+                e.addSuppressed(suppressed);
             }
     }
 
@@ -4474,7 +4473,7 @@ public abstract class IgniteUtils {
             log.warning(compact(msg.toString()), e);
         else {
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
-                    compact(msg.toString()));
+                compact(msg.toString()));
 
             if (e != null)
                 e.printStackTrace(System.err);
@@ -5931,8 +5930,8 @@ public abstract class IgniteUtils {
 
         try {
             attr = mBeanSrv.getAttribute(
-                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
-                    "TotalPhysicalMemorySize");
+                ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                "TotalPhysicalMemorySize");
         }
         catch (Exception e) {
             return -1;
@@ -6952,21 +6951,14 @@ public abstract class IgniteUtils {
      * @return Return value.
      * @throws IgniteCheckedException If call failed.
      */
-    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
-        // Checks that this method doesn't extend a caller's permissions.
-        // If a ProrectionDomain of passed ClassLoader doesn't have the RuntimePermission "setContextClassLoader",
-        // then a caller's code that instantiated the ClassLoader doesn't too.
-        // In that case, the method throws an exception.
-        if (!hasSetContextClassLoaderPermission(ldr))
-            throw new IgniteCheckedException("The current thread cannot set the context ClassLoader.");
-
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, Callable<R> c) throws IgniteCheckedException {
         Thread curThread = Thread.currentThread();
 
         // Get original context class loader.
         ClassLoader ctxLdr = curThread.getContextClassLoader();
 
         try {
-            setCtxLdr(curThread, ldr);
+            curThread.setContextClassLoader(ldr);
 
             return c.call();
         }
@@ -6978,31 +6970,8 @@ public abstract class IgniteUtils {
         }
         finally {
             // Set the original class loader back.
-            setCtxLdr(curThread, ctxLdr);
+            curThread.setContextClassLoader(ctxLdr);
         }
-    }
-
-    /**
-     * @param ldr ClassLoader
-     * @return True if the ProtectedDomain of passed ClassLoader has the RuntimePermission "setContextClassLoader".
-     */
-    private static boolean hasSetContextClassLoaderPermission(ClassLoader ldr) {
-        if (SecurityUtils.hasSecurityManager()) {
-            ProtectionDomain pd = SecurityUtils.doPrivileged(
-                () -> ldr.getClass().getProtectionDomain());
-
-            return pd.implies(new RuntimePermission("setContextClassLoader"));
-        }
-
-        return true;
-    }
-
-    /** */
-    private static void setCtxLdr(Thread thread, ClassLoader ldr) {
-        if (SecurityUtils.hasSecurityManager())
-            SecurityUtils.doPrivileged(() -> thread.setContextClassLoader(ldr));
-        else
-            thread.setContextClassLoader(ldr);
     }
 
     /**
@@ -7014,12 +6983,20 @@ public abstract class IgniteUtils {
      * @param <R> Return type.
      * @return Return value.
      */
-    public static @Nullable <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
+    @Nullable public static <R> R wrapThreadLoader(ClassLoader ldr, IgniteOutClosure<R> c) {
+        Thread curThread = Thread.currentThread();
+
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
         try {
-            return wrapThreadLoader(ldr, (Callable<R>)c::apply);
+            curThread.setContextClassLoader(ldr);
+
+            return c.apply();
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        finally {
+            // Set the original class loader back.
+            curThread.setContextClassLoader(ctxLdr);
         }
     }
 
@@ -7028,20 +7005,22 @@ public abstract class IgniteUtils {
      * resets thread context class loader to its initial value.
      *
      * @param ldr Class loader to run the closure under.
-     * @param r Closure to run.
+     * @param c Closure to run.
      */
-    public static void wrapThreadLoader(ClassLoader ldr, Runnable r) {
-        try {
-            wrapThreadLoader(ldr, new Callable<Void>() {
-                @Override public Void call() {
-                    r.run();
+    public static void wrapThreadLoader(ClassLoader ldr, Runnable c) {
+        Thread curThread = Thread.currentThread();
 
-                    return null;
-                }
-            });
+        // Get original context class loader.
+        ClassLoader ctxLdr = curThread.getContextClassLoader();
+
+        try {
+            curThread.setContextClassLoader(ldr);
+
+            c.run();
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+        finally {
+            // Set the original class loader back.
+            curThread.setContextClassLoader(ctxLdr);
         }
     }
 
@@ -8047,7 +8026,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                        "not be propagated to callee): " + e,
+                            "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -9398,11 +9377,11 @@ public abstract class IgniteUtils {
                 if (!readme.exists()) {
                     U.writeStringToFile(readme,
                         "This is Apache Ignite working directory that contains information that \n" +
-                        "    Ignite nodes need in order to function normally.\n" +
-                        "Don't delete it unless you're sure you know what you're doing.\n\n" +
-                        "You can change the location of working directory with \n" +
-                        "    igniteConfiguration.setWorkingDirectory(location) or \n" +
-                        "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                            "    Ignite nodes need in order to function normally.\n" +
+                            "Don't delete it unless you're sure you know what you're doing.\n\n" +
+                            "You can change the location of working directory with \n" +
+                            "    igniteConfiguration.setWorkingDirectory(location) or \n" +
+                            "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
             catch (Exception e) {

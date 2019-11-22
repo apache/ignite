@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.IgniteSecurityManager;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityManager;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.AfterClass;
@@ -99,7 +99,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
                 }
             });
 
-            System.setSecurityManager(new IgniteSecurityManager());
+            System.setSecurityManager(new TestSecurityManager());
 
             setupSM = true;
         }

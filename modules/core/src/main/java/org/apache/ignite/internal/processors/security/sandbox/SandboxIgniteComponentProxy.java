@@ -92,13 +92,13 @@ public final class SandboxIgniteComponentProxy {
         @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
             Object res = SecurityUtils.doPrivileged(() -> mtd.invoke(original, args));
 
-            Class cls = proxedClass(res);
+            Class cls = proxiedClass(res);
 
             return cls != null ? proxy(cls, res) : res;
         }
 
         /** */
-        private Class proxedClass(Object obj) {
+        private Class proxiedClass(Object obj) {
             for (Class cls : PROXIED_CLASSES) {
                 if (cls.isInstance(obj))
                     return cls;
