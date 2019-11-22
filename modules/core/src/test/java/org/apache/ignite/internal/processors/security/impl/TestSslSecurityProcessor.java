@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -34,6 +37,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERT
  * Security processor for test.
  */
 public class TestSslSecurityProcessor extends TestSecurityProcessor {
+    /** Client that has system permissions. */
+    public static final String CLIENT_ADMIN_OPER = "client_admin_oper";
+
+    /** Check SSL certificates flag. */
     private final boolean checkSslCerts;
 
     /**
@@ -47,7 +54,8 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
+        throws IgniteCheckedException {
         if (checkSslCerts && !ctx.localNodeId().equals(node.id())) {
             Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
             ClassLoader ldr = U.resolveClassLoader(ctx.config());
@@ -63,7 +71,7 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
                 U.unmarshal(marshaller, bytes, ldr);
             }
             catch (IgniteCheckedException e) {
-                throw new SecurityException("Failed to get security certificates.", e);
+                throw new IgniteAccessControlException("Failed to get security certificates.", e);
             }
         }
 
@@ -71,26 +79,51 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext authCtx) {
+    @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
         if (checkSslCerts) {
             Marshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
             ClassLoader ldr = U.resolveClassLoader(ctx.config());
             byte[] bytes = (byte[]) authCtx.nodeAttributes().get(ATTR_SECURITY_CERTIFICATES);
 
-            if (bytes == null) {
-                log.info("SSL certificates are not found.");
+            if (bytes == null)
+                throw new IgniteAccessControlException("SSL certificates are not found.");
 
-                return null;
-            }
+            Certificate[] certs;
 
             try {
-                U.unmarshal(marshaller, bytes, ldr);
+                certs = U.unmarshal(marshaller, bytes, ldr);
             }
             catch (IgniteCheckedException e) {
-                throw new SecurityException("Failed to get security certificates.", e);
+                throw new IgniteAccessControlException("Failed to get security certificates.", e);
             }
+
+            validateCertificates(certs, authCtx.credentials().getLogin());
         }
 
         return super.authenticate(authCtx);
+    }
+
+    /**
+     * @param certs Certificates.
+     * @param login Login.
+     * @throws IgniteAccessControlException If received invalid certificates.
+     */
+    private void validateCertificates(Certificate[] certs, Object login) throws IgniteAccessControlException {
+        for (Certificate cert : certs) {
+            if (!(cert instanceof X509Certificate))
+                continue;
+
+            X509Certificate x509Cert = (X509Certificate) cert;
+
+            if (x509Cert.getSubjectDN().getName().contains("CN=client")) {
+                if (CLIENT_ADMIN_OPER.equals(login))
+                    return;
+
+                throw new IgniteAccessControlException("Client certificate doesn't correspond with login [login=" +
+                    login + ", subjDN=" + x509Cert.getSubjectDN().getName() + "]");
+            }
+        }
+
+        throw new IgniteAccessControlException("Client certificate not found.");
     }
 }

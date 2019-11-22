@@ -41,21 +41,21 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    CacheOperationPermissionCheckTest.class,
-    DataStreamerPermissionCheckTest.class,
-    ScanQueryPermissionCheckTest.class,
-    EntryProcessorPermissionCheckTest.class,
-    ComputePermissionCheckTest.class,
-
-    DistributedClosureRemoteSecurityContextCheckTest.class,
-    ComputeTaskRemoteSecurityContextCheckTest.class,
-    ExecutorServiceRemoteSecurityContextCheckTest.class,
-    ScanQueryRemoteSecurityContextCheckTest.class,
-    EntryProcessorRemoteSecurityContextCheckTest.class,
-    DataStreamerRemoteSecurityContextCheckTest.class,
-    CacheLoadRemoteSecurityContextCheckTest.class,
-    ThinClientPermissionCheckTest.class,
-    InvalidServerTest.class,
+//    CacheOperationPermissionCheckTest.class,
+//    DataStreamerPermissionCheckTest.class,
+//    ScanQueryPermissionCheckTest.class,
+//    EntryProcessorPermissionCheckTest.class,
+//    ComputePermissionCheckTest.class,
+//
+//    DistributedClosureRemoteSecurityContextCheckTest.class,
+//    ComputeTaskRemoteSecurityContextCheckTest.class,
+//    ExecutorServiceRemoteSecurityContextCheckTest.class,
+//    ScanQueryRemoteSecurityContextCheckTest.class,
+//    EntryProcessorRemoteSecurityContextCheckTest.class,
+//    DataStreamerRemoteSecurityContextCheckTest.class,
+//    CacheLoadRemoteSecurityContextCheckTest.class,
+//    ThinClientPermissionCheckTest.class,
+//    InvalidServerTest.class,
     SslCertificatesCheckTest.class,
     SslCertificatesCheckWithGlobalAuthTest.class,
 })

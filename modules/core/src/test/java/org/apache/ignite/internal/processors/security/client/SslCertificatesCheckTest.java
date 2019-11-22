@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT_ADMIN_OPER;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -60,9 +61,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     {
         listeningLog.registerListener(lsnr);
     }
-
-    /** Client that has system permissions. */
-    protected static final String CLIENT_ADMIN_OPER = "client_admin_oper";
 
     /** */
     private boolean failServer;
@@ -165,10 +163,8 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
                     return null;
                 },
                 GridClientAuthenticationException.class,
-                "Client authentication failed");
+                "SSL certificates are not found.");
         }
-
-        assertTrue(lsnr.check());
     }
 
     /**
@@ -177,10 +173,12 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     @Test
     public void testSslCertificatesClientFail() throws Exception {
         failServer = true;
-
+        System.out.println("asd123 1");
         Ignite ignite = startGrids(1);
+        System.out.println("asd123 2");
 
         assertEquals(1, ignite.cluster().topologyVersion());
+        System.out.println("asd123 3");
 
         GridTestUtils.assertThrowsAnyCause(log,
             ()-> {
@@ -190,8 +188,11 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             IgniteSpiException.class,
             "Authentication failed");
 
+        System.out.println("asd123 4");
         assertEquals(1, ignite.cluster().topologyVersion());
+        System.out.println("asd123 5");
         assertTrue(lsnr.check());
+        System.out.println("asd123 6");
     }
 
     /**

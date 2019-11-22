@@ -176,6 +176,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
+    /** SSL: Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;. */
+    private StringProperty userAttrs = new StringProperty("userAttributes",
+        "Custom class name that implements Factory<Map<String, Object>> (user attributes)", null, null, false, null);
+
     /** User name to authenticate the client on the server side. */
     private StringProperty user = new StringProperty(
         "user", "User name to authenticate the client on the server side", null, null, false, null);
@@ -209,6 +213,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
+        userAttrs,
         user, passwd,
         dataPageScanEnabled,
         affinityAwareness,
@@ -536,6 +541,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException {
         this.updateBatchSize.setValue(updateBatchSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getUserAttributes() {
+        return userAttrs.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUserAttributes(String cls) {
+        userAttrs.setValue(cls);
     }
 
     /**

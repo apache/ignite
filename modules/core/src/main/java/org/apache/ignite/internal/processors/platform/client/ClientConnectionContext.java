@@ -168,7 +168,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(user, pwd);
+        AuthorizationContext authCtx = authenticate(user, pwd, null);
 
         currentVer = ver;
 

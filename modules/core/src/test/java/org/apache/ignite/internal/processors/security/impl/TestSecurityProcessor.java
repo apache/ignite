@@ -73,7 +73,8 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
+        throws IgniteCheckedException {
         if (!PERMS.containsKey(cred))
             return null;
 
@@ -93,7 +94,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
         if (ctx.credentials() == null || ctx.credentials().getLogin() == null)
             return null;
 
