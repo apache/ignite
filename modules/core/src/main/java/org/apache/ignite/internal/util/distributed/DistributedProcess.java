@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -61,7 +62,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  */
 public class DistributedProcess<I extends Serializable, R extends Serializable> {
     /** Kernal context. */
-    private final DistributedProcesses type;
+    private final DistributedProcessType type;
 
     /** Active processes. */
     private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
@@ -81,7 +82,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
-    public DistributedProcess(GridKernalContext ctx, DistributedProcesses type,
+    public DistributedProcess(GridKernalContext ctx, DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
         this.ctx = ctx;
@@ -364,5 +365,24 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         private Process(UUID id) {
             this.id = id;
         }
+    }
+
+    /**
+     * Defines distributed processes.
+     */
+    public enum DistributedProcessType {
+        /**
+         * Master key change prepare process.
+         *
+         * @see GridEncryptionManager
+         */
+        MASTER_KEY_CHANGE_PREPARE,
+
+        /**
+         * Master key change finish process.
+         *
+         * @see GridEncryptionManager
+         */
+        MASTER_KEY_CHANGE_FINISH;
     }
 }

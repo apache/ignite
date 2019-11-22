@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +45,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     private final UUID processId;
 
     /** Process type. */
-    private final DistributedProcesses type;
+    private final DistributedProcessType type;
 
     /** Result. */
     private Map<UUID, R> res;
@@ -58,7 +59,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
      * @param res Results.
      * @param err Errors
      */
-    public FullMessage(UUID processId, DistributedProcesses type, Map<UUID, R> res, Map<UUID, Exception> err) {
+    public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Exception> err) {
         this.processId = processId;
         this.type = type;
         this.res = res;
@@ -97,7 +98,7 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     }
 
     /** @return Process type. */
-    public DistributedProcesses type() {
+    public DistributedProcessType type() {
         return type;
     }
 
