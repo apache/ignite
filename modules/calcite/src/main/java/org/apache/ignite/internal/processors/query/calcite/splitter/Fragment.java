@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
  *
  */
 public class Fragment {
-    public final RelNode rel;
+    private final RelNode rel;
 
     private NodesMapping mapping;
     private ImmutableIntList localInputs;
@@ -49,14 +49,34 @@ public class Fragment {
         init(null, ctx, mq);
     }
 
-    public void init(Fragment parent, Context ctx, RelMetadataQuery mq) {
+    public RelNode root() {
+        return rel;
+    }
+
+    public NodesMapping mapping() {
+        return mapping;
+    }
+
+    public ImmutableIntList localInputs() {
+        return localInputs;
+    }
+
+    public ImmutableList<Fragment> remoteInputs() {
+        return remoteInputs;
+    }
+
+    public boolean isRemote() {
+        return rel instanceof Sender;
+    }
+
+    private void init(Fragment parent, Context ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(rel, mq);
 
         remoteInputs = info.remoteInputs();
         localInputs = info.localInputs();
 
         if (info.mapping() == null)
-            mapping = remote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local();
+            mapping = isRemote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local();
         else {
             try {
                 mapping = info.mapping().deduplicate();
@@ -67,7 +87,7 @@ public class Fragment {
         }
 
         if (parent != null) {
-            assert remote();
+            assert isRemote();
 
             ((Sender)rel).init(parent.mapping);
         }
@@ -76,10 +96,6 @@ public class Fragment {
             for (Fragment input : remoteInputs)
                 input.init(this, ctx, mq);
         }
-    }
-
-    private boolean remote() {
-        return rel instanceof Sender;
     }
 
     private LocationRegistry registry(Context ctx) {

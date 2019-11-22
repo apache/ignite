@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.cluster;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.ToIntFunction;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunc
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -62,11 +65,13 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
     }
 
     @Override public NodesMapping local() {
-        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode()), null, (byte) 0);
+        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode().id()), null, (byte) 0);
     }
 
     @Override public NodesMapping random(AffinityTopologyVersion topVer) {
-        return new NodesMapping(ctx.discovery().discoCache(topVer).serverNodes(), null, (byte) 0);
+        List<ClusterNode> nodes = ctx.discovery().discoCache(topVer).serverNodes();
+
+        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, (byte) 0);
     }
 
     @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -79,35 +84,35 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
 
         List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
+        List<List<UUID>> res;
 
         if (cctx.config().getWriteSynchronizationMode() == CacheWriteSynchronizationMode.PRIMARY_SYNC) {
-            List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
+            res = new ArrayList<>(assignments.size());
 
             for (List<ClusterNode> partNodes : assignments)
-                assignments0.add(F.isEmpty(partNodes) ? Collections.emptyList() : Collections.singletonList(F.first(partNodes)));
-
-            assignments = assignments0;
+                res.add(F.isEmpty(partNodes) ? Collections.emptyList() : Collections.singletonList(F.first(partNodes).id()));
         }
         else if (!cctx.topology().rebalanceFinished(topVer)) {
+            res = new ArrayList<>(assignments.size());
+
             flags |= NodesMapping.HAS_MOVING_PARTITIONS;
 
-            List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
-
             for (int part = 0; part < assignments.size(); part++) {
-                List<ClusterNode> partNodes = assignments0.get(part), partNodes0 = new ArrayList<>(partNodes.size());
+                List<ClusterNode> partNodes = assignments.get(part);
+                List<UUID> partIds = new ArrayList<>(partNodes.size());
 
-                for (ClusterNode partNode : partNodes) {
-                    if (cctx.topology().partitionState(partNode.id(), part) == GridDhtPartitionState.OWNING)
-                        partNodes0.add(partNode);
+                for (ClusterNode node : partNodes) {
+                    if (cctx.topology().partitionState(node.id(), part) == GridDhtPartitionState.OWNING)
+                        partIds.add(node.id());
                 }
 
-                assignments0.add(partNodes0);
+                res.add(partIds);
             }
-
-            assignments = assignments0;
         }
+        else
+            res = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
 
-        return new NodesMapping(null, assignments, flags);
+        return new NodesMapping(null, res, flags);
     }
 
     private NodesMapping replicatedLocation(GridCacheContext cctx, AffinityTopologyVersion topVer) {
@@ -116,32 +121,38 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         if (cctx.config().getNodeFilter() != null)
             flags |= NodesMapping.PARTIALLY_REPLICATED;
 
-        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
+        GridDhtPartitionTopology topology = cctx.topology();
 
-        if (!cctx.topology().rebalanceFinished(topVer)) {
+        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
+        List<UUID> res;
+
+        if (!topology.rebalanceFinished(topVer)) {
             flags |= NodesMapping.PARTIALLY_REPLICATED;
 
-            List<ClusterNode> nodes0 = new ArrayList<>(nodes.size());
+            res = new ArrayList<>(nodes.size());
 
-            int parts = cctx.topology().partitions();
+            int parts = topology.partitions();
 
-            parent:
             for (ClusterNode node : nodes) {
-                for (int part = 0; part < parts; part++) {
-                    if (cctx.topology().partitionState(node.id(), part) != GridDhtPartitionState.OWNING)
-                        continue parent;
-                }
-
-                nodes0.add(node);
+                if (isOwner(node.id(), topology, parts))
+                    res.add(node.id());
             }
-
-            nodes = nodes0;
         }
+        else
+            res = Commons.transform(nodes, ClusterNode::id);
 
-        return new NodesMapping(nodes, null, flags);
+        return new NodesMapping(res, null, flags);
     }
 
-    private static class AffinityFactory extends AbstractDestinationFunctionFactory {
+    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology topology, int parts) {
+        for (int p = 0; p < parts; p++) {
+            if (topology.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
+                return false;
+        }
+        return true;
+    }
+
+    private final static class AffinityFactory extends AbstractDestinationFunctionFactory {
         private final int cacheId;
         private final Object key;
 
@@ -153,10 +164,10 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
         @Override public DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys) {
             assert keys.size() == 1 && mapping != null && !F.isEmpty(mapping.assignments());
 
-            List<List<ClusterNode>> assignments = mapping.assignments();
+            List<List<UUID>> assignments = mapping.assignments();
 
             if (U.assertionsEnabled()) {
-                for (List<ClusterNode> assignment : assignments) {
+                for (List<UUID> assignment : assignments) {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
                 }
             }

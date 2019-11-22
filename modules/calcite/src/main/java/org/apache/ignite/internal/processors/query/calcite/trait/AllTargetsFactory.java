@@ -16,25 +16,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.io.ObjectStreamException;
 import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
  *
  */
-class AllTargetsFactory extends AbstractDestinationFunctionFactory {
+final class AllTargetsFactory extends AbstractDestinationFunctionFactory {
     static final DestinationFunctionFactory INSTANCE = new AllTargetsFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        List<ClusterNode> nodes = m.nodes();
+        List<UUID> nodes = m.nodes();
 
         return r -> nodes;
     }
 
     @Override public Object key() {
         return "AllTargetsFactory";
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+        return INSTANCE;
     }
 }

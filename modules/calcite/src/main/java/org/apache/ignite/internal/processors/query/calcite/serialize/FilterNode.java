@@ -16,30 +16,35 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class SenderNode extends RelGraphNode {
-    private final DistributionTrait targetDistr;
-    private final NodesMapping targetMapping;
+public class FilterNode extends RelGraphNode {
+    private final int[] variables;
+    private final LogicalExpression condition;
 
-    private SenderNode(DistributionTrait targetDistr, NodesMapping targetMapping) {
-        this.targetDistr = targetDistr;
-        this.targetMapping = targetMapping;
+    private FilterNode(LogicalExpression condition, int[] variables) {
+        this.variables = variables;
+        this.condition = condition;
     }
 
-    public static SenderNode create(Sender rel) {
-        return new SenderNode(rel.targetDistribution(), rel.targetMapping());
+    public static FilterNode create(IgniteFilter rel, RexToExpTranslator expTranslator) {
+        return new FilterNode(expTranslator.translate(rel.getCondition()),
+            rel.getVariablesSet().stream().mapToInt(CorrelationId::getId).toArray());
     }
 
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return Sender.create(F.first(children), targetDistr, targetMapping);
+        return IgniteFilter.create(
+            F.first(children),
+            condition.implement(ctx.expressionTranslator()),
+            Arrays.stream(variables).mapToObj(CorrelationId::new).collect(Collectors.toSet()));
     }
 }

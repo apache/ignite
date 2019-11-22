@@ -19,19 +19,28 @@ package org.apache.ignite.internal.processors.query.calcite.serialize;
 import java.util.List;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
+public class ReceiverNode extends RelGraphNode {
+    private final ExpDataType dataType;
+    private final NodesMapping sourceMapping;
 
-    protected RelGraphNode() {
+    private ReceiverNode(RelTraitSet traits, ExpDataType dataType, NodesMapping sourceMapping) {
+        super(traits);
+        this.dataType = dataType;
+        this.sourceMapping = sourceMapping;
     }
 
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
+    public static ReceiverNode create(Receiver rel) {
+        return new ReceiverNode(rel.getTraitSet(), ExpDataType.fromType(rel.getRowType()), rel.sourceMapping());
     }
 
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
+    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+        return new Receiver(ctx.cluster(), traitSet.toTraitSet(ctx.cluster()), dataType.toRelDataType(ctx.typeFactory()), sourceMapping);
+    }
 }

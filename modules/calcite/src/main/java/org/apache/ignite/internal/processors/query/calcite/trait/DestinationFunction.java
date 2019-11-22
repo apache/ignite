@@ -17,11 +17,11 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
-import org.apache.ignite.cluster.ClusterNode;
+import java.util.UUID;
 
 /**
  *
  */
 public interface DestinationFunction {
-    List<ClusterNode> destination(Object row);
+    List<UUID> destination(Object row);
 }

@@ -16,22 +16,21 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
+public class DynamicParamExpression implements LogicalExpression {
+    public final ExpDataType type;
+    public final int index;
 
-    protected RelGraphNode() {
+    public DynamicParamExpression(RelDataType type, int index) {
+        this.type = ExpDataType.fromType(type);
+        this.index = index;
     }
 
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
     }
-
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
 }

@@ -20,6 +20,7 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
@@ -27,16 +28,31 @@ import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
  *
  */
 public final class Receiver extends AbstractRelNode implements IgniteRel {
-    private final Fragment source;
+    private final Fragment sourceFragment;
+    private final NodesMapping sourceMapping;
 
     /**
      * @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
      */
-    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment source) {
+    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment sourceFragment) {
         super(cluster, traits);
         this.rowType = rowType;
-        this.source = source;
+        this.sourceFragment = sourceFragment;
+
+        sourceMapping = null;
+    }
+
+    /**
+     * @param cluster Cluster this relational expression belongs to
+     * @param traits Trait set.
+     */
+    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, NodesMapping sourceMapping) {
+        super(cluster, traits);
+        this.rowType = rowType;
+        this.sourceMapping = sourceMapping;
+
+        sourceFragment = null;
     }
 
     /** {@inheritDoc} */
@@ -44,7 +60,16 @@ public final class Receiver extends AbstractRelNode implements IgniteRel {
         return implementor.implement(this);
     }
 
-    public Fragment source() {
-        return source;
+    public Fragment sourceFragment() {
+        return sourceFragment;
+    }
+
+    public NodesMapping sourceMapping() {
+        if (sourceFragment != null)
+            return sourceFragment.mapping();
+
+        assert sourceMapping != null;
+
+        return sourceMapping;
     }
 }

@@ -23,8 +23,8 @@ import java.util.List;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.DistributionType.HASH;
 
@@ -32,11 +32,10 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.Distribu
  *
  */
 public class IgniteDistributions {
-    private static final int[] EMPTY_KEYS = new int[0];
-    private static final DistributionTrait BROADCAST = new DistributionTrait(DistributionType.BROADCAST, EMPTY_KEYS, AllTargetsFactory.INSTANCE);
-    private static final DistributionTrait SINGLE = new DistributionTrait(DistributionType.SINGLE, EMPTY_KEYS, SingleTargetFactory.INSTANCE);
-    private static final DistributionTrait RANDOM = new DistributionTrait(DistributionType.RANDOM, EMPTY_KEYS, RandomTargetFactory.INSTANCE);
-    private static final DistributionTrait ANY    = new DistributionTrait(DistributionType.ANY, EMPTY_KEYS, NoOpFactory.INSTANCE);
+    private static final DistributionTrait BROADCAST = new DistributionTrait(DistributionType.BROADCAST, ImmutableIntList.of(), AllTargetsFactory.INSTANCE);
+    private static final DistributionTrait SINGLE = new DistributionTrait(DistributionType.SINGLE, ImmutableIntList.of(), SingleTargetFactory.INSTANCE);
+    private static final DistributionTrait RANDOM = new DistributionTrait(DistributionType.RANDOM, ImmutableIntList.of(), RandomTargetFactory.INSTANCE);
+    private static final DistributionTrait ANY    = new DistributionTrait(DistributionType.ANY, ImmutableIntList.of(), NoOpFactory.INSTANCE);
 
     public static DistributionTrait any() {
         return ANY;
@@ -55,11 +54,11 @@ public class IgniteDistributions {
     }
 
     public static DistributionTrait hash(List<Integer> keys) {
-        return new DistributionTrait(HASH, U.toIntArray(keys), HashFunctionFactory.INSTANCE);
+        return new DistributionTrait(HASH, ImmutableIntList.copyOf(keys), HashFunctionFactory.INSTANCE);
     }
 
     public static DistributionTrait hash(List<Integer> keys, DestinationFunctionFactory factory) {
-        return new DistributionTrait(HASH, U.toIntArray(keys), factory);
+        return new DistributionTrait(HASH, ImmutableIntList.copyOf(keys), factory);
     }
 
     public static List<DistributionTrait> deriveDistributions(RelNode rel, RelMetadataQuery mq) {

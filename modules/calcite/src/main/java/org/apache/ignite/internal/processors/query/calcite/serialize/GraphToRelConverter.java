@@ -16,22 +16,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
-
-    protected RelGraphNode() {
+public class GraphToRelConverter {
+    public RelNode convert(IgnitePlanner planner, Graph graph) {
+        return null;
     }
-
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
-    }
-
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
 }

@@ -76,7 +76,7 @@ public class RexToExpTranslator implements RexVisitor<LogicalExpression> {
     }
 
     @Override public LogicalExpression visitDynamicParam(RexDynamicParam dynamicParam) {
-        throw new UnsupportedOperationException();
+        return new DynamicParamExpression(dynamicParam.getType(), dynamicParam.getIndex());
     }
 
     @Override public LogicalExpression visitRangeRef(RexRangeRef rangeRef) {

@@ -16,22 +16,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.io.ObjectStreamException;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
  *
  */
-class RandomTargetFactory extends AbstractDestinationFunctionFactory {
+final class RandomTargetFactory extends AbstractDestinationFunctionFactory {
     static final DestinationFunctionFactory INSTANCE = new RandomTargetFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        List<ClusterNode> nodes = m.nodes();
+        List<UUID> nodes = m.nodes();
 
         return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
     }
@@ -40,4 +41,7 @@ class RandomTargetFactory extends AbstractDestinationFunctionFactory {
         return "RandomTargetFactory";
     }
 
+    private Object readResolve() throws ObjectStreamException {
+        return INSTANCE;
+    }
 }

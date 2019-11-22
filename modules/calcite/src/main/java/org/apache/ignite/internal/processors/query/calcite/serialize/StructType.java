@@ -24,22 +24,22 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 /**
  *
  */
-public class StructType implements ExpressionType {
-    private final LinkedHashMap<String, FieldType> fields;
+public class StructType implements ExpDataType {
+    private final LinkedHashMap<String, ExpDataType> fields;
 
-    public static StructType fromType(RelDataType type) {
+    static StructType fromType(RelDataType type) {
         assert type.isStruct();
 
-        LinkedHashMap<String, FieldType> fields = new LinkedHashMap<>();
+        LinkedHashMap<String, ExpDataType> fields = new LinkedHashMap<>();
 
         for (RelDataTypeField field : type.getFieldList()) {
-            fields.put(field.getName(), FieldType.fromType(field.getType()));
+            fields.put(field.getName(), ExpDataType.fromType(field.getType()));
         }
 
         return new StructType(fields);
     }
 
-    private StructType(LinkedHashMap<String, FieldType> fields) {
+    private StructType(LinkedHashMap<String, ExpDataType> fields) {
         this.fields = fields;
     }
 

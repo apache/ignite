@@ -35,7 +35,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
@@ -55,6 +54,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.serialize.LogicalExpression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraph;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RelToGraphConverter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
@@ -66,10 +67,10 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
-import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
@@ -85,7 +86,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     private static SchemaPlus schema;
 
     private static TestRegistry registry;
-    private static List<ClusterNode> nodes;
+    private static List<UUID> nodes;
 
     @BeforeClass
     public static void setupClass() {
@@ -134,7 +135,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         nodes = new ArrayList<>(4);
 
         for (int i = 0; i < 4; i++) {
-            nodes.add(new GridTestNode(UUID.randomUUID()));
+            nodes.add(UUID.randomUUID());
         }
 
         registry = new TestRegistry();
@@ -359,6 +360,82 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<LogicalExpression> expressions = translator.translate(proj.getProjects());
 
         assertNotNull(expressions);
+    }
+
+    @Test
+    public void testPlanSerializationDeserialization() throws Exception {
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.id = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        assertNotNull(ctx);
+
+        RelTraitDef[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        byte[] convertedBytes;
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+            assertNotNull(planner);
+
+            Query query = ctx.unwrap(Query.class);
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query.sql());
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            RelNode rel = planner.convert(sqlNode);
+
+            // Transformation chain
+            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteRel.IGNITE_CONVENTION)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.LOGICAL, rel, desired);
+
+            assertNotNull(rel);
+
+            QueryPlan plan = planner.plan(rel);
+
+            assertNotNull(plan);
+
+            assertTrue(plan.fragments().size() == 2);
+
+            plan.init(ctx);
+
+            RelGraph graph = new RelToGraphConverter().convert((IgniteRel) plan.fragments().get(1).root());
+
+            convertedBytes = new JdkMarshaller().marshal(graph);
+
+            assertNotNull(convertedBytes);
+        }
+
+        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)) {
+            assertNotNull(planner);
+
+            RelGraph graph = new JdkMarshaller().unmarshal(convertedBytes, getClass().getClassLoader());
+
+            assertNotNull(graph);
+
+            RelNode rel = planner.convert(graph);
+
+            assertNotNull(rel);
+        }
     }
 
     @Test

@@ -19,16 +19,34 @@ package org.apache.ignite.internal.processors.query.calcite.serialize;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.linq4j.Ord;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntList;
 
 /**
  *
  */
-public class Graph implements Serializable {
-    private final List<GraphNode> nodes = new ArrayList<>();
+public class Graph<T extends GraphNode> implements Serializable {
+    private final List<T> nodes = new ArrayList<>();
     private final List<GridIntList> edges = new ArrayList<>();
 
-    int addNode(GraphNode node) {
+    public List<Ord<T>> nodes() {
+        return Ord.zip(nodes);
+    }
+
+    public List<GridIntList> edges() {
+        return Commons.transform(edges, GridIntList::copy);
+    }
+
+    public int addNode(int parentId, T node) {
+        int id = addNode(node);
+
+        addEdge(parentId, id);
+
+        return id;
+    }
+
+    public int addNode(T node) {
         assert nodes.size() == edges.size();
 
         int id = nodes.size();
@@ -39,26 +57,22 @@ public class Graph implements Serializable {
         return id;
     }
 
-    void addEdge(int parentId, int childId) {
-        edges.get(parentId).add(childId);
+    public void addEdge(int parentId, int childId) {
+        assert parentId == -1 || (parentId >= 0 && parentId < edges.size());
+        assert nodes.size() == edges.size();
+
+        if (parentId != -1)
+            edges.get(parentId).add(childId);
     }
 
-    int addChild(int parentId, GraphNode node) {
-        int id = addNode(node);
+    public List<Ord<T>> children(int parentId) {
+        GridIntList children = edges.get(parentId);
 
-        edges.get(parentId).add(id);
+        ArrayList<Ord<T>> ords = new ArrayList<>(children.size());
 
-        return id;
-    }
+        for (int i = 0; i < children.size(); i++)
+            ords.add(Ord.of(children.get(i), nodes.get(children.get(i))));
 
-    List<GraphNode> children(int parentId) {
-        GridIntList childrenIds = edges.get(parentId);
-        ArrayList<GraphNode> children = new ArrayList<>(childrenIds.size());
-
-        for (int i = 0; i < childrenIds.size(); i++) {
-            children.add(nodes.get(i));
-        }
-
-        return children;
+        return ords;
     }
 }

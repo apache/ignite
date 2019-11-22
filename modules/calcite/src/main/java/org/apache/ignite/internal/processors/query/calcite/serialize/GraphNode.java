@@ -16,8 +16,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
+import java.io.Serializable;
+
 /**
  *
  */
-public interface GraphNode {
+public interface GraphNode extends Serializable {
 }

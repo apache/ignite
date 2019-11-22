@@ -22,11 +22,11 @@ import org.apache.calcite.rel.type.RelDataType;
  *
  */
 public class LocalRefExpression implements LogicalExpression {
-    public final ExpressionType type;
+    public final ExpDataType type;
     public final int index;
 
     public LocalRefExpression(RelDataType type, int index) {
-        this.type = ExpressionType.fromType(type);
+        this.type = ExpDataType.fromType(type);
         this.index = index;
     }
 

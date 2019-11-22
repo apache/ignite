@@ -16,22 +16,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import java.io.Serializable;
+import org.apache.calcite.rel.core.CorrelationId;
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
+public class SerializedCorrelationId implements Serializable {
+    private final int id;
+    private final String name;
 
-    protected RelGraphNode() {
+    public SerializedCorrelationId(int id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
+    public SerializedCorrelationId(CorrelationId corrId) {
+        id = corrId.getId();
+        name = corrId.getName();
     }
 
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
+    public int id() {
+        return id;
+    }
+
+    public String name() {
+        return name;
+    }
 }

@@ -20,9 +20,12 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,6 +50,14 @@ public final class Sender extends SingleRel implements IgniteRel {
         this.targetDistr = targetDistr;
     }
 
+    private Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input,
+        @NotNull DistributionTrait targetDistr, @NotNull NodesMapping targetMapping) {
+        super(cluster, traits, input);
+
+        this.targetDistr = targetDistr;
+        this.targetMapping = targetMapping;
+    }
+
     /** {@inheritDoc} */
     @Override public <T> T implement(RelImplementor<T> implementor) {
         return implementor.implement(this);
@@ -66,5 +77,16 @@ public final class Sender extends SingleRel implements IgniteRel {
 
     public DestinationFunction targetFunction(org.apache.calcite.plan.Context ctx) {
         return targetDistr.destinationFunctionFactory().create(ctx, targetMapping, targetDistr.keys());
+    }
+
+    public static Sender create(RelNode input, DistributionTrait targetDistr, NodesMapping targetMapping) {
+        RelOptCluster cluster = input.getCluster();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
+
+        RelTraitSet traits = cluster.traitSet()
+            .replace(IgniteRel.IGNITE_CONVENTION)
+            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.distribution(input, mq));
+
+        return new Sender(cluster, traits, input, targetDistr, targetMapping);
     }
 }

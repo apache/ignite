@@ -90,6 +90,10 @@ public class ExpToRexTranslator implements ExpImplementor<RexNode> {
         return new RexLocalRef(exp.index, exp.type.toRelDataType(typeFactory));
     }
 
+    @Override public RexNode implement(DynamicParamExpression exp) {
+        return builder.makeDynamicParam(exp.type.toRelDataType(typeFactory), exp.index);
+    }
+
     private SqlOperator op(String name, SqlSyntax syntax) {
         return ops.get(Pair.of(name, syntax));
     }

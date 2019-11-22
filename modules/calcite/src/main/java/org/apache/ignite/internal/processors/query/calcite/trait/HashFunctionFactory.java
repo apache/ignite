@@ -16,11 +16,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import java.io.ObjectStreamException;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.ToIntFunction;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-class HashFunctionFactory extends AbstractDestinationFunctionFactory {
+final class HashFunctionFactory extends AbstractDestinationFunctionFactory {
     static final DestinationFunctionFactory INSTANCE = new HashFunctionFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
@@ -50,10 +51,10 @@ class HashFunctionFactory extends AbstractDestinationFunctionFactory {
             return hash;
         };
 
-        List<List<ClusterNode>> assignments = m.assignments();
+        List<List<UUID>> assignments = m.assignments();
 
         if (U.assertionsEnabled()) {
-            for (List<ClusterNode> assignment : assignments) {
+            for (List<UUID> assignment : assignments) {
                 assert F.isEmpty(assignment) || assignment.size() == 1;
             }
         }
@@ -63,5 +64,9 @@ class HashFunctionFactory extends AbstractDestinationFunctionFactory {
 
     @Override public Object key() {
         return "HashFunctionFactory";
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+        return INSTANCE;
     }
 }

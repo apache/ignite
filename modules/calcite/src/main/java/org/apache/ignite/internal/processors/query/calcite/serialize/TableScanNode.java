@@ -16,17 +16,25 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.io.Serializable;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
+import java.util.List;
+import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 
 /**
  *
  */
-public interface ExpressionType extends Serializable {
-    static ExpressionType fromType(RelDataType type) {
-        return type.isStruct() ? StructType.fromType(type) : FieldType.fromType(type);
+public class TableScanNode extends RelGraphNode {
+    private final List<String> tableName;
+
+    private TableScanNode(List<String> tableName) {
+        this.tableName = tableName;
     }
 
-    RelDataType toRelDataType(RelDataTypeFactory factory);
+    public static TableScanNode create(IgniteTableScan rel) {
+        return new TableScanNode(rel.getTable().getQualifiedName());
+    }
+
+    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+        return ctx.schema().getTableForMember(tableName).toRel(ctx);
+    }
 }

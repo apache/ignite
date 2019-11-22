@@ -27,4 +27,6 @@ public interface ExpImplementor<T> {
     T implement(LiteralExpression literalExpression);
 
     T implement(LocalRefExpression localRefExpression);
+
+    T implement(DynamicParamExpression dynamicParamExpression);
 }

@@ -16,22 +16,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import java.util.List;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import java.io.Serializable;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraitSet traitSet;
-
-    protected RelGraphNode() {
+public interface ExpDataType extends Serializable {
+    static ExpDataType fromType(RelDataType type) {
+        return type.isStruct() ? StructType.fromType(type) : SimpleType.fromType(type);
     }
 
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraitSet(traits);
-    }
-
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
+    RelDataType toRelDataType(RelDataTypeFactory factory);
 }

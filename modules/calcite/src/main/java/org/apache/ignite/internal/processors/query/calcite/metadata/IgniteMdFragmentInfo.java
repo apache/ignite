@@ -93,7 +93,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
     }
 
     public FragmentInfo getFragmentInfo(Receiver rel, RelMetadataQuery mq) {
-        return new FragmentInfo(rel.source());
+        return new FragmentInfo(rel.sourceFragment());
     }
 
     public FragmentInfo getFragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {

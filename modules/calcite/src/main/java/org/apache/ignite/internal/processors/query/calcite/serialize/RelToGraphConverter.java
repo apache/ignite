@@ -17,9 +17,9 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
@@ -28,67 +28,80 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class RelToGraphConverter implements RelImplementor<Pair<Integer, List<IgniteRel>>> {
-    private Deque<Pair<Integer, List<IgniteRel>>> stack = new ArrayDeque<>();
-    private Graph graph;
-    private int parentId;
+public class RelToGraphConverter {
+    private final RexToExpTranslator rexTranslator = new RexToExpTranslator();
 
-    public Graph convert(IgniteRel root) {
-        stack = new ArrayDeque<>();
-        graph = new Graph();
-        parentId = -1;
+    private RelGraph graph;
+    private int curParent;
 
-        stack.push(root.implement(this));
+    private static final class Item {
+        final int parentId;
+        final List<IgniteRel> children;
+
+        private Item(int parentId, List<IgniteRel> children) {
+            this.parentId = parentId;
+            this.children = children;
+        }
+    }
+
+    private final class Implementor implements RelImplementor<Item> {
+        @Override public Item implement(IgniteFilter rel) {
+            return new Item(graph.addNode(curParent, FilterNode.create(rel, rexTranslator)), Commons.cast(rel.getInputs()));
+        }
+
+        @Override public Item implement(IgniteJoin rel) {
+            return new Item(graph.addNode(curParent, JoinNode.create(rel, rexTranslator)), Commons.cast(rel.getInputs()));
+        }
+
+        @Override public Item implement(IgniteProject rel) {
+            return new Item(graph.addNode(curParent, ProjectNode.create(rel, rexTranslator)), Commons.cast(rel.getInputs()));
+        }
+
+        @Override public Item implement(IgniteTableScan rel) {
+            return new Item(graph.addNode(curParent, TableScanNode.create(rel)), Commons.cast(rel.getInputs()));
+        }
+
+        @Override public Item implement(Receiver rel) {
+            return new Item(graph.addNode(curParent, ReceiverNode.create(rel)), Collections.emptyList());
+        }
+
+        @Override public Item implement(Sender rel) {
+            return new Item(graph.addNode(curParent, SenderNode.create(rel)), Commons.cast(rel.getInputs()));
+        }
+
+        @Override public Item implement(IgniteExchange rel) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public Item implement(IgniteRel other) {
+            throw new AssertionError();
+        }
+    }
+
+    public RelGraph convert(IgniteRel root) {
+        graph = new RelGraph();
+
+        Implementor implementor = new Implementor();
+        Deque<Item> stack = new ArrayDeque<>();
+        stack.push(new Item(-1, F.asList(root)));
 
         while (!stack.isEmpty()) {
-            Pair<Integer, List<IgniteRel>> pair = stack.pop();
+            Item item = stack.pop();
 
-            parentId = pair.left;
+            curParent = item.parentId;
 
-            for (IgniteRel child : pair.right) {
-                stack.push(child.implement(this));
+            for (IgniteRel child : item.children) {
+                stack.push(child.implement(implementor));
             }
         }
 
         return graph;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteFilter rel) {
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteJoin rel) {
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteProject rel) {
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteTableScan rel) {
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(Receiver rel) {
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(Sender rel) {
-        assert parentId == -1;
-
-        return null;
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteExchange rel) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override public Pair<Integer, List<IgniteRel>> implement(IgniteRel other) {
-        throw new AssertionError();
     }
 }

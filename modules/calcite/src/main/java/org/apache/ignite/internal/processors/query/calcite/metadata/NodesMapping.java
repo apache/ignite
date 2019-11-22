@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import org.apache.ignite.cluster.ClusterNode;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,21 +38,21 @@ public class NodesMapping implements Serializable {
     public static final byte PARTIALLY_REPLICATED = 1 << 3;
     public static final byte DEDUPLICATED = 1 << 4;
 
-    private final List<ClusterNode> nodes;
-    private final List<List<ClusterNode>> assignments;
+    private final List<UUID> nodes;
+    private final List<List<UUID>> assignments;
     private final byte flags;
 
-    public NodesMapping(List<ClusterNode> nodes, List<List<ClusterNode>> assignments, byte flags) {
+    public NodesMapping(List<UUID> nodes, List<List<UUID>> assignments, byte flags) {
         this.nodes = nodes;
         this.assignments = assignments;
         this.flags = flags;
     }
 
-    public List<ClusterNode> nodes() {
+    public List<UUID> nodes() {
         return nodes;
     }
 
-    public List<List<ClusterNode>> assignments() {
+    public List<List<UUID>> assignments() {
         return assignments;
     }
 
@@ -62,7 +62,7 @@ public class NodesMapping implements Serializable {
         if ((flags & PARTIALLY_REPLICATED) == 0)
             return new NodesMapping(U.firstNotNull(nodes, other.nodes), mergeAssignments(other, null), flags);
 
-        List<ClusterNode> nodes;
+        List<UUID> nodes;
 
         if (this.nodes == null)
             nodes = other.nodes;
@@ -81,11 +81,11 @@ public class NodesMapping implements Serializable {
         if (assignments == null || !excessive())
             return this;
 
-        HashSet<ClusterNode> nodes0 = new HashSet<>();
-        List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
+        HashSet<UUID> nodes0 = new HashSet<>();
+        List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
 
-        for (List<ClusterNode> partNodes : assignments) {
-            ClusterNode node = F.first(partNodes);
+        for (List<UUID> partNodes : assignments) {
+            UUID node = F.first(partNodes);
 
             if (node == null)
                 throw new LocationMappingException("Failed to map fragment to location.");
@@ -97,14 +97,14 @@ public class NodesMapping implements Serializable {
         return new NodesMapping(new ArrayList<>(nodes0), assignments0, (byte)(flags | DEDUPLICATED));
     }
 
-    public int[] partitions(ClusterNode node) {
+    public int[] partitions(UUID node) {
         if (assignments == null)
             return null;
 
         GridIntList parts = new GridIntList(assignments.size());
 
         for (int i = 0; i < assignments.size(); i++) {
-            List<ClusterNode> assignment = assignments.get(i);
+            List<UUID> assignment = assignments.get(i);
             if (Objects.equals(node, F.first(assignment)))
                 parts.add(i);
         }
@@ -132,25 +132,25 @@ public class NodesMapping implements Serializable {
         return (flags & PARTIALLY_REPLICATED) == PARTIALLY_REPLICATED;
     }
 
-    private List<List<ClusterNode>> mergeAssignments(NodesMapping other, List<ClusterNode> nodes) throws LocationMappingException {
-        byte flags = (byte) (this.flags | other.flags); List<List<ClusterNode>> left = assignments, right = other.assignments;
+    private List<List<UUID>> mergeAssignments(NodesMapping other, List<UUID> nodes) throws LocationMappingException {
+        byte flags = (byte) (this.flags | other.flags); List<List<UUID>> left = assignments, right = other.assignments;
 
         if (left == null && right == null)
             return null; // nothing to intersect;
 
         if (left == null || right == null || (flags & HAS_MOVING_PARTITIONS) == 0) {
-            List<List<ClusterNode>> assignments = U.firstNotNull(left, right);
+            List<List<UUID>> assignments = U.firstNotNull(left, right);
 
             if (nodes == null || (flags & PARTIALLY_REPLICATED) == 0)
                 return assignments;
 
-            List<List<ClusterNode>> assignments0 = new ArrayList<>(assignments.size());
-            HashSet<ClusterNode> nodesSet = new HashSet<>(nodes);
+            List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
+            HashSet<UUID> nodesSet = new HashSet<>(nodes);
 
-            for (List<ClusterNode> partNodes : assignments) {
-                List<ClusterNode> partNodes0 = new ArrayList<>(partNodes.size());
+            for (List<UUID> partNodes : assignments) {
+                List<UUID> partNodes0 = new ArrayList<>(partNodes.size());
 
-                for (ClusterNode partNode : partNodes) {
+                for (UUID partNode : partNodes) {
                     if (nodesSet.contains(partNode))
                         partNodes0.add(partNode);
                 }
@@ -164,14 +164,14 @@ public class NodesMapping implements Serializable {
             return assignments0;
         }
 
-        List<List<ClusterNode>> assignments = new ArrayList<>(left.size());
-        HashSet<ClusterNode> nodesSet = nodes != null ? new HashSet<>(nodes) : null;
+        List<List<UUID>> assignments = new ArrayList<>(left.size());
+        HashSet<UUID> nodesSet = nodes != null ? new HashSet<>(nodes) : null;
 
         for (int i = 0; i < left.size(); i++) {
-            List<ClusterNode> leftNodes = left.get(i), partNodes = new ArrayList<>(leftNodes.size());
-            HashSet<ClusterNode> rightNodesSet = new HashSet<>(right.get(i));
+            List<UUID> leftNodes = left.get(i), partNodes = new ArrayList<>(leftNodes.size());
+            HashSet<UUID> rightNodesSet = new HashSet<>(right.get(i));
 
-            for (ClusterNode partNode : leftNodes) {
+            for (UUID partNode : leftNodes) {
                 if (rightNodesSet.contains(partNode) && (nodesSet == null || nodesSet.contains(partNode)))
                     partNodes.add(partNode);
             }

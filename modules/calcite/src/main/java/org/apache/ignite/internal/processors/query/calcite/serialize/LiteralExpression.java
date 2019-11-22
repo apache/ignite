@@ -22,11 +22,11 @@ import org.apache.calcite.rel.type.RelDataType;
  *
  */
 public class LiteralExpression implements LogicalExpression {
-    public final ExpressionType type;
+    public final ExpDataType type;
     public final Comparable value;
 
     public LiteralExpression(RelDataType type, Comparable value) {
-        this.type = ExpressionType.fromType(type);
+        this.type = ExpDataType.fromType(type);
         this.value = value;
     }
 

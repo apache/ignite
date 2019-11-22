@@ -24,22 +24,22 @@ import org.apache.calcite.sql.type.SqlTypeName;
 /**
  *
  */
-public class FieldType implements ExpressionType {
+public class SimpleType implements ExpDataType {
     private final Class clazz;
     private final SqlTypeName typeName;
     private final int precision;
     private final int scale;
 
-    public static FieldType fromType(RelDataType type) {
+    public static SimpleType fromType(RelDataType type) {
         assert !type.isStruct();
 
         if (type instanceof RelDataTypeFactoryImpl.JavaType)
-            return new FieldType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass(), null, 0, 0);
+            return new SimpleType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass(), null, 0, 0);
 
-        return new FieldType(null, type.getSqlTypeName(), type.getPrecision(), type.getScale());
+        return new SimpleType(null, type.getSqlTypeName(), type.getPrecision(), type.getScale());
     }
 
-    private FieldType(Class clazz, SqlTypeName typeName, int precision, int scale) {
+    private SimpleType(Class clazz, SqlTypeName typeName, int precision, int scale) {
         this.clazz = clazz;
         this.typeName = typeName;
         this.precision = precision;

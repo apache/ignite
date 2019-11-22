@@ -26,11 +26,13 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
@@ -69,11 +71,18 @@ import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.ConversionContext;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraph;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraphNode;
+import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -200,6 +209,28 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return rel(sql).rel;
     }
 
+    public RelNode convert(RelGraph graph) {
+        ready();
+
+        CalciteCatalogReader catalogReader = createCatalogReader();
+        RexBuilder rexBuilder = createRexBuilder();
+        RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+        RelBuilder relBuilder = createRelBuilder(cluster, catalogReader);
+
+        ConversionContext ctx = new ConversionContext(this, relBuilder, operatorTable);
+
+        return F.first(convertRecursive(ctx, graph, graph.nodes().subList(0, 1)));
+    }
+
+    private List<RelNode> convertRecursive(ConversionContext ctx, RelGraph graph, List<Ord<RelGraphNode>> src) {
+        ImmutableList.Builder<RelNode> b = ImmutableList.builder();
+
+        for (Ord<RelGraphNode> node : src)
+            b.add(node.e.toRel(ctx, convertRecursive(ctx, graph, graph.children(node.i))));
+
+        return b.build();
+    }
+
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
         ready();
@@ -215,18 +246,21 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             new SqlToRelConverter(this, validator, createCatalogReader(), cluster, convertletTable, config);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
         root = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-        RelBuilder relBuilder = config.getRelBuilderFactory().create(cluster, null);
+        RelBuilder relBuilder = createRelBuilder(cluster, null);
         root = root.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         return root;
     }
 
-    public RelNode convert(Graph graph) {
+    public QueryPlan plan(RelNode rel) {
         ready();
 
-        return null; // TODO
+        if (rel.getConvention() != IgniteRel.IGNITE_CONVENTION)
+            throw new IllegalArgumentException("IGNITE_CONVENTION is required.");
+
+        return new Splitter().go((IgniteRel) rel);
     }
 
-    public Graph convert(RelNode node) {
+    public Graph graph(RelNode node) {
         ready();
 
         return null; // TODO
@@ -265,7 +299,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         RelRoot root = sqlToRelConverter.convertQuery(sqlNode, true, false);
         RelRoot root2 = root.withRel(sqlToRelConverter.flattenTypes(root.rel, true));
-        RelBuilder relBuilder = config.getRelBuilderFactory().create(cluster, null);
+        RelBuilder relBuilder = createRelBuilder(cluster, null);
         return root2.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
     }
 
@@ -328,19 +362,23 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return typeFactory;
     }
 
-    public SqlConformance conformance() {
+    private SqlConformance conformance() {
         return connectionConfig.conformance();
     }
 
-    public SqlOperatorTable operatorTable() {
+    private SqlOperatorTable operatorTable() {
         return operatorTable;
     }
 
-    public RexBuilder createRexBuilder() {
+    private RexBuilder createRexBuilder() {
         return new RexBuilder(typeFactory);
     }
 
-    public CalciteCatalogReader createCatalogReader() {
+    private RelBuilder createRelBuilder(RelOptCluster cluster, RelOptSchema schema) {
+        return sqlToRelConverterConfig.getRelBuilderFactory().create(cluster, schema);
+    }
+
+    private CalciteCatalogReader createCatalogReader() {
         SchemaPlus rootSchema = rootSchema(defaultSchema);
 
         return new CalciteCatalogReader(

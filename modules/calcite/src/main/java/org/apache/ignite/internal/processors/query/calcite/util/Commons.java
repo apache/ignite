@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
@@ -44,7 +45,7 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -138,97 +139,56 @@ public final class Commons {
         };
     }
 
-    public static int[] intersect(int[] left, int[] right) {
-        if (F.isEmpty(left) || F.isEmpty(right))
-            return EMPTY;
-
-        int[] res = null;
-
-        int i = 0, j = 0, k = 0, size = Math.min(left.length, right.length);
-
-        while (i < left.length && j < right.length) {
-            if (left[i] < right[j])
-                i++;
-            else if (right[j] < left[i])
-                j++;
-            else {
-                if (res == null)
-                    res = new int[size];
-
-                res[k++] = left[i];
-
-                i++;
-                j++;
-            }
-        }
-
-        if (k == 0)
-            return EMPTY;
-
-        return res.length == k ? res : Arrays.copyOf(res, k);
-    }
-
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
-
-        HashSet<T> set = new HashSet<>(right);
-
-        return left.stream().filter(set::contains).collect(Collectors.toList());
+        else if (left.size() > right.size())
+            return intersect0(right, left);
+        else
+            return intersect0(left, right);
     }
 
-    public static <T> List<T> union(List<T> left, List<T> right) {
-        Set<T> set = U.newHashSet(left.size() + right.size());
+    public static <T> List<T> intersect0(List<T> left, List<T> right) {
+        List<T> res = new ArrayList<>(Math.min(left.size(), right.size()));
+        HashSet<T> set = new HashSet<>(left);
 
-        set.addAll(left);
-        set.addAll(right);
-
-        return new ArrayList<>(set);
-    }
-
-    public static int[] union(int[] left, int[] right) {
-        if (F.isEmpty(left) && F.isEmpty(right))
-            return EMPTY;
-
-        int min = Math.min(left.length, right.length);
-        int max = left.length + right.length;
-        int expected = Math.max(min, (int) (max * 1.5));
-
-        int[] res = new int[U.ceilPow2(expected)];
-
-        int i = 0, j = 0, k = 0;
-
-        while (i < left.length && j < right.length) {
-            res = ensureSize(res, k + 1);
-
-            if (left[i] < right[j])
-                res[k++] = left[i++];
-            else if (right[j] < left[i])
-                res[k++] = right[j++];
-            else {
-                res[k++] = left[i];
-
-                i++;
-                j++;
-            }
+        for (T t : right) {
+            if (set.contains(t))
+                res.add(t);
         }
 
-        if (k == 0)
-            return EMPTY;
-
-        return res.length == k ? res : Arrays.copyOf(res, k);
-    }
-
-    private static int[] ensureSize(int[] array, int size) {
-        return size < array.length ? array : Arrays.copyOf(array, U.ceilPow2(size));
+        return res;
     }
 
     public static <T> List<T> concat(List<T> col, T... elements) {
         ArrayList<T> res = new ArrayList<>(col.size() + elements.length);
 
         res.addAll(col);
-        Collections.addAll(res, elements);
+        res.addAll(Arrays.asList(elements));
 
         return res;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> cast(List<?> src) {
+        return (List)src;
+    }
+
+    public static <T,R> List<R> transform(@NotNull List<T> src, @NotNull Function<T,R> mapFun) {
+        List<R> list = new ArrayList<>(src.size());
+
+        for (T t : src)
+            list.add(mapFun.apply(t));
+
+        return list;
+    }
+
+    public static <T,R> Set<R> transform(@NotNull Set<T> src, @NotNull Function<T,R> mapFun) {
+        Set<R> set = new HashSet<>(src.size());
+
+        for (T t : src)
+            set.add(mapFun.apply(t));
+
+        return set;
     }
 }
