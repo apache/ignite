@@ -522,13 +522,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             /**
              * @param snpTrans Current snapshot transmission.
              * @param rmtNodeId Remote node which sends partition.
-             * @param snpName Snapshot name to notify listener with.
              * @param grpPartId Pair of group id and its partition id.
              */
             private void finishRecover(
                 SnapshotTransmissionFuture snpTrans,
                 UUID rmtNodeId,
-                String snpName,
                 GroupPartitionId grpPartId
             ) {
                 FilePageStore pageStore = null;
@@ -602,7 +600,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 if (initMeta.count() == 0) {
                     finishRecover(transFut,
                         nodeId,
-                        snpName,
                         grpPartId);
                 }
 
@@ -627,7 +624,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             if (transferred.longValue() == initMeta.count()) {
                                 finishRecover(transFut,
                                     nodeId,
-                                    snpName,
                                     grpPartId);
                             }
                         }
