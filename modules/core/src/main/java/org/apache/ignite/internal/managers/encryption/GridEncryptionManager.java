@@ -277,63 +277,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE,
-            (req) -> {
-                if (pendingMasterKey != null) {
-                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                        "Previous change was not completed."));
-                }
+        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
+            this::finishPrepareMasterKeyChange);
 
-                pendingMasterKey = req;
-
-                if (ctx.clientNode())
-                    return new GridFinishedFuture<>();
-
-                try {
-                    byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
-
-                    if (!Arrays.equals(req.digest, digest)) {
-                        return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master " +
-                            "key digest consistency check failed. Make sure that a new master key is the same at " +
-                            "all server nodes [nodeId=" + ctx.localNodeId() + ']'));
-                    }
-                }
-                catch (Exception e) {
-                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
-                        ctx.localNodeId() + ']', e));
-                }
-
-                return new GridFinishedFuture<>(new MasterKeyChangeResult());
-            },
-            (id, res, err) -> {
-                if (!err.isEmpty())
-                    finishMasterKeyChange(id, err);
-                else if (isCoordinator())
-                    finishProc.start(id, pendingMasterKey);
-            }
-        );
-
-        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH,
-            (req) -> {
-                if (pendingMasterKey == null || !pendingMasterKey.equals(req))
-                    return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
-
-                boolean active = ctx.state().clusterState().active();
-
-                if (!active) {
-                    return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                        "The cluster is inactive."));
-                }
-
-                if (!ctx.clientNode())
-                    changeMasterKeyAndReencryptGroupKeys(decryptKeyName(req.encKeyName()));
-
-                lastChangedMasterKeyDigest = req.digest();
-
-                return new GridFinishedFuture<>(new MasterKeyChangeResult());
-            },
-            (id, res, err) -> finishMasterKeyChange(id, err)
-        );
+        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::masterKeyChange,
+            this::finishMasterKeyChange);
     }
 
     /** {@inheritDoc} */
@@ -619,15 +567,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** @return Digest of last changed master key or {@code null} if master key was not changed. */
-    public byte[] lastChangedMasterKeyDigest() {
-        return lastChangedMasterKeyDigest;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> changeMasterKey(String masterKeyName) {
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+
+        if (!ctx.state().clusterState().active())
+            throw new IgniteException("Master key change was rejected. The cluster is inactive.");
 
         checkMasterKeyChangeSupported();
 
@@ -639,7 +585,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         PendingMasterKey request = new PendingMasterKey(UUID.randomUUID(), encryptKeyName(masterKeyName), digest);
 
         synchronized (opsMux) {
-            checkState();
+            if (disconnected) {
+                throw new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
+                    "Failed to perform operation, client node disconnected.");
+            }
+
+            if (stopped)
+                throw new IgniteException("Failed to perform operation, node is stopping.");
 
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
                 throw new IgniteException("Master key change is in progress.");
@@ -657,8 +609,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
-        checkMasterKeyChangeSupported();
-
         masterKeyChangeLock.readLock().lock();
 
         try {
@@ -669,103 +619,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * @param masterKeyName Master key name.
-     * @return Master key digest.
-     * @throws IgniteException if unable to get master key digest.
-     */
-    private byte[] masterKeyDigest(String masterKeyName) {
-        byte[] digest;
-
-        masterKeyChangeLock.writeLock().lock();
-
-        try {
-            String curName = getSpi().getMasterKeyName();
-
-            try {
-                getSpi().setMasterKeyName(masterKeyName);
-
-                digest = getSpi().masterKeyDigest();
-            } catch (Exception e) {
-                throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
-            } finally {
-                getSpi().setMasterKeyName(curName);
-            }
-        }
-        finally {
-            masterKeyChangeLock.writeLock().unlock();
-        }
-
-        return digest;
-    }
-
-    /**
-     * @param keyName Master key name to encrypt.
-     * @return Encrypted master key name.
-     */
-    private byte[] encryptKeyName(String keyName) {
-        masterKeyChangeLock.readLock().lock();
-
-        try {
-            Serializable key = getSpi().create();
-
-            byte[] encKey = getSpi().encryptKey(key);
-
-            byte[] serKeyName = U.toBytes(keyName);
-
-            ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
-                getSpi().encryptedSize(serKeyName.length));
-
-            res.putInt(encKey.length);
-            res.put(encKey);
-
-            getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
-
-            return res.array();
-        }
-        finally {
-            masterKeyChangeLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * @param data Byte array with encrypted a master key name.
-     * @return Decrypted master key name.
-     */
-    private String decryptKeyName(byte[] data) {
-        masterKeyChangeLock.readLock().lock();
-
-        try {
-            ByteBuffer buf = ByteBuffer.wrap(data);
-
-            int keyLen = buf.getInt();
-
-            byte[] encKey = new byte[keyLen];
-
-            buf.get(encKey);
-
-            byte[] encKeyName = new byte[buf.remaining()];
-
-            buf.get(encKeyName);
-
-            byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
-
-            return U.fromBytes(serKeyName);
-        }
-        finally {
-            masterKeyChangeLock.readLock().unlock();
-        }
-    }
-
-    /** */
-    private void checkState() {
-        if (disconnected) {
-            throw new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
-                "Failed to perform operation, client node disconnected.");
-        }
-
-        if (stopped)
-            throw new IgniteException("Failed to perform operation, node is stopping.");
+    /** @return Digest of last changed master key or {@code null} if master key was not changed. */
+    public byte[] lastChangedMasterKeyDigest() {
+        return lastChangedMasterKeyDigest;
     }
 
     /**
@@ -1083,26 +939,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Apply keys from WAL record during recovery phase.
-     *
-     * @param rec Record.
-     */
-    public void applyKeys(MasterKeyChangeRecord rec) {
-        assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
-
-        try {
-            getSpi().setMasterKeyName(rec.getMasterKeyName());
-
-            for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
-                grpEncKeys.computeIfAbsent(entry.getKey(), k -> getSpi().decryptKey(entry.getValue()));
-
-            forceWriteAllKeysToMetaStore = true;
-        } catch (IgniteSpiException e) {
-            log.warning("Unable to apply group keys from WAL record [masterKeyName=" + rec.getMasterKeyName() + ']', e);
-        }
-    }
-
-    /**
      * Sets up master key and re-encrypt group keys. Writes changes to WAL and if possible to MetaStorage.
      *
      * @param name New master key name.
@@ -1160,6 +996,114 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return new MasterKeyChangeRecord(getSpi().getMasterKeyName(), reencryptedKeys);
     }
 
+    /**
+     * Apply keys from WAL record during recovery phase.
+     *
+     * @param rec Record.
+     */
+    public void applyKeys(MasterKeyChangeRecord rec) {
+        assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
+
+        try {
+            getSpi().setMasterKeyName(rec.getMasterKeyName());
+
+            for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
+                grpEncKeys.computeIfAbsent(entry.getKey(), k -> getSpi().decryptKey(entry.getValue()));
+
+            forceWriteAllKeysToMetaStore = true;
+        } catch (IgniteSpiException e) {
+            log.warning("Unable to apply group keys from WAL record [masterKeyName=" + rec.getMasterKeyName() + ']', e);
+        }
+    }
+
+    /**
+     * @param masterKeyName Master key name.
+     * @return Master key digest.
+     * @throws IgniteException if unable to get master key digest.
+     */
+    private byte[] masterKeyDigest(String masterKeyName) {
+        byte[] digest;
+
+        masterKeyChangeLock.writeLock().lock();
+
+        try {
+            String curName = getSpi().getMasterKeyName();
+
+            try {
+                getSpi().setMasterKeyName(masterKeyName);
+
+                digest = getSpi().masterKeyDigest();
+            } catch (Exception e) {
+                throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
+            } finally {
+                getSpi().setMasterKeyName(curName);
+            }
+        }
+        finally {
+            masterKeyChangeLock.writeLock().unlock();
+        }
+
+        return digest;
+    }
+
+    /**
+     * @param keyName Master key name to encrypt.
+     * @return Encrypted master key name.
+     */
+    private byte[] encryptKeyName(String keyName) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
+            Serializable key = getSpi().create();
+
+            byte[] encKey = getSpi().encryptKey(key);
+
+            byte[] serKeyName = U.toBytes(keyName);
+
+            ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
+                getSpi().encryptedSize(serKeyName.length));
+
+            res.putInt(encKey.length);
+            res.put(encKey);
+
+            getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
+
+            return res.array();
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param data Byte array with encrypted a master key name.
+     * @return Decrypted master key name.
+     */
+    private String decryptKeyName(byte[] data) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
+            ByteBuffer buf = ByteBuffer.wrap(data);
+
+            int keyLen = buf.getInt();
+
+            byte[] encKey = new byte[keyLen];
+
+            buf.get(encKey);
+
+            byte[] encKeyName = new byte[buf.remaining()];
+
+            buf.get(encKeyName);
+
+            byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
+
+            return U.fromBytes(serKeyName);
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
+        }
+    }
+
     /** Checks that the master key change process supported by all nodes in cluster. */
     public void checkMasterKeyChangeSupported() {
         if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
@@ -1167,13 +1111,100 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
+     * Prepares master key change. Checks master key consistency.
+     *
+     * @param req Request.
+     * @return Result future.
+     */
+    private IgniteInternalFuture<MasterKeyChangeResult> prepareMasterKeyChange(PendingMasterKey req) {
+        if (pendingMasterKey != null) {
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                "Previous change was not completed."));
+        }
+
+        pendingMasterKey = req;
+
+        if (ctx.clientNode())
+            return new GridFinishedFuture<>();
+
+        try {
+            byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
+
+            if (!Arrays.equals(req.digest, digest)) {
+                return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master " +
+                    "key digest consistency check failed. Make sure that a new master key is the same at " +
+                    "all server nodes [nodeId=" + ctx.localNodeId() + ']'));
+            }
+        }
+        catch (Exception e) {
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected [nodeId=" +
+                ctx.localNodeId() + ']', e));
+        }
+
+        return new GridFinishedFuture<>(new MasterKeyChangeResult());
+    }
+
+    /**
+     * Starts master key change process if there are no errors.
+     *
+     * @param id Request id.
+     * @param res Results.
+     * @param err Errors.
+     */
+    private void finishPrepareMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
+        if (!err.isEmpty()) {
+            if (pendingMasterKey != null && pendingMasterKey.requestId().equals(id))
+                pendingMasterKey = null;
+
+            doneMasterKeyChangeFuture(id, err);
+        }
+        else if (isCoordinator())
+            finishProc.start(id, pendingMasterKey);
+    }
+
+    /**
+     * Changes master key.
+     *
+     * @param req Request.
+     * @return Result future.
+     */
+    private IgniteInternalFuture<MasterKeyChangeResult> masterKeyChange(PendingMasterKey req) {
+        if (pendingMasterKey == null || !pendingMasterKey.equals(req))
+            return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
+
+        if (!ctx.state().clusterState().active()) {
+            pendingMasterKey = null;
+
+            return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
+                "The cluster is inactive."));
+        }
+
+        if (!ctx.clientNode())
+            changeMasterKeyAndReencryptGroupKeys(decryptKeyName(req.encKeyName()));
+
+        pendingMasterKey = null;
+
+        lastChangedMasterKeyDigest = req.digest();
+
+        return new GridFinishedFuture<>(new MasterKeyChangeResult());
+    }
+
+    /**
+     * Finishes master key change.
+     *
+     * @param id Request id.
+     * @param res Results.
+     * @param err Errors.
+     */
+    private void finishMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
+        doneMasterKeyChangeFuture(id, err);
+    }
+
+    /**
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void finishMasterKeyChange(UUID reqId, Map<UUID, Exception> err) {
-        if (pendingMasterKey != null && pendingMasterKey.requestId().equals(reqId))
-            pendingMasterKey = null;
-
+    private void doneMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
         synchronized (opsMux) {
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
                 masterKeyChangeFut.id().equals(reqId)) {
