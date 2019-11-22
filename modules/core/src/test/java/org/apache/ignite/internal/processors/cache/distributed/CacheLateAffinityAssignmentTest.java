@@ -359,11 +359,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopGrid(0); // Kill coordinator, now coordinator node1 without cache.
 
-        boolean primaryChanged = calculateAffinity(5, false, aff);
+        boolean ownersExtended = calculateAffinity(5, false, aff);
 
-        checkAffinity(3, topVer(5, 0), !primaryChanged);
+        checkAffinity(3, topVer(5, 0), !ownersExtended);
 
-        if (primaryChanged)
+        if (ownersExtended)
             checkAffinity(3, topVer(5, 1), true);
 
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
@@ -643,7 +643,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(1, 4);
 
-        checkAffinity(2, topVer(4, 0), true);
+        checkAffinity(2, topVer(4, 1), true);
 
         awaitPartitionMapExchange();
     }
@@ -1032,9 +1032,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(0, 3);
 
-        checkAffinity(1, topVer(3, 0), true);
-
-        checkNoExchange(1, topVer(3, 1));
+        checkAffinity(1, topVer(3, 1), true);
 
         awaitPartitionMapExchange();
     }
@@ -1372,9 +1370,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(0, ord); // Triggers exchange completion from new coordinator.
 
-        checkAffinity(cnt - 2, topVer(ord - 1, 0), true, false);
-
-        checkAffinity(cnt - 2, topVer(ord, 0), true);
+        checkAffinity(cnt - 2, topVer(ord, 1), true);
 
         awaitPartitionMapExchange();
     }
@@ -1482,11 +1478,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             topVer++;
 
-            boolean primaryChanged = calculateAffinity(nodes + 2, false, aff);
+            boolean ownersExtended = calculateAffinity(nodes + 2, false, aff);
 
-            checkAffinity(nodes - 2, topVer(topVer, 0), !primaryChanged);
+            checkAffinity(nodes - 2, topVer(topVer, 0), !ownersExtended);
 
-            if (primaryChanged)
+            if (ownersExtended)
                 checkAffinity(nodes - 2, topVer(topVer, 1), true);
 
             awaitPartitionMapExchange();
@@ -1882,7 +1878,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopNode(clients, ++topVer);
 
-        checkAffinity(clients + 1, topVer(topVer, 0), true);
+        checkAffinity(clients + 1, topVer(topVer, 1), true);
     }
 
     /**
@@ -2202,11 +2198,11 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        boolean primaryChanged = calculateAffinity(4, false, assignments);
+        boolean ownersExtended = calculateAffinity(4, false, assignments);
 
-        assignments = checkAffinity(2, topVer(4, 0), !primaryChanged);
+        assignments = checkAffinity(2, topVer(4, 0), !ownersExtended);
 
-        if (primaryChanged)
+        if (ownersExtended)
             checkAffinity(2, topVer(4, 1), true);
 
         checkServicesDeploy(ignite(1), assignments.get(CACHE_NAME1));
@@ -2967,7 +2963,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @param filterByRcvd If {@code true} filters caches by 'receivedFrom' property.
      * @param cur Optional current affinity.
      * @throws Exception If failed.
-     * @return {@code True} if some primary node changed comparing to given affinity.
+     * @return {@code True} if some new owner appended comparing to given affinity (owning expected).
      */
     private boolean calculateAffinity(long topVer,
         boolean filterByRcvd,
@@ -3001,7 +2997,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         long stopTime = System.currentTimeMillis() + 10_000;
 
-        boolean primaryChanged = false;
+        boolean ownersExtended = false;
 
         do {
             for (int i = futs.size() - 1; i >= 0; i--) {
@@ -3066,25 +3062,20 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                 assertEquals(prev.size(), assignment.size());
 
-                if (!primaryChanged) {
+                if (!ownersExtended) {
                     for (int p = 0; p < prev.size(); p++) {
-                        List<ClusterNode> nodes0 = prev.get(p);
-                        List<ClusterNode> nodes1 = assignment.get(p);
+                        List<ClusterNode> prevNodes = prev.get(p);
+                        List<ClusterNode> curNodes = assignment.get(p);
 
-                        if (!nodes0.isEmpty() && !nodes1.isEmpty()) {
-                            ClusterNode p0 = nodes0.get(0);
-                            ClusterNode p1 = nodes1.get(0);
+                        if (!prevNodes.containsAll(curNodes)) {
+                            ownersExtended = true;
 
-                            if (allNodes.contains(p0) && !p0.equals(p1)) {
-                                primaryChanged = true;
+                            log.info("Owners extended [cache=" + cacheDesc.cacheConfiguration().getName() +
+                                ", part=" + p +
+                                ", prev=" + F.nodeIds(prevNodes) +
+                                ", new=" + F.nodeIds(curNodes) + ']');
 
-                                log.info("Primary changed [cache=" + cacheDesc.cacheConfiguration().getName() +
-                                    ", part=" + p +
-                                    ", prev=" + F.nodeIds(nodes0) +
-                                    ", new=" + F.nodeIds(nodes1) + ']');
-
-                                break;
-                            }
+                            break;
                         }
                     }
                 }
@@ -3093,7 +3084,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             assignments.put(cacheDesc.cacheId(), assignment);
         }
 
-        return primaryChanged;
+        return ownersExtended;
     }
 
     /**
