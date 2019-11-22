@@ -877,7 +877,7 @@ public abstract class IgniteUtils {
      * @return Exception converters.
      */
     private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-    exceptionConverters() {
+        exceptionConverters() {
         Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
@@ -4166,7 +4166,7 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception suppressed) {
-                e.addSuppressed(suppressed);
+               e.addSuppressed(suppressed);
             }
     }
 
@@ -4473,7 +4473,7 @@ public abstract class IgniteUtils {
             log.warning(compact(msg.toString()), e);
         else {
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
-                compact(msg.toString()));
+                    compact(msg.toString()));
 
             if (e != null)
                 e.printStackTrace(System.err);
@@ -5930,8 +5930,8 @@ public abstract class IgniteUtils {
 
         try {
             attr = mBeanSrv.getAttribute(
-                ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
-                "TotalPhysicalMemorySize");
+                    ObjectName.getInstance("java.lang", "type", "OperatingSystem"),
+                    "TotalPhysicalMemorySize");
         }
         catch (Exception e) {
             return -1;
@@ -8026,7 +8026,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                            "not be propagated to callee): " + e,
+                        "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -9376,12 +9376,12 @@ public abstract class IgniteUtils {
 
                 if (!readme.exists()) {
                     U.writeStringToFile(readme,
-                        "This is Apache Ignite working directory that contains information that \n" +
-                            "    Ignite nodes need in order to function normally.\n" +
-                            "Don't delete it unless you're sure you know what you're doing.\n\n" +
-                            "You can change the location of working directory with \n" +
-                            "    igniteConfiguration.setWorkingDirectory(location) or \n" +
-                            "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
+                    "This is Apache Ignite working directory that contains information that \n" +
+                       "    Ignite nodes need in order to function normally.\n" +
+                       "Don't delete it unless you're sure you know what you're doing.\n\n" +
+                       "You can change the location of working directory with \n" +
+                       "    igniteConfiguration.setWorkingDirectory(location) or \n" +
+                       "    <property name=\"workingDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
             catch (Exception e) {
