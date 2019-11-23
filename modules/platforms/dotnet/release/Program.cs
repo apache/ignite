@@ -30,7 +30,13 @@ namespace test_proj
 {
     public static class Program
     {
-        public static async Task Main()
+        public static void Main()
+        {
+            // Don't use async Main - compatibility with C# 7.0
+            MainAsync().GetAwaiter().GetResult();
+        }
+
+        private static async Task MainAsync()
         {
             var cfg = new IgniteConfiguration
             {
