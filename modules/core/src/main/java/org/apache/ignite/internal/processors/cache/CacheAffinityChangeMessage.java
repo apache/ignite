@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -69,8 +68,6 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
         Map<Integer, IgniteUuid> cacheDeploymentIds) {
-        assert !F.isEmpty(assignmentChange) : assignmentChange;
-
         this.topVer = topVer;
         this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;

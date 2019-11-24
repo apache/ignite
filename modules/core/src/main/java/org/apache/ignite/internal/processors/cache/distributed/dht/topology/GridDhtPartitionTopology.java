@@ -353,9 +353,11 @@ public interface GridDhtPartitionTopology {
     public Collection<Integer> lostPartitions();
 
     /**
-     * Pre-processes partition update counters before exchange.
+     * Pre-processes partition update counters before exchange for specified partitions.
+     *
+     * @param parts Partitions.
      */
-    void finalizeUpdateCounters();
+    public void finalizeUpdateCounters(Set<Integer> parts);
 
     /**
      * @return Partition update counters.

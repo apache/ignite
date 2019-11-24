@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,6 +43,12 @@ public class ExchangeContext {
     /** Per-group affinity fetch on join (old protocol). */
     private boolean fetchAffOnJoin;
 
+    /** Baseline node left. */
+    private boolean baselineNodeLeft;
+
+    /** Local recovery needed. */
+    private boolean locRecovery;
+
     /** Merges allowed flag. */
     private final boolean merge;
 
@@ -56,25 +63,53 @@ public class ExchangeContext {
      * @param fut Exchange future.
      */
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
-        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
+        int ver = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (compatibilityNode || (crd && fut.localJoinExchange())) {
+        if (!compatibilityNode && ver > 2 &&
+            fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted() && fut.wasRebalanced()) {
+            baselineNodeLeft = true;
+            merge = false;
+
+            locRecovery = localRecoveryNeeded(fut); // Check local node affected.
+        }
+        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
             fetchAffOnJoin = true;
-
             merge = false;
         }
         else {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = protocolVer == 1;
+            fetchAffOnJoin = ver == 1;
 
             merge = !startCaches &&
-                protocolVer > 1 &&
+                ver > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
+    }
+
+    /**
+     * @param fut Future.
+     */
+    private boolean localRecoveryNeeded(GridDhtPartitionsExchangeFuture fut) {
+        for (CacheGroupContext grp : fut.sharedContext().cache().cacheGroups()) {
+            if (grp.isLocal())
+                continue;
+
+            GridAffinityAssignmentCache aff = grp.affinity();
+
+            Set<Integer> failedPrimaries = aff.primaryPartitions(fut.exchangeId().eventNode().id(), aff.lastVersion());
+            Set<Integer> locBackups = aff.backupPartitions(fut.sharedContext().localNodeId(), aff.lastVersion());
+
+            for (int part : failedPrimaries) {
+                if (locBackups.contains(part))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -98,6 +133,24 @@ public class ExchangeContext {
      */
     public boolean fetchAffinityOnJoin() {
         return fetchAffOnJoin;
+    }
+
+    /**
+     * @return {@code True} if baseline node left.
+     */
+    public boolean baselineNodeLeft() {
+        assert !baselineNodeLeft || !merge;
+
+        return baselineNodeLeft;
+    }
+
+    /**
+     * @return {@code True} if local recovery required.
+     */
+    public boolean localRecovery() {
+        assert !locRecovery || !merge;
+
+        return locRecovery;
     }
 
     /**

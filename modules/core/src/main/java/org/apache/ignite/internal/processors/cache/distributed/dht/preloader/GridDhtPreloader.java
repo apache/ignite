@@ -309,8 +309,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty())
+        if (!assignments.isEmpty()) {
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
+            assert exchFut == null || !exchFut.rebalanced() : grp.groupId();
+        }
 
         return assignments;
     }

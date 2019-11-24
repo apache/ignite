@@ -78,8 +78,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinished
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
-import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
-import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -89,6 +87,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -97,6 +96,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -828,6 +828,40 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         for (IgniteInternalTx tx : activeTransactions()) {
             if (needWaitTransaction(tx, topVer))
                 res.add(tx.finishFuture());
+        }
+
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     * Creates a future that will wait for all transactions started by specified node.
+     *
+     * @param topVer Topology version.
+     * @return Future that will be completed when all transactions are finished.
+     */
+    public IgniteInternalFuture<Boolean> recoverLocalTxsByNode(AffinityTopologyVersion topVer, ClusterNode node) {
+        GridCompoundFuture<IgniteInternalTx, Boolean> res =
+            new CacheObjectsReleaseFuture<>(
+                "localTx by " + node.id(),
+                topVer,
+                new IgniteReducer<IgniteInternalTx, Boolean>() {
+                    @Override public boolean collect(IgniteInternalTx e) {
+                        return true;
+                    }
+
+                    @Override public Boolean reduce() {
+                        return true;
+                    }
+                });
+
+        for (IgniteInternalTx tx : activeTransactions()) {
+            if (tx.originatingNodeId().equals(node.id())) {
+                res.add(tx.finishFuture());
+
+                assert needWaitTransaction(tx, topVer);
+            }
         }
 
         res.markInitialized();
