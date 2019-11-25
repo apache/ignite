@@ -73,7 +73,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @return Default cache configuration.
      */
     private CacheConfiguration<KeyClass, ValueClass> cacheConfiguration(String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
+        CacheConfiguration<KeyClass, ValueClass> ccfg = new CacheConfiguration<>(cacheName);
 
         QueryEntity entity = new QueryEntity();
 
@@ -103,8 +103,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
 
-        IgniteCache cache1 = ignite.getOrCreateCache(cacheConfiguration(cacheName1));
-        IgniteCache cache2 = ignite.getOrCreateCache(cacheConfiguration(cacheName2));
+        IgniteCache<KeyClass, ValueClass> cache1 = ignite.getOrCreateCache(cacheConfiguration(cacheName1));
+        IgniteCache<KeyClass, ValueClass> cache2 = ignite.getOrCreateCache(cacheConfiguration(cacheName2));
 
         cache1.put(new KeyClass(1), new ValueClass(1L));
         cache2.put(new KeyClass(1), new ValueClass(1L));
@@ -121,33 +121,33 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         ignite = startGrid(0);
 
-        BooleanMetric isIndexRebuildingCache1 = isIndexRebuildingMetric(ignite, cacheName1);
-        BooleanMetric isIndexRebuildingCache2 = isIndexRebuildingMetric(ignite, cacheName2);
+        BooleanMetric indexRebuildCache1 = isIndexRebuildInProgressMetric(ignite, cacheName1);
+        BooleanMetric indexRebuildCache2 = isIndexRebuildInProgressMetric(ignite, cacheName2);
 
         ignite.cluster().active(true);
 
-        assertTrue(isIndexRebuildingCache1.value());
-        assertTrue(isIndexRebuildingCache2.value());
+        assertTrue(indexRebuildCache1.value());
+        assertTrue(indexRebuildCache2.value());
 
         ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName1);
 
         ignite.cache(cacheName1).indexReadyFuture().get();
 
-        assertFalse(isIndexRebuildingCache1.value());
-        assertTrue(isIndexRebuildingCache2.value());
+        assertFalse(indexRebuildCache1.value());
+        assertTrue(indexRebuildCache2.value());
 
         ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get();
 
-        assertFalse(isIndexRebuildingCache1.value());
-        assertFalse(isIndexRebuildingCache2.value());
+        assertFalse(indexRebuildCache1.value());
+        assertFalse(indexRebuildCache2.value());
     }
 
-    /** @return Gets {@code isIndexRebuildInProgress} metric for given cache. */
-    private BooleanMetric isIndexRebuildingMetric(IgniteEx ignite, String cacheName) {
+    /** @return Gets {@code IsIndexRebuildInProgress} metric for given cache. */
+    private BooleanMetric isIndexRebuildInProgressMetric(IgniteEx ignite, String cacheName) {
         MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(cacheName, false));
 
-        return mreg.findMetric("isIndexRebuilding");
+        return mreg.findMetric("IsIndexRebuildInProgress");
     }
 }

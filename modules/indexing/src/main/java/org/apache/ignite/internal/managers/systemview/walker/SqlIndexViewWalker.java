@@ -39,8 +39,7 @@ public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndex
         v.accept(6, "cacheId", int.class);
         v.accept(7, "inlineSize", int.class);
         v.accept(8, "isPk", boolean.class);
-        v.accept(9, "isRebuildInProgress", boolean.class);
-        v.accept(10, "isUnique", boolean.class);
+        v.accept(9, "isUnique", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -54,12 +53,11 @@ public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndex
         v.acceptInt(6, "cacheId", row.cacheId());
         v.acceptInt(7, "inlineSize", row.inlineSize());
         v.acceptBoolean(8, "isPk", row.isPk());
-        v.acceptBoolean(9, "isRebuildInProgress", row.isRebuildInProgress());
-        v.acceptBoolean(10, "isUnique", row.isUnique());
+        v.acceptBoolean(9, "isUnique", row.isUnique());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 11;
+        return 10;
     }
 }
