@@ -35,7 +35,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -74,7 +73,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.LOGGER.ordinal()] =
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
-            SecurityUtils.hasSecurityManager() ? new GridResourceProxiedIgniteInjector(ctx.grid())
+            ctx.security().sandbox().enabled() ? new GridResourceProxiedIgniteInjector(ctx.grid())
                 : new GridResourceBasicInjector<>(ctx.grid());
     }
 

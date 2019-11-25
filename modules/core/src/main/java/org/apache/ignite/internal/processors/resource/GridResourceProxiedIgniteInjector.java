@@ -66,7 +66,7 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
      * @return True if {@code target} should get a proxy instance of Ignite.
      */
     private boolean shouldUseProxy(Object target){
-        for(Class cls : PROXIED_CLASSES){
+        for (Class cls : PROXIED_CLASSES) {
             if (cls.isInstance(target))
                 return true;
         }
