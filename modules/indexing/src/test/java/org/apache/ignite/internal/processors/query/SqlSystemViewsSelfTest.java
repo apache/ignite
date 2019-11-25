@@ -358,31 +358,31 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         srv.cluster().active(true);
 
-        checkRebuild(cacheName1, true);
-        checkRebuild(cacheName2, true);
+        checkIndexRebuild(cacheName1, true);
+        checkIndexRebuild(cacheName2, true);
 
         ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get();
 
-        checkRebuild(cacheName1, false);
-        checkRebuild(cacheName2, true);
+        checkIndexRebuild(cacheName1, false);
+        checkIndexRebuild(cacheName2, true);
 
         ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get();
 
-        checkRebuild(cacheName1, false);
-        checkRebuild(cacheName2, false);
+        checkIndexRebuild(cacheName1, false);
+        checkIndexRebuild(cacheName2, false);
     }
 
     /**
-     * Checks indexes rebuilding for given cache.
+     * Checks index rebuilding for given cache.
      *
      * @param cacheName Cache name.
      * @param rebuild Is indexes rebuild in progress.
      */
-    private void checkRebuild(String cacheName, boolean rebuild) {
+    private void checkIndexRebuild(String cacheName, boolean rebuild) {
         String idxSql = "SELECT IS_INDEX_REBUILD_IN_PROGRESS FROM " + systemSchemaName() + ".TABLES " +
             "WHERE TABLE_NAME='" + cacheName + "'";
 
@@ -393,9 +393,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue(res.stream().allMatch(row -> {
             assertEquals(1, row.size());
 
-            Boolean isRebuildInProgress = (Boolean)row.get(0);
+            Boolean isIndexRebuildInProgress = (Boolean)row.get(0);
 
-            return isRebuildInProgress == rebuild;
+            return isIndexRebuildInProgress == rebuild;
         }));
     }
 
