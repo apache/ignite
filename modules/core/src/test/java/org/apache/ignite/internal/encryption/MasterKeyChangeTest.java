@@ -350,6 +350,30 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         }
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeFailsDuringRotation() throws Exception {
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
+
+        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grids.get2());
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+
+        spi.waitForBlocked();
+
+        runAsync(() -> stopGrid(GRID_1));
+
+        fut.get();
+
+        assertEquals(MASTER_KEY_NAME_2, grids.get1().encryption().getMasterKeyName());
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
