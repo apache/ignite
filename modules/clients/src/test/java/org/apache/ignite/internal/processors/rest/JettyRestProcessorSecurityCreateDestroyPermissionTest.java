@@ -28,11 +28,6 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
-import static org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest.CACHE_NAME;
-import static org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest.CREATE_CACHE_NAME;
-import static org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest.EMPTY_PERM;
-import static org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest.FORBIDDEN_CACHE_NAME;
-import static org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest.NEW_TEST_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -51,6 +46,21 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     protected static final String SUCCESS_STATUS = "0";
     /** */
     protected static final String ERROR_STATUS = "1";
+
+    /** Empty permission. */
+    protected static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+
+    /** Cache name for tests. */
+    protected static final String CACHE_NAME = "TEST_CACHE";
+
+    /** Create cache name. */
+    protected static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
+
+    /** Forbidden cache. */
+    protected static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
+
+    /** New cache. */
+    protected static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
 
     /**
      * {@inheritDoc}
