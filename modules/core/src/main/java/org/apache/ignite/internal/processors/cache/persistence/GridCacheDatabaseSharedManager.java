@@ -183,7 +183,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.transactions.TransactionState;
@@ -786,10 +785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metaStorage = createMetastorage(true);
 
-                boolean encryptionDisabled = cctx.gridConfig().getEncryptionSpi() instanceof NoopEncryptionSpi;
-
-                applyLogicalUpdates(status, onlyMetastorageGroup(),
-                    encryptionDisabled ? onlyMetastorageRecords() : onlyMetastorageAndEncryptionRecords(), false);
+                applyLogicalUpdates(status, onlyMetastorageGroup(), onlyMetastorageAndEncryptionRecords(), false);
 
                 fillWalDisabledGroups();
 
@@ -5631,13 +5627,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private IgnitePredicate<Integer> groupsWithEnabledWal() {
         return groupId -> !initiallyGlobalWalDisabledGrps.contains(groupId)
             && !initiallyLocalWalDisabledGrps.contains(groupId);
-    }
-
-    /**
-     * @return WAL records predicate that passes only Metastorage data records.
-     */
-    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> onlyMetastorageRecords() {
-        return (type, ptr) -> type == METASTORE_DATA_RECORD;
     }
 
     /**

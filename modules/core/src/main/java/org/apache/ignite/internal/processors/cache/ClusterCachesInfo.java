@@ -932,9 +932,7 @@ public class ClusterCachesInfo {
         DynamicCacheChangeRequest req,
         String cacheName
     ) {
-        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
-
-        String conflictErr = checkCacheConflict(ccfg);
+        String conflictErr = checkCacheConflict(req.startCacheConfiguration());
 
         if (conflictErr != null) {
             U.warn(log, "Ignore cache start request. " + conflictErr);
@@ -950,7 +948,8 @@ public class ClusterCachesInfo {
             return false;
         }
 
-        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(ccfg, registeredCaches.values());
+        SchemaOperationException err = QueryUtils.checkQueryEntityConflicts(
+            req.startCacheConfiguration(), registeredCaches.values());
 
         if (err != null) {
             if (persistedCfgs)
@@ -961,6 +960,8 @@ public class ClusterCachesInfo {
             return false;
         }
 
+        CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
+
         GridEncryptionManager encMgr = ctx.encryption();
 
         if (ccfg.isEncryptionEnabled() && (encMgr.isMasterKeyChangeInProgress() ||
@@ -969,7 +970,7 @@ public class ClusterCachesInfo {
             U.warn(log, "Ignore cache start request during the master key change process.");
 
             IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +
-                "process is not supported.");
+                "process is not supported. Group keys can be encrypted by the old master key.");
 
             if (persistedCfgs)
                 res.errs.add(error);

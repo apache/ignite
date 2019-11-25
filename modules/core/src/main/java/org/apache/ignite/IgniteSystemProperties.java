@@ -1291,8 +1291,8 @@ public final class IgniteSystemProperties {
      * master key name. Set up this property to re-encrypt cache keys on startup and join to cluster with valid master
      * key name.
      */
-    public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP =
-        "IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP";
+    public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP =
+        "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
      * Enforces singleton.

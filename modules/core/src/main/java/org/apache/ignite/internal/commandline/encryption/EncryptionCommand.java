@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.of;
 
 /**
- * Commands assosiated with encryption functionality.
+ * Commands assosiated with encryption features.
  */
 public class EncryptionCommand implements Command<VisorEncryptionArgs> {
     /** Arguments. */

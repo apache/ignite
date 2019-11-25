@@ -25,10 +25,10 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  * Logical data record indented for master key change action.
  */
 public class MasterKeyChangeRecord extends WALRecord {
-    /** */
+    /** Master key name. */
     private final String masterKeyName;
 
-    /** */
+    /** Group keys. */
     private final Map<Integer, byte[]> grpKeys;
 
     /**

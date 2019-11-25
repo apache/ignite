@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -28,6 +27,7 @@ import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
@@ -61,7 +62,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * @param <R> Result type.
  */
 public class DistributedProcess<I extends Serializable, R extends Serializable> {
-    /** Kernal context. */
+    /** Process type. */
     private final DistributedProcessType type;
 
     /** Active processes. */
@@ -91,7 +92,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         log = ctx.log(getClass());
 
         ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
-            if (msg.type() != type)
+            if (msg.type() != type.ordinal())
                 return;
 
             Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
@@ -126,14 +127,14 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 ClusterNode crdNode = coordinator();
 
                 if (crdNode != null && !ctx.clientNode())
-                    sendSingleSingleMessage(p, crdNode);
+                    sendSingleMessage(p, crdNode);
             });
 
             p.initFut.onDone();
         });
 
         ctx.discovery().setCustomEventListener(FullMessage.class, (topVer, snd, msg0) -> {
-            if (msg0.type() != type)
+            if (msg0.type() != type.ordinal())
                 return;
 
             FullMessage<R> msg = (FullMessage<R>)msg0;
@@ -154,10 +155,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
-            if (msg0 instanceof SingleNodeMessage && ((SingleNodeMessage)msg0).type() == type) {
+            if (msg0 instanceof SingleNodeMessage && ((SingleNodeMessage)msg0).type() == type.ordinal()) {
                 SingleNodeMessage<R> msg = (SingleNodeMessage<R>)msg0;
 
-                if (msg.type() == type)
+                if (msg.type() == type.ordinal())
                     onSingleNodeMessageReceived(msg, nodeId);
             }
         });
@@ -167,24 +168,24 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             for (Process p : processes.values()) {
                 p.initFut.listen(fut -> {
-                    boolean crdChanged = F.eq(leftNodeId, p.crdId);
-
-                    if (crdChanged) {
+                    if (F.eq(leftNodeId, p.crdId)) {
                         ClusterNode crd = coordinator();
 
-                        if (crd != null) {
-                            p.crdId = crd.id();
-
-                            if (crd.isLocal())
-                                initCoordinator(p, discoCache.version());
-
-                            if (!ctx.clientNode())
-                                p.resFut.listen(f -> sendSingleSingleMessage(p, crd));
-                        }
-                        else
+                        if (crd == null) {
                             onAllServersLeft();
+
+                            return;
+                        }
+
+                        p.crdId = crd.id();
+
+                        if (crd.isLocal())
+                            initCoordinator(p, discoCache.version());
+
+                        if (!ctx.clientNode())
+                            p.resFut.listen(f -> sendSingleMessage(p, crd));
                     }
-                    else if (ctx.localNodeId().equals(p.crdId)) {
+                    else if (F.eq(ctx.localNodeId(), p.crdId)) {
                         boolean rmvd, isEmpty;
 
                         synchronized (mux) {
@@ -213,7 +214,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public void start(UUID id, I req) {
         try {
-            InitMessage msg = new InitMessage<>(id, type, req);
+            InitMessage msg = new InitMessage<>(id, type.ordinal(), req);
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -229,20 +230,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param topVer Topology version.
      */
     private void initCoordinator(Process p, AffinityTopologyVersion topVer) {
-        Set<UUID> aliveSrvNodesIds = new HashSet<>();
-
-        for (ClusterNode node : ctx.discovery().serverNodes(topVer)) {
-            if (ctx.discovery().alive(node))
-                aliveSrvNodesIds.add(node.id());
-        }
-
         synchronized (mux) {
             if (p.initCrdFut.isDone())
                 return;
 
             assert p.remaining.isEmpty();
 
-            p.remaining.addAll(aliveSrvNodesIds);
+            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -254,10 +248,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param p Process.
      * @param crd Coordinator node to send message.
      */
-    private void sendSingleSingleMessage(Process p, ClusterNode crd) {
+    private void sendSingleMessage(Process p, ClusterNode crd) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type.ordinal(), p.resFut.result(),
             (Exception)p.resFut.error());
 
         if (crd.isLocal())
@@ -267,7 +261,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 ctx.io().sendToGridTopic(crd, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
-                log.warning("Unable to send message.", e);
+                log.error("Unable to send message to coordinator.", e);
+
+                ctx.failure().process(new FailureContext(CRITICAL_ERROR,
+                    new Exception("Unable to send message to coordinator.", e)));
             }
         }
     }
@@ -316,7 +313,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 res.put(uuid, msg.response());
         });
 
-        FullMessage msg = new FullMessage<>(p.id, type, res, err);
+        FullMessage msg = new FullMessage<>(p.id, type.ordinal(), res, err);
 
         try {
             ctx.discovery().sendCustomEvent(msg);

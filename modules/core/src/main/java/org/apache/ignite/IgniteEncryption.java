@@ -23,9 +23,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
- * Defines encryption processes functionality.
+ * Defines encryption features.
  * <p>
- * Ignite provides Transparent Data Encryption of cache data on disk. Encryption features is provided by {@link
+ * Ignite provides Transparent Data Encryption of cache data on disk. Encryption features are provided by {@link
  * EncryptionSpi} and can be configured via {@link IgniteConfiguration#setEncryptionSpi(EncryptionSpi)}. Cache
  * encryption is configured via {@link CacheConfiguration#setEncryptionEnabled(boolean)}.
  * <p>
@@ -65,7 +65,7 @@ public interface IgniteEncryption {
      * <p>
      * If some node was unavailable during a master key change process it won't be able to join to cluster with old the
      * master key name. Node should re-encrypt group keys during the startup and recovery process. Set up valid master
-     * key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP}.
+     * key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
      *
      * @return Future for this operation.
      * @throws IgniteException If the change master key process failed.

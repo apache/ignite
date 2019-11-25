@@ -37,9 +37,9 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class KeystoreEncryptionSpiSelfTest {
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testCantStartWithEmptyParam() {
+    public void testCantStartWithEmptyParam() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             EncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
@@ -47,9 +47,9 @@ public class KeystoreEncryptionSpiSelfTest {
         }, IgniteException.class);
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testCantStartWithoutPassword() {
+    public void testCantStartWithoutPassword() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 
@@ -59,9 +59,9 @@ public class KeystoreEncryptionSpiSelfTest {
         }, IgniteException.class);
     }
 
-    /** */
+    /** @throws Exception If failed. */
     @Test
-    public void testCantStartKeystoreDoesntExists() {
+    public void testCantStartKeystoreDoesntExists() throws Exception {
         GridTestUtils.assertThrowsWithCause(() -> {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
 

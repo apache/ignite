@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -42,7 +41,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     private UUID processId;
 
     /** Process type. */
-    private DistributedProcessType type;
+    private int type;
 
     /** Single node response. */
     private R resp;
@@ -60,7 +59,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
      * @param resp Single node response.
      * @param err Error.
      */
-    public SingleNodeMessage(UUID processId, DistributedProcessType type, R resp, Exception err) {
+    public SingleNodeMessage(UUID processId, int type, R resp, Exception err) {
         this.processId = processId;
         this.type = type;
         this.resp = resp;
@@ -86,7 +85,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("type", type.ordinal()))
+                if (!writer.writeInt("type", type))
                     return false;
 
                 writer.incrementState();
@@ -124,7 +123,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 1:
-                type = DistributedProcessType.values()[reader.readInt("type")];
+                type = reader.readInt("type");
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +171,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     }
 
     /** @return Process type. */
-    public DistributedProcessType type() {
+    public int type() {
         return type;
     }
 

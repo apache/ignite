@@ -39,7 +39,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.ENCRYPTION_KEY_PREFIX;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
@@ -102,7 +102,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertEquals(MASTER_KEY_NAME_2, grids.get1().encryption().getMasterKeyName());
 
-        System.setProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP, MASTER_KEY_NAME_2);
+        System.setProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP, MASTER_KEY_NAME_2);
 
         try {
             IgniteEx ignite = startGrid(GRID_1);
@@ -112,7 +112,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             checkEncryptedCaches(grids.get1(), ignite);
         }
         finally {
-            System.clearProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP);
+            System.clearProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP);
         }
     }
 

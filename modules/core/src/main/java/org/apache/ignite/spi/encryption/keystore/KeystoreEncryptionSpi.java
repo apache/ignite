@@ -45,7 +45,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -113,8 +112,11 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      */
     private int keySize = DEFAULT_KEY_SIZE;
 
-    /** Tuple of the master key name and the master key. */
-    private volatile T2<String, KeystoreEncryptionKey> masterKey = new T2<>(DEFAULT_MASTER_KEY_NAME, null);
+    /** Master key. */
+    private volatile KeystoreEncryptionKey masterKey;
+
+    /** Master key name. */
+    private volatile String masterKeyName = DEFAULT_MASTER_KEY_NAME;
 
     /** Logger. */
     @LoggerResource
@@ -142,7 +144,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        loadMasterKey(getMasterKeyName());
+        loadMasterKey(masterKeyName);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +158,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     @Override public byte[] masterKeyDigest() {
         ensureStarted();
 
-        return makeDigest(masterKey.get2().key().getEncoded());
+        return makeDigest(masterKey.key().getEncoded());
     }
 
     /** {@inheritDoc} */
@@ -268,14 +270,14 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
         byte[] res = new byte[encryptedSize(serKey.length)];
 
-        encrypt(ByteBuffer.wrap(serKey), masterKey.get2(), ByteBuffer.wrap(res));
+        encrypt(ByteBuffer.wrap(serKey), masterKey, ByteBuffer.wrap(res));
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public KeystoreEncryptionKey decryptKey(byte[] data) {
-        byte[] serKey = decrypt(data, masterKey.get2());
+        byte[] serKey = decrypt(data, masterKey);
 
         KeystoreEncryptionKey key = U.fromBytes(serKey);
 
@@ -304,18 +306,15 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public String getMasterKeyName() {
-        return masterKey.get1();
+        return masterKeyName;
     }
 
     /** {@inheritDoc} */
     @Override public void setMasterKeyName(String masterKeyName) {
-        if (!started()) {
-            masterKey = new T2<>(masterKeyName, null);
+        this.masterKeyName = masterKeyName;
 
-            return;
-        }
-
-        loadMasterKey(masterKeyName);
+        if (started())
+            loadMasterKey(masterKeyName);
     }
 
     /**
@@ -489,7 +488,9 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             assertParameter(key != null, "No such master key found [masterKeyName="+ masterKeyName + ']');
 
-            masterKey = new T2<>(masterKeyName, new KeystoreEncryptionKey(key, null));
+            masterKey = new KeystoreEncryptionKey(key, null);
+
+            this.masterKeyName = masterKeyName;
         }
         catch (GeneralSecurityException | IOException e) {
             throw new IgniteSpiException(e);

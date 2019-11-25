@@ -76,7 +76,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -701,10 +701,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             throw new IgniteException("Failed to read encryption keys state.", e);
         }
 
-        String newMasterKeyName = IgniteSystemProperties.getString(IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP);
+        String newMasterKeyName = IgniteSystemProperties.getString(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP);
 
         if (newMasterKeyName != null) {
-            log.info("System property " + IGNITE_MASTER_KEY_NAME_TO_CHANGE_ON_STARTUP + " is set. Master key " +
+            log.info("System property " + IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP + " is set. Master key " +
                 "will be changed locally and group keys will be re-encrypted before join to cluster [masterKeyName=" +
                 newMasterKeyName + ']');
 
