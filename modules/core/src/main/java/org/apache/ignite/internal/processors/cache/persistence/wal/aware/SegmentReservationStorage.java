@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 import java.util.Arrays;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 
@@ -28,6 +29,17 @@ import org.apache.ignite.IgniteLogger;
 class SegmentReservationStorage {
     /** Logger. */
     protected IgniteLogger log;
+
+    private ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<String>() {
+        @Override public boolean add(String o) {
+            boolean res = super.add(o);
+
+            while(size() > 20)
+                poll();
+
+            return res;
+        }
+    };
 
     public SegmentReservationStorage(IgniteLogger log) {
         this.log = log;
@@ -47,7 +59,7 @@ class SegmentReservationStorage {
             reserved.merge(absIdx, 1, (a, b) -> a + b);
         }
 
-        log.info("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
+        queue.add("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
     }
 
     private String threadDump() {
@@ -66,7 +78,7 @@ class SegmentReservationStorage {
             reserved = this.reserved.floorKey(absIdx) != null;
         }
 
-        log.info("RESERVE :: " + absIdx + " :: " + reserved + "\n" + threadDump());
+        queue.add("RESERVE :: " + absIdx + " :: " + reserved + "\n" + threadDump());
 
         return reserved;
     }
@@ -78,7 +90,7 @@ class SegmentReservationStorage {
         synchronized(this) {
             Integer cur = reserved.get(absIdx);
 
-            assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx + ", reserved=" + reserved.toString();
+            assert cur != null && cur >= 1 : "cur=" + cur + ", absIdx=" + absIdx + ", reserved=" + reserved.toString() + "\n" + queue.stream().collect(Collectors.joining("\n"));
 
             if (cur == 1)
                 reserved.remove(absIdx);
@@ -86,6 +98,6 @@ class SegmentReservationStorage {
                 reserved.put(absIdx, cur - 1);
         }
 
-        log.info("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
+        queue.add("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
     }
 }
