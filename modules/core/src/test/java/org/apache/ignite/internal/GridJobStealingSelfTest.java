@@ -50,6 +50,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -298,6 +299,19 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             ret.get(ignite1.cluster().localNode().id());
         assert ret.get(ignite3.cluster().localNode().id()) != null && ret.get(ignite3.cluster().localNode().id()) == 2 :
             ret.get(ignite3.cluster().localNode().id());
+    }
+
+    /**
+     * @throws Exception If fatiled.
+     */
+    @Ignore("https://ggsystems.atlassian.net/browse/GG-25507")
+    @Test
+    public void testJobStealingMbeanValidity() throws Exception {
+        String[] beansToValidate = new String[] {
+            "org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi$JobStealingCollisionSpiMBeanImpl",
+            "org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi$JobStealingFailoverSpiMBeanImpl"};
+
+        validateMbeans(ignite1, beansToValidate);
     }
 
     /** {@inheritDoc} */

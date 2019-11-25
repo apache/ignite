@@ -17,6 +17,7 @@
 package org.apache.ignite.testframework.junits.common;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -40,6 +41,7 @@ import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
+import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -119,6 +121,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
@@ -2491,5 +2494,127 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
 
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, cls, true);
+    }
+
+    /**
+     * Checks that return types of all registered ignite metrics methods are correct.
+     * Also checks that all classes from {@code namesToCheck} are registered as mbeans.
+     *
+     * @param ignite Ignite instance to collect metrics from.
+     * @param namesToCheck Mbean classes names that must be registered in {@code MBeanServer}.
+     * @throws Exception If failed to obtain mbeans.
+     */
+    protected void validateMbeans(Ignite ignite, String... namesToCheck) throws Exception {
+        logMbeansValidation(getNotRegisteredMbeans(ignite, namesToCheck), "Not registered mbeans");
+        logMbeansValidation(getInvalidMbeansMethods(ignite), "Invalid metrics methods");
+    }
+
+    /**
+     * @param ignite Ignite instance to collect metrics from.
+     * @param namesToCheck Mbean classes names that must be registered in {@code MBeanServer}.
+     * @return {@code Set} of class names that are contained in {@code namesToCheck}
+     *          but not registered in {@code MBeanServer}.
+     */
+    protected Set<String> getNotRegisteredMbeans(Ignite ignite, String... namesToCheck) {
+        MBeanServer srv = ignite.configuration().getMBeanServer();
+
+        Set<String> beancClsNames = srv.queryMBeans(null, null).stream()
+                                                               .map(ObjectInstance::getClassName)
+                                                               .collect(toSet());
+
+        return Arrays.stream(namesToCheck)
+                     .filter(nameToCheck -> beancClsNames.stream().noneMatch(clsName -> clsName.contains(nameToCheck)))
+                     .collect(toSet());
+    }
+
+    /**
+     * @param ignite Ignite instance to collect metrics from.
+     * @return {@code Set} of metrics methods that have forbidden return types.
+     * @throws Exception If failed to obtain metrics.
+     */
+    protected Set<String> getInvalidMbeansMethods(Ignite ignite) throws Exception {
+        Set<String> sysMetricsPackages = new HashSet<>();
+        sysMetricsPackages.add("sun.management");
+        sysMetricsPackages.add("javax.management");
+
+        MBeanServer srv = ignite.configuration().getMBeanServer();
+
+        Set<String> invalidMethods = new HashSet<>();
+
+        for (ObjectInstance instance: srv.queryMBeans(null, null)) {
+            final String clsName = instance.getClassName();
+
+            if (sysMetricsPackages.stream().anyMatch(clsName::startsWith))
+                continue;
+
+            Class c = Class.forName(clsName);
+
+            for (Class interf : c.getInterfaces()) {
+                for (Method m : interf.getMethods()) {
+                    if (!m.isAnnotationPresent(MXBeanDescription.class))
+                        continue;
+
+                    if (!validateMetricsMethod(m))
+                        invalidMethods.add(m.toString());
+                }
+            }
+        }
+
+        return invalidMethods;
+    }
+
+    /**  */
+    private void logMbeansValidation(Set<String> invalidSet, String errorMsgPrefix) {
+        if (!invalidSet.isEmpty()) {
+            log.info("****************************************");
+            log.info(errorMsgPrefix + ":");
+
+            invalidSet.stream()
+                .sorted()
+                .forEach(log::info);
+
+            log.info("****************************************");
+
+            fail(errorMsgPrefix + " detected^");
+        }
+    }
+
+    /**
+     * Validates return type for metrics method.
+     * Validity rules are not carved in stone and can be changed in future.
+     * See https://ggsystems.atlassian.net/browse/GG-25507.
+     *
+     * @param m Metric method to check.
+     * @return {@code True} if method return type is allowed.
+     */
+    private boolean validateMetricsMethod(Method m) {
+        Set<String> primitives = new HashSet<>();
+        primitives.add("char");
+        primitives.add("short");
+        primitives.add("int");
+        primitives.add("long");
+        primitives.add("double");
+        primitives.add("float");
+        primitives.add("byte");
+        primitives.add("boolean");
+        primitives.add("void");
+
+        Set<String> allowedPackages = new HashSet<>();
+        allowedPackages.add("java.lang");
+        allowedPackages.add("java.util");
+
+        final String returnTypeName = m.getGenericReturnType().getTypeName();
+
+        if (primitives.stream().anyMatch(type -> type.equals(returnTypeName) || (type + "[]").equals(returnTypeName)))
+            return true;
+
+        String[] parts = returnTypeName.split("[<>,]");
+
+        for (String part: parts) {
+            if (allowedPackages.stream().noneMatch(pack -> part.trim().startsWith(pack)))
+                return false;
+        }
+
+        return true;
     }
 }

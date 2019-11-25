@@ -483,6 +483,20 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testZkMbeansValidity() throws Exception {
+        try {
+            Ignite ignite = startGrid();
+
+            validateMbeans(ignite, "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
+        } finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      *
      */
     private static class ValidationTestAffinity extends RendezvousAffinityFunction {

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
 import org.apache.ignite.internal.GridMBeansTest;
+import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridPeerDeploymentRetryModifiedTest;
 import org.apache.ignite.internal.GridPeerDeploymentRetryTest;
@@ -180,6 +181,7 @@ import org.junit.runners.Suite;
     GridNodeMetricsLogSelfTest.class,
     GridLocalIgniteSerializationTest.class,
     GridMBeansTest.class,
+    GridMbeansMiscTest.class,
     TransactionsMXBeanImplTest.class,
     SetTxTimeoutOnPartitionMapExchangeTest.class,
     DiscoveryDataDeserializationFailureHanderTest.class,
