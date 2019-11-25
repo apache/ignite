@@ -105,17 +105,22 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     @Test
     public void testGetOrCreateDestroyCache() throws Exception {
         // This won't fail since defaultAllowAll is true.
-        assertEquals(SUCCESS_STATUS, (jsonField(content(NEW_TEST_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS,
+            (jsonField(content(NEW_TEST_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
 
-        assertEquals(SUCCESS_STATUS, (jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
-        assertEquals(SUCCESS_STATUS, (jsonField(content(CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS,
+            (jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS,
+            (jsonField(content(CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
 
         checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), CACHE_CREATE);
 
         // This won't fail since defaultAllowAll is true.
-        assertEquals(SUCCESS_STATUS, (jsonField(content(NEW_TEST_CACHE, GridRestCommand.DESTROY_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS,
+            (jsonField(content(NEW_TEST_CACHE, GridRestCommand.DESTROY_CACHE), STATUS)));
 
-        assertEquals(SUCCESS_STATUS, (jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS,
+            (jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS)));
 
         checkFailWithError(content(CREATE_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
         checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
