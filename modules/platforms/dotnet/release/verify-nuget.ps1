@@ -32,6 +32,9 @@ Requirements:
 .PARAMETER packageDir
 Directory with nupkg files to verify, defaults to ..\nupkg.
 
+.EXAMPLE
+./verify-nuget.ps1 -packageDir /foo/packages
+
 #>
 
 param (
