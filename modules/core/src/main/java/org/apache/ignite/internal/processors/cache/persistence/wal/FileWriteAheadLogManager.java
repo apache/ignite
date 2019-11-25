@@ -979,6 +979,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (!hasIndex(((FileWALPointer)start).index())) {
             segmentAware.release(((FileWALPointer)start).index());
 
+            log.info("HAS INDEX :: " + start);
+
             return false;
         }
 

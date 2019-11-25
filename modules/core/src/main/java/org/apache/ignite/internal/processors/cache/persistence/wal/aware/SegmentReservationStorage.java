@@ -34,7 +34,7 @@ class SegmentReservationStorage {
         @Override public boolean add(String o) {
             boolean res = super.add(o);
 
-            while(size() > 20)
+            while(size() > 40)
                 poll();
 
             return res;
@@ -59,7 +59,7 @@ class SegmentReservationStorage {
             reserved.merge(absIdx, 1, (a, b) -> a + b);
         }
 
-        queue.add("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
+        queue.add("RESERVE :: " + Thread.currentThread().getName() + " :: " + System.currentTimeMillis() + " :: "  + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
     }
 
     private String threadDump() {
@@ -78,7 +78,7 @@ class SegmentReservationStorage {
             reserved = this.reserved.floorKey(absIdx) != null;
         }
 
-        queue.add("RESERVE :: " + absIdx + " :: " + reserved + "\n" + threadDump());
+        queue.add("RESERVED :: " + Thread.currentThread().getName() + " :: " + System.currentTimeMillis() + " :: " + absIdx + " :: " + reserved + "\n" + threadDump());
 
         return reserved;
     }
@@ -98,6 +98,6 @@ class SegmentReservationStorage {
                 reserved.put(absIdx, cur - 1);
         }
 
-        queue.add("RESERVE :: " + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
+        queue.add("RELEASE :: " + Thread.currentThread().getName() + " :: " + System.currentTimeMillis() + " :: "  + absIdx + " :: " + reserved.toString() + "\n" + threadDump());
     }
 }
