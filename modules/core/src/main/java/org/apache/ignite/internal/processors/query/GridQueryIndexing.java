@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -333,6 +334,15 @@ public interface GridQueryIndexing {
      * @return Future completed when index rebuild finished.
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+
+    /**
+     * Rebuild cache group indexes for specific partition.
+     *
+     * @param grp Cache group context.
+     * @param partId Partition.
+     * @return Future completed when index rebuild is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesByPartition(CacheGroupContext grp, int partId);
 
     /**
      * Mark as rebuild needed for the given cache.

@@ -255,6 +255,18 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_PART = 32;
 
+    /** */
+    public static final short T_INDEX_REBUILD_MARKER_INNER = 33;
+
+    /** */
+    public static final short T_INDEX_REBUILD_MARKER_LEAF = 34;
+
+    /** */
+    public static final short T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_INNER = 35;
+
+    /** */
+    public static final short T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_LEAF = 36;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
@@ -795,6 +807,18 @@ public abstract class PageIO {
 
             case T_DATA_REF_METASTORAGE_LEAF:
                 return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
+
+            case T_INDEX_REBUILD_MARKER_INNER:
+                return (Q)IndexStorageImpl.IndexRebuildMarkersInnerIO.VERSIONS.forVersion(ver);
+
+            case T_INDEX_REBUILD_MARKER_LEAF:
+                return (Q)IndexStorageImpl.IndexRebuildMarkersLeafIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_INNER:
+                return (Q)IndexStorageImpl.IndexRebuildMarkersWithCacheIdInnerIO.VERSIONS.forVersion(ver);
+
+            case T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_LEAF:
+                return (Q)IndexStorageImpl.IndexRebuildMarkersWithCacheIdLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -70,7 +71,10 @@ import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.record.StartBuildIndexRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -80,12 +84,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorage;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -165,6 +172,8 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -1937,38 +1946,96 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         SchemaIndexCacheVisitorClosure clo;
 
+        Set<Integer> parts = null;
+
         if (!pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.
             clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
         }
         else {
-            // Otherwise iterate over tables looking for missing indexes.
-            IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
+            parts = getIndexRebuildMarkers(cctx);
 
-            for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cctx.name())) {
-                assert tblDesc.table() != null;
+            if (!F.isEmpty(parts))
+                clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
+            else {
+                // Otherwise iterate over tables looking for missing indexes.
+                IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
 
-                tblDesc.table().collectIndexesForPartialRebuild(clo0);
+                for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cctx.name())) {
+                    assert tblDesc.table() != null;
+
+                    tblDesc.table().collectIndexesForPartialRebuild(clo0);
+                }
+
+                if (clo0.hasIndexes())
+                    clo = clo0;
+                else
+                    return null;
             }
-
-            if (clo0.hasIndexes())
-                clo = clo0;
-            else
-                return null;
         }
 
         // Closure prepared, do rebuild.
+        return rebuildIndexesFromHashByPartitions(cctx, clo, parts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesByPartition(CacheGroupContext grp, int partId) {
+        // No data in fresh in-memory cache.
+        if (!grp.persistenceEnabled())
+            return new GridFinishedFuture<>();
+
+        GridCompoundFuture res = new GridCompoundFuture();
+
+        for (GridCacheContext cctx : grp.caches()) {
+            SchemaIndexCacheVisitorClosure clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
+
+            res.add(rebuildIndexesFromHashByPartitions(cctx, clo, Collections.singleton(partId)));
+        }
+        res.markInitialized();
+
+        return res;
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param clo Per-row closure.
+     * @param parts Partitions.
+     * @return Future completed when all indexes are built.
+     */
+    private IgniteInternalFuture<?> rebuildIndexesFromHashByPartitions(GridCacheContext cctx,
+        SchemaIndexCacheVisitorClosure clo, @Nullable Set<Integer> parts) {
         final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
 
         markIndexRebuild(cctx.name(), true);
 
+        if (parts == null) {
+            parts = cctx.topology().localPartitions().stream().map(GridDhtLocalPartition::id)
+                .collect(Collectors.toSet());
+        }
+
+        storeIndexRebuildMarkers(cctx, parts, true);
+
+        WALRecord rec = new StartBuildIndexRecord(cctx.groupId(), cctx.cacheId(), parts);
+
+        try {
+            cctx.shared().wal().log(rec);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Can't write to WAL record: " + rec, e);
+
+            throw new IgniteException(e);
+        }
+
         if (cctx.group().metrics() != null)
             cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+
+        final Set<Integer> parts0 = parts;
 
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
                 try {
-                    rebuildIndexesFromHash0(cctx, clo);
+                    rebuildIndexesFromHash0(cctx, clo, parts0);
 
                     markIndexRebuild(cctx.name(), false);
 
@@ -1999,11 +2066,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param clo Closure.
+     * @param parts Partitions.
      * @throws IgniteCheckedException If failed.
      */
-    protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException {
-        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
+    protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo,
+        Set<Integer> parts) throws IgniteCheckedException {
+
+        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx, parts) {
+            /** {@inheritDoc} */
+            @Override public void onPartitionCompleted(int partId) {
+                if (parts != null)
+                    storeIndexRebuildMarkers(cctx, Collections.singletonList(partId), false);
+            }
+        };
 
         visitor.visit(clo);
     }
@@ -3062,5 +3137,50 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
+    }
+
+    /**
+     * Store index partitions rebuild markers.
+     *
+     * @param cctx Cache context.
+     * @param parts Partitions.
+     * @param addOrRemove Use {@code true} to add rebuild marker and {@code false} to remove.
+     */
+    private void storeIndexRebuildMarkers(GridCacheContext cctx, Collection<Integer> parts, boolean addOrRemove) {
+        ctx.cache().context().database().checkpointReadLock();
+
+        try {
+            IndexStorage idxStorage = ((GridCacheOffheapManager)cctx.offheap()).getIndexStorage();
+
+            try {
+                idxStorage.storeIndexRebuildMarkers(cctx.cacheId(), parts, addOrRemove);
+
+                log.info((addOrRemove ? "Stored" : "Removed") +
+                    " index rebuild markers. [cache=" + cctx.name() +
+                    ", partsCnt=" + parts.size() + "]");
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+        finally {
+            ctx.cache().context().database().checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * Retrieve index partitions rebuild markers.
+     *
+     * @param cctx Cache context.
+     * @return Partitions marked as rebuild-required.
+     */
+    private Set<Integer> getIndexRebuildMarkers(GridCacheContext cctx) {
+        IndexStorage idxStorage = ((GridCacheOffheapManager)cctx.offheap()).getIndexStorage();
+        try {
+            return idxStorage.getIndexRebuildMarkers(cctx.cacheId());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

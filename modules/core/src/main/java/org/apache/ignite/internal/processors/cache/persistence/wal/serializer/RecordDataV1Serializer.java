@@ -41,6 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.StartBuildIndexRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -536,6 +537,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
+
+            case START_BUILD_INDEX_RECORD:
+                StartBuildIndexRecord startRec = (StartBuildIndexRecord)record;
+
+                return /*groupId*/ 4 + /*cacheId*/ 4 +
+                    /*partsCount*/ 2 + /*partId*/ (startRec.partIds() == null ? 0 : 2 * startRec.partIds().size());
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1157,6 +1164,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case START_BUILD_INDEX_RECORD:
+                int grpId = in.readInt();
+                cacheId = in.readInt();
+
+                int partsCnt = in.readUnsignedShort();
+
+                ArrayList<Integer> partIds = new ArrayList<>(partsCnt);
+
+                for (int i = 0; i < partsCnt; i++)
+                    partIds.add(in.readUnsignedShort());
+
+                res = new StartBuildIndexRecord(grpId, cacheId, partIds);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1720,6 +1742,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+                break;
+
+            case START_BUILD_INDEX_RECORD:
+                StartBuildIndexRecord buildRec = (StartBuildIndexRecord) rec;
+
+                buf.putInt(buildRec.groupId());
+                buf.putInt(buildRec.cacheId());
+
+                if (buildRec.partIds() == null)
+                    buf.putShort((short)0);
+                else {
+                    buf.putShort((short)buildRec.partIds().size());
+
+                    for (int partId : buildRec.partIds())
+                        buf.putShort((short)partId);
+                }
+
                 break;
 
             default:

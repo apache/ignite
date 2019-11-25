@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.io.File;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -232,14 +233,14 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         private boolean firstRbld = true;
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
+        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo, Set<Integer> parts)
             throws IgniteCheckedException {
             if (!firstRbld)
                 U.await(INSTANCE.rebuildLatch);
             else
                 firstRbld = false;
 
-            super.rebuildIndexesFromHash0(cctx, clo);
+            super.rebuildIndexesFromHash0(cctx, clo, parts);
         }
     }
 }
