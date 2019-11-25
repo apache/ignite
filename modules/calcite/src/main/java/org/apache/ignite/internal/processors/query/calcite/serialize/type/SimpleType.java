@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -24,7 +24,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 /**
  *
  */
-public class SimpleType implements ExpDataType {
+public class SimpleType implements DataType {
     private final Class clazz;
     private final SqlTypeName typeName;
     private final int precision;

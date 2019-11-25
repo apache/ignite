@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
 import java.util.LinkedHashMap;
 import org.apache.calcite.rel.type.RelDataType;
@@ -24,22 +24,22 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 /**
  *
  */
-public class StructType implements ExpDataType {
-    private final LinkedHashMap<String, ExpDataType> fields;
+public class StructType implements DataType {
+    private final LinkedHashMap<String, DataType> fields;
 
     static StructType fromType(RelDataType type) {
         assert type.isStruct();
 
-        LinkedHashMap<String, ExpDataType> fields = new LinkedHashMap<>();
+        LinkedHashMap<String, DataType> fields = new LinkedHashMap<>();
 
         for (RelDataTypeField field : type.getFieldList()) {
-            fields.put(field.getName(), ExpDataType.fromType(field.getType()));
+            fields.put(field.getName(), DataType.fromType(field.getType()));
         }
 
         return new StructType(fields);
     }
 
-    private StructType(LinkedHashMap<String, ExpDataType> fields) {
+    private StructType(LinkedHashMap<String, DataType> fields) {
         this.fields = fields;
     }
 

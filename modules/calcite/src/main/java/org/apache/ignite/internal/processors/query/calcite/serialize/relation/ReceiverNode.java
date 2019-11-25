@@ -14,33 +14,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.List;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 
 
 /**
  *
  */
 public class ReceiverNode extends RelGraphNode {
-    private final ExpDataType dataType;
+    private final DataType dataType;
     private final NodesMapping sourceMapping;
 
-    private ReceiverNode(RelTraitSet traits, ExpDataType dataType, NodesMapping sourceMapping) {
+    private ReceiverNode(RelTraitSet traits, DataType dataType, NodesMapping sourceMapping) {
         super(traits);
         this.dataType = dataType;
         this.sourceMapping = sourceMapping;
     }
 
     public static ReceiverNode create(Receiver rel) {
-        return new ReceiverNode(rel.getTraitSet(), ExpDataType.fromType(rel.getRowType()), rel.sourceMapping());
+        return new ReceiverNode(rel.getTraitSet(), DataType.fromType(rel.getRowType()), rel.sourceMapping());
     }
 
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return new Receiver(ctx.cluster(), traitSet.toTraitSet(ctx.cluster()), dataType.toRelDataType(ctx.typeFactory()), sourceMapping);
+        return new Receiver(ctx.getCluster(),
+            traitSet.toTraitSet(ctx.getCluster()),
+            dataType.toRelDataType(ctx.getTypeFactory()), sourceMapping);
     }
 }

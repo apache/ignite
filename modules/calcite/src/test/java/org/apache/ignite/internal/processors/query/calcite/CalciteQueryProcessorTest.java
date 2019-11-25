@@ -53,10 +53,10 @@ import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.serialize.LogicalExpression;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelToGraphConverter;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RexToExpTranslator;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
+import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
+import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -357,7 +357,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         Project proj = (Project) relRoot.rel.getInput(0);
 
-        List<LogicalExpression> expressions = translator.translate(proj.getProjects());
+        List<Expression> expressions = translator.translate(proj.getProjects());
 
         assertNotNull(expressions);
     }

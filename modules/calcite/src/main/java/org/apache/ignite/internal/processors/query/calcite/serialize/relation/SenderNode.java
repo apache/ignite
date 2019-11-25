@@ -14,33 +14,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.List;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class ProjectNode extends RelGraphNode {
-    private final List<LogicalExpression> projects;
-    private final ExpDataType dataType;
+public class SenderNode extends RelGraphNode {
+    private final DistributionTrait targetDistr;
+    private final NodesMapping targetMapping;
 
-    private ProjectNode(List<LogicalExpression> projects, ExpDataType dataType) {
-        this.projects = projects;
-        this.dataType = dataType;
+    private SenderNode(DistributionTrait targetDistr, NodesMapping targetMapping) {
+        this.targetDistr = targetDistr;
+        this.targetMapping = targetMapping;
     }
 
-    public static ProjectNode create(IgniteProject rel, RexToExpTranslator rexTranslator) {
-        return new ProjectNode(rexTranslator.translate(rel.getProjects()),
-            ExpDataType.fromType(rel.getRowType()));
+    public static SenderNode create(Sender rel) {
+        return new SenderNode(rel.targetDistribution(), rel.targetMapping());
     }
 
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return IgniteProject.create(F.first(children),
-            ctx.expressionTranslator().translate(projects),
-            dataType.toRelDataType(ctx.typeFactory()));
+        return Sender.create(F.first(children), targetDistr, targetMapping);
     }
 }

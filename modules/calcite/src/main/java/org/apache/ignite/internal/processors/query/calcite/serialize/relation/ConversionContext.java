@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
-import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.RelOptSchema;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
 
 /**
  *
  */
-public class LiteralExpression implements LogicalExpression {
-    public final ExpDataType type;
-    public final Comparable value;
+public interface ConversionContext extends RelOptTable.ToRelContext {
+    RelDataTypeFactory getTypeFactory();
 
-    public LiteralExpression(RelDataType type, Comparable value) {
-        this.type = ExpDataType.fromType(type);
-        this.value = value;
-    }
+    RelOptSchema getSchema();
 
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
-    }
+    Context getContext();
+
+    ExpToRexTranslator getExpressionTranslator();
 }

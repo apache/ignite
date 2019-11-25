@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
-import java.util.List;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 
 /**
  *
  */
-public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraits traitSet;
+public class LiteralExpression implements Expression {
+    public final DataType type;
+    public final Comparable value;
 
-    protected RelGraphNode() {
+    public LiteralExpression(RelDataType type, Comparable value) {
+        this.type = DataType.fromType(type);
+        this.value = value;
     }
 
-    protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraits(traits);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
     }
-
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
 }

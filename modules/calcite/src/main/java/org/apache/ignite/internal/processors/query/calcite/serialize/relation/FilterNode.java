@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -29,9 +31,9 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class FilterNode extends RelGraphNode {
     private final int[] variables;
-    private final LogicalExpression condition;
+    private final Expression condition;
 
-    private FilterNode(LogicalExpression condition, int[] variables) {
+    private FilterNode(Expression condition, int[] variables) {
         this.variables = variables;
         this.condition = condition;
     }
@@ -44,7 +46,7 @@ public class FilterNode extends RelGraphNode {
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         return IgniteFilter.create(
             F.first(children),
-            condition.implement(ctx.expressionTranslator()),
+            condition.implement(ctx.getExpressionTranslator()),
             Arrays.stream(variables).mapToObj(CorrelationId::new).collect(Collectors.toSet()));
     }
 }

@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 
 /**
  *
  */
-public class LocalRefExpression implements LogicalExpression {
-    public final ExpDataType type;
+public class InputRefExpression implements Expression {
+    public final DataType type;
     public final int index;
 
-    public LocalRefExpression(RelDataType type, int index) {
-        this.type = ExpDataType.fromType(type);
+    public InputRefExpression(RelDataType type, int index) {
+        this.type = DataType.fromType(type);
         this.index = index;
     }
 

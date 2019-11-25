@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,17 +24,19 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
+import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 
 /**
  *
  */
 public class JoinNode extends RelGraphNode {
-    private final LogicalExpression condition;
+    private final Expression condition;
     private final int[] variables;
     private final JoinRelType joinType;
     private final boolean semiDone;
 
-    private JoinNode(RelTraitSet traits, LogicalExpression condition, int[] variables, JoinRelType joinType, boolean semiDone) {
+    private JoinNode(RelTraitSet traits, Expression condition, int[] variables, JoinRelType joinType, boolean semiDone) {
         super(traits);
         this.condition = condition;
         this.variables = variables;
@@ -56,11 +58,11 @@ public class JoinNode extends RelGraphNode {
         RelNode left = children.get(0);
         RelNode right = children.get(1);
 
-        return new IgniteJoin(ctx.cluster(),
-            traitSet.toTraitSet(ctx.cluster()),
+        return new IgniteJoin(ctx.getCluster(),
+            traitSet.toTraitSet(ctx.getCluster()),
             left,
             right,
-            ctx.expressionTranslator().translate(condition),
+            ctx.getExpressionTranslator().translate(condition),
             Arrays.stream(variables).mapToObj(CorrelationId::new).collect(Collectors.toSet()),
             joinType,
             semiDone);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,7 +54,7 @@ public class ExpToRexTranslator implements ExpImplementor<RexNode> {
         this.ops = ops;
     }
 
-    public List<RexNode> translate(List<LogicalExpression> exps) {
+    public List<RexNode> translate(List<Expression> exps) {
         if (F.isEmpty(exps))
             return Collections.emptyList();
 
@@ -63,14 +63,14 @@ public class ExpToRexTranslator implements ExpImplementor<RexNode> {
 
         List<RexNode> res = new ArrayList<>(exps.size());
 
-        for (LogicalExpression exp : exps) {
+        for (Expression exp : exps) {
             res.add(exp.implement(this));
         }
 
         return res;
     }
 
-    public RexNode translate(LogicalExpression exp) {
+    public RexNode translate(Expression exp) {
         return exp.implement(this);
     }
 

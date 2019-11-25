@@ -26,7 +26,6 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
@@ -74,15 +73,13 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
-import org.apache.ignite.internal.processors.query.calcite.serialize.ConversionContext;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelGraphNode;
+import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
+import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -212,23 +209,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     public RelNode convert(RelGraph graph) {
         ready();
 
-        CalciteCatalogReader catalogReader = createCatalogReader();
-        RexBuilder rexBuilder = createRexBuilder();
-        RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
-        RelBuilder relBuilder = createRelBuilder(cluster, catalogReader);
+        RelOptCluster cluster = RelOptCluster.create(planner, createRexBuilder());
+        RelBuilder relBuilder = createRelBuilder(cluster, createCatalogReader());
 
-        ConversionContext ctx = new ConversionContext(this, relBuilder, operatorTable);
-
-        return F.first(convertRecursive(ctx, graph, graph.nodes().subList(0, 1)));
-    }
-
-    private List<RelNode> convertRecursive(ConversionContext ctx, RelGraph graph, List<Ord<RelGraphNode>> src) {
-        ImmutableList.Builder<RelNode> b = ImmutableList.builder();
-
-        for (Ord<RelGraphNode> node : src)
-            b.add(node.e.toRel(ctx, convertRecursive(ctx, graph, graph.children(node.i))));
-
-        return b.build();
+        return new GraphToRelConverter(this, relBuilder, operatorTable).convert(graph);
     }
 
     /** {@inheritDoc} */

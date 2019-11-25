@@ -14,19 +14,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 import java.io.Serializable;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 /**
  *
  */
-public interface ExpDataType extends Serializable {
-    static ExpDataType fromType(RelDataType type) {
-        return type.isStruct() ? StructType.fromType(type) : SimpleType.fromType(type);
-    }
-
-    RelDataType toRelDataType(RelDataTypeFactory factory);
+public interface Expression extends Serializable {
+    <T> T implement(ExpImplementor<T> implementor);
 }

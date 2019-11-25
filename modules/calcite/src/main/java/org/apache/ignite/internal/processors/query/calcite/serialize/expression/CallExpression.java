@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
+
+import java.util.List;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.SqlSyntax;
 
 /**
  *
  */
-public interface ExpImplementor<T> {
-    T implement(CallExpression callExpression);
+public class CallExpression implements Expression {
+    public final String opName;
+    public final SqlSyntax opSyntax;
+    public final List<Expression> operands;
 
-    T implement(InputRefExpression inputRefExpression);
+    public CallExpression(SqlOperator op, List<Expression> operands) {
+        this.operands = operands;
+        opName = op.getName();
+        opSyntax = op.getSyntax();
+    }
 
-    T implement(LiteralExpression literalExpression);
-
-    T implement(LocalRefExpression localRefExpression);
-
-    T implement(DynamicParamExpression dynamicParamExpression);
+    @Override public <T> T implement(ExpImplementor<T> implementor) {
+        return implementor.implement(this);
+    }
 }

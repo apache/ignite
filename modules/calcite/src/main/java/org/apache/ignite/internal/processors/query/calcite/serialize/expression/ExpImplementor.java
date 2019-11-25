@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
-
-import java.util.List;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 /**
  *
  */
-public class TableScanNode extends RelGraphNode {
-    private final List<String> tableName;
+public interface ExpImplementor<T> {
+    T implement(CallExpression callExpression);
 
-    private TableScanNode(List<String> tableName) {
-        this.tableName = tableName;
-    }
+    T implement(InputRefExpression inputRefExpression);
 
-    public static TableScanNode create(IgniteTableScan rel) {
-        return new TableScanNode(rel.getTable().getQualifiedName());
-    }
+    T implement(LiteralExpression literalExpression);
 
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return ctx.schema().getTableForMember(tableName).toRel(ctx);
-    }
+    T implement(LocalRefExpression localRefExpression);
+
+    T implement(DynamicParamExpression dynamicParamExpression);
 }

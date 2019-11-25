@@ -34,13 +34,13 @@ import org.apache.ignite.internal.util.typedef.F;
  *
  */
 public class Fragment {
-    private final RelNode rel;
+    private final RelNode root;
 
     private NodesMapping mapping;
     private ImmutableList<Fragment> remoteInputs;
 
-    public Fragment(RelNode rel) {
-        this.rel = rel;
+    public Fragment(RelNode root) {
+        this.root = root;
     }
 
     public void init(Context ctx, RelMetadataQuery mq) {
@@ -48,7 +48,7 @@ public class Fragment {
     }
 
     public RelNode root() {
-        return rel;
+        return root;
     }
 
     public NodesMapping mapping() {
@@ -60,11 +60,11 @@ public class Fragment {
     }
 
     public boolean isRemote() {
-        return rel instanceof Sender;
+        return root instanceof Sender;
     }
 
     private void init(Fragment parent, Context ctx, RelMetadataQuery mq) {
-        FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(rel, mq);
+        FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
         remoteInputs = info.remoteInputs();
 
@@ -82,7 +82,7 @@ public class Fragment {
         if (parent != null) {
             assert isRemote();
 
-            ((Sender)rel).init(parent.mapping);
+            ((Sender) root).init(parent.mapping);
         }
 
         if (!F.isEmpty(remoteInputs)) {

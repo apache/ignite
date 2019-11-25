@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.volcano.AbstractConverter;
-import org.apache.calcite.rel.rules.AbstractMaterializedViewRule;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateJoinTransposeRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
@@ -44,7 +43,6 @@ import org.apache.calcite.rel.rules.IntersectToDistinctRule;
 import org.apache.calcite.rel.rules.JoinCommuteRule;
 import org.apache.calcite.rel.rules.JoinPushExpressionsRule;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.rules.MaterializedViewFilterScanRule;
 import org.apache.calcite.rel.rules.ProjectFilterTransposeRule;
 import org.apache.calcite.rel.rules.ProjectMergeRule;
 import org.apache.calcite.rel.rules.ProjectRemoveRule;
@@ -141,15 +139,6 @@ public class IgniteRules {
         ValuesReduceRule.PROJECT_INSTANCE,
         AggregateValuesRule.INSTANCE);
 
-    public static final List<RelOptRule> MATERIALIZATION_RULES = ImmutableList.of(
-        MaterializedViewFilterScanRule.INSTANCE,
-        AbstractMaterializedViewRule.INSTANCE_PROJECT_FILTER,
-        AbstractMaterializedViewRule.INSTANCE_FILTER,
-        AbstractMaterializedViewRule.INSTANCE_PROJECT_JOIN,
-        AbstractMaterializedViewRule.INSTANCE_JOIN,
-        AbstractMaterializedViewRule.INSTANCE_PROJECT_AGGREGATE,
-        AbstractMaterializedViewRule.INSTANCE_AGGREGATE);
-
     public static final List<RelOptRule> SUBQUERY_REWRITE_RULES = ImmutableList.of(
         SubQueryRemoveRule.FILTER,
         SubQueryRemoveRule.PROJECT,
@@ -162,8 +151,10 @@ public class IgniteRules {
 
     public static List<RelOptRule> logicalRules(Context ctx) {
         return ImmutableList.<RelOptRule>builder()
+            .addAll(BASE_RULES)
+            .addAll(ABSTRACT_RULES)
+            .addAll(ABSTRACT_RELATIONAL_RULES)
             .addAll(IGNITE_RULES)
-            .add(AbstractConverter.ExpandConversionRule.INSTANCE)
             .build();
     }
 }

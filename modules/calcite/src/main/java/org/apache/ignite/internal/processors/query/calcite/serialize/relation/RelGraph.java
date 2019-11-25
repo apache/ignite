@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 
 /**
  *
  */
-public interface LogicalExpression extends Serializable {
-    <T> T implement(ExpImplementor<T> implementor);
+public class RelGraph extends Graph<RelGraphNode> {
 }

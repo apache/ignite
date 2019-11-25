@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +36,9 @@ import org.apache.calcite.rex.RexVisitor;
 /**
  *
  */
-public class RexToExpTranslator implements RexVisitor<LogicalExpression> {
-    public List<LogicalExpression> translate(List<RexNode> operands) {
-        ArrayList<LogicalExpression> res = new ArrayList<>(operands.size());
+public class RexToExpTranslator implements RexVisitor<Expression> {
+    public List<Expression> translate(List<RexNode> operands) {
+        ArrayList<Expression> res = new ArrayList<>(operands.size());
 
         for (RexNode operand : operands) {
             res.add(translate(operand));
@@ -47,55 +47,55 @@ public class RexToExpTranslator implements RexVisitor<LogicalExpression> {
         return res;
     }
 
-    public LogicalExpression translate(RexNode rex) {
+    public Expression translate(RexNode rex) {
         return rex.accept(this);
     }
 
-     @Override public LogicalExpression visitInputRef(RexInputRef inputRef) {
+     @Override public Expression visitInputRef(RexInputRef inputRef) {
         return new InputRefExpression(inputRef.getType(), inputRef.getIndex());
     }
 
-    @Override public LogicalExpression visitLocalRef(RexLocalRef localRef) {
+    @Override public Expression visitLocalRef(RexLocalRef localRef) {
         return new LocalRefExpression(localRef.getType(), localRef.getIndex());
     }
 
-    @Override public LogicalExpression visitLiteral(RexLiteral literal) {
+    @Override public Expression visitLiteral(RexLiteral literal) {
         return new LiteralExpression(literal.getType(), literal.getValue());
     }
 
-    @Override public LogicalExpression visitCall(RexCall call) {
+    @Override public Expression visitCall(RexCall call) {
         return new CallExpression(call.getOperator(), translate(call.getOperands()));
     }
 
-    @Override public LogicalExpression visitOver(RexOver over) {
+    @Override public Expression visitOver(RexOver over) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitCorrelVariable(RexCorrelVariable correlVariable) {
+    @Override public Expression visitCorrelVariable(RexCorrelVariable correlVariable) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitDynamicParam(RexDynamicParam dynamicParam) {
+    @Override public Expression visitDynamicParam(RexDynamicParam dynamicParam) {
         return new DynamicParamExpression(dynamicParam.getType(), dynamicParam.getIndex());
     }
 
-    @Override public LogicalExpression visitRangeRef(RexRangeRef rangeRef) {
+    @Override public Expression visitRangeRef(RexRangeRef rangeRef) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitFieldAccess(RexFieldAccess fieldAccess) {
+    @Override public Expression visitFieldAccess(RexFieldAccess fieldAccess) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitSubQuery(RexSubQuery subQuery) {
+    @Override public Expression visitSubQuery(RexSubQuery subQuery) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitTableInputRef(RexTableInputRef fieldRef) {
+    @Override public Expression visitTableInputRef(RexTableInputRef fieldRef) {
         throw new UnsupportedOperationException();
     }
 
-    @Override public LogicalExpression visitPatternFieldRef(RexPatternFieldRef fieldRef) {
+    @Override public Expression visitPatternFieldRef(RexPatternFieldRef fieldRef) {
         throw new UnsupportedOperationException();
     }
 }
