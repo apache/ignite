@@ -126,8 +126,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
                 ClusterNode crdNode = coordinator();
 
-                if (crdNode != null && !ctx.clientNode())
+                if (!ctx.clientNode()) {
+                    assert crd != null;
+
                     sendSingleMessage(p, crdNode);
+                }
             });
 
             p.initFut.onDone();
