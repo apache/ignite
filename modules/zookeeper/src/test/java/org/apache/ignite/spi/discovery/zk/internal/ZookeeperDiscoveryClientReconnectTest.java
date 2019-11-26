@@ -75,7 +75,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
             @Override public Void call() throws Exception {
                 int threadIdx = idx.getAndIncrement();
 
-                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+                helper.clientModeThreadLocal(threadIdx != srvIdx && ThreadLocalRandom.current().nextBoolean());
 
                 startGrid(threadIdx);
 
