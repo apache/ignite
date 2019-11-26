@@ -131,14 +131,14 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName1);
 
-        ignite.cache(cacheName1).indexReadyFuture().get();
+        ignite.cache(cacheName1).indexReadyFuture().get(30_000);
 
         assertFalse(indexRebuildCache1.value());
         assertTrue(indexRebuildCache2.value());
 
         ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
 
-        ignite.cache(cacheName2).indexReadyFuture().get();
+        ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
         assertFalse(indexRebuildCache1.value());
         assertFalse(indexRebuildCache2.value());

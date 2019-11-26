@@ -363,14 +363,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName1);
 
-        srv.cache(cacheSqlName1).indexReadyFuture().get();
+        srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
         ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName2);
 
-        srv.cache(cacheSqlName2).indexReadyFuture().get();
+        srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, false);
@@ -384,9 +384,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
      */
     private void checkIndexRebuild(String cacheName, boolean rebuild) {
         String idxSql = "SELECT IS_INDEX_REBUILD_IN_PROGRESS FROM " + systemSchemaName() + ".TABLES " +
-            "WHERE TABLE_NAME='" + cacheName + "'";
+            "WHERE TABLE_NAME = ?";
 
-        List<List<?>> res = execSql(grid(), idxSql);
+        List<List<?>> res = execSql(grid(), idxSql, cacheName);
 
         assertFalse(res.isEmpty());
 
