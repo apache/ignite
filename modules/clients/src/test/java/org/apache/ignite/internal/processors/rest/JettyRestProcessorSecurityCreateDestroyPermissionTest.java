@@ -36,15 +36,19 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
 
 /** */
 public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends JettyRestProcessorCommonSelfTest {
-    /** */
+    /** Default user. */
     protected static final String DFLT_USER = "ignite";
-    /** */
+
+    /** Default password. */
     protected static final String DFLT_PWD = "ignite";
-    /** */
+
+    /** Status. */
     protected static final String STATUS = "successStatus";
-    /** */
+
+    /** Success status. */
     protected static final String SUCCESS_STATUS = "0";
-    /** */
+
+    /** Error status. */
     protected static final String ERROR_STATUS = "1";
 
     /** Empty permission. */

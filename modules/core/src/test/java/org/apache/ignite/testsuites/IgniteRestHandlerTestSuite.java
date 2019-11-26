@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.rest.RestProcessorInitializationTest;
 import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
+import org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
@@ -34,6 +35,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     GridCacheCommandHandlerSelfTest.class,
     GridCacheAtomicCommandHandlerSelfTest.class,
+    CacheOperationPermissionRestCommandHandlerCheckTest.class,
     GridLogCommandHandlerTest.class,
     GridQueryCommandHandlerTest.class,
     CacheTopologyCommandHandlerTest.class,
