@@ -103,7 +103,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * <p>
      * Blocks the indexes rebuilding until unblocked via {@link #stopBlock(String)}.
      */
-    protected static class BlockingIndexing extends IgniteH2Indexing {
+    public static class BlockingIndexing extends IgniteH2Indexing {
         /** */
         private final ConcurrentHashMap<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 
