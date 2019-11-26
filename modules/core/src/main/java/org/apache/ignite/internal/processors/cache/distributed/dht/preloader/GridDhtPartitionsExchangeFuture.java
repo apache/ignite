@@ -799,7 +799,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ExchangeType exchange;
 
             if (exchCtx.baselineNodeLeft()){
-                exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent() : onBaselineNodeLeftEvent();
+                exchange = onBaselineNodeLeftEvent();
 
                 assert wasRebalanced() : this;
 
@@ -1049,6 +1049,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         BaselineTopology top = firstEvtDiscoCache.state().baselineTopology();
 
         return (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) &&
+            !firstDiscoEvt.eventNode().isClient() &&
             top != null &&
             top.consistentIds().contains(firstDiscoEvt.eventNode().consistentId());
     }
