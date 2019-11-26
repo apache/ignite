@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
@@ -59,6 +60,10 @@ public class CacheMetricsImpl implements CacheMetrics {
      * {@code "cache.sys-cache"}, for example.
      */
     public static final String CACHE_METRICS = "cache";
+
+    /** Histogram buckets for duration get, put, remove operations in nanoseconds. */
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {1_000, 50_000, 75_000, 100_000, 250_000, 500_000,
+        750_000, 1_000_000, 3_000_000, 5_000_000, 10_000_000, 25_000_000, 60_000_000};
 
     /** Number of reads. */
     private final AtomicLongMetric reads;
@@ -161,6 +166,15 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** Number of currently clearing partitions for rebalancing. */
     private final AtomicLongMetric rebalanceClearingPartitions;
+
+    /** Get duration histogram. */
+    private final HistogramMetric getHistogram;
+
+    /** Put duration histogram. */
+    private final HistogramMetric putHistogram;
+
+    /** Remove duration histogram. */
+    private final HistogramMetric rmvHistogram;
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -311,6 +325,13 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rebalanceClearingPartitions = mreg.longMetric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
+
+        getHistogram = mreg.histogram("GetHistogram", HISTOGRAM_BUCKETS, "Get duration histogram in nanoseconds.");
+
+        putHistogram = mreg.histogram("PutHistogram", HISTOGRAM_BUCKETS, "Put duration histogram in nanoseconds.");
+
+        rmvHistogram = mreg.histogram("RemoveHistogram", HISTOGRAM_BUCKETS,
+            "Remove duration histogram in nanoseconds.");
     }
 
     /**
@@ -613,6 +634,10 @@ public class CacheMetricsImpl implements CacheMetrics {
         offHeapHits.reset();
         offHeapMisses.reset();
         offHeapEvicts.reset();
+
+        getHistogram.reset();
+        putHistogram.reset();
+        rmvHistogram.reset();
 
         clearRebalanceCounters();
 
@@ -966,6 +991,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     public void addGetTimeNanos(long duration) {
         getTimeNanos.add(duration);
 
+        getHistogram.value(duration);
+
         if (delegate != null)
             delegate.addGetTimeNanos(duration);
     }
@@ -978,6 +1005,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     public void addPutTimeNanos(long duration) {
         putTimeNanos.add(duration);
 
+        putHistogram.value(duration);
+
         if (delegate != null)
             delegate.addPutTimeNanos(duration);
     }
@@ -989,6 +1018,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public void addRemoveTimeNanos(long duration) {
         rmvTimeNanos.add(duration);
+
+        rmvHistogram.value(duration);
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
