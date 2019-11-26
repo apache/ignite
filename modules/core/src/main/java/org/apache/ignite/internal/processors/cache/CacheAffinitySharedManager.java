@@ -355,25 +355,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, Map<Integer, List<UUID>>> assignmentsChange = U.newHashMap(waitInfo.assignments.size());
 
-        for (Map.Entry<Integer, Map<Integer, List<ClusterNode>>> e : waitInfo.assignments.entrySet()) {
-            Integer grpId = e.getKey();
+        forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                Integer grpId = aff.groupId();
 
-            Map<Integer, List<ClusterNode>> assignment = e.getValue();
+                Map<Integer, List<ClusterNode>> assignment = waitInfo.assignments.get(grpId);
 
-            List<List<ClusterNode>> origin = cctx.affinity().affinity(grpId).assignments(waitInfo.topVer);
+                if (assignment != null) {
+                    List<List<ClusterNode>> origin = aff.assignments(waitInfo.topVer);
 
-            Map<Integer, List<UUID>> assignment0 = U.newHashMap(assignment.size());
+                    Map<Integer, List<UUID>> assignment0 = U.newHashMap(assignment.size());
 
-            for (int p : assignment.keySet()) {
-                // Filter initially ideal assignments.
-                // This may happen when affinity already equal to ideal, but some backups are not owners.
-                if (!assignment.get(p).equals(origin.get(p)))
-                    assignment0.put(p, toIds0(assignment.get(p)));
+                    for (int p : assignment.keySet()) {
+                        // Filter initially ideal assignments.
+                        // This may happen when affinity already equal to ideal, but some backups are not owners.
+                        if (!assignment.get(p).equals(origin.get(p)))
+                            assignment0.put(p, toIds0(assignment.get(p)));
+                    }
+
+                    if (!assignment0.isEmpty())
+                        assignmentsChange.put(grpId, assignment0);
+                }
             }
-
-            if (!assignment0.isEmpty())
-                assignmentsChange.put(grpId, assignment0);
-        }
+        });
 
         return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);
     }
