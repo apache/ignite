@@ -40,13 +40,13 @@ public final class AffinityCache {
      *
      * @param ver Affinity topology version.
      */
-    public AffinityCache(AffinityTopologyVersion ver, int affinityAwarenessPartDistributionsCacheSize,
-        int affinityAwarenessSQLCacheSize) {
+    public AffinityCache(AffinityTopologyVersion ver, int partitionAwarenessPartDistributionsCacheSize,
+        int partitionAwarenessSQLCacheSize) {
         this.ver = ver;
 
-        cachePartitionsDistribution = new GridBoundedLinkedHashMap<>(affinityAwarenessPartDistributionsCacheSize);
+        cachePartitionsDistribution = new GridBoundedLinkedHashMap<>(partitionAwarenessPartDistributionsCacheSize);
 
-        sqlCache = new GridBoundedLinkedHashMap<>(affinityAwarenessSQLCacheSize);
+        sqlCache = new GridBoundedLinkedHashMap<>(partitionAwarenessSQLCacheSize);
     }
 
     /**

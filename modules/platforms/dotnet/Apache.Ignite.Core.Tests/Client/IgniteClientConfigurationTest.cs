@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     "bar:123",
                     "baz:100..103"
                 },
-                EnableAffinityAwareness = true
+                EnablePartitionAwareness = true
             };
 
             using (var xmlReader = XmlReader.Create(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml")))

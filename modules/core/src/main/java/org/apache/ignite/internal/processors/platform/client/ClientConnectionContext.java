@@ -48,7 +48,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.3.0. */
     public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
-    /** Version 1.4.0. Added: Affinity Awareness, IEP-23. */
+    /** Version 1.4.0. Added: Partition Awareness, IEP-23. */
     public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
 
     /** Version 1.5.0. Added: Expiration Policy configuration. */

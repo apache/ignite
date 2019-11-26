@@ -17,7 +17,7 @@
 -->
 
 <igniteClientConfiguration host="test1" port="345" socketReceiveBufferSize="222" socketSendBufferSize="333"
-                           tcpNoDelay="false" socketTimeout="0:0:15" enableAffinityAwareness="true">
+                           tcpNoDelay="false" socketTimeout="0:0:15" enablePartitionAwareness="true">
     <binaryConfiguration compactFooter="false" keepDeserialized="false">
         <types>
             <string>foo</string>

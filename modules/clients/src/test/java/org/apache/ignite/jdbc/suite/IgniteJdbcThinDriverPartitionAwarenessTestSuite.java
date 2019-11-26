@@ -17,9 +17,9 @@
 package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessReconnectionAndFailoverSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessTransactionsSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPartitionAwarenessTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
@@ -29,24 +29,24 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * JDBC Thin driver test suite to run in affinity awareness mode.
+ * JDBC Thin driver test suite to run in Partition Awareness mode.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     JdbcThinConnectionSelfTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinStatementSelfTest.class,
-    JdbcThinAffinityAwarenessSelfTest.class,
-    JdbcThinAffinityAwarenessTransactionsSelfTest.class,
-    JdbcThinAffinityAwarenessReconnectionAndFailoverSelfTest.class,
+    JdbcThinPartitionAwarenessSelfTest.class,
+    JdbcThinPartitionAwarenessTransactionsSelfTest.class,
+    JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest.class,
 })
-public class IgniteJdbcThinDriverAffinityAwarenessTestSuite {
+public class IgniteJdbcThinDriverPartitionAwarenessTestSuite {
 
     /**
-     * Setup affinity awareness mode.
+     * Setup Partition Awareness mode.
      */
     @BeforeClass
-    public static void setupAffinityAwareness() {
-        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "affinityAwareness", true);
+    public static void setupPartitionAwareness() {
+        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "partitionAwareness", true);
     }
 }

@@ -39,9 +39,9 @@ import java.util.UUID;
  * <ul>
  * <li>{@link #compute()}</li>
  * </ul>
- * <h1 class="header">Affinity Awareness</h1>
+ * <h1 class="header">Partition Awareness</h1>
  * One of the unique properties of the Ignite remote clients is that they are
- * affinity aware. In other words, both compute and data APIs will optionally
+ * partition aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
  * This allows for collocation of computations and data and avoids extra network
  * hops that would be necessary if non-affinity nodes were contacted.

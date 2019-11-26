@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Contains cache partitions distributions with corresponding set of cache ids.
  */
-public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizable {
+public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinarylizable {
 
     /** Set of cache Ids. */
     private final Set<Integer> cacheIds = new HashSet<>();
@@ -43,7 +43,7 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
     /**
      * Constructor.
      */
-    private JdbcThinAffinityAwarenessMappingGroup() {
+    private JdbcThinPartitionAwarenessMappingGroup() {
         partitionsMappings = new HashMap<>();
     }
 
@@ -54,7 +54,7 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
      * @param partitionsMappings Partitions mappings.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public JdbcThinAffinityAwarenessMappingGroup(@NotNull Integer cacheId, Map<UUID,
+    public JdbcThinPartitionAwarenessMappingGroup(@NotNull Integer cacheId, Map<UUID,
         @NotNull Set<Integer>> partitionsMappings) {
         cacheIds.add(cacheId);
         this.partitionsMappings = partitionsMappings;
@@ -141,16 +141,16 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
     }
 
     /**
-     * Reads <code>JdbcThinAffinityAwarenessMappingGroup</code> from provided reader.
+     * Reads <code>JdbcThinPartitionAwarenessMappingGroup</code> from provided reader.
      *
      * @param reader Binary object reader.
      * @param ver Protocol version.
-     * @return Deserialized instance of <code>JdbcThinAffinityAwarenessMappingGroup</code>.
+     * @return Deserialized instance of <code>JdbcThinPartitionAwarenessMappingGroup</code>.
      * @throws BinaryObjectException In case of error.
      */
-    public static JdbcThinAffinityAwarenessMappingGroup readGroup(BinaryReaderExImpl reader,
+    public static JdbcThinPartitionAwarenessMappingGroup readGroup(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        JdbcThinAffinityAwarenessMappingGroup res = new JdbcThinAffinityAwarenessMappingGroup();
+        JdbcThinPartitionAwarenessMappingGroup res = new JdbcThinPartitionAwarenessMappingGroup();
 
         int cacheIdsSize = reader.readInt();
 

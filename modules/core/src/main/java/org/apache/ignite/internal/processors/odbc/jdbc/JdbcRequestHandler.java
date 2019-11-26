@@ -39,7 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinAffinityAwarenessMappingGroup;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -647,7 +647,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 if (cur.isQuery())
                     res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
-                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 else {
@@ -659,7 +659,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                             ", res=" + S.toString(List.class, items) + ']';
 
                     res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
-                        isClientAffinityAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
                             partRes :
                             null);
                 }
@@ -1316,7 +1316,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Partitions distributions.
      */
     private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
-        List<JdbcThinAffinityAwarenessMappingGroup> mappings = new ArrayList<>();
+        List<JdbcThinPartitionAwarenessMappingGroup> mappings = new ArrayList<>();
 
         AffinityTopologyVersion topVer = connCtx.kernalContext().cache().context().exchange().readyAffinityVersion();
 
@@ -1325,7 +1325,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 connCtx.kernalContext().cache().cacheDescriptor(cacheId),
                 topVer);
 
-            mappings.add(new JdbcThinAffinityAwarenessMappingGroup(cacheId, partitionsMap));
+            mappings.add(new JdbcThinPartitionAwarenessMappingGroup(cacheId, partitionsMap));
         }
 
         return new JdbcResponse(new JdbcCachePartitionsResult(mappings), topVer);
@@ -1482,13 +1482,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /**
      * @param partResRequested Boolean flag that signals whether client requested partiton result.
      * @param partRes Direved partition result.
-     * @return True if applicable to jdbc thin client side affinity awareness:
+     * @return True if applicable to jdbc thin client side Partition Awareness:
      *   1. Partitoin result was requested;
      *   2. Partition result either null or
      *     a. Rendezvous affinity function without map filters was used;
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
-    private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
-        return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+    private static boolean isClientPartitionAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
+        return partResRequested && (partRes == null || partRes.isClientPartitionAwarenessApplicable());
     }
 }

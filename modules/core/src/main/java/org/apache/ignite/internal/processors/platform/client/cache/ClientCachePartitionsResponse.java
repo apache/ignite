@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  */
 class ClientCachePartitionsResponse extends ClientResponse {
     /** Node partitions. */
-    private final ArrayList<ClientCacheAffinityAwarenessGroup> mappings;
+    private final ArrayList<ClientCachePartitionAwarenessGroup> mappings;
 
     /** Affinity version. */
     private final ClientAffinityTopologyVersion affinityVer;
@@ -37,7 +37,7 @@ class ClientCachePartitionsResponse extends ClientResponse {
      * @param mappings Mappings for caches.
      * @param affinityVer Affinity version.
      */
-    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCacheAffinityAwarenessGroup> mappings,
+    ClientCachePartitionsResponse(long requestId, ArrayList<ClientCachePartitionAwarenessGroup> mappings,
         ClientAffinityTopologyVersion affinityVer) {
         super(requestId);
 
@@ -55,7 +55,7 @@ class ClientCachePartitionsResponse extends ClientResponse {
 
         writer.writeInt(mappings.size());
 
-        for (ClientCacheAffinityAwarenessGroup mapping : mappings) {
+        for (ClientCachePartitionAwarenessGroup mapping : mappings) {
             mapping.write(writer);
         }
     }

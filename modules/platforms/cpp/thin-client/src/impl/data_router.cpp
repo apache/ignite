@@ -148,7 +148,7 @@ namespace ignite
 
             void DataRouter::RefreshAffinityMapping(const std::vector<int32_t>& cacheIds)
             {
-                std::vector<AffinityAwarenessGroup> groups;
+                std::vector<PartitionAwarenessGroup> groups;
 
                 CachePartitionsRequest req(cacheIds);
                 CachePartitionsResponse rsp(groups);

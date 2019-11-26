@@ -1135,7 +1135,7 @@ public class TestTableEngines extends TestDb {
     }
 
     /**
-     * A test table factory producing affinity aware tables.
+     * A test table factory producing partition aware tables.
      */
     public static class AffinityTableEngine implements TableEngine {
         public static Table createdTbl;

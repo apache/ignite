@@ -39,13 +39,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Data types coverage for basic jdbc-put-cache-retrieve operations.
  */
 public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCoverageTests {
-    /** Signals that tests should start in affinity awareness mode. */
-    public static boolean affinityAwareness;
+    /** Signals that tests should start in Partition Awareness mode. */
+    public static boolean partitionAwareness;
 
     /** URL. */
-    private String url = affinityAwareness ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" :
-        "jdbc:ignite:thin://127.0.0.1?affinityAwareness=false";
+    private String url = partitionAwareness ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" :
+        "jdbc:ignite:thin://127.0.0.1?partitionAwareness=false";
 
     /** Connection. */
     private Connection conn;

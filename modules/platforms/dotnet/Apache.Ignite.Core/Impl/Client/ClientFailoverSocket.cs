@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs a send-receive operation with affinity awareness.
+        /// Performs a send-receive operation with Partition Awareness.
         /// </summary>
         public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs an async send-receive operation with affinity awareness.
+        /// Performs an async send-receive operation with Partition Awareness.
         /// </summary>
         public Task<T> DoOutInOpAffinityAsync<T, TKey>(
             ClientOp opId,
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
-            if (!_config.EnableAffinityAwareness)
+            if (!_config.EnablePartitionAwareness)
             {
                 return null;
             }
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             _affinityTopologyVersion = affinityTopologyVersion;
 
-            if (_config.EnableAffinityAwareness)
+            if (_config.EnablePartitionAwareness)
             {
                 InitSocketMap();
             }
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             for (int i = 0; i < size; i++)
             {
-                var grp = new ClientCacheAffinityAwarenessGroup(s);
+                var grp = new ClientCachePartitionAwarenessGroup(s);
 
                 // Count partitions to avoid reallocating array.
                 int maxPartNum = 0;

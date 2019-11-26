@@ -36,11 +36,11 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
- * Jdbc thin transactional affinity awareness test.
+ * Jdbc thin transactional Partition Awareness test.
  */
-public class JdbcThinAffinityAwarenessTransactionsSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;

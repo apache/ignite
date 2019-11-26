@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests affinity awareness functionality.
+    /// Tests Partition Awareness functionality.
     /// </summary>
-    public class AffinityAwarenessTest : ClientTestBase
+    public class PartitionAwarenessTest : ClientTestBase
     {
         /** */
         private const string NodeIndexAttr = "test-node-idx";
@@ -46,9 +46,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private ICacheClient<int, int> _cache;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AffinityAwarenessTest"/> class.
+        /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
         /// </summary>
-        public AffinityAwarenessTest() : base(3)
+        public PartitionAwarenessTest() : base(3)
         {
             // No-op.
         }
@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // Warm-up.
             Assert.AreEqual(1, _cache.Get(1));
-
+            
             // Before topology change.
             Assert.AreEqual(12, _cache.Get(12));
             Assert.AreEqual(1, GetClientRequestGridIndex());
@@ -179,14 +179,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
+                
+                // Get default node index by performing non-partition-aware operation.
+                _cache.GetAll(Enumerable.Range(1, 10));
+                var defaultNodeIdx = GetClientRequestGridIndex("GetAll");
+                Assert.Greater(defaultNodeIdx, -1);
 
                 // Assert: keys 12 and 14 belong to a new node now, but we don't have the new node in the server list.
                 // Requests are routed to default node.
                 Assert.AreEqual(12, _cache.Get(12));
-                Assert.AreEqual(1, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
 
                 Assert.AreEqual(14, _cache.Get(14));
-                Assert.AreEqual(1, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
             }
         }
 
@@ -256,7 +261,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             _cache.Get(1);
             _cache.Get(1);
 
-            var requests = GetCacheRequestNames(_loggers[1]).ToArray();
+            var requests = _loggers.SelectMany(GetCacheRequestNames).ToArray();
 
             var expectedRequests = new[]
             {
@@ -266,14 +271,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 "Get"
             };
 
-            Assert.AreEqual(expectedRequests, requests);
+            CollectionAssert.AreEquivalent(expectedRequests, requests);
         }
 
         [Test]
-        public void CacheGet_AffinityAwarenessDisabled_RequestIsRoutedToDefaultNode()
+        public void CacheGet_PartitionAwarenessDisabled_RequestIsRoutedToDefaultNode()
         {
             var cfg = GetClientConfiguration();
-            cfg.EnableAffinityAwareness = false;
+            cfg.EnablePartitionAwareness = false;
 
             using (var client = Ignition.StartClient(cfg))
             {
@@ -289,7 +294,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     .Distinct()
                     .ToArray();
 
-                // Affinity awareness disabled - all requests go to same socket, picked with round-robin on connect.
+                // Partition awareness disabled - all requests go to same socket, picked with round-robin on connect.
                 Assert.AreEqual(1, requestTargets.Length);
             }
         }
@@ -408,7 +413,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetClientConfiguration();
 
-            cfg.EnableAffinityAwareness = true;
+            cfg.EnablePartitionAwareness = true;
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 

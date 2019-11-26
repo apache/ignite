@@ -406,16 +406,16 @@ public interface ConnectionProperties {
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 
     /**
-     * @return {@code true} if jdbc thin affinity awareness is enabled for this connection,
+     * @return {@code true} if jdbc thin Partition Awareness is enabled for this connection,
      * {@code false} if it's disabled.
      */
-    public boolean isAffinityAwareness();
+    public boolean isPartitionAwareness();
 
     /**
-     * @param affinityAwareness {@code true} if jdbc thin affinity awareness is enabled
+     * @param partitionAwareness {@code true} if jdbc thin Partition Awareness is enabled
      * for this connection, if {@code false} then it's disabled.
      */
-    public void setAffinityAwareness(boolean affinityAwareness);
+    public void setPartitionAwareness(boolean partitionAwareness);
 
     /**
      * Note: Batch size of 1 prevents deadlock on update where keys sequence are different in several concurrent updates.
@@ -433,31 +433,31 @@ public interface ConnectionProperties {
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 
     /**
-     * @return SQL cache size that is used within affinity awareness optimizations.
+     * @return SQL cache size that is used within Partition Awareness optimizations.
      */
-    public int getAffinityAwarenessSqlCacheSize();
+    public int getPartitionAwarenessSqlCacheSize();
 
     /**
-     * Sets SQL cache size that is used within affinity awareness optimizations.
+     * Sets SQL cache size that is used within Partition Awareness optimizations.
      *
-     * @param affinityAwarenessSqlCacheSize SQL cache size.
+     * @param partitionAwarenessSqlCacheSize SQL cache size.
      * @throws SQLException On error.
      */
-    public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSqlCacheSize) throws SQLException;
+    public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize) throws SQLException;
 
     /**
-     * @return Partition distributions cache size that is used within affinity awareness optimizations.
+     * @return Partition distributions cache size that is used within Partition Awareness optimizations.
      */
-    public int getAffinityAwarenessPartitionDistributionsCacheSize();
+    public int getPartitionAwarenessPartitionDistributionsCacheSize();
 
     /**
-     * Sets partition distributions cache size that is used within affinity awareness optimizations.
+     * Sets partition distributions cache size that is used within Partition Awareness optimizations.
      *
-     * @param affinityAwarenessPartDistributionsCacheSize Partition distributions cache size.
+     * @param partitionAwarenessPartDistributionsCacheSize Partition distributions cache size.
      * @throws SQLException On error.
      */
-    public void setAffinityAwarenessPartitionDistributionsCacheSize(
-        int affinityAwarenessPartDistributionsCacheSize) throws SQLException;
+    public void setPartitionAwarenessPartitionDistributionsCacheSize(
+        int partitionAwarenessPartDistributionsCacheSize) throws SQLException;
 
     /**
      * Note: zero value means query memory manager uses default limit.

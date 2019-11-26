@@ -68,9 +68,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
-    /** URL with affinity awareness enabled. */
-    public static final String URL_AFFINITY_AWARENESS =
-        "jdbc:ignite:thin://127.0.0.1:10800..10801?affinityAwareness=true";
+    /** URL with Partition Awareness enabled. */
+    public static final String URL_PARTITION_AWARENESS =
+        "jdbc:ignite:thin://127.0.0.1:10800..10801?partitionAwareness=true";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -1087,7 +1087,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
         }
 
-        try (Connection conn = DriverManager.getConnection(URL_AFFINITY_AWARENESS)) {
+        try (Connection conn = DriverManager.getConnection(URL_PARTITION_AWARENESS)) {
             assertEquals("Unexpected ignite database product version.",
                 conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
             assertEquals("Unexpected ignite driver version.",

@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// Partition mapping associated with the group of caches.
     /// Mirrors corresponding Java class.
     /// </summary>
-    internal class ClientCacheAffinityAwarenessGroup
+    internal class ClientCachePartitionAwarenessGroup
     {
         /** */
         private readonly List<KeyValuePair<Guid, List<int>>> _partitionMap;
@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** */
         private readonly List<KeyValuePair<int, Dictionary<int, int>>> _caches;
 
-        public ClientCacheAffinityAwarenessGroup(IBinaryStream stream)
+        public ClientCachePartitionAwarenessGroup(IBinaryStream stream)
         {
             // Whether this group is eligible for client-side partition awareness.
             var applicable = stream.ReadBool();

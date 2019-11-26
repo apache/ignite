@@ -251,9 +251,9 @@
                     <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="enableAffinityAwareness" type="xs:boolean">
+            <xs:attribute name="enablePartitionAwareness" type="xs:boolean">
                 <xs:annotation>
-                    <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
+                    <xs:documentation>Enables partition-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="userName" type="xs:string">

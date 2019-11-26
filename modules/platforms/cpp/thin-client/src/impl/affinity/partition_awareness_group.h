@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_AFFINITY_AWARENESS_GROUP
-#define _IGNITE_IMPL_THIN_AFFINITY_AWARENESS_GROUP
+#ifndef _IGNITE_IMPL_THIN_PARTITION_AWARENESS_GROUP
+#define _IGNITE_IMPL_THIN_PARTITION_AWARENESS_GROUP
 
 #include <stdint.h>
 #include <vector>
@@ -32,15 +32,15 @@ namespace ignite
         namespace thin
         {
             /**
-             * Affinity awareness group.
+             * Partition awareness group.
              */
-            class AffinityAwarenessGroup
+            class PartitionAwarenessGroup
             {
             public:
                 /**
                  * Default constructor.
                  */
-                AffinityAwarenessGroup() :
+                PartitionAwarenessGroup() :
                     applicable(true)
                 {
                     // No-op.
@@ -120,4 +120,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_IMPL_THIN_AFFINITY_AWARENESS_GROUP
+#endif //_IGNITE_IMPL_THIN_PARTITION_AWARENESS_GROUP

@@ -69,7 +69,7 @@ public interface FailoverContext {
      * {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)} or
      * {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)} calls.
      *
-     * @return Cache name or {@code null} if task was not an affinity-aware task.
+     * @return Cache name or {@code null} if task was not an partition-aware task.
      */
     public String affinityCacheName();
 }

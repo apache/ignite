@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Client
             Password = cfg.Password;
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
-            EnableAffinityAwareness = cfg.EnableAffinityAwareness;
+            EnablePartitionAwareness = cfg.EnablePartitionAwareness;
         }
 
         /// <summary>
@@ -203,14 +203,14 @@ namespace Apache.Ignite.Core.Client
         public string Password { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether affinity awareness should be enabled.
+        /// Gets or sets a value indicating whether Partition Awareness should be enabled.
         /// <para />
         /// Default is false: only one connection is established at a given moment to a random server node.
         /// When true: for cache operations, Ignite client attempts to send the request directly to
         /// the primary node for the given cache key.
         /// To do so, connection is established to every known server node at all times.
         /// </summary>
-        public bool EnableAffinityAwareness { get; set; }
+        public bool EnablePartitionAwareness { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 /**
  * Partition mapping associated with the group of caches.
  */
-class ClientCacheAffinityAwarenessGroup {
+class ClientCachePartitionAwarenessGroup {
     /** Binary processor. */
     CacheObjectBinaryProcessorImpl proc;
 
@@ -42,7 +42,7 @@ class ClientCacheAffinityAwarenessGroup {
      * @param mapping Partition mapping.
      * @param cacheDesc Descriptor of the initial cache.
      */
-    public ClientCacheAffinityAwarenessGroup(CacheObjectBinaryProcessorImpl proc, ClientCachePartitionMapping mapping,
+    public ClientCachePartitionAwarenessGroup(CacheObjectBinaryProcessorImpl proc, ClientCachePartitionMapping mapping,
         DynamicCacheDescriptor cacheDesc) {
         this.proc = proc;
         this.mapping = mapping;

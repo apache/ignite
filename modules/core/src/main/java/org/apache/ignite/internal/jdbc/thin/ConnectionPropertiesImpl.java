@@ -188,10 +188,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
-    /** Affinity awareness flag. */
-    private BooleanProperty affinityAwareness = new BooleanProperty(
-        "affinityAwareness",
-        "Whether jdbc thin affinity awareness is enabled.",
+    /** Partition awareness flag. */
+    private BooleanProperty partitionAwareness = new BooleanProperty(
+        "partitionAwareness",
+        "Whether jdbc thin Partition Awareness is enabled.",
         false, false);
 
     /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
@@ -200,15 +200,15 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             "Set to 1 to prevent deadlock on update where keys sequence are different " +
             "in several concurrent updates.", null, false, 1, Integer.MAX_VALUE);
 
-    /** Affinity awareness SQL cache size. */
-    private IntegerProperty affinityAwarenessSQLCacheSize = new IntegerProperty("affinityAwarenessSQLCacheSize",
-        "The size of sql cache that is used within affinity awareness optimization.",
+    /** Partition awareness SQL cache size. */
+    private IntegerProperty partitionAwarenessSQLCacheSize = new IntegerProperty("partitionAwarenessSQLCacheSize",
+        "The size of sql cache that is used within Partition Awareness optimization.",
         1_000, false, 1, Integer.MAX_VALUE);
 
-    /** Affinity awareness partition distributions cache size. */
-    private IntegerProperty affinityAwarenessPartDistributionsCacheSize = new IntegerProperty(
-        "affinityAwarenessPartitionDistributionsCacheSize",
-        "The size of partition distributions cache that is used within affinity awareness optimization.",
+    /** Partition awareness partition distributions cache size. */
+    private IntegerProperty partitionAwarenessPartDistributionsCacheSize = new IntegerProperty(
+        "partitionAwarenessPartitionDistributionsCacheSize",
+        "The size of partition distributions cache that is used within Partition Awareness optimization.",
         1_000, false, 1, Integer.MAX_VALUE);
 
     /** Query memory limit. */
@@ -239,10 +239,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd,
         dataPageScanEnabled,
-        affinityAwareness,
+        partitionAwareness,
         updateBatchSize,
-        affinityAwarenessSQLCacheSize,
-        affinityAwarenessPartDistributionsCacheSize,
+        partitionAwarenessSQLCacheSize,
+        partitionAwarenessPartDistributionsCacheSize,
         qryMaxMemory,
         qryTimeout,
         connTimeout
@@ -552,13 +552,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAffinityAwareness() {
-        return affinityAwareness.value();
+    @Override public boolean isPartitionAwareness() {
+        return partitionAwareness.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwareness(boolean affinityAwareness) {
-        this.affinityAwareness.setValue(affinityAwareness);
+    @Override public void setPartitionAwareness(boolean partitionAwareness) {
+        this.partitionAwareness.setValue(partitionAwareness);
     }
 
     /** {@inheritDoc} */
@@ -572,26 +572,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public int getAffinityAwarenessSqlCacheSize() {
-        return affinityAwarenessSQLCacheSize.value();
+    @Override public int getPartitionAwarenessSqlCacheSize() {
+        return partitionAwarenessSQLCacheSize.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSQLCacheSize)
+    @Override public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSQLCacheSize)
         throws SQLException {
-        this.affinityAwarenessSQLCacheSize.setValue(affinityAwarenessSQLCacheSize);
+        this.partitionAwarenessSQLCacheSize.setValue(partitionAwarenessSQLCacheSize);
     }
 
     /** {@inheritDoc} */
-    @Override public int getAffinityAwarenessPartitionDistributionsCacheSize() {
-        return affinityAwarenessPartDistributionsCacheSize.value();
+    @Override public int getPartitionAwarenessPartitionDistributionsCacheSize() {
+        return partitionAwarenessPartDistributionsCacheSize.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwarenessPartitionDistributionsCacheSize(
-        int affinityAwarenessPartDistributionsCacheSize) throws SQLException {
-        this.affinityAwarenessPartDistributionsCacheSize.setValue(
-            affinityAwarenessPartDistributionsCacheSize);
+    @Override public void setPartitionAwarenessPartitionDistributionsCacheSize(
+        int partitionAwarenessPartDistributionsCacheSize) throws SQLException {
+        this.partitionAwarenessPartDistributionsCacheSize.setValue(
+            partitionAwarenessPartDistributionsCacheSize);
     }
 
     /** {@inheritDoc} */

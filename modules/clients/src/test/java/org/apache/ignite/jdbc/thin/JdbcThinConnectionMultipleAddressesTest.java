@@ -536,7 +536,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
             stopAllGrids();
         else {
 
-            if (affinityAwareness) {
+            if (partitionAwareness) {
                 for (int i = 0; i < NODES_CNT - 1; i++)
                     stopGrid(i);
             }

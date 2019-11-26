@@ -65,8 +65,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Data types coverage for basic cache-put-jdbc-thin-retrieve operations.
  */
 public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypesCoverageTest {
-    /** Signals that tests should start in affinity awareness mode. */
-    public static boolean affinityAwareness;
+    /** Signals that tests should start in Partition Awareness mode. */
+    public static boolean partitionAwareness;
 
     /**
      * Please pay attention, that it's not a comprehensive java to sql data types mapping,
@@ -103,9 +103,9 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
     }
 
     /** URL. */
-    private String url = affinityAwareness ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" :
-        "jdbc:ignite:thin://127.0.0.1?affinityAwareness=false";
+    private String url = partitionAwareness ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" :
+        "jdbc:ignite:thin://127.0.0.1?partitionAwareness=false";
 
     /** Connection. */
     private Connection conn;
