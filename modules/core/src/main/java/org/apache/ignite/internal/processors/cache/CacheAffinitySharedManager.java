@@ -499,9 +499,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 // If current node is not client and current node have no aff holder.
                 if (grpHolder.nonAffNode() && !cctx.localNode().isClient()) {
-                    ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
+                    GridDhtPartitionsExchangeFuture excFut = context().exchange().lastFinishedFuture();
 
-                    grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
+                    grp.topology().updateTopologyVersion(excFut, discoCache, -1, false);
+
+                    // Exchange free cache cache creation just replacing client topology with dht.
+                    // Topology shouild be inited before use.
+                    grp.topology().beforeExchange(excFut, true, false);
 
                     grpHolder = new CacheGroupAffNodeHolder(grp, grpHolder.affinity());
 
