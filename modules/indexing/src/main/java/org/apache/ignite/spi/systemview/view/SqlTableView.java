@@ -100,4 +100,9 @@ public class SqlTableView {
     public String valueTypeName() {
         return tbl.rowDescriptor().type().valueTypeName();
     }
+
+    /** @return {@code True} if index rebuild is in progress. */
+    public boolean isIndexRebuildInProgress() {
+        return tbl.rebuildFromHashInProgress();
+    }
 }
