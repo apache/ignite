@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -1412,15 +1413,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     @Test
     public void testGetHistogram() {
-        IgniteEx grid = grid(0);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
-
-        boolean isNear = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).isNear();
-
-        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
-
-        HistogramMetric getHistogram = mreg.findMetric("GetHistogram");
+        HistogramMetric getHistogram = metric("GetHistogram");
 
         assertTrue(Arrays.stream(getHistogram.value()).allMatch(v -> v == 0));
 
@@ -1436,15 +1431,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     @Test
     public void testPutHistogram() {
-        IgniteEx grid = grid(0);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
-
-        boolean isNear = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).isNear();
-
-        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
-
-        HistogramMetric putHistogram = mreg.findMetric("PutHistogram");
+        HistogramMetric putHistogram = metric("PutHistogram");
 
         assertTrue(Arrays.stream(putHistogram.value()).allMatch(v -> v == 0));
 
@@ -1456,15 +1445,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     @Test
     public void testRemoveHistogram() {
-        IgniteEx grid = grid(0);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
-
-        boolean isNear = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).isNear();
-
-        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
-
-        HistogramMetric rmvHistogram = mreg.findMetric("RemoveHistogram");
+        HistogramMetric rmvHistogram = metric("RemoveHistogram");
 
         assertTrue(Arrays.stream(rmvHistogram.value()).allMatch(v -> v == 0));
 
@@ -1475,5 +1458,23 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         cache.remove(1);
 
         assertTrue(Arrays.stream(rmvHistogram.value()).anyMatch(v -> v > 0));
+    }
+
+    /**
+     * @param name Metric name to find.
+     * @return Metric.
+     */
+    private <M extends Metric> M metric(String name) {
+        IgniteEx grid = grid(0);
+
+        boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
+
+        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
+
+        M histogram = mreg.findMetric(name);
+
+        assertNotNull(histogram);
+
+        return histogram;
     }
 }
