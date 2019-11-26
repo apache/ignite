@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests transform for extra traffic.
  */
-public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest {
+public class GridCacheReturnValueTransformSelfTest extends GridCommonAbstractTest {
     /** Distribution mode. */
     private boolean cache;
 

@@ -398,7 +398,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, false, null);
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, false, null, 0);
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -639,6 +639,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     msg.activate() ? msg.baselineTopology() : prevState.baselineTopology(),
                     msg.requestId(),
                     topVer,
+                    !state.active() && msg.activate() ? msg.timestamp() : prevState.activationTime(),
                     nodeIds
                 );
 
@@ -697,7 +698,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return DiscoveryDataClusterState.createState(
             stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
             stateMsg.readOnly(),
-            stateMsg.baselineTopology()
+            stateMsg.baselineTopology(),
+            stateMsg.timestamp()
         );
     }
 
@@ -1638,7 +1640,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState state = globalState;
 
         if (!state.active() && !state.transition() && state.baselineTopology() == null)
-            globalState = DiscoveryDataClusterState.createState(false, false, blt);
+            globalState = DiscoveryDataClusterState.createState(false, false, blt, 0);
     }
 
     /**
