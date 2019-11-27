@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.table.PageStoreTable;
-import org.h2.table.RegularTable;
 import org.h2.table.Table;
 
 /**

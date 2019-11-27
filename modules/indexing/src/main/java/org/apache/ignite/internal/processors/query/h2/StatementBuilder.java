@@ -40,8 +40,10 @@ package org.apache.ignite.internal.processors.query.h2;
  *</pre>
  */
 public class StatementBuilder {
-
+    /** */
     private final StringBuilder builder = new StringBuilder();
+
+    /** */
     private int index;
 
     /**
@@ -146,5 +148,4 @@ public class StatementBuilder {
     public StringBuilder builder() {
         return builder;
     }
-
 }
