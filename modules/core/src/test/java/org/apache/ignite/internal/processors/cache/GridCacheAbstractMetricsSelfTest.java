@@ -1425,7 +1425,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.get(1);
 
-        assertTrue(Arrays.stream(getHistogram.value()).anyMatch(v -> v > 0));
+        assertEquals(1, Arrays.stream(getHistogram.value()).filter(v -> v > 0).count());
     }
 
     /** */
@@ -1439,7 +1439,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(1, 1);
 
-        assertTrue(Arrays.stream(putHistogram.value()).anyMatch(v -> v > 0));
+        assertEquals(1, Arrays.stream(putHistogram.value()).filter(v -> v > 0).count());
     }
 
     /** */
@@ -1457,7 +1457,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.remove(1);
 
-        assertTrue(Arrays.stream(rmvHistogram.value()).anyMatch(v -> v > 0));
+        assertEquals(1, Arrays.stream(rmvHistogram.value()).filter(v -> v > 0).count());
     }
 
     /**
@@ -1471,10 +1471,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
 
-        M histogram = mreg.findMetric(name);
+        M m = mreg.findMetric(name);
 
-        assertNotNull(histogram);
+        assertNotNull(m);
 
-        return histogram;
+        return m;
     }
 }

@@ -340,12 +340,11 @@ public class CacheMetricsImpl implements CacheMetrics {
             return fut != null && !fut.isDone();
         }, "True if index rebuild is in progress.");
 
-        getHistogram = mreg.histogram("GetHistogram", HISTOGRAM_BUCKETS, "Get duration histogram in nanoseconds.");
+        getHistogram = mreg.histogram("GetHistogram", HISTOGRAM_BUCKETS, "Get duration in nanoseconds.");
 
-        putHistogram = mreg.histogram("PutHistogram", HISTOGRAM_BUCKETS, "Put duration histogram in nanoseconds.");
+        putHistogram = mreg.histogram("PutHistogram", HISTOGRAM_BUCKETS, "Put duration in nanoseconds.");
 
-        rmvHistogram = mreg.histogram("RemoveHistogram", HISTOGRAM_BUCKETS,
-            "Remove duration histogram in nanoseconds.");
+        rmvHistogram = mreg.histogram("RemoveHistogram", HISTOGRAM_BUCKETS, "Remove duration in nanoseconds.");
     }
 
     /**
