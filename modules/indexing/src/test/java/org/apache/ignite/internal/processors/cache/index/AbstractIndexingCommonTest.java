@@ -17,7 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.Session;
@@ -58,4 +74,63 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Collects index file paths from all grids for given cache. Must be called when the grid is up.
+     *
+     * @param cacheName Cache name.
+     */
+    protected List<Path> getIndexBinPaths(String cacheName) {
+        return G.allGrids().stream()
+            .map(grid -> (IgniteEx) grid)
+            .map(grid -> {
+                IgniteInternalCache<Object, Object> cachex = grid.cachex(cacheName);
+
+                assertNotNull(cachex);
+
+                FilePageStoreManager pageStoreMgr = (FilePageStoreManager) cachex.context().shared().pageStore();
+
+                assertNotNull(pageStoreMgr);
+
+                File cacheWorkDir = pageStoreMgr.cacheWorkDir(cachex.configuration());
+
+                return cacheWorkDir.toPath().resolve("index.bin");
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Blocking indexing processor.
+     * <p>
+     * Blocks the indexes rebuilding until unblocked via {@link #stopBlock(String)}.
+     */
+    protected static class BlockingIndexing extends IgniteH2Indexing {
+        /** */
+        private final ConcurrentHashMap<String, CountDownLatch> latches = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
+            throws IgniteCheckedException {
+            String cacheName = cctx.name();
+
+            latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1));
+
+            U.await(latches.get(cacheName));
+
+            super.rebuildIndexesFromHash0(cctx, clo);
+        }
+
+        /**
+         * Stops the indexes rebuilding block for given cache.
+         *
+         * @param cacheName Cache name.
+         */
+        public void stopBlock(String cacheName) {
+            CountDownLatch latch = latches.get(cacheName);
+
+            if (latch == null)
+                throw new IgniteException("Cache wasn't start index rebuild yet. [cacheName=" + cacheName + ']');
+
+            latch.countDown();
+        }
+    }
 }

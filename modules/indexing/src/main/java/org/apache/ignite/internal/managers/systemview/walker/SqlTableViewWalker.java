@@ -38,6 +38,7 @@ public class SqlTableViewWalker implements SystemViewRowAttributeWalker<SqlTable
         v.accept(6, "valueAlias", String.class);
         v.accept(7, "keyTypeName", String.class);
         v.accept(8, "valueTypeName", String.class);
+        v.accept(9, "isIndexRebuildInProgress", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -51,10 +52,11 @@ public class SqlTableViewWalker implements SystemViewRowAttributeWalker<SqlTable
         v.accept(6, "valueAlias", String.class, row.valueAlias());
         v.accept(7, "keyTypeName", String.class, row.keyTypeName());
         v.accept(8, "valueTypeName", String.class, row.valueTypeName());
+        v.acceptBoolean(9, "isIndexRebuildInProgress", row.isIndexRebuildInProgress());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 9;
+        return 10;
     }
 }
