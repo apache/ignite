@@ -592,7 +592,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             int off = 0;
             int max = 255;
 
-            InlineIndexHelper ih = new InlineIndexHelper("", v1.getType(), 1, 0,
+            InlineIndexHelper ih = new InlineIndexHelper("", v1.getType().getValueType(), 1, 0,
                 CompareMode.getInstance(null, 0));
 
             off += ih.put(pageAddr, off, v1, max - off);

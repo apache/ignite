@@ -1121,7 +1121,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(false), prepared.getSQL()), res);
     }
 
     @QuerySqlFunction
