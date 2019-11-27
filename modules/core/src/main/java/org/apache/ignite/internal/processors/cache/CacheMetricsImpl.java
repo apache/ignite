@@ -63,8 +63,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     public static final String CACHE_METRICS = "cache";
 
     /** Histogram buckets for duration get, put, remove operations in nanoseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {1_000, 50_000, 75_000, 100_000, 250_000, 500_000,
-        750_000, 1_000_000, 3_000_000, 5_000_000, 10_000_000, 25_000_000, 60_000_000};
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {1_000_000, 10_000_000, 100_000_000, 250_000_000,
+        1_000_000_000};
 
     /** Number of reads. */
     private final AtomicLongMetric reads;
