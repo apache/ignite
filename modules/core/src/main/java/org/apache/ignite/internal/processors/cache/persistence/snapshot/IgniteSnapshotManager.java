@@ -66,6 +66,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
@@ -693,8 +694,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         try {
             dbMgr.removeCheckpointListener(cpLsnr);
 
-            for (LocalSnapshotContext ctx : localSnpCtxs.values())
-                closeSnapshotResources(ctx);
+            for (LocalSnapshotContext ctx : localSnpCtxs.values()) {
+                // Try stop all snapshot processing if not yet.
+                ctx.snpFut.onDone(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
+                    "is stopping"));
+            }
 
             SnapshotTransmissionFuture fut = snpRq.get();
 
@@ -1571,10 +1575,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class RemoteSnapshotSender implements SnapshotSender {
-        /** Ignite logger to use. */
-        private final IgniteLogger log;
-
+    private static class RemoteSnapshotSender extends SnapshotSender {
         /** The sender which sends files to remote node. */
         private final GridIoManager.TransmissionSender sndr;
 
@@ -1595,29 +1596,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             String snpName,
             String dbNodePath
         ) {
-            this.log = log.getLogger(RemoteSnapshotSender.class);
+            super(log);
+
             this.sndr = sndr;
             this.snpName = snpName;
             this.dbNodePath = dbNodePath;
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
-            // There is no need send it to a remote node.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
-            // There is no need send it to a remote node.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendBinaryMeta(Map<Integer, BinaryType> types) {
-            // There is no need send it to a remote node.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             try {
                 assert part.exists();
 
@@ -1637,7 +1624,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             try {
                 sndr.send(delta, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.CHUNK);
 
@@ -1669,7 +1656,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() {
+        @Override public void close0() {
             U.closeQuiet(sndr);
         }
     }
@@ -1677,10 +1664,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class LocalSnapshotSender implements SnapshotSender {
-        /** Ignite logger to use. */
-        private final IgniteLogger log;
-
+    private static class LocalSnapshotSender extends SnapshotSender {
         /**
          * Local node snapshot directory calculated on snapshot directory.
          */
@@ -1717,7 +1701,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             MarshallerMappingWriter mappingWriter,
             int pageSize
         ) {
-            this.log = log.getLogger(LocalSnapshotSender.class);
+            super(log);
+
             dbNodeSnpDir = snpDir;
             this.ioFactory = ioFactory;
             this.storeFactory = storeFactory;
@@ -1727,7 +1712,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+        @Override public void sendCacheConfig0(File ccfg, String cacheDirName, GroupPartitionId pair) {
             try {
                 File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
 
@@ -1739,7 +1724,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+        @Override public void sendMarshallerMeta0(List<Map<Integer, MappedName>> mappings) {
             if (mappings == null)
                 return;
 
@@ -1761,7 +1746,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendBinaryMeta(Map<Integer, BinaryType> types) {
+        @Override public void sendBinaryMeta0(Map<Integer, BinaryType> types) {
             if (types == null)
                 return;
 
@@ -1770,7 +1755,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             try {
                 File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
 
@@ -1796,7 +1781,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbNodeSnpDir, cacheDirName, pair.getPartitionId());
 
             if (log.isInfoEnabled()) {
@@ -1851,11 +1836,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            // No-op.
         }
 
         /**
