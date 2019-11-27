@@ -3732,7 +3732,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
-            if (cctx.affinity().waitGroups().isEmpty())
+            if (!cctx.affinity().rebalanceRequired())
                 msg.rebalanced(true);
 
             // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy

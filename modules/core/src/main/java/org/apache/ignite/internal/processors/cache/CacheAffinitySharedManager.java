@@ -328,6 +328,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return {@code true} if rebalance expected.
+     */
+    public boolean rebalanceRequired() {
+        synchronized (mux) {
+            return waitInfo != null;
+        }
+    }
+
+    /**
      * Adds historically rebalancing partitions to wait group.
      * Not doing so could trigger late affinity switching before actual rebalancing will finish.
      *
