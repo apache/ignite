@@ -1412,52 +1412,52 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
     /** */
     @Test
-    public void testGetHistogram() {
+    public void testGetTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric getHistogram = metric("GetHistogram");
+        HistogramMetric m = metric("GetTime");
 
-        assertTrue(Arrays.stream(getHistogram.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
 
-        assertTrue(Arrays.stream(getHistogram.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         cache.get(1);
 
-        assertEquals(1, Arrays.stream(getHistogram.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
     }
 
     /** */
     @Test
-    public void testPutHistogram() {
+    public void testPutTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric putHistogram = metric("PutHistogram");
+        HistogramMetric m = metric("PutTime");
 
-        assertTrue(Arrays.stream(putHistogram.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
 
-        assertEquals(1, Arrays.stream(putHistogram.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
     }
 
     /** */
     @Test
-    public void testRemoveHistogram() {
+    public void testRemoveTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric rmvHistogram = metric("RemoveHistogram");
+        HistogramMetric m = metric("RemoveTime");
 
-        assertTrue(Arrays.stream(rmvHistogram.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         cache.put(1, 1);
 
-        assertTrue(Arrays.stream(rmvHistogram.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         cache.remove(1);
 
-        assertEquals(1, Arrays.stream(rmvHistogram.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
     }
 
     /**
