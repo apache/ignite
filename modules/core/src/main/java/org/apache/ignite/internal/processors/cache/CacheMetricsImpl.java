@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
@@ -64,8 +65,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     public static final String CACHE_METRICS = "cache";
 
     /** Histogram buckets for duration get, put, remove operations in nanoseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {MILLISECONDS.toNanos(1), MILLISECONDS.toNanos(10),
-        MILLISECONDS.toNanos(100), MILLISECONDS.toNanos(250), MILLISECONDS.toNanos(1000)};
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(100, MILLISECONDS),
+        NANOSECONDS.convert(250, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
 
     /** Number of reads. */
     private final AtomicLongMetric reads;
