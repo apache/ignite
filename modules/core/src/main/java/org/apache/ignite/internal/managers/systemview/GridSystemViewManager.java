@@ -41,6 +41,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryView
 import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -51,12 +52,14 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -104,6 +107,28 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
+    }
+
+    /**
+     * Registers system views for a striped thread pools
+     *
+     * @param stripedExecSvc Striped executor.
+     * @param dataStreamExecSvc Data streamer executor service.
+     */
+    public void registerThreadPools(StripedExecutor stripedExecSvc, StripedExecutor dataStreamExecSvc) {
+        ctx.systemView().registerInnerCollectionView(metricName("striped", "threadpool", "queue"),
+            "Striped thread pool task queue",
+            StripedExecutorTaskView.class,
+            Arrays.asList(stripedExecSvc.stripes()),
+            StripedExecutor.Stripe::queue, //TODO: make iterator for queue not blocking!
+            StripedExecutorTaskView::new);
+
+        ctx.systemView().registerInnerCollectionView(metricName("datastream", "threadpool", "queue"),
+            "Datastream thread pool task queue",
+            StripedExecutorTaskView.class,
+            Arrays.asList(dataStreamExecSvc.stripes()),
+            StripedExecutor.Stripe::queue, //TODO: make iterator for queue not blocking!
+            StripedExecutorTaskView::new);
     }
 
     /**

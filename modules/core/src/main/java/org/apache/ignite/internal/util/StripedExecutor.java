@@ -182,8 +182,12 @@ public class StripedExecutor implements ExecutorService {
     /**
      * @return Stripes count.
      */
-    public int stripes() {
+    public int stripesCount() {
         return stripes.length;
+    }
+
+    public Stripe[] stripes() {
+        return stripes;
     }
 
     /**
@@ -306,7 +310,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Completed tasks per stripe count.
      */
     public long[] stripesCompletedTasks() {
-        long[] res = new long[stripes()];
+        long[] res = new long[stripesCount()];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].completedCnt;
@@ -318,7 +322,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Number of active tasks per stripe.
      */
     public boolean[] stripesActiveStatuses() {
-        boolean[] res = new boolean[stripes()];
+        boolean[] res = new boolean[stripesCount()];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].active;
@@ -344,7 +348,7 @@ public class StripedExecutor implements ExecutorService {
      * @return Size of queue per stripe.
      */
     public int[] stripesQueueSizes() {
-        int[] res = new int[stripes()];
+        int[] res = new int[stripesCount()];
 
         for (int i = 0; i < res.length; i++)
             res[i] = stripes[i].queueSize();
@@ -425,11 +429,11 @@ public class StripedExecutor implements ExecutorService {
         CountDownLatch awaitLatch;
 
         if (stripes.length == 0) {
-            awaitLatch = new CountDownLatch(stripes());
+            awaitLatch = new CountDownLatch(stripesCount());
 
             // We have to ensure that all asynchronous updates are done.
             // StripedExecutor guarantees ordering inside stripe - it would enough to await "finishing" tasks.
-            range(0, stripes()).forEach(idx -> execute(idx, awaitLatch::countDown));
+            range(0, stripesCount()).forEach(idx -> execute(idx, awaitLatch::countDown));
         }
         else {
             awaitLatch = new CountDownLatch(stripes.length);
@@ -445,7 +449,7 @@ public class StripedExecutor implements ExecutorService {
                 U.log(log, "Await stripes executor complete tasks" +
                     ", awaitLatch=" + awaitLatch.getCount() +
                     ", stripes=" + (stripes.length == 0 ?
-                    Arrays.toString(range(0, stripes()).toArray()) : Arrays.toString(stripes)) +
+                    Arrays.toString(range(0, stripesCount()).toArray()) : Arrays.toString(stripes)) +
                     ", queueSize=" + Arrays.toString(stripesQueueSizes()) +
                     ", activeStatus=" + Arrays.toString(stripesActiveStatuses()));
             }
@@ -460,7 +464,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Stripe.
      */
-    private abstract static class Stripe extends GridWorker {
+    public abstract static class Stripe extends GridWorker {
         /** */
         private final String igniteInstanceName;
 
@@ -597,6 +601,15 @@ public class StripedExecutor implements ExecutorService {
          * @return Stripe's queue to string presentation.
          */
         abstract String queueToString();
+
+        /**
+         * @return Stripe queue.
+         */
+        public abstract Queue<Runnable> queue();
+
+        public int index() {
+            return idx;
+        }
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -742,6 +755,11 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
+        @Override public Queue<Runnable> queue() {
+            return queue;
+        }
+
+        /** {@inheritDoc} */
         @Override int queueSize() {
             return queue.size();
         }
@@ -809,6 +827,11 @@ public class StripedExecutor implements ExecutorService {
         }
 
         /** {@inheritDoc} */
+        @Override public Queue<Runnable> queue() {
+            return queue;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StripeConcurrentQueueNoPark.class, this, super.toString());
         }
@@ -863,6 +886,11 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override String queueToString() {
             return String.valueOf(queue);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Queue<Runnable> queue() {
+            return queue;
         }
 
         /** {@inheritDoc} */
