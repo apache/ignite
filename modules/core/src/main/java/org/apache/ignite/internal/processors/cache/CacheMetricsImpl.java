@@ -280,7 +280,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         getTimeTotal = mreg.longMetric("GetTimeTotal",
             "The total time of cache gets, in nanoseconds.");
 
-        rmvTimeTotal = mreg.longMetric("RemovalTimeTotal",
+        rmvTimeTotal = mreg.longMetric("RemoveTimeTotal",
             "The total time of cache removal, in nanoseconds.");
 
         commitTimeNanos = mreg.longMetric("CommitTime",
