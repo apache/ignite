@@ -125,6 +125,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
@@ -361,6 +362,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     // Process partitions.
                     for (GroupPartitionId pair : sctx0.parts) {
                         CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
+
+                        assert ccfg != null : "Cache configuraction cannot be empty on snapshot creation: " + pair;
+
                         String cacheDirName = cacheDirName(ccfg);
                         Long partLen = sctx0.partFileLengths.get(pair);
 
@@ -719,6 +723,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Relative configured path of presistence data storage directory for the local node.
+     */
+    public String relativeStoragePath() throws IgniteCheckedException {
+        PdsFolderSettings pCfg = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+
+        return Paths.get(DB_DEFAULT_FOLDER, pCfg.folderName()).toString();
+    }
+
+    /**
      * @param snpLsnr Snapshot listener instance.
      */
     public void addSnapshotListener(SnapshotListener snpLsnr) {
@@ -910,7 +923,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         File nodeSnpDir = null;
 
         try {
-            String dbNodePath = cctx.kernalContext().pdsFolderResolver().resolveFolders().pdsNodePath();
+            String dbNodePath = relativeStoragePath();
             nodeSnpDir = U.resolveWorkDirectory(new File(tmpWorkDir, snpName).getAbsolutePath(), dbNodePath, false);
 
             sctx = new LocalSnapshotContext(snpName,
@@ -1003,10 +1016,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     SnapshotSender localSnapshotSender(File rootSnpDir) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
-        String dbNodePath = cctx.kernalContext()
-            .pdsFolderResolver()
-            .resolveFolders()
-            .pdsNodePath();
+        String dbNodePath = relativeStoragePath();
 
         U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
 
@@ -1034,10 +1044,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     ) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
-        String dbNodePath = cctx.kernalContext()
-            .pdsFolderResolver()
-            .resolveFolders()
-            .pdsNodePath();
+        String dbNodePath = relativeStoragePath();
 
         return new RemoteSnapshotSender(log,
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),

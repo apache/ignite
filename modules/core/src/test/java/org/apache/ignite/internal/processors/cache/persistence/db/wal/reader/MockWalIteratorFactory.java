@@ -109,7 +109,7 @@ public class MockWalIteratorFactory {
         when(ctx.clientNode()).thenReturn(false);
         when(ctx.pdsFolderResolver()).thenReturn(new PdsFoldersResolver() {
             @Override public PdsFolderSettings resolveFolders() {
-                return new PdsFolderSettings(new File("."), persistentCfg1, subfolderName, consistentId, null, false);
+                return new PdsFolderSettings(new File("."), subfolderName, consistentId, null, false);
             }
         });
 

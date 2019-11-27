@@ -216,7 +216,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        String nodePath = ig.context().pdsFolderResolver().resolveFolders().pdsNodePath();
+        String nodePath = mgr.relativeStoragePath();
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
             Paths.get(mgr.localSnapshotDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
