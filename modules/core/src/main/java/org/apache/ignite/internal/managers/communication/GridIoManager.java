@@ -3210,7 +3210,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             long startTime = U.currentTimeMillis();
             int retries = 0;
 
-            senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
+            AtomicBoolean prev = senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
+
+            assert prev == null : "Current session already in use: " + sesKey;
 
             try (FileSender snd = new FileSender(file,
                 offset,
