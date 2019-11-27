@@ -201,7 +201,6 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
-import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
@@ -219,6 +218,8 @@ import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFie
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
+import static org.apache.ignite.internal.util.IgniteUtils.classForName;
+import static org.h2.value.DataType.getTypeClassName;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -1894,11 +1895,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 QueryUtils.SCHEMA_SYS,
                                 view.getTableName(),
                                 c.getName(),
-                                IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
+                                classForName(getTypeClassName(c.getType().getValueType(), false), Object.class),
                                 c.isNullable(),
                                 null,
-                                (int)c.getPrecision(),
-                                c.getScale(),
+                                (int)c.getType().getPrecision(),
+                                c.getType().getScale(),
                                 false))
                 ).forEach(infos::add);
         }

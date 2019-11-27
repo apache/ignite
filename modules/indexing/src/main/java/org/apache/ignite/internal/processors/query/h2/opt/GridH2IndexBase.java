@@ -25,9 +25,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelM
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
+import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
@@ -43,7 +45,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
      *
      * @param tbl Table.
      */
-    protected GridH2IndexBase(GridH2Table tbl) {
+    protected GridH2IndexBase(GridH2Table tbl, int id, String name,
+        IndexColumn[] newIndexColumns, IndexType newIndexType) {
+        super(tbl, id, name, newIndexColumns, newIndexType);
+
         this.tbl = tbl;
     }
 

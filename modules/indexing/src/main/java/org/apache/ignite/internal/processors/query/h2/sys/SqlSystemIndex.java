@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sys;
 
 import java.util.Iterator;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -30,8 +31,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-
-import java.util.HashSet;
 
 /**
  * Meta view H2 index.
@@ -45,6 +44,8 @@ public class SqlSystemIndex extends BaseIndex {
      * @param col Column.
      */
     SqlSystemIndex(SystemViewH2Adapter tbl, Column... col) {
+        super(tbl, 0, null, null, IndexType.createNonUnique(false));
+
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -52,7 +53,7 @@ public class SqlSystemIndex extends BaseIndex {
         else
             idxCols = new IndexColumn[0];
 
-        initBaseIndex(tbl, 0, null, idxCols, IndexType.createNonUnique(false));
+        indexColumns = idxCols;
     }
 
     /** {@inheritDoc} */
@@ -80,8 +81,8 @@ public class SqlSystemIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
-        HashSet<Column> allColsSet) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColsSet) {
         long rowCnt = getRowCountApproximation();
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);

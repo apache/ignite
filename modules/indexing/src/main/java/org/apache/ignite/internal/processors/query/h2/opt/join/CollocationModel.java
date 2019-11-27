@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
-
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.SplitterContext;
@@ -32,7 +31,6 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
 import org.h2.engine.Session;
-import org.h2.expression.Comparison;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.index.IndexCondition;
@@ -43,6 +41,9 @@ import org.h2.table.SubQueryInfo;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+
+import static org.h2.expression.condition.Comparison.EQUAL;
+import static org.h2.expression.condition.Comparison.EQUAL_NULL_SAFE;
 
 /**
  * Collocation model for a query.
@@ -384,7 +385,7 @@ public final class CollocationModel {
             if (F.isEmpty(tf.getIndexConditions())) {
                 throw new CacheException("Failed to prepare distributed join query: " +
                     "join condition does not use index [joinedCache=" + tbl.cacheName() +
-                    ", plan=" + tf.getSelect().getPlanSQL() + ']');
+                    ", plan=" + tf.getSelect().getPlanSQL(false) + ']');
             }
         }
 
@@ -402,7 +403,7 @@ public final class CollocationModel {
                 int colId = c.getColumn().getColumnId();
                 int cmpType = c.getCompareType();
 
-                if ((cmpType == Comparison.EQUAL || cmpType == Comparison.EQUAL_NULL_SAFE) &&
+                if ((cmpType == EQUAL || cmpType == EQUAL_NULL_SAFE) &&
                     (colId == affColId || tbl.rowDescriptor().isKeyColumn(colId)) && c.isEvaluatable()) {
                     affKeyCondFound = true;
 

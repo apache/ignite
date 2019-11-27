@@ -42,7 +42,7 @@ public class GridH2Short extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Short(Value val) {
-        assert val.getType() == Value.SHORT : val.getType();
+        assert val.getType().getValueType() == Value.SHORT : val.getType();
 
         x = val.getShort();
     }

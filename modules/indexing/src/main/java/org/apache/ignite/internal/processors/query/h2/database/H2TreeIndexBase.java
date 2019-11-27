@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,9 +26,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
+import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
@@ -45,8 +45,9 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      *
      * @param tbl Table.
      */
-    protected H2TreeIndexBase(GridH2Table tbl) {
-        super(tbl);
+    protected H2TreeIndexBase(GridH2Table tbl, int id, String name,
+        IndexColumn[] newIndexColumns, IndexType newIndexType) {
+        super(tbl, id, name, newIndexColumns, newIndexType);
     }
 
     /**
@@ -56,7 +57,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
-        HashSet<Column> allColumnsSet) {
+        AllColumnsForPlan allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
@@ -82,7 +83,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
 
             InlineIndexHelper idx = new InlineIndexHelper(
                 col.columnName,
-                col.column.getType(),
+                col.column.getType().getValueType(),
                 col.column.getColumnId(),
                 col.sortType,
                 table.getCompareMode());

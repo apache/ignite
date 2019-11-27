@@ -80,7 +80,7 @@ public class GridSqlAlias extends GridSqlElement {
         b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql() : child.getSQL());
 
         b.a(useAs ? " AS " : " ");
-        b.a(Parser.quoteIdentifier(alias));
+        b.a(Parser.quoteIdentifier(alias, false));
 
         if (tbl)
             b.a(((GridSqlTable)child).getAfterAliasSQL());

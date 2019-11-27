@@ -176,7 +176,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
         int segmentsCnt,
         QueryContextRegistry qryCtxRegistry
     ) throws IgniteCheckedException {
-        super(table);
+        super(table, 0, idxName, null,
+            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         assert segmentsCnt > 0 : segmentsCnt;
 
@@ -192,7 +193,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         this.idxName = idxName;
 
-        this.table = table;
         this.qryCtxRegistry = qryCtxRegistry;
 
         GridQueryTypeDescriptor typeDesc = table.rowDescriptor().type();
@@ -265,12 +265,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         cols = colsInfo.cols();
 
+        indexColumns = cols;
+
         inlineIdxs = colsInfo.inlineIdx();
 
         IndexColumn.mapColumns(cols, table);
-
-        initBaseIndex(table, 0, idxName, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         // Initialize distributed joins.
         msgTopic = new IgniteBiTuple<>(GridTopic.TOPIC_QUERY, table.identifierString() + '.' + getName());
@@ -334,7 +333,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             ", idxName=" + idxName +
             ", idxType=" + idxType +
             ", colName=" + col.columnName +
-            ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+            ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType().getValueType()) + ']'
         );
     }
 

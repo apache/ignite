@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.h2.result.Row;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 
@@ -334,5 +335,9 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         sb.a(" ]");
 
         return sb.toString();
+    }
+
+    @Override public boolean hasSharedData(Row other) {
+        return false;
     }
 }

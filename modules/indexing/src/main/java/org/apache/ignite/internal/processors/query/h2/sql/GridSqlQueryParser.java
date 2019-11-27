@@ -67,26 +67,28 @@ import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
 import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
-import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
-import org.h2.expression.CompareLike;
-import org.h2.expression.Comparison;
-import org.h2.expression.ConditionAndOr;
-import org.h2.expression.ConditionExists;
-import org.h2.expression.ConditionIn;
-import org.h2.expression.ConditionInConstantSet;
-import org.h2.expression.ConditionInSelect;
-import org.h2.expression.ConditionNot;
+import org.h2.expression.BinaryOperation;
+import org.h2.expression.BinaryOperation.OpType;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.expression.ExpressionList;
-import org.h2.expression.Function;
-import org.h2.expression.JavaFunction;
-import org.h2.expression.Operation;
 import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
-import org.h2.expression.TableFunction;
 import org.h2.expression.ValueExpression;
+import org.h2.expression.aggregate.Aggregate;
+import org.h2.expression.aggregate.AggregateType;
+import org.h2.expression.condition.CompareLike;
+import org.h2.expression.condition.Comparison;
+import org.h2.expression.condition.ConditionAndOr;
+import org.h2.expression.condition.ConditionExists;
+import org.h2.expression.condition.ConditionIn;
+import org.h2.expression.condition.ConditionInConstantSet;
+import org.h2.expression.condition.ConditionInSelect;
+import org.h2.expression.condition.ConditionNot;
+import org.h2.expression.function.Function;
+import org.h2.expression.function.JavaFunction;
+import org.h2.expression.function.TableFunction;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
@@ -108,7 +110,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER_EQUAL;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
@@ -132,7 +133,8 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fro
 public class GridSqlQueryParser {
     /** */
     private static final GridSqlOperationType[] COMPARISON_TYPES =
-        {EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
+        {
+            GridSqlOperationType.EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
         SMALLER, NOT_EQUAL, IS_NULL, IS_NOT_NULL,
         null, null, null, SPATIAL_INTERSECTS /* 11 */,
         null, null, null, null, EQUAL_NULL_SAFE /* 16 */,
@@ -154,13 +156,13 @@ public class GridSqlQueryParser {
     private static final Getter<SelectUnion, Boolean> UNION_IS_FOR_UPDATE = getter(SelectUnion.class, "isForUpdate");
 
     /** */
-    private static final Getter<Operation, Operation.OpType> OPERATION_TYPE = getter(Operation.class, "opType");
+    private static final Getter<BinaryOperation, OpType> OPERATION_TYPE = getter(BinaryOperation.class, "opType");
 
     /** */
-    private static final Getter<Operation, Expression> OPERATION_LEFT = getter(Operation.class, "left");
+    private static final Getter<BinaryOperation, Expression> OPERATION_LEFT = getter(BinaryOperation.class, "left");
 
     /** */
-    private static final Getter<Operation, Expression> OPERATION_RIGHT = getter(Operation.class, "right");
+    private static final Getter<BinaryOperation, Expression> OPERATION_RIGHT = getter(BinaryOperation.class, "right");
 
     /** */
     private static final Getter<Comparison, Integer> COMPARISON_TYPE = getter(Comparison.class, "compareType");
@@ -238,7 +240,7 @@ public class GridSqlQueryParser {
     private static final Getter<Aggregate, Boolean> DISTINCT = getter(Aggregate.class, "distinct");
 
     /** */
-    private static final Getter<Aggregate, Aggregate.AggregateType> TYPE = getter(Aggregate.class, "type");
+    private static final Getter<Aggregate, AggregateType> TYPE = getter(Aggregate.class, "type");
 
     /** */
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
@@ -709,7 +711,7 @@ public class GridSqlQueryParser {
 
         h2ObjToGridObj.put(select, res);
 
-        res.distinct(select.isDistinct());
+        res.distinct(select.isStandardDistinct());
 
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where, true));
@@ -778,7 +780,7 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            if (select.isDistinct())
+            if (select.isStandardDistinct())
                 throw new IgniteSQLException("DISTINCT clause is not supported for SELECT FOR UPDATE.",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
@@ -1350,7 +1352,7 @@ public class GridSqlQueryParser {
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DEFAULT:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NOT_NULL:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_RENAME:
-                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NULL:
+//                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NULL:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
                         stmtName = "ALTER COLUMN";
@@ -1386,7 +1388,7 @@ public class GridSqlQueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
-        checkTypeSupported(col.getType(), "[colName=" + col.getName() + ']');
+        checkTypeSupported(col.getType().getValueType(), "[colName=" + col.getName() + ']');
 
         if (col.getDefaultExpression() != null) {
             if (!col.getDefaultExpression().isConstant()) {
@@ -1394,8 +1396,8 @@ public class GridSqlQueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-            DataType colType = DataType.getDataType(col.getType());
-            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType());
+            DataType colType = DataType.getDataType(col.getType().getValueType());
+            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType().getValueType());
 
             if ((DataType.isStringType(colType.type) && !DataType.isStringType(dfltType.type))
                 || (DataType.supportsAdd(colType.type) && !DataType.supportsAdd(dfltType.type))) {
@@ -2093,7 +2095,7 @@ public class GridSqlQueryParser {
      * @param opType H2 operation type.
      * @return Ignite operation type.
      */
-    private static GridSqlOperationType mapOperationType(Operation.OpType opType) {
+    private static GridSqlOperationType mapOperationType(OpType opType) {
         switch (opType) {
             case CONCAT:
                 return GridSqlOperationType.CONCAT;
@@ -2109,10 +2111,6 @@ public class GridSqlQueryParser {
 
             case DIVIDE:
                 return GridSqlOperationType.DIVIDE;
-
-            case NEGATE:
-                // NB: Was set to null in original code for some reason; left unchanged during 1.4.197 migration.
-                return null;
 
             case MODULUS:
                 return GridSqlOperationType.MODULUS;
@@ -2147,17 +2145,10 @@ public class GridSqlQueryParser {
             return expression == ValueExpression.getDefault() ? GridSqlKeyword.DEFAULT :
                 new GridSqlConst(expression.getValue(null));
 
-        if (expression instanceof Operation) {
-            Operation operation = (Operation)expression;
+        if (expression instanceof BinaryOperation) {
+            BinaryOperation operation = (BinaryOperation)expression;
 
-            Operation.OpType type = OPERATION_TYPE.get(operation);
-
-            if (type == Operation.OpType.NEGATE) {
-                assert OPERATION_RIGHT.get(operation) == null;
-
-                return new GridSqlOperation(GridSqlOperationType.NEGATE,
-                    parseExpression(OPERATION_LEFT.get(operation), calcTypes));
-            }
+            OpType type = OPERATION_TYPE.get(operation);
 
             return new GridSqlOperation(mapOperationType(type),
                 parseExpression(OPERATION_LEFT.get(operation), calcTypes),
@@ -2294,7 +2285,7 @@ public class GridSqlQueryParser {
             }
 
             if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT) {
-                checkTypeSupported(f.getType(), "[expSql=" + f.getSQL() + ']');
+                checkTypeSupported(f.getType().getValueType(), "[expSql=" + f.getSQL(false) + ']');
 
                 res.resultType(fromExpression(f));
             }
@@ -2321,7 +2312,7 @@ public class GridSqlQueryParser {
             return new GridSqlParameter(((Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
-            Aggregate.AggregateType type = TYPE.get((Aggregate)expression);
+            AggregateType type = TYPE.get((Aggregate)expression);
 
             if (GridSqlAggregateFunction.isValidType(type)) {
                 GridSqlAggregateFunction res = new GridSqlAggregateFunction(
@@ -2395,7 +2386,7 @@ public class GridSqlQueryParser {
             SelectOrderBy o = orders.get(i);
 
             grpConcatOrderExpression[i] = parseExpression(o.expression, calcTypes);
-            grpConcatOrderDesc[i] = o.descending;
+            grpConcatOrderDesc[i] = (o.sortType & SortOrder.DESCENDING) != 0;
         }
 
         f.setGroupConcatOrder(grpConcatOrderExpression, grpConcatOrderDesc);

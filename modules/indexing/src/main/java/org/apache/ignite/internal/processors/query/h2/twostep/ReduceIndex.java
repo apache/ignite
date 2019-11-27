@@ -44,6 +44,7 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -132,15 +133,16 @@ public abstract class ReduceIndex extends BaseIndex {
         IndexType type,
         IndexColumn[] cols
     ) {
-        this(ctx);
-
-        initBaseIndex(tbl, 0, name, cols, type);
+        this(ctx, tbl, 0, name, cols, type);
     }
 
     /**
      * @param ctx Context.
      */
-    protected ReduceIndex(GridKernalContext ctx) {
+    protected ReduceIndex(GridKernalContext ctx, Table newTable, int id, String name,
+        IndexColumn[] newIndexColumns, IndexType newIndexType) {
+        super(newTable, id, name, newIndexColumns, newIndexType);
+
         this.ctx = ctx;
 
         fetched = new ReduceBlockList<>(PREFETCH_SIZE);

@@ -120,7 +120,7 @@ public class H2QueryInfo {
             .append(sql);
 
         if (type != QueryType.REDUCE)
-            msgSb.append("', plan=").append(stmt.getPlanSQL());
+            msgSb.append("', plan=").append(stmt.getPlanSQL(false));
 
         msgSb.append(']');
 

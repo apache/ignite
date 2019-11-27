@@ -83,9 +83,9 @@ public class GridSqlTable extends GridSqlElement {
      */
     public String getBeforeAliasSql() {
         if (schema == null)
-            return Parser.quoteIdentifier(tblName);
+            return Parser.quoteIdentifier(tblName, false);
 
-        return Parser.quoteIdentifier(schema) + '.' + Parser.quoteIdentifier(tblName);
+        return Parser.quoteIdentifier(schema, false) + '.' + Parser.quoteIdentifier(tblName, false);
     }
 
     /**
@@ -107,7 +107,7 @@ public class GridSqlTable extends GridSqlElement {
             else
                 b.a(", ");
 
-            b.a(Parser.quoteIdentifier(idx));
+            b.a(Parser.quoteIdentifier(idx, false));
         }
 
         b.a(')');

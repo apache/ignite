@@ -62,7 +62,7 @@ public class SqlViewColumnView {
 
     /** @return Field data type. */
     public String type() {
-        return DataType.getTypeClassName(col.getType());
+        return DataType.getTypeClassName(col.getType().getValueType(), false);
     }
 
     /** @return Field default. */
@@ -72,12 +72,12 @@ public class SqlViewColumnView {
 
     /** @return Precision. */
     public long precision() {
-        return col.getPrecision();
+        return col.getType().getPrecision();
     }
 
     /** @return Scale. */
     public int scale() {
-        return col.getScale();
+        return col.getType().getScale();
     }
 
     /** @return {@code True} if nullable field. */

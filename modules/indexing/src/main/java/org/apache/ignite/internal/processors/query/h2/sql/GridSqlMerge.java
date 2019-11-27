@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.List;
-import org.h2.util.StatementBuilder;
+import org.apache.ignite.internal.processors.query.h2.StatementBuilder;
 
 /** */
 public class GridSqlMerge extends GridSqlStatement {

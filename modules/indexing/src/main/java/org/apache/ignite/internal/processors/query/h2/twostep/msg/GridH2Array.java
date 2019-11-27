@@ -53,7 +53,7 @@ public class GridH2Array extends GridH2ValueMessage {
      * @throws IgniteCheckedException If failed.
      */
     public GridH2Array(Value val) throws IgniteCheckedException {
-        assert val.getType() == Value.ARRAY : val.getType();
+        assert val.getType().getValueType() == Value.ARRAY : val.getType();
 
         ValueArray arr = (ValueArray)val;
 

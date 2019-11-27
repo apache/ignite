@@ -42,7 +42,7 @@ public class GridH2Boolean extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Boolean(Value val) {
-        assert val.getType() == Value.BOOLEAN : val.getType();
+        assert val.getType().getValueType() == Value.BOOLEAN : val.getType();
 
         x = val.getBoolean();
     }

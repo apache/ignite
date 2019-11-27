@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
@@ -70,8 +71,8 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColumnsSet) {
         double baseCost = super.getCost(ses, masks, filters, filter, sortOrder, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
@@ -81,7 +82,7 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
 
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
-        return delegate().getTable().getSQL() + "." + SCAN_INDEX_NAME_SUFFIX;
+        return delegate().getTable().getSQL(false) + "." + SCAN_INDEX_NAME_SUFFIX;
     }
 
     /** {@inheritDoc} */

@@ -49,7 +49,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Decimal(Value val) {
-        assert val.getType() == Value.DECIMAL : val.getType();
+        assert val.getType().getValueType() == Value.DECIMAL : val.getType();
 
         BigDecimal x = val.getBigDecimal();
 

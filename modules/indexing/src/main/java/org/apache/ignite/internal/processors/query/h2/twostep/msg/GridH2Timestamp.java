@@ -45,7 +45,7 @@ public class GridH2Timestamp extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Timestamp(Value val) {
-        assert val.getType() == Value.TIMESTAMP : val.getType();
+        assert val.getType().getValueType() == Value.TIMESTAMP : val.getType();
 
         ValueTimestamp t = (ValueTimestamp)val;
 

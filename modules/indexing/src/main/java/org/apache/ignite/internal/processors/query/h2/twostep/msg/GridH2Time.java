@@ -42,7 +42,7 @@ public class GridH2Time extends GridH2ValueMessage {
      * @param val Value.
      */
     public GridH2Time(Value val) {
-        assert val.getType() == Value.TIME : val.getType();
+        assert val.getType().getValueType() == Value.TIME : val.getType();
 
         ValueTime t = (ValueTime)val;
 

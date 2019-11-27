@@ -46,18 +46,14 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     public H2TreeClientIndex(GridH2Table table, String name, boolean pk, List<IndexColumn> colsList, int inlineSize) {
-        super(table);
-
-        this.table = table;
+        super(table, 0, name, colsList.toArray(new IndexColumn[0]),
+            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
         this.inlineSize = calculateInlineSize(cols, inlineSize, table.cacheInfo().config());
 
         IndexColumn.mapColumns(cols, table);
-
-        initBaseIndex(table, 0, name, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
     }
 
     /** {@inheritDoc} */

@@ -1150,10 +1150,7 @@ public class GridReduceQueryExecutor {
                     else {
                         col0 = new Column(
                             alias,
-                            type.type(),
-                            type.precision(),
-                            type.scale(),
-                            type.displaySize()
+                            type.type()
                         );
                     }
 

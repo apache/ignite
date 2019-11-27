@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
@@ -51,8 +52,8 @@ public class GridH2ProxySpatialIndex extends GridH2ProxyIndex implements Spatial
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> cols) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColumnsSet) {
         return SpatialTreeIndex.getCostRangeIndex(masks, columns) / 10;
     }
 

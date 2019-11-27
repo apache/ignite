@@ -169,7 +169,7 @@ public class GridH2ValueMessageFactory implements MessageFactory {
      * @throws IgniteCheckedException If failed.
      */
     public static GridH2ValueMessage toMessage(Value v) throws IgniteCheckedException {
-        switch (v.getType()) {
+        switch (v.getType().getValueType()) {
             case Value.NULL:
                 return GridH2Null.INSTANCE;
 

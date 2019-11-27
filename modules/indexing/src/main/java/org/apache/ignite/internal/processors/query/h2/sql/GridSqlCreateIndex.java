@@ -99,9 +99,9 @@ public class GridSqlCreateIndex extends GridSqlStatement {
         StringBuilder sb = new StringBuilder("CREATE ")
             .append(idx.getIndexType() == QueryIndexType.GEOSPATIAL ? "SPATIAL " : "")
             .append("INDEX ").append(ifNotExists ? "IF NOT EXISTS " : "")
-            .append(Parser.quoteIdentifier(schemaName)).append('.')
-            .append(Parser.quoteIdentifier(idx.getName())).append(" ON ")
-            .append(Parser.quoteIdentifier(tblName)).append(" (");
+            .append(Parser.quoteIdentifier(schemaName, false)).append('.')
+            .append(Parser.quoteIdentifier(idx.getName(), false)).append(" ON ")
+            .append(Parser.quoteIdentifier(tblName, false)).append(" (");
 
         boolean first = true;
 
@@ -111,7 +111,7 @@ public class GridSqlCreateIndex extends GridSqlStatement {
             else
                 sb.append(", ");
 
-            sb.append(Parser.quoteIdentifier(e.getKey())).append(e.getValue() ? " ASC" : " DESC");
+            sb.append(Parser.quoteIdentifier(e.getKey(), false)).append(e.getValue() ? " ASC" : " DESC");
         }
 
         sb.append(')');
