@@ -49,6 +49,9 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Authorization context. */
     private AuthorizationContext authCtx;
 
+    /** User attributes. */
+    protected Map<String, Object> userAttrs;
+
     /**
      * Constructor.
      *
@@ -88,10 +91,10 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @return Auth context.
      * @throws IgniteCheckedException If failed.
      */
-    protected AuthorizationContext authenticate(String user, String pwd, Map<String, Object> userAttrs)
+    protected AuthorizationContext authenticate(String user, String pwd)
         throws IgniteCheckedException {
         if (ctx.security().enabled())
-            authCtx = authenticateExternal(user, pwd, userAttrs).authorizationContext();
+            authCtx = authenticateExternal(user, pwd).authorizationContext();
         else if (ctx.authentication().enabled()) {
             if (F.isEmpty(user))
                 throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
@@ -110,7 +113,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /**
      * Do 3-rd party authentication.
      */
-    private AuthenticationContext authenticateExternal(String user, String pwd, Map<String, Object> userAttrs)
+    private AuthenticationContext authenticateExternal(String user, String pwd)
         throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 

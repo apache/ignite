@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -170,7 +169,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;
-        Map<String, Object> userAttrs = null;
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
@@ -194,7 +192,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(user, passwd, userAttrs);
+            actx = authenticate(user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);

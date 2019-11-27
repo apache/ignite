@@ -153,7 +153,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
-        AuthorizationContext actx = authenticate(user, passwd, null);
+        AuthorizationContext actx = authenticate(user, passwd);
 
         ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
