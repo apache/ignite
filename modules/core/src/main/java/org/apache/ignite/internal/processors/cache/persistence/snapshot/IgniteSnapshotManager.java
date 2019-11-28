@@ -67,12 +67,14 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -113,6 +115,8 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
@@ -204,6 +208,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** Checkpoint listener to handle scheduled snapshot requests. */
     private DbCheckpointListener cpLsnr;
+
+    /** System discovery message listener. */
+    private DiscoveryEventListener discoLsnr;
 
     /** Snapshot listener on created snapshots. */
     private volatile SnapshotListener snpLsnr;
@@ -472,6 +479,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
         });
 
+        cctx.gridEvents().addDiscoveryEventListener(discoLsnr = (evt, discoCache) -> {
+            if (!busyLock.enterBusy())
+                return;
+
+            try {
+                SnapshotTransmissionFuture snpTrFut = snpRq.get();
+
+                if (snpTrFut == null)
+                    return;
+
+                if (snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
+                    snpTrFut.onDone(new ClusterTopologyCheckedException("The node from which a snapshot has been " +
+                        "requested left the grid"));
+
+                    snpRq.set(null);
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
         // Remote snapshot handler.
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
             /** {@inheritDoc} */
@@ -501,7 +530,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 SnapshotTransmissionFuture transFut = snpRq.get();
 
                 if (transFut == null) {
-                    throw new IgniteException("Snapshot transmission request is missing " +
+                    throw new TransmissionCancelledException("Stale snapshot transmission request will be ignored " +
                         "[snpName=" + snpName + ", cacheDirName=" + cacheDirName + ", partId=" + partId + ']');
                 }
 
@@ -587,7 +616,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 SnapshotTransmissionFuture transFut = snpRq.get();
 
                 if (transFut == null) {
-                    throw new IgniteException("Snapshot transmission with given name doesn't exists " +
+                    throw new TransmissionCancelledException("Stale snapshot transmission request will be ignored " +
                         "[snpName=" + snpName + ", grpId=" + grpId + ", partId=" + partId + ']');
                 }
 
@@ -601,7 +630,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         "[snpName=" + snpName + ", grpId=" + grpId + ", partId=" + partId + ']');
                 }
 
-                // todo this should be inverted\hided to snapshot transmission
                 pageStore.beginRecover();
 
                 // No snapshot delta pages received. Finalize recovery.
@@ -718,6 +746,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             snpRunner.shutdown();
 
             cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
+            cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
             cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
         }
         finally {
@@ -876,7 +905,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                         break;
                     }
-                    else if (U.currentTimeMillis() - startTime < DFLT_CREATE_SNAPSHOT_TIMEOUT)
+                    else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT)
                         throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
 
                     U.sleep(200);
@@ -1621,6 +1650,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
             try {
                 assert part.exists();
+                assert len > 0 : "Requested partitions has incorrect file length " +
+                    "[pair=" + pair + ", cacheDirName=" + cacheDirName + ']';
 
                 sndr.send(part, 0, len, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.FILE);
 
@@ -1771,15 +1802,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
             try {
+                if (len == 0)
+                    return;
+
                 File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
 
                 File snpPart = new File(cacheDir, part.getName());
 
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
-
-                if (len == 0)
-                    return;
 
                 copy(part, snpPart, len);
 
