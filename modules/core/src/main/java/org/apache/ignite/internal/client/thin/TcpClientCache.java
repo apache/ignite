@@ -522,8 +522,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         if (expiryPlc != null) {
             if (payloadCh.clientChannel().serverVersion().compareTo(V1_6_0) < 0) {
-                throw new ClientProtocolError(String.format("Expire policy have not supported by the server's " +
-                    "protocol version %s, required version %s", payloadCh.clientChannel().serverVersion(), V1_6_0));
+                throw new ClientProtocolError(String.format("Expire policies have not supported by the server " +
+                    " version %s, required version %s", payloadCh.clientChannel().serverVersion(), V1_6_0));
             }
 
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;
