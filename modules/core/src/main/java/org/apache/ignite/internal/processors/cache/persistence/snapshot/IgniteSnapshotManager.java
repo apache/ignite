@@ -53,7 +53,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1362,7 +1361,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 + " should be same with " + ByteOrder.nativeOrder();
 
             int crc = PageIO.getCrc(pageBuf);
-            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+            int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
 
             if (log.isDebugEnabled()) {
                 log.debug("onPageWrite [pageId=" + pageId +
@@ -1846,7 +1845,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     long pageId = PageIO.getPageId(pageBuf);
 
-                    int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+                    int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
 
                     int crc = PageIO.getCrc(pageBuf);
 
