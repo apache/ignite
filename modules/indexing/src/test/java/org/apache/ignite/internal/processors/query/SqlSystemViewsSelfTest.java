@@ -1571,6 +1571,22 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEqualsCollections(elevenExpVals, durationMetrics);
     }
 
+    /** */
+    @Test
+    public void testStripedExecutorSystemView() throws Exception {
+        try(IgniteEx g0 = startGrid(0);
+            IgniteEx g1 = startGrid(1)) {
+
+            IgniteCache<Integer, Integer> cache1 = g0.createCache("cache1");
+            long start = U.currentTimeMillis();
+
+            int i = 0;
+
+            while (U.currentTimeMillis() - start <= 50_000)
+                cache1.put(i++, i);
+        }
+    }
+
     /**
      * Mock for {@link ClusterMetricsImpl} that always returns big (more than 24h) duration for all duration metrics.
      */

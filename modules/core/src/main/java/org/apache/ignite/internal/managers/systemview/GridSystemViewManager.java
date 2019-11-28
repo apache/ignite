@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalk
 import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
@@ -94,6 +95,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
         registerWalker(ScanQueryView.class, new ScanQueryViewWalker());
+        registerWalker(StripedExecutorTaskView.class, new StripedExecutorTaskViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -120,14 +122,14 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
             "Striped thread pool task queue",
             StripedExecutorTaskView.class,
             Arrays.asList(stripedExecSvc.stripes()),
-            StripedExecutor.Stripe::queue, //TODO: make iterator for queue not blocking!
+            StripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
 
         ctx.systemView().registerInnerCollectionView(metricName("datastream", "threadpool", "queue"),
             "Datastream thread pool task queue",
             StripedExecutorTaskView.class,
             Arrays.asList(dataStreamExecSvc.stripes()),
-            StripedExecutor.Stripe::queue, //TODO: make iterator for queue not blocking!
+            StripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
     }
 

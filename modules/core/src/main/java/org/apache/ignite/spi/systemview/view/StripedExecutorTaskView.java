@@ -1,5 +1,6 @@
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
 
@@ -25,20 +26,24 @@ public class StripedExecutorTaskView {
     }
 
     /** @return Stripe index for task. */
-    public int index() {
+    @Order
+    public int stripeIndex() {
         return stripe.index();
     }
 
     /** @return Task class name. */
+    @Order(3)
     public String className() {
         return task.getClass().getName();
     }
 
     /** @return Task {@code toString} representation. */
+    @Order(1)
     public String description() {
         return toStringSafe(task);
     }
 
+    @Order(2)
     public String threadName() {
         return stripe.name();
     }
