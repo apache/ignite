@@ -30,9 +30,14 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
@@ -50,6 +55,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -194,7 +200,8 @@ public class FunctionalTest {
                     .setDefaultFieldValues(Collections.singletonMap("id", 0))
                     .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))
                     .setAliases(Stream.of("id", "orgId").collect(Collectors.toMap(f -> f, String::toUpperCase)))
-                );
+                )
+                .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
 
             ClientCache cache = client.createCache(cacheCfg);
 
@@ -813,6 +820,64 @@ public class FunctionalTest {
             t.start();
 
             t.join();
+        }
+    }
+
+    /**
+     * Test cache with expire policy.
+     */
+    @Test
+    public void testExpirePolicy() throws Exception {
+        long ttl = 1000L;
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration()
+                .setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            );
+
+            Duration dur = new Duration(TimeUnit.MILLISECONDS, ttl);
+
+            ClientCache<Integer, Integer> cachePlcCreated = cache.withExpirePolicy(new CreatedExpiryPolicy(dur));
+            ClientCache<Integer, Integer> cachePlcUpdated = cache.withExpirePolicy(new ModifiedExpiryPolicy(dur));
+            ClientCache<Integer, Integer> cachePlcAccessed = cache.withExpirePolicy(new AccessedExpiryPolicy(dur));
+
+            cache.put(0, 0);
+            cachePlcCreated.put(1, 1);
+            cachePlcUpdated.put(2, 2);
+            cachePlcAccessed.put(3, 3);
+
+            U.sleep(ttl / 3 * 2);
+
+            assertTrue(cache.containsKey(0));
+            assertTrue(cache.containsKey(1));
+            assertTrue(cache.containsKey(2));
+            assertTrue(cache.containsKey(3));
+
+            cachePlcCreated.put(1, 2);
+            cachePlcCreated.get(1); // Update and access key with created expire policy.
+            cachePlcUpdated.put(2, 3); // Update key with modified expire policy.
+            cachePlcAccessed.get(3); // Access key with accessed expire policy.
+
+            U.sleep(ttl / 3 * 2);
+
+            assertTrue(cache.containsKey(0));
+            assertFalse(cache.containsKey(1));
+            assertTrue(cache.containsKey(2));
+            assertTrue(cache.containsKey(3));
+
+            U.sleep(ttl / 3 * 2);
+
+            cachePlcUpdated.get(2); // Access key with updated expire policy.
+
+            U.sleep(ttl / 3 * 2);
+
+            assertTrue(cache.containsKey(0));
+            assertFalse(cache.containsKey(1));
+            assertFalse(cache.containsKey(2));
+            assertFalse(cache.containsKey(3));
         }
     }
 
