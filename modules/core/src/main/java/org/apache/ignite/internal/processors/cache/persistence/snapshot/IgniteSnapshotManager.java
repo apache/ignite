@@ -378,19 +378,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         String cacheDirName = cacheDirName(ccfg);
                         Long partLen = sctx0.partFileLengths.get(pair);
 
-                        try {
-                            // Initialize empty partition file.
-                            if (partLen == 0) {
-                                FilePageStore filePageStore = (FilePageStore)storeMgr.getStore(pair.getGroupId(),
-                                    pair.getPartitionId());
-
-                                filePageStore.init();
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-
                         CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                             wrapExceptionally(() -> {
                                     sctx0.snpSndr.sendPart(
