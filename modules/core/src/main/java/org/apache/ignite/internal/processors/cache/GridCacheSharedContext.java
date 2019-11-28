@@ -43,6 +43,7 @@ import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -53,8 +54,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridCachePreloadSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -194,7 +193,7 @@ public class GridCacheSharedContext<K, V> {
     private volatile boolean readOnlyMode;
 
     /** Manager to preload cache partions. Can be {@code null} if presistence is not enabled. */
-    private GridCachePreloadSharedManager preloadMgr;
+    private GridPartitionFilePreloader filePreloader;
 
     /**
      * @param kernalCtx  Context.
@@ -239,7 +238,7 @@ public class GridCacheSharedContext<K, V> {
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
-        GridCachePreloadSharedManager preloadMgr
+        GridPartitionFilePreloader filePreloader
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -256,7 +255,7 @@ public class GridCacheSharedContext<K, V> {
             snapshotMgr,
             snpMgr,
             depMgr,
-            preloadMgr,
+            filePreloader,
             exchMgr,
             affMgr,
             ioMgr,
@@ -429,7 +428,7 @@ public class GridCacheSharedContext<K, V> {
             snapshotMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
-            preloadMgr,
+            filePreloader,
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
             ioMgr,
@@ -480,7 +479,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteSnapshotManager snapshotMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
-        GridCachePreloadSharedManager preloadMgr,
+        GridPartitionFilePreloader filePreloader,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr,
@@ -502,7 +501,7 @@ public class GridCacheSharedContext<K, V> {
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
-        this.preloadMgr = add(mgrs, preloadMgr);
+        this.filePreloader = add(mgrs, filePreloader);
         this.exchMgr = add(mgrs, exchMgr);
         this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
@@ -737,10 +736,10 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return File rebalancing manager.
+     * @return File preloading manager.
      */
-    public GridCachePreloadSharedManager filePreloader() {
-        return preloadMgr;
+    public GridPartitionFilePreloader filePreloader() {
+        return filePreloader;
     }
 
     /**

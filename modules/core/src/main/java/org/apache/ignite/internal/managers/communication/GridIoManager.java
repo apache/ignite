@@ -3304,6 +3304,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 if (stopping)
                     throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
+                if (senderStopFlags.get(sesKey) == null)
+                    e.printStackTrace();
+
+                assert senderStopFlags.get(sesKey) != null : "key=" + sesKey + ", flags=" + senderStopFlags.keySet();
+
                 if (senderStopFlags.get(sesKey).get())
                     throw new ClusterTopologyCheckedException("Remote node left the cluster: " + rmtId, e);
 
