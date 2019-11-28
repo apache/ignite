@@ -1425,7 +1425,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.get(1);
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
     /** */
@@ -1439,7 +1439,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(1, 1);
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
     /** */
@@ -1457,7 +1457,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.remove(1);
 
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v > 0).count());
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
     /**
