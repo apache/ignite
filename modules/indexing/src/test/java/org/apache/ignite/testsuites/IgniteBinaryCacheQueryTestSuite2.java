@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiTh
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.QueryJoinWithDifferentNodeFiltersTest;
+import org.apache.ignite.internal.processors.cache.SqlCacheStartStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheClientQueryReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest;
@@ -84,6 +85,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    SqlCacheStartStopTest.class,
+
     SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest.class,
     SqlIndexConsistencyAfterInterruptTxCacheOperationTest.class,
     SqlTwoCachesInGroupWithSameEntryTest.class,
