@@ -170,9 +170,9 @@ abstract class SnapshotSender implements Closeable {
      * @param part Partition file to send.
      * @param cacheDirName Cache group directory name.
      * @param pair Group id with partition id pair.
-     * @param length Partition length.
+     * @param len Partition length.
      */
-    protected abstract void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length);
+    protected abstract void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len);
 
     /**
      * @param delta Delta pages file.

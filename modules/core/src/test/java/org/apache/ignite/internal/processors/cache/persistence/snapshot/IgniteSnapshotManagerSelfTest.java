@@ -278,12 +278,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 mgr.snapshotExecutorService(),
                 new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
                     @Override
-                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
                         try {
                             if (pair.getPartitionId() == 0)
                                 U.await(slowCopy);
 
-                            delegate.sendPart0(part, cacheDirName, pair, length);
+                            delegate.sendPart0(part, cacheDirName, pair, len);
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             throw new IgniteException(e);
@@ -392,11 +392,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             parts,
             mgr.snapshotExecutorService(),
             new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snpDir0)) {
-                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
 
-                    delegate.sendPart0(part, cacheDirName, pair, length);
+                    delegate.sendPart0(part, cacheDirName, pair, len);
                 }
             });
 
@@ -602,8 +602,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-            delegate.sendPart(part, cacheDirName, pair, length);
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
+            delegate.sendPart(part, cacheDirName, pair, len);
         }
 
         /** {@inheritDoc} */
