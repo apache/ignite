@@ -19,15 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.Paths;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.pdsDirectory;
 
 /**
  * Class holds information required for folder generation for ignite persistent store
@@ -40,9 +36,6 @@ public class PdsFolderSettings {
      * This value may be null if persistence is not enabled.
      */
     @Nullable private final File persistentStoreRootPath;
-
-    /** Relative configured path of presistence data storage directory. */
-    private final String pdsDir;
 
     /** Sub folder name containing consistent ID and optionally node index. */
     private final String folderName;
@@ -67,22 +60,18 @@ public class PdsFolderSettings {
      * Creates settings in for new PST(DB) folder mode.
      *
      * @param persistentStoreRootPath Persistent store root path or null if non PDS mode.
-     * @param dsCfg Relative path of 'db' directory.
      * @param folderName Sub folder name containing consistent ID and optionally node index.
      * @param consistentId Consistent id.
      * @param fileLockHolder File lock holder with prelocked db directory.
      * @param compatible Compatible mode flag.
      */
-    public PdsFolderSettings(
-        @Nullable final File persistentStoreRootPath,
-        DataStorageConfiguration dsCfg,
+    public PdsFolderSettings(@Nullable final File persistentStoreRootPath,
         final String folderName,
         final Serializable consistentId,
         @Nullable final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder,
-        final boolean compatible
-    ) {
+        final boolean compatible) {
+
         this.consistentId = consistentId;
-        this.pdsDir = pdsDirectory(dsCfg);
         this.folderName = folderName;
         this.fileLockHolder = fileLockHolder;
         this.compatible = compatible;
@@ -93,15 +82,17 @@ public class PdsFolderSettings {
      * Creates settings for compatible mode. Folder name is consistent ID (masked), no node prefix is added.
      *
      * @param persistentStoreRootPath root DB path.
-     * @param dsCfg Relative path of 'db' directory.
      * @param consistentId node consistent ID.
      */
     public PdsFolderSettings(
         @Nullable final File persistentStoreRootPath,
-        DataStorageConfiguration dsCfg,
-        @NotNull final Serializable consistentId
-    ) {
-        this(persistentStoreRootPath, dsCfg, U.maskForFileName(consistentId.toString()), consistentId, null, true);
+        @NotNull final Serializable consistentId) {
+
+        this.consistentId = consistentId;
+        this.compatible = true;
+        this.folderName = U.maskForFileName(consistentId.toString());
+        this.persistentStoreRootPath = persistentStoreRootPath;
+        this.fileLockHolder = null;
     }
 
     /**
@@ -144,13 +135,6 @@ public class PdsFolderSettings {
      */
     @Nullable public File persistentStoreRootPath() {
         return persistentStoreRootPath;
-    }
-
-    /**
-     * @return Relative configured path of presistence data storage directory for the local node.
-     */
-    public String pdsNodePath() {
-        return Paths.get(pdsDir, folderName).toString();
     }
 
     /** {@inheritDoc} */

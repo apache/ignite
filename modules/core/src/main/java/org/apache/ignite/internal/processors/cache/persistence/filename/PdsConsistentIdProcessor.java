@@ -125,10 +125,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
-            return new PdsFolderSettings(pstStoreBasePath, cfg.getDataStorageConfiguration(), cfg.getConsistentId());
+            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
         }
 
-        return new PdsFolderSettings(pstStoreBasePath, cfg.getDataStorageConfiguration(), consistentId);
+        return new PdsFolderSettings(pstStoreBasePath, consistentId);
     }
 
     /** {@inheritDoc} */
@@ -154,9 +154,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @throws IgniteCheckedException if IO failed.
      */
     private PdsFolderSettings prepareNewSettings() throws IgniteCheckedException {
-        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-
-        final File pstStoreBasePath = resolvePersistentStoreBasePath(dsCfg);
+        final File pstStoreBasePath = resolvePersistentStoreBasePath();
         //here deprecated method is used to get compatible version of consistentId
         final Serializable consistentId = ctx.discovery().consistentId();
 
@@ -164,7 +162,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return compatibleResolve(pstStoreBasePath, consistentId);
 
         if (ctx.clientNode())
-            return new PdsFolderSettings(pstStoreBasePath, dsCfg, UUID.randomUUID());
+            return new PdsFolderSettings(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
             return compatibleResolve(pstStoreBasePath, consistentId);
@@ -172,9 +170,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         // compatible mode from configuration is used fot this case
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consistent id change
-            return new PdsFolderSettings(pstStoreBasePath, dsCfg, cfg.getConsistentId());
+            return new PdsFolderSettings(pstStoreBasePath, cfg.getConsistentId());
         }
-
         // The node scans the work directory and checks if there is a folder matching the consistent ID.
         // If such a folder exists, we start up with this ID (compatibility mode)
         final String subFolder = U.maskForFileName(consistentId.toString());
@@ -183,7 +180,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         if (oldStyleFolderLockHolder != null)
             return new PdsFolderSettings(pstStoreBasePath,
-                dsCfg,
                 subFolder,
                 consistentId,
                 oldStyleFolderLockHolder,
@@ -207,7 +203,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                     log.info("Successfully locked persistence storage folder [" + next.subFolderFile() + "]");
 
                 return new PdsFolderSettings(pstStoreBasePath,
-                    dsCfg,
                     next.subFolderFile().getName(),
                     next.uuid(),
                     fileLockHolder,
@@ -335,7 +330,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             if (log.isInfoEnabled())
                 log.info("Successfully created new persistent storage folder [" + newRandomFolder + "]");
 
-            return new PdsFolderSettings(pstStoreBasePath, cfg.getDataStorageConfiguration(), consIdBasedFolder, uuid, fileLockHolder, false);
+            return new PdsFolderSettings(pstStoreBasePath, consIdBasedFolder, uuid, fileLockHolder, false);
         }
         throw new IgniteCheckedException("Unable to lock file generated randomly [" + newRandomFolder + "]");
     }
@@ -444,22 +439,20 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * store configuration. Null if persistence is not enabled. Returned folder is created automatically.
      * @throws IgniteCheckedException if I/O failed.
      */
-    @Nullable private File resolvePersistentStoreBasePath(DataStorageConfiguration dsCfg) throws IgniteCheckedException {
+    @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
+        final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+
         if (dsCfg == null)
             return null;
 
-        return U.resolveWorkDirectory(cfg.getWorkDirectory(), pdsDirectory(dsCfg), false);
-    }
+        final String pstPath = dsCfg.getStoragePath();
 
-    /**
-     * @param dsCfg Data storage configuration.
-     * @return Relative data storage path to use.
-     */
-    public static String pdsDirectory(DataStorageConfiguration dsCfg) {
-        if (dsCfg == null)
-            return null;
+        return U.resolveWorkDirectory(
+            cfg.getWorkDirectory(),
+            pstPath != null ? pstPath : DB_DEFAULT_FOLDER,
+            false
+        );
 
-        return dsCfg.getStoragePath() == null ? DB_DEFAULT_FOLDER : dsCfg.getStoragePath();
     }
 
     /**

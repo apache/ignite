@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -215,7 +216,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        String nodePath = ig.context().pdsFolderResolver().resolveFolders().pdsNodePath();
+        String nodePath = mgr.relativeStoragePath();
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
             Paths.get(mgr.localSnapshotDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
@@ -275,14 +276,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .scheduleSnapshot(SNAPSHOT_NAME,
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotSender(mgr.localSnapshotSender(snapshotDir0)) {
+                new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
                     @Override
-                    public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
                             if (pair.getPartitionId() == 0)
                                 U.await(slowCopy);
 
-                            super.sendPart(part, cacheDirName, pair, length);
+                            delegate.sendPart0(part, cacheDirName, pair, length);
                         }
                         catch (IgniteInterruptedCheckedException e) {
                             throw new IgniteException(e);
@@ -390,12 +391,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
             parts,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotSender(mgr.localSnapshotSender(snpDir0)) {
-                @Override public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+            new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snpDir0)) {
+                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
 
-                    super.sendPart(part, cacheDirName, pair, length);
+                    delegate.sendPart0(part, cacheDirName, pair, length);
                 }
             });
 
@@ -572,44 +573,46 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DeleagateSnapshotSender implements SnapshotSender {
+    private static class DeleagateSnapshotSender extends SnapshotSender {
         /** Delegate call to. */
-        private final SnapshotSender delegate;
+        protected final SnapshotSender delegate;
 
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagateSnapshotSender(SnapshotSender delegate) {
+        public DeleagateSnapshotSender(IgniteLogger log, SnapshotSender delegate) {
+            super(log);
+
             this.delegate = delegate;
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+        @Override public void sendCacheConfig0(File ccfg, String cacheDirName, GroupPartitionId pair) {
             delegate.sendCacheConfig(ccfg, cacheDirName, pair);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendMarshallerMeta(List<Map<Integer, MappedName>> mappings) {
+        @Override public void sendMarshallerMeta0(List<Map<Integer, MappedName>> mappings) {
             delegate.sendMarshallerMeta(mappings);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendBinaryMeta(Map<Integer, BinaryType> types) {
+        @Override public void sendBinaryMeta0(Map<Integer, BinaryType> types) {
             delegate.sendBinaryMeta(types);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
             delegate.sendPart(part, cacheDirName, pair, length);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta(File delta, String cacheDirName, GroupPartitionId pair) {
+        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             delegate.sendDelta(delta, cacheDirName, pair);
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws IOException {
+        @Override public void close0() throws IOException{
             delegate.close();
         }
     }

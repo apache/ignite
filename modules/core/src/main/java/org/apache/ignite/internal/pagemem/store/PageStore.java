@@ -27,9 +27,14 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
  */
 public interface PageStore extends Closeable {
     /**
-     * @param lsnr Page store listener to set.
+     * @param lsnr Page write listener to set.
      */
-    public void setListener(PageStoreListener lsnr);
+    public void addWriteListener(PageWriteListener lsnr);
+
+    /**
+     * @param lsnr Page write listenter to remove.
+     */
+    public void removeWriteListener(PageWriteListener lsnr);
 
     /**
      * Checks if page exists.
@@ -59,20 +64,10 @@ public interface PageStore extends Closeable {
      * @param pageId Page ID.
      * @param pageBuf Page buffer to read into.
      * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return {@code true} if page has been read successfully, {@code false} if page hasn't been written yet.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public default void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        readPage(pageId, pageBuf, keepCrc);
-    }
-
-    /**
-     * @param pageId Page id.
-     * @param pageBuf Page buffer to read into.
-     * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
-     * @return Number of read bytes, or negative value if page read the first time.
-     * @throws IgniteCheckedException If reading failed (IO error occurred).
-     */
-    public int readPage(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
+    public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.

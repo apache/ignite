@@ -23,13 +23,10 @@ import java.nio.ByteBuffer;
  *
  */
 @FunctionalInterface
-public interface PageStoreListener {
-    /** Default handler. */
-    public static PageStoreListener NO_OP = (pageId, buff) -> {};
-
+public interface PageWriteListener {
     /**
      * @param pageId Handled page id.
      * @param buf Buffer with data.
      */
-    public void onPageWrite(long pageId, ByteBuffer buf);
+    public void accept(long pageId, ByteBuffer buf);
 }
