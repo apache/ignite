@@ -2709,7 +2709,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             rctx.hnd.onException(rctx.rmtNodeId, ex);
 
-            U.error(log, "Receiver has been interrupted due to an exception occurred [ctx=" + rctx + ']', ex);
+            if (X.hasCause(ex, TransmissionCancelledException.class)) {
+                if (log.isInfoEnabled())
+                    log.info("Transmission receiver has been cancelled [rctx=" + rctx + ']');
+            }
+            else
+                U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
         }
     }
 
@@ -2795,8 +2800,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
         catch (Throwable t) {
-            U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
-
             // Do not remove receiver context here, since sender will recconect to get this error.
             interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
         }

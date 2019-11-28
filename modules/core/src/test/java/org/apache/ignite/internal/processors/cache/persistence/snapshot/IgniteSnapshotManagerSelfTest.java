@@ -457,6 +457,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         fut.cancel();
 
+        System.out.println(">>>> cancelled, started new");
+
         IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
             owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
 
