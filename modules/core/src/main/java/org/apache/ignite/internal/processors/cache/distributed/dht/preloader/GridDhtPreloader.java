@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -275,7 +276,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 else {
                     // If for some reason (for example if supplier fails and new supplier is elected) partition is
                     // assigned for full rebalance force clearing if not yet set.
-                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p))
+                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p) && !part.dataStore().readOnly())
                         part.clearAsync();
 
                     List<ClusterNode> picked = remoteOwners(p, topVer);
@@ -331,7 +332,32 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (!assignments.isEmpty())
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
+        debugInfo(assignments);
+
         return assignments;
+    }
+
+    private void debugInfo(GridDhtPreloaderAssignments assignments) {
+        if (!log.isDebugEnabled())
+            return;
+
+        StringBuilder buf = new StringBuilder("\n****************************************\n\tAssignments on " + ctx.localNodeId() + " grp="+grp.cacheOrGroupName() + "\n");
+
+        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> entry : assignments.entrySet()) {
+            buf.append("\t\tNode " + entry.getKey().id()+"\n");
+
+            buf.append("\t\t\tfull parts: \n");
+
+            for (Integer p : entry.getValue().partitions().fullSet())
+                buf.append("\t\t\t\t" + p + "\n");
+
+            buf.append("\t\t\tHist parts: \n");
+
+            for (Integer p : entry.getValue().partitions().historicalSet())
+                buf.append("\t\t\t\t" + p + "\n");
+        }
+
+        log.debug(buf.toString());
     }
 
     /** {@inheritDoc} */

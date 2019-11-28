@@ -46,7 +46,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridCachePreloadSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -192,7 +192,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
         // Switch to read-only node1
         GridCacheContext<Object, Object> cctx = node1.cachex(DEFAULT_CACHE_NAME).context();
 
-        GridCachePreloadSharedManager preloader = node1.context().cache().context().filePreloader();
+        GridPartitionFilePreloader preloader = node1.context().cache().context().filePreloader();
 
         GridCompoundFuture<Void,Void> destroyFut = new GridCompoundFuture<>();
 
@@ -481,7 +481,7 @@ public class GridCachePersistenctRebalanceReinitTest extends GridCommonAbstractT
 
         GridCacheContext<Object, Object> cctx = node1.cachex(DEFAULT_CACHE_NAME).context();
 
-        GridCachePreloadSharedManager preloader = node1.context().cache().context().filePreloader();
+        GridPartitionFilePreloader preloader = node1.context().cache().context().filePreloader();
 
         GridCompoundFuture<Void,Void> destroyFut = new GridCompoundFuture<>();
 

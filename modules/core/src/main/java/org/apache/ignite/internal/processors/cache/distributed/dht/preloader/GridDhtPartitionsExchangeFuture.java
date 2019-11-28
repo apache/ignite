@@ -1430,16 +1430,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !cctx.kernalContext().clientNode();
 
-        if (cctx.filePreloader() != null) {
-            cctx.exchange().exchangerBlockingSectionBegin();
-
-            try {
-                cctx.filePreloader().onTopologyChanged(this);
-            }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
-        }
+//        if (cctx.filePreloader() != null) {
+//            cctx.exchange().exchangerBlockingSectionBegin();
+//
+//            try {
+//                cctx.filePreloader().onTopologyChanged(this);
+//            }
+//            finally {
+//                cctx.exchange().exchangerBlockingSectionEnd();
+//            }
+//        }
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
@@ -1460,7 +1460,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            cctx.database().releaseHistoryForPreloading();
+            // todo think - for now release for preloading invokes on full partition update - is this correct
+//            cctx.database().releaseHistoryForPreloading();
 
             // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
             partHistReserved = cctx.database().reserveHistoryForExchange();
@@ -2309,11 +2310,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.database().releaseHistoryForExchange();
 
-            if (cctx.filePreloader() != null)
-                cctx.filePreloader().onExchangeDone(this);
-
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
+
+                if (cctx.filePreloader() != null)
+                    cctx.filePreloader().onExchangeDone(this);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
@@ -3728,6 +3729,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            boolean hasMoving = !partsToReload.isEmpty();
+
+            Set<Integer> waitGrps = cctx.affinity().waitGroups();
+
+            if (!hasMoving) {
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (waitGrps.contains(grpCtx.groupId()) && grpCtx.topology().hasMovingPartitions()) {
+                        hasMoving = true;
+
+                        break;
+                    }
+
+                }
+            }
+
+            if (!hasMoving)
+                cctx.database().releaseHistoryForPreloading();
+
             if (stateChangeExchange()) {
                 StateChangeRequest req = exchActions.stateChangeRequest();
 
@@ -3740,24 +3759,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     cctx.kernalContext().state().onStateChangeError(exchangeGlobalExceptions, req);
                 }
-                else {
-                    boolean hasMoving = !partsToReload.isEmpty();
-
-                    Set<Integer> waitGrps = cctx.affinity().waitGroups();
-
-                    if (!hasMoving) {
-                        for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                            if (waitGrps.contains(grpCtx.groupId()) && grpCtx.topology().hasMovingPartitions()) {
-                                hasMoving = true;
-
-                                break;
-                            }
-
-                        }
-                    }
-
+                else
                     cctx.kernalContext().state().onExchangeFinishedOnCoordinator(this, hasMoving);
-                }
 
                 if (!cctx.kernalContext().state().clusterState().localBaselineAutoAdjustment()) {
                     boolean active = !stateChangeErr && req.activate();

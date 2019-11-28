@@ -482,6 +482,8 @@ public class FilePageStore implements PageStore {
                 ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" +
                 pathProvider.apply().toAbsolutePath();
 
+
+
             int n = readWithFailover(pageBuf, off);
 
             // If page was not written yet, nothing to read.
@@ -544,6 +546,8 @@ public class FilePageStore implements PageStore {
 
             try {
                 if (!inited) {
+//                    U.dumpStack("Init page store: " + getFileAbsolutePath());
+
                     FileIO fileIO = null;
 
                     StorageException err = null;

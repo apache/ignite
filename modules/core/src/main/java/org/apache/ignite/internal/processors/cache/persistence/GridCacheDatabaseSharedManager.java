@@ -1852,8 +1852,82 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
+//    /** {@inheritDoc} */
+//    @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> localReserved) {
+//        if (localReserved != null) {
+//            if (log.isDebugEnabled())
+//                log.debug("local reserved: " + localReserved);
+//
+//            for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
+//                boolean success = cctx.database().reserveHistoryForPreloading(
+//                    e.getKey().get1(), e.getKey().get2(), e.getValue());
+//
+//                // We can't fail here since history is reserved for exchange.
+//                assert success;
+//
+//
+//            }
+//        }
+//
+//        if (log.isDebugEnabled()) {
+//            log.debug("Reserve history for preloading [cache=" +
+//                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+//        }
+//
+//        CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
+//
+//        if (cpEntry == null) {
+//            log.warning("Unable to reserve history, checkpoint not found [cache=" +
+//                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+//
+//            return false;
+//        }
+//
+//        WALPointer ptr = cpEntry.checkpointMark();
+//
+//        if (ptr == null) {
+//            log.warning("Unable to reserve history, WAL pointer is null [cache=" +
+//                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
+//
+//            return false;
+//        }
+//
+//        boolean reserved = cctx.wal().reserve(ptr);
+//
+//        if (reserved)
+//            reservedForPreloading.put(new T2<>(grpId, partId), new T2<>(cntr, ptr));
+//        else {
+//            FileWALPointer minPtr = (FileWALPointer)ptr;
+//            boolean exchReserved = false;
+//
+//            for (Map<Integer, T2<Long, WALPointer>> value : reservedForExchange.values()) {
+//                for (T2<Long, WALPointer> pair : value.values()) {
+//                    FileWALPointer ptr0 = (FileWALPointer)pair.get2();
+//
+//                    if (minPtr.compareTo(ptr0) >= 0) {
+//                        if (log.isDebugEnabled())
+//                            log.debug("Found reserved pointer: " + ptr0 + ", not reserved = " + ptr);
+//
+//                        exchReserved = true;
+//
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            log.warning("Unable to reserve WAL pointer [cache=" +
+//                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + ", exchReserved="+exchReserved+"]");
+//        }
+//
+//        return reserved;
+//    }
+
+
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
+        if (reservedForPreloading.containsKey(new T2<>(grpId, partId)))
+            return true;
+
         if (log.isDebugEnabled()) {
             log.debug("Reserve history for preloading [cache=" +
                 cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
@@ -1909,6 +1983,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
+        if (log.isDebugEnabled())
+            log.debug("Release history for preloading");
+
         for (Map.Entry<T2<Integer, Integer>, T2<Long, WALPointer>> e : reservedForPreloading.entrySet()) {
             try {
                 cctx.wal().release(e.getValue().get2());

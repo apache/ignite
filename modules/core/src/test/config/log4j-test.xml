@@ -107,6 +107,18 @@
     -->
 
     <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
+        <level value="DEBUG"/>
+    </category>
+
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader">
+        <level value="TRACE"/>
+    </category>
+
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceFuture">
+        <level value="TRACE"/>
+    </category>
+
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceNodeRoutine">
         <level value="TRACE"/>
     </category>
 

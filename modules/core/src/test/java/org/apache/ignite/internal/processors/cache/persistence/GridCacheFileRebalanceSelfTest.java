@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,8 +48,14 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -63,7 +70,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -167,6 +174,11 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 //            .setCommunicationSpi(new TestRecordingCommunicationSpi()
     }
 
+//    @Test
+//    public void testEvictReadOnlyPartition() {
+//
+//    }
+
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
@@ -181,18 +193,27 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalCache<Object, Object> cache = ignite0.cachex(DEFAULT_CACHE_NAME);
 
+        assert cache.size() == TEST_SIZE;
+
         CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
 
-        int hash = DEFAULT_CACHE_NAME.hashCode();
+//        int hash = DEFAULT_CACHE_NAME.hashCode();
 
-        for (int i = 0; i < TEST_SIZE; i++)
-            assertEquals(i + hash, cache.localPeek(i, peekAll));
+        for (long i = 0; i < TEST_SIZE; i++) {
+            assertTrue("key=" + i, cache.containsKey(i));
+
+            assertEquals("key=" + i, generateValue(i, DEFAULT_CACHE_NAME), cache.localPeek(i, peekAll));
+        }
 
         List<GridDhtLocalPartition> locParts = cache.context().topology().localPartitions();
 
         CountDownLatch allPartsCleared = new CountDownLatch(locParts.size());
 
         ignite0.context().cache().context().database().checkpointReadLock();
+
+        CacheGroupContext grp = cache.context().group();
+
+        System.out.println("Clearing partitions");
 
         try {
             for (GridDhtLocalPartition part : locParts) {
@@ -203,7 +224,22 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
                 part.clearAsync();
 
                 part.onClearFinished(f -> {
+
+                    try {
+                        PageMemoryEx memEx = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+                        int tag = memEx.invalidate(grp.groupId(), part.id());
+
+                        ((FilePageStoreManager)ignite0.context().cache().context().pageStore()).getStore(grp.groupId(), part.id()).truncate(tag);
+                        //PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+
+//                        memEx.clearAsync(
+//                            (grp0, pageId) -> grp0 == grp.groupId() && part.id() == PageIdUtils.partId(pageId), true).get();
+
                         allPartsCleared.countDown();
+                    } catch (IgniteCheckedException e) {
+                        e.printStackTrace();
+                    }
                     }
                 );
             }
@@ -211,39 +247,47 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
             ignite0.context().cache().context().database().checkpointReadUnlock();
         }
 
-        System.out.println("Clearing partitions");
+        System.out.println("Running standart partition eviction");
 
-        allPartsCleared.await(20_000, TimeUnit.MILLISECONDS);
+        for (GridDhtLocalPartition part : locParts) {
+            part.dataStore().readOnly(false);
 
-        // Ensure twice that all entries evicted.
-        for (int i = 0; i < TEST_SIZE; i++)
-            assertNull(cache.localPeek(i, peekAll));
-
-        ignite0.context().cache().context().database().checkpointReadLock();
-
-        try {
-            for (GridDhtLocalPartition part : locParts) {
-                part.dataStore().readOnly(false);
-
-                part.own();
-            }
-        } finally {
-            ignite0.context().cache().context().database().checkpointReadUnlock();
+            part.clearAsync();
         }
 
-        for (int i = 0; i < TEST_SIZE; i++)
-            assertNull(cache.localPeek(i, peekAll));
+        U.sleep(15_000);
 
-        cache.put(TEST_SIZE, TEST_SIZE);
-
-        assertEquals(TEST_SIZE, cache.get(TEST_SIZE));
+//        allPartsCleared.await(20_000, TimeUnit.MILLISECONDS);
+//
+//        // Ensure twice that all entries evicted.
+//        for (int i = 0; i < TEST_SIZE; i++)
+//            assertNull(cache.localPeek(i, peekAll));
+//
+//        ignite0.context().cache().context().database().checkpointReadLock();
+//
+//        try {
+//            for (GridDhtLocalPartition part : locParts) {
+//                part.dataStore().readOnly(false);
+//
+//                part.own();
+//            }
+//        } finally {
+//            ignite0.context().cache().context().database().checkpointReadUnlock();
+//        }
+//
+//        for (int i = 0; i < TEST_SIZE; i++)
+//            assertNull(cache.localPeek(i, peekAll));
+//
+//        cache.put(TEST_SIZE, TEST_SIZE);
+//
+//        assertEquals(TEST_SIZE, cache.get(TEST_SIZE));
     }
 
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
-    public void testPersistenceRebalanceBase() throws Exception {
+    public void testBase() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
@@ -264,8 +308,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceUnderConstantLoad() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testUnderConstantLoad() throws Exception {
         cacheWriteSyncMode = FULL_SYNC;
         cacheMode = REPLICATED;
         backups = 0;
@@ -283,7 +327,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
         ConstantLoader ldr = new ConstantLoader(ignite0.cache(DEFAULT_CACHE_NAME), cntr, removes, 8);
 
-        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, 1, "thread");
+        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, 2, "thread");
 
         forceCheckpoint(ignite0);
 
@@ -304,8 +348,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceUnderConstantLoadPartitioned3nodes() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testUnderConstantLoadPartitioned3nodes() throws Exception {
         cacheMode = PARTITIONED;
         backups = 0;
 
@@ -345,7 +389,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 2; i++) {
             IgniteInternalCache cache = grid(i).cachex(DEFAULT_CACHE_NAME);
 
-            System.out.println("\nParts on " + grid(i).cluster().localNode().id());
+            System.out.println("\nPartittions on " + grid(i).cluster().localNode().id());
 
             for (GridDhtLocalPartition part : cache.context().topology().currentLocalPartitions())
                 System.out.println(part.id() + " state=" + part.state() + " size=" + part.fullSize());
@@ -374,7 +418,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             IgniteInternalCache cache = grid(i).cachex(DEFAULT_CACHE_NAME);
 
-            System.out.println("\nParts on " + grid(i).cluster().localNode().id());
+            System.out.println("\nPartittions on " + grid(i).cluster().localNode().id());
 
             for (GridDhtLocalPartition part : cache.context().topology().currentLocalPartitions())
                 System.out.println(part.id() + " state=" + part.state() + " size=" + part.fullSize());
@@ -385,13 +429,11 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         verifyCacheContent(ignite0.cache(DEFAULT_CACHE_NAME), cntr.get(), removes);
     }
 
-
-
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
     public void checkEvictionOfReadonlyPartition() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -466,7 +508,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "true")
-    public void testPersistenceRebalanceMultipleCaches() throws Exception {
+    public void testMultipleCaches() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
@@ -493,8 +535,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesThreeNodesSequence() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesThreeNodesSequence() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         IgniteEx ignite0 = startGrid(0);
@@ -539,8 +581,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesMultipleNodesSequencePartitioned() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesMultipleNodesSequencePartitioned() throws Exception {
         cacheMode = PARTITIONED;
         parts = 128;
         backups = 0;
@@ -580,8 +622,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesMultipleNodesStartStopStableTopologyPartitionedNoCoordinatorChange() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesMultipleNodesStartStopStableTopologyPartitionedNoCoordinatorChange() throws Exception {
         cacheMode = PARTITIONED;
         parts = 128;
         backups = 1;
@@ -635,8 +677,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesMultipleNodesStartStopStableTopologyPartitionedNoCoordinatorChangeWithConstantLoad() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesMultipleNodesStartStopStableTopologyPartitionedNoCoordinatorChangeWithConstantLoad() throws Exception {
         cacheMode = PARTITIONED;
         cacheWriteSyncMode = FULL_SYNC;
         parts = 16;
@@ -718,8 +760,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesMultipleNodesSequencePartitionedWithConstantLoad() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesMultipleNodesSequencePartitionedWithConstantLoad() throws Exception {
         cacheMode = PARTITIONED;
         parts = 128;
         backups = 0;
@@ -796,8 +838,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesCancelRebalance() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalance() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         int entriesCnt = 400_000;
@@ -844,14 +886,14 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesCancelRebalancePartitioned() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalancePartitioned() throws Exception {
         cacheMode = PARTITIONED;
         backups = 0;
 
         List<ClusterNode> blt = new ArrayList<>();
 
-        int entriesCnt = 400_000;
+        int entriesCnt = 100_000;
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -887,6 +929,304 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         verifyCacheContent(ignite2.cache(CACHE1), entriesCnt);
         verifyCacheContent(ignite2.cache(CACHE2), entriesCnt);
     }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalancePartitionedUnderConstantLoad() throws Exception {
+        cacheMode = PARTITIONED;
+        backups = 0;
+
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        int entriesCnt = 100_000;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        loadData(ignite0, CACHE1, entriesCnt);
+        loadData(ignite0, CACHE2, entriesCnt);
+
+        forceCheckpoint(ignite0);
+
+        AtomicLong cntr = new AtomicLong(entriesCnt);
+
+        ConstantLoader ldr = new ConstantLoader(ignite0.cache(CACHE1), cntr, false, threads);
+
+        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "loader");
+
+        IgniteEx ignite1 = startGrid(1);
+
+        blt.add(ignite1.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(80);
+
+        IgniteEx ignite2 = startGrid(2);
+
+        blt.add(ignite2.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        ldrFut.get();
+
+        verifyCacheContent(ignite2.cache(CACHE1), ldr.cntr.get());
+        verifyCacheContent(ignite2.cache(CACHE2), entriesCnt);
+    }
+
+    /** todo */
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalancePartitionedUnderConstantLoadUnstableTopology() throws Exception {
+        cacheMode = PARTITIONED;
+        backups = 3;
+
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        int entriesCnt = 100_000;
+
+        int timeout = 180_000;
+
+        try {
+            IgniteEx ignite0 = startGrid(0);
+
+            ignite0.cluster().active(true);
+
+            blt.add(ignite0.localNode());
+
+            ignite0.cluster().setBaselineTopology(blt);
+
+            loadData(ignite0, CACHE1, entriesCnt);
+            loadData(ignite0, CACHE2, entriesCnt);
+
+            forceCheckpoint(ignite0);
+
+            AtomicLong cntr = new AtomicLong(entriesCnt);
+
+            ConstantLoader ldr = new ConstantLoader(ignite0.cache(CACHE1), cntr, false, threads);
+
+            IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "loader");
+
+            long endTime = System.currentTimeMillis() + timeout;
+
+            int nodes = 3;
+
+            int started = 1;
+
+            for (int i = 0; i < nodes; i++) {
+                int time0 = ThreadLocalRandom.current().nextInt(1000);
+
+                IgniteEx igniteX = startGrid(i + started);
+
+                blt.add(igniteX.localNode());
+
+                if (time0 % 2 == 0)
+                    U.sleep(time0);
+
+                ignite0.cluster().setBaselineTopology(blt);
+            }
+
+            do {
+                for (int i = 0; i < nodes; i++) {
+                    int time0 = ThreadLocalRandom.current().nextInt(2000);
+
+                    U.sleep(time0);
+
+                    stopGrid(i + started);
+                }
+
+                awaitPartitionMapExchange();
+
+                for (int i = 0; i < nodes; i++) {
+                    int time0 = ThreadLocalRandom.current().nextInt(1000);
+
+                    if (time0 % 2 == 0)
+                        U.sleep(time0);
+
+                    startGrid(i + started);
+
+                    //                blt.add(igniteX.localNode());;
+
+
+
+                    //                ignite0.cluster().setBaselineTopology(blt);
+                }
+
+                awaitPartitionMapExchange();
+            }
+            while (U.currentTimeMillis() < endTime);
+
+            awaitPartitionMapExchange();
+
+            ldr.stop();
+
+            ldrFut.get();
+
+            for (Ignite g : G.allGrids()) {
+                verifyCacheContent(g.cache(CACHE1), ldr.cntr.get());
+                verifyCacheContent(g.cache(CACHE2), entriesCnt);
+            }
+        } catch (Error | RuntimeException | IgniteCheckedException e) {
+            for (Ignite g : G.allGrids()) {
+                GridPartitionFilePreloader filePreloader = ((IgniteEx)g).context().cache().context().filePreloader();
+
+                synchronized (System.err) {
+                    if (filePreloader != null)
+                        filePreloader.printDiagnostic();
+                }
+            }
+
+            throw e;
+        }
+    }
+
+    /** todo */
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalancePartitionedUnderConstantLoad2() throws Exception {
+        cacheMode = PARTITIONED;
+        backups = 3;
+
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        int entriesCnt = 100_000;
+
+        int timeout = 180_000;
+
+        try {
+            IgniteEx ignite0 = startGrid(0);
+
+            ignite0.cluster().active(true);
+
+            blt.add(ignite0.localNode());
+
+            ignite0.cluster().setBaselineTopology(blt);
+
+            loadData(ignite0, CACHE1, entriesCnt);
+            loadData(ignite0, CACHE2, entriesCnt);
+
+            forceCheckpoint(ignite0);
+
+            AtomicLong cntr = new AtomicLong(entriesCnt);
+
+            ConstantLoader ldr = new ConstantLoader(ignite0.cache(CACHE1), cntr, false, threads);
+
+            IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "loader");
+
+            long endTime = System.currentTimeMillis() + timeout;
+
+            int nodes = 3;
+
+            int started = 1;
+
+            for (int i = 0; i < nodes; i++) {
+                int time0 = ThreadLocalRandom.current().nextInt(1000);
+
+                IgniteEx igniteX = startGrid(i + started);
+
+                blt.add(igniteX.localNode());
+
+                if (time0 % 2 == 0)
+                    U.sleep(time0);
+
+                ignite0.cluster().setBaselineTopology(blt);
+            }
+
+            for (int i = 0; i < nodes; i++) {
+                int time0 = ThreadLocalRandom.current().nextInt(2000);
+
+                U.sleep(time0);
+
+                stopGrid(i + started);
+            }
+
+            U.sleep(3_000);
+
+
+            for (int i = 0; i < nodes; i++) {
+                int time0 = ThreadLocalRandom.current().nextInt(1000);
+
+                if (time0 % 2 == 0)
+                    U.sleep(time0);
+
+                System.out.println("*******************************");
+                System.out.println("  starting test killer " + (i + started));
+                System.out.println("*******************************");
+
+                startGrid(i + started);
+            }
+
+
+//            do {
+
+//
+//                awaitPartitionMapExchange();
+//
+//                for (int i = 0; i < nodes; i++) {
+//                    int time0 = ThreadLocalRandom.current().nextInt(1000);
+//
+//                    if (time0 % 2 == 0)
+//                        U.sleep(time0);
+//
+//                    startGrid(i + started);
+//
+//                    //                blt.add(igniteX.localNode());;
+//
+//
+//
+//                    //                ignite0.cluster().setBaselineTopology(blt);
+//                }
+//
+//                awaitPartitionMapExchange();
+//            }
+//            while (U.currentTimeMillis() < endTime);
+
+            awaitPartitionMapExchange();
+
+            ldr.stop();
+
+            ldrFut.get();
+
+            for (Ignite g : G.allGrids()) {
+                verifyCacheContent(g.cache(CACHE1), ldr.cntr.get());
+                verifyCacheContent(g.cache(CACHE2), entriesCnt);
+            }
+        } catch (Error | RuntimeException | IgniteCheckedException e) {
+            for (Ignite g : G.allGrids()) {
+                GridPartitionFilePreloader filePreloader = ((IgniteEx)g).context().cache().context().filePreloader();
+
+                synchronized (System.err) {
+                    if (filePreloader != null)
+                        filePreloader.printDiagnostic();
+                }
+            }
+
+            throw e;
+        }
+    }
+
 
     private void verifyCacheContent(IgniteCache<Object, Object> cache, long cnt) {
         verifyCacheContent(cache, cnt, false);
@@ -935,8 +1275,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesCancelRebalanceConstantLoad() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalanceConstantLoad() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         int entriesCnt = 400_000;
@@ -995,8 +1335,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value="1")
-    public void testPersistenceRebalanceMultipleCachesCancelRebalanceConstantLoadPartitioned() throws Exception {
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalanceConstantLoadPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         backups = 0;
 
@@ -1045,7 +1385,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
         ldrFut.get();
 
-        U.sleep(500);
+//        U.sleep(2_000);
 
         verifyCacheContent(ignite2.cache(CACHE1), cntr.get());
         verifyCacheContent(ignite2.cache(CACHE2), entriesCnt);
@@ -1057,7 +1397,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Ignore
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    public void testPersistenceRebalanceManualCache() throws Exception {
+    public void testManualCache() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
@@ -1087,46 +1427,92 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
     }
 
-//    /** */
-//    @Test
-//    @Ignore
-//    @WithSystemProperty(key = IGNITE_PERSISTENCE_REBALANCE_ENABLED, value = "true")
-//    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-//    public void testPersistenceRebalanceAsyncUpdates() throws Exception {
-//        IgniteEx ignite0 = startGrid(0);
+    @Test
+    public void testEvictions() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        GridCacheContext ctx = ignite0.cachex(DEFAULT_CACHE_NAME).context();
+
+        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+            part.dataStore().readOnly(true);
+
+        PageMemoryEx memEx = (PageMemoryEx)ctx.dataRegion().pageMemory();
+
+        final int groupId = ctx.groupId();
+
+//        if (log.isDebugEnabled())
+//            log.debug("Cleaning up region " + name);
+
+        memEx.clearAsync(
+            (grp, pageId) -> {
+//                                if (isCancelled())
+//                                    return false;
+                return groupId == grp && PageIdUtils.partId(pageId) != 0;
+            }, true)
+            .listen(c1 -> {
+                // todo misleading should be reformulate
+//                            cctx.database().checkpointReadLock();
+//                        cancelLock.lock();
+
+                try {
+//                            try {
+//                    if (log.isDebugEnabled())
+//                        log.debug("Off heap region cleared [node=" + cctx.localNodeId() + ", region=" + name + "]");
+
+                    for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                        //int grpId = gr;
+                        //int partId = (int)partGrp;
+
+                        CacheGroupContext grp = ctx.group();
+
+                        int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(groupId, part.id());
+
+                        ((FilePageStoreManager)ctx.shared().pageStore()).getStore(groupId, part.id()).truncate(tag);
+
+//                        if (log.isDebugEnabled())
+//                            log.debug("Parition truncated [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]");
+                    }
+
+//                    onDone();
+                } catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+//                    onDone(e);
 //
-//        ignite0.cluster().active(true);
+//                    FileRebalanceFuture.this.onDone(e);
+                }
+//                finally {
+////                            cancelLock.unlock();
 //
-//        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(
-//            new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-//                .setCacheMode(CacheMode.PARTITIONED)
-//                .setRebalanceMode(CacheRebalanceMode.ASYNC)
-//                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-//                .setBackups(1)
-//                .setAffinity(new RendezvousAffinityFunction(false)
-//                    .setPartitions(8)));
-//
-//        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
-//
-//        assertTrue(!ignite0.cluster().isBaselineAutoAdjustEnabled());
-//
-//        IgniteEx ignite1 = startGrid(1);
-//
-//        TestRecordingCommunicationSpi.spi(ignite1)
-//            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-//                @Override public boolean apply(ClusterNode node, Message msg) {
-//                    return msg instanceof GridPartitionBatchDemandMessage;
+////                                cctx.database().checkpointReadUnlock();
 //                }
-//            });
-//
-//        ignite1.cluster().setBaselineTopology(ignite1.cluster().nodes());
-//
-//        TestRecordingCommunicationSpi.spi(ignite1).waitForBlocked();
-//
-//        cache.put(TEST_SIZE, new byte[1000]);
-//
-//        awaitPartitionMapExchange(true, true, Collections.singleton(ignite1.localNode()), true);
-//    }
+            });
+
+        for (int i = 0; i < 1_000; i++)
+            ctx.cache().put(i, i);
+
+        forceCheckpoint();
+
+        for (int i = 1_000; i < 2_000; i++)
+            ctx.cache().put(i, i);
+
+        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+            part.updateSize(2);
+
+            part.moving();
+
+            part.readOnly(false);
+
+            //log.info("p=" + part.id() + " size=" + part.publicSize(CU.cacheId(DEFAULT_CACHE_NAME)));
+
+            part.rent(false);
+        }
+
+        U.sleep(5_000);
+
+        log.info("cache size=" + ctx.cache().size());
+    }
 
     /**
      * @param ignite Ignite instance to load.
@@ -1146,10 +1532,6 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private static long generateValue(long num, String str) {
-        return num + str.hashCode();
-    }
-
     /**
      * @param expCache Expected data cache.
      * @param actCache Actual data cache.
@@ -1167,7 +1549,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
             GridDhtLocalPartition expPart = actCache.context().topology().localPartition(actPart.id());
 
             if (actPart.state() != expPart.state())
-                buf.append("\n").append(expCache.context().localNodeId()).append(" vs ").append(actCache.context().localNodeId()).append(" state mismatch p=").append(actPart.id()).append(" exp=").append(expPart).append(" act=").append(actPart);
+                buf.append("\n").append(expCache.context().localNodeId()).append(" vs ").append(actCache.context().localNodeId()).append(" state mismatch p=").append(actPart.id()).append(" exp=").append(expPart.state()).append(" act=").append(actPart.state());
 
             long expCntr = expPart.updateCounter();
             long actCntr = actPart.updateCounter();
@@ -1217,6 +1599,10 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         }
 
         return buf;
+    }
+
+    private static long generateValue(long num, String str) {
+        return num + str.hashCode();
     }
 
     /** */
@@ -1277,16 +1663,8 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
                 long from = cntr.getAndAdd(100);
 
-                for (long i = from; i < from + 100; i++) {
+                for (long i = from; i < from + 100; i++)
                     cache.put(i, generateValue(i, cacheName));
-
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        e.printStackTrace();
-                    }
-                }
 
                 if (!enableRemove)
                     continue;
