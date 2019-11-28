@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERT
  */
 public class TestSslSecurityProcessor extends TestSecurityProcessor {
     /** Client that has system permissions. */
-    public static final String CLIENT_ADMIN_OPER = "client_admin_oper";
+    public static final String CLIENT = "client";
 
     /** Check SSL certificates flag. */
     private final boolean checkSslCerts;
@@ -116,7 +116,7 @@ public class TestSslSecurityProcessor extends TestSecurityProcessor {
             X509Certificate x509Cert = (X509Certificate) cert;
 
             if (x509Cert.getSubjectDN().getName().contains("CN=client")) {
-                if (CLIENT_ADMIN_OPER.equals(login))
+                if (login != null && ((String) login).contains(CLIENT))
                     return;
 
                 throw new IgniteAccessControlException("Client certificate doesn't correspond with login [login=" +

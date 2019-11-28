@@ -36,7 +36,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT_ADMIN_OPER;
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -92,7 +92,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
-        return new TestSecurityData[]{new TestSecurityData(CLIENT_ADMIN_OPER,
+        return new TestSecurityData[]{new TestSecurityData(CLIENT,
             "pwd",
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                 .appendSystemPermissions(ADMIN_OPS)

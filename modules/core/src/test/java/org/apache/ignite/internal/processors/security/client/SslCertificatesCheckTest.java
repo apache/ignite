@@ -43,7 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT_ADMIN_OPER;
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -80,7 +80,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      * @return Test data.
      */
     protected TestSecurityData[] clientData() {
-        return new TestSecurityData[]{new TestSecurityData(CLIENT_ADMIN_OPER,
+        return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                 .appendSystemPermissions(ADMIN_OPS)
                 .build()
@@ -132,7 +132,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         assertEquals(3, ignite.cluster().topologyVersion());
         assertFalse(ignite.cluster().active());
 
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT_ADMIN_OPER, ""))) {
+        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
             assertTrue(client.connected());
             client.state().active(true);
         }
@@ -155,7 +155,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
 
         assertEquals(3, ignite.cluster().topologyVersion());
 
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT_ADMIN_OPER, ""))) {
+        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
             assertFalse(client.connected());
             GridTestUtils.assertThrowsAnyCause(log,
                 ()-> {

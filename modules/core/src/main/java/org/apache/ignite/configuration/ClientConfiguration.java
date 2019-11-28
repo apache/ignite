@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.SslMode;
@@ -88,6 +89,9 @@ public final class ClientConfiguration implements Serializable {
 
     /** @serial User password. */
     private String userPwd;
+
+    /** User attributes. */
+    private Map<String, Object> userAttrs;
 
     /** Tx config. */
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
@@ -419,5 +423,21 @@ public final class ClientConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientConfiguration.class, this);
+    }
+
+    /**
+     * @return User attributes.
+     */
+    public Map<String, Object> getUserAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * @param userAttrs User attributes.
+     */
+    public ClientConfiguration setUserAttrs(Map<String, Object> userAttrs) {
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }
