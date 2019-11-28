@@ -154,6 +154,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
+    /** Timeout in milliseconsd to wait while a previous requested snapshot completed. */
+    private static final long DFLT_CREATE_SNAPSHOT_TIMEOUT = 15_000L;
+
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
 
@@ -865,18 +868,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 throw new IgniteCheckedException("Previous snapshot request has not been finished yet: " + fut);
 
             try {
+                long startTime = U.currentTimeMillis();
+
                 while (true) {
                     if (snpRq.compareAndSet(null, snpTransFut)) {
                         cctx.gridIO().sendToCustomTopic(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL);
 
                         break;
                     }
+                    else if (U.currentTimeMillis() - startTime < DFLT_CREATE_SNAPSHOT_TIMEOUT)
+                        throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
 
                     U.sleep(200);
                 }
             }
             catch (IgniteCheckedException e) {
-                snpRq.set(null);
+                snpRq.compareAndSet(snpTransFut, null);
 
                 throw e;
             }
