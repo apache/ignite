@@ -1611,20 +1611,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
             try {
                 assert part.exists();
 
-                sndr.send(part, 0, length, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.FILE);
+                sndr.send(part, 0, len, transmissionParams(snpName, cacheDirName, pair), TransmissionPolicy.FILE);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition file has been send [part=" + part.getName() + ", pair=" + pair +
-                        ", length=" + length + ']');
+                        ", length=" + len + ']');
                 }
             }
             catch (IgniteCheckedException | InterruptedException | IOException e) {
                 U.error(log, "Error sending partition file [part=" + part.getName() + ", pair=" + pair +
-                    ", length=" + length + ']', e);
+                    ", length=" + len + ']', e);
 
                 throw new IgniteException(e);
             }
@@ -1762,7 +1762,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long len) {
             try {
                 File cacheDir = U.resolveWorkDirectory(dbNodeSnpDir.getAbsolutePath(), cacheDirName, false);
 
@@ -1771,15 +1771,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                if (length == 0)
+                if (len == 0)
                     return;
 
-                copy(part, snpPart, length);
+                copy(part, snpPart, len);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition has been snapshotted [snapshotDir=" + dbNodeSnpDir.getAbsolutePath() +
                         ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
-                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
+                        ", len=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
                 }
             }
             catch (IOException | IgniteCheckedException ex) {
