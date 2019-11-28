@@ -29,8 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import javax.management.InstanceNotFoundException;
-import java.util.function.Predicate;
-import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -1131,6 +1129,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
         return false;
     }
+
+//    public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> localReserved) {
+//        return false;
+//    }
 
     /**
      * Release reserved update history.

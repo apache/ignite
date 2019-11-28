@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridCachePreloadSharedManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandLegacyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -3346,7 +3346,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        GridCachePreloadSharedManager preloader = cctx.filePreloader();
+                        GridPartitionFilePreloader preloader = cctx.filePreloader();
 
                         if (preloader != null)
                             loadPartsRun = preloader.addNodeAssignments(assignsMap, resVer, forcePreload, cnt, exchFut);
@@ -3361,8 +3361,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assignsCancelled |= assigns.cancelled();
 
                                 if (cctx.filePreloader() != null &&
-                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut))
+                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut)) {
+                                    log.info("File rebalance required for grp=" + grp.cacheOrGroupName());
+
                                     continue;
+                                }
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
@@ -3371,6 +3374,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     forcedRebFut);
 
                                 if (cur != null) {
+                                    assert cctx.filePreloader() == null || !cctx.filePreloader().isPreloading(grpId) :
+                                        "File preloading in progress [grp=" + grp.cacheOrGroupName() + "]";
+
                                     rebList.add(grp.cacheOrGroupName());
 
                                     r = cur;
@@ -3386,7 +3392,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                         }
-                        else if (r != null) {
+                        else if (r != null || loadPartsRun != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList +
@@ -3399,8 +3405,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
-                            loadPartsRun.run();
-                            r.run();
+                            if (loadPartsRun != null)
+                                loadPartsRun.run();
+
+                            if (r!= null)
+                                r.run();
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +

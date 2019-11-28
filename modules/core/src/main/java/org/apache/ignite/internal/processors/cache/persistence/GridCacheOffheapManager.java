@@ -1392,7 +1392,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
                 assert part != null && part.state() == OWNING && part.reservations() > 0
-                    : "Partition should in OWNING state and has at least 1 reservation";
+                    : "Partition should in OWNING state and has at least 1 reservation, state=" + part.state();
 
                 part.release();
             }
@@ -2103,16 +2103,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     delegate = null;
 
                     // TODO add test when the storage is not inited and the current method called
-                    CacheDataStore delegate0 = init0(false);
-
-                    assert delegate0 != null;
                 }
+
+                CacheDataStore delegate0 = init0(false);
+
+                assert delegate0 != null;
 
                 return startCntr;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+        }
+
+        public void close() {
+            //todo sync properly
+            if (init.compareAndSet(true, false))
+                delegate = null;
         }
 
 
