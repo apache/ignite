@@ -423,11 +423,11 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         memory.finishCheckpoint();
 
-        LongAdderMetric totalThrottleTime = U.field(memory.metrics(), "totalThrottleTime");
+        LongAdderMetric totalThrottlingTime = U.field(memory.metrics(), "totalThrottlingTime");
 
-        assertNotNull(totalThrottleTime);
+        assertNotNull(totalThrottlingTime);
 
-        assertTrue(totalThrottleTime.value() > 0);
+        assertTrue(totalThrottlingTime.value() > 0);
     }
 
     /**

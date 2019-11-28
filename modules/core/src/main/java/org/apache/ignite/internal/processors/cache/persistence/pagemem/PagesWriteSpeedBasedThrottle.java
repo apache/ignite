@@ -23,7 +23,6 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -226,10 +225,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             doPark(throttleParkTimeNs);
         }
 
-        DataRegionMetricsImpl metrics = pageMemory.metrics();
-
-        if (metrics != null)
-            metrics.addThrottleTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
+        pageMemory.metrics().addThrottlingTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }

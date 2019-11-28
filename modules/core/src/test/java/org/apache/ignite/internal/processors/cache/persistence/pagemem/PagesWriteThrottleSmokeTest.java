@@ -205,9 +205,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                 fail("Put rate degraded to zero for at least 10 seconds");
             }
 
-            LongAdderMetric totalThrottleTime = totalThrottleTime(ig);
+            LongAdderMetric totalThrottlingTime = totalThrottlingTime(ig);
 
-            assertTrue(totalThrottleTime.value() > 0);
+            assertTrue(totalThrottlingTime.value() > 0);
         }
         finally {
             stopAllGrids();
@@ -216,17 +216,17 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite instance.
-     * @return {@code totalThrottleTime} metric for the default region.
+     * @return {@code totalThrottlingTime} metric for the default region.
      */
-    private LongAdderMetric totalThrottleTime(IgniteEx ignite) {
+    private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
         MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
             ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
 
-        LongAdderMetric totalThrottleTime = mreg.findMetric("totalThrottleTime");
+        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
 
-        assertNotNull(totalThrottleTime);
+        assertNotNull(totalThrottlingTime);
 
-        return totalThrottleTime;
+        return totalThrottlingTime;
     }
 
     /**
