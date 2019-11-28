@@ -135,6 +135,22 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @Test
+    public void testTextQueryWithRange() throws Exception {
+        checkTextQuery("[10 TO 20}", QUERY_LIMIT, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
+    public void testTextQueryWithConditionAndRange() throws Exception {
+        checkTextQuery("1 OR 10 OR [11 TO 2}", 0, false, false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    @Test
     public void testLocalTextQueryWithKeepBinary() throws Exception {
         checkTextQuery(true, true);
     }
@@ -199,9 +215,11 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         // 1. Populate cache with data, calculating expected count in parallel.
         Set<Integer> exp = populateCache(ignite, false, MAX_ITEM_COUNT, (IgnitePredicate<Integer>)x -> String.valueOf(x).startsWith("1"));
 
-        GridTestUtils.runMultiThreaded(textQueryTask(ignite, clause, exp), N_THREADS, "text-query-test");
-
-        clearCache(ignite);
+        try {
+            GridTestUtils.runMultiThreaded(textQueryTask(ignite, clause, exp), N_THREADS, "text-query-test");
+        } finally {
+            clearCache(ignite);
+        }
     }
 
     /**
@@ -255,9 +273,11 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
         // 2. Validate results.
         TextQuery qry = new TextQuery<>(Person.class, clause).setLocal(loc).setLimit(limit);
 
-        validateQueryResults(ignite, qry, exp, keepBinary);
-
-        clearCache(ignite);
+        try {
+            validateQueryResults(ignite, qry, exp, keepBinary);
+        } finally {
+            clearCache(ignite);
+        }
     }
 
     /**
@@ -407,7 +427,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
 
             assertEquals(entry.getKey().intValue(), entry.getValue().age);
 
-            testPair.expected.remove(entry.getKey());
+            assertTrue(testPair.expected.remove(entry.getKey()));
         }
         return testPair;
     }
