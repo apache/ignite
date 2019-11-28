@@ -3164,6 +3164,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        //GridDhtPartitionsSingleMessage msg = msgs.values().iterator().next();
+
         // Also must process counters from the local node.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
@@ -3198,6 +3200,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else if (cntr == maxCntr.cnt)
                 maxCntr.nodes.add(cctx.localNodeId());
         }
+
+        Map<Integer, Set<UUID>> ownersByUpdCounters = new HashMap<>(maxCntrs.size());
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
+            ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
+
+        Map<Integer, Long> partSizes = new HashMap<>(maxCntrs.size());
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
+            partSizes.put(e.getKey(), e.getValue().size);
+
+        top.globalPartSizes(partSizes);
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
@@ -3238,17 +3250,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     // todo   if minCntr is zero - check that file rebalancing is supported and partition is big enough,
                     // todo   otherwise - do regular  preloading
                     // todo  && minCntr == 0
-                    if (enableFileRebalance && localHistCntr <= maxCntr &&
-                        maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
+                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
 
                         continue;
                     }
                     else
-                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
+                    if (enableFileRebalance && localHistCntr <= maxCntr &&
+                        maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
                         haveHistory.add(p);
 
@@ -3262,15 +3274,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (histCntr != null) {
                     // todo merge conditions (with else)
-                    if (enableFileRebalance && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                        // For file rebalancing we need to reserve history from current update counter.
-                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
-
-                        haveHistory.add(p);
-
-                        break;
-                    }
-                    else
                     if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         //assert ;
 
@@ -3280,19 +3283,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         break;
                     }
+                    else
+                    if (enableFileRebalance && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                        // For file rebalancing we need to reserve history from current update counter.
+                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
+
+                        haveHistory.add(p);
+
+                        break;
+                    }
                 }
             }
         }
-
-        Map<Integer, Set<UUID>> ownersByUpdCounters = new HashMap<>(maxCntrs.size());
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
-            ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
-
-        Map<Integer, Long> partSizes = new HashMap<>(maxCntrs.size());
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
-            partSizes.put(e.getKey(), e.getValue().size);
-
-        top.globalPartSizes(partSizes);
 
         Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory, this);
 

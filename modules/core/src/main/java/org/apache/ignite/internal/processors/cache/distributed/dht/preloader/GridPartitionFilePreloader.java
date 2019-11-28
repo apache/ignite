@@ -127,7 +127,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
         // At this point cache updates are queued and we can safely switch partitions to read-only mode and vice-versa.
-        // TODO method logic clashes with GridDhtPreloader#generateAssignments logic
+        // TODO method logic clashes with GridDhtPreloader#generateAssignments
         assert exchFut != null;
 
         if (!FILE_REBALANCE_ENABLED)
@@ -188,9 +188,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         Set<Integer> movingParts = new HashSet<>();
 
-        boolean fatEnough = false;
-
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
+
+        boolean fatEnough = false;
 
         for (int p = 0; p < partitions; p++) {
             if (!aff.get(p).contains(cctx.localNode()))
@@ -267,6 +267,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         if (log.isTraceEnabled())
             log.trace(formatMappings(nodeOrderAssignsMap));
+
+        log.info("Starting file rebalancing");
 
         // Start new rebalance session.
         FileRebalanceFuture rebFut = fileRebalanceFut;
@@ -461,7 +463,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param grp Cache group.
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
-    private boolean fileRebalanceSupported(CacheGroupContext grp) {
+    public boolean fileRebalanceSupported(CacheGroupContext grp) {
         if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled())
             return false;
 
@@ -475,7 +477,21 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (grp.mvccEnabled())
             return false;
 
-        return !grp.hasAtomicCaches();
+        if (grp.hasAtomicCaches())
+            return false;
+
+        // todo redundant ?
+        Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
+
+        if (globalSizes.isEmpty())
+            return false;
+
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            if (globalSizes.get(p) > FILE_REBALANCE_THRESHOLD)
+                return true;
+        }
+
+        return false;
     }
 
     /**
