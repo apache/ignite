@@ -156,7 +156,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             DataRegionMetricsImpl metrics = pageMemory.metrics();
 
             if (metrics != null)
-                pageMemory.metrics().addThrottleDuration(U.currentTimeMillis() - startTime);
+                pageMemory.metrics().addThrottleTime(U.currentTimeMillis() - startTime);
         }
         else {
             int oldCntr = cntr.getAndSet(0);

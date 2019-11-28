@@ -229,7 +229,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         DataRegionMetricsImpl metrics = pageMemory.metrics();
 
         if (metrics != null)
-            metrics.addThrottleDuration(U.nanosToMillis(System.nanoTime() - curNanoTime));
+            metrics.addThrottleTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }
