@@ -91,8 +91,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl",
             "org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerMXBeanImpl",
-            "org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl",
-            "org.apache.ignite.internal.processors.cluster.IgniteClusterMXBeanImpl",
             "org.apache.ignite.internal.processors.odbc.ClientListenerProcessor$ClientProcessorMXBeanImpl",
             "org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl",
             "org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi$SharedFsCheckpointSpiMBeanImpl",
