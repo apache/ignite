@@ -37,7 +37,7 @@ public class TrainingWithBinaryObjectExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Model training over cached dataset with binary objects usage example started.");
         // Start ignite grid.

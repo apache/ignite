@@ -183,13 +183,9 @@ public class SandboxMLCache {
 
             Object[] res = new Object[cells.length];
 
-            if (cells[0].contains("p"))
-                res[0] = 0.0;
-            else
-                res[0] = 1.0;
+            res[0] = cells[0].contains("p") ? 0.0 : 1.0;
 
-            for (int i = 1; i < cells.length; i++)
-                res[i] = cells[i];
+            System.arraycopy(cells, 1, res, 1, cells.length - 1);
 
             cache.put(cnt++, res);
         }

@@ -115,10 +115,10 @@ public class RandomForestRegressionExample {
 
                     System.out.println("\n>>> Evaluated model on " + totalAmount + " data points.");
 
-                    mse = mse / totalAmount;
+                    mse /= totalAmount;
                     System.out.println("\n>>> Mean squared error (MSE) " + mse);
 
-                    mae = mae / totalAmount;
+                    mae /= totalAmount;
                     System.out.println("\n>>> Mean absolute error (MAE) " + mae);
 
                     System.out.println(">>> Random Forest regression algorithm over cached dataset usage example completed.");

@@ -43,7 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.jdbc.thin.AffinityCache;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResultDescriptor;
 import org.apache.ignite.internal.jdbc.thin.QualifiedSQLQuery;
-import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
+import org.apache.ignite.internal.processors.query.QueryHistory;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
@@ -716,7 +716,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
         int nonEmptyMetricsCntr = 0;
         int qryExecutionsCntr = 0;
         for (int i = 0; i < NODES_CNT; i++) {
-            Collection<QueryHistoryMetrics> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
+            Collection<QueryHistory> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
                 .runningQueryManager().queryHistoryMetrics().values();
 
             if (!metrics.isEmpty()) {
