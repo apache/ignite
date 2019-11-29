@@ -4053,8 +4053,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         // Failed node's primary partitions. Safe to use affinity since topology was fully rebalanced.
                         parts = grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer);
-
-                        assert !parts.isEmpty() : grp.groupId();
                     }
                     else
                         parts = grp.topology().localPartitionMap().keySet();
