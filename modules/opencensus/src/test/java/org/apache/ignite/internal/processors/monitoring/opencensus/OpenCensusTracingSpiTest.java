@@ -79,6 +79,9 @@ public class OpenCensusTracingSpiTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
+        if (igniteInstanceName.contains("client"))
+            cfg.setClientMode(true);
+
         cfg.setTracingSpi(new OpenCensusTracingSpi());
 
         return cfg;
@@ -111,6 +114,8 @@ public class OpenCensusTracingSpiTest extends GridCommonAbstractTest {
         exporter.start("test");
 
         startGrids(GRID_CNT);
+
+        startGrid("client");
     }
 
     /**
@@ -241,7 +246,7 @@ public class OpenCensusTracingSpiTest extends GridCommonAbstractTest {
     @Test
     public void testNodeLeftTracing() throws Exception {
         // Consistent id is the same with node name.
-        List<String> clusterNodeNames = grid(0).cluster().nodes()
+        List<String> clusterNodeNames = grid(0).cluster().forServers().nodes()
             .stream().map(node -> (String)node.consistentId()).collect(Collectors.toList());
 
         String leftNodeId = grid(GRID_CNT - 1).localNode().id().toString();
