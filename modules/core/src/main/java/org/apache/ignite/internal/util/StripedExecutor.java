@@ -186,6 +186,9 @@ public class StripedExecutor implements ExecutorService {
         return stripes.length;
     }
 
+    /**
+     * @return Stripes of this executor.
+     */
     public Stripe[] stripes() {
         return stripes;
     }
