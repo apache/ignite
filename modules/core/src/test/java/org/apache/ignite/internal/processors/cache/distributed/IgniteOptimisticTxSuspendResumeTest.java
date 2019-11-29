@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.junits.common.KeyType;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -252,17 +253,17 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
             List<List<Integer>> keys = new ArrayList<>();
 
             // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
-            for (int type = 0; type < 3; type++) {
+            for (KeyType keyType : KeyType.values()) {
                 if (cfg.getCacheMode() == LOCAL)
                     continue;
 
-                if (type == 1 && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
+                if (keyType == KeyType.BACKUP && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
                     continue;
 
-                if (type == 2 && cfg.getCacheMode() == REPLICATED)
+                if (keyType == KeyType.NEAR && cfg.getCacheMode() == REPLICATED)
                     continue;
 
-                List<Integer> keys0 = findKeys(cache, keysCnt, type * 100_000, type);
+                List<Integer> keys0 = findKeys(cache, keysCnt, keyType.getKeyIndex() * 100_000, keyType);
 
                 assertEquals(cacheName, keysCnt, keys0.size());
 
