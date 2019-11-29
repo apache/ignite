@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -126,19 +128,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param exchFut Exchange future.
      */
     public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
-        // At this point cache updates are queued and we can safely switch partitions to read-only mode and vice-versa.
-        // TODO method logic clashes with GridDhtPreloader#generateAssignments
+        assert !cctx.kernalContext().clientNode() : "File preloader should not be created on client node";
         assert exchFut != null;
 
         if (!FILE_REBALANCE_ENABLED)
-            return;
-
-        AffinityTopologyVersion lastAffChangeTopVer =
-            cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
-
-        AffinityTopologyVersion rebTopVer = cctx.exchange().rebalanceTopologyVersion();
-
-        if (lastAffChangeTopVer.compareTo(rebTopVer) <= 0)
             return;
 
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
@@ -150,12 +143,41 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return;
         }
 
+        AffinityTopologyVersion rebTopVer = cctx.exchange().rebalanceTopologyVersion();
+
+        FileRebalanceFuture rebFut = fileRebalanceFut;
+
+        boolean forced = rebTopVer == NONE ||
+            (rebFut.isDone() && !rebFut.result()) || exchFut.localJoinExchange();
+
+        Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
+
+        while (!forced && itr.hasNext()) {
+            CacheGroupContext grp = itr.next();
+
+            forced = exchFut.resetLostPartitionFor(grp.cacheOrGroupName()) ||
+                grp.affinity().cachedVersions().contains(rebTopVer);
+        }
+
+        AffinityTopologyVersion lastAffChangeTopVer =
+            cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
+
+        if (!forced && lastAffChangeTopVer.compareTo(rebTopVer) == 0) {
+            assert lastAffChangeTopVer.compareTo(exchFut.topologyVersion()) != 0;
+
+            if (log.isDebugEnabled())
+                log.debug("Skipping file rebalancing initialization affinity was not changed: " + exchId);
+
+            return;
+        }
+
         // Should interrupt current rebalance.
-        if (!fileRebalanceFut.isDone())
-            fileRebalanceFut.cancel();
+        if (!rebFut.isDone())
+            rebFut.cancel();
 
         assert fileRebalanceFut.isDone();
 
+        // At this point cache updates are queued and we can safely switch partitions to read-only mode and vice-versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (!fileRebalanceSupported(grp))
                 continue;
@@ -178,8 +200,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     private Set<Integer> detectMovingPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
-        int partitions = grp.affinity().partitions();
-
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
 
         assert aff != null;
@@ -192,7 +212,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         boolean fatEnough = false;
 
-        for (int p = 0; p < partitions; p++) {
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
             if (!aff.get(p).contains(cctx.localNode()))
                 continue;
 
@@ -458,7 +478,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /**
      * Check whether file rebalancing is supported by the cache group.
-     * todo Make sure that no one of these properties could be changed on the fly.
      *
      * @param grp Cache group.
      * @return {@code True} if file rebalancing is applicable for specified cache group.
@@ -480,7 +499,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (grp.hasAtomicCaches())
             return false;
 
-        // todo redundant ?
+        // todo redundant check ?
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
         if (globalSizes.isEmpty())

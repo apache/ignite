@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -89,6 +91,9 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE2 = "cache2";
+
+    /** */
+    private static final String DYNAMIC_CACHE = "dynamic-cache";
 
     @Parameterized.Parameter
     public CacheAtomicityMode cacheAtomicityMode;
@@ -302,6 +307,36 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         verifyLocalCache(ignite0.cachex(DEFAULT_CACHE_NAME), ignite1.cachex(DEFAULT_CACHE_NAME));
+    }
+
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testBaseActivation() throws Exception {
+        Ignite ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        loadData(ignite0, DEFAULT_CACHE_NAME, 100_000);
+
+        startGridsMultiThreaded(1, 3);
+
+        log.info("wait for activation");
+        U.sleep(180_000);
+
+        ignite0.cluster().setBaselineTopology(F.viewReadOnly(G.allGrids(), g -> g.cluster().localNode()));
+
+//        loadData(ignite0, DEFAULT_CACHE_NAME, TEST_SIZE);
+//
+//        forceCheckpoint();
+//
+//        IgniteEx ignite1 = startGrid(1);
+//
+//        awaitPartitionMapExchange();
+//
+//        verifyLocalCache(ignite0.cachex(DEFAULT_CACHE_NAME), ignite1.cachex(DEFAULT_CACHE_NAME));
     }
 
     /** */
@@ -986,6 +1021,87 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
 
         verifyCacheContent(ignite2.cache(CACHE1), ldr.cntr.get());
         verifyCacheContent(ignite2.cache(CACHE2), entriesCnt);
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    public void testMultipleCachesCancelRebalancePartitionedUnderConstantLoadDynamicCacheStart() throws Exception {
+        cacheMode = PARTITIONED;
+        backups = 0;
+
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        int entriesCnt = 100_000;
+        int dynamicSize = 10_000;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        loadData(ignite0, CACHE1, entriesCnt);
+        loadData(ignite0, CACHE2, entriesCnt);
+
+        forceCheckpoint(ignite0);
+
+        AtomicLong cntr = new AtomicLong(entriesCnt);
+
+        ConstantLoader ldr = new ConstantLoader(ignite0.cache(CACHE1), cntr, false, threads);
+
+        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "loader");
+
+        CountDownLatch cacheStartLatch = new CountDownLatch(1);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        IgniteInternalFuture dynamicCacheStartFut = GridTestUtils.runAsync(() -> {
+            U.awaitQuiet(cacheStartLatch);
+
+            IgniteCache<Long, Long> dynCache = ignite0.createCache(cacheConfig(DYNAMIC_CACHE));
+
+            for (long i = 0; i < dynamicSize; i++)
+                dynCache.put(i, generateValue(i, DYNAMIC_CACHE));
+        }, "cache-starter");
+
+        IgniteEx ignite1 = startGrid(1);
+
+        blt.add(ignite1.localNode());
+
+        U.sleep(rnd.nextInt(300));
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        cacheStartLatch.countDown();
+
+        U.sleep(rnd.nextInt(300));
+
+        IgniteEx ignite2 = startGrid(2);
+
+        blt.add(ignite2.localNode());
+
+        U.sleep(rnd.nextInt(300));
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        dynamicCacheStartFut.get();
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        ldrFut.get();
+
+        verifyCacheContent(ignite2.cache(CACHE1), ldr.cntr.get());
+        verifyCacheContent(ignite2.cache(CACHE2), entriesCnt);
+        verifyCacheContent(ignite2.cache(DYNAMIC_CACHE), dynamicSize);
     }
 
     /** todo */
