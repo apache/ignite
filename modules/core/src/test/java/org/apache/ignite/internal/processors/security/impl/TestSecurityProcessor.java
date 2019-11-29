@@ -168,4 +168,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
             SANDBOX_PERMS.remove(data.credentials());
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean sandboxEnabled() {
+        return true;
+    }
 }

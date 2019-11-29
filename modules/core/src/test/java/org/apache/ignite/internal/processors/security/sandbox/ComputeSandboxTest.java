@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.lang.System.setProperty;
 import static java.util.Collections.singletonList;
 
 /**
@@ -43,36 +44,39 @@ import static java.util.Collections.singletonList;
  */
 public class ComputeSandboxTest extends AbstractSandboxTest {
     /** */
-    private static final TestComputeTask COMPUTE_TASK = new TestComputeTask(START_THREAD_RUNNABLE);
+    private static final TestComputeTask COMPUTE_TASK = new TestComputeTask();
 
     /** */
     private static final IgniteCallable<Object> CALLABLE = () -> {
-        START_THREAD_RUNNABLE.run();
+        setProperty(PROP_NAME, PROP_VALUE);
 
         return null;
     };
 
     /** */
     private static final IgniteClosure<Object, Object> CLOSURE = a -> {
-        START_THREAD_RUNNABLE.run();
+        setProperty(PROP_NAME, PROP_VALUE);
 
         return null;
     };
 
     /** */
+    private static final IgniteRunnable RUNNABLE = () -> setProperty(PROP_NAME, PROP_VALUE);
+
+    /** */
     @Test
-    public void test() throws Exception {
-        prepareCluster();
+    public void testCompute(){
+        computeOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
+        computeOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
+            .forEach(op -> runForbiddenOperation(op, AccessControlException.class));
+    }
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED_THREAD_START);
-
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_THREAD_START);
-
-        computeOperations(clntAllowed).forEach(this::runOperation);
-        computeOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, AccessControlException.class));
-
-        executorServiceOperations(clntAllowed).forEach(this::runOperation);
-        executorServiceOperations(clntFrobidden).forEach(op -> runForbiddenOperation(op, IgniteException.class));
+    /** */
+    @Test
+    public void testExecutorService(){
+        executorServiceOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
+        executorServiceOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
+            .forEach(op -> runForbiddenOperation(op, IgniteException.class));
     }
 
     /**
@@ -83,13 +87,13 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
             () -> node.compute().execute(COMPUTE_TASK, 0),
             () -> node.compute().broadcast(CALLABLE),
             () -> node.compute().call(CALLABLE),
-            () -> node.compute().run(START_THREAD_RUNNABLE),
+            () -> node.compute().run(RUNNABLE),
             () -> node.compute().apply(CLOSURE, new Object()),
 
             () -> new TestFutureAdapter<>(node.compute().executeAsync(COMPUTE_TASK, 0)).get(),
             () -> new TestFutureAdapter<>(node.compute().broadcastAsync(CALLABLE)).get(),
             () -> new TestFutureAdapter<>(node.compute().callAsync(CALLABLE)).get(),
-            () -> new TestFutureAdapter<>(node.compute().runAsync(START_THREAD_RUNNABLE)).get(),
+            () -> new TestFutureAdapter<>(node.compute().runAsync(RUNNABLE)).get(),
             () -> new TestFutureAdapter<>(node.compute().applyAsync(CLOSURE, new Object())).get()
         );
     }
@@ -108,14 +112,6 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
 
     /** */
     static class TestComputeTask implements ComputeTask<Object, Object> {
-        /** */
-        private final IgniteRunnable r;
-
-        /** */
-        public TestComputeTask(IgniteRunnable r) {
-            this.r = r;
-        }
-
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             Object arg) throws IgniteException {
@@ -126,7 +122,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
                     }
 
                     @Override public Object execute() {
-                        r.run();
+                        setProperty(PROP_NAME, PROP_VALUE);
 
                         return null;
                     }

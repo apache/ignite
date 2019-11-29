@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,8 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.junit.After;
 import org.junit.Before;
@@ -71,6 +74,9 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
             "    }\n" +
             "}";
 
+    /** Client node name. */
+    private static final String CLNT_NODE = "clnt";
+
     /** */
     private Path srcTmpDir;
 
@@ -92,19 +98,44 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
         U.delete(srcTmpDir);
     }
 
-    /** */
-    @Test
-    public void test() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void prepareCluster() throws Exception {
         Ignite srv = startGrid("srv", ALLOW_ALL,  false);
 
-        Ignite clnt = startGrid("clnt", ALLOW_ALL, true);
+        startGrid(CLNT_NODE, ALLOW_ALL, true);
 
         srv.cluster().active(true);
+    }
 
-        IgniteCompute compute = clnt.compute(clnt.cluster().forRemotes());
+    /** */
+    @Test
+    public void testDoPrivilegedIgniteCallable() throws Exception {
+        checkCallable(clientCompute(), callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
+    }
 
-        checkCallable(compute, callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
-        checkCallable(compute, callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
+    /** */
+    @Test
+    public void testSecurityUtilsCallable() throws Exception {
+        checkCallable(clientCompute(), callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
+    }
+
+    /** */
+    @Test
+    public void testIgniteProxy(){
+        runForbiddenOperation(() -> clientCompute().broadcast(new TestRunnable() {
+            @Override public void run() {
+                assertTrue(Proxy.isProxyClass(ignite.getClass()));
+
+                ignite.compute().broadcast(() -> System.getProperty("user.home"));
+            }
+        }), AccessControlException.class);
+    }
+
+    /** */
+    private IgniteCompute clientCompute(){
+        Ignite clnt = grid(CLNT_NODE);
+
+        return clnt.compute(clnt.cluster().forRemotes());
     }
 
     /** */
@@ -138,5 +169,12 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /** */
+    abstract static class TestRunnable implements IgniteRunnable{
+        /** */
+        @IgniteInstanceResource
+        protected Ignite ignite;
     }
 }

@@ -171,18 +171,21 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (hasSecurityManager())
-            sandbox = new AccessControllerSandbox(this);
-        else {
-            ctx.log(getClass()).warning("IgniteSecurity enabled, but system SecurityManager is not defined, " +
-                "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
-
-            sandbox = new NoOpSandbox();
-        }
-
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
         secPrc.start();
+
+        if (hasSecurityManager() && secPrc.sandboxEnabled())
+            sandbox = new AccessControllerSandbox(this);
+        else {
+            if (secPrc.sandboxEnabled()) {
+                ctx.log(getClass()).warning("GridSecurityProcessor#sandboxEnabled returns true, " +
+                    "but system SecurityManager is not defined, " +
+                    "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
+            }
+
+            sandbox = new NoOpSandbox();
+        }
     }
 
     /** {@inheritDoc} */

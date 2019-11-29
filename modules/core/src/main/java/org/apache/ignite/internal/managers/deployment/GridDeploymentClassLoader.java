@@ -533,7 +533,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (byteMap != null)
                     byteMap.put(path, byteSrc.array());
 
-                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN);
+                cls = ctx.security().sandbox().enabled()
+                    ? defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN)
+                    : defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');

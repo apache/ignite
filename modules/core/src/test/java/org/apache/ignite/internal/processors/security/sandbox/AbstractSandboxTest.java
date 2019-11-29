@@ -17,77 +17,44 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.security.AccessControlException;
 import java.security.AllPermission;
 import java.security.CodeSource;
-import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
+import java.util.PropertyPermission;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityManager;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static sun.security.util.SecurityConstants.MODIFY_THREADGROUP_PERMISSION;
-import static sun.security.util.SecurityConstants.MODIFY_THREAD_PERMISSION;
 
 /** */
 public abstract class AbstractSandboxTest extends AbstractSecurityTest {
-    /** Flag that shows thread was started. */
-    protected static final AtomicBoolean IS_STARTED = new AtomicBoolean(false);
-
     /** */
     protected static final String TEST_CACHE = "test_cache";
 
     /** */
-    private static final ReentrantLock LOCK = new ReentrantLock();
-
-    /** */
-    private static final int LOCK_TIMEOUT = 500;
-
-    /** */
-    private static boolean setupSM;
+    protected static boolean setupSM;
 
     /** Sever node name. */
     protected static final String SRV = "srv";
 
-    /** Client node that can start a new thread. */
-    protected static final String CLNT_ALLOWED_THREAD_START = "clnt_allowed";
+    /** Client node that can write to test property. */
+    protected static final String CLNT_ALLOWED_WRITE_PROP = "clnt_allowed";
 
-    /** Client node that cannot start a new thread. */
-    protected static final String CLNT_FORBIDDEN_THREAD_START = "clnt_forbidden";
+    /** Client node that cannot write to the test property. */
+    protected static final String CLNT_FORBIDDEN_WRITE_PROP = "clnt_forbidden";
 
-    /** */
-    public static final IgniteRunnable START_THREAD_RUNNABLE = () -> {
-        LOCK.lock();
+    /** Test property name. */
+    protected static final String PROP_NAME = "test.sandbox.property";
 
-        try {
-            new Thread(() -> IS_STARTED.set(true)).start();
+    /** Test property value. */
+    protected static final String PROP_VALUE = "propertyValue";
 
-            while (!IS_STARTED.get())
-                TimeUnit.MILLISECONDS.sleep(100);
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            LOCK.unlock();
-        }
-    };
-
-    /** */
-    @BeforeClass
-    public static void setup() {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
         if (System.getSecurityManager() == null) {
             Policy.setPolicy(new Policy() {
                 @Override public PermissionCollection getPermissions(CodeSource cs) {
@@ -99,15 +66,18 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
                 }
             });
 
-            System.setSecurityManager(new TestSecurityManager());
+            System.setSecurityManager(new SecurityManager());
 
             setupSM = true;
         }
+
+        prepareCluster();
     }
 
-    /** */
-    @AfterClass
-    public static void tearDown() {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         if (setupSM) {
             System.setSecurityManager(null);
             Policy.setPolicy(null);
@@ -118,104 +88,38 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected void prepareCluster() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
-        startGrid(CLNT_ALLOWED_THREAD_START, ALLOW_ALL,
-            TestPermissionsBuilder.create()
-                .add(MODIFY_THREAD_PERMISSION)
-                .add(MODIFY_THREADGROUP_PERMISSION).get(), true);
+        Permissions perms = new Permissions();
 
-        startGrid(CLNT_FORBIDDEN_THREAD_START, ALLOW_ALL, true);
+        perms.add(new PropertyPermission(PROP_NAME, "write"));
+
+        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, perms, true);
+
+        startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALLOW_ALL, true);
 
         srv.cluster().active(true);
     }
 
-    /** */
+    /**
+     * @param r Runnable that writes the {@link AbstractSandboxTest#PROP_VALUE} to the {@link
+     * AbstractSandboxTest#PROP_NAME} property.
+     */
     protected void runOperation(Runnable r) {
-        IS_STARTED.set(false);
+        System.clearProperty(PROP_NAME);
 
         r.run();
 
-        waitStarted();
-
-        assertTrue(IS_STARTED.get());
+        assertEquals(PROP_VALUE, System.getProperty(PROP_NAME));
     }
 
-    /** */
-    protected void runOperation(Supplier<Object> s) {
-        runOperation((Runnable)s::get);
-    }
+    /**
+     * @param r RunnableX that writes the {@link AbstractSandboxTest#PROP_VALUE} to the {@link
+     * AbstractSandboxTest#PROP_NAME} property.
+     */
+    protected void runForbiddenOperation(GridTestUtils.RunnableX r, Class<? extends Throwable> cls) {
+        System.clearProperty(PROP_NAME);
 
-    /** */
-    protected void runForbiddenOperation(GridTestUtils.RunnableX runnable, Class<? extends Throwable> cls) {
-        IS_STARTED.set(false);
+        assertThrowsWithCause(r, cls);
 
-        assertThrowsWithCause(runnable, cls);
-
-        assertFalse(IS_STARTED.get());
-    }
-
-    /** */
-    protected void runForbiddenOperation(Supplier<Object> s) {
-        runForbiddenOperation(
-            () -> {
-                Object res = s.get();
-
-                if (res instanceof Exception)
-                    throw (Exception)res;
-            },
-            AccessControlException.class
-        );
-    }
-
-    /** */
-    private void waitStarted() {
-        boolean isLocked = false;
-
-        try {
-            isLocked = LOCK.tryLock(LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            if (isLocked)
-                LOCK.unlock();
-        }
-    }
-
-    /** */
-     protected static class TestPermissionsBuilder {
-        /** */
-        public static TestPermissionsBuilder create() {
-            return new TestPermissionsBuilder();
-        }
-
-        /** */
-        public static Permissions createAllowAll() {
-            Permissions res = new Permissions();
-
-            res.add(new AllPermission());
-
-            return res;
-        }
-
-        /** */
-        private final Permissions perms;
-
-        /** */
-        private TestPermissionsBuilder() {
-            perms = new Permissions();
-        }
-
-        /** */
-        public TestPermissionsBuilder add(Permission perm) {
-            perms.add(perm);
-
-            return this;
-        }
-
-        /** */
-        public Permissions get() {
-            return perms;
-        }
+        assertNull(System.getProperty(PROP_NAME));
     }
 }

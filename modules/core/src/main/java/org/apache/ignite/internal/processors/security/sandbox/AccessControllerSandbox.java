@@ -22,7 +22,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.security.ProtectionDomain;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
@@ -36,9 +35,6 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSe
  * Sandbox that based on AccessController.
  */
 public class AccessControllerSandbox implements IgniteSandbox {
-    /** */
-    private static final AccessControlContext NULL_PD_ARRAY_CONTEXT = new AccessControlContext(new ProtectionDomain[0]);
-
     /** Instance of IgniteSecurity. */
     private final IgniteSecurity security;
 
@@ -59,7 +55,7 @@ public class AccessControllerSandbox implements IgniteSandbox {
         assert secCtx != null;
 
         final AccessControlContext acc = AccessController.doPrivileged(
-            (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(NULL_PD_ARRAY_CONTEXT,
+            (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(AccessController.getContext(),
                 new IgniteDomainCombiner(secCtx.subject().sandboxPermissions()))
         );
 

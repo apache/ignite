@@ -38,6 +38,15 @@ public class IgniteDomainCombiner implements DomainCombiner {
         if (currDomains == null || currDomains.length == 0)
             return assignedDomains;
 
-        return new ProtectionDomain[] {pd};
+        if (assignedDomains == null || assignedDomains.length == 0)
+            return new ProtectionDomain[] {pd};
+
+        ProtectionDomain[] res = new ProtectionDomain[assignedDomains.length + 1];
+
+        res[0] = pd;
+
+        System.arraycopy(assignedDomains, 0, res, 1, assignedDomains.length);
+
+        return res;
     }
 }

@@ -21,7 +21,6 @@ import java.security.AccessControlException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.cache.Cache;
-import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -34,12 +33,27 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.lang.System.setProperty;
 import static java.util.Collections.singleton;
 
 /**
  * Checks that user-defined code for cache operations is executed inside the sandbox.
  */
 public class CacheSandboxTest extends AbstractSandboxTest {
+    /** */
+    private static final CacheEntryProcessor<Object, Object, Object> TEST_PROC = (entry, o) -> {
+        setProperty(PROP_NAME, PROP_VALUE);
+
+        return null;
+    };
+
+    /** */
+    private static final IgniteBiPredicate<String, String> TEST_PRED = (a, b) -> {
+        setProperty(PROP_NAME, PROP_VALUE);
+
+        return true;
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -49,53 +63,58 @@ public class CacheSandboxTest extends AbstractSandboxTest {
             );
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        populateCache();
+    }
+
     /** */
     @Test
-    public void test() throws Exception {
-        prepareCluster();
-        populateCache();
+    public void testEntryProcessor() {
+        entryProcessorOperations(grid(CLNT_ALLOWED_WRITE_PROP)).map(s -> (Runnable)s::get).forEach(this::runOperation);
+        entryProcessorOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
+            .map((s) -> (GridTestUtils.RunnableX)() -> {
+                    Object res = s.get();
 
-        Ignite clntAllowed = grid(CLNT_ALLOWED_THREAD_START);
+                    if (res instanceof Exception)
+                        throw (Exception)res;
+                }
+            )
+            .forEach(r -> runForbiddenOperation(r, AccessControlException.class));
+    }
 
-        Ignite clntFrobidden = grid(CLNT_FORBIDDEN_THREAD_START);
+    /** */
+    @Test
+    public void testScanQuery() {
+        scanQueryOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
+        scanQueryOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
+            .forEach(r -> runForbiddenOperation(r, AccessControlException.class));
+    }
 
-        entryProcessorOperations(clntAllowed).forEach(this::runOperation);
-        entryProcessorOperations(clntFrobidden).forEach(this::runForbiddenOperation);
-
-        scanQueryOperations(clntAllowed).forEach(this::runOperation);
-        scanQueryOperations(clntFrobidden).forEach(r -> runForbiddenOperation(r, AccessControlException.class));
-
-        runOperation(loadCacheOperation(clntAllowed));
-        runForbiddenOperation(loadCacheOperation(clntFrobidden), AccessControlException.class);
+    /** */
+    @Test
+    public void testLoadCache() {
+        runOperation(() -> grid(CLNT_ALLOWED_WRITE_PROP).<String, String>cache(TEST_CACHE).loadCache(TEST_PRED));
+        runForbiddenOperation(() -> grid(CLNT_FORBIDDEN_WRITE_PROP)
+            .<String, String>cache(TEST_CACHE).loadCache(TEST_PRED), AccessControlException.class);
     }
 
     /**
      * @return EntryProcessor operations to test.
      */
     private Stream<Supplier<Object>> entryProcessorOperations(Ignite node) {
-        EntryProcessorResult<Object> dflt = new EntryProcessorResult<Object>() {
-            @Override public Object get() throws EntryProcessorException {
-                return null;
-            }
-        };
+        EntryProcessorResult<Object> dflt = () -> null;
 
         return Stream.of(
-            () -> node.cache(TEST_CACHE).invoke("key", processor()),
-            () -> node.cache(TEST_CACHE).invokeAll(singleton("key"), processor())
+            () -> node.cache(TEST_CACHE).invoke("key", TEST_PROC),
+            () -> node.cache(TEST_CACHE).invokeAll(singleton("key"), TEST_PROC)
                 .getOrDefault("key", dflt).get(),
-            () -> node.cache(TEST_CACHE).invokeAsync("key", processor()).get(),
-            () -> node.cache(TEST_CACHE).invokeAllAsync(singleton("key"), processor()).get()
+            () -> node.cache(TEST_CACHE).invokeAsync("key", TEST_PROC).get(),
+            () -> node.cache(TEST_CACHE).invokeAllAsync(singleton("key"), TEST_PROC).get()
                 .getOrDefault("key", dflt).get()
         );
-    }
-
-    /** */
-    private CacheEntryProcessor<Object, Object, Object> processor() {
-        return (entry, o) -> {
-            START_THREAD_RUNNABLE.run();
-
-            return null;
-        };
     }
 
     /**
@@ -106,7 +125,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
             () -> node.cache(TEST_CACHE).query(
                 new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
                     @Override public boolean apply(Object o, Object o2) {
-                        START_THREAD_RUNNABLE.run();
+                        setProperty(PROP_NAME, PROP_VALUE);
 
                         return false;
                     }
@@ -116,25 +135,12 @@ public class CacheSandboxTest extends AbstractSandboxTest {
                 new ScanQuery<>((k, v) -> true),
                 new IgniteClosure<Cache.Entry<Object, Object>, Object>() {
                     @Override public Object apply(Cache.Entry<Object, Object> entry) {
-                        START_THREAD_RUNNABLE.run();
+                        setProperty(PROP_NAME, PROP_VALUE);
 
                         return null;
                     }
                 }
             ).getAll()
-        );
-    }
-
-    /**
-     * @return LoadCache operation to test.
-     */
-    private GridTestUtils.RunnableX loadCacheOperation(Ignite node) {
-        return () -> node.<String, String>cache(TEST_CACHE).loadCache(
-            (a, b) -> {
-                START_THREAD_RUNNABLE.run();
-
-                return true;
-            }
         );
     }
 

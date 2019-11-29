@@ -18,15 +18,10 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlException;
-import java.util.Collection;
-import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -43,10 +38,8 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void test() throws Exception {
-        prepareCluster();
-
-        runOperation(operation(grid(CLNT_ALLOWED_THREAD_START)));
-        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN_THREAD_START)), AccessControlException.class);
+        runOperation(operation(grid(CLNT_ALLOWED_WRITE_PROP)));
+        runForbiddenOperation(operation(grid(CLNT_FORBIDDEN_WRITE_PROP)), AccessControlException.class);
     }
 
     /**
@@ -55,13 +48,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     private GridTestUtils.RunnableX operation(Ignite node) {
         return () -> {
             try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(TEST_CACHE)) {
-                strm.receiver(new StreamReceiver<Integer, Integer>() {
-                    @Override public void receive(IgniteCache<Integer, Integer> cache,
-                        Collection<Map.Entry<Integer, Integer>> entries) throws IgniteException {
-
-                        START_THREAD_RUNNABLE.run();
-                    }
-                });
+                strm.receiver((cache, entries) -> System.setProperty(PROP_NAME, PROP_VALUE));
 
                 strm.addData(1, 100);
             }

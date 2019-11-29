@@ -113,26 +113,22 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
             );
     }
 
-    /** */
-    @Test
-    public void test() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void prepareCluster() throws Exception {
         Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
         startGrid("srv_2", ALLOW_ALL, false);
 
-        Ignite clnt = startGrid(CLNT_ALLOWED_THREAD_START, ALLOW_ALL, true);
+        startGrid(CLNT_ALLOWED_WRITE_PROP, ALLOW_ALL, true);
 
         srv.cluster().active(true);
-
-        testCacheOperations(clnt);
-
-        testComputeOperations(clnt);
-
-        testDataStreamerOperations(clnt);
     }
 
     /** */
-    private void testComputeOperations(Ignite clnt) {
+    @Test
+    public void testComputeOperations() {
+        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
+
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
             new TestRunnable() {
                 @Override public void run() {
@@ -160,7 +156,10 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     }
 
     /** */
-    private void testCacheOperations(Ignite clnt) {
+    @Test
+    public void testCacheOperations() {
+        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
+
         clnt.compute(clnt.cluster().forRemotes()).broadcast(
             new TestRunnable() {
                 @Override public void run() {
@@ -192,7 +191,10 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     }
 
     /** */
-    private void testDataStreamerOperations(Ignite clnt) {
+    @Test
+    public void testDataStreamerOperations() {
+        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
+
         clnt.compute(clnt.cluster().forRemotes())
             .broadcast(
                 new TestRunnable() {
