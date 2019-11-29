@@ -251,7 +251,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return fatEnough ? movingParts : null;
     }
 
-    // todo currently used only for debugging, should be removed
+    /** @deprecated used only for debugging, should be removed */
+    @Deprecated
     public boolean isPreloading(int grpId) {
         return fileRebalanceFut.isPreloading(grpId);
     }

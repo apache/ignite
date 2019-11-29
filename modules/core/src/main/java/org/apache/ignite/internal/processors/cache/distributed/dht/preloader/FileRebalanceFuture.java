@@ -33,16 +33,20 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     /** */
@@ -81,6 +85,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     /** */
     private final Map<Integer, GridDhtPreloaderAssignments> historicalAssignments = new ConcurrentHashMap<>();
 
+    /** Index rebuild future. */
+    private final GridCompoundFuture idxFuture = new GridCompoundFuture<>();
+
     /** */
     public FileRebalanceFuture() {
         this(null, null, null, null, 0, null);
@@ -111,6 +118,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             initialize(assignsMap);
     }
 
+    /** @deprecated used only for debugging, should be removed */
+    @Deprecated
     boolean isPreloading(int grpId) {
         return allGroupsMap.containsKey(grpId) && !isDone();
     }
@@ -139,21 +148,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                        // todo remove
-                        //assert cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut);
-
                         String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
 
                         Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
 
                         Set<Integer> allPartitions = allPartsMap.computeIfAbsent(grpId, v -> new HashSet<>());
-
-//                        GridDhtPartitionDemandMessage msg = e.getValue();
-//                        ClusterNode node = e.getKey();
-//
-//                        nodes.add(node.id());
-
-//                        Set<Integer> parttitions = msg.partitions().fullSet();
 
                         for (Integer partId : entry.getValue()) {
                             assert grp.topology().localPartition(partId).dataStore().readOnly() :
@@ -163,13 +162,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                             allPartitions.add(partId);
                         }
+
+                        regionParts.add(((long)grpId << 32) + INDEX_PARTITION);
                     }
                 }
             }
-
-            //for (Map.Entry<Integer, GridDhtPreloaderAssignments> entry : assignments.entrySet()) {
-
-//            }
 
             for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
                 regions.put(e.getKey(), new GridFutureAdapter());
@@ -231,6 +228,13 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                     }
 
                     futs.clear();
+
+                    if (!idxFuture.isDone()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Cancelling index rebuild");
+
+                        idxFuture.cancel();
+                    }
                 }
             }
             catch (IgniteCheckedException e) {
@@ -258,12 +262,32 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         }
 
         if (remainingNodes.isEmpty() && allGroupsMap.remove(grpId) != null) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            // rebuildIndexes
+            // todo should be combined with existsing mechanics - can conflict with same index rebuild at the same time
+            GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+            if (qryProc.moduleEnabled()) {
+                if (log.isInfoEnabled())
+                    log.info("Starting index rebuild for cache group: " + grp.cacheOrGroupName());
+
+                cancelLock.lock();
+                try {
+                    for (GridCacheContext ctx : grp.caches())
+                        idxFuture.add(qryProc.rebuildIndexesFromHash(ctx));
+
+                } finally {
+                    cancelLock.unlock();
+                }
+            }
+
             GridDhtPreloaderAssignments assigns = historicalAssignments.remove(grpId);
 
             if (assigns != null) {
                 GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
 
-                Runnable task = cctx.cache().cacheGroup(grpId).preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
+                Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
 
                 // todo do we need to run it async
                 cctx.kernalContext().getSystemExecutorService().submit(task);
@@ -299,8 +323,21 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 //            });
 //        }
 
-        if (futs.isEmpty())
-            onDone(true);
+        if (futs.isEmpty()) {
+            cancelLock.lock();
+
+            try {
+                if (!idxFuture.initialized()) {
+                    idxFuture.markInitialized();
+
+                    idxFuture.listen(clo -> {
+                        onDone(true);
+                    });
+                }
+            } finally {
+                cancelLock.unlock();
+            }
+        }
     }
 
     /**
@@ -344,7 +381,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                             fut.onDone();
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (RuntimeException | IgniteCheckedException e) {
                             fut.onDone(e);
 
                             onDone(e);
@@ -357,7 +394,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                     });
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (RuntimeException | IgniteCheckedException e) {
             onDone(e);
         }
         finally {
@@ -378,33 +415,44 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
             if (log.isDebugEnabled())
                 log.debug("Parition truncated [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]");
+
+//            // todo close on switch as others
+//            if (partId == INDEX_PARTITION) {
+//                ((GridCacheOffheapManager.GridCacheDataStore)((IgniteCacheOffheapManagerImpl)grp.offheap()).dataStore(INDEX_PARTITION)).close();
+//            }
         }
     }
 
     private void reservePartitions(Set<Long> partitionSet) {
-        for (long e : partitionSet) {
-            int grpId = (int)(e >> 32);
-            int partId = (int)e;
+        for (long entry : partitionSet) {
+            GridDhtLocalPartition part = getPartition(entry);
 
-            GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
-
-            assert part != null : "groupId=" + grpId + ", p=" + partId;
-
-            part.reserve();
+            if (part != null)
+                part.reserve();
         }
     }
 
     private void releasePartitions(Set<Long> partitionSet) {
-        for (long e : partitionSet) {
-            int grpId = (int)(e >> 32);
-            int partId = (int)e;
+        for (long entry : partitionSet) {
+            GridDhtLocalPartition part = getPartition(entry);
 
-            GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
-
-            assert part != null : "groupId=" + grpId + ", p=" + partId;
-
-            part.release();
+            if (part != null)
+                part.release();
         }
+    }
+
+    private GridDhtLocalPartition getPartition(long entry) {
+        int grpId = (int)(entry >> 32);
+        int partId = (int)entry;
+
+        if (partId == INDEX_PARTITION)
+            return null;
+
+        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+
+        assert part != null : "groupId=" + grpId + ", p=" + partId;
+
+        return part;
     }
 
     /**

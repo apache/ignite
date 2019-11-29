@@ -1027,7 +1027,7 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
     @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="0")
     public void testMultipleCachesCancelRebalancePartitionedUnderConstantLoadDynamicCacheStart() throws Exception {
         cacheMode = PARTITIONED;
         backups = 0;
