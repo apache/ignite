@@ -316,6 +316,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     ) {
         assert ctx != null;
         assert pageSize > 0;
+        assert memMetrics != null;
 
         log = ctx.logger(PageMemoryImpl.class);
 
