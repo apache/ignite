@@ -361,7 +361,7 @@ final class ClientUtils {
             }
             else if (cfg.getExpiryPolicy() != null) {
                 throw new ClientProtocolError(String.format("Expire policies have not supported by the server " +
-                    " version %s, required version %s", ver, V1_6_0));
+                    "version %s, required version %s", ver, V1_6_0));
             }
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length

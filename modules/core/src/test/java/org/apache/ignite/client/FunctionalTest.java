@@ -831,6 +831,7 @@ public class FunctionalTest {
     @Test
     public void testExpirePolicy() throws Exception {
         long ttl = 600L;
+        int MAX_RETRIES = 5;
 
         try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
@@ -846,56 +847,84 @@ public class FunctionalTest {
             ClientCache<Integer, Object> cachePlcUpdated = cache.withExpirePolicy(new ModifiedExpiryPolicy(dur));
             ClientCache<Integer, Object> cachePlcAccessed = cache.withExpirePolicy(new AccessedExpiryPolicy(dur));
 
-            cache.put(0, 0);
-            cachePlcCreated.put(1, 1);
-            cachePlcUpdated.put(2, 2);
-            cachePlcAccessed.put(3, 3);
+            for (int i = 0; i < MAX_RETRIES; i++) {
+                cache.clear();
 
-            U.sleep(ttl / 3 * 2);
+                long ts = U.currentTimeMillis();
 
-            assertTrue(cache.containsKey(0));
-            assertTrue(cache.containsKey(1));
-            assertTrue(cache.containsKey(2));
-            assertTrue(cache.containsKey(3));
+                cache.put(0, 0);
+                cachePlcCreated.put(1, 1);
+                cachePlcUpdated.put(2, 2);
+                cachePlcAccessed.put(3, 3);
 
-            cachePlcCreated.put(1, 2);
-            cachePlcCreated.get(1); // Update and access key with created expire policy.
-            cachePlcUpdated.put(2, 3); // Update key with modified expire policy.
-            cachePlcAccessed.get(3); // Access key with accessed expire policy.
+                U.sleep(ttl / 3 * 2);
 
-            U.sleep(ttl / 3 * 2);
+                boolean containsKey0 = cache.containsKey(0);
+                boolean containsKey1 = cache.containsKey(1);
+                boolean containsKey2 = cache.containsKey(2);
+                boolean containsKey3 = cache.containsKey(3);
 
-            assertTrue(cache.containsKey(0));
-            assertFalse(cache.containsKey(1));
-            assertTrue(cache.containsKey(2));
-            assertTrue(cache.containsKey(3));
+                if (U.currentTimeMillis() - ts >= ttl) // Retry if this block execution takes too long.
+                    continue;
 
-            U.sleep(ttl / 3 * 2);
+                assertTrue(containsKey0);
+                assertTrue(containsKey1);
+                assertTrue(containsKey2);
+                assertTrue(containsKey3);
 
-            cachePlcUpdated.get(2); // Access key with updated expire policy.
+                ts = U.currentTimeMillis();
 
-            U.sleep(ttl / 3 * 2);
+                cachePlcCreated.put(1, 2);
+                cachePlcCreated.get(1); // Update and access key with created expire policy.
+                cachePlcUpdated.put(2, 3); // Update key with modified expire policy.
+                cachePlcAccessed.get(3); // Access key with accessed expire policy.
 
-            assertTrue(cache.containsKey(0));
-            assertFalse(cache.containsKey(1));
-            assertFalse(cache.containsKey(2));
-            assertFalse(cache.containsKey(3));
+                U.sleep(ttl / 3 * 2);
 
-            // Expire policy, keep binary and transactional flags together.
-            ClientCache<Integer, Object> binCache = cachePlcCreated.withKeepBinary();
+                containsKey0 = cache.containsKey(0);
+                containsKey1 = cache.containsKey(1);
+                containsKey2 = cache.containsKey(2);
+                containsKey3 = cache.containsKey(3);
 
-            try (ClientTransaction tx = client.transactions().txStart()) {
-                binCache.put(4, new T2<>("test", "test"));
+                if (U.currentTimeMillis() - ts >= ttl) // Retry if this block execution takes too long.
+                    continue;
 
-                tx.commit();
+                assertTrue(containsKey0);
+                assertFalse(containsKey1);
+                assertTrue(containsKey2);
+                assertTrue(containsKey3);
+
+                U.sleep(ttl / 3 * 2);
+
+                cachePlcUpdated.get(2); // Access key with updated expire policy.
+
+                U.sleep(ttl / 3 * 2);
+
+                assertTrue(cache.containsKey(0));
+                assertFalse(cache.containsKey(1));
+                assertFalse(cache.containsKey(2));
+                assertFalse(cache.containsKey(3));
+
+                // Expire policy, keep binary and transactional flags together.
+                ClientCache<Integer, Object> binCache = cachePlcCreated.withKeepBinary();
+
+                try (ClientTransaction tx = client.transactions().txStart()) {
+                    binCache.put(4, new T2<>("test", "test"));
+
+                    tx.commit();
+                }
+
+                assertTrue(binCache.get(4) instanceof BinaryObject);
+                assertFalse(cache.get(4) instanceof BinaryObject);
+
+                U.sleep(ttl / 3 * 4);
+
+                assertFalse(cache.containsKey(4));
+
+                return;
             }
 
-            assertTrue(binCache.get(4) instanceof BinaryObject);
-            assertFalse(cache.get(4) instanceof BinaryObject);
-
-            U.sleep(ttl / 3 * 4);
-
-            assertFalse(cache.containsKey(4));
+            fail("Failed to check expire policy within " + MAX_RETRIES + " retries (block execution takes too long)");
         }
     }
 
