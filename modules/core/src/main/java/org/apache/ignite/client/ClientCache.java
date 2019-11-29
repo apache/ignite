@@ -338,8 +338,8 @@ public interface ClientCache<K, V> {
     public <K1, V1> ClientCache<K1, V1> withKeepBinary();
 
     /**
-     *  Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
-     *  the returned cache.
+     * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
+     * the returned cache.
      *
      * @return Cache instance with the specified expiry policy set.
      */

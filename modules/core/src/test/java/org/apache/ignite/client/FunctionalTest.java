@@ -43,6 +43,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -828,21 +830,21 @@ public class FunctionalTest {
      */
     @Test
     public void testExpirePolicy() throws Exception {
-        long ttl = 1000L;
+        long ttl = 600L;
 
         try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
-            ClientCache<Integer, Integer> cache = client.createCache(new ClientCacheConfiguration()
+            ClientCache<Integer, Object> cache = client.createCache(new ClientCacheConfiguration()
                 .setName("cache")
-                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             );
 
             Duration dur = new Duration(TimeUnit.MILLISECONDS, ttl);
 
-            ClientCache<Integer, Integer> cachePlcCreated = cache.withExpirePolicy(new CreatedExpiryPolicy(dur));
-            ClientCache<Integer, Integer> cachePlcUpdated = cache.withExpirePolicy(new ModifiedExpiryPolicy(dur));
-            ClientCache<Integer, Integer> cachePlcAccessed = cache.withExpirePolicy(new AccessedExpiryPolicy(dur));
+            ClientCache<Integer, Object> cachePlcCreated = cache.withExpirePolicy(new CreatedExpiryPolicy(dur));
+            ClientCache<Integer, Object> cachePlcUpdated = cache.withExpirePolicy(new ModifiedExpiryPolicy(dur));
+            ClientCache<Integer, Object> cachePlcAccessed = cache.withExpirePolicy(new AccessedExpiryPolicy(dur));
 
             cache.put(0, 0);
             cachePlcCreated.put(1, 1);
@@ -878,6 +880,22 @@ public class FunctionalTest {
             assertFalse(cache.containsKey(1));
             assertFalse(cache.containsKey(2));
             assertFalse(cache.containsKey(3));
+
+            // Expire policy, keep binary and transactional flags together.
+            ClientCache<Integer, Object> binCache = cachePlcCreated.withKeepBinary();
+
+            try (ClientTransaction tx = client.transactions().txStart()) {
+                binCache.put(4, new T2<>("test", "test"));
+
+                tx.commit();
+            }
+
+            assertTrue(binCache.get(4) instanceof BinaryObject);
+            assertFalse(cache.get(4) instanceof BinaryObject);
+
+            U.sleep(ttl / 3 * 4);
+
+            assertFalse(cache.containsKey(4));
         }
     }
 
