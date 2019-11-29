@@ -497,6 +497,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         for (Map.Entry<String, GridFutureAdapter> entry : regions.entrySet())
             buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + entry.getValue().isFailed() + "\n");
 
+        if (!isDone())
+            buf.append("\n\tIndex future fnished=").append(idxFuture.isDone()).append(" failed=").append(idxFuture.isFailed()).append(" futs=").append(idxFuture.futures()).append('\n');
+
         return buf.toString();
     }
 }

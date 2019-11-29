@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -751,6 +752,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                     if (printPartState)
                                         printPartitionState(c);
+
+                                    for (Ignite gX : G.allGrids()) {
+                                        GridPartitionFilePreloader filePreloader = ((IgniteEx)gX).context().cache().context().filePreloader();
+
+                                        if (filePreloader != null)
+                                            filePreloader.printDiagnostic();
+                                    }
 
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
                                         "igniteInstanceName=" + g.name() +

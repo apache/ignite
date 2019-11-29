@@ -105,7 +105,7 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
                 readOnlyStore.reinit();
 
             // Should close cache data store - no updates expected..
-            ((GridCacheOffheapManager.GridCacheDataStore)store).close();
+//            ((GridCacheOffheapManager.GridCacheDataStore)store).close();
         }
     }
 

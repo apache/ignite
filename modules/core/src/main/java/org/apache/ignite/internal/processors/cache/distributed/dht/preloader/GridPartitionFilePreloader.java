@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
@@ -148,7 +149,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         FileRebalanceFuture rebFut = fileRebalanceFut;
 
         boolean forced = rebTopVer == NONE ||
-            (rebFut.isDone() && !rebFut.result()) || exchFut.localJoinExchange();
+            (rebFut.isDone() && (rebFut.result() == null || !rebFut.result())) || exchFut.localJoinExchange();
 
         Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
 
@@ -195,6 +196,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     part.dataStore().readOnly(true);
                 else
                     part.dataStore().readOnly(false);
+
+                // Should close cache data store - no updates expected..
+                ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
             }
         }
     }

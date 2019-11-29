@@ -3225,8 +3225,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean enableFileRebalance =
             cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceSupported(grp, nodes);
-
-        log.info("cache=" + grp.cacheOrGroupName() + ", fileRebalance=" + enableFileRebalance + " minCntrs="+minCntrs);
+//
+//        log.info("cache=" + grp.cacheOrGroupName() + ", fileRebalance=" + enableFileRebalance + " minCntrs="+minCntrs);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3242,8 +3242,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
-
-                log.debug("grp=" + grp.cacheOrGroupName() + ", p=" + p + ", localHistCntr=" + localHistCntr);
+//
+//                log.debug("grp=" + grp.cacheOrGroupName() + ", p=" + p + ", localHistCntr=" + localHistCntr);
 
                 if (localHistCntr != null) {
                     // todo   crd node should always have history for max counter - this is redundant

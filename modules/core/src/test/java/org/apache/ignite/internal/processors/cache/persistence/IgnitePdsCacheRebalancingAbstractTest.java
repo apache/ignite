@@ -37,10 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -57,10 +54,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -88,12 +82,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     /** Cache with enabled indexes. */
     private static final String INDEXED_CACHE = "indexed";
 
-    /** Cache with enabled indexes. */
-    private static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-memory";
-
-    /** In memory region. */
-    private static final String IN_MEMORY_REGION = "in-memory-region";
-
     /** */
     protected boolean explicitTx;
 
@@ -111,7 +99,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         CacheConfiguration ccfg1 = cacheConfiguration(CACHE)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
             .setBackups(2)
-            .setCacheMode(CacheMode.REPLICATED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setIndexedTypes(Integer.class, Integer.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
@@ -122,9 +109,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setBackups(2)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-        CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
-            .setDataRegionName(IN_MEMORY_REGION);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
 
@@ -140,21 +124,19 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         qryEntity.setIndexes(Collections.singleton(qryIdx));
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
-        ccfg3.setQueryEntities(Collections.singleton(qryEntity));
 
         List<CacheConfiguration> cacheCfgs = new ArrayList<>();
         cacheCfgs.add(ccfg1);
         cacheCfgs.add(ccfg2);
-        cacheCfgs.add(ccfg3);
 
         if (filteredCacheEnabled && !gridName.endsWith("0")) {
-            CacheConfiguration ccfg4 = cacheConfiguration(FILTERED_CACHE)
+            CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setNodeFilter(new CoordinatorNodeFilter());
 
-            cacheCfgs.add(ccfg4);
+            cacheCfgs.add(ccfg3);
         }
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
@@ -168,9 +150,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
-                .setMaxSize(512 * 1024 * 1024)
-            ).setDataRegionConfigurations(new DataRegionConfiguration()
-                .setName(IN_MEMORY_REGION)
                 .setMaxSize(512 * 1024 * 1024)
             );
 
@@ -224,7 +203,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-//        cleanPersistenceDir();
+        cleanPersistenceDir();
     }
 
     /**
@@ -347,9 +326,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
     public void testTopologyChangesWithConstantLoad() throws Exception {
         final long timeOut = U.currentTimeMillis() + 5 * 60 * 1000;
 
@@ -611,9 +587,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed
      */
     @Test
-    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         Ignite ig = startGridsMultiThreaded(4);
 
@@ -630,235 +603,70 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         assertPartitionsSame(idleVerify(grid(0), CACHE));
 
-        try {
+        for (int it = 0; it < SF.applyLB(10, 3); it++) {
+            final int it0 = it;
 
-            for (int it = 0; it < SF.applyLB(10, 3); it++) {
-                final int it0 = it;
+            IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                try {
+                    int dataLoadTimeout = SF.applyLB(500, 250);
 
-                IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                    try {
-//                        int dataLoadTimeout = 2500;//SF.applyLB(2500, 250);
+                    stopGrid(3);
 
-                        stopGrid(3);
+                    U.sleep(dataLoadTimeout); // Wait for data load.
 
-                        awaitPartitionMapExchange(); // U.sleep(dataLoadTimeout) // Wait for data load.
+                    startGrid(3);
 
-                        startGrid(3);
+                    U.sleep(dataLoadTimeout); // Wait for data load.
 
-                        awaitPartitionMapExchange(); // U.sleep(dataLoadTimeout) // Wait for data load.
-
-                        if (it0 % 2 != 0) {
-                            stopGrid(2);
-
-                            awaitPartitionMapExchange(); // U.sleep(dataLoadTimeout) // Wait for data load.
-
-                            startGrid(2);
-                        }
-
-                        awaitPartitionMapExchange();
-                    }
-                    catch (Exception e) {
-                        error("Unable to start/stop grid", e);
-
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                IgniteCache<Object, Object> cache = ig.cache(CACHE);
-
-                while (!fut.isDone()) {
-                    int nextKeys = keys + 10;
-
-                    for (; keys < nextKeys; keys++)
-                        cache.put(keys, keys);
-                }
-
-                fut.get();
-
-                log.info("Checking data...");
-
-                Map<Integer, Long> cntrs = new HashMap<>();
-
-                for (int g = 0; g < 4; g++) {
-                    IgniteEx ig0 = grid(g);
-
-                    for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
-                        if (cntrs.containsKey(part.id()))
-                            assertEquals(String.valueOf(part.id()), (long)cntrs.get(part.id()), part.updateCounter());
-                        else
-                            cntrs.put(part.id(), part.updateCounter());
-                    }
-
-                    IgniteCache<Integer, String> ig0cache = ig0.cache(CACHE);
-
-                    for (Cache.Entry<Integer, String> entry : ig0cache.query(new ScanQuery<Integer, String>()))
-                        assertEquals(entry.getKey() + " " + g, entry.getKey(), entry.getValue());
-                }
-
-                assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
-            }
-        } catch (Error | RuntimeException | IgniteCheckedException e) {
-            for (Ignite g : G.allGrids()) {
-                GridPartitionFilePreloader filePreloader = ((IgniteEx)g).context().cache().context().filePreloader();
-
-                if (filePreloader != null)
-                    filePreloader.printDiagnostic();
-            }
-
-            throw e;
-        }
-    }
-
-    @Test
-    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="1")
-    public void testPartitionCounterConsistencyOnUnstableTopology2() throws Exception {
-        Ignite ig = startGridsMultiThreaded(4);
-
-        ig.cluster().active(true);
-
-        int keys = 0;
-
-        try (IgniteDataStreamer<Object, Object> ds = ig.dataStreamer(CACHE)) {
-            ds.allowOverwrite(true);
-
-            for (; keys < 10_000; keys++)
-                ds.addData(keys, keys);
-        }
-
-        assertPartitionsSame(idleVerify(grid(0), CACHE));
-
-        try {
-
-            for (int it = 0; it < SF.applyLB(10, 3); it++) {
-                final int it0 = it;
-
-                IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                    try {
-                        int dataLoadTimeout = 1500;//SF.applyLB(2500, 250);
-
-                        stopGrid(3);
+                    if (it0 % 2 != 0) {
+                        stopGrid(2);
 
                         U.sleep(dataLoadTimeout); // Wait for data load.
 
-                        startGrid(3);
-
-                        U.sleep(dataLoadTimeout); // Wait for data load.
-
-                        if (it0 % 2 != 0) {
-                            stopGrid(2);
-
-                            U.sleep(dataLoadTimeout); // Wait for data load.
-
-                            startGrid(2);
-                        }
-
-                        awaitPartitionMapExchange();
+                        startGrid(2);
                     }
-                    catch (Exception e) {
-                        error("Unable to start/stop grid", e);
 
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                IgniteCache<Object, Object> cache = ig.cache(CACHE);
-
-                while (!fut.isDone()) {
-                    int nextKeys = keys + 10;
-
-                    for (; keys < nextKeys; keys++)
-                        cache.put(keys, keys);
+                    awaitPartitionMapExchange();
                 }
+                catch (Exception e) {
+                    error("Unable to start/stop grid", e);
 
-                fut.get();
-
-                log.info("Checking data...");
-
-                Map<Integer, Long> cntrs = new HashMap<>();
-
-                for (int g = 0; g < 4; g++) {
-                    IgniteEx ig0 = grid(g);
-
-                    for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
-                        if (cntrs.containsKey(part.id()))
-                            assertEquals("node=" + ig0.cluster().localNode().id() + " p=" + part.id() + " state=" + part.state() + " readonly=" + part.dataStore().readOnly(), (long)cntrs.get(part.id()), part.updateCounter());
-                        else
-                            cntrs.put(part.id(), part.updateCounter());
-                    }
-
-                    IgniteCache<Integer, String> ig0cache = ig0.cache(CACHE);
-
-                    for (Cache.Entry<Integer, String> entry : ig0cache.query(new ScanQuery<Integer, String>()))
-                        assertEquals(entry.getKey() + " " + g, entry.getKey(), entry.getValue());
+                    throw new RuntimeException(e);
                 }
+            });
 
-                assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
-            }
-        } catch (Error | RuntimeException | IgniteCheckedException e) {
-            for (Ignite g : G.allGrids()) {
-                GridPartitionFilePreloader filePreloader = ((IgniteEx)g).context().cache().context().filePreloader();
+            IgniteCache<Object, Object> cache = ig.cache(CACHE);
 
-                if (filePreloader != null)
-                    filePreloader.printDiagnostic();
+            while (!fut.isDone()) {
+                int nextKeys = keys + 10;
+
+                for (;keys < nextKeys; keys++)
+                    cache.put(keys, keys);
             }
 
-            throw e;
-        }
-    }
+            fut.get();
 
-    /**
-     * Test rebalancing of in-memory cache on the node with mixed data region configurations.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRebalancingWithMixedDataRegionConfigurations() throws Exception {
-        int entriesCount = 10_000;
+            log.info("Checking data...");
 
-        Ignite ignite0 = startGrids(2);
+            Map<Integer, Long> cntrs = new HashMap<>();
 
-        ignite0.cluster().active(true);
+            for (int g = 0; g < 4; g++) {
+                IgniteEx ig0 = grid(g);
 
-        IgniteCache<Integer, TestValue> cachePds = ignite0.cache(INDEXED_CACHE);
-        IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
+                for (GridDhtLocalPartition part : ig0.cachex(CACHE).context().topology().currentLocalPartitions()) {
+                    if (cntrs.containsKey(part.id()))
+                        assertEquals(String.valueOf(part.id()), (long) cntrs.get(part.id()), part.updateCounter());
+                    else
+                        cntrs.put(part.id(), part.updateCounter());
+                }
 
-        for (int i = 0; i < entriesCount / 2; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
+                IgniteCache<Integer, String> ig0cache = ig0.cache(CACHE);
 
-            cachePds.put(i, value);
-            cacheInMem.put(i, value);
-        }
+                for (Cache.Entry<Integer, String> entry : ig0cache.query(new ScanQuery<Integer, String>()))
+                    assertEquals(entry.getKey() + " " + g, entry.getKey(), entry.getValue());
+            }
 
-        forceCheckpoint();
-
-        stopGrid(1);
-
-        for (int i = entriesCount / 2; i < entriesCount; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
-
-            cachePds.put(i, value);
-            cacheInMem.put(i, value);
-        }
-
-        IgniteEx ignite1 = startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        IgniteInternalCache<Integer, TestValue> cachePds1 = ignite1.cachex(INDEXED_CACHE);
-        IgniteInternalCache<Integer, TestValue> cacheInMem1 = ignite1.cachex(INDEXED_CACHE_IN_MEMORY);
-
-        CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
-
-        assertEquals(entriesCount, cachePds1.localSize(peekAll));
-        assertEquals(entriesCount, cacheInMem1.localSize(peekAll));
-
-        for (int i = 0; i < entriesCount; i++) {
-            TestValue value = new TestValue(i, i * 2, i * 3);
-
-            assertEquals(value, cachePds1.localPeek(i, peekAll));
-            assertEquals(value, cacheInMem1.localPeek(i, peekAll));
+            assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
         }
     }
 
