@@ -82,6 +82,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -1209,10 +1210,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<List<ClusterNode>> assignment = new ArrayList<>(curAff);
 
+                    CacheGroupContext grp = cctx.cache().cacheGroup(aff.groupId());
+
+                    GridDhtPartitionTopology top = grp != null ? cctx.cache().cacheGroup(desc.groupId()).topology() : null;
+
                     for (Map.Entry<Integer, List<UUID>> e : change.entrySet()) {
                         Integer part = e.getKey();
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
+
+                        assert !nodes.contains(cctx.localNode()) || top.localPartition(part).state() == OWNING :
+                            "Invalid local partition state on LAS switch [part=" + top.localPartition(part) +
+                                ", ideal=" + F.nodeIds(nodes) + "]";
 
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
                             "[cacheGrp=" + aff.cacheOrGroupName() +
@@ -2269,7 +2278,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     map.put(nodeId, partMap);
                 }
 
-                partMap.put(p, GridDhtPartitionState.OWNING);
+                partMap.put(p, OWNING);
             }
         }
 
@@ -2502,7 +2511,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                         if (aliveNodes.contains(curPrimary)) {
-                            if (state != GridDhtPartitionState.OWNING) {
+                            if (state != OWNING) {
                                 newNodes0 = latePrimaryAssignment(grpHolder.affinity(),
                                     p,
                                     curPrimary,
@@ -2511,11 +2520,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             }
                         }
                         else {
-                            if (state != GridDhtPartitionState.OWNING) {
+                            if (state != OWNING) {
                                 for (int i = 1; i < curNodes.size(); i++) {
                                     ClusterNode curNode = curNodes.get(i);
 
-                                    if (top.partitionState(curNode.id(), p) == GridDhtPartitionState.OWNING &&
+                                    if (top.partitionState(curNode.id(), p) == OWNING &&
                                         aliveNodes.contains(curNode)) {
                                         newNodes0 = latePrimaryAssignment(grpHolder.affinity(),
                                             p,

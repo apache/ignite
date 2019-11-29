@@ -314,7 +314,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             assert exchFut == null || !exchFut.rebalanced() :
                 "Unexpected rebalance on rebalanced cluster " +
-                    "[grp=" + grp.groupId() + ", assignments=" + assignments + "]";
+                    "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
         }
 
         return assignments;
