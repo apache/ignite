@@ -41,7 +41,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * The security subject cannot has access higher than Ignite himself.
+ * The security subject cannot have access higher than Ignite himself.
  */
 public class SecuritySubjectPermissionsTest extends AbstractSandboxTest {
     /** */
