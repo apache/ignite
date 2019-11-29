@@ -22,9 +22,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Target;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 import org.jetbrains.annotations.NotNull;
@@ -33,29 +31,22 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public final class Sender extends SingleRel implements IgniteRel {
-    private final DistributionTrait targetDistr;
-
-    private NodesMapping targetMapping;
+    private Target target;
 
     /**
      * Creates a <code>SingleRel</code>.
-     *  @param cluster Cluster this relational expression belongs to
+     * @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
      * @param input Input relational expression
-     * @param targetDistr Target distribution
      */
-    public Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input, @NotNull DistributionTrait targetDistr) {
+    public Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
-
-        this.targetDistr = targetDistr;
     }
 
-    private Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input,
-        @NotNull DistributionTrait targetDistr, @NotNull NodesMapping targetMapping) {
+    private Sender(RelOptCluster cluster, RelTraitSet traits, RelNode input, @NotNull Target target) {
         super(cluster, traits, input);
 
-        this.targetDistr = targetDistr;
-        this.targetMapping = targetMapping;
+        this.target = target;
     }
 
     /** {@inheritDoc} */
@@ -63,23 +54,15 @@ public final class Sender extends SingleRel implements IgniteRel {
         return implementor.implement(this);
     }
 
-    public void init(NodesMapping mapping) {
-        targetMapping = mapping;
+    public void init(Target target) {
+        this.target = target;
     }
 
-    public DistributionTrait targetDistribution() {
-        return targetDistr;
+    public Target target() {
+        return target;
     }
 
-    public NodesMapping targetMapping() {
-        return targetMapping;
-    }
-
-    public DestinationFunction targetFunction(org.apache.calcite.plan.Context ctx) {
-        return targetDistr.destinationFunctionFactory().create(ctx, targetMapping, targetDistr.keys());
-    }
-
-    public static Sender create(RelNode input, DistributionTrait targetDistr, NodesMapping targetMapping) {
+    public static Sender create(RelNode input, Target target) {
         RelOptCluster cluster = input.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
@@ -87,6 +70,6 @@ public final class Sender extends SingleRel implements IgniteRel {
             .replace(IgniteRel.IGNITE_CONVENTION)
             .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.distribution(input, mq));
 
-        return new Sender(cluster, traits, input, targetDistr, targetMapping);
+        return new Sender(cluster, traits, input, target);
     }
 }

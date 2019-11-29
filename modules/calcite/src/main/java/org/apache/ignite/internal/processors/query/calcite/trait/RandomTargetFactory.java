@@ -28,8 +28,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 /**
  *
  */
-final class RandomTargetFactory extends AbstractDestinationFunctionFactory {
-    static final DestinationFunctionFactory INSTANCE = new RandomTargetFactory();
+public final class RandomTargetFactory extends AbstractDestinationFunctionFactory {
+    public static final DestinationFunctionFactory INSTANCE = new RandomTargetFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
         List<UUID> nodes = m.nodes();

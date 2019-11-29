@@ -20,39 +20,25 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Source;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 /**
  *
  */
 public final class Receiver extends AbstractRelNode implements IgniteRel {
-    private final Fragment sourceFragment;
-    private final NodesMapping sourceMapping;
+    private final Source source;
 
     /**
      * @param cluster Cluster this relational expression belongs to
      * @param traits Trait set.
      */
-    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment sourceFragment) {
+    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Source source) {
         super(cluster, traits);
         this.rowType = rowType;
-        this.sourceFragment = sourceFragment;
-
-        sourceMapping = null;
-    }
-
-    /**
-     * @param cluster Cluster this relational expression belongs to
-     * @param traits Trait set.
-     */
-    public Receiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, NodesMapping sourceMapping) {
-        super(cluster, traits);
-        this.rowType = rowType;
-        this.sourceMapping = sourceMapping;
-
-        sourceFragment = null;
+        this.source = source;
     }
 
     /** {@inheritDoc} */
@@ -60,16 +46,11 @@ public final class Receiver extends AbstractRelNode implements IgniteRel {
         return implementor.implement(this);
     }
 
-    public Fragment sourceFragment() {
-        return sourceFragment;
+    public DistributionTrait distribution() {
+        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
-    public NodesMapping sourceMapping() {
-        if (sourceFragment != null)
-            return sourceFragment.mapping();
-
-        assert sourceMapping != null;
-
-        return sourceMapping;
+    public Source source() {
+        return source;
     }
 }

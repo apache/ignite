@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.io.ObjectStreamException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
@@ -28,11 +29,11 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-final class SingleTargetFactory extends AbstractDestinationFunctionFactory {
-    static final DestinationFunctionFactory INSTANCE = new SingleTargetFactory();
+public final class SingleTargetFactory extends AbstractDestinationFunctionFactory {
+    public static final DestinationFunctionFactory INSTANCE = new SingleTargetFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        List<UUID> nodes = Collections.singletonList(F.first(m.nodes()));
+        List<UUID> nodes = Collections.singletonList(Objects.requireNonNull(F.first(m.nodes())));
 
         return r -> nodes;
     }

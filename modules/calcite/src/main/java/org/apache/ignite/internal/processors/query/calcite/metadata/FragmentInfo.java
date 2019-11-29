@@ -17,25 +17,27 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Source;
 
 /**
  *
  */
 public class FragmentInfo {
     private final NodesMapping mapping;
-    private final ImmutableList<Fragment> remoteInputs;
+    private final ImmutableList<Pair<Receiver, Source>> sources;
 
-    public FragmentInfo(Fragment remoteInput) {
-        this(ImmutableList.of(remoteInput), null);
+    public FragmentInfo(Pair<Receiver, Source> source) {
+        this(ImmutableList.of(source), null);
     }
 
     public FragmentInfo(NodesMapping mapping) {
         this(null, mapping);
     }
 
-    public FragmentInfo(ImmutableList<Fragment> remoteInputs, NodesMapping mapping) {
-        this.remoteInputs = remoteInputs;
+    public FragmentInfo(ImmutableList<Pair<Receiver, Source>> sources, NodesMapping mapping) {
+        this.sources = sources;
         this.mapping = mapping;
     }
 
@@ -43,13 +45,13 @@ public class FragmentInfo {
         return mapping;
     }
 
-    public ImmutableList<Fragment> remoteInputs() {
-        return remoteInputs;
+    public ImmutableList<Pair<Receiver, Source>> sources() {
+        return sources;
     }
 
     public FragmentInfo merge(FragmentInfo other) throws LocationMappingException {
         return new FragmentInfo(
-            merge(remoteInputs(), other.remoteInputs()),
+            merge(sources(), other.sources()),
             merge(mapping(), other.mapping()));
     }
 

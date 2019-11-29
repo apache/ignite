@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-final class HashFunctionFactory extends AbstractDestinationFunctionFactory {
-    static final DestinationFunctionFactory INSTANCE = new HashFunctionFactory();
+public final class HashFunctionFactory extends AbstractDestinationFunctionFactory {
+    public static final DestinationFunctionFactory INSTANCE = new HashFunctionFactory();
 
     @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
         assert m != null && !F.isEmpty(m.assignments());

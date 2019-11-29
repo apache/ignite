@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -77,9 +78,15 @@ public class NodesMapping implements Serializable {
         return new NodesMapping(nodes, mergeAssignments(other, nodes), flags);
     }
 
-    public NodesMapping deduplicate() throws LocationMappingException {
-        if (assignments == null || !excessive())
+    public NodesMapping deduplicate() {
+        if (!excessive())
             return this;
+
+        if (assignments == null) {
+            UUID node = nodes.get(ThreadLocalRandom.current().nextInt(nodes.size()));
+
+            return new NodesMapping(Collections.singletonList(node), null, (byte)(flags | DEDUPLICATED));
+        }
 
         HashSet<UUID> nodes0 = new HashSet<>();
         List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
@@ -88,10 +95,12 @@ public class NodesMapping implements Serializable {
             UUID node = F.first(partNodes);
 
             if (node == null)
-                throw new LocationMappingException("Failed to map fragment to location.");
+                assignments0.add(Collections.emptyList());
+            else {
+                assignments0.add(Collections.singletonList(node));
 
-            assignments0.add(Collections.singletonList(node));
-            nodes0.add(node);
+                nodes0.add(node);
+            }
         }
 
         return new NodesMapping(new ArrayList<>(nodes0), assignments0, (byte)(flags | DEDUPLICATED));

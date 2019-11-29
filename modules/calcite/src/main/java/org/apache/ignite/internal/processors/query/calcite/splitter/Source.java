@@ -14,32 +14,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import java.io.ObjectStreamException;
-import java.util.List;
-import java.util.UUID;
 import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 
 /**
  *
  */
-public final class AllTargetsFactory extends AbstractDestinationFunctionFactory {
-    public static final DestinationFunctionFactory INSTANCE = new AllTargetsFactory();
+public interface Source {
+    /**
+     * @return Exchange id, has to be unique in scope of query.
+     */
+    long exchangeId();
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        List<UUID> nodes = m.nodes();
+    /**
+     * @return Source mapping.
+     */
+    NodesMapping mapping();
 
-        return r -> nodes;
-    }
-
-    @Override public Object key() {
-        return "AllTargetsFactory";
-    }
-
-    private Object readResolve() throws ObjectStreamException {
-        return INSTANCE;
+    /**
+     * @param mapping Target mapping.
+     * @param distribution Target distribution.
+     * @param ctx Context.
+     * @param mq Metadata query instance.
+     */
+    default void init(NodesMapping mapping, DistributionTrait distribution, Context ctx, RelMetadataQuery mq) {
+        // No-op.
     }
 }

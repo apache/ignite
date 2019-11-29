@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteRelShuttle;
 
 /**
@@ -46,11 +45,12 @@ public class Splitter extends IgniteRelShuttle {
     }
 
     @Override public RelNode visit(IgniteExchange rel) {
-        RelOptCluster cluster = rel.getCluster();
-        RelTraitSet inputTraits = rel.getInput().getTraitSet();
+        RelNode input = rel.getInput();
+        RelOptCluster cluster = input.getCluster();
+        RelTraitSet inputTraits = input.getTraitSet();
         RelTraitSet outputTraits = rel.getTraitSet();
 
-        Sender sender = new Sender(cluster, inputTraits, visit(rel.getInput()), outputTraits.getTrait(DistributionTraitDef.INSTANCE));
+        Sender sender = new Sender(cluster, inputTraits, visit(input));
         Fragment fragment = new Fragment(sender);
         fragments.add(fragment);
 

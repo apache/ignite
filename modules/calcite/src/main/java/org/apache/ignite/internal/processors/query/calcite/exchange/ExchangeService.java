@@ -14,29 +14,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
+package org.apache.ignite.internal.processors.query.calcite.exchange;
 
 import java.util.List;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Target;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
  */
-public class SenderNode extends RelGraphNode {
-    private final Target target;
-
-    private SenderNode(Target target) {
-        this.target = target;
-    }
-
-    public static SenderNode create(Sender rel) {
-        return new SenderNode(rel.target());
-    }
-
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return Sender.create(F.first(children), target);
-    }
+public interface ExchangeService {
+    void register(Outbox outbox);
+    void unregister(Outbox outbox);
+    void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
 }

@@ -14,32 +14,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import java.io.ObjectStreamException;
-import java.util.List;
-import java.util.UUID;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
+import java.io.Serializable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
  *
  */
-public final class AllTargetsFactory extends AbstractDestinationFunctionFactory {
-    public static final DestinationFunctionFactory INSTANCE = new AllTargetsFactory();
+public class SourceImpl implements Source, Serializable {
+    private final long exchangeId;
+    private final NodesMapping mapping;
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        List<UUID> nodes = m.nodes();
-
-        return r -> nodes;
+    public SourceImpl(long exchangeId, NodesMapping mapping) {
+        this.exchangeId = exchangeId;
+        this.mapping = mapping;
     }
 
-    @Override public Object key() {
-        return "AllTargetsFactory";
+    @Override public long exchangeId() {
+        return exchangeId;
     }
 
-    private Object readResolve() throws ObjectStreamException {
-        return INSTANCE;
+    @Override public NodesMapping mapping() {
+        return mapping;
     }
 }

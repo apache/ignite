@@ -43,6 +43,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
+
 /**
  *
  */
@@ -65,13 +67,13 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
     }
 
     @Override public NodesMapping local() {
-        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode().id()), null, (byte) 0);
+        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode().id()), null, DEDUPLICATED);
     }
 
     @Override public NodesMapping random(AffinityTopologyVersion topVer) {
         List<ClusterNode> nodes = ctx.discovery().discoCache(topVer).serverNodes();
 
-        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, (byte) 0);
+        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, DEDUPLICATED);
     }
 
     @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {

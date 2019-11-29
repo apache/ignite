@@ -14,28 +14,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.io.ObjectStreamException;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import java.util.function.Predicate;
 
 /**
  *
  */
-public final class NoOpFactory extends AbstractDestinationFunctionFactory {
-    public static final DestinationFunctionFactory INSTANCE = new NoOpFactory();
+public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
+    private final Predicate<Object[]> predicate;
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
-        return null;
+    public FilterNode(Sink<Object[]> target, Predicate<Object[]> predicate) {
+        super(target);
+
+        this.predicate = predicate;
     }
 
-    @Override public Object key() {
-        return "NoOpFactory";
+    @Override public Sink<Object[]> sink(int idx) {
+        if (idx != 0)
+            throw new IndexOutOfBoundsException();
+
+        return this;
     }
 
-    private Object readResolve() throws ObjectStreamException {
-        return INSTANCE;
+    @Override public boolean push(Object[] row) {
+        return !predicate.test(row) || target.push(row);
+    }
+
+    @Override public void end() {
+        target.end();
     }
 }

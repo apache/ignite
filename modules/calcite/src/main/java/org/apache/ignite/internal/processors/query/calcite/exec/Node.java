@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Target;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
  */
-public class SenderNode extends RelGraphNode {
-    private final Target target;
-
-    private SenderNode(Target target) {
-        this.target = target;
-    }
-
-    public static SenderNode create(Sender rel) {
-        return new SenderNode(rel.target());
-    }
-
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return Sender.create(F.first(children), target);
-    }
+public interface Node<T> {
+    Sink<T> sink(int idx);
+    void sources(List<Source> sources);
 }

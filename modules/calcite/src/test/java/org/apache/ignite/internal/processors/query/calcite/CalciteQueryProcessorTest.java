@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -33,15 +34,6 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
@@ -63,14 +55,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.BeforeClass;
@@ -1026,6 +1012,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     private static class TestRegistry implements LocationRegistry, DistributionRegistry {
+        private AtomicLong idGen = new AtomicLong();
+
         @Override public NodesMapping random(AffinityTopologyVersion topVer) {
             return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
         }
@@ -1058,41 +1046,5 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             throw new AssertionError("Unexpected cache id:" + cacheId);
         }
-    }
-
-    /**
-     * @return Binary marshaller.
-     */
-    private BinaryMarshaller binaryMarshaller() throws IgniteCheckedException {
-        IgniteConfiguration iCfg = new IgniteConfiguration();
-
-        BinaryConfiguration bCfg = new BinaryConfiguration();
-        iCfg.setBinaryConfiguration(bCfg);
-        iCfg.setClientMode(false);
-        iCfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                //No-op.
-            }
-        });
-        iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
-
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
-
-        BinaryMarshaller marsh = new BinaryMarshaller();
-
-        MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, null);
-
-        GridTestKernalContext kernCtx = new GridTestKernalContext(log, iCfg);
-
-        kernCtx.add(new GridSystemViewManager(kernCtx));
-        kernCtx.add(new GridDiscoveryManager(kernCtx));
-
-        marshCtx.onMarshallerProcessorStarted(kernCtx, null);
-
-        marsh.setContext(marshCtx);
-
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
-
-        return marsh;
     }
 }
