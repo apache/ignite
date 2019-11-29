@@ -162,6 +162,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         String user = null;
         String pwd = null;
 
+        if (ver.compareTo(VER_1_7_0) >= 0)
+            userAttrs = reader.readMap();
+
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {
                 hasMore = reader.available() > 0;
@@ -175,9 +178,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
                 pwd = reader.readString();
             }
         }
-
-        if (ver.compareTo(VER_1_7_0) >= 0)
-            userAttrs = reader.readMap();
 
         AuthorizationContext authCtx = authenticate(user, pwd);
 

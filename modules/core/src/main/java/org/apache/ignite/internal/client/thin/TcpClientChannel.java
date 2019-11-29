@@ -423,13 +423,13 @@ class TcpClientChannel implements ClientChannel {
 
         writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
+        if (ver.compareTo(V1_7_0) >= 0)
+            writer.writeMap(userAttrs);
+
         if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
             writer.writeString(user);
             writer.writeString(pwd);
         }
-
-        if (ver.compareTo(V1_6_0) >= 0)
-            writer.writeMap(userAttrs);
 
         writer.out().writeInt(0, writer.out().position() - 4);// actual size
 
