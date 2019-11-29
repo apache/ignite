@@ -22,7 +22,7 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion> {
     /** Protocol version: 1.7.0. User attributes support. */
     public static final ProtocolVersion V1_7_0 = new ProtocolVersion((short)1, (short)7, (short)0);
 
-    /** Protocol version: 1.6.0. Expiration Policy configuration. */
+    /** Protocol version: 1.6.0. Expiration policy support. */
     public static final ProtocolVersion V1_6_0 = new ProtocolVersion((short)1, (short)6, (short)0);
 
     /** Protocol version: 1.5.0. Transactions support. */
