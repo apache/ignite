@@ -44,6 +44,7 @@ import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskResult;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
@@ -242,6 +243,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9391")
     @Test
     public void testRebalanceEstimateFinishTime() throws Exception {
         System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));

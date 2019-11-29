@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster.j
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -86,6 +87,7 @@ public class JoinActiveNodeToActiveClusterWithPersistence extends JoinActiveNode
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Test
     @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         staticCacheConfigurationInClusterTemplate().execute();

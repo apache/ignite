@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.osgi.activators.BasicIgniteTestActivator;
 import org.apache.ignite.osgi.activators.TestOsgiFlags;
 import org.apache.ignite.osgi.activators.TestOsgiFlagsImpl;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -101,6 +102,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8300")
     @Test
     public void testServiceExposedAndCallbacksInvoked() throws Exception {
         assertNotNull(ignite);

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.karaf.features.Feature;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
@@ -60,6 +61,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
     /**
      * @throws Exception
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8254")
     @Test
     public void testAllBundlesActiveAndFeaturesInstalled() throws Exception {
         // Asssert all bundles except fragments are ACTIVE.
