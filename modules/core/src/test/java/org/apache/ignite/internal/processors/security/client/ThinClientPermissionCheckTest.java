@@ -232,18 +232,12 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      * @return Thin client for specified user.
      */
     private IgniteClient startClient(String userName) {
-        return Ignition.startClient(getClientConfiguration(userName));
-    }
-
-    /**
-     * @param userName User name.
-     * @return Thin client configuration for specified user.
-     */
-    protected ClientConfiguration getClientConfiguration(String userName) {
-        return new ClientConfiguration().setAddresses(Config.SERVER)
-            .setUserName(userName)
-            .setUserPassword("")
-            .setUserAttrs(userAttributres());
+        return Ignition.startClient(
+            new ClientConfiguration().setAddresses(Config.SERVER)
+                .setUserName(userName)
+                .setUserPassword("")
+                .setUserAttrs(userAttributres())
+        );
     }
 
     /**

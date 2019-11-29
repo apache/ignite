@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.security.cache.closure.EntryProcess
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.client.SslCertificatesCheckTest;
 import org.apache.ignite.internal.processors.security.client.SslCertificatesCheckWithGlobalAuthTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
@@ -41,21 +42,22 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    CacheOperationPermissionCheckTest.class,
-//    DataStreamerPermissionCheckTest.class,
-//    ScanQueryPermissionCheckTest.class,
-//    EntryProcessorPermissionCheckTest.class,
-//    ComputePermissionCheckTest.class,
-//
-//    DistributedClosureRemoteSecurityContextCheckTest.class,
-//    ComputeTaskRemoteSecurityContextCheckTest.class,
-//    ExecutorServiceRemoteSecurityContextCheckTest.class,
-//    ScanQueryRemoteSecurityContextCheckTest.class,
-//    EntryProcessorRemoteSecurityContextCheckTest.class,
-//    DataStreamerRemoteSecurityContextCheckTest.class,
-//    CacheLoadRemoteSecurityContextCheckTest.class,
-//    ThinClientPermissionCheckTest.class,
-//    InvalidServerTest.class,
+    CacheOperationPermissionCheckTest.class,
+    DataStreamerPermissionCheckTest.class,
+    ScanQueryPermissionCheckTest.class,
+    EntryProcessorPermissionCheckTest.class,
+    ComputePermissionCheckTest.class,
+
+    DistributedClosureRemoteSecurityContextCheckTest.class,
+    ComputeTaskRemoteSecurityContextCheckTest.class,
+    ExecutorServiceRemoteSecurityContextCheckTest.class,
+    ScanQueryRemoteSecurityContextCheckTest.class,
+    EntryProcessorRemoteSecurityContextCheckTest.class,
+    DataStreamerRemoteSecurityContextCheckTest.class,
+    CacheLoadRemoteSecurityContextCheckTest.class,
+    ThinClientPermissionCheckTest.class,
+    ThinClientPermissionCheckSecurityTest.class,
+    InvalidServerTest.class,
     SslCertificatesCheckTest.class,
     SslCertificatesCheckWithGlobalAuthTest.class,
 })

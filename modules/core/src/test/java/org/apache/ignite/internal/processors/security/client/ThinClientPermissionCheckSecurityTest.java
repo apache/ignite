@@ -49,7 +49,9 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
 
     /** {@inheritDoc} */
     @Override protected Map<String, Object> userAttributres() {
-        try (InputStream ksInputStream = new FileInputStream(U.getIgniteHome() + "/modules/clients/src/test/keystore/client.jks")) {
+        String clientJksPath = U.getIgniteHome() + "/modules/clients/src/test/keystore/client.jks";
+
+        try (InputStream ksInputStream = new FileInputStream(clientJksPath)) {
             KeyStore clientKeyStore = KeyStore.getInstance("JKS");
             clientKeyStore.load(ksInputStream, "123456".toCharArray());
 

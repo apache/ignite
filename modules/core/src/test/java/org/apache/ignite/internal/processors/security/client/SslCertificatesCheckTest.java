@@ -37,7 +37,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,13 +55,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
     /** */
-    private final LogListener lsnr = LogListener.matches("SSL certificates are not found.").build();
-
-    {
-        listeningLog.registerListener(lsnr);
-    }
-
-    /** */
     private boolean failServer;
 
     /** */
@@ -73,7 +65,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         super.afterTest();
 
         stopAllGrids();
-        lsnr.reset();
     }
 
     /**
@@ -136,8 +127,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             assertTrue(client.connected());
             client.state().active(true);
         }
-
-        assertFalse(lsnr.check());
     }
 
     /**
@@ -173,12 +162,10 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     @Test
     public void testSslCertificatesClientFail() throws Exception {
         failServer = true;
-        System.out.println("asd123 1");
+
         Ignite ignite = startGrids(1);
-        System.out.println("asd123 2");
 
         assertEquals(1, ignite.cluster().topologyVersion());
-        System.out.println("asd123 3");
 
         GridTestUtils.assertThrowsAnyCause(log,
             ()-> {
@@ -188,11 +175,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             IgniteSpiException.class,
             "Authentication failed");
 
-        System.out.println("asd123 4");
         assertEquals(1, ignite.cluster().topologyVersion());
-        System.out.println("asd123 5");
-        assertTrue(lsnr.check());
-        System.out.println("asd123 6");
     }
 
     /**
@@ -213,7 +196,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             "Authentication failed");
 
         assertEquals(1, ignite.cluster().topologyVersion());
-        assertTrue(lsnr.check());
     }
 
     /**
