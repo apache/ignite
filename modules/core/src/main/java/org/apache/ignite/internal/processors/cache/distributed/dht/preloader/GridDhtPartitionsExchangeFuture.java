@@ -790,16 +790,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", evtNode=" + firstDiscoEvt.eventNode().id() +
                     ", customEvt=" + (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() : null) +
                     ", allowMerge=" + exchCtx.mergeExchanges() +
-                    ", baselineNodeLeft=" + exchCtx.baselineNodeLeft() +
-                    ", localRecovery=" + exchCtx.localRecovery() + ']');
+                    ", exchangeFreeSwitch=" + exchCtx.exchangeFreeSwitch() +
+                    ", recoveryRequired=" + exchCtx.recoveryRequired() + ']');
             }
 
             timeBag.finishGlobalStage("Exchange parameters initialization");
 
             ExchangeType exchange;
 
-            if (exchCtx.baselineNodeLeft()){
-                exchange = onBaselineNodeLeftEvent();
+            if (exchCtx.exchangeFreeSwitch()){
+                exchange = onExchangeFreeSwitch();
 
                 assert wasRebalanced() : this;
 
@@ -894,7 +894,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             switch (exchange) {
                 case ALL: {
-                    if (exchCtx.baselineNodeLeft())
+                    if (exchCtx.exchangeFreeSwitch())
                         distributedRecovery();
                     else
                         distributedExchange();
@@ -903,7 +903,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 case CLIENT: {
-                    if (!exchCtx.mergeExchanges() && (exchCtx.fetchAffinityOnJoin() || exchCtx.baselineNodeLeft()))
+                    if (!exchCtx.mergeExchanges() && (exchCtx.fetchAffinityOnJoin() || exchCtx.exchangeFreeSwitch()))
                         initTopologies();
 
                     clientOnlyExchange();
@@ -1408,18 +1408,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return Exchange type.
      */
-    private ExchangeType onBaselineNodeLeftEvent() {
+    private ExchangeType onExchangeFreeSwitch() {
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         assert firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED;
 
-        assert exchCtx.baselineNodeLeft();
+        assert exchCtx.exchangeFreeSwitch();
 
         onLeft();
 
         exchCtx.events().warnNoAffinityNodes(cctx);
 
-        cctx.affinity().onBaselineNodeLeft(this);
+        cctx.affinity().onExchangeFreeSwitch(this);
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
@@ -1428,7 +1428,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void clientOnlyExchange() throws IgniteCheckedException {
-        if (exchCtx.baselineNodeLeft())
+        if (exchCtx.exchangeFreeSwitch())
             onDone(initialVersion());
         else if (crd != null) {
             assert !crd.isLocal() : crd;
@@ -1477,8 +1477,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         waitRecovery();
 
-        if (exchCtx.localRecovery())
-            finalizePartitionCounters();
+        finalizePartitionCounters();
 
         onDone(initialVersion());
     }
@@ -1716,7 +1715,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             recoveryLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
 
-            partRecoveryFut = exchCtx.localRecovery() ?
+            partRecoveryFut = exchCtx.recoveryRequired() ?
                 cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
                 new GridFinishedFuture<>();
         }
@@ -1763,7 +1762,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         recoveryLatch.countDown();
 
-        if (context().localRecovery()) {
+        if (context().recoveryRequired()) {
             try {
                 while (true) {
                     try {
@@ -2407,7 +2406,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 boolean locNodeNotCrd = crd == null || !crd.isLocal();
 
-                if ((locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange())) || exchCtx.baselineNodeLeft())
+                if ((locNodeNotCrd && (serverNodeDiscoveryEvent() || localJoinExchange())) || exchCtx.exchangeFreeSwitch())
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
@@ -4034,18 +4033,31 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
+        if (exchCtx.exchangeFreeSwitch() && !exchCtx.recoveryRequired()) {
+            timeBag.finishGlobalStage("Finalize update counters (skipped)");
+
+            return;
+        }
+
         try {
             U.<CacheGroupContext, Void>doInParallelUninterruptibly(
                 parallelismLvl,
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),
                 grp -> {
-                    AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
+                    Set<Integer> parts;
 
-                    // Failed node's primary partitions or just all local backups in case of possible exchange merge.
-                    Set<Integer> parts = exchCtx.baselineNodeLeft() ?
-                        grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer) :
-                        grp.topology().localPartitionMap().keySet();
+                    if (exchCtx.recoveryRequired()) {
+                        // Previous topology to resolve failed primaries set.
+                        AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
+
+                        // Failed node's primary partitions. Safe to use affinity since topology was fully rebalanced.
+                        parts = grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer);
+
+                        assert !parts.isEmpty() : grp.groupId();
+                    }
+                    else
+                        parts = grp.topology().localPartitionMap().keySet();
 
                     grp.topology().finalizeUpdateCounters(parts);
 

@@ -44,10 +44,10 @@ public class ExchangeContext {
     private boolean fetchAffOnJoin;
 
     /** Baseline node left. */
-    private boolean baselineNodeLeft;
+    private boolean exchangeFreeSwitch;
 
     /** Local recovery needed. */
-    private boolean locRecovery;
+    private boolean recoveryRequired;
 
     /** Merges allowed flag. */
     private final boolean merge;
@@ -65,12 +65,11 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int ver = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (!compatibilityNode && ver > 2 &&
-            fut.isBaselineNodeFailed() && !fut.isBaselineAutoAdjusted() && fut.wasRebalanced()) {
-            baselineNodeLeft = true;
+        if (!compatibilityNode && ver > 2 && fut.wasRebalanced() && fut.isBaselineNodeFailed()) {
+            exchangeFreeSwitch = true;
             merge = false;
 
-            locRecovery = localRecoveryNeeded(fut); // Check local node affected.
+            recoveryRequired = backupForPrimaries(fut); // Check local node affected.
         }
         else if (compatibilityNode || (crd && fut.localJoinExchange())) {
             fetchAffOnJoin = true;
@@ -91,19 +90,21 @@ public class ExchangeContext {
     }
 
     /**
+     * Returns {@code true} if local node contains backup partitions for event node's primaries.
+     *
      * @param fut Future.
      */
-    private boolean localRecoveryNeeded(GridDhtPartitionsExchangeFuture fut) {
+    private boolean backupForPrimaries(GridDhtPartitionsExchangeFuture fut) {
         for (CacheGroupContext grp : fut.sharedContext().cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
             GridAffinityAssignmentCache aff = grp.affinity();
 
-            Set<Integer> failedPrimaries = aff.primaryPartitions(fut.exchangeId().eventNode().id(), aff.lastVersion());
+            Set<Integer> remotePrimaries = aff.primaryPartitions(fut.exchangeId().eventNode().id(), aff.lastVersion());
             Set<Integer> locBackups = aff.backupPartitions(fut.sharedContext().localNodeId(), aff.lastVersion());
 
-            for (int part : failedPrimaries) {
+            for (int part : remotePrimaries) {
                 if (locBackups.contains(part))
                     return true;
             }
@@ -136,21 +137,17 @@ public class ExchangeContext {
     }
 
     /**
-     * @return {@code True} if baseline node left.
+     * @return {@code True} if it's safe to perform PME-free switch.
      */
-    public boolean baselineNodeLeft() {
-        assert !baselineNodeLeft || !merge;
-
-        return baselineNodeLeft;
+    public boolean exchangeFreeSwitch() {
+        return exchangeFreeSwitch;
     }
 
     /**
-     * @return {@code True} if local recovery required.
+     * @return {@code True} if tx recovery required.
      */
-    public boolean localRecovery() {
-        assert !locRecovery || !merge;
-
-        return locRecovery;
+    public boolean recoveryRequired() {
+        return recoveryRequired;
     }
 
     /**

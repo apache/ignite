@@ -1654,7 +1654,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param fut Exchange future.
      */
-    public void onBaselineNodeLeft(final GridDhtPartitionsExchangeFuture fut) {
+    public void onExchangeFreeSwitch(final GridDhtPartitionsExchangeFuture fut) {
         assert (fut.events().hasServerLeft() && !fut.firstEvent().eventNode().isClient()) : fut.firstEvent();
         assert !fut.context().mergeExchanges();
 
@@ -1671,7 +1671,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cache.affinity().initialize(topVer, assign); // Fully rebalanced. Initializing ideal assignment.
 
                 fut.timeBag().finishLocalStage(
-                    "Affinity initialization (baseline node left on fully-rebalanced topology) " +
+                    "Affinity initialization (exchange-free switch on fully-rebalanced topology) " +
                         "[grp=" + desc.cacheOrGroupName() + "]");
             }
         });
