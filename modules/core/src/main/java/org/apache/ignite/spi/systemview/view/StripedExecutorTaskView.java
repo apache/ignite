@@ -33,7 +33,7 @@ public class StripedExecutorTaskView {
 
     /** @return Task class name. */
     @Order(3)
-    public String className() {
+    public String taskName() {
         return task.getClass().getName();
     }
 

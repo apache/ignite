@@ -222,7 +222,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestMessage implements Message {
+    public static class TestMessage implements Message {
         /** {@inheritDoc} */
         @Override public void onAckReceived() {
             // No-op.

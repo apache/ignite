@@ -48,8 +48,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
@@ -413,7 +415,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
             "TRANSACTIONS",
-            "CONTINUOUS_QUERIES"
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -772,6 +776,63 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(found1 && found2);
+    }
+
+    /** */
+    @Test
+    public void testStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+            "STRIPED_THREADPOOL_QUEUE",
+            "sys");
+    }
+
+    /** */
+    @Test
+    public void testStreamerExecutor() throws Exception {
+        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "data-streamer");
+    }
+
+    /**
+     * Checks striped executro system view.
+     *
+     * @param execSvc Striped executor.
+     * @param view System view name.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> execute(ignite0, "SELECT * FROM SYS." + view).size() == 2, 5_000);
+
+            assertTrue(res);
+
+            List<List<?>> stripedQueue = execute(ignite0, "SELECT * FROM SYS." + view);
+
+            List<?> row0 = stripedQueue.get(0);
+
+            assertEquals(0, row0.get(0));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get(1));
+            assertEquals(poolName + "-stripe-0", row0.get(2));
+            assertEquals(TestRunnable.class.getName(), row0.get(3));
+
+            List<?> row1 = stripedQueue.get(1);
+
+            assertEquals(1, row1.get(0));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get(1));
+            assertEquals(poolName + "-stripe-1", row1.get(2));
+            assertEquals(TestRunnable.class.getName(), row1.get(3));
+        }
+        finally {
+            latch.countDown();
+        }
     }
 
     /**

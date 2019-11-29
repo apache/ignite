@@ -32,7 +32,7 @@ public class StripedExecutorTaskViewWalker implements SystemViewRowAttributeWalk
         v.accept(0, "stripeIndex", int.class);
         v.accept(1, "description", String.class);
         v.accept(2, "threadName", String.class);
-        v.accept(3, "className", String.class);
+        v.accept(3, "taskName", String.class);
     }
 
     /** {@inheritDoc} */
@@ -40,7 +40,7 @@ public class StripedExecutorTaskViewWalker implements SystemViewRowAttributeWalk
         v.acceptInt(0, "stripeIndex", row.stripeIndex());
         v.accept(1, "description", String.class, row.description());
         v.accept(2, "threadName", String.class, row.threadName());
-        v.accept(3, "className", String.class, row.className());
+        v.accept(3, "taskName", String.class, row.taskName());
     }
 
     /** {@inheritDoc} */

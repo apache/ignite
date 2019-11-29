@@ -71,6 +71,18 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+    /** Name of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
+
+    /** Description of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
+
+    /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
+
+    /** Description of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW_DESC = "Datastream thread pool task queue";
+
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
@@ -118,15 +130,13 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param dataStreamExecSvc Data streamer executor service.
      */
     public void registerThreadPools(StripedExecutor stripedExecSvc, StripedExecutor dataStreamExecSvc) {
-        ctx.systemView().registerInnerCollectionView(metricName("striped", "threadpool", "queue"),
-            "Striped thread pool task queue",
+        ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
             StripedExecutorTaskView.class,
             Arrays.asList(stripedExecSvc.stripes()),
             StripedExecutor.Stripe::queue,
             StripedExecutorTaskView::new);
 
-        ctx.systemView().registerInnerCollectionView(metricName("datastream", "threadpool", "queue"),
-            "Datastream thread pool task queue",
+        ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
             StripedExecutorTaskView.class,
             Arrays.asList(dataStreamExecSvc.stripes()),
             StripedExecutor.Stripe::queue,

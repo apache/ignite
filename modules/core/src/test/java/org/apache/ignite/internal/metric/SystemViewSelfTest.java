@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.cache.Cache;
@@ -56,8 +57,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -72,6 +73,7 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -82,6 +84,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
@@ -894,6 +898,66 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testStripedExecutors() throws Exception {
+        try (IgniteEx g = startGrid(0)) {
+            checkStripeExecutorView(g.context().getStripedExecutorService(),
+                g.context().systemView().view(SYS_POOL_QUEUE_VIEW),
+                "sys");
+
+            checkStripeExecutorView(g.context().getDataStreamerExecutorService(),
+                g.context().systemView().view(STREAM_POOL_QUEUE_VIEW),
+                "data-streamer");
+        }
+    }
+
+    /**
+     * Checks striped executro system view.
+     *
+     * @param execSvc Striped executor.
+     * @param view System view.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
+        String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> view.size() == 2, 5_000);
+
+            assertTrue(res);
+
+            Iterator<StripedExecutorTaskView> iter = view.iterator();
+
+            assertTrue(iter.hasNext());
+
+            StripedExecutorTaskView row0 = iter.next();
+
+            assertEquals(0, row0.stripeIndex());
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.description());
+            assertEquals(poolName + "-stripe-0", row0.threadName());
+            assertEquals(TestRunnable.class.getName(), row0.taskName());
+
+            assertTrue(iter.hasNext());
+
+            StripedExecutorTaskView row1 = iter.next();
+
+            assertEquals(1, row1.stripeIndex());
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.description());
+            assertEquals(poolName + "-stripe-1", row1.threadName());
+            assertEquals(TestRunnable.class.getName(), row1.taskName());
+        }
+        finally {
+            latch.countDown();
+        }
+    }
+
+    /** */
     public static class TestPredicate implements IgniteBiPredicate<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public boolean apply(Integer integer, Integer integer2) {
@@ -924,6 +988,36 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
+        }
+    }
+
+    /** Test runnable. */
+    public static class TestRunnable implements Runnable {
+        /** */
+        private final CountDownLatch latch;
+
+        /** */
+        private final int idx;
+
+        /** */
+        public TestRunnable(CountDownLatch latch, int idx) {
+            this.latch = latch;
+            this.idx = idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                latch.await(5, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + idx;
         }
     }
 }

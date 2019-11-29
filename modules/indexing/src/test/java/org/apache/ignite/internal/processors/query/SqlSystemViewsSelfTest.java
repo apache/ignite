@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -38,6 +39,8 @@ import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -59,6 +62,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -82,6 +86,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -1569,22 +1574,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .collect(Collectors.toList());
 
         assertEqualsCollections(elevenExpVals, durationMetrics);
-    }
-
-    /** */
-    @Test
-    public void testStripedExecutorSystemView() throws Exception {
-        try(IgniteEx g0 = startGrid(0);
-            IgniteEx g1 = startGrid(1)) {
-
-            IgniteCache<Integer, Integer> cache1 = g0.createCache("cache1");
-            long start = U.currentTimeMillis();
-
-            int i = 0;
-
-            while (U.currentTimeMillis() - start <= 50_000)
-                cache1.put(i++, i);
-        }
     }
 
     /**
