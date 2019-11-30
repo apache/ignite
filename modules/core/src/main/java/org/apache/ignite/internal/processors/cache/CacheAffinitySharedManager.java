@@ -1171,6 +1171,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         final CacheAffinityChangeMessage msg
     ) {
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
+        assert msg.partitionsMessage() == null : msg;
 
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
 
@@ -1232,10 +1233,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             ", msgVer=" + msg.topologyVersion() +
                             ']';
 
+                        assert nodes.equals(aff.idealAssignmentRaw().get(part)) :
+                            "Not an ideal distribution on LAS [part=" + part + ", new=" + F.nodeIds(nodes) +
+                                ", ideal(expected)=" + F.nodeIds(aff.idealAssignmentRaw().get(part)) + ']';
+
                         assignment.set(part, nodes);
                     }
 
-                    // Can be refactored to just a boolean flags set at message (since always ideal).
+                    // Hint: Can be refactored to just a boolean flags set at message (since always ideal).
                     assert assignment.equals(aff.idealAssignmentRaw()) : aff.cacheOrGroupName();
 
                     aff.initialize(topVer, assignment);
