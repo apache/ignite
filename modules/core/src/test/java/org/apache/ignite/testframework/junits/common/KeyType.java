@@ -1,8 +1,6 @@
 package org.apache.ignite.testframework.junits.common;
 
-/**
- * Defined type of key
- * */
+/** Defined type of key. */
 public enum KeyType {
     PRIMARY(0),
     BACKUP(1),

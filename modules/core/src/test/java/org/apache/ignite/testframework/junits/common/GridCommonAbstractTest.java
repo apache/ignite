@@ -1145,15 +1145,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         switch (keyType) {
                             case PRIMARY:
                                 ok = aff.isPrimary(node0, key);
+
                                 break;
+
                             case BACKUP:
                                 ok = aff.isBackup(node0, key);
+
                                 break;
+
                             case NEAR:
                                 ok = !aff.isPrimaryOrBackup(node0, key);
+
                                 break;
+
                             default:
                                 fail();
+
                                 return false;
                         }
 
