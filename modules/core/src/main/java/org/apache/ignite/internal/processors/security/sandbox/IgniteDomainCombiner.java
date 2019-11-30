@@ -22,7 +22,7 @@ import java.security.PermissionCollection;
 import java.security.ProtectionDomain;
 
 /**
- * A {@code IgniteSubjectDomainCombainer} updates ProtectionDomains with passed {@code Permissions}.
+ * A {@code IgniteDomainCombiner} updates ProtectionDomains with passed {@code Permissions}.
  */
 public class IgniteDomainCombiner implements DomainCombiner {
     /** */

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
@@ -127,9 +128,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testComputeOperations() {
-        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
-
-        clnt.compute(clnt.cluster().forRemotes()).broadcast(
+        compute().broadcast(
             new TestRunnable() {
                 @Override public void run() {
                     ignite.compute().execute(TEST_COMPUTE_TASK, 0);
@@ -158,9 +157,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testCacheOperations() {
-        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
-
-        clnt.compute(clnt.cluster().forRemotes()).broadcast(
+        compute().broadcast(
             new TestRunnable() {
                 @Override public void run() {
                     IgniteCache<String, String> cache = ignite.cache(TEST_CACHE);
@@ -193,10 +190,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testDataStreamerOperations() {
-        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
-
-        clnt.compute(clnt.cluster().forRemotes())
-            .broadcast(
+        compute().broadcast(
                 new TestRunnable() {
                     @Override public void run() {
                         try (IgniteDataStreamer<String, String> s = ignite.dataStreamer(TEST_CACHE)) {
@@ -207,6 +201,13 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
                         }
                     }
                 });
+    }
+
+    /** */
+    private IgniteCompute compute(){
+        Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
+
+        return clnt.compute(clnt.cluster().forRemotes());
     }
 
     /** */

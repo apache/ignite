@@ -102,8 +102,8 @@ public interface GridSecurityProcessor extends GridProcessor {
     public boolean enabled();
 
     /**
-     * If this method returns true and {@link SecurityManager} is installed than user defined code will be run inside
-     * the Sandbox.
+     * If this method returns true and {@link SecurityManager} is installed,
+     * then the user-defined code will be run inside the Sandbox.
      *
      * @return True if sandbox is enabled.
      * @see IgniteSandbox
