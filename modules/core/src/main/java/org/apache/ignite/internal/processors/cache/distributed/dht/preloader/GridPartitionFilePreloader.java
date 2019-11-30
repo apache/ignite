@@ -192,13 +192,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // Also, "global" partition size can change and file rebalance will not be applicable to it.
             // todo add test case for specified scenario with global size change.
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (moving != null && moving.contains(part.id()))
-                    part.dataStore().readOnly(true);
-                else
-                    part.dataStore().readOnly(false);
+                boolean toReadOnly = moving != null && moving.contains(part.id());
 
-                // Should close cache data store - no updates expected..
-                ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
+                if (part.dataStore().readOnly(toReadOnly)) {
+                    // Should close cache data store - no updates expected..
+                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
+                }
             }
         }
     }

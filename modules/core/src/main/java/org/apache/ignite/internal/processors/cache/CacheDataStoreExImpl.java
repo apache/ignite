@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
@@ -95,18 +94,17 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void readOnly(boolean readOnly) {
-        //assert readOnly : "Changing mode required checkpoint write lock";
-
+    @Override public boolean readOnly(boolean readOnly) {
         if (this.readOnly.compareAndSet(!readOnly, readOnly)) {
             log.info("Changing data store mode to " + (readOnly ? "READ-ONLY" : "FULL") + " [p=" + partId() + "]");
 
             if (readOnly)
                 readOnlyStore.reinit();
 
-            // Should close cache data store - no updates expected..
-//            ((GridCacheOffheapManager.GridCacheDataStore)store).close();
+            return true;
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */

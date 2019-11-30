@@ -36,7 +36,7 @@ public interface CacheDataStoreEx extends CacheDataStore {
      *
      * @param readOnly Read-only mode flag.
      */
-    public void readOnly(boolean readOnly);
+    public boolean readOnly(boolean readOnly);
 
     /**
      * @return {@code True} if current mode is read-only.

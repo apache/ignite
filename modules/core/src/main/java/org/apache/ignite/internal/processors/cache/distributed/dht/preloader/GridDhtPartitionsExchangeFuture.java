@@ -3223,10 +3223,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
-        boolean enableFileRebalance =
-            cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceSupported(grp, nodes);
-//
-//        log.info("cache=" + grp.cacheOrGroupName() + ", fileRebalance=" + enableFileRebalance + " minCntrs="+minCntrs);
+        boolean enableFileRebalance = grp != null && cctx.filePreloader() != null &&
+            cctx.filePreloader().fileRebalanceSupported(grp, nodes);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3242,8 +3240,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
-//
-//                log.debug("grp=" + grp.cacheOrGroupName() + ", p=" + p + ", localHistCntr=" + localHistCntr);
 
                 if (localHistCntr != null) {
                     // todo   crd node should always have history for max counter - this is redundant
@@ -3275,8 +3271,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (histCntr != null) {
                     // todo merge conditions (with else)
                     if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                        //assert ;
-
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);
@@ -3938,6 +3932,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     for (Map.Entry<T2<Integer, Integer>, Long> e : reservations.entrySet()) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey().get1());
+
+                        if (grp == null)
+                            continue;
 
                         buf.append("cache=").append(grp.cacheOrGroupName()).append(" p=").append(e.getKey().get2()).append(" cntr=").append(e.getValue()).append("\n");
                     }
