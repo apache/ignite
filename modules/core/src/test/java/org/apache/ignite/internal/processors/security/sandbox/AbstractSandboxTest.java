@@ -105,8 +105,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     }
 
     /**
-     * @param r Runnable that writes the {@link AbstractSandboxTest#PROP_VALUE} to the {@link
-     * AbstractSandboxTest#PROP_NAME} property.
+     * @param r Runnable that runs {@link AbstractSandboxTest#controlAction()}.
      */
     protected void runOperation(Runnable r) {
         System.clearProperty(PROP_NAME);
@@ -117,8 +116,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     }
 
     /**
-     * @param r RunnableX that writes the {@link AbstractSandboxTest#PROP_VALUE} to the {@link
-     * AbstractSandboxTest#PROP_NAME} property.
+     * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
      */
     protected void runForbiddenOperation(GridTestUtils.RunnableX r, Class<? extends Throwable> cls) {
         System.clearProperty(PROP_NAME);
