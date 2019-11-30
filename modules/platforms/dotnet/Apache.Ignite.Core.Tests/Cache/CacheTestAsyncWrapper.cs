@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
-            return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+            return this;
         }
 
         /** <inheritDoc /> */
