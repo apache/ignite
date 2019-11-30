@@ -74,8 +74,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <param name="flagKeepBinary">Keep binary flag.</param>
         /// <param name="flagNoRetries">No-retries mode flag.</param>
         /// <param name="flagPartitionRecover">Partition recover mode flag.</param>
-        /// <param name="flagReadRepair">Read Repair mode flag.</param>
-        /// <param name="flagAllowAtomicOpsInTx">Allow atomic operations in transactions flag.</param>
         public CacheImpl(IPlatformTargetInternal target,
             bool flagSkipStore, bool flagKeepBinary, bool flagNoRetries, bool flagPartitionRecover
             ) : base(target)
