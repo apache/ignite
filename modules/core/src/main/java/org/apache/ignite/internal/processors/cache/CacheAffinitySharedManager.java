@@ -1243,6 +1243,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
 
+                // LAS affinity MUST be ideal.
+                assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) : aff.cacheOrGroupName();
+
                 cctx.exchange().exchangerUpdateHeartbeat();
 
                 exchFut.timeBag().finishLocalStage("Affinity change by custom message " +
