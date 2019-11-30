@@ -254,7 +254,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsAllowAtomicOpsInTx {
+        public bool IsAllowAtomicOpsInTx
+        {
             get { return _flagAllowAtomicOpsInTx; }
         }
 
