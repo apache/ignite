@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.lang.System.setProperty;
 import static java.util.Collections.singletonList;
 
 /**
@@ -48,20 +47,20 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
 
     /** */
     private static final IgniteCallable<Object> CALLABLE = () -> {
-        setProperty(PROP_NAME, PROP_VALUE);
+        controlAction();
 
         return null;
     };
 
     /** */
     private static final IgniteClosure<Object, Object> CLOSURE = a -> {
-        setProperty(PROP_NAME, PROP_VALUE);
+        controlAction();
 
         return null;
     };
 
     /** */
-    private static final IgniteRunnable RUNNABLE = () -> setProperty(PROP_NAME, PROP_VALUE);
+    private static final IgniteRunnable RUNNABLE = AbstractSandboxTest::controlAction;
 
     /** */
     @Test
@@ -122,7 +121,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
                     }
 
                     @Override public Object execute() {
-                        setProperty(PROP_NAME, PROP_VALUE);
+                        controlAction();
 
                         return null;
                     }

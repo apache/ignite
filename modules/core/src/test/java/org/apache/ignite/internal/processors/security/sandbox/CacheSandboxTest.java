@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static java.lang.System.setProperty;
 import static java.util.Collections.singleton;
 
 /**
@@ -42,14 +41,14 @@ import static java.util.Collections.singleton;
 public class CacheSandboxTest extends AbstractSandboxTest {
     /** */
     private static final CacheEntryProcessor<Object, Object, Object> TEST_PROC = (entry, o) -> {
-        setProperty(PROP_NAME, PROP_VALUE);
+        controlAction();
 
         return null;
     };
 
     /** */
     private static final IgniteBiPredicate<String, String> TEST_PRED = (a, b) -> {
-        setProperty(PROP_NAME, PROP_VALUE);
+        controlAction();
 
         return true;
     };
@@ -125,7 +124,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
             () -> node.cache(TEST_CACHE).query(
                 new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
                     @Override public boolean apply(Object o, Object o2) {
-                        setProperty(PROP_NAME, PROP_VALUE);
+                        controlAction();
 
                         return false;
                     }
@@ -135,7 +134,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
                 new ScanQuery<>((k, v) -> true),
                 new IgniteClosure<Cache.Entry<Object, Object>, Object>() {
                     @Override public Object apply(Cache.Entry<Object, Object> entry) {
-                        setProperty(PROP_NAME, PROP_VALUE);
+                        controlAction();
 
                         return null;
                     }

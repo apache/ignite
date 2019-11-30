@@ -48,7 +48,7 @@ public class DataStreamerSandboxTest extends AbstractSandboxTest {
     private GridTestUtils.RunnableX operation(Ignite node) {
         return () -> {
             try (IgniteDataStreamer<Integer, Integer> strm = node.dataStreamer(TEST_CACHE)) {
-                strm.receiver((cache, entries) -> System.setProperty(PROP_NAME, PROP_VALUE));
+                strm.receiver((cache, entries) -> controlAction());
 
                 strm.addData(1, 100);
             }
