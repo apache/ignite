@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagReadRepair)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int)CacheOp.WithReadRepair),
+            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithReadRepair),
                 true, _flagKeepBinary, _flagSkipStore, _flagPartitionRecover, true, _flagAllowAtomicOpsInTx);
         }
 
@@ -248,7 +248,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsReadRepair {
+        public bool IsReadRepair
+        {
             get { return _flagReadRepair; }
         }
 
