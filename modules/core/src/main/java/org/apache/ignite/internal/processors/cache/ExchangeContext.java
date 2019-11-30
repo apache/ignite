@@ -43,7 +43,7 @@ public class ExchangeContext {
     /** Per-group affinity fetch on join (old protocol). */
     private boolean fetchAffOnJoin;
 
-    /** Baseline node left. */
+    /** PME is not required. */
     private boolean exchangeFreeSwitch;
 
     /** Local recovery needed. */
