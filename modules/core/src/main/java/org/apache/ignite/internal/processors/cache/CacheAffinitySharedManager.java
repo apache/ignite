@@ -1221,7 +1221,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
                         assert !nodes.contains(cctx.localNode()) || top.localPartition(part).state() == OWNING :
-                            "Invalid local partition state on LAS switch [part=" + top.localPartition(part) +
+                            "Invalid local partition state on LAA switch [part=" + top.localPartition(part) +
                                 ", ideal=" + F.nodeIds(nodes) + "]";
 
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
@@ -1234,7 +1234,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             ']';
 
                         assert nodes.equals(aff.idealAssignmentRaw().get(part)) :
-                            "Not an ideal partition distribution set atempt on LAS [part=" + part + ", new=" +
+                            "Not an ideal partition distribution set atempt on LAA [part=" + part + ", new=" +
                                 F.nodeIds(nodes) + ", ideal(expected)=" + F.nodeIds(aff.idealAssignmentRaw().get(part)) + ']';
 
                         assignment.set(part, nodes);
@@ -1247,14 +1247,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
                 else {
                     assert aff.assignments(aff.lastVersion()).equals(aff.idealAssignmentRaw()) :
-                        "Not an ideal distribution duplication attempt on LAS [grp=" + aff.cacheOrGroupName() +
+                        "Not an ideal distribution duplication attempt on LAA [grp=" + aff.cacheOrGroupName() +
                             ", lastAffinity=" + aff.lastVersion() + ", cacheAffinity=" + aff.cachedVersions() + "]";
 
                     aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
                 }
 
                 assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) :
-                    "Not an ideal final distribution on LAS [grp=" + aff.cacheOrGroupName() +
+                    "Not an ideal final distribution on LAA [grp=" + aff.cacheOrGroupName() +
                         ", changed=" + (change != null) + ", lastAffinity=" + aff.lastVersion() + "]";
 
                 cctx.exchange().exchangerUpdateHeartbeat();

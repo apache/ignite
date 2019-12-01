@@ -1157,7 +1157,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks LAS absent on owner left.
+     * Checks LAA absent on owner left.
      */
     @Test
     public void testSinglePartitionCacheOwnerLeft() throws Exception {
@@ -1165,7 +1165,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Chackes LAS absent on non owner left.
+     * Checks LAA absent on non owner left.
      */
     @Test
     public void testSinglePartitionCacheNonOwnerLeft() throws Exception {
@@ -1174,7 +1174,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
     /**
      * Since we have only 1 partition, at each node left it will be lost (no rebalance needed) or it will be still
-     * located at second node (thanks to special affinity) (no rebalance neeeded). So, LAS should never happen.
+     * located at second node (thanks to special affinity) (no rebalance neeeded). So, LAA should never happen.
      *
      * @param ownerLeft Kill owner flag.
      */
@@ -1206,7 +1206,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(nodes, topVer(top, 0), true);
 
-        checkNoExchange(nodes, topVer(top, 1)); // Checks LAS is absent on initial topology.
+        checkNoExchange(nodes, topVer(top, 1)); // Checks LAA is absent on initial topology.
 
         for (int i = 0; i < 10; i++)
             startServer(nodes++, ++top);
