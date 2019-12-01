@@ -365,29 +365,29 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, Map<Integer, List<UUID>>> assignmentsChange = U.newHashMap(waitInfo.assignments.size());
 
-        forAllCacheGroups(new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) {
-                Integer grpId = aff.groupId();
+        for (Map.Entry<Integer, Map<Integer, List<ClusterNode>>> e : waitInfo.assignments.entrySet()) {
+            Integer grpId = e.getKey();
 
-                Map<Integer, List<ClusterNode>> assignment = waitInfo.assignments.get(grpId);
+            Map<Integer, List<ClusterNode>> assignment = e.getValue();
 
-                if (assignment != null) {
-                    List<List<ClusterNode>> origin = aff.assignments(waitInfo.topVer);
+            CacheGroupHolder grpHolder = grpHolders.get(grpId);
 
-                    Map<Integer, List<UUID>> assignment0 = U.newHashMap(assignment.size());
+            if (grpHolder != null) {
+                List<List<ClusterNode>> origin = grpHolder.affinity().assignments(waitInfo.topVer);
 
-                    for (int p : assignment.keySet()) {
-                        // Filter initially ideal assignments.
-                        // This may happen when affinity already equal to ideal, but some backups are not owners.
-                        if (!assignment.get(p).equals(origin.get(p)))
-                            assignment0.put(p, toIds0(assignment.get(p)));
-                    }
+                Map<Integer, List<UUID>> assignment0 = U.newHashMap(assignment.size());
 
-                    if (!assignment0.isEmpty())
-                        assignmentsChange.put(grpId, assignment0);
+                for (int p : assignment.keySet()) {
+                    // Filter initially ideal assignments.
+                    // This may happen when affinity already equal to ideal, but some backups are not owners.
+                    if (!assignment.get(p).equals(origin.get(p)))
+                        assignment0.put(p, toIds0(assignment.get(p)));
                 }
+
+                if (!assignment0.isEmpty())
+                    assignmentsChange.put(grpId, assignment0);
             }
-        });
+        }
 
         return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);
     }
@@ -1202,7 +1202,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     return;
                 }
 
-                Map<Integer, List<UUID>> change = affChange != null ? affChange.get(aff.groupId()) : null;
+                Map<Integer, List<UUID>> change = affChange.get(aff.groupId());
 
                 if (change != null) {
                     assert !change.isEmpty() : msg;
@@ -1234,8 +1234,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             ']';
 
                         assert nodes.equals(aff.idealAssignmentRaw().get(part)) :
-                            "Not an ideal distribution on LAS [part=" + part + ", new=" + F.nodeIds(nodes) +
-                                ", ideal(expected)=" + F.nodeIds(aff.idealAssignmentRaw().get(part)) + ']';
+                            "Not an ideal partition distribution set atempt on LAS [part=" + part + ", new=" +
+                                F.nodeIds(nodes) + ", ideal(expected)=" + F.nodeIds(aff.idealAssignmentRaw().get(part)) + ']';
 
                         assignment.set(part, nodes);
                     }
@@ -1245,11 +1245,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     aff.initialize(topVer, assignment);
                 }
-                else
-                    aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
+                else {
+                    assert aff.assignments(aff.lastVersion()).equals(aff.idealAssignmentRaw()) :
+                        "Not an ideal distribution duplication attempt on LAS [grp=" + aff.cacheOrGroupName() +
+                            ", lastAffinity=" + aff.lastVersion() + ", cacheAffinity=" + aff.cachedVersions() + "]";
 
-                // LAS affinity MUST be ideal.
-                assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) : aff.cacheOrGroupName();
+                    aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
+                }
+
+                assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) :
+                    "Not an ideal final distribution on LAS [grp=" + aff.cacheOrGroupName() +
+                        ", changed=" + (change != null) + ", lastAffinity=" + aff.lastVersion() + "]";
 
                 cctx.exchange().exchangerUpdateHeartbeat();
 
