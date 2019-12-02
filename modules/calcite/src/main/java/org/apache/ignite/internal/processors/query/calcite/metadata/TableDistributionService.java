@@ -16,13 +16,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
+import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 
 /**
  *
  */
-public interface LocationRegistry {
-    NodesMapping local(); // returns local node with single partition
-    NodesMapping random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
-    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
+public interface TableDistributionService {
+    DistributionTrait distribution(int cacheId, RowType rowType);
 }

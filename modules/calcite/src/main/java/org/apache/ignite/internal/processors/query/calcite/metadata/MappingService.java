@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exchange;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.List;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
  *
  */
-public interface ExchangeService {
-    void register(Outbox outbox);
-    void unregister(Outbox outbox);
-    void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
+public interface MappingService {
+    NodesMapping local(); // returns local node with single partition
+    NodesMapping random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
+    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
 }

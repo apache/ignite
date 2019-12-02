@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -124,6 +125,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             .typeSystem(RelDataTypeSystem.class, IgniteTypeSystem.DEFAULT);
 
         typeFactory = new IgniteTypeFactory(typeSystem);
+
+        Commons.plannerContext(context).planner(this);
     }
 
     private CalciteConnectionConfig connConfig() {
@@ -302,7 +305,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         ready();
 
         RelTraitSet toTraits = targetTraits.simplify();
-        RuleSet rules = plannerPhase.getRules(context);
+        RuleSet rules = plannerPhase.getRules(Commons.plannerContext(context));
 
         input.accept(new MetaDataProviderModifier(metadataProvider));
 

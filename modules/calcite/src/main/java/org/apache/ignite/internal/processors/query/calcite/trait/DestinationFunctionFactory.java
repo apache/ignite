@@ -17,15 +17,15 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.io.Serializable;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
  */
 public interface DestinationFunctionFactory extends Serializable {
-    DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys);
+    DestinationFunction create(PlannerContext ctx, NodesMapping mapping, ImmutableIntList keys);
 
     Object key();
 }

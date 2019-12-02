@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 public final class RandomTargetFactory extends AbstractDestinationFunctionFactory {
     public static final DestinationFunctionFactory INSTANCE = new RandomTargetFactory();
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+    @Override public DestinationFunction create(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
         List<UUID> nodes = m.nodes();
 
         return r -> Collections.singletonList(nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));

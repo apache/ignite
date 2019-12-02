@@ -43,7 +43,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     private final Collection<UUID> targets;
     private final DestinationFunction function;
 
-    private ExchangeService srvc;
+    private ExchangeProcessor srvc;
 
     protected Outbox(GridCacheVersion queryId, long exchangeId, Collection<UUID> targets, DestinationFunction function) {
         super(Sink.noOp());
@@ -52,6 +52,14 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
         this.targets = targets;
         this.function = function;
+    }
+
+    public void init(ExchangeProcessor srvc) {
+        this.srvc = srvc;
+
+        srvc.register(this);
+
+        signal();
     }
 
     public void acknowledge(UUID nodeId, int batchId) {
@@ -89,14 +97,6 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             dest.add(row);
 
         return true;
-    }
-
-    public void init(ExchangeService srvc) {
-        this.srvc = srvc;
-
-        srvc.register(this);
-
-        signal();
     }
 
     @Override public void end() {

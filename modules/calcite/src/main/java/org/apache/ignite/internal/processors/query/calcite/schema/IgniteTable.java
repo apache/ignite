@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -26,15 +25,14 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
@@ -71,30 +69,19 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
+        PlannerContext ctx = Commons.plannerContext(cluster.getPlanner().getContext());
         RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.IGNITE_CONVENTION)
-                .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(cluster.getPlanner().getContext()));
+                .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(ctx));
         return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 
-    public DistributionTrait distributionTrait(Context context) {
-        return distributionRegistry(context).distribution(CU.cacheId(cacheName), rowType);
+    public DistributionTrait distributionTrait(PlannerContext context) {
+        return Commons.plannerContext(context).distributionTrait(CU.cacheId(cacheName), rowType);
     }
 
-    public FragmentInfo fragmentInfo(Context ctx) {
-        int cacheId = CU.cacheId(cacheName);
+    public FragmentInfo fragmentInfo(PlannerContext ctx) {
+        PlannerContext ctx0 = Commons.plannerContext(ctx);
 
-        return new FragmentInfo(locationRegistry(ctx).distributed(cacheId, topologyVersion(ctx)));
-    }
-
-    private LocationRegistry locationRegistry(Context ctx) {
-        return ctx.unwrap(LocationRegistry.class);
-    }
-
-    public DistributionRegistry distributionRegistry(Context ctx) {
-        return ctx.unwrap(DistributionRegistry.class);
-    }
-
-    private AffinityTopologyVersion topologyVersion(Context ctx) {
-        return ctx.unwrap(AffinityTopologyVersion.class);
+        return new FragmentInfo(ctx0.mapForCache(CU.cacheId(cacheName), ctx0.topologyVersion()));
     }
 }

@@ -24,6 +24,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RelImplementor;
 
 public final class IgniteTableScan extends TableScan implements IgniteRel {
@@ -44,6 +45,6 @@ public final class IgniteTableScan extends TableScan implements IgniteRel {
 
   public FragmentInfo fragmentInfo() {
     return getTable().unwrap(IgniteTable.class)
-        .fragmentInfo(getCluster().getPlanner().getContext());
+        .fragmentInfo(Commons.plannerContext(getCluster().getPlanner().getContext()));
   }
 }

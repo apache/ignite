@@ -17,9 +17,9 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.io.ObjectStreamException;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 public final class NoOpFactory extends AbstractDestinationFunctionFactory {
     public static final DestinationFunctionFactory INSTANCE = new NoOpFactory();
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+    @Override public DestinationFunction create(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
         return null;
     }
 

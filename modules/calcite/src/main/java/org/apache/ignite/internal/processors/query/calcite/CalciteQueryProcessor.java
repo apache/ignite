@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -36,9 +36,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.cluster.RegistryImpl;
+import org.apache.ignite.internal.processors.query.calcite.cluster.MappingServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.cluster.TableDistributionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DistributedExecution;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryExecution;
 import org.apache.ignite.internal.processors.query.calcite.schema.CalciteSchemaHolder;
@@ -48,8 +50,6 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.provided;
 
 /**
  *
@@ -110,7 +110,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     }
 
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
-        Context context = context(Commons.convert(ctx), query, params);
+        PlannerContext context = context(Commons.convert(ctx), query, params, this::buildContext);
         QueryExecution execution = prepare(context);
         FieldsQueryCursor<List<?>> cur = execution.execute();
         return Collections.singletonList(cur);
@@ -124,16 +124,12 @@ public class CalciteQueryProcessor implements QueryEngine {
         return log;
     }
 
-    public GridKernalContext context() {
-        return kernalContext;
-    }
-
     /** */
-    public IgnitePlanner planner(RelTraitDef[] traitDefs, Context ctx) {
+    public IgnitePlanner planner(RelTraitDef[] traitDefs, PlannerContext ctx0) {
         FrameworkConfig cfg = Frameworks.newConfigBuilder(config())
-                .defaultSchema(ctx.unwrap(SchemaPlus.class))
+                .defaultSchema(ctx0.schema())
                 .traitDefs(traitDefs)
-                .context(ctx)
+                .context(ctx0)
                 .build();
 
         return new IgnitePlanner(cfg);
@@ -145,16 +141,25 @@ public class CalciteQueryProcessor implements QueryEngine {
      * @param params Query parameters.
      * @return Query execution context.
      */
-    Context context(@NotNull Context ctx, String query, Object[] params) { // Package private visibility for tests.
-        return Contexts.chain(ctx, config.getContext(),
-            Contexts.of(
-                new Query(query, params),
-                new RegistryImpl(kernalContext),
-                provided(ctx, SchemaPlus.class, schemaHolder::schema),
-                provided(ctx, AffinityTopologyVersion.class, this::readyAffinityVersion)));
+    PlannerContext context(@NotNull Context ctx, String query, Object[] params, BiFunction<Context, Query, PlannerContext> clo) { // Package private visibility for tests.
+        return clo.apply(Contexts.chain(ctx, config.getContext()), new Query(query, params));
     }
 
-    private QueryExecution prepare(Context ctx) {
+    private PlannerContext buildContext(@NotNull Context parent, @NotNull Query query) {
+        return PlannerContext.builder()
+            .logger(log)
+            .kernalContext(kernalContext)
+            .queryProcessor(this)
+            .parentContext(parent)
+            .query(query)
+            .schema(schemaHolder.schema())
+            .topologyVersion(readyAffinityVersion())
+            .distributionService(new TableDistributionServiceImpl(kernalContext))
+            .mappingService(new MappingServiceImpl(kernalContext))
+            .build();
+    }
+
+    private QueryExecution prepare(PlannerContext ctx) {
         return new DistributedExecution(ctx);
     }
 

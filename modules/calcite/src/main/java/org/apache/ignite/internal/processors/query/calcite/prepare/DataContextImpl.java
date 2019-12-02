@@ -20,18 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.Map;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 
 /**
  *
  */
 class DataContextImpl implements DataContext {
     /** */
-    private final JavaTypeFactoryImpl typeFactory;
+    private final JavaTypeFactory typeFactory;
 
     /** */
     private final SchemaPlus schema;
@@ -46,10 +43,11 @@ class DataContextImpl implements DataContext {
      * @param params Parameters.
      * @param ctx Query context.
      */
-    DataContextImpl(Map<String, Object> params, Context ctx) {
-        typeFactory = new JavaTypeFactoryImpl(ctx.unwrap(CalciteQueryProcessor.class).config().getTypeSystem());
-        schema = ctx.unwrap(SchemaPlus.class);
-        queryProvider = ctx.unwrap(QueryProvider.class);
+    DataContextImpl(Map<String, Object> params, PlannerContext ctx) {
+        typeFactory = ctx.typeFactory();
+        schema = ctx.schema();
+        queryProvider = ctx.queryProvider();
+
         this.params = params;
     }
 

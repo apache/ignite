@@ -16,9 +16,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
 
 /**
@@ -41,7 +41,7 @@ public interface Source {
      * @param ctx Context.
      * @param mq Metadata query instance.
      */
-    default void init(NodesMapping mapping, DistributionTrait distribution, Context ctx, RelMetadataQuery mq) {
+    default void init(NodesMapping mapping, DistributionTrait distribution, PlannerContext ctx, RelMetadataQuery mq) {
         // No-op.
     }
 }

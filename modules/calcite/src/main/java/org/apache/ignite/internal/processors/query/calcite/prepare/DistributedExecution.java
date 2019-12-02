@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
@@ -47,19 +45,19 @@ import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryC
  */
 public class DistributedExecution implements QueryExecution {
     /** */
-    private final Context ctx;
+    private final PlannerContext ctx;
 
     /**
      * @param ctx Query context.
      */
-    public DistributedExecution(Context ctx) {
+    public DistributedExecution(PlannerContext ctx) {
         this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
     @Override public FieldsQueryCursor<List<?>> execute() {
-        CalciteQueryProcessor proc = Objects.requireNonNull(ctx.unwrap(CalciteQueryProcessor.class));
-        Query query = Objects.requireNonNull(ctx.unwrap(Query.class));
+        CalciteQueryProcessor proc = ctx.queryProcessor();
+        Query query = ctx.query();
 
         RelTraitDef[] traitDefs = {
             RelDistributionTraitDef.INSTANCE,

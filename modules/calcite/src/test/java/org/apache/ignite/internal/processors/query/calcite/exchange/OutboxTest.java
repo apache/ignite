@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
@@ -38,7 +37,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         NodesMapping mapping = new NodesMapping(Collections.singletonList(nodeId), null, NodesMapping.DEDUPLICATED);
 
         targets = mapping.nodes();
-        func = SingleTargetFactory.INSTANCE.create(Contexts.empty(), mapping, ImmutableIntList.of());
+        func = SingleTargetFactory.INSTANCE.create(null, mapping, ImmutableIntList.of());
     }
 
 
@@ -100,7 +99,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         assertEquals(EndMarker.INSTANCE, F.last(exch.lastBatch));
     }
 
-    private static class TestExchangeService implements ExchangeService {
+    private static class TestExchangeService implements ExchangeProcessor {
         private boolean registered;
         private boolean unregistered;
         private List<Integer> ids = new ArrayList<>();

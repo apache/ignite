@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -35,10 +34,11 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.TableDistributionService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -68,18 +69,17 @@ import org.junit.Test;
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
+    private static GridTestKernalContext kernalContext;
     private static CalciteQueryProcessor proc;
     private static SchemaPlus schema;
-
-    private static TestRegistry registry;
     private static List<UUID> nodes;
 
     @BeforeClass
     public static void setupClass() {
+        kernalContext = new GridTestKernalContext(log);
         proc = new CalciteQueryProcessor();
-
         proc.setLogger(log);
-        proc.start(new GridTestKernalContext(log));
+        proc.start(kernalContext);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
@@ -123,8 +123,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++) {
             nodes.add(UUID.randomUUID());
         }
-
-        registry = new TestRegistry();
     }
 
     @Test
@@ -136,7 +134,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 + 1" +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -149,7 +147,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(query);
 
@@ -175,7 +173,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -188,7 +186,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(query);
 
@@ -212,7 +210,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         String sql = "SELECT d.id, (SELECT p.name FROM Project p WHERE p.id = d.id) name, d.projectId " +
             "FROM Developer d";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -225,7 +223,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(query);
 
@@ -251,7 +249,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -264,7 +262,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(query);
 
@@ -297,7 +295,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -311,7 +309,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(query);
 
@@ -357,7 +355,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -371,7 +369,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -433,7 +431,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
 
         assertNotNull(ctx);
 
@@ -447,7 +445,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -497,9 +495,19 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService(){
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 return IgniteDistributions.broadcast();
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -512,9 +520,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
-
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
         assertNotNull(ctx);
 
         RelTraitDef[] traitDefs = {
@@ -527,7 +533,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -577,12 +583,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService(){
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
                 return IgniteDistributions.hash(rowType.distributionKeys());
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -601,7 +617,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
 
         assertNotNull(ctx);
 
@@ -615,7 +631,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -665,12 +681,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService(){
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
                 return IgniteDistributions.hash(rowType.distributionKeys());
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -689,7 +715,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
 
         assertNotNull(ctx);
 
@@ -703,7 +729,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -753,9 +779,19 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.ver0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService(){
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 return IgniteDistributions.broadcast();
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -769,7 +805,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
 
         assertNotNull(ctx);
 
@@ -783,7 +819,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -834,12 +870,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "WHERE (d.projectId + 1) > ?";
 
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService(){
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
                 return IgniteDistributions.hash(rowType.distributionKeys());
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -858,7 +904,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
 
         assertNotNull(ctx);
 
@@ -872,7 +918,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -923,12 +969,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "WHERE (d.projectId + 1) > ?";
 
 
-        TestRegistry registry = new TestRegistry(){
+        TableDistributionService ds = new TableDistributionService() {
             @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
                 if (cacheId == CU.cacheId("Project"))
                     return IgniteDistributions.broadcast();
 
                 return IgniteDistributions.hash(rowType.distributionKeys());
+            }
+        };
+
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
             }
 
             @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
@@ -946,7 +1002,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
                 throw new AssertionError("Unexpected cache id:" + cacheId);
             }
         };
-        Context ctx = proc.context(Contexts.of(schema, registry, AffinityTopologyVersion.NONE), sql, new Object[]{2});
+
+        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms, ds));
 
         assertNotNull(ctx);
 
@@ -960,7 +1017,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
             assertNotNull(planner);
 
-            Query query = ctx.unwrap(Query.class);
+            Query query = Commons.plannerContext(ctx).query();
 
             assertNotNull(planner);
 
@@ -1011,40 +1068,58 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         return res;
     }
 
-    private static class TestRegistry implements LocationRegistry, DistributionRegistry {
-        private AtomicLong idGen = new AtomicLong();
+    private PlannerContext context(Context c, Query q) {
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
+            }
 
-        @Override public NodesMapping random(AffinityTopologyVersion topVer) {
-            return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
-        }
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
+            }
 
-        @Override public NodesMapping local() {
-            return new NodesMapping(select(nodes, 0), null, (byte) 0);
-        }
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new NodesMapping(null, Arrays.asList(
+                        select(nodes, 0,1),
+                        select(nodes, 1,2),
+                        select(nodes, 2,0),
+                        select(nodes, 0,1),
+                        select(nodes, 1,2)
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new NodesMapping(null, Arrays.asList(
+                        select(nodes, 0,1),
+                        select(nodes, 1,2),
+                        select(nodes, 2,0),
+                        select(nodes, 0,1),
+                        select(nodes, 1,2)
+                    ), NodesMapping.HAS_PARTITIONED_CACHES);
 
-        @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
-            return IgniteDistributions.hash(rowType.distributionKeys());
-        }
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
 
-        @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
-            if (cacheId == CU.cacheId("Developer"))
-                return new NodesMapping(null, Arrays.asList(
-                    select(nodes, 0,1),
-                    select(nodes, 1,2),
-                    select(nodes, 2,0),
-                    select(nodes, 0,1),
-                    select(nodes, 1,2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
-            if (cacheId == CU.cacheId("Project"))
-                return new NodesMapping(null, Arrays.asList(
-                    select(nodes, 0,1),
-                    select(nodes, 1,2),
-                    select(nodes, 2,0),
-                    select(nodes, 0,1),
-                    select(nodes, 1,2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
+        TableDistributionService ds = new TableDistributionService() {
+            @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
+                return IgniteDistributions.hash(rowType.distributionKeys());
+            }
+        };
 
-            throw new AssertionError("Unexpected cache id:" + cacheId);
-        }
+        return context(c, q, ms, ds);
+    }
+
+    private PlannerContext context(Context parent, Query query, MappingService ms, TableDistributionService ds) {
+        return PlannerContext.builder()
+            .parentContext(parent)
+            .logger(log)
+            .kernalContext(kernalContext)
+            .queryProcessor(proc)
+            .query(query)
+            .schema(schema)
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .distributionService(ds)
+            .mappingService(ms)
+            .build();
     }
 }

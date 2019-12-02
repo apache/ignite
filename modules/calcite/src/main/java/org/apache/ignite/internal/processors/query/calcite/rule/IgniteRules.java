@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
@@ -62,6 +61,7 @@ import org.apache.calcite.rel.rules.UnionMergeRule;
 import org.apache.calcite.rel.rules.UnionPullUpConstantsRule;
 import org.apache.calcite.rel.rules.UnionToDistinctRule;
 import org.apache.calcite.rel.rules.ValuesReduceRule;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
@@ -149,7 +149,7 @@ public class IgniteRules {
         IgniteProjectRule.INSTANCE,
         IgniteJoinRule.INSTANCE);
 
-    public static List<RelOptRule> logicalRules(Context ctx) {
+    public static List<RelOptRule> logicalRules(PlannerContext ctx) {
         return ImmutableList.<RelOptRule>builder()
             .addAll(BASE_RULES)
             .addAll(ABSTRACT_RULES)

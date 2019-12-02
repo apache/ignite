@@ -17,17 +17,14 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.Receiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.Sender;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
@@ -49,11 +46,12 @@ public class Fragment implements Source {
         this.root = root;
     }
 
-    public void init(Context ctx, RelMetadataQuery mq) {
+    public void init(PlannerContext ctx, RelMetadataQuery mq) {
+
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
         if (info.mapping() == null)
-            mapping = remote() ? registry(ctx).random(topologyVersion(ctx)) : registry(ctx).local();
+            mapping = remote() ? ctx.mapForRandom(ctx.topologyVersion()) : ctx.mapForLocal();
         else
             mapping = info.mapping().deduplicate();
 
@@ -73,7 +71,7 @@ public class Fragment implements Source {
         return exchangeId;
     }
 
-    @Override public void init(NodesMapping mapping, DistributionTrait distribution, Context ctx, RelMetadataQuery mq) {
+    @Override public void init(NodesMapping mapping, DistributionTrait distribution, PlannerContext ctx, RelMetadataQuery mq) {
         assert remote();
 
         ((Sender) root).init(new TargetImpl(exchangeId, mapping, distribution));
@@ -91,13 +89,5 @@ public class Fragment implements Source {
 
     private boolean remote() {
         return root instanceof Sender;
-    }
-
-    private LocationRegistry registry(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(LocationRegistry.class));
-    }
-
-    private AffinityTopologyVersion topologyVersion(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(AffinityTopologyVersion.class));
     }
 }

@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import java.io.ObjectStreamException;
 import java.util.List;
 import java.util.UUID;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 public final class AllTargetsFactory extends AbstractDestinationFunctionFactory {
     public static final DestinationFunctionFactory INSTANCE = new AllTargetsFactory();
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+    @Override public DestinationFunction create(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
         List<UUID> nodes = m.nodes();
 
         return r -> nodes;

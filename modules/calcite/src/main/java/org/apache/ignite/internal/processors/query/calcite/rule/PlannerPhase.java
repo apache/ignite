@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 
 /**
  *
@@ -27,14 +27,14 @@ import org.apache.calcite.tools.RuleSets;
 public enum PlannerPhase {
     /** */
     SUBQUERY_REWRITE("Sub-queries rewrites") {
-        @Override public RuleSet getRules(Context ctx) {
+        @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(IgniteRules.SUBQUERY_REWRITE_RULES);
         }
     },
 
     /** */
     LOGICAL("Logical planning") {
-        @Override public RuleSet getRules(Context ctx) {
+        @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(IgniteRules.logicalRules(ctx));
         }
     };
@@ -45,5 +45,5 @@ public enum PlannerPhase {
         this.description = description;
     }
 
-    public abstract RuleSet getRules(Context ctx);
+    public abstract RuleSet getRules(PlannerContext ctx);
 }

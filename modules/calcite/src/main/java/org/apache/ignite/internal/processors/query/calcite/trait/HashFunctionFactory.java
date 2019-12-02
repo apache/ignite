@@ -20,9 +20,9 @@ import java.io.ObjectStreamException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public final class HashFunctionFactory extends AbstractDestinationFunctionFactory {
     public static final DestinationFunctionFactory INSTANCE = new HashFunctionFactory();
 
-    @Override public DestinationFunction create(Context ctx, NodesMapping m, ImmutableIntList k) {
+    @Override public DestinationFunction create(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
         assert m != null && !F.isEmpty(m.assignments());
 
         int[] fields = k.toIntArray();

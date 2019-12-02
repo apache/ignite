@@ -20,50 +20,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.ToIntFunction;
-import org.apache.calcite.plan.Context;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.query.calcite.metadata.DistributionRegistry;
-import org.apache.ignite.internal.processors.query.calcite.metadata.LocationRegistry;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.trait.AbstractDestinationFunctionFactory;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 
 /**
  *
  */
-public class RegistryImpl implements DistributionRegistry, LocationRegistry {
+public class MappingServiceImpl implements MappingService {
     private final GridKernalContext ctx;
 
-    public RegistryImpl(GridKernalContext ctx) {
+    public MappingServiceImpl(GridKernalContext ctx) {
         this.ctx = ctx;
-    }
-
-    @Override public DistributionTrait distribution(int cacheId, RowType rowType) {
-        CacheGroupContext grp = ctx.cache().context().cacheContext(cacheId).group();
-
-        if (grp.isReplicated())
-            return IgniteDistributions.broadcast();
-
-        Object key = grp.affinity().similarAffinityKey();
-
-        return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(cacheId, key));
     }
 
     @Override public NodesMapping local() {
@@ -152,36 +130,5 @@ public class RegistryImpl implements DistributionRegistry, LocationRegistry {
                 return false;
         }
         return true;
-    }
-
-    private final static class AffinityFactory extends AbstractDestinationFunctionFactory {
-        private final int cacheId;
-        private final Object key;
-
-        AffinityFactory(int cacheId, Object key) {
-            this.cacheId = cacheId;
-            this.key = key;
-        }
-
-        @Override public DestinationFunction create(Context ctx, NodesMapping mapping, ImmutableIntList keys) {
-            assert keys.size() == 1 && mapping != null && !F.isEmpty(mapping.assignments());
-
-            List<List<UUID>> assignments = mapping.assignments();
-
-            if (U.assertionsEnabled()) {
-                for (List<UUID> assignment : assignments) {
-                    assert F.isEmpty(assignment) || assignment.size() == 1;
-                }
-            }
-
-            ToIntFunction<Object> rowToPart = ctx.unwrap(GridKernalContext.class)
-                .cache().context().cacheContext(cacheId).affinity()::partition;
-
-            return row -> assignments.get(rowToPart.applyAsInt(((Object[]) row)[keys.getInt(0)]));
-        }
-
-        @Override public Object key() {
-            return key;
-        }
     }
 }

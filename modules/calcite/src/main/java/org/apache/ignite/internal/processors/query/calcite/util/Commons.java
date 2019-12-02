@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -42,11 +41,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -56,24 +55,6 @@ public final class Commons {
 
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
-    }
-
-    public static <T> @Nullable T provided(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
-        T param = ctx.unwrap(paramType);
-
-        if (param != null)
-            return null; // Provided by parent context.
-
-        return paramSrc.get();
-    }
-
-    public static <T> T contextParam(Context ctx, Class<T> paramType, Supplier<T> paramSrc) {
-        T param = ctx.unwrap(paramType);
-
-        if (param != null)
-            return param;
-
-        return paramSrc.get();
     }
 
     /** */
@@ -188,5 +169,9 @@ public final class Commons {
             set.add(mapFun.apply(t));
 
         return set;
+    }
+
+    public static PlannerContext plannerContext(Context ctx) {
+        return Objects.requireNonNull(ctx.unwrap(PlannerContext.class));
     }
 }

@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.metadata;
+package org.apache.ignite.internal.processors.query.calcite.exchange;
 
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
  */
-public interface DistributionRegistry {
-    DistributionTrait distribution(int cacheId, RowType rowType);
+public interface ExchangeProcessor {
+    void register(Outbox outbox);
+    void unregister(Outbox outbox);
+    void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
 }
