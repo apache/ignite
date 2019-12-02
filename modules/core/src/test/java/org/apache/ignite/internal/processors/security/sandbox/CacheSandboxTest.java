@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlException;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorResult;
@@ -30,7 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
@@ -72,15 +71,8 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testEntryProcessor() {
-        entryProcessorOperations(grid(CLNT_ALLOWED_WRITE_PROP)).map(s -> (Runnable)s::get).forEach(this::runOperation);
+        entryProcessorOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
         entryProcessorOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
-            .map((s) -> (GridTestUtils.RunnableX)() -> {
-                    Object res = s.get();
-
-                    if (res instanceof Exception)
-                        throw (Exception)res;
-                }
-            )
             .forEach(r -> runForbiddenOperation(r, AccessControlException.class));
     }
 
@@ -103,7 +95,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /**
      * @return EntryProcessor operations to test.
      */
-    private Stream<Supplier<Object>> entryProcessorOperations(Ignite node) {
+    private Stream<RunnableX> entryProcessorOperations(Ignite node) {
         EntryProcessorResult<Object> dflt = () -> null;
 
         return Stream.of(
@@ -119,7 +111,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /**
      * @return ScanQuery operations to test.
      */
-    private Stream<GridTestUtils.RunnableX> scanQueryOperations(Ignite node) {
+    private Stream<RunnableX> scanQueryOperations(Ignite node) {
         return Stream.of(
             () -> node.cache(TEST_CACHE).query(
                 new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
