@@ -212,7 +212,7 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
     }
 
     /**
-     * Sets MaxCountOfInitTries parameter. If means initialization were unsuccessfull then algorithm try to reinitialize
+     * Sets MaxCountOfInitTries parameter. If means initialization were unsuccessful then algorithm try to reinitialize
      * means randomly MaxCountOfInitTries times.
      *
      * @param maxCountOfInitTries Max count of init tries.
@@ -417,17 +417,17 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
      * @return Initial model.
      */
     private Optional<GmmModel> init(Dataset<EmptyContext, GmmPartitionData> dataset) {
-        int countOfTries = 0;
+        int cntOfTries = 0;
 
         while (true) {
             try {
                 if (initialMeans == null) {
                     List<Vector> randomMeansSets = Stream.of(dataset.compute(
                         selectNRandomXsMapper(countOfComponents),
-                        GmmTrainer::selectNRandomXsReducer
-                    )).flatMap(Stream::of).collect(Collectors.toList());
+                        GmmTrainer::selectNRandomXsReducer))
+                        .flatMap(Stream::of)
+                        .sorted(Comparator.comparingDouble(Vector::getLengthSquared)).collect(Collectors.toList());
 
-                    Collections.sort(randomMeansSets, Comparator.comparingDouble(Vector::getLengthSquared));
                     Collections.shuffle(randomMeansSets, environment.randomNumbersGenerator());
 
                     A.ensure(
@@ -461,11 +461,11 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
             }
             catch (SingularMatrixException | IllegalArgumentException e) {
                 String msg = "Cannot construct non-singular covariance matrix by data. " +
-                    "Try to select other initial means or other model trainer [number of tries = " + countOfTries + "]";
+                    "Try to select other initial means or other model trainer [number of tries = " + cntOfTries + "]";
                 environment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
-                countOfTries += 1;
+                cntOfTries += 1;
                 initialMeans = null;
-                if (countOfTries >= maxCountOfInitTries)
+                if (cntOfTries >= maxCountOfInitTries)
                     throw new RuntimeException(msg, e);
             }
         }

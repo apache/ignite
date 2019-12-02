@@ -26,7 +26,7 @@ import org.apache.ignite.ml.tree.TreeFilter;
  * A partition {@code data} of the containing matrix of features and vector of labels stored in heap
  * with index on features.
  */
-public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implements AutoCloseable {
+public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData {
     /** Copy of vector with original labels. Auxiliary for Gradient Boosting on Trees.*/
     private double[] copiedOriginalLabels;
 
@@ -138,11 +138,6 @@ public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implemen
         this.copiedOriginalLabels = copiedOriginalLabels;
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // Do nothing, GC will clean up.
-    }
-
     /**
      * Builds index in according to current tree depth and cached indexes in upper levels. Uses depth as key of cached
      * index and replaces cached index with same key.
@@ -162,8 +157,8 @@ public class DecisionTreeData extends FeatureMatrixWithLabelsOnHeapData implemen
             if (depth == 0)
                 indexesCache.add(new TreeDataIndex(getFeatures(), getLabels()));
             else {
-                TreeDataIndex lastIndex = indexesCache.get(depth - 1);
-                indexesCache.add(lastIndex.filter(filter));
+                TreeDataIndex lastIdx = indexesCache.get(depth - 1);
+                indexesCache.add(lastIdx.filter(filter));
             }
         }
 

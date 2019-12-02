@@ -56,9 +56,9 @@ public class TrainingWithBinaryObjectExample {
                     new BinaryObjectVectorizer<Integer>("feature1").labeled("label");
 
                 KMeansTrainer trainer = new KMeansTrainer();
-                KMeansModel kmdl = trainer.fit(datasetBuilder, vectorizer);
+                KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
 
-                System.out.println(">>> Model trained over binary objects. Model " + kmdl);
+                System.out.println(">>> Model trained over binary objects. Model " + mdl);
             }
             finally {
                 dataCache.destroy();

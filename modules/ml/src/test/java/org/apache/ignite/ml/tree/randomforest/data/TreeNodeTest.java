@@ -69,9 +69,7 @@ public class TreeNodeTest {
     public void testPredictProba() {
         TreeNode root = new TreeNode(1, 1);
         List<TreeNode> leaves = root.toConditional(0, 0.1);
-        leaves.forEach(leaf -> {
-            leaf.toLeaf(leaf.getId().nodeId() % 2);
-        });
+        leaves.forEach(leaf -> leaf.toLeaf(leaf.getId().nodeId() % 2));
 
         assertEquals(TreeNode.Type.CONDITIONAL, root.getType());
         assertEquals(0.0, root.predict(features1), 0.001);

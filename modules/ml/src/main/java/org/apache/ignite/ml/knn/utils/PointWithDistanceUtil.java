@@ -40,7 +40,7 @@ public class PointWithDistanceUtil {
      * @param <L> Label type.
      * @return Array of {@link LabeledVector}
      */
-    public static <L> List<LabeledVector<L>> transfomToListOrdered(Queue<PointWithDistance<L>> points) {
+    public static <L> List<LabeledVector<L>> transformToListOrdered(Queue<PointWithDistance<L>> points) {
         List<LabeledVector<L>> res = new ArrayList<>(points.size());
 
         while (!points.isEmpty()) {
