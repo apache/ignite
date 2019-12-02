@@ -118,9 +118,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private boolean forceSrvMode;
 
     /** */
-    private boolean persistence;
-
-    /** */
     private static final String CACHE_NAME1 = "testCache1";
 
     /** */
@@ -184,16 +181,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration cfg1 = new DataStorageConfiguration();
 
-        DataRegionConfiguration drCfg = new DataRegionConfiguration().setMaxSize(512L * 1024 * 1024);
-
-        if (persistence) {
-            drCfg.setPersistenceEnabled(true);
-
-            cfg.setActiveOnStart(false);
-            cfg.setAutoActivationEnabled(false);
-        }
-
-        cfg1.setDefaultDataRegionConfiguration(drCfg);
+        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(cfg1);
 
@@ -1081,79 +1069,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         spi1.stopBlock();
 
         checkAffinity(2, topVer(4, 1), true);
-    }
-
-    /**
-     * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster).
-     * It's not possible to perform switch since primaries may change.
-     */
-    @Test
-    public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster();
-    }
-
-    /**
-     * Checks Partition Exchange is absent in case of fixed baseline.
-     * It's possible to perform switch since primaries can't change.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        persistence = true;
-
-        try {
-            testNodeLeftOnFullyRebalancedCluster();
-        }
-        finally {
-            persistence = false;
-        }
-    }
-
-    /**
-     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAS).
-     */
-    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        int nodes = 10;
-
-        Ignite ignite = startGridsMultiThreaded(nodes, true);
-
-        ignite.cluster().active(true);
-
-        AtomicLong cnt = new AtomicLong();
-
-        for (int i = 0; i < nodes; i++) {
-            TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cnt.incrementAndGet();
-
-                    if (!persistence)
-                        return false;
-
-                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                }
-            });
-        }
-
-        Random r = new Random();
-
-        while (nodes > 1) {
-            G.allGrids().get(r.nextInt(--nodes)).close(); // Stopping random node.
-
-            awaitPartitionMapExchange();
-
-            assertEquals(persistence ? 0 /*PME absent*/ : (nodes - 1) /*regular PME*/, cnt.get());
-
-            IgniteEx alive = (IgniteEx)G.allGrids().get(0);
-
-            assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
-
-            cnt.set(0);
-        }
     }
 
     /**
