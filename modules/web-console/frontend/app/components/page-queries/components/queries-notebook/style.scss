@@ -124,7 +124,7 @@ queries-notebook {
 
     .form-field__sensitive {
         input[type='checkbox'] {
-            height: 0;
+            display: none;
         }
 
         input:checked + span {

@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool.Reusable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /** */
     private ThreadLocalObjectPool<Obj> pool = new ThreadLocalObjectPool<>(Obj::new, 1);
@@ -31,6 +35,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectIsReusedAfterRecycling() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         o1.recycle();
@@ -43,6 +48,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBorrowedObjectIsNotReturnedTwice() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
@@ -53,6 +59,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldBeClosedOnRecycleIfPoolIsFull() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
@@ -65,6 +72,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldNotBeReturnedIfPoolIsFull() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
         Reusable<Obj> o2 = pool.borrow();
@@ -81,6 +89,7 @@ public class ThreadLocalObjectPoolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectShouldReturnedToRecyclingThreadBag() throws Exception {
         Reusable<Obj> o1 = pool.borrow();
 

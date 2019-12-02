@@ -30,12 +30,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,6 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test tx salvage.
  */
+@RunWith(JUnit4.class)
 public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 5;
@@ -66,19 +67,9 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /** Salvage timeout system property value before alteration. */
     private static String salvageTimeoutOld;
 
-    /** Standard VM IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        // Discovery.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -123,6 +114,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(OPTIMISTIC, true);
     }
@@ -130,6 +122,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticcTxSalvageBeforeTimeout() throws Exception {
         checkSalvageBeforeTimeout(PESSIMISTIC, false);
     }
@@ -137,6 +130,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(OPTIMISTIC, true);
     }
@@ -144,6 +138,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxSalvageAfterTimeout() throws Exception {
         checkSalvageAfterTimeout(PESSIMISTIC, false);
     }

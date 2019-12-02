@@ -32,11 +32,15 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDmlQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -65,6 +69,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testUpdateSimple() {
         IgniteCache p = cache();
 
@@ -95,6 +100,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testUpdateSingle() {
         IgniteCache p = cache();
 
@@ -125,6 +131,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testUpdateValueAndFields() {
         IgniteCache p = cache();
 
@@ -155,6 +162,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testDefault() {
         IgniteCache p = cache();
 
@@ -183,6 +191,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     }
 
     /** */
+    @Test
     public void testTypeConversions() throws ParseException {
         IgniteCache cache = ignite(0).cache("L2AT");
 
@@ -227,6 +236,7 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     }
 
     /** */
+    @Test
     public void testSingleInnerFieldUpdate() throws ParseException {
         IgniteCache cache = ignite(0).cache("L2AT");
 

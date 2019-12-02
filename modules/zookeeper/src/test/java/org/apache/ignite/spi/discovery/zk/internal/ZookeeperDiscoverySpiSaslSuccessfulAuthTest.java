@@ -17,14 +17,19 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteNodesWithValidPasswordSuccessfullyJoins() throws Exception {
         System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
             "ValidZookeeperClient");
@@ -37,6 +42,7 @@ public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscov
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteNodeWithoutSaslConfigurationSuccessfullyJoins() throws Exception {
         //clearing SASL-related system properties that were set in beforeTest
         clearSaslSystemProperties();

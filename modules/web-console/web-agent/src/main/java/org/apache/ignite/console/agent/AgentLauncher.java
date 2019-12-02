@@ -17,12 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
-import io.socket.client.Ack;
-import io.socket.client.IO;
-import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
@@ -40,9 +34,16 @@ import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
+import okhttp3.OkHttpClient;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
@@ -61,6 +62,8 @@ import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
 import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
+import static org.apache.ignite.console.agent.AgentUtils.sslConnectionSpec;
+import static org.apache.ignite.console.agent.AgentUtils.sslSocketFactory;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
 import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 
@@ -315,28 +318,84 @@ public class AgentLauncher {
             return;
         }
 
+        boolean serverTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasServerTrustStore = cfg.serverTrustStore() != null;
+
+        if (serverTrustAll && hasServerTrustStore) {
+            log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
+
+            serverTrustAll = false;
+        }
+
+        boolean nodeTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasNodeTrustStore = cfg.nodeTrustStore() != null;
+
+        if (nodeTrustAll && hasNodeTrustStore) {
+            log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to cluster.");
+
+            nodeTrustAll = false;
+        }
+
         cfg.nodeURIs(nodeURIs);
 
         IO.Options opts = new IO.Options();
-
         opts.path = "/agents";
 
-        // Workaround for use self-signed certificate
-        if (Boolean.getBoolean("trust.all")) {
-            log.info("Trust to all certificates mode is enabled.");
+        List<String> cipherSuites = cfg.cipherSuites();
 
-            SSLContext ctx = SSLContext.getInstance("TLS");
+        if (
+            serverTrustAll ||
+            hasServerTrustStore ||
+            cfg.serverKeyStore() != null
+        ) {
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-            // Create an SSLContext that uses our TrustManager
-            ctx.init(null, new TrustManager[] {trustManager()}, null);
+            X509TrustManager serverTrustMgr = trustManager(
+                serverTrustAll,
+                cfg.serverTrustStore(),
+                cfg.serverTrustStorePassword()
+            );
 
-            opts.sslContext = ctx;
+            if (serverTrustAll)
+                builder.hostnameVerifier((hostname, session) -> true);
+
+            SSLSocketFactory sslSocketFactory = sslSocketFactory(
+                cfg.serverKeyStore(),
+                cfg.serverKeyStorePassword(),
+                serverTrustMgr,
+                cipherSuites
+            );
+
+            if (sslSocketFactory != null) {
+                if (serverTrustMgr != null)
+                    builder.sslSocketFactory(sslSocketFactory, serverTrustMgr);
+                else
+                    builder.sslSocketFactory(sslSocketFactory);
+
+                if (!F.isEmpty(cipherSuites))
+                    builder.connectionSpecs(sslConnectionSpec(cipherSuites));
+            }
+
+            OkHttpClient sslFactory = builder.build();
+
+            opts.callFactory = sslFactory;
+            opts.webSocketFactory = sslFactory;
+            opts.secure = true;
         }
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutor();
-             ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
+        try (
+            RestExecutor restExecutor = new RestExecutor(
+                nodeTrustAll,
+                cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
+                cipherSuites);
+
+            ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
+        ) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
 
@@ -416,6 +475,7 @@ public class AgentLauncher {
             };
 
             DatabaseListener dbHnd = new DatabaseListener(cfg);
+
             RestListener restHnd = new RestListener(cfg, restExecutor);
 
             final CountDownLatch latch = new CountDownLatch(1);

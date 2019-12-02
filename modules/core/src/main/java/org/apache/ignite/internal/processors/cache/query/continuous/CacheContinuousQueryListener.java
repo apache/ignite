@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -114,4 +115,9 @@ public interface CacheContinuousQueryListener<K, V> {
      * @return Whether to notify on existing entries.
      */
     public boolean notifyExisting();
+
+    /**
+     * @return {@code True} if this listener should be called on events on primary partitions only.
+     */
+    public boolean isPrimaryOnly();
 }

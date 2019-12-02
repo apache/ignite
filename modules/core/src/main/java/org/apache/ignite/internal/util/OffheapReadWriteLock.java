@@ -263,7 +263,7 @@ public class OffheapReadWriteLock {
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
-                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             updated = releaseWithTag(state, tag);
 

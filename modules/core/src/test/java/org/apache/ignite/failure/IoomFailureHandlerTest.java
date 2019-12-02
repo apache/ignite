@@ -28,10 +28,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * IgniteOutOfMemoryError failure handler test.
  */
+@RunWith(JUnit4.class)
 public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** Offheap size for memory policy. */
     private static final int SIZE = 10 * 1024 * 1024;
@@ -96,6 +100,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with no store.
      */
+    @Test
     public void testIoomErrorNoStoreHandling() throws Exception {
         testIoomErrorHandling(false, false);
     }
@@ -103,6 +108,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
+    @Test
     public void testIoomErrorPdsHandling() throws Exception {
         testIoomErrorHandling(true, false);
     }
@@ -110,6 +116,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with no store.
      */
+    @Test
     public void testIoomErrorMvccNoStoreHandling() throws Exception {
         testIoomErrorHandling(false, true);
     }
@@ -117,6 +124,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     /**
      * Test IgniteOutOfMemoryException handling with PDS.
      */
+    @Test
     public void testIoomErrorMvccPdsHandling() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-10185");
 

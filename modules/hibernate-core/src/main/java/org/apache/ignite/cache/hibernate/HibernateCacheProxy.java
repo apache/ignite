@@ -39,7 +39,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -124,10 +123,9 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Nullable @Override public Object localPeek(
         Object key,
-        CachePeekMode[] peekModes,
-        @Nullable IgniteCacheExpiryPolicy plc
+        CachePeekMode[] peekModes
     ) throws IgniteCheckedException {
-        return delegate.localPeek(keyTransformer.transform(key), peekModes, plc);
+        return delegate.localPeek(keyTransformer.transform(key), peekModes);
     }
 
     /** {@inheritDoc} */
@@ -645,6 +643,21 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         return delegate.lostPartitions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        delegate.preloadPartition(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        return delegate.preloadPartitionAsync(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        return delegate.localPreloadPartition(part);
     }
 
     /** {@inheritDoc} */

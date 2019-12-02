@@ -25,10 +25,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstractSelfTest {
     /** */
     protected static final String REST_SECRET_KEY = "secret-key";
@@ -52,6 +56,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnauthorized() throws Exception {
         String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cacheName=default&cmd=top";
 

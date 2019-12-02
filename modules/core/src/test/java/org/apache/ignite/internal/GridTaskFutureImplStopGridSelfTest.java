@@ -38,12 +38,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for task future when grid stops.
  */
 @GridCommonTest(group = "Kernal Self")
-@SuppressWarnings({"UnusedDeclaration"})
+@RunWith(JUnit4.class)
 public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 5000;
@@ -58,7 +61,6 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     private static final Object mux = new Object();
 
     /** */
-    @SuppressWarnings({"StaticNonFinalField"})
     private static int cnt;
 
     /** */
@@ -69,6 +71,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGet() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
@@ -152,7 +155,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
+    @SuppressWarnings({"PublicInnerClass"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @LoggerResource

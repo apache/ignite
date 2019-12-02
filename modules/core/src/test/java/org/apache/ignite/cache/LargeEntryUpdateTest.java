@@ -31,10 +31,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class LargeEntryUpdateTest extends GridCommonAbstractTest {
     /**  */
     private static final int THREAD_COUNT = 10;
@@ -95,6 +99,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryUpdate() throws Exception {
         try (Ignite ignite = startGrid()) {
             for (int i = 0; i < CACHE_COUNT; ++i) {

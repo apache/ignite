@@ -45,14 +45,14 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,13 +63,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Continuous queries counter tests.
  */
+@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommonAbstractTest
     implements Serializable {
     /** */
     protected static final String CACHE_NAME = "test_cache";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
@@ -86,12 +84,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
         if (igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME))
             cfg.setClientMode(true);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -177,6 +169,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntries() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -234,7 +227,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals(2, vals.size());
             assertEquals(2, (int)vals.get(0).get1());
             assertEquals(1L, (long)vals.get(0).get2());
-            assertNull(vals.get(1).get1());
+            assertEquals(2, (int)vals.get(1).get1());
 
             vals = map.get(3);
 
@@ -248,6 +241,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoQueryListener() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -353,8 +347,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(1L, (long)val.get(0).get1());
 
         // Check remove 1
+        assertEquals(1L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
-        assertNull(val.get(1).get1());
 
         val = evnts.get(2);
 
@@ -365,8 +359,8 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(2L, (long)val.get(0).get1());
 
         // Check remove 2
+        assertEquals(2L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
-        assertNull(val.get(1).get1());
 
         val = evnts.get(3);
 
@@ -377,13 +371,14 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
         assertEquals(3L, (long)val.get(0).get1());
 
         // Check remove 3
+        assertEquals(3L, (long)val.get(1).get1());
         assertEquals(iter * 2 + 2, (long)val.get(1).get2());
-        assertNull(val.get(1).get1());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -442,6 +437,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntriesByFilter() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
@@ -509,7 +505,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals((int)vals.get(1).get1(), 4);
             assertEquals((long)vals.get(1).get1(), (long)vals.get(1).get2());
 
-            assertNull(vals.get(2).get1());
+            assertEquals(4, (long)vals.get(2).get1());
             assertEquals(5, (long)vals.get(2).get2());
 
             assertEquals((int)vals.get(3).get1(), 10);
@@ -526,7 +522,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
             assertEquals((int)vals.get(1).get1(), 4);
             assertEquals((long)vals.get(1).get1(), (long)vals.get(1).get2());
 
-            assertNull(vals.get(2).get1());
+            assertEquals(4, (long)vals.get(2).get1());
             assertEquals(5, (long)vals.get(2).get2());
 
             assertEquals((int)vals.get(3).get1(), 40);
@@ -537,6 +533,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 

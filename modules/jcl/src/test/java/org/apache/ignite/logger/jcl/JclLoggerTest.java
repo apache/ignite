@@ -17,21 +17,22 @@
 
 package org.apache.ignite.logger.jcl;
 
-import junit.framework.TestCase;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Jcl logger test.
  */
 @GridCommonTest(group = "Logger")
-public class JclLoggerTest extends TestCase {
+public class JclLoggerTest {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
     private IgniteLogger log;
 
     /** */
+    @Test
     public void testLogInitialize() {
         log = new JclLogger(LogFactory.getLog(JclLoggerTest.class.getName()));
 

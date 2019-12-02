@@ -38,10 +38,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     /** Client index. */
     private static final int CLIENT_IDX = 1;
@@ -102,6 +106,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         try {
             startGrids(2);

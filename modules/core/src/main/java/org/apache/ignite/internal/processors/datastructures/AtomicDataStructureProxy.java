@@ -149,7 +149,7 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
      * @return Error.
      */
     private IllegalStateException suspendedError() {
-        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), "Underlying cache is restarting: " + ctx.name());
+        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), ctx.name());
     }
 
     /** {@inheritDoc} */

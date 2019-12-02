@@ -18,23 +18,26 @@
 package org.apache.ignite.testsuites;
 
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinderSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Ignite Kubernetes integration test.
  */
-public class IgniteKubernetesTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteKubernetesTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new IgniteTestSuite("Kubernetes Integration Test Suite");
 
         // Cloud Nodes IP finder.
-        suite.addTestSuite(TcpDiscoveryKubernetesIpFinderSelfTest.class);
+        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryKubernetesIpFinderSelfTest.class));
 
         return suite;
     }

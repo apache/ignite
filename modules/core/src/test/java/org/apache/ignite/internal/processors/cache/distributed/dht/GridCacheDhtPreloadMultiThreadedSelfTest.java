@@ -29,20 +29,19 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * MultiThreaded load test for DHT preloader.
  */
+@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Creates new test.
      */
@@ -53,6 +52,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeLeaveBeforePreloadingComplete() throws Exception {
         try {
             final CountDownLatch startLatch = new CountDownLatch(1);
@@ -110,6 +110,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentNodesStart() throws Exception {
         try {
             multithreadedAsync(
@@ -136,7 +137,10 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentNodesStartStop() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         try {
             multithreadedAsync(
                 new Callable<Object>() {
@@ -176,8 +180,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                 cCfg.setBackups(1);
             }
         }
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }

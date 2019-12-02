@@ -66,12 +66,12 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -83,10 +83,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for Java client.
  */
 @SuppressWarnings("deprecation")
+@RunWith(JUnit4.class)
 public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -233,12 +231,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
@@ -346,6 +338,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectable() throws Exception {
         GridClient client = client();
 
@@ -359,6 +352,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAsyncExceptions() throws Exception {
         GridClient client = client();
 
@@ -404,6 +398,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGracefulShutdown() throws Exception {
         GridClientCompute compute = client.compute();
 
@@ -422,6 +417,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceShutdown() throws Exception {
         GridClientCompute compute = client.compute();
 
@@ -445,6 +441,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdown() throws Exception {
         GridClient c = client();
 
@@ -486,6 +483,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         String taskName = getTaskName();
         Object taskArg = getTaskArgument();
@@ -499,6 +497,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopology() throws Exception {
         GridClientCompute compute = client.compute();
 

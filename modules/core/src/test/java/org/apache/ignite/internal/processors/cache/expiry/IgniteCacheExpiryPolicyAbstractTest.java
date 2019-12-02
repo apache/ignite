@@ -58,6 +58,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -70,6 +73,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private static final long TTL_FOR_EXPIRE = 500L;
@@ -118,6 +122,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testCreateUpdate0() throws Exception {
         startGrids(1);
 
@@ -149,6 +154,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnCreate() throws Exception {
         factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
 
@@ -176,6 +182,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnUpdate() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, 0L, null));
 
@@ -207,6 +214,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnAccess() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(null, null, 0L));
 
@@ -252,6 +260,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testZeroOnAccessEagerTtlDisabled() throws Exception {
         disableEagerTtl = true;
 
@@ -277,6 +286,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEternal() throws Exception {
         factory = EternalExpiryPolicy.factoryOf();
 
@@ -298,6 +308,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullFactory() throws Exception {
         factory = null; // Should work as eternal.
 
@@ -349,6 +360,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAccess() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-305");
 
@@ -595,6 +607,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateUpdate() throws Exception {
         factory = new FactoryBuilder.SingletonFactory<>(new TestPolicy(60_000L, 61_000L, null));
 
@@ -835,6 +848,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -958,6 +972,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -1005,6 +1020,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNearExpiresOnClient() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -1042,6 +1058,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearExpiresWithCacheStore() throws Exception {
         if(cacheMode() != PARTITIONED)
             return;

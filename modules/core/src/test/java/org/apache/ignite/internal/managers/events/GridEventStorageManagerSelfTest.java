@@ -28,12 +28,16 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 
 /**
  * Tests for {@link GridEventStorageManager}.
  */
+@RunWith(JUnit4.class)
 public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
@@ -60,6 +64,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitForEvent() throws Exception {
         Ignite ignite = grid();
 
@@ -92,6 +97,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWaitForEventContinuationTimeout() throws Exception {
         Ignite ignite = grid();
 
@@ -111,6 +117,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUserEvent() throws Exception {
         Ignite ignite = grid();
 

@@ -19,9 +19,11 @@ import angular from 'angular';
 import templateUrl from './template.tpl.pug';
 import { NotebookCtrl } from './controller';
 import NotebookData from '../../notebook.data';
+import {component as actions} from './components/query-actions-button/component';
 import './style.scss';
 
 export default angular.module('ignite-console.sql.notebook', [])
+    .component('queryActionsButton', actions)
     .component('queriesNotebook', {
         controller: NotebookCtrl,
         templateUrl

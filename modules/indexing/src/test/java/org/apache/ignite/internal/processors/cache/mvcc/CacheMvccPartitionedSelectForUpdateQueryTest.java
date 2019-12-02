@@ -18,19 +18,24 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /** */
+@RunWith(JUnit4.class)
 public class CacheMvccPartitionedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
     /** {@inheritDoc} */
-    public CacheMode cacheMode() {
+    @Override public CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /**
      *
      */
+    @Test
     public void testSelectForUpdateDistributedSegmented() throws Exception {
         doTestSelectForUpdateDistributed("PersonSeg", false);
     }
@@ -38,6 +43,7 @@ public class CacheMvccPartitionedSelectForUpdateQueryTest extends CacheMvccSelec
     /**
      *
      */
+    @Test
     public void testSelectForUpdateLocalSegmented() throws Exception {
         doTestSelectForUpdateLocal("PersonSeg", false);
     }

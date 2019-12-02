@@ -84,9 +84,10 @@ namespace ignite
             {
                 utility::WriteString(writer, config.GetUser());
                 utility::WriteString(writer, config.GetPassword());
-
-                writer.WriteInt8(config.GetNestedTxMode());
             }
+
+            if (version >= ProtocolVersion::VERSION_2_7_0)
+                writer.WriteInt8(config.GetNestedTxMode());
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,

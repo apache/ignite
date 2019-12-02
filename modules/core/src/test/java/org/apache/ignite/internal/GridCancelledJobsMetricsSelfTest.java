@@ -47,11 +47,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Cancelled jobs metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static GridCancelCollisionSpi colSpi = new GridCancelCollisionSpi();
@@ -80,6 +84,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelledJobs() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

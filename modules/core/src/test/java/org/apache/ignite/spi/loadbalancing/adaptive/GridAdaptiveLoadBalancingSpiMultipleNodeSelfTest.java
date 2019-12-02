@@ -30,11 +30,15 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests adaptive load balancing SPI.
  */
 @GridSpiTest(spi = AdaptiveLoadBalancingSpi.class, group = "Load Balancing SPI")
+@RunWith(JUnit4.class)
 public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbstractTest<AdaptiveLoadBalancingSpi> {
     /** */
     private static final int RMT_NODE_CNT = 10;
@@ -72,6 +76,7 @@ public class GridAdaptiveLoadBalancingSpiMultipleNodeSelfTest extends GridSpiAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWeights() throws Exception {
         // Seal it.
         List<ClusterNode> nodes = new ArrayList<>(getSpiContext().remoteNodes());

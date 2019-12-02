@@ -30,9 +30,14 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -41,6 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /** */
     private CacheAtomicityMode atomicityMode;
@@ -89,6 +95,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTx() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
@@ -98,6 +105,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionTxNearEnabled() throws Exception {
         atomicityMode = TRANSACTIONAL;
 
@@ -109,6 +117,31 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
+    public void testVersionMvccTx() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
+    public void testVersionMvccTxNearEnabled() throws Exception {
+        atomicityMode = TRANSACTIONAL_SNAPSHOT;
+
+        near = true;
+
+        checkVersion();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testVersionAtomicPrimary() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -118,6 +151,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionAtomicPrimaryNearEnabled() throws Exception {
         atomicityMode = ATOMIC;
 
@@ -138,17 +172,19 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
             checkVersion(String.valueOf(i), null); // Update.
         }
 
-        if (atomicityMode == TRANSACTIONAL) {
+        if (atomicityMode != ATOMIC) {
             for (int i = 100; i < 200; i++) {
                 checkVersion(String.valueOf(i), PESSIMISTIC); // Create.
 
                 checkVersion(String.valueOf(i), PESSIMISTIC); // Update.
             }
 
-            for (int i = 200; i < 300; i++) {
-                checkVersion(String.valueOf(i), OPTIMISTIC); // Create.
+            if (atomicityMode != TRANSACTIONAL_SNAPSHOT) {
+                for (int i = 200; i < 300; i++) {
+                    checkVersion(String.valueOf(i), OPTIMISTIC); // Create.
 
-                checkVersion(String.valueOf(i), OPTIMISTIC); // Update.
+                    checkVersion(String.valueOf(i), OPTIMISTIC); // Update.
+                }
             }
         }
     }

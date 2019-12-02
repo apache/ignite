@@ -36,10 +36,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,15 +47,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Check reloadAll() on partitioned cache.
  */
+@RunWith(JUnit4.class)
 public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends GridCommonAbstractTest {
     /** Amount of nodes in the grid. */
     private static final int GRID_CNT = 4;
 
     /** Amount of backups in partitioned cache. */
     private static final int BACKUP_CNT = 1;
-
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Map where dummy cache store values are stored. */
     private final Map<Integer, String> map = new ConcurrentHashMap<>();
@@ -67,12 +65,6 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -175,6 +167,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testReloadAll() throws Exception {
         // Fill caches with values.
         for (IgniteCache<Integer, String> cache : caches) {

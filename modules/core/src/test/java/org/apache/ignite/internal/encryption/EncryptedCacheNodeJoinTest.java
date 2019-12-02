@@ -23,11 +23,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     /** */
     private static final String GRID_2 = "grid-2";
@@ -105,6 +109,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCantJoinWithoutEncryptionSpi() throws Exception {
         startGrid(GRID_0);
 
@@ -119,6 +124,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCantJoinWithDifferentKeyStore() throws Exception {
         startGrid(GRID_0);
 
@@ -133,6 +139,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCanJoin() throws Exception {
         startGrid(GRID_0);
 
@@ -140,6 +147,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCantJoinWithDifferentCacheKeys() throws Exception {
         IgniteEx grid0 = startGrid(GRID_0);
         startGrid(GRID_3);
@@ -168,6 +176,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testThirdNodeCanJoin() throws Exception {
         IgniteEx grid0 = startGrid(GRID_0);
 
@@ -187,6 +196,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testClientNodeJoin() throws Exception {
         IgniteEx grid0 = startGrid(GRID_0);
 
@@ -200,6 +210,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCantJoinWithSameNameButNotEncCache() throws Exception {
         configureCache = true;
 
@@ -218,6 +229,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
     }
 
     /** */
+    @Test
     public void testNodeCantJoinWithSameNameButEncCache() throws Exception {
         configureCache = true;
 

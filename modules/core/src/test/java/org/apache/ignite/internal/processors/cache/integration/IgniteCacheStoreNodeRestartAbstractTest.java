@@ -22,10 +22,14 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCacheAbstractTest {
     /** */
     protected static final String CACHE_NAME1 = "cache1";
@@ -73,6 +77,7 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshaller() throws Exception {
         grid(0).cache(CACHE_NAME1).put("key1", new UserObject("key1"));
 

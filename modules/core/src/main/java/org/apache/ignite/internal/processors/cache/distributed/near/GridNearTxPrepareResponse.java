@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -98,9 +97,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** Not {@code null} if client node should remap transaction. */
     private AffinityTopologyVersion clientRemapVer;
 
-    /** */
-    private MvccSnapshot mvccSnapshot;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -147,20 +143,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
         if (onePhaseCommit)
             flags |= NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK;
-    }
-
-    /**
-     * @param mvccSnapshot Mvcc info.
-     */
-    public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
-        this.mvccSnapshot = mvccSnapshot;
-    }
-
-    /**
-     * @return Mvcc info.
-     */
-    @Nullable public MvccSnapshot mvccSnapshot() {
-        return mvccSnapshot;
     }
 
     /**
@@ -376,72 +358,65 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         switch (writer.state()) {
-            case 10:
-                if (!writer.writeMessage("clientRemapVer", clientRemapVer))
-                    return false;
-
-                writer.incrementState();
-
             case 11:
-                if (!writer.writeMessage("dhtVer", dhtVer))
+                if (!writer.writeAffinityTopologyVersion("clientRemapVer", clientRemapVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("filterFailedKeys", filterFailedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeCollection("filterFailedKeys", filterFailedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeCollection("ownedValKeys", ownedValKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection("ownedValVals", ownedValVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("ownedValKeys", ownedValKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("ownedValVals", ownedValVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeMessage("retVal", retVal))
+                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeMessage("retVal", retVal))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -458,16 +433,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return false;
 
         switch (reader.state()) {
-            case 10:
-                clientRemapVer = reader.readMessage("clientRemapVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 11:
-                dhtVer = reader.readMessage("dhtVer");
+                clientRemapVer = reader.readAffinityTopologyVersion("clientRemapVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -475,7 +442,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 12:
-                filterFailedKeys = reader.readCollection("filterFailedKeys", MessageCollectionItemType.MSG);
+                dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -483,7 +450,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 13:
-                futId = reader.readIgniteUuid("futId");
+                filterFailedKeys = reader.readCollection("filterFailedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -491,7 +458,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 14:
-                miniId = reader.readInt("miniId");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -499,7 +466,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 15:
-                ownedValKeys = reader.readCollection("ownedValKeys", MessageCollectionItemType.MSG);
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -507,7 +474,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 16:
-                ownedValVals = reader.readCollection("ownedValVals", MessageCollectionItemType.MSG);
+                ownedValKeys = reader.readCollection("ownedValKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -515,7 +482,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 17:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
+                ownedValVals = reader.readCollection("ownedValVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -523,7 +490,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 18:
-                retVal = reader.readMessage("retVal");
+                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -531,7 +498,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 19:
-                writeVer = reader.readMessage("writeVer");
+                retVal = reader.readMessage("retVal");
 
                 if (!reader.isLastRead())
                     return false;
@@ -539,13 +506,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 20:
-                mvccSnapshot = reader.readMessage("mvccSnapshot");
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridNearTxPrepareResponse.class);

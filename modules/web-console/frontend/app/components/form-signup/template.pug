@@ -1,0 +1,105 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+.form-signup__grid(ng-form='signup' ng-ref='$ctrl.innerForm' ng-ref-read='form')
+    .span-2
+        +form-field__email({
+            label: 'Email:',
+            model: '$ctrl.ngModel.$viewValue.email',
+            name: '"email"',
+            placeholder: 'Input email',
+            required: true
+        })(
+            ng-model-options='{allowInvalid: true}'
+            autocomplete='email'
+            ignite-auto-focus
+        )
+            +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+    .span-1
+        +form-field__password({
+            label: 'Password:',
+            model: '$ctrl.ngModel.$viewValue.password',
+            name: '"password"',
+            placeholder: 'Input password',
+            required: true
+        })(
+            autocomplete='new-password'
+        )
+    .span-1
+        +form-field__password({
+            label: 'Confirm:',
+            model: 'confirm',
+            name: '"confirm"',
+            placeholder: 'Confirm password',
+            required: true
+        })(
+            ignite-match='$ctrl.ngModel.$viewValue.password'
+            autocomplete='off'
+        )
+    .span-1
+        +form-field__text({
+            label: 'First name:',
+            model: '$ctrl.ngModel.$viewValue.firstName',
+            name: '"firstName"',
+            placeholder: 'Input first name',
+            required: true
+        })(
+            autocomplete='given-name'
+        )
+    .span-1
+        +form-field__text({
+            label: 'Last name:',
+            model: '$ctrl.ngModel.$viewValue.lastName',
+            name: '"lastName"',
+            placeholder: 'Input last name',
+            required: true
+        })(
+            autocomplete='family-name'
+        )
+    .span-1
+        +form-field__phone({
+            label: 'Phone:',
+            model: '$ctrl.ngModel.$viewValue.phone',
+            name: '"phone"',
+            placeholder: 'Input phone (ex.: +15417543010)',
+            optional: true
+        })(
+            autocomplete='tel'
+        )
+    .span-1
+        +form-field__dropdown({
+            label: 'Country/Region:',
+            model: '$ctrl.ngModel.$viewValue.country',
+            name: '"country"',
+            required: true,
+            placeholder: 'Choose your country',
+            options: '$ctrl.countries'
+        })(
+            autocomplete='country'
+        )
+    .span-2
+        +form-field__text({
+            label: 'Company:',
+            model: '$ctrl.ngModel.$viewValue.company',
+            name: '"company"',
+            placeholder: 'Input company name',
+            required: true
+        })(
+            ignite-on-enter-focus-move='countryInput'
+            autocomplete='organization'
+        )

@@ -51,19 +51,6 @@ To build docker images from sources run following command in Ignite project root
 Prepared image can be listed with `docker images` command.
 
 
-Ignite Web Console Standalone Docker Image Build Manual Instructions
-====================================================================
-Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
-
-1. Build Apache Ignite Web Agent archive as described in `modules/web-console/web-agent/README.txt`.
-2. Goto Web Console's module directory: `cd modules/web-console`
-3. Build docker image:
-
-"docker build . -t apacheignite/web-console-standalone[:<version>] -f docker/standalone/Dockerfile"
-
-Prepared image can be listed in `docker images` command output.
-
-
 Ignite Web Console Backend Docker Image Build Manual Instructions
 ====================================================================
 Install Docker (version >=17.05) using instructions from https://www.docker.com/community-edition.
@@ -139,3 +126,20 @@ Unit tests are performed with Mocha framework - https://mochajs.org
 To launch tests on your local machine you will need:
 1. In new terminal change directory to 'modules/web-console/backend' folder and execute: "npm install".
 2. To start test environment and tests execute: "npm run test".
+
+
+Web Console settings
+====================
+Web Console backend could be configured with custom parameters.
+
+See "backend/config/settings.json.sample" for list of parameters with example value.
+
+If you need custom parameters, you will need create "backend/config/settings.json" and adjust values.
+
+Web Console settings for Docker
+===============================
+Web Console backend could be configured with custom parameters.
+
+You may pass custom parameters with help of "-e" option.
+
+For example: docker run -e "server_disable_signup=true" -p 9090:80 $IMAGE_ID

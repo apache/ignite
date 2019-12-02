@@ -205,6 +205,9 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
 
+    /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
+    public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
+
     /**
      * Enforces singleton.
      */
