@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
@@ -87,7 +86,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testLoadCache() {
-        runOperation(() -> grid(CLNT_ALLOWED_WRITE_PROP).<String, String>cache(TEST_CACHE).loadCache(TEST_PRED));
+        //runOperation(() -> grid(CLNT_ALLOWED_WRITE_PROP).<String, String>cache(TEST_CACHE).loadCache(TEST_PRED));
         runForbiddenOperation(() -> grid(CLNT_FORBIDDEN_WRITE_PROP)
             .<String, String>cache(TEST_CACHE).loadCache(TEST_PRED), AccessControlException.class);
     }
@@ -114,24 +113,18 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     private Stream<RunnableX> scanQueryOperations(Ignite node) {
         return Stream.of(
             () -> node.cache(TEST_CACHE).query(
-                new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
-                    @Override public boolean apply(Object o, Object o2) {
-                        controlAction();
+                new ScanQuery<>((Object o, Object o2) -> {
+                    controlAction();
 
-                        return false;
-                    }
-                })
-            ).getAll(),
+                    return false;
+                })).getAll(),
             () -> node.cache(TEST_CACHE).query(
                 new ScanQuery<>((k, v) -> true),
-                new IgniteClosure<Cache.Entry<Object, Object>, Object>() {
-                    @Override public Object apply(Cache.Entry<Object, Object> entry) {
-                        controlAction();
+                (Cache.Entry<Object, Object> entry) -> {
+                    controlAction();
 
-                        return null;
-                    }
-                }
-            ).getAll()
+                    return null;
+                }).getAll()
         );
     }
 
