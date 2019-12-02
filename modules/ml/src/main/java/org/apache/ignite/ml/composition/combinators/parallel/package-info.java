@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains parallel combinators of trainers and models.
+ * Contains parallel combiners (ensembles) of trainers and models.
  */
 package org.apache.ignite.ml.composition.combinators.parallel;

@@ -397,14 +397,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "CACHE_GROUPS",
             "CACHES",
             "TASKS",
-            "LOCAL_SQL_QUERY_HISTORY",
+            "SQL_QUERIES_HISTORY",
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
-            "LOCAL_SQL_RUNNING_QUERIES",
+            "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
             "TABLES",
@@ -413,7 +413,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
             "TRANSACTIONS",
-            "QUERY_CONTINUOUS"
+            "CONTINUOUS_QUERIES"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -528,8 +528,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testContinuousQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite0.createCache("cache-1");
 
-        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
 
         try (QueryCursor qry = cache.query(new ContinuousQuery<>()
             .setInitialQuery(new ScanQuery<>())
@@ -547,8 +547,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             checkContinuouQueryView(ignite1, false);
         }
 
-        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
     }
 
     /** */
@@ -563,7 +563,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "  REMOTE_FILTER, " +
             "  LOCAL_TRANSFORMED_LISTENER, " +
             "  REMOTE_TRANSFORMER " +
-            "FROM SYS.QUERY_CONTINUOUS");
+            "FROM SYS.CONTINUOUS_QUERIES");
 
         assertEquals(1, qrys.size());
 

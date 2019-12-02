@@ -21,6 +21,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
+/**
+ * Tests for a few properties of Sparse Storage.
+ */
 public class SparseVectorStorageTest extends AbstractStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isNumericVector(VectorStorage storage) {

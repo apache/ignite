@@ -68,15 +68,15 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
      * {@inheritDoc}
      */
     @Override public void aggregate(LabeledVector<L> vector) {
-        L label = vector.label();
+        L lb = vector.label();
         if (firstClsLbl == null)
-            this.firstClsLbl = label;
-        else if (secondClsLbl == null && !label.equals(firstClsLbl)) {
-            secondClsLbl = label;
+            this.firstClsLbl = lb;
+        else if (secondClsLbl == null && !lb.equals(firstClsLbl)) {
+            secondClsLbl = lb;
             swapLabelsIfNeed();
         }
         else
-            checkNewLabel(label);
+            checkNewLabel(lb);
     }
 
     /**
@@ -139,7 +139,7 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
     }
 
     /**
-     * Checks new label to mergeability with this context.
+     * Checks new label to merge-ability with this context.
      *
      * @param lb Label.
      */
