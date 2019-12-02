@@ -99,13 +99,13 @@ fi
 #
 # Save terminal setting. Used to restore terminal on finish.
 #
-SAVED_STTY=`stty -g 2>/dev/null`
+SAVED_STTY=$(stty -g 2>/dev/null || true)
 
 #
 # Restores terminal.
 #
 function restoreSttySettings() {
-    stty ${SAVED_STTY}
+    stty ${SAVED_STTY} || true
 }
 
 #
