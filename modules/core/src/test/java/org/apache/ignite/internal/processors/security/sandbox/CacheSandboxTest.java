@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlException;
 import java.util.stream.Stream;
-import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -86,7 +85,7 @@ public class CacheSandboxTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testLoadCache() {
-        //runOperation(() -> grid(CLNT_ALLOWED_WRITE_PROP).<String, String>cache(TEST_CACHE).loadCache(TEST_PRED));
+        runOperation(() -> grid(CLNT_ALLOWED_WRITE_PROP).<String, String>cache(TEST_CACHE).loadCache(TEST_PRED));
         runForbiddenOperation(() -> grid(CLNT_FORBIDDEN_WRITE_PROP)
             .<String, String>cache(TEST_CACHE).loadCache(TEST_PRED), AccessControlException.class);
     }
@@ -112,15 +111,13 @@ public class CacheSandboxTest extends AbstractSandboxTest {
      */
     private Stream<RunnableX> scanQueryOperations(Ignite node) {
         return Stream.of(
-            () -> node.cache(TEST_CACHE).query(
-                new ScanQuery<>((Object o, Object o2) -> {
-                    controlAction();
+            () -> node.cache(TEST_CACHE).query(new ScanQuery<>((o, o2) -> {
+                controlAction();
 
-                    return false;
-                })).getAll(),
+                return false;
+            })).getAll(),
             () -> node.cache(TEST_CACHE).query(
-                new ScanQuery<>((k, v) -> true),
-                (Cache.Entry<Object, Object> entry) -> {
+                new ScanQuery<>((k, v) -> true), e -> {
                     controlAction();
 
                     return null;
