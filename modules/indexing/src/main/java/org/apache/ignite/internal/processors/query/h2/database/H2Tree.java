@@ -85,9 +85,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final IndexColumn[] cols;
 
     /** */
-    private final int[] columnIds;
-
-    /** */
     private final boolean mvccEnabled;
 
     /** */
@@ -248,11 +245,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         }
 
         cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
-
-        columnIds = new int[cols.length];
-
-        for (int i = 0; i < cols.length; i++)
-            columnIds[i] = cols[i].column.getColumnId();
 
         created = initNew;
     }
@@ -531,7 +523,9 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return 0;
 
         for (int i = 0, len = cols.length; i < len; i++) {
-            int idx = columnIds[i];
+            IndexColumn idxCol = cols[i];
+
+            int idx = idxCol.column.getColumnId();
 
             Value v1 = r1.getValue(idx);
             Value v2 = r2.getValue(idx);
@@ -544,7 +538,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             int c = compareValues(v1, v2);
 
             if (c != 0)
-                return InlineIndexHelper.fixSort(c, cols[i].sortType);
+                return InlineIndexHelper.fixSort(c, idxCol.sortType);
         }
 
         return mvccCompare(r1, r2);
