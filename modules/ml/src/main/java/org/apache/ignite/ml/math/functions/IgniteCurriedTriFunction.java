@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import java.io.Serializable;
-
 /**
  * Serializable curried tri-function.
  *

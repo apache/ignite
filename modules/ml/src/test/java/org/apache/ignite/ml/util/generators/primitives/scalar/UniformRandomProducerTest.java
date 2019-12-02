@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.util.generators.primitives.scalar;
 
-import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;

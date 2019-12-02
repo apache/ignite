@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.math.functions;
 
-import java.io.Serializable;
 import java.util.function.BiFunction;
 
 /**

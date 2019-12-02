@@ -22,7 +22,6 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-import java.io.Serializable;
 import java.util.*;
 
 /** Base class for multi-classification model for set of classifiers. */

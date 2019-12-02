@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
