@@ -782,13 +782,13 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public void sync() throws StorageException {
-        // todo
-        if (!inited)
-            return;
-
         lock.writeLock().lock();
 
         try {
+            // todo why checkpointer syncs read-only partition?
+            if (!inited)
+                return;
+
             init();
 
             FileIO fileIO = this.fileIO;

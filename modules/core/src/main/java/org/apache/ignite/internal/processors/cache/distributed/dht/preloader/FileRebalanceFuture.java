@@ -274,8 +274,12 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                 cancelLock.lock();
                 try {
-                    for (GridCacheContext ctx : grp.caches())
-                        idxFuture.add(qryProc.rebuildIndexesFromHash(ctx));
+                    for (GridCacheContext ctx : grp.caches()) {
+                        IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
+
+                        if (fut != null)
+                            idxFuture.add(fut);
+                    }
 
                 } finally {
                     cancelLock.unlock();

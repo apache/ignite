@@ -2099,13 +2099,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public long reinit() {
             try {
                 // todo hard thinking about checkExists flag + think about initLatch
-                assert delegate == null;
-                assert !init.get();
-//                if (init.compareAndSet(true, false)) {
-//                    delegate = null;
-//
-//                    // TODO add test when the storage is not inited and the current method called
-//                }
+//                assert delegate == null : "p=" + partId;
+//                assert !init.get();
+                if (init.compareAndSet(true, false)) {
+                    delegate = null;
+
+                    // TODO add test when the storage is not inited and the current method called
+                }
 
                 CacheDataStore delegate0 = init0(false);
 
