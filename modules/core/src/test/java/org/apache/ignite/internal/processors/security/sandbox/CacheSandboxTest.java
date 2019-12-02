@@ -116,12 +116,11 @@ public class CacheSandboxTest extends AbstractSandboxTest {
 
                 return false;
             })).getAll(),
-            () -> node.cache(TEST_CACHE).query(
-                new ScanQuery<>((k, v) -> true), e -> {
-                    controlAction();
+            () -> node.cache(TEST_CACHE).query(new ScanQuery<>((k, v) -> true), e -> {
+                controlAction();
 
-                    return null;
-                }).getAll()
+                return null;
+            }).getAll()
         );
     }
 
