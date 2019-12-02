@@ -193,14 +193,14 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /**
-     * Create a {@link TrainersSequentialComposition} of whis trainer and specified trainer.
+     * Create a {@link TrainersSequentialComposition} of this trainer and specified trainer.
      *
      * @param tr Trainer to compose with.
      * @param datasetMappingProducer {@link DatasetMapping} producer specifying dependency between this trainer and
      * trainer to compose with.
      * @param <O1> Type of output of trainer to compose with.
      * @param <M1> Type of model produced by the trainer to compose with.
-     * @return A {@link TrainersSequentialComposition} of whis trainer and specified trainer.
+     * @return A {@link TrainersSequentialComposition} of this trainer and specified trainer.
      */
     public <O1, M1 extends IgniteModel<O, O1>> TrainersSequentialComposition<I, O, O1, L> andThen(
         DatasetTrainer<M1, L> tr,

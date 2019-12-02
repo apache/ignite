@@ -115,7 +115,7 @@ public class KNNClassificationModel extends KNNModel<Double> {
     /**
      * Groups given list of neighbours represented by vectors by label on several {@link GroupedNeighbours} groups.
      *
-     * @param neighbours List of meighbours.
+     * @param neighbours List of neighbours.
      * @return Collection of grouped neighbours (each group contains neighbours with the same label).
      */
     private Collection<GroupedNeighbours> groupByLabel(List<LabeledVector<Double>> neighbours) {
