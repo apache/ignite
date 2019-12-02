@@ -178,7 +178,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         while (nodes > 1) {
             G.allGrids().get(r.nextInt(--nodes)).close(); // Stopping random node.
 
-            awaitPartitionMapExchange();
+            awaitPartitionMapExchange(true, true, null, true);
 
             assertEquals(persistence ? 0 /*PME absent*/ : (nodes - 1) /*regular PME*/, cnt.get());
 
