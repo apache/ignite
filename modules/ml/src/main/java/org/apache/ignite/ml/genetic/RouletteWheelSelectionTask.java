@@ -49,7 +49,7 @@ public class RouletteWheelSelectionTask extends ComputeTaskAdapter<LinkedHashMap
     @IgniteInstanceResource
     private Ignite ignite;
 
-    // Inject load balancer.
+    /** Inject load balancer. */
     @LoadBalancerResource
     ComputeLoadBalancer balancer;
 
@@ -131,7 +131,7 @@ public class RouletteWheelSelectionTask extends ComputeTaskAdapter<LinkedHashMap
 
         List<Long> keys = new ArrayList();
 
-        parents.stream().forEach((x) -> {
+        parents.forEach((x) -> {
             long[] genes = x.getGenes();
             Chromosome newparent = new Chromosome(genes);
             cache.put(newparent.id(), newparent);

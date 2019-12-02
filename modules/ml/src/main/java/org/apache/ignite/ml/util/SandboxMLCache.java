@@ -135,7 +135,7 @@ public class SandboxMLCache {
 
             for (int i = 0; i < cells.length; i++)
                 try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
+                    if(cells[i].isEmpty()) data[i] = Double.NaN;
                     else data[i] = Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
                     try {

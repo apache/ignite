@@ -132,6 +132,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
                     + " for timeout(ms)=" + (throttleParkTimeNs / 1_000_000));
             }
 
+            long startTime = U.currentTimeMillis();
+
             if (isPageInCheckpoint) {
                 cpBufThrottledThreads.put(curThread.getId(), curThread);
 
@@ -149,6 +151,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             }
             else
                 LockSupport.parkNanos(throttleParkTimeNs);
+
+            pageMemory.metrics().addThrottlingTime(U.currentTimeMillis() - startTime);
         }
         else {
             int oldCntr = cntr.getAndSet(0);

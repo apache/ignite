@@ -59,7 +59,7 @@ public class GAConfiguration {
      *
      * No crossovers or mutations will be performed for elite chromosomes.
      *
-     * NOTE: This parameter is only considered when selectionMethod is SELECTON_METHOD_ELETISM.
+     * NOTE: This parameter is only considered when selectionMethod is SELECTION_METHOD_ELITISM.
      */
     private int elitismCnt;
 
@@ -77,8 +77,8 @@ public class GAConfiguration {
      */
     private int populationSize = 500;
 
-    /** Gene pool is the sum of ALL genes utilized to create chromsomes */
-    private List<Gene> genePool = new ArrayList<Gene>();
+    /** Gene pool is the sum of ALL genes utilized to create chromosomes */
+    private List<Gene> genePool = new ArrayList<>();
 
     /** Number of genes within a chromosome */
     private int chromosomeLen;
@@ -111,6 +111,9 @@ public class GAConfiguration {
      */
     private IFitnessFunction fitnessFunction;
 
+    /**
+     * Default constructor.
+     */
     public GAConfiguration() {
         this.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
         this.setTruncateRate(.10);
@@ -291,7 +294,7 @@ public class GAConfiguration {
     }
 
     /**
-     * Retreive the termination criteria
+     * Retrieve the termination criteria
      *
      * @return Termination Criteria
      */
