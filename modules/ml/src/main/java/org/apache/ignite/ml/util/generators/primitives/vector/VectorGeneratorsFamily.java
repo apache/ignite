@@ -151,8 +151,8 @@ public class VectorGeneratorsFamily implements VectorGenerator {
             double sumOfWeigts = weights.stream().mapToDouble(x -> x).sum();
             double[] probs = weights.stream().mapToDouble(w -> w / sumOfWeigts).toArray();
 
-            List<VectorGenerator> mappedFamilily = family.stream().map(mapper).collect(Collectors.toList());
-            return new VectorGeneratorsFamily(mappedFamilily, new DiscreteRandomProducer(seed, probs));
+            List<VectorGenerator> mappedFamily = family.stream().map(mapper).collect(Collectors.toList());
+            return new VectorGeneratorsFamily(mappedFamily, new DiscreteRandomProducer(seed, probs));
         }
     }
 

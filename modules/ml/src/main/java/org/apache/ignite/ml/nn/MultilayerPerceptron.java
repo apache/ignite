@@ -43,8 +43,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
-    Serializable {
+public final class MultilayerPerceptron implements SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
@@ -549,10 +548,10 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     }
 
     /**
-     * Differentiate nonlinearity.
+     * Differentiate non-linearity.
      *
      * @param linearOut Linear output of current layer.
-     * @param nonlinearity Nonlinearity of current layer.
+     * @param nonlinearity Non-linearity of current layer.
      * @return Gradients matrix.
      */
     private Matrix differentiateNonlinearity(Matrix linearOut,

@@ -24,5 +24,5 @@ import java.io.Serializable;
  *
  * @see IgniteCurriedBiFunction
  */
-public interface IgniteCurriedTriFunction<A, B, C, D> extends IgniteFunction<A, IgniteCurriedBiFunction<B, C, D>>, Serializable {
+public interface IgniteCurriedTriFunction<A, B, C, D> extends IgniteFunction<A, IgniteCurriedBiFunction<B, C, D>> {
 }

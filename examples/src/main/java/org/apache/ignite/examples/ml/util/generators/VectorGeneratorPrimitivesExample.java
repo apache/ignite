@@ -49,12 +49,12 @@ public class VectorGeneratorPrimitivesExample {
         Tracer.showClassificationDatasetHtml("Full ring", fullRing.asDataStream(), 1500, 0, 1, false);
         Tracer.showClassificationDatasetHtml("Sector", partOfRing.asDataStream(), 1500, 0, 1, false);
         Tracer.showClassificationDatasetHtml("Circle", circle.asDataStream(), 1500, 0, 1, false);
-        Tracer.showClassificationDatasetHtml("Paralellogram", parallelogram.asDataStream(), 1500, 0, 1, false);
+        Tracer.showClassificationDatasetHtml("Parallelogram", parallelogram.asDataStream(), 1500, 0, 1, false);
         Tracer.showClassificationDatasetHtml("Gauss", gauss.asDataStream(), 1500, 0, 1, false);
 
         // Using of rotate for generator.
         VectorGenerator rotatedParallelogram = parallelogram.rotate(-Math.PI / 8);
-        Tracer.showClassificationDatasetHtml("Rotated paralellogram", rotatedParallelogram.asDataStream(), 1500, 0, 1, false);
+        Tracer.showClassificationDatasetHtml("Rotated Parallelogram", rotatedParallelogram.asDataStream(), 1500, 0, 1, false);
 
         // Sum of generators where vectors from first generator are summed with corresponding vectors from second generator.
         VectorGenerator gaussPlusRing = gauss.plus(fullRing);
