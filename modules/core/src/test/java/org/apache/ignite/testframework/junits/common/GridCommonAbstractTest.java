@@ -1102,18 +1102,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
-        return findKeys(cache, cnt, startFrom, KeyType.PRIMARY);
+        return findKeys(cache, cnt, startFrom, TypePartitionForKey.PRIMARY);
     }
 
     /**
      * @param cache Cache.
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
-     * @param keyType type of key to find
+     * @param typePartitionForKey type of key to find
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final KeyType keyType) {
-        return findKeys(null, cache, cnt, startFrom, keyType);
+    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final TypePartitionForKey typePartitionForKey) {
+        return findKeys(null, cache, cnt, startFrom, typePartitionForKey);
     }
 
     /**
@@ -1121,11 +1121,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
-     * @param keyType type of key to find
+     * @param typePartitionForKey type of key to find
      * @return Collection of keys for which given cache is primary.
      */
     protected List<Integer> findKeys(@Nullable ClusterNode node, IgniteCache<?, ?> cache,
-        final int cnt, final int startFrom, final KeyType keyType) {
+        final int cnt, final int startFrom, final TypePartitionForKey typePartitionForKey) {
         assert cnt > 0 : cnt;
 
         final List<Integer> found = new ArrayList<>(cnt);
@@ -1142,7 +1142,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                         boolean ok;
 
-                        switch (keyType) {
+                        switch (typePartitionForKey) {
                             case PRIMARY:
                                 ok = aff.isPrimary(node0, key);
 
@@ -1153,7 +1153,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 break;
 
-                            case NEAR:
+                            case OTHER:
                                 ok = !aff.isPrimaryOrBackup(node0, key);
 
                                 break;
@@ -1287,7 +1287,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is backup.
      */
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
-        return findKeys(cache, cnt, startFrom, KeyType.BACKUP);
+        return findKeys(cache, cnt, startFrom, TypePartitionForKey.BACKUP);
     }
 
     /**
@@ -1299,7 +1299,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        return findKeys(cache, cnt, startFrom, KeyType.NEAR);
+        return findKeys(cache, cnt, startFrom, TypePartitionForKey.OTHER);
     }
 
     /**

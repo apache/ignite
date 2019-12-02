@@ -27,7 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.junits.common.KeyType;
+import org.apache.ignite.testframework.junits.common.TypePartitionForKey;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -253,17 +253,13 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
             List<List<Integer>> keys = new ArrayList<>();
 
             // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
-            for (KeyType keyType : KeyType.values()) {
-                if (cfg.getCacheMode() == LOCAL)
+            for (TypePartitionForKey typePartitionForKey : TypePartitionForKey.values()) {
+                if ((cfg.getCacheMode() == LOCAL) ||
+                    (typePartitionForKey == TypePartitionForKey.BACKUP && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0) ||
+                    (typePartitionForKey == TypePartitionForKey.OTHER && cfg.getCacheMode() == REPLICATED))
                     continue;
 
-                if (keyType == KeyType.BACKUP && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
-                    continue;
-
-                if (keyType == KeyType.NEAR && cfg.getCacheMode() == REPLICATED)
-                    continue;
-
-                List<Integer> keys0 = findKeys(cache, keysCnt, keyType.getKeyIndex() * 100_000, keyType);
+                List<Integer> keys0 = findKeys(cache, keysCnt, 0, typePartitionForKey);
 
                 assertEquals(cacheName, keysCnt, keys0.size());
 
