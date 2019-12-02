@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,6 +59,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -72,9 +75,14 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
+import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
@@ -86,6 +94,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
 import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -115,6 +124,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
+        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -605,6 +615,184 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         boolean res = waitForCondition(() -> systemView(TXS_MON_LIST).isEmpty(), 10_000L);
 
         assertTrue(res);
+    }
+
+    /** */
+    @Test
+    public void testLocalScanQuery() throws Exception {
+        IgniteCache<Integer, Integer> cache1 = ignite.createCache(
+            new CacheConfiguration<Integer, Integer>("cache1")
+                .setGroupName("group1"));
+
+        int part = ignite.affinity("cache1").primaryPartitions(ignite.localNode())[0];
+
+        List<Integer> partKeys = partitionKeys(cache1, part, 11, 0);
+
+        for (Integer key : partKeys)
+            cache1.put(key, key);
+
+        TabularDataSupport qrySysView0 = systemView(SCAN_QRY_SYS_VIEW);
+
+        assertNotNull(qrySysView0);
+
+        assertEquals(0, qrySysView0.size());
+
+        QueryCursor<Integer> qryRes1 = cache1.query(
+            new ScanQuery<Integer, Integer>()
+                .setFilter(new TestPredicate())
+                .setLocal(true)
+                .setPartition(part)
+                .setPageSize(10),
+            new TestTransformer());
+
+        assertTrue(qryRes1.iterator().hasNext());
+
+        boolean res = waitForCondition(() -> !systemView(SCAN_QRY_SYS_VIEW).isEmpty(), 5_000);
+
+        assertTrue(res);
+
+        CompositeData view = systemView(SCAN_QRY_SYS_VIEW).get(new Object[] {0});
+
+        assertEquals(ignite.localNode().id().toString(), view.get("originNodeId"));
+        assertEquals(0L, view.get("queryId"));
+        assertEquals("cache1", view.get("cacheName"));
+        assertEquals(cacheId("cache1"), view.get("cacheId"));
+        assertEquals(cacheGroupId("cache1", "group1"), view.get("cacheGroupId"));
+        assertEquals("group1", view.get("cacheGroupName"));
+        assertTrue((Long)view.get("startTime") <= System.currentTimeMillis());
+        assertTrue((Long)view.get("duration") >= 0);
+        assertFalse((Boolean)view.get("canceled"));
+        assertEquals(TEST_PREDICATE, view.get("filter"));
+        assertTrue((Boolean)view.get("local"));
+        assertEquals(part, view.get("partition"));
+        assertEquals(toStringSafe(ignite.context().discovery().topologyVersionEx()), view.get("topology"));
+        assertEquals(TEST_TRANSFORMER, view.get("transformer"));
+        assertFalse((Boolean)view.get("keepBinary"));
+        assertEquals("null", view.get("subjectId"));
+        assertNull(view.get("taskName"));
+
+        qryRes1.close();
+
+        res = waitForCondition(() -> systemView(SCAN_QRY_SYS_VIEW).isEmpty(), 5_000);
+
+        assertTrue(res);
+    }
+
+    /** */
+    @Test
+    public void testScanQuery() throws Exception {
+        try(IgniteEx client1 = startGrid("client-1");
+            IgniteEx client2 = startGrid("client-2")) {
+
+            IgniteCache<Integer, Integer> cache1 = client1.createCache(
+                new CacheConfiguration<Integer, Integer>("cache1")
+                    .setGroupName("group1"));
+
+            IgniteCache<Integer, Integer> cache2 = client2.createCache("cache2");
+
+            awaitPartitionMapExchange();
+
+            for (int i = 0; i < 100; i++) {
+                cache1.put(i, i);
+                cache2.put(i, i);
+            }
+
+            TabularDataSupport qrySysView0 = systemView(ignite, SCAN_QRY_SYS_VIEW);
+
+            assertNotNull(qrySysView0);
+
+            assertEquals(0, qrySysView0.size());
+
+            QueryCursor<Integer> qryRes1 = cache1.query(
+                new ScanQuery<Integer, Integer>()
+                    .setFilter(new TestPredicate())
+                    .setPageSize(10),
+                new TestTransformer());
+
+            QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
+                .setPageSize(20));
+
+            assertTrue(qryRes1.iterator().hasNext());
+            assertTrue(qryRes2.iterator().hasNext());
+
+            checkScanQueryView(client1, client2, ignite);
+
+            qryRes1.close();
+            qryRes2.close();
+
+            boolean res = waitForCondition(() -> qrySysView0.isEmpty(), 5_000);
+
+            assertTrue(res);
+        }
+    }
+
+    /** */
+    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, IgniteEx server) throws Exception {
+        boolean res = waitForCondition(() -> systemView(server, SCAN_QRY_SYS_VIEW).size() > 1, 5_000);
+
+        assertTrue(res);
+
+        Consumer<CompositeData> cache1checker = view -> {
+            assertEquals(client1.localNode().id().toString(), view.get("originNodeId"));
+            assertTrue((Long)view.get("queryId") != 0);
+            assertEquals("cache1", view.get("cacheName"));
+            assertEquals(cacheId("cache1"), view.get("cacheId"));
+            assertEquals(cacheGroupId("cache1", "group1"), view.get("cacheGroupId"));
+            assertEquals("group1", view.get("cacheGroupName"));
+            assertTrue((Long)view.get("startTime") <= System.currentTimeMillis());
+            assertTrue((Long)view.get("duration") >= 0);
+            assertFalse((Boolean)view.get("canceled"));
+            assertEquals(TEST_PREDICATE, view.get("filter"));
+            assertFalse((Boolean)view.get("local"));
+            assertEquals(-1, view.get("partition"));
+            assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.get("topology"));
+            assertEquals(TEST_TRANSFORMER, view.get("transformer"));
+            assertFalse((Boolean)view.get("keepBinary"));
+            assertEquals("null", view.get("subjectId"));
+            assertNull(view.get("taskName"));
+            assertEquals(10, view.get("pageSize"));
+        };
+
+        Consumer<CompositeData> cache2checker = view -> {
+            assertEquals(client2.localNode().id().toString(), view.get("originNodeId"));
+            assertTrue((Long)view.get("queryId") != 0);
+            assertEquals("cache2", view.get("cacheName"));
+            assertEquals(cacheId("cache2"), view.get("cacheId"));
+            assertEquals(cacheGroupId("cache2", null), view.get("cacheGroupId"));
+            assertEquals("cache2", view.get("cacheGroupName"));
+            assertTrue((Long)view.get("startTime") <= System.currentTimeMillis());
+            assertTrue((Long)view.get("duration") >= 0);
+            assertFalse((Boolean)view.get("canceled"));
+            assertNull(view.get("filter"));
+            assertFalse((Boolean)view.get("local"));
+            assertEquals(-1, view.get("partition"));
+            assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.get("topology"));
+            assertNull(view.get("transformer"));
+            assertTrue((Boolean)view.get("keepBinary"));
+            assertEquals("null", view.get("subjectId"));
+            assertNull(view.get("taskName"));
+            assertEquals(20, view.get("pageSize"));
+        };
+
+        boolean found1 = false;
+        boolean found2 = false;
+
+        TabularDataSupport qrySysView = systemView(server, SCAN_QRY_SYS_VIEW);
+
+        for (int i=0; i < qrySysView.size(); i++) {
+            CompositeData view = systemView(SCAN_QRY_SYS_VIEW).get(new Object[] {i});
+
+            if ("cache2".equals(view.get("cacheName"))) {
+                cache2checker.accept(view);
+                found1 = true;
+            }
+            else {
+                cache1checker.accept(view);
+                found2 = true;
+            }
+        }
+
+        assertTrue(found1 && found2);
     }
 
     /** */
