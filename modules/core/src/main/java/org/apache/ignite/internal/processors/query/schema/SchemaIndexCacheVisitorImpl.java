@@ -257,7 +257,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         finally {
             part.release();
 
-            if (partsCnt.getAndDecrement() > 0)
+            if (partsCnt.getAndUpdate(v -> v > 0 ? v - 1 : 0) > 0)
                 cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
         }
     }
