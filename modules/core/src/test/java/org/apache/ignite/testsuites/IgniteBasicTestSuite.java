@@ -33,6 +33,7 @@ import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
 import org.apache.ignite.internal.GridMBeansTest;
+import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridPeerDeploymentRetryModifiedTest;
 import org.apache.ignite.internal.GridPeerDeploymentRetryTest;
@@ -184,6 +185,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
         suite.addTestSuite(GridLocalIgniteSerializationTest.class);
         suite.addTestSuite(GridMBeansTest.class);
+        suite.addTestSuite(GridMbeansMiscTest.class);
         suite.addTestSuite(TransactionsMXBeanImplTest.class);
         suite.addTestSuite(SetTxTimeoutOnPartitionMapExchangeTest.class);
 
