@@ -134,6 +134,13 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCacheCheckpointSpiMbeanValidity() throws Exception {
+        validateMbeans(grid(1), "org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi$CacheCheckpointSpiMBeanImpl");
+    }
+
+    /**
      * Failover test task.
      */
     @ComputeTaskSessionFullSupport

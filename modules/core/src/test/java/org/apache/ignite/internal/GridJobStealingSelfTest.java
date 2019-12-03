@@ -293,6 +293,19 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             ret.get(ignite3.cluster().localNode().id());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJobStealingMbeanValidity() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-25507");
+
+        String[] beansToValidate = new String[] {
+            "org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi$JobStealingCollisionSpiMBeanImpl",
+            "org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi$JobStealingFailoverSpiMBeanImpl"};
+
+        validateMbeans(ignite1, beansToValidate);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
