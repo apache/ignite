@@ -153,6 +153,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             stop = true;
 
             resetPartitionsCount();
+
+            throw e;
         }
 
         if (fut != null)
