@@ -130,9 +130,9 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2).add(mlp3);
 
-        Assert.assertTrue(stackedMLP.toString().length() > 0);
-        Assert.assertTrue(stackedMLP.toString(true).length() > 0);
-        Assert.assertTrue(stackedMLP.toString(false).length() > 0);
+        Assert.assertTrue(!stackedMLP.toString().isEmpty());
+        Assert.assertTrue(!stackedMLP.toString(true).isEmpty());
+        Assert.assertTrue(!stackedMLP.toString(false).isEmpty());
 
         Assert.assertEquals(4, stackedMLP.architecture().outputSize());
         Assert.assertEquals(8, stackedMLP.architecture().layersCount());

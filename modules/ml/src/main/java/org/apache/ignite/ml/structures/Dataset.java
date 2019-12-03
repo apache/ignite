@@ -21,14 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class for set of vectors. This is a base class in hierarchy of datasets.
  */
-public class Dataset<Row extends DatasetRow> implements Serializable, Externalizable {
+public class Dataset<Row extends DatasetRow> implements Externalizable {
     /** Data to keep. */
     protected Row[] data;
 

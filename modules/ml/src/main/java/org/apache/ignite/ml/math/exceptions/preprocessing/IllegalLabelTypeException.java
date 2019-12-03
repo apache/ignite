@@ -27,11 +27,11 @@ public class IllegalLabelTypeException extends IgniteException {
     private static final long serialVersionUID = 120L;
 
     /**
-     * @param illegalClass The illegal type.
+     * @param illegalCls The illegal type.
      * @param illegalVal The illegal value.
-     * @param desiredClass The desired type.
+     * @param desiredCls The desired type.
      */
-    public IllegalLabelTypeException(Class illegalClass, Object illegalVal, Class desiredClass) {
-        super("The type of label " + illegalClass + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredClass);
+    public IllegalLabelTypeException(Class illegalCls, Object illegalVal, Class desiredCls) {
+        super("The type of label " + illegalCls + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredCls);
     }
 }
