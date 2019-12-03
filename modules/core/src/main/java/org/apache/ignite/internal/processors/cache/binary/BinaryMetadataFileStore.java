@@ -14,23 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,6 +65,15 @@ class BinaryMetadataFileStore {
 
     /** */
     private final IgniteLogger log;
+
+    /** */
+    private BinaryMetadataAsyncWriter writer;
+
+    /** */
+    private final ConcurrentMap<OperationSyncKey, GridFutureAdapter> writeOpFutures = new ConcurrentHashMap<>();
+
+    /** Flag to indicate that node is stopping due to detected critical error. */
+    private volatile boolean stopOnCriticalError = false;
 
     /**
      * @param metadataLocCache Metadata locale cache.
@@ -90,6 +110,16 @@ class BinaryMetadataFileStore {
         }
 
         U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
+
+        writer = new BinaryMetadataAsyncWriter();
+        new IgniteThread(writer).start();
+    }
+
+    /**
+     * Stops worker for async writing of binary metadata.
+     */
+    void stop() {
+        U.cancel(writer);
     }
 
     /**
@@ -117,6 +147,19 @@ class BinaryMetadataFileStore {
                 "; exception was thrown: " + e.getMessage();
 
             U.error(log, msg);
+
+            stopOnCriticalError = true;
+
+            for (Map.Entry<OperationSyncKey, GridFutureAdapter> entry : writeOpFutures.entrySet()) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Cancelling future for write operation for" +
+                        " [typeId=" + entry.getKey().typeId +
+                        ", typeVer=" + entry.getKey().typeVer + ']'
+                    );
+
+                entry.getValue().onDone(entry);
+            }
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
@@ -182,5 +225,236 @@ class BinaryMetadataFileStore {
         }
 
         return null;
+    }
+
+    /**
+     * @param meta Binary metadata to be written.
+     * @param typeVer Type version.
+     */
+    void writeMetadataAsync(BinaryMetadata meta, int typeVer) {
+        if (!CU.isPersistenceEnabled(ctx.config()))
+            return;
+
+        if (log.isDebugEnabled())
+            log.debug(
+                "Submitting task for async write for" +
+                " [typeName=" + meta.typeName() +
+                ", typeId=" + meta.typeId() +
+                ", typeVersion=" + typeVer + ']'
+            );
+
+        writer.submit(new WriteOperationTask(meta, typeVer));
+    }
+
+    /**
+     * {@code typeVer} parameter is always non-negative except one special case
+     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryType, boolean)} for context):
+     * if request for bin meta update arrives right at the moment when node is stopping
+     * {@link MetadataUpdateResult} of special type is generated: UPDATE_DISABLED.
+     *
+     * At this moment type version is unknown and blocking thread adds risk of deadlock so wait is skipped.
+     *
+     * @param typeId Type ID.
+     * @param typeVer Type version.
+     * @throws IgniteCheckedException If write operation failed.
+     */
+    void waitForWriteCompletion(int typeId, int typeVer) throws IgniteCheckedException {
+        //special case, see javadoc
+        if (typeVer == -1) {
+            if (log.isDebugEnabled())
+                log.debug("No need to wait for " + typeId + ", negative typeVer was passed.");
+
+            return;
+        }
+
+        GridFutureAdapter fut = writeOpFutures.get(new OperationSyncKey(typeId, typeVer));
+
+        if (fut != null) {
+            if (log.isDebugEnabled())
+                log.debug(
+                    "Waiting for write completion of" +
+                    " [typeId=" + typeId +
+                    ", typeVer=" + typeVer + ']'
+                );
+
+            fut.get();
+        }
+    }
+
+    /**
+     *
+     */
+    private class BinaryMetadataAsyncWriter extends GridWorker {
+        /** */
+        private final BlockingQueue<WriteOperationTask> queue = new LinkedBlockingQueue<>();
+
+        /** */
+        BinaryMetadataAsyncWriter() {
+            super(ctx.igniteInstanceName(), "binary-metadata-writer", BinaryMetadataFileStore.this.log, ctx.workersRegistry());
+        }
+
+        /**
+         * @param task Write operation task.
+         */
+        void submit(WriteOperationTask task) {
+            if (isCancelled())
+                return;
+
+            GridFutureAdapter writeOpFuture = new GridFutureAdapter();
+
+            writeOpFutures.put(new OperationSyncKey(task.meta.typeId(), task.typeVer), writeOpFuture);
+
+            if (stopOnCriticalError) {
+                writeOpFuture.onDone(new Exception("The node is in invalid state due to a critical error. " +
+                    "See logs for more details."));
+
+                return;
+            }
+
+            queue.add(task);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            super.cancel();
+
+            queue.clear();
+
+            IgniteCheckedException err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+            for (Map.Entry<OperationSyncKey, GridFutureAdapter> e : writeOpFutures.entrySet()) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Cancelling future for write operation for" +
+                        " [typeId=" + e.getKey().typeId +
+                        ", typeVer=" + e.getKey().typeVer + ']'
+                    );
+
+                e.getValue().onDone(err);
+            }
+
+            writeOpFutures.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+           while (!isCancelled()) {
+               try {
+                   body0();
+               }
+               catch (InterruptedException e) {
+                   if (!isCancelled) {
+                       ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, e));
+
+                       throw e;
+                   }
+               }
+           }
+        }
+
+        /** */
+        private void body0() throws InterruptedException {
+            WriteOperationTask task;
+
+            blockingSectionBegin();
+
+            try {
+                task = queue.take();
+
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Starting write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']'
+                    );
+
+                writeMetadata(task.meta);
+            }
+            finally {
+                blockingSectionEnd();
+            }
+
+            GridFutureAdapter fut = writeOpFutures.remove(new OperationSyncKey(task.meta.typeId(), task.typeVer));
+
+            if (fut != null) {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Future for write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']' +
+                        " completed."
+                    );
+
+                fut.onDone();
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug(
+                        "Future for write operation for" +
+                        " [typeId=" + task.meta.typeId() +
+                        ", typeVer=" + task.typeVer + ']' +
+                        " not found."
+                    );
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class WriteOperationTask {
+        /** */
+        private final BinaryMetadata meta;
+        /** */
+        private final int typeVer;
+
+        /**
+         * @param meta Metadata for binary type.
+         * @param ver Version of type.
+         */
+        private WriteOperationTask(BinaryMetadata meta, int ver) {
+            this.meta = meta;
+            typeVer = ver;
+        }
+    }
+
+    /**
+     *
+     */
+    private static final class OperationSyncKey {
+        /** */
+        private final int typeId;
+
+        /** */
+        private final int typeVer;
+
+        /**
+         * @param typeId Type Id.
+         * @param typeVer Type version.
+         */
+        private OperationSyncKey(int typeId, int typeVer) {
+            this.typeId = typeId;
+            this.typeVer = typeVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 31 * typeId + typeVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (!(obj instanceof OperationSyncKey))
+                return false;
+
+            OperationSyncKey that = (OperationSyncKey)obj;
+
+            return (that.typeId == typeId) && (that.typeVer == typeVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(OperationSyncKey.class, this);
+        }
     }
 }

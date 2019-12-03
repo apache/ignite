@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -313,8 +313,20 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
 
-        if (filter == null || filter.evictAllowed(e.wrapLazyValue(cctx.keepBinary())))
-            plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
+        if (filter == null || filter.evictAllowed(e.wrapLazyValue(cctx.keepBinary()))) {
+            try {
+                plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
+            }
+            catch (RuntimeException ex) {
+                if (!e.obsoleteOrDeleted()) {
+                    U.ignoreRuntimeException(() -> plc.onEntryAccessed(true, e.wrapEviction()));
+                    e.wrapEviction().evict();
+                }
+
+                LT.warn(log, "Eviction manager caught an error [msg=" + ex.getMessage() + "]." +
+                    " Entry [key=" + e.key() + "] wasn't inserted.");
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -108,6 +108,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
+import static org.apache.ignite.internal.IgniteFeatures.IGNITE_SECURITY_PROCESSOR;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
@@ -1683,9 +1684,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         boolean ordered,
         long timeout,
         boolean skipOnTimeout) throws IgniteCheckedException {
-        boolean securityMsgSupported = IgniteFeatures.allNodesSupports(ctx.discovery().allNodes(), IgniteFeatures.IGNITE_SECURITY_PROCESSOR);
-
-        if (ctx.security().enabled() && securityMsgSupported) {
+        if (ctx.security().enabled() &&
+            IgniteFeatures.allNodesSupports(ctx.discovery().allNodes(), IGNITE_SECURITY_PROCESSOR)) {
             UUID secSubjId = null;
 
             SecurityContext secCtx = ctx.security().securityContext();
@@ -2017,7 +2017,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @param p Message predicate.
      */
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
-        addUserMessageListener(topic, p, null);
+        addUserMessageListener(topic, p, ctx.localNodeId());
     }
 
     /**
@@ -2027,7 +2027,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void addUserMessageListener(
         final @Nullable Object topic,
         final @Nullable IgniteBiPredicate<UUID, ?> p,
-        final @Nullable UUID nodeId
+        final UUID nodeId
     ) {
         if (p != null) {
             try {

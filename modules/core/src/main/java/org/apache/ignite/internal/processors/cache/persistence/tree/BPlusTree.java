@@ -5005,6 +5005,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             return r;
         }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            rows = null;
+        }
     }
 
     /**

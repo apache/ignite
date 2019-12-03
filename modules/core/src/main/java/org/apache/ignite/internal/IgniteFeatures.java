@@ -79,17 +79,8 @@ public enum IgniteFeatures {
     /** Support of DR events from  Web Console. */
     WC_DR_EVENTS(20),
 
-    /** Support of rolling upgrade status task for Web Console. */
-    WC_ROLLING_UPGRADE_STATUS(21),
-
     /** Support of chain parameter in snapshot delete task for Web Console. */
     WC_SNAPSHOT_CHAIN_MODE(22),
-
-    /** Support of baseline auto adjustment for Web Console. */
-    WC_BASELINE_AUTO_ADJUSTMENT(23),
-
-    /** Scheduling disabled. */
-    WC_SCHEDULING_NOT_AVAILABLE(24),
 
     /** Support of DR-specific visor tasks used by control utility. */
     DR_CONTROL_UTILITY(25);
@@ -137,6 +128,9 @@ public enum IgniteFeatures {
      * @return {@code True} if feature is declared to be supported by remote node.
      */
     public static boolean nodeSupports(byte[] featuresAttrBytes, IgniteFeatures feature) {
+        if (featuresAttrBytes == null)
+            return false;
+
         int featureId = feature.getFeatureId();
 
         // Same as "BitSet.valueOf(features).get(featureId)"

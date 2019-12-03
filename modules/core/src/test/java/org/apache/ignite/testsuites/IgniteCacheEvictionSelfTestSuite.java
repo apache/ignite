@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFailureHandlerTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
@@ -89,6 +90,7 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
         suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
         suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
+        suite.addTest(new TestSuite(EvictionPolicyFailureHandlerTest.class));
 
         suite.addTest(new TestSuite(PageEvictionMetricTest.class));
 

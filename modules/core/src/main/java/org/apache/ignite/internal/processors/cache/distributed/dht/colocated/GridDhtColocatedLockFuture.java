@@ -156,9 +156,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     @SuppressWarnings("UnusedDeclaration")
     private volatile int done;
 
-    /** Trackable flag (here may be non-volatile). */
-    private boolean trackable;
-
     /** TTL for create operation. */
     private final long createTtl;
 
@@ -182,6 +179,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** {@code True} when mappings are ready for processing. */
     private boolean mappingsReady;
+
+    /** */
+    private boolean trackable = true;
 
     /**
      * @param cctx Registry.
@@ -777,20 +777,24 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
+            AffinityTopologyVersion lastChangeVer = cctx.shared().exchange().lastAffinityChangedTopologyVersion(topVer);
+
+            IgniteInternalFuture<AffinityTopologyVersion> affFut = cctx.shared().exchange().affinityReadyFuture(lastChangeVer);
+
+            if (!affFut.isDone()) {
+                try {
+                    affFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(err);
+
+                    return;
+                }
+            }
+
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
-                if (fut.exchangeDone() && fut.topologyVersion().equals(topVer)) {
-                    Throwable err = null;
-
-                    // Before cache validation, make sure that this topology future is already completed.
-                    try {
-                        fut.get();
-                    }
-                    catch (IgniteCheckedException e) {
-                        err = fut.error();
-                    }
-
-                    if (err == null)
-                        err = fut.validateCache(cctx, recovery, read, null, keys);
+                if (fut.exchangeDone() && fut.topologyVersion().equals(lastChangeVer)) {
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);

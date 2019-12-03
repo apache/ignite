@@ -280,6 +280,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public void stop(boolean cancel) {
         if (transport != null)
             transport.stop();
+
+        if (metadataFileStore != null)
+            metadataFileStore.stop();
     }
 
     /** {@inheritDoc} */
@@ -511,6 +514,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             if (res.rejected())
                 throw res.error();
+            else if (!ctx.clientNode())
+                metadataFileStore.waitForWriteCompletion(typeId, res.typeVersion());
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to update metadata for type: " + newMeta.typeName(), e);
@@ -577,6 +582,30 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /**
+     * Forces caller thread to wait for binary metadata write operation for given type ID.
+     *
+     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
+     *
+     * @param typeId ID of binary type to wait for metadata write operation.
+     */
+    public void waitMetadataWriteIfNeeded(final int typeId) {
+        if (metadataFileStore == null)
+            return;
+
+        BinaryMetadataHolder hldr = metadataLocCache.get(typeId);
+
+        if (hldr != null) {
+            try {
+                metadataFileStore.waitForWriteCompletion(typeId, hldr.acceptedVersion());
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                    ", typeVer=" + hldr.acceptedVersion() + ']', e);
+            }
+        }
+    }
+
+    /**
      * @param typeId Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
@@ -617,6 +646,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.
+                }
+            }
+            else if (metadataFileStore != null) {
+                try {
+                    metadataFileStore.waitForWriteCompletion(typeId, holder.acceptedVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                        ", typeVer=" + holder.acceptedVersion() + ']', e);
+
+                    return null;
                 }
             }
 
@@ -730,6 +770,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + holder.pendingVersion()
                         + ", acceptedVer=" + holder.acceptedVersion() + ']');
+            }
+        }
+
+        if (holder != null && metadataFileStore != null) {
+            try {
+                metadataFileStore.waitForWriteCompletion(typeId, holder.acceptedVersion());
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                    ", typeVer=" + holder.acceptedVersion() + ']', e);
+
+                return null;
             }
         }
 

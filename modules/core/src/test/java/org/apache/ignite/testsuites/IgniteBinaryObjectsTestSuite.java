@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
+import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
@@ -55,7 +56,9 @@ import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
@@ -103,6 +106,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
+        suite.addTestSuite(BinaryFieldExtractionSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
@@ -140,7 +144,9 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheBinaryObjectMetadataExchangeMultinodeTest.class);
         suite.addTestSuite(BinaryMetadataUpdatesFlowTest.class);
-        suite.addTestSuite(BinaryMetadataRegistrationTest.class);
+        suite.addTestSuite(BinaryMetadataRegistrationCacheApiTest.class);
+        suite.addTestSuite(BinaryMetadataRegistrationEntryProcessorTest.class);
+        suite.addTestSuite(BinaryMetadataRegistrationCacheStoreTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
         suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
 
