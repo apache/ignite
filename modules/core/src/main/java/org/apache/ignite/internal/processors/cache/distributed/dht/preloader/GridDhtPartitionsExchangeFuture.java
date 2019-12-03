@@ -892,10 +892,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             switch (exchange) {
                 case ALL: {
-                    if (exchCtx.exchangeFreeSwitch())
-                        distributedRecovery();
-                    else
-                        distributedExchange();
+                    distributedExchange();
 
                     break;
                 }
@@ -1470,19 +1467,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void distributedRecovery() throws IgniteCheckedException {
-        initTopologies();
-
-        waitRecovery();
-
-        finalizePartitionCounters();
-
-        onDone(initialVersion());
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
     private void distributedExchange() throws IgniteCheckedException {
         assert crd != null;
 
@@ -1524,8 +1508,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean skipWaitOnLocalJoin = cctx.exchange().latch().canSkipJoiningNodes(initialVersion())
             && localJoinExchange();
 
-        // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
-        if (!skipWaitOnLocalJoin) {
+        if (context().exchangeFreeSwitch())
+            waitPartitionRelease(false, false);
+        else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
 
             // Do not perform distributed partition release in case of cluster activation.
@@ -1620,17 +1605,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            if (crd.isLocal()) {
-                if (remaining.isEmpty()) {
-                    initFut.onDone(true);
+            if (context().exchangeFreeSwitch())
+                onDone(initialVersion());
+            else {
+                if (crd.isLocal()) {
+                    if (remaining.isEmpty()) {
+                        initFut.onDone(true);
 
-                    onAllReceived(null);
+                        onAllReceived(null);
+                    }
                 }
-            }
-            else
-                sendPartitions(crd);
+                else
+                    sendPartitions(crd);
 
-            initDone();
+                initDone();
+            }
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -1701,96 +1690,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void waitRecovery() throws IgniteCheckedException {
-        Latch recoveryLatch;
-
-        IgniteInternalFuture<?> partRecoveryFut;
-
-        cctx.exchange().exchangerBlockingSectionBegin();
-
-        try {
-            recoveryLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
-
-            partRecoveryFut = cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode());
-        }
-        finally {
-            cctx.exchange().exchangerBlockingSectionEnd();
-        }
-
-        int dumpCnt = 0;
-
-        long nextDumpTime = 0;
-
-        IgniteConfiguration cfg = cctx.gridConfig();
-
-        long waitTimeout = 2 * cfg.getNetworkTimeout();
-
-        while (true) {
-            long curTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
-
-            cctx.exchange().exchangerBlockingSectionBegin();
-
-            try {
-                partRecoveryFut.get(waitTimeout, TimeUnit.MILLISECONDS);
-
-                break;
-            }
-            catch (IgniteFutureTimeoutCheckedException ignored) {
-                if (nextDumpTime <= U.currentTimeMillis()) {
-                    dumpPendingObjects(partReleaseFut, curTimeout <= 0);
-
-                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Unable to await partitions recovery future", e);
-
-                throw e;
-            }
-            finally {
-                cctx.exchange().exchangerBlockingSectionEnd();
-            }
-        }
-
-        timeBag.finishGlobalStage("Wait partitions recover");
-
-        recoveryLatch.countDown();
-
-        try {
-            while (true) {
-                try {
-                    cctx.exchange().exchangerBlockingSectionBegin();
-
-                    try {
-                        recoveryLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
-                    }
-                    finally {
-                        cctx.exchange().exchangerBlockingSectionEnd();
-                    }
-
-                    if (log.isInfoEnabled())
-                        log.info("Finished waiting for partitions recovery latch: " + recoveryLatch);
-
-                    break;
-                }
-                catch (IgniteFutureTimeoutCheckedException ignored) {
-                    U.warn(log, "Unable to await partitions recovery latch within timeout: " + recoveryLatch);
-
-                    // Try to resend ack.
-                    recoveryLatch.countDown();
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Stop waiting for partitions recovery latch: " + e.getMessage());
-        }
-
-        timeBag.finishGlobalStage("Wait partitions recovery latch");
-    }
-
-    /**
      * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on
      * the previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two
      * different simultaneous owners of the same lock.
@@ -1815,7 +1714,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (distributed)
                 releaseLatch = cctx.exchange().latch().getOrCreate(DISTRIBUTED_LATCH_ID, initialVersion());
 
-            partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
+            partReleaseFut = context().exchangeFreeSwitch() ?
+                cctx.partitionRecoveryFuture(initialVersion(), firstDiscoEvt.eventNode()) :
+                cctx.partitionReleaseFuture(initialVersion());
 
             // Assign to class variable so it will be included into toString() method.
             this.partReleaseFut = partReleaseFut;
@@ -1891,6 +1792,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isInfoEnabled())
                 log.info("Finished waiting for partition release future [topVer=" + exchangeId().topologyVersion() +
                     ", waitTime=" + waitTime + "ms, futInfo=" + futInfo + ", mode=" + mode + "]");
+        }
+
+        if (context().exchangeFreeSwitch()) {
+            assert !distributed : "Partitions release latch must be initialized in distributed mode.";
+
+            timeBag.finishGlobalStage("Wait partitions recovery");
+
+            return;
         }
 
         IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
