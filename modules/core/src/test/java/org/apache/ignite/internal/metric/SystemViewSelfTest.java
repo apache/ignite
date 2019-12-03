@@ -912,7 +912,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks striped executro system view.
+     * Checks striped executor system view.
      *
      * @param execSvc Striped executor.
      * @param view System view.
