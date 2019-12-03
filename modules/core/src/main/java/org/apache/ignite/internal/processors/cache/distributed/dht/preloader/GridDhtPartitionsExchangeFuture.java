@@ -799,10 +799,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (exchCtx.exchangeFreeSwitch()){
                 exchange = onExchangeFreeSwitch();
 
-                assert wasRebalanced() : this;
-
-                markRebalanced(); // Still rebalanced.
-
                 initCoordinatorCaches(newCrd);
             }
             else if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -898,7 +894,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 case CLIENT: {
-                    if (!exchCtx.mergeExchanges() && (exchCtx.fetchAffinityOnJoin() || exchCtx.exchangeFreeSwitch()))
+                    if (!exchCtx.mergeExchanges() && exchCtx.fetchAffinityOnJoin())
                         initTopologies();
 
                     clientOnlyExchange();
@@ -912,9 +908,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     synchronized (mux) {
                         state = ExchangeLocalState.DONE;
                     }
-
-                    if (wasRebalanced())
-                        markRebalanced(); // Still rebalanced.
 
                     onDone(topVer);
 
@@ -1376,7 +1369,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.affinity().onClientEvent(this);
 
-        return firstDiscoEvt.eventNode().isLocal() ? ExchangeType.CLIENT : ExchangeType.NONE;
+        if (firstDiscoEvt.eventNode().isLocal())
+            return ExchangeType.CLIENT;
+        else {
+            if (wasRebalanced())
+                markRebalanced();
+
+            return ExchangeType.NONE;
+        }
     }
 
     /**
@@ -1410,22 +1410,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert exchCtx.exchangeFreeSwitch();
 
+        assert wasRebalanced() : this;
+
+        markRebalanced(); // Still rebalanced.
+
         onLeft();
 
         exchCtx.events().warnNoAffinityNodes(cctx);
 
         cctx.affinity().onExchangeFreeSwitch(this);
 
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+        return cctx.kernalContext().clientNode() ? ExchangeType.NONE : ExchangeType.ALL;
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     private void clientOnlyExchange() throws IgniteCheckedException {
-        if (exchCtx.exchangeFreeSwitch())
-            onDone(initialVersion());
-        else if (crd != null) {
+        if (crd != null) {
             assert !crd.isLocal() : crd;
 
             cctx.exchange().exchangerBlockingSectionBegin();
