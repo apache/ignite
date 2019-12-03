@@ -1371,6 +1371,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
                 callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
 
+            registerMetrics();
+
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
@@ -4531,6 +4533,53 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteInternalFuture sendIoTest(List<ClusterNode> nodes, byte[] payload, boolean procFromNioThread) {
         return ctx.io().sendIoTest(nodes, payload, procFromNioThread);
+    }
+
+    /**
+     * Registers metrics.
+     */
+    private void registerMetrics() {
+        if (!ctx.metric().enabled())
+            return;
+
+        MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
+
+        reg.register("fullVersion", this::getFullVersion, String.class, ATTR_DESC_FULL_VER);
+        reg.register("copyright", this::getCopyright, String.class, ATTR_DESC_COPYRIGHT);
+        reg.register("startTimestampFormatted", this::getStartTimestampFormatted, String.class, ATTR_DESC_START_TIMESTAMP_FORMATTED);
+        reg.register("isRebalanceEnabled", this::isRebalanceEnabled, ATTR_DESC_IS_REBALANCE_ENABLED);
+        reg.register("uptimeFormatted", this::getUpTimeFormatted, String.class, ATTR_DESC_UPTIME_FORMATTED);
+        reg.register("startTimestamp", this::getStartTimestamp, ATTR_DESC_START_TIMESTAMP);
+        reg.register("uptime", this::getUpTime, ATTR_DESC_UPTIME);
+        reg.register("osInformation", this::getOsInformation, String.class, ATTR_DESC_OS_INFO);
+        reg.register("jdkInformation", this::getJdkInformation, String.class, ATTR_DESC_JDK_INFO);
+        reg.register("osUser", this::getOsUser, String.class, ATTR_DESC_OS_USER);
+        reg.register("vmName", this::getVmName, String.class, ATTR_DESC_VM_NAME);
+        reg.register("instanceName", this::getInstanceName, String.class, ATTR_DESC_INSTANCE_NAME);
+        reg.register("currentCoordinatorFormatted", this::getCurrentCoordinatorFormatted, String.class, ATTR_DESC_CUR_COORDINATOR_FORMATTED);
+        reg.register("isNodeInBaseline", this::isNodeInBaseline, ATTR_DESC_IS_NODE_BASELINE);
+        reg.register("longJVMPausesCount", this::getLongJVMPausesCount, ATTR_DESC_LONG_JVM_PAUSES_CNT);
+        reg.register("longJVMPausesTotalDuration", this::getLongJVMPausesTotalDuration, ATTR_DESC_LONG_JVM_PAUSES_TOTAL_DURATION);
+        reg.register("longJVMPauseLastEvents", this::getLongJVMPauseLastEvents, Map.class, ATTR_DESC_LONG_JVM_PAUSE_LAST_EVENTS);
+        reg.register("active", this::active, Boolean.class, ATTR_DESC_ACTIVE);
+        reg.register("readOnlyMode", this::readOnlyMode, Boolean.class, ATTR_DESC_READ_ONLY_MODE);
+        reg.register("readOnlyModeDuration", this::getReadOnlyModeDuration, ATTR_DESC_READ_ONLY_MODE_DURATION);
+        reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class, ATTR_DESC_USER_ATTRS_FORMATTED);
+        reg.register("gridLoggerFormatted", this::getGridLoggerFormatted, String.class, ATTR_DESC_GRID_LOG_FORMATTED);
+        reg.register("executorServiceFormatted", this::getExecutorServiceFormatted, String.class, ATTR_DESC_EXECUTOR_SRVC_FORMATTED);
+        reg.register("igniteHome", this::getIgniteHome, String.class, ATTR_DESC_IGNITE_HOME);
+        reg.register("mBeanServerFormatted", this::getMBeanServerFormatted, String.class, ATTR_DESC_MBEAN_SERVER_FORMATTED);
+        reg.register("localNodeId", this::getLocalNodeId, UUID.class, ATTR_DESC_LOC_NODE_ID);
+        reg.register("isPeerClassLoadingEnabled", this::isPeerClassLoadingEnabled, Boolean.class, ATTR_DESC_IS_PEER_CLS_LOADING_ENABLED);
+        reg.register("lifecycleBeansFormatted", this::getLifecycleBeansFormatted, List.class, ATTR_DESC_LIFECYCLE_BEANS_FORMATTED);
+        reg.register("discoverySpiFormatted", this::getDiscoverySpiFormatted, String.class, ATTR_DESC_DISCOVERY_SPI_FORMATTED);
+        reg.register("communicationSpiFormatted", this::getCommunicationSpiFormatted, String.class, ATTR_DESC_COMMUNICATION_SPI_FORMATTED);
+        reg.register("deploymentSpiFormatted", this::getDeploymentSpiFormatted, String.class, ATTR_DESC_DEPLOYMENT_SPI_FORMATTED);
+        reg.register("checkpointSpiFormatted", this::getCheckpointSpiFormatted, String.class, ATTR_DESC_CHECKPOINT_SPI_FORMATTED);
+        reg.register("collisionSpiFormatted", this::getCollisionSpiFormatted, String.class, ATTR_DESC_COLLISION_SPI_FORMATTED);
+        reg.register("eventStorageSpiFormatted", this::getEventStorageSpiFormatted, String.class, ATTR_DESC_EVT_STORAGE_SPI_FORMATTED);
+        reg.register("failoverSpiFormatted", this::getFailoverSpiFormatted, String.class, ATTR_DESC_FAILOVER_SPI_FORMATTED);
+        reg.register("loadBalancingSpiFormatted", this::getLoadBalancingSpiFormatted, String.class, ATTR_DESC_LOAD_BALANCING_SPI_FORMATTED);
     }
 
     /**

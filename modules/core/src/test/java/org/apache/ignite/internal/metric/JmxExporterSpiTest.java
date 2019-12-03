@@ -19,8 +19,11 @@ package org.apache.ignite.internal.metric;
 
 import java.lang.management.ManagementFactory;
 import java.sql.Connection;
+import java.text.DateFormat;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +68,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -89,6 +93,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
@@ -724,6 +729,105 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
             assertTrue(res);
         }
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIgniteKernal() throws Exception {
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, IGNITE_METRICS);
+
+        assertNotNull(mbn);
+
+        int cnt = 36;
+
+        for (MBeanAttributeInfo info : mbn.getMBeanInfo().getAttributes()) {
+            cnt--;
+
+            assertFalse(F.isEmpty(info.getDescription()));
+            Object val = mbn.getAttribute(info.getName());
+
+            switch (info.getName()) {
+                case "fullVersion":
+                case "copyright":
+                case "osInformation":
+                case "jdkInformation":
+                case "vmName":
+                case "discoverySpiFormatted":
+                case "communicationSpiFormatted":
+                case "deploymentSpiFormatted":
+                case "checkpointSpiFormatted":
+                case "collisionSpiFormatted":
+                case "eventStorageSpiFormatted":
+                case "failoverSpiFormatted":
+                case "loadBalancingSpiFormatted":
+                    assertFalse(F.isEmpty(val.toString()));
+                    break;
+                case "osUser":
+                    assertEquals(System.getProperty("user.name"), val.toString());
+                    break;
+                case "startTimestampFormatted":
+                    assertNotNull(DateFormat.getDateTimeInstance().parse(val.toString()));
+                    break;
+                case "uptimeFormatted":
+                    assertNotNull(LocalTime.parse(val.toString()));
+                    break;
+                case "isRebalanceEnabled":
+                case "isNodeInBaseline":
+                case "active":
+                    assertTrue((boolean)val);
+                    break;
+                case "readOnlyMode":
+                    assertFalse((boolean)val);
+                    break;
+                case "startTimestamp":
+                case "uptime":
+                    assertTrue((long)val > 0);
+                    break;
+                case "instanceName":
+                    assertEquals(ignite.name(), val.toString());
+                    break;
+                case "userAttributesFormatted":
+                case "lifecycleBeansFormatted":
+                    assertEquals(Collections.emptyList(), val);
+                    break;
+                case "longJVMPauseLastEvents":
+                    assertEquals(Collections.emptyMap(), val);
+                    break;
+                case "longJVMPausesCount":
+                case "longJVMPausesTotalDuration":
+                case "readOnlyModeDuration":
+                    assertEquals(0L, val);
+                    break;
+                case "executorServiceFormatted":
+                    assertEquals(String.valueOf(ignite.configuration().getPublicThreadPoolSize()), val.toString());
+                    break;
+                case "isPeerClassLoadingEnabled":
+                    assertEquals(ignite.configuration().isPeerClassLoadingEnabled(), val);
+                    break;
+                case "currentCoordinatorFormatted":
+                    assertTrue(val.toString().contains(ignite.localNode().id().toString()));
+                    break;
+                case "igniteHome":
+                    assertEquals(ignite.configuration().getIgniteHome(), val.toString());
+                    break;
+                case "localNodeId":
+                    assertEquals(ignite.localNode().id(), val);
+                    break;
+                case "gridLoggerFormatted":
+                    assertEquals(ignite.configuration().getGridLogger().toString(), val.toString());
+                    break;
+                case "mBeanServerFormatted":
+                    assertEquals(ignite.configuration().getMBeanServer().toString(), val.toString());
+                    break;
+                default:
+                    fail("Unexpected attribute : " + info.getName());
+            }
+        }
+
+        assertEquals(0, cnt);
     }
 
     /** */
