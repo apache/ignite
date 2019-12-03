@@ -43,6 +43,7 @@ import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutor.Stripe;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -124,7 +125,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
-     * Registers system views for a striped thread pools
+     * Registers system views for a striped thread pools.
      *
      * @param stripedExecSvc Striped executor.
      * @param dataStreamExecSvc Data streamer executor service.
@@ -133,13 +134,13 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
             StripedExecutorTaskView.class,
             Arrays.asList(stripedExecSvc.stripes()),
-            StripedExecutor.Stripe::queue,
+            Stripe::queue,
             StripedExecutorTaskView::new);
 
         ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
             StripedExecutorTaskView.class,
             Arrays.asList(dataStreamExecSvc.stripes()),
-            StripedExecutor.Stripe::queue,
+            Stripe::queue,
             StripedExecutorTaskView::new);
     }
 

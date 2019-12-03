@@ -43,6 +43,7 @@ public class StripedExecutorTaskView {
         return toStringSafe(task);
     }
 
+    /** @return Name of the {@link Thread} executing the {@link #task}. */
     @Order(2)
     public String threadName() {
         return stripe.name();
