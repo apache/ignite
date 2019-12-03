@@ -24,10 +24,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -35,6 +33,7 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientAbstractMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
@@ -60,9 +59,9 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTopologyReques
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
@@ -76,16 +75,16 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_P
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_READ_ONLY_MODE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_DISABLE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.APPEND;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.GET;
@@ -98,7 +97,6 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.RMV_ALL;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALLER;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.
@@ -149,9 +147,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
     /** Handler for all Redis requests. */
     private GridRedisNioListener redisLsnr;
 
-    /** Client SSL authorization enabled flag. */
-    private final boolean sslClientAuth;
-
     /**
      * Creates listener which will convert incoming tcp packets to rest requests and forward them to
      * a given rest handler.
@@ -169,10 +164,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         this.log = log;
         this.proto = proto;
         this.hnd = hnd;
-
-        ConnectorConfiguration connCfg = ctx.config().getConnectorConfiguration();
-
-        sslClientAuth = connCfg.isSslEnabled() && connCfg.isSslClientAuth() && ctx.config().getSslContextFactory() != null;
     }
 
     /**
@@ -420,16 +411,9 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restReq.clientId(msg.clientId());
             restReq.sessionToken(msg.sessionToken());
             restReq.address(ses.remoteAddress());
-
-            GridSslMeta meta = ses.meta(SSL_META.ordinal());
-
-            if (sslClientAuth && meta != null && meta.sslEngine() != null && meta.sslEngine().getSession() != null) {
-                try {
-                    restReq.sslCerts(meta.sslEngine().getSession().getPeerCertificates());
-                } catch (SSLPeerUnverifiedException e) {
-                    log.warning("Failed to get peer certificates [ses=" + ses + ", msg=" + msg + ']');
-                }
-            }
+            if (restReq.credentials() == null)
+                restReq.credentials(new SecurityCredentials(((GridClientAbstractMessage) msg).login(), ((GridClientAbstractMessage) msg).password()));
+            restReq.userAttributes(msg.userAttributes());
         }
 
         return restReq;

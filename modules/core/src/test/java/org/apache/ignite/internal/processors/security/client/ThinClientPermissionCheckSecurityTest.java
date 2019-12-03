@@ -32,7 +32,8 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider
+    .ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 

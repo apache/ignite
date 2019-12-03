@@ -105,7 +105,15 @@
             <level value="DEBUG"/>
         </category>
     -->
-
+    <category name="org.apache.ignite.spi.discovery.tcp.ServerImpl">
+        <level value="DEBUG"/>
+    </category>
+    <category name="org.apache.ignite.internal.processors.rest">
+        <level value="DEBUG"/>
+    </category>
+    <category name="org.apache.ignite.internal.client.impl">
+        <level value="DEBUG"/>
+    </category>
     <!--
         Uncomment to enable transactions debugging.
     -->

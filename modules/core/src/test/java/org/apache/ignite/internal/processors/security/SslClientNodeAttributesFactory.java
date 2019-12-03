@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 

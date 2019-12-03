@@ -124,6 +124,9 @@ public class GridClientConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
+    /** User attributes. */
+    private Map<String, Object> userAttrs;
+
     /**
      * Creates default configuration.
      */
@@ -157,6 +160,7 @@ public class GridClientConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
+        userAttrs = cfg.getUserAttributes();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -908,5 +912,21 @@ public class GridClientConfiguration {
      */
     public boolean isDaemon() {
         return daemon;
+    }
+
+    /**
+     * @return User attributes.
+     */
+    public Map<String, Object> getUserAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * @param userAttrs User attributes.
+     */
+    public GridClientConfiguration setUserAttrs(Map<String, Object> userAttrs) {
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }

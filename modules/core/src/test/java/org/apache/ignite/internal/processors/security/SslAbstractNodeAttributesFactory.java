@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.security;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider.
+    ATTR_SECURITY_CERTIFICATES;
 
 /**
  * Creates user attributes for thin clients.

@@ -561,14 +561,6 @@ public class IgniteConfiguration {
     /** User authentication enabled. */
     private boolean authEnabled;
 
-    /**
-     * SSL certificates transmission flag.
-     *
-     * If {@code true}, then node attributes of node join messages will contain SSL certificates,
-     * with which new node trying to connect to the cluster.
-     */
-    private boolean sslCertsTransmissionEnabled;
-
     /** Failure handler. */
     private FailureHandler failureHnd;
 
@@ -621,7 +613,6 @@ public class IgniteConfiguration {
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
         authEnabled = cfg.isAuthenticationEnabled();
-        sslCertsTransmissionEnabled = cfg.isSslCertsTransmissionEnabled();
         autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
         dsCfg = cfg.getDataStorageConfiguration();
@@ -3427,32 +3418,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
-
-        return this;
-    }
-
-    /**
-     * Returns {@code true} if SSL certificates transmission is enabled for cluster. Otherwise returns {@code false}.
-     * Default value is false; transmission is disabled.
-     *
-     * If enabled, then node attributes of node join messages will contain SSL certificates,
-     * with which new node trying to connect to the cluster.
-     *
-     * @return {@code true} if SSL certificates transmission is enabled for cluster. Otherwise returns {@code false}.
-     */
-    public boolean isSslCertsTransmissionEnabled() {
-        return sslCertsTransmissionEnabled;
-    }
-
-    /**
-     * Sets flag indicating whether the SSL certificates transmission to authenticator is enabled for cluster.
-     *
-     * @param sslCertsTransmissionEnabled SSL certificates transmission enabled flag.
-     * {@code true} enables SSL certificates transmission to authenticator.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setSslCertificatesTransmissionEnabled(boolean sslCertsTransmissionEnabled) {
-        this.sslCertsTransmissionEnabled = sslCertsTransmissionEnabled;
 
         return this;
     }

@@ -53,9 +53,9 @@ import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineC
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeReadOnlyModeCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridClusterNameCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -83,8 +83,6 @@ import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -94,7 +92,6 @@ import org.apache.ignite.thread.IgniteThread;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -804,16 +801,10 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         assert req.clientId() != null;
 
         AuthenticationContext authCtx = new AuthenticationContext();
-
+        authCtx.nodeAttributes(req.userAttributes());
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
         authCtx.address(req.address());
-
-        JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
-
-        authCtx.nodeAttributes(req.sslCerts() != null && ctx.config().isSslCertsTransmissionEnabled() ?
-            Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller, req.sslCerts())) :
-            Collections.emptyMap());
 
         SecurityCredentials creds = credentials(req);
 

@@ -18,16 +18,41 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Arrays;
+import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.SslAbstractNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
 /**
  *
  */
 public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
+    /** Security certificates attribute name. Attribute is not available via public API. */
+    public static final String ATTR_SECURITY_CERTIFICATES = /*ATTR_PREFIX +*/ "s.security.certs";
+
     /** Check ssl certificates. */
     protected final boolean checkSslCerts;
+
+//    /** {@inheritDoc} */
+//    @Override public void start(PluginContext ctx) {
+//        super.start(ctx);
+//
+//        SslAbstractNodeAttributesFactory factory = ctx.grid().configuration().isClientMode() ?
+//            new SslClientNodeAttributesFactory() :
+//            new SslServerNodeAttributesFactory();
+//
+//        Map<String, Object> attrs = factory.create();
+//        Object certs = attrs.get(ATTR_SECURITY_CERTIFICATES);
+//
+//        ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_SECURITY_CERTIFICATES, certs);
+//    }
 
     /** */
     public TestSslSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,

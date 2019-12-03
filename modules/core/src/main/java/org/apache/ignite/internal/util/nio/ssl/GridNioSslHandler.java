@@ -670,13 +670,6 @@ class GridNioSslHandler extends ReentrantLock {
     }
 
     /**
-     * @return SSL session.
-     */
-    SSLEngine sslEngine() {
-        return sslEngine;
-    }
-
-    /**
      * Write request for cases while handshake is not finished yet.
      */
     private static class WriteRequest {

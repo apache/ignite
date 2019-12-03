@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.client;
 
 import java.util.Collections;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -27,6 +28,9 @@ import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.SslAbstractNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -42,6 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider.ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -85,26 +90,36 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setActiveOnStart(false);
-        cfg.setSslCertificatesTransmissionEnabled(true);
 
-        cfg.setPluginProviders(new TestSslSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL,
+        boolean isClient = instanceName.endsWith("2");
+        String name = isClient ? "client_" + instanceName : "srv_" + instanceName;
+
+        cfg.setPluginProviders(new TestSslSecurityPluginProvider(name, null, ALLOW_ALL,
             globalAuth, true, clientData()));
 
-        if (!failServer) {
-            SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
 
-            cfg.setSslContextFactory(sslFactory);
-            cfg.setConnectorConfiguration(new ConnectorConfiguration()
-                .setSslEnabled(true)
-                .setSslClientAuth(!failClient)
-                .setSslFactory(sslFactory));
-        }
+        cfg.setSslContextFactory(sslFactory);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration()
+            .setSslEnabled(true)
+            .setSslClientAuth(!failClient)
+            .setSslFactory(sslFactory));
 
         if (instanceName.endsWith("0"))
             cfg.setGridLogger(listeningLog);
 
-        if (instanceName.endsWith("2"))
+        if (isClient)
             cfg.setClientMode(true);
+
+        SslAbstractNodeAttributesFactory factory = isClient ?
+                new SslClientNodeAttributesFactory() :
+                new SslServerNodeAttributesFactory();
+
+        if (!(isClient && failClient || !isClient && failServer)) {
+            Map<String, Object> attrs = factory.create();
+
+            cfg.setUserAttributes(attrs);
+        }
 
         return cfg;
     }
@@ -124,8 +139,11 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         assertFalse(ignite.cluster().active());
 
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
+            System.out.println("asd123 1");
             assertTrue(client.connected());
+            System.out.println("asd123 2");
             client.state().active(true);
+            System.out.println("asd123 3");
         }
     }
 
@@ -213,6 +231,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             .setSslContextFactory(sslFactory::create)
             .setRouters(Collections.singletonList("127.0.0.1:11211"))
             .setSecurityCredentialsProvider(
-                new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)));
+                new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)))
+            .setUserAttrs(failClient ? null : new SslClientNodeAttributesFactory().create());
     }
 }

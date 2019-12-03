@@ -31,7 +31,7 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CERTIFICATES;
+import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider.ATTR_SECURITY_CERTIFICATES;
 
 /**
  * Security processor for test.
