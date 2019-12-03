@@ -60,6 +60,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -800,18 +801,22 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testStripedExecutors() throws Exception {
+    public void testSysStripedExecutor() throws Exception {
         checkStripeExecutorView(ignite.context().getStripedExecutorService(),
             SYS_POOL_QUEUE_VIEW,
             "sys");
+    }
 
+    /** */
+    @Test
+    public void testStreamerStripedExecutor() throws Exception {
         checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
             STREAM_POOL_QUEUE_VIEW,
             "data-streamer");
     }
 
     /**
-     * Checks striped executro system view.
+     * Checks striped executor system view.
      *
      * @param execSvc Striped executor.
      * @param viewName System view.
@@ -820,10 +825,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     private void checkStripeExecutorView(StripedExecutor execSvc, String viewName, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
-        execSvc.execute(0, new SystemViewSelfTest.TestRunnable(latch, 0));
-        execSvc.execute(0, new SystemViewSelfTest.TestRunnable(latch, 1));
-        execSvc.execute(1, new SystemViewSelfTest.TestRunnable(latch, 2));
-        execSvc.execute(1, new SystemViewSelfTest.TestRunnable(latch, 3));
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
 
         try {
             boolean res = waitForCondition(() -> systemView(viewName).size() == 2, 5_000);
@@ -835,16 +840,16 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             CompositeData row0 = view.get(new Object[] {0});
 
             assertEquals(0, row0.get("stripeIndex"));
-            assertEquals(SystemViewSelfTest.TestRunnable.class.getSimpleName() + '1', row0.get("description"));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get("description"));
             assertEquals(poolName + "-stripe-0", row0.get("threadName"));
-            assertEquals(SystemViewSelfTest.TestRunnable.class.getName(), row0.get("taskName"));
+            assertEquals(TestRunnable.class.getName(), row0.get("taskName"));
 
             CompositeData row1 = view.get(new Object[] {1});
 
             assertEquals(1, row1.get("stripeIndex"));
-            assertEquals(SystemViewSelfTest.TestRunnable.class.getSimpleName() + '3', row1.get("description"));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get("description"));
             assertEquals(poolName + "-stripe-1", row1.get("threadName"));
-            assertEquals(SystemViewSelfTest.TestRunnable.class.getName(), row1.get("taskName"));
+            assertEquals(TestRunnable.class.getName(), row1.get("taskName"));
         }
         finally {
             latch.countDown();

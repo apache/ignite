@@ -795,7 +795,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /**
-     * Checks striped executro system view.
+     * Checks striped executor system view.
      *
      * @param execSvc Striped executor.
      * @param view System view name.
