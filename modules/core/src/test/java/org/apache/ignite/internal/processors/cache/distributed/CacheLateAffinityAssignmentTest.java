@@ -205,6 +205,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * @param parts Number of partitions.
      * @return Affinity function.

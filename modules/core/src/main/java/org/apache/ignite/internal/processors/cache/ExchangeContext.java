@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,9 +45,6 @@ public class ExchangeContext {
     /** PME is not required. */
     private boolean exchangeFreeSwitch;
 
-    /** Local recovery needed. */
-    private boolean recoveryRequired;
-
     /** Merges allowed flag. */
     private final boolean merge;
 
@@ -68,8 +64,6 @@ public class ExchangeContext {
         if (!compatibilityNode && ver > 2 && fut.wasRebalanced() && fut.isBaselineNodeFailed()) {
             exchangeFreeSwitch = true;
             merge = false;
-
-            recoveryRequired = backupForPrimaries(fut); // Check local node affected.
         }
         else if (compatibilityNode || (crd && fut.localJoinExchange())) {
             fetchAffOnJoin = true;
@@ -87,30 +81,6 @@ public class ExchangeContext {
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
-    }
-
-    /**
-     * Returns {@code true} if local node contains backup partitions for event node's primaries.
-     *
-     * @param fut Future.
-     */
-    private boolean backupForPrimaries(GridDhtPartitionsExchangeFuture fut) {
-        for (CacheGroupContext grp : fut.sharedContext().cache().cacheGroups()) {
-            if (grp.isLocal())
-                continue;
-
-            GridAffinityAssignmentCache aff = grp.affinity();
-
-            Set<Integer> remotePrimaries = aff.primaryPartitions(fut.exchangeId().eventNode().id(), aff.lastVersion());
-            Set<Integer> locBackups = aff.backupPartitions(fut.sharedContext().localNodeId(), aff.lastVersion());
-
-            for (int part : remotePrimaries) {
-                if (locBackups.contains(part))
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -141,13 +111,6 @@ public class ExchangeContext {
      */
     public boolean exchangeFreeSwitch() {
         return exchangeFreeSwitch;
-    }
-
-    /**
-     * @return {@code True} if tx recovery required.
-     */
-    public boolean recoveryRequired() {
-        return recoveryRequired;
     }
 
     /**
