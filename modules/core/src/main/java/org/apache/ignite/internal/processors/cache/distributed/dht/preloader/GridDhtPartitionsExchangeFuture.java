@@ -1043,13 +1043,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @return {@code true} if Event's baseline auto-adjusted and {@code false} otherwise.
-     */
-    public boolean isBaselineAutoAdjusted() {
-        return firstEvtDiscoCache.state().localBaselineAutoAdjustment();
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
