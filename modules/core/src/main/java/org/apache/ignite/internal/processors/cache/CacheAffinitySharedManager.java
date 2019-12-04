@@ -518,7 +518,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     grp.topology().updateTopologyVersion(excFut, discoCache, -1, false);
 
                     // Exchange free cache creation, just replacing client topology with dht.
-                    // Topology shouild be inited before use.
+                    // Topology shouild be initialized before the use.
                     grp.topology().beforeExchange(excFut, true, false);
 
                     grpHolder = new CacheGroupAffNodeHolder(grp, grpHolder.affinity());
