@@ -808,9 +808,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * </ul>
      *
      * @param topVer Topology version.
+     * @param node Cluster node.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer) {
+    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "LocalTx",
@@ -826,42 +827,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (needWaitTransaction(tx, topVer))
-                res.add(tx.finishFuture());
-        }
-
-        res.markInitialized();
-
-        return res;
-    }
-
-    /**
-     * Creates a future that will wait for all transactions started by specified node.
-     *
-     * @param topVer Topology version.
-     * @return Future that will be completed when all transactions are finished.
-     */
-    public IgniteInternalFuture<Boolean> recoverLocalTxsByNode(AffinityTopologyVersion topVer, ClusterNode node) {
-        GridCompoundFuture<IgniteInternalTx, Boolean> res =
-            new CacheObjectsReleaseFuture<>(
-                "localTx by " + node.id(),
-                topVer,
-                new IgniteReducer<IgniteInternalTx, Boolean>() {
-                    @Override public boolean collect(IgniteInternalTx e) {
-                        return true;
-                    }
-
-                    @Override public Boolean reduce() {
-                        return true;
-                    }
-                });
-
-        for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.originatingNodeId().equals(node.id())) {
+            if (node != null && tx.originatingNodeId().equals(node.id())) {
                 res.add(tx.finishFuture());
 
                 assert needWaitTransaction(tx, topVer);
             }
+            else if (needWaitTransaction(tx, topVer))
+                res.add(tx.finishFuture());
         }
 
         res.markInitialized();
