@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -155,7 +156,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAS).
+     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
     private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
         int nodes = 10;
@@ -203,7 +204,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Checks that transaction can be continued on node left and there is no waiting for it's completion in case
+     * baseline was not changed and cluster was fully rebalanced.
      */
     @Test
     public void testNoTransactionsWaitAtNodeLeft() throws Exception {
@@ -264,7 +266,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             Ignite failed = candidate;
 
             int multiplicator = 3;
-            int key_bound = 1_000_000;
+
+            AtomicInteger key_from = new AtomicInteger();
 
             CountDownLatch readyLatch = new CountDownLatch(4 * multiplicator);
             CountDownLatch failedLatch = new CountDownLatch(1);
@@ -273,7 +276,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> nearThenNearFut = multithreadedAsync(() -> {
                 try {
-                    List<Integer> keys = nearKeys(failedCache, 2, r.nextInt(key_bound));
+                    List<Integer> keys = nearKeys(failedCache, 2, key_from.addAndGet(100));
 
                     Integer key0 = keys.get(0);
                     Integer key1 = keys.get(1);
@@ -305,7 +308,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> primaryThenPrimaryFut = multithreadedAsync(() -> {
                 try {
-                    List<Integer> keys = primaryKeys(failedCache, 2, r.nextInt(key_bound));
+                    List<Integer> keys = primaryKeys(failedCache, 2, key_from.addAndGet(100));
 
                     Integer key0 = keys.get(0);
                     Integer key1 = keys.get(1);
@@ -339,8 +342,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> nearThenPrimaryFut = multithreadedAsync(() -> {
                 try {
-                    Integer key0 = nearKeys(failedCache, 1, r.nextInt(key_bound)).get(0);
-                    Integer key1 = primaryKeys(failedCache, 1, r.nextInt(key_bound)).get(0);
+                    Integer key0 = nearKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
+                    Integer key1 = primaryKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
 
                     Ignite primary = primaryNode(key0, cacheName);
 
@@ -371,8 +374,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> nearThenBackupFut = multithreadedAsync(() -> {
                 try {
-                    Integer key0 = nearKeys(failedCache, 1, r.nextInt(key_bound)).get(0);
-                    Integer key1 = backupKeys(failedCache, 1, r.nextInt(key_bound)).get(0);
+                    Integer key0 = nearKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
+                    Integer key1 = backupKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
 
                     Ignite primary = primaryNode(key0, cacheName);
 
