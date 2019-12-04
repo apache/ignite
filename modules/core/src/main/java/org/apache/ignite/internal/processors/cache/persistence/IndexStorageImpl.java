@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -59,6 +62,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** Index tree. */
     private final MetaTree metaTree;
 
+    /** Tree storing index rebuild markers for cache partitions. */
+    private final IndexRebuildMarkersTree rebuildMarksTree;
+
     /** Meta page reuse tree. */
     private final ReuseList reuseList;
 
@@ -89,8 +95,11 @@ public class IndexStorageImpl implements IndexStorage {
         final ReuseList reuseList,
         final long rootPageId,
         final boolean initNew,
+        final long rebldRootPageId,
+        final boolean rebldInitNew,
         final FailureProcessor failureProcessor,
-        final PageLockListener lockLsnr
+        final PageLockListener lockLsnr,
+        final PageLockListener rebldLockLsnr
     ) {
         try {
             this.pageMem = pageMem;
@@ -114,6 +123,23 @@ public class IndexStorageImpl implements IndexStorage {
                 initNew,
                 failureProcessor,
                 lockLsnr
+            );
+
+            rebuildMarksTree = new IndexRebuildMarkersTree(
+                grpShared,
+                grpId,
+                allocPartId,
+                allocSpace,
+                pageMem,
+                wal,
+                globalRmvId,
+                rebldRootPageId,
+                reuseList,
+                grpShared ? IndexRebuildMarkersWithCacheIdInnerIO.VERSIONS : IndexRebuildMarkersInnerIO.VERSIONS,
+                grpShared ? IndexRebuildMarkersWithCacheIdLeafIO.VERSIONS : IndexRebuildMarkersLeafIO.VERSIONS,
+                rebldInitNew,
+                failureProcessor,
+                rebldLockLsnr
             );
         }
         catch (IgniteCheckedException e) {
@@ -187,6 +213,8 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
+
+        rebuildMarksTree.destroy();
     }
 
     /** {@inheritDoc} */
@@ -210,6 +238,39 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public boolean nameIsAssosiatedWithCache(String idxName, int cacheId) {
         return !grpShared || idxName.startsWith(Integer.toString(cacheId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void storeIndexRebuildMarkers(int cacheId, Collection<Integer> parts, boolean addOrRemove)
+        throws IgniteCheckedException {
+        final IndexRebuildMarkersTree tree = rebuildMarksTree;
+
+        if (addOrRemove) {
+            for (Integer part : parts)
+                tree.putx(new IndexPartitionRebuildMarker(cacheId, part));
+        }
+        else {
+            for (Integer part : parts)
+                tree.removex(new IndexPartitionRebuildMarker(cacheId, part));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> getIndexRebuildMarkers(int cacheId) throws IgniteCheckedException {
+        final IndexRebuildMarkersTree tree = rebuildMarksTree;
+
+        if (tree.isEmpty())
+            return Collections.emptySet();
+
+        GridCursor<IndexPartitionRebuildMarker> cur = tree.find(new IndexPartitionRebuildMarker(cacheId, 0),
+            new IndexPartitionRebuildMarker(cacheId, 0xFFFF));
+
+        HashSet<Integer> res = new HashSet<>();
+
+        while (cur.next())
+            res.add(cur.get().partId & 0xFFFF);
+
+        return res;
     }
 
     /**
@@ -500,6 +561,392 @@ public class IndexStorageImpl implements IndexStorage {
             final long pageAddr,
             final int idx) throws IgniteCheckedException {
             return readRow(pageAddr, offset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(long pageAddr, final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     * Index partition rebuild marker (cacheId + partition).
+     */
+    private static class IndexPartitionRebuildMarker {
+        /** */
+        private int cacheId;
+
+        /** */
+        private short partId;
+
+        /**
+         * @param cacheId Cache ID.
+         * @param partId Partition.
+         */
+        private IndexPartitionRebuildMarker(int cacheId, int partId) {
+            this.cacheId = cacheId;
+            this.partId = (short)partId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "PS [=" + cacheId + ", partId=" + partId + ']';
+        }
+    }
+
+    /**
+     * Index partitions rebuild markers tree.
+     * Basically a persistent set of {cache,partition} items.
+     */
+    private static class IndexRebuildMarkersTree
+        extends BPlusTree<IndexPartitionRebuildMarker, IndexPartitionRebuildMarker> {
+        /** */
+        private final boolean grpShared;
+
+        /** */
+        private final int allocPartId;
+
+        /** */
+        private final byte allocSpace;
+
+        /**
+         * @param pageMem Page memory.
+         * @param metaPageId Meta page ID.
+         * @param reuseList Reuse list.
+         * @param innerIos Inner IOs.
+         * @param leafIos Leaf IOs.
+         * @param failureProcessor if the tree is corrupted.
+         * @throws IgniteCheckedException If failed.
+         */
+        private IndexRebuildMarkersTree(
+            final boolean grpShared,
+            final int cacheId,
+            final int allocPartId,
+            final byte allocSpace,
+            final PageMemory pageMem,
+            final IgniteWriteAheadLogManager wal,
+            final AtomicLong globalRmvId,
+            final long metaPageId,
+            final ReuseList reuseList,
+            final IOVersions<? extends BPlusInnerIO<IndexPartitionRebuildMarker>> innerIos,
+            final IOVersions<? extends BPlusLeafIO<IndexPartitionRebuildMarker>> leafIos,
+            final boolean initNew,
+            @Nullable FailureProcessor failureProcessor,
+            @Nullable PageLockListener lockLsnr
+        ) throws IgniteCheckedException {
+            super(
+                treeName("idxRebuildMarkers", "IndexRebuildMarkers"),
+                cacheId,
+                null,
+                pageMem,
+                wal,
+                globalRmvId,
+                metaPageId,
+                reuseList,
+                innerIos,
+                leafIos,
+                failureProcessor,
+                lockLsnr
+            );
+
+            this.grpShared = grpShared;
+            this.allocPartId = allocPartId;
+            this.allocSpace = allocSpace;
+
+            initTree(initNew);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            return pageMem.allocatePage(groupId(), allocPartId, allocSpace);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int compare(final BPlusIO<IndexPartitionRebuildMarker> io, final long pageAddr,
+            final int idx, final IndexPartitionRebuildMarker row) {
+            int off = ((IndexIO)io).getOffset(pageAddr, idx);
+
+            if (grpShared) {
+                int cmp = Integer.compare(PageUtils.getInt(pageAddr, off), row.cacheId);
+
+                off += 4;
+
+                if (cmp != 0)
+                    return cmp;
+            }
+
+            return Integer.compare(PageUtils.getShort(pageAddr, off) & 0xFFFF, row.partId & 0xFFFF);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexPartitionRebuildMarker getRow(final BPlusIO<IndexPartitionRebuildMarker> io,
+            final long pageAddr, final int idx, Object ignore) {
+            return readRebuildMarker(pageAddr, ((IndexIO)io).getOffset(pageAddr, idx), grpShared);
+        }
+    }
+
+
+    /**
+     * Read row from buffer.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @return Read row.
+     */
+    private static IndexPartitionRebuildMarker readRebuildMarker(final long pageAddr, int off, boolean grpShared) {
+        int cacheId = 0;
+
+        if (grpShared) {
+            cacheId = PageUtils.getInt(pageAddr, off);
+
+            off += 4;
+        }
+
+        int partId = PageUtils.getShort(pageAddr, off) & 0xFFFF;
+
+        return new IndexPartitionRebuildMarker(cacheId, partId);
+    }
+
+
+    /**
+     * Store row to buffer.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset in buf.
+     * @param row Row to store.
+     */
+    private static void storeRebuildMarker(
+        long pageAddr,
+        int off,
+        IndexPartitionRebuildMarker row,
+        boolean grpShared
+    ) {
+        if (grpShared) {
+            PageUtils.putInt(pageAddr, off, row.cacheId);
+
+            off += 4;
+        }
+
+        PageUtils.putShort(pageAddr, off, row.partId);
+    }
+
+    /**
+     * Copy row data.
+     *
+     * @param dstPageAddr Destination page address.
+     * @param dstOff Destination buf offset.
+     * @param srcPageAddr Source page address.
+     * @param srcOff Src buf offset.
+     */
+    private static void copyRebuildMarker(
+        final long dstPageAddr,
+        int dstOff,
+        final long srcPageAddr,
+        int srcOff,
+        boolean grpShared
+    ) {
+        if (grpShared) {
+            int cacheId = PageUtils.getInt(srcPageAddr, srcOff);
+            srcOff += 4;
+
+            PageUtils.putInt(dstPageAddr, dstOff, cacheId);
+            dstOff += 4;
+        }
+
+        short partId = PageUtils.getShort(srcPageAddr, srcOff);
+
+        PageUtils.putShort(dstPageAddr, dstOff, partId);
+    }
+
+    /**
+     *
+     */
+    public static final class IndexRebuildMarkersInnerIO extends BPlusInnerIO<IndexPartitionRebuildMarker>
+        implements IndexIO {
+        /** */
+        public static final IOVersions<IndexRebuildMarkersInnerIO> VERSIONS = new IOVersions<>(
+            new IndexRebuildMarkersInnerIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexRebuildMarkersInnerIO(final int ver) {
+            // 2 bytes partId
+            super(T_INDEX_REBUILD_MARKER_INNER, ver, false, 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void storeByOffset(long pageAddr, int off, IndexPartitionRebuildMarker row) {
+            storeRebuildMarker(pageAddr, off, row, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final long dstPageAddr,
+            final int dstIdx,
+            final BPlusIO<IndexPartitionRebuildMarker> srcIo,
+            final long srcPageAddr,
+            final int srcIdx) {
+            copyRebuildMarker(dstPageAddr,
+                offset(dstIdx),
+                srcPageAddr,
+                ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx),
+                false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexPartitionRebuildMarker getLookupRow(final BPlusTree<IndexPartitionRebuildMarker, ?> tree,
+            final long pageAddr,
+            final int idx) {
+            return readRebuildMarker(pageAddr, offset(idx), false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(long pageAddr, final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     *
+     */
+    public static final class IndexRebuildMarkersLeafIO extends BPlusLeafIO<IndexPartitionRebuildMarker>
+        implements IndexIO {
+        /** */
+        public static final IOVersions<IndexRebuildMarkersLeafIO> VERSIONS = new IOVersions<>(
+            new IndexRebuildMarkersLeafIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexRebuildMarkersLeafIO(final int ver) {
+            // 2 bytes partId
+            super(T_INDEX_REBUILD_MARKER_LEAF, ver, 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void storeByOffset(long buf, int off, IndexPartitionRebuildMarker row) {
+            storeRebuildMarker(buf, off, row, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final long dstPageAddr,
+            final int dstIdx,
+            final BPlusIO<IndexPartitionRebuildMarker> srcIo,
+            final long srcPageAddr,
+            final int srcIdx) {
+            copyRebuildMarker(dstPageAddr,
+                offset(dstIdx),
+                srcPageAddr,
+                ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx),
+                false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexPartitionRebuildMarker getLookupRow(final BPlusTree<IndexPartitionRebuildMarker, ?> tree,
+            final long pageAddr,
+            final int idx) {
+            return readRebuildMarker(pageAddr, offset(idx), false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(long pageAddr, final int idx) {
+            return offset(idx);
+        }
+    }
+
+
+    /**
+     *
+     */
+    public static final class IndexRebuildMarkersWithCacheIdInnerIO extends BPlusInnerIO<IndexPartitionRebuildMarker>
+        implements IndexIO {
+        /** */
+        public static final IOVersions<IndexRebuildMarkersWithCacheIdInnerIO> VERSIONS = new IOVersions<>(
+            new IndexRebuildMarkersWithCacheIdInnerIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexRebuildMarkersWithCacheIdInnerIO(final int ver) {
+            // 4 bytes for cacheId, 2 bytes partId
+            super(T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_INNER, ver, false, 4 + 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void storeByOffset(long pageAddr, int off, IndexPartitionRebuildMarker row) {
+            storeRebuildMarker(pageAddr, off, row, true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final long dstPageAddr,
+            final int dstIdx,
+            final BPlusIO<IndexPartitionRebuildMarker> srcIo,
+            final long srcPageAddr,
+            final int srcIdx) {
+            copyRebuildMarker(dstPageAddr,
+                offset(dstIdx),
+                srcPageAddr,
+                ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx),
+                true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexPartitionRebuildMarker getLookupRow(final BPlusTree<IndexPartitionRebuildMarker, ?> tree,
+            final long pageAddr,
+            final int idx) {
+            return readRebuildMarker(pageAddr, offset(idx), true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(long pageAddr, final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     *
+     */
+    public static final class IndexRebuildMarkersWithCacheIdLeafIO extends BPlusLeafIO<IndexPartitionRebuildMarker>
+        implements IndexIO {
+        /** */
+        public static final IOVersions<IndexRebuildMarkersWithCacheIdLeafIO> VERSIONS = new IOVersions<>(
+            new IndexRebuildMarkersWithCacheIdLeafIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexRebuildMarkersWithCacheIdLeafIO(final int ver) {
+            // 4 bytes for cacheId, 2 bytes partId
+            super(T_CACHE_ID_AWARE_INDEX_REBUILD_MARKER_LEAF, ver, 4 + 2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void storeByOffset(long buf, int off, IndexPartitionRebuildMarker row) {
+            storeRebuildMarker(buf, off, row, true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final long dstPageAddr,
+            final int dstIdx,
+            final BPlusIO<IndexPartitionRebuildMarker> srcIo,
+            final long srcPageAddr,
+            final int srcIdx) {
+            copyRebuildMarker(dstPageAddr,
+                offset(dstIdx),
+                srcPageAddr,
+                ((IndexIO)srcIo).getOffset(srcPageAddr, srcIdx),
+                true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexPartitionRebuildMarker getLookupRow(final BPlusTree<IndexPartitionRebuildMarker, ?> tree,
+            final long pageAddr,
+            final int idx) {
+            return readRebuildMarker(pageAddr, offset(idx), true);
         }
 
         /** {@inheritDoc} */

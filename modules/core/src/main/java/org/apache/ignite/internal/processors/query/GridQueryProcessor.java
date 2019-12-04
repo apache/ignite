@@ -61,6 +61,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -1998,6 +1999,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.rebuildIndexesFromHash(cctx);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Rebuild cache group indexes for specific partition.
+     *
+     * @param grp Cache group context.
+     * @param partId Partition.
+     * @return Future completed when index rebuild is finished.
+     */
+    public IgniteInternalFuture<?> rebuildIndexesByPartition(CacheGroupContext grp, int partId) {
+        if (!busyLock.enterBusy())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes (by partition)" +
+                " from hash (grid is stopping)."));
+
+        try {
+            return idx.rebuildIndexesByPartition(grp, partId);
         }
         finally {
             busyLock.leaveBusy();

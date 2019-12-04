@@ -224,7 +224,10 @@ public abstract class WALRecord {
         PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
 
         /** Partition meta page containing tombstone presence flag. */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V3 (60, PHYSICAL);
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V3 (60, PHYSICAL),
+
+        /** Start build index record. */
+        START_BUILD_INDEX_RECORD(61, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

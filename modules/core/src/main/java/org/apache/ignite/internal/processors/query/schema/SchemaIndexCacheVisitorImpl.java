@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapt
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -56,6 +59,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
     /** Cache context. */
     private final GridCacheContext cctx;
+
+    /** Partitions to be rebuilt. */
+    private final Set<Integer> parts;
 
     /** Row filter. */
     private final SchemaIndexCacheFilter rowFilter;
@@ -81,10 +87,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
     /**
      * Constructor.
-     *  @param cctx Cache context.
+     *
+     * @param cctx Cache context.
+     * @param parts Partitions.
      */
-    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx) {
-        this(cctx, null, null, 0);
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, Set<Integer> parts) {
+        this(cctx, parts, null, null, 0);
     }
 
     /**
@@ -97,6 +105,21 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      */
     public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter,
         SchemaIndexOperationCancellationToken cancel, int parallelism) {
+        this(cctx, null, rowFilter, cancel, parallelism);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param cctx Cache context.
+     * @param parts Partitions.
+     * @param rowFilter Row filter.
+     * @param cancel Cancellation token.
+     * @param parallelism Degree of parallelism.
+     */
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, Set<Integer> parts, SchemaIndexCacheFilter rowFilter,
+        SchemaIndexOperationCancellationToken cancel, int parallelism) {
+        this.parts = parts;
         this.rowFilter = rowFilter;
         this.cancel = cancel;
 
@@ -117,6 +140,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         assert clo != null;
 
         List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+
+        if (!F.isEmpty(this.parts))
+            parts = parts.stream().filter(p -> this.parts.contains(p.id())).collect(Collectors.toList());
 
         if (parts.isEmpty())
             return;
@@ -230,6 +256,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 if (locked)
                     cctx.shared().database().checkpointReadUnlock();
             }
+
+            if (!stop)
+                onPartitionCompleted(part.id());
         }
         finally {
             part.release();
@@ -278,6 +307,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private void checkCancelled() throws IgniteCheckedException {
         if (cancel != null && cancel.isCancelled())
             throw new IgniteCheckedException("Index creation was cancelled.");
+    }
+
+    /**
+     *
+     * @param partId Partition.
+     */
+    public void onPartitionCompleted(int partId) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

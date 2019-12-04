@@ -830,8 +830,13 @@ public class GridH2Table extends TableBase {
         boolean replaced = idx.putx(row);
 
         // Row was not replaced, need to remove manually.
-        if (!replaced && prevRow != null)
-            idx.removex(prevRow);
+        if (!replaced && prevRow != null) {
+            // Let's compare rows to prevent removing the same row we've just added.
+            // It is necessary when index is not up-to-date (rebuilding) and the given index
+            // has the same column values for both new and old cache row.
+            if (rebuildFromHashInProgress == FALSE || idx.compareRows(row, prevRow) != 0)
+                idx.removex(prevRow);
+        }
     }
 
     /**

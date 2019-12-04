@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import com.google.common.collect.ImmutableSet;
 import java.io.File;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -29,7 +34,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -42,17 +52,26 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CP_FILE_NAME_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 
 /**
  *
@@ -133,56 +152,17 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
      */
     @Test
     public void test() throws Exception {
-
         long start = System.currentTimeMillis();
 
         IgniteEx grid1 = startGrids(4);
 
         grid1.cluster().active(true);
 
-        final int accountCount = 2048;
+        final int accountCnt = 2048;
 
-        try (IgniteDataStreamer streamer = grid1.dataStreamer(FIRST_CACHE)) {
-            for (long i = 0; i < accountCount; i++) {
-                streamer.addData(i, new Account(i));
-            }
+        fillData(grid1, accountCnt);
 
-            streamer.flush();
-        }
-
-        try (IgniteDataStreamer streamer = grid1.dataStreamer(SECOND_CACHE)) {
-            for (long i = 0; i < accountCount; i++) {
-                streamer.addData(i, new Account(i));
-            }
-
-            streamer.flush();
-        }
-
-        AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteCache<Object, Object> cache1 = grid1.cache(FIRST_CACHE);
-        IgniteCache<Object, Object> cache2 = grid1.cache(SECOND_CACHE);
-
-        new Thread(new Runnable() {
-            @Override public void run() {
-                long i = 0;
-
-                while (!stop.get()) {
-                    try {
-                        cache1.put(i, new Account(i));
-
-                        cache2.put(i, new Account(i));
-
-                        i++;
-                    }
-                    catch (Throwable e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-
-        File workDirectory = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        AtomicBoolean stop = startFillData(grid1, 0);
 
         long diff = System.currentTimeMillis() - start;
 
@@ -192,9 +172,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        for (File grp : new File(workDirectory, U.maskForFileName(getTestIgniteInstanceName(3))).listFiles()) {
-            new File(grp, "index.bin").delete();
-        }
+        removeIndexBin(3);
 
         startGrid(3);
 
@@ -202,17 +180,179 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         U.sleep(3_000);
 
-        ImmutableSet<UUID> nodes = ImmutableSet.of(((IgniteProcessProxy)grid(3)).getId(),
-            ((IgniteProcessProxy)grid(2)).getId());
+        validateIndexes(grid1, grid(2), grid(3));
+    }
 
-        VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1);
+    /**
+     * Test index recovery after killed rebuild.
+     *
+     * <ol>
+     * <li>Start cluster (4x).</li>.
+     * <li>Fill enough data as we need a lengthy index rebuild process.</li>
+     * <li>Stop node #3.</li>
+     * <li>Remove index.bin on node #3 to trigger indexes rebuild on start-up.</li>
+     * <li>Re-start node #3 (must start index rebuild).</li>
+     * <li>Start background puts.</li>
+     * <li>Kill node #3.</li>
+     * <li>Re-start node #3 (must start index rebuild).</li>
+     * <li>Continue background puts.</li>
+     * <li>Wait index rebuild completion.</li>
+     * <li>Validate indexes on node #3.</li>
+     * </ol>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testKillRebuild() throws Exception {
+        IgniteEx grid1 = startGrids(4);
 
-        VisorTaskArgument<VisorValidateIndexesTaskArg> argument = new VisorTaskArgument<>(nodes, arg, true);
+        grid1.cluster().active(true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().execute(new VisorValidateIndexesTask(), argument);
+        int accountCnt = 50_000; // Need lengthy rebuild.
 
-        VisorValidateIndexesTaskResult result = execute.get();
+        fillData(grid1, accountCnt);
+
+        stopGrid(3);
+
+        removeIndexBin(3);
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
+
+        AtomicBoolean stop = startFillData(grid1, 1024);
+
+        U.sleep(2000);
+
+        IgniteProcessProxy.kill(getTestIgniteInstanceName(3));
+
+        stop.set(true);
+
+        startGrid(3);
+
+        awaitPartitionMapExchange();
+
+        stop = startFillData(grid1, 1024);
+
+        try {
+            assertTrue(waitIndexesAreReady(grid1, 3, 60_000));
+        }
+        finally {
+            stop.set(true);
+        }
+
+        assertTrue(watchCheckpointStatus(3, CheckpointEntryType.END, 60_000));
+
+        validateIndexes(grid1, grid(3));
+    }
+
+    /**
+     *
+     * @param ignite Ignite.
+     * @param accountCnt Number of accounts to create.
+     */
+    private void fillData(IgniteEx ignite, int accountCnt) {
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(FIRST_CACHE)) {
+            for (long i = 0; i < accountCnt; i++)
+                streamer.addData(i, new Account(i));
+
+            streamer.flush();
+        }
+
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(SECOND_CACHE)) {
+            for (long i = 0; i < accountCnt; i++)
+                streamer.addData(i, new Account(i));
+
+            streamer.flush();
+        }
+    }
+
+    /**
+     *
+     * @param ignite Ignite.
+     * @param startAccount First account id to create.
+     * @return Cancellation flag.
+     */
+    private AtomicBoolean startFillData(IgniteEx ignite, int startAccount) {
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(FIRST_CACHE);
+        IgniteCache<Object, Object> cache2 = ignite.cache(SECOND_CACHE);
+
+        new Thread(() -> {
+            long i = startAccount;
+
+            while (!stop.get()) {
+                try {
+                    cache1.put(i, new Account(i));
+
+                    cache2.put(i, new Account(i));
+
+                    i++;
+                }
+                catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+        return stop;
+    }
+
+    /**
+     * @param idx Node index.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void removeIndexBin(int idx) throws IgniteCheckedException {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+        String instanceDir = U.maskForFileName(getTestIgniteInstanceName(idx));
+
+        for (File grp : Objects.requireNonNull(new File(workDir, instanceDir).listFiles()))
+            new File(grp, INDEX_FILE_NAME).delete();
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param idx Node index.
+     * @param timeout Timeout.
+     * @return {@code true} When index ready condition is observed within given time.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean waitIndexesAreReady(IgniteEx ignite, int idx, long timeout) throws IgniteCheckedException {
+        IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(grid(idx).localNode().id()));
+
+        return GridTestUtils.waitForCondition(()-> compute.callAsync(new IgniteCallable<Boolean>() {
+            /** */
+            @IgniteInstanceResource
+            Ignite ignite;
+
+            /** {@inheritDoc} */
+            @Override public Boolean call() {
+                return ignite.cache(FIRST_CACHE).indexReadyFuture().isDone() &&
+                    ignite.cache(SECOND_CACHE).indexReadyFuture().isDone();
+            }
+        }).get(timeout), timeout);
+    }
+
+    /**
+     *
+     * @param ignite Ignite.
+     * @param targets Target ignite instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateIndexes(IgniteEx ignite, IgniteEx... targets) throws IgniteCheckedException {
+        Set<UUID> nodes = Arrays.stream(targets).map(g -> ((IgniteProcessProxy)g).getId()).collect(Collectors.toSet());
+
+        VisorTaskArgument<VisorValidateIndexesTaskArg> arg = new VisorTaskArgument<>(nodes,
+            new VisorValidateIndexesTaskArg(null, nodes, 0, 1),
+            true);
+
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec =
+            ignite.context().task().execute(new VisorValidateIndexesTask(), arg);
+
+        VisorValidateIndexesTaskResult result = exec.get();
+
+        assertTrue(F.isEmpty(result.exceptions()));
 
         Map<UUID, VisorValidateIndexesJobResult> results = result.results();
 
@@ -227,23 +367,74 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
         assertFalse(hasIssue);
     }
 
-    /** */
-    private void cleanPersistenceFiles(String igName) throws Exception {
-        String ig1DbPath = Paths.get(DFLT_STORE_DIR, igName).toString();
+    /**
+     * Watches filesystem directory for new checkpoint status files.
+     *
+     * @param idx Node index.
+     * @param type Checkpoint entry type.
+     * @param timeout Timeout.
+     * @return {@code true} When specified checkpoint entry file was created within given time.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean watchCheckpointStatus(int idx, CheckpointEntryType type, long timeout)
+        throws IgniteCheckedException {
+        long since = System.currentTimeMillis();
+        long till = since + timeout;
 
-        File igDbDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbPath, false);
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
 
-        U.delete(igDbDir);
+        Path cpPath = Paths.get(workDir.toPath().toString(),
+            U.maskForFileName(getTestIgniteInstanceName(idx)),
+            "cp");
 
-        Files.createDirectory(igDbDir.toPath());
+        try (WatchService svc = FileSystems.getDefault().newWatchService()) {
+            WatchKey key = cpPath.register(svc, ENTRY_CREATE);
 
-        String ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", igName).toString();
+            while (System.currentTimeMillis() < till) {
+                WatchKey key0;
+                try {
+                    key0 = svc.take();
+                }
+                catch (InterruptedException e) {
+                    return false;
+                }
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
+                for (WatchEvent<?> event: key0.pollEvents()) {
+                    WatchEvent.Kind<?> kind = event.kind();
 
-        ig1DbWalPath = Paths.get(DFLT_STORE_DIR, "wal", "archive", igName).toString();
+                    if (kind == OVERFLOW)
+                        continue;
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), ig1DbWalPath, false));
+                    WatchEvent<Path> ev = (WatchEvent<Path>)event;
+                    Path filename = ev.context();
+
+                    Matcher match = CP_FILE_NAME_PATTERN.matcher(filename.toString());
+
+                    if (match.matches()) {
+                        long ts = Long.parseLong(match.group(1));
+
+                        if (ts > since) {
+                            CheckpointEntryType entryType = CheckpointEntryType.valueOf(match.group(3));
+
+                            if (entryType == type) {
+                                log.info("waitForRemoteCheckpoint since=" + since +
+                                    ", ts=" + ts + ", entryType=" + entryType + ", file=" + filename);
+
+                                return true;
+                            }
+                        }
+                    }
+
+                    if (!key.reset())
+                        break;
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

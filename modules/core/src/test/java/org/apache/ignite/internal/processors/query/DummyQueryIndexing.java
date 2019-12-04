@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -245,6 +246,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesByPartition(CacheGroupContext grp, int partId) {
         return null;
     }
 

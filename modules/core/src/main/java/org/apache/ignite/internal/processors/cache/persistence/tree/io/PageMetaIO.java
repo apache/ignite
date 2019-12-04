@@ -56,7 +56,7 @@ public class PageMetaIO extends PageIO {
 
     /** */
     public static final IOVersions<PageMetaIO> VERSIONS = new IOVersions<>(
-        new PageMetaIO(1)
+        new PageMetaIO(1), new PageMetaIOV2(2)
     );
 
     /**
@@ -243,6 +243,25 @@ public class PageMetaIO extends PageIO {
      */
     public int getCandidatePageCount(long pageAddr) {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
+    }
+
+
+    /**
+     * @param pageAddr Page address.
+     * @return Tree root page.
+     */
+    public long getIndexRebuildMarkersTreeRoot(long pageAddr) {
+        throw new UnsupportedOperationException("Index partitions rebuild markers tree is not supported by " +
+            "this PageMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param treeRoot Tree root.
+     */
+    public void setIndexRebuildMarkersTreeRoot(long pageAddr, long treeRoot) {
+        throw new UnsupportedOperationException("Index partitions rebuild markers tree is not supported by " +
+            "this PageMetaIO version: ver=" + getVersion());
     }
 
     /** {@inheritDoc} */

@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstorage.Parti
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
@@ -149,6 +150,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
         String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+        String rebuildMarksTreeName = grp.cacheOrGroupName() + "##IndexRebuildMarksTree";
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
@@ -164,6 +166,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         );
 
         RootPage metastoreRoot = metas.treeRoot;
+        RootPage rebldRoot = metas.indexRebuildMarksTreeRoot;
 
         indexStorage = new IndexStorageImpl(
             grp.dataRegion().pageMemory(),
@@ -176,8 +179,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseList,
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
+            rebldRoot.pageId().pageId(),
+            rebldRoot.isAllocated(),
             ctx.kernalContext().failure(),
-            diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName)
+            diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName),
+            diagnosticMgr.pageLockTracker().createPageLockTracker(rebuildMarksTreeName)
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
@@ -988,9 +994,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             final long pageAddr = pageMem.writeLock(grpId, metaId, metaPage);
 
             boolean allocated = false;
+            boolean rebldAllocated = false;
 
             try {
-                long metastoreRoot, reuseListRoot;
+                long metastoreRoot, reuseListRoot, rebldStateRoot;
 
                 if (PageIO.getType(pageAddr) != PageIO.T_META) {
                     PageMetaIO pageIO = PageMetaIO.VERSIONS.latest();
@@ -999,9 +1006,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     metastoreRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
                     reuseListRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
+                    rebldStateRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
 
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
+                    pageIO.setIndexRebuildMarkersTreeRoot(pageAddr, rebldStateRoot);
 
                     if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
                         assert pageIO.getType() == PageIO.T_META;
@@ -1017,12 +1026,58 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
 
                     allocated = true;
+                    rebldAllocated = true;
                 }
                 else {
                     PageMetaIO pageIO = PageIO.getPageIO(pageAddr);
 
                     metastoreRoot = pageIO.getTreeRoot(pageAddr);
                     reuseListRoot = pageIO.getReuseListRoot(pageAddr);
+
+                    int pageVer = PageMetaIO.getVersion(pageAddr);
+
+                    if (pageVer < 2) {
+                        assert pageVer == 1;
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Upgrade meta page version [part=" + PageIdAllocator.INDEX_PARTITION +
+                                ", grpId=" + grpId + ", oldVer=" + pageVer +
+                                ", newVer=" + pageIO.getVersion());
+                        }
+
+                        pageIO = PageMetaIO.VERSIONS.latest();
+
+                        ((PageMetaIOV2)pageIO).upgradePage(pageAddr);
+
+                        rebldStateRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
+
+                        pageIO.setIndexRebuildMarkersTreeRoot(pageAddr, rebldStateRoot);
+
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal,
+                            null)) {
+                            wal.log(new PageSnapshot(new FullPageId(metaId, grpId), pageAddr,
+                                pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                        }
+
+                        rebldAllocated = true;
+                    }
+                    else {
+                        rebldStateRoot = pageIO.getIndexRebuildMarkersTreeRoot(pageAddr);
+
+                        if (rebldStateRoot == 0) {
+                            rebldStateRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
+
+                            pageIO.setIndexRebuildMarkersTreeRoot(pageAddr, rebldStateRoot);
+
+                            if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal,
+                                null)) {
+                                wal.log(new PageSnapshot(new FullPageId(metaId, grpId), pageAddr,
+                                    pageMem.pageSize(), pageMem.realPageSize(grpId)));
+                            }
+
+                            rebldAllocated = true;
+                        }
+                    }
 
                     assert reuseListRoot != 0L;
                 }
@@ -1031,7 +1086,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     new RootPage(new FullPageId(metastoreRoot, grpId), allocated),
                     new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
                     null,
-                    null);
+                    null,
+                    new RootPage(new FullPageId(rebldStateRoot, grpId), rebldAllocated));
             }
             finally {
                 pageMem.writeUnlock(grpId, metaId, metaPage, null, allocated);
@@ -1612,15 +1668,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @GridToStringInclude
         private final RootPage partMetastoreReuseListRoot;
 
+        /** */
+        @GridToStringInclude
+        private final RootPage indexRebuildMarksTreeRoot;
+
         /**
          * @param treeRoot Metadata storage root.
          * @param reuseListRoot Reuse list root.
          */
-        Metas(RootPage treeRoot, RootPage reuseListRoot, RootPage pendingTreeRoot, RootPage partMetastoreReuseListRoot) {
+        Metas(RootPage treeRoot, RootPage reuseListRoot, RootPage pendingTreeRoot, RootPage partMetastoreReuseListRoot,
+            RootPage indexRebuildMarksTreeRoot) {
             this.treeRoot = treeRoot;
             this.reuseListRoot = reuseListRoot;
             this.pendingTreeRoot = pendingTreeRoot;
             this.partMetastoreReuseListRoot = partMetastoreReuseListRoot;
+            this.indexRebuildMarksTreeRoot = indexRebuildMarksTreeRoot;
         }
 
         /** {@inheritDoc} */
@@ -2058,7 +2120,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         new RootPage(new FullPageId(treeRoot, grpId), allocated),
                         new RootPage(new FullPageId(reuseListRoot, grpId), allocated),
                         new RootPage(new FullPageId(pendingTreeRoot, grpId), allocated || pendingTreeAllocated),
-                        new RootPage(new FullPageId(partMetaStoreReuseListRoot, grpId), allocated || partMetastoreReuseListAllocated));
+                        new RootPage(new FullPageId(partMetaStoreReuseListRoot, grpId), allocated || partMetastoreReuseListAllocated),
+                        null);
                 }
                 finally {
                     pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null,

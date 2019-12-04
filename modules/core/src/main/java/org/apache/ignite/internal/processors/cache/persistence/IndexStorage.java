@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -86,4 +87,22 @@ public interface IndexStorage {
      * @return True if the given idxName could be assosiated with the given cacheId (existing is not checked).
      */
     boolean nameIsAssosiatedWithCache(String idxName, int cacheId);
+
+    /**
+     * Store index partitions rebuild markers for the given cache.
+     *
+     * @param cacheId Cache ID.
+     * @param parts Partitions.
+     * @param addOrRemove Use {@code true} to add rebuild markers and {@code false} to remove.
+     */
+    void storeIndexRebuildMarkers(int cacheId, Collection<Integer> parts, boolean addOrRemove)
+        throws IgniteCheckedException;
+
+    /**
+     * Retrieve index partitions rebuild markers for the given cache.
+     *
+     * @param cacheId Cache ID.
+     * @return Partitions marked as rebuild-required.
+     */
+    Set<Integer> getIndexRebuildMarkers(int cacheId) throws IgniteCheckedException;
 }
