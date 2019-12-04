@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -249,7 +250,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             Random r = new Random();
 
-            Ignite failed = G.allGrids().get(r.nextInt(nodes));
+            Ignite candidate;
+            MvccProcessor proc;
+
+            do {
+                candidate = G.allGrids().get(r.nextInt(nodes));
+
+                proc = ((IgniteEx)candidate).context().coordinators();
+            }
+            // MVCC coordinator fail always breaks transactions, excluding.
+            while (proc.mvccEnabled() && proc.currentCoordinator().local());
+
+            Ignite failed = candidate;
 
             int multiplicator = 3;
             int key_bound = 1_000_000;
@@ -391,7 +403,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             failed.close(); // Stopping node.
 
-            awaitPartitionMapExchange(true, true, null);
+            awaitPartitionMapExchange();
 
             failedLatch.countDown();
 
