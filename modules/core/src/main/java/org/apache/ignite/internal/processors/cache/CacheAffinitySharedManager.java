@@ -1680,9 +1680,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 CacheGroupHolder cache = getOrCreateGroupHolder(topVer, desc);
 
-                List<List<ClusterNode>> assign = cache.affinity().calculate(topVer, evts, evts.discoveryCache()).assignment();
-
-                cache.affinity().initialize(topVer, assign); // Fully rebalanced. Initializing ideal assignment.
+                calculateAndInit(evts, cache.affinity(), topVer); // Fully rebalanced. Initializing ideal assignment.
 
                 fut.timeBag().finishLocalStage(
                     "Affinity initialization (exchange-free switch on fully-rebalanced topology) " +
