@@ -51,10 +51,10 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
         testDeferredDelete(LOCAL, TRANSACTIONAL, false, false);
 
         testDeferredDelete(PARTITIONED, ATOMIC, false, true);
-        testDeferredDelete(PARTITIONED, TRANSACTIONAL, false, false);
+        testDeferredDelete(PARTITIONED, TRANSACTIONAL, false, true);
 
         testDeferredDelete(REPLICATED, ATOMIC, false, true);
-        testDeferredDelete(REPLICATED, TRANSACTIONAL, false, false);
+        testDeferredDelete(REPLICATED, TRANSACTIONAL, false, true);
 
         // Near
         testDeferredDelete(LOCAL, ATOMIC, true, false);
@@ -64,7 +64,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
         testDeferredDelete(PARTITIONED, TRANSACTIONAL, true, false);
 
         testDeferredDelete(REPLICATED, ATOMIC, true, true);
-        testDeferredDelete(REPLICATED, TRANSACTIONAL, true, false);
+        testDeferredDelete(REPLICATED, TRANSACTIONAL, true, true);
     }
 
     /**
