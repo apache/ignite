@@ -149,7 +149,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        return grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        return grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
     }
 
     /**

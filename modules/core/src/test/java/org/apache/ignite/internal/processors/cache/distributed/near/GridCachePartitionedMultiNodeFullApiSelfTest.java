@@ -190,7 +190,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Affinity<Object> aff = ignite(i).affinity(DEFAULT_CACHE_NAME);
 
-            info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
+            info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackupsList("key")) +
                 ", locNode=" + ignite(i).cluster().localNode().id() + ']');
 
             if (aff.isBackup(grid(i).localNode(), "key")) {
@@ -353,11 +353,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
+        info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackupsList(key));
 
         Affinity<Object> aff = affinity(cache);
 
-        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
         info("Got nodes from affinity: " + nodes);
 

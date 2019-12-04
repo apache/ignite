@@ -696,7 +696,7 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         boolean rmv
     ) {
         Collection<ClusterNode> nodes = atomicityMode(cache) == TRANSACTIONAL ?
-                affinity(cache).mapKeyToPrimaryAndBackups(key) :
+                affinity(cache).mapKeyToPrimaryAndBackupsList(key) :
                 Collections.singletonList(affinity(cache).mapKeyToNode(key));
 
         assert !nodes.isEmpty();

@@ -166,7 +166,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
                 Affinity<Object> checkAff = grid.affinity(DEFAULT_CACHE_NAME);
 
                 for (int p = 0; p < PARTS; p++)
-                    assertEquals(aff.mapPartitionToPrimaryAndBackups(p), checkAff.mapPartitionToPrimaryAndBackups(p));
+                    assertEquals(aff.mapPartitionToPrimaryAndBackupsList(p), checkAff.mapPartitionToPrimaryAndBackupsList(p));
             }
             catch (IllegalArgumentException ignored) {
                 // Skip the node without cache.

@@ -191,7 +191,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
                 // Check entry versions consistency.
                 for (String key : keys) {
-                    Collection<ClusterNode> nodes = grid.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+                    Collection<ClusterNode> nodes = grid.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
                     List<IgniteEx> grids = grids(nodes);
 

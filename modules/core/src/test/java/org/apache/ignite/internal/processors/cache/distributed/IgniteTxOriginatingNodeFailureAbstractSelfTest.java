@@ -148,7 +148,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key));
 
             nodes.remove(txNode);
 

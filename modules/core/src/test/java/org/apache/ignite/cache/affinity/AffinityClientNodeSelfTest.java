@@ -160,10 +160,10 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
             Affinity<Object> aff = ignite.affinity(cacheName);
 
             for (int part = 0; part < aff.partitions(); part++) {
-                Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(part);
+                Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackupsList(part);
 
                 assertEquals(expNodes, nodes.size());
-                assertEquals(aff0.mapPartitionToPrimaryAndBackups(part), nodes);
+                assertEquals(aff0.mapPartitionToPrimaryAndBackupsList(part), nodes);
 
                 assertFalse(nodes.contains(clientNode));
 
@@ -172,7 +172,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
                 TestKey key = new TestKey(part, part + 1);
 
                 assertEquals(aff0.partition(key), aff.partition(key));
-                assertEquals(aff0.mapKeyToPrimaryAndBackups(key), aff.mapKeyToPrimaryAndBackups(key));
+                assertEquals(aff0.mapKeyToPrimaryAndBackupsList(key), aff.mapKeyToPrimaryAndBackupsList(key));
             }
         }
     }

@@ -219,8 +219,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         final Integer key1 = key0;
         final Integer key2 = primaryKey(cache2);
 
-        final Collection<ClusterNode> key1Nodes = aff.mapKeyToPrimaryAndBackups(key1);
-        final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
+        final Collection<ClusterNode> key1Nodes = aff.mapKeyToPrimaryAndBackupsList(key1);
+        final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackupsList(key2);
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
@@ -399,8 +399,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             int backups = origCache.getConfiguration(CacheConfiguration.class).getBackups();
 
             final Collection<ClusterNode> key1Nodes =
-                (locBackupKey && backups < 2) ? Collections.emptyList() : aff.mapKeyToPrimaryAndBackups(key1);
-            final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
+                (locBackupKey && backups < 2) ? Collections.emptyList() : aff.mapKeyToPrimaryAndBackupsList(key1);
+            final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackupsList(key2);
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(orig).configuration().getCommunicationSpi();
 
@@ -408,11 +408,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ);
 
-            log.info("Put key1 [key1=" + key1 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key1)) + ']');
+            log.info("Put key1 [key1=" + key1 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackupsList(key1)) + ']');
 
             origCache.put(key1, key1);
 
-            log.info("Put key2 [key2=" + key2 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key2)) + ']');
+            log.info("Put key2 [key2=" + key2 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackupsList(key2)) + ']');
 
             origCache.put(key2, key2);
 

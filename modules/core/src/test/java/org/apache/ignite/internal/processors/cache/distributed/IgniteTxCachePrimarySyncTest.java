@@ -881,7 +881,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
         final Object key) throws Exception {
         Affinity<Object> aff = ignite.affinity(cacheName);
 
-        final Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+        final Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
         assertEquals(expNodes, nodes.size());
 

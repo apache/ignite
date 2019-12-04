@@ -156,7 +156,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
                 info("Puts: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }
@@ -212,7 +212,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
                 info("Puts: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }
@@ -267,7 +267,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
                 info("Writes: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }
@@ -318,13 +318,13 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
                 info("Writes: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 cache0.get(i); // +1 read.
 
                 info("Writes: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }
@@ -375,13 +375,13 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
                 info("Writes: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 cache0.get(i); // +1 read.
 
                 info("Writes: " + cache0.localMetrics().getCachePuts());
                 info("Reads: " + cache0.localMetrics().getCacheGets());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }
@@ -430,7 +430,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 info("Reads: " + cache0.localMetrics().getCacheGets());
                 info("Hits: " + cache0.localMetrics().getCacheHits());
                 info("Misses: " + cache0.localMetrics().getCacheMisses());
-                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackups(i)));
+                info("Affinity nodes: " + U.nodes2names(affinity(cache0).mapKeyToPrimaryAndBackupsList(i)));
 
                 break;
             }

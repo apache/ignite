@@ -237,7 +237,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Nodes for key [id=" + grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(KEY) +
+        info("Nodes for key [id=" + grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(KEY) +
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);

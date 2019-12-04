@@ -17,7 +17,9 @@
 
 package org.apache.ignite.cache.affinity;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -187,8 +189,23 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
+     * @deprecated Use {@link Affinity#mapKeyToPrimaryAndBackups(Object)} instead.
      */
+    @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
+
+    /**
+     * Gets primary and backup nodes for the key. Primary node is always
+     * first in the returned list.
+     *
+     * @param key Key to get affinity nodes for.
+     * @return List of primary and backup nodes for the key with primary node always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public default List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
+        Collection<ClusterNode> res = mapKeyToPrimaryAndBackups(key);
+        return res instanceof List ? (List<ClusterNode>)res : new ArrayList(res);
+    }
 
     /**
      * Gets primary node for the given partition.
@@ -222,6 +239,21 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
+     * @deprecated Use {@link Affinity#mapPartitionToPrimaryAndBackupsList(int)} instead.
      */
+    @Deprecated
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
+
+    /**
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned list.
+     *
+     * @param part Partition to get affinity nodes for.
+     * @return List of primary and backup nodes for partition with primary node always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public default List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
+        Collection<ClusterNode> res = mapPartitionToPrimaryAndBackups(part);
+        return res instanceof List ? (List<ClusterNode>)res : new ArrayList(res);
+    }
 }

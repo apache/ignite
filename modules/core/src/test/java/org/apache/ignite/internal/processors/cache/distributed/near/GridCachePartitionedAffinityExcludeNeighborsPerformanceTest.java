@@ -90,7 +90,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @return Nodes.
      */
     private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
-        return aff.mapKeyToPrimaryAndBackups(key);
+        return aff.mapKeyToPrimaryAndBackupsList(key);
     }
 
     /**

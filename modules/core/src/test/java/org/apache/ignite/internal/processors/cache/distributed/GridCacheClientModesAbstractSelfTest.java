@@ -224,7 +224,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                     if (cacheMode() == PARTITIONED)
                         assertFalse(affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key));
 
-                    assertFalse(affinity(cache).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()));
+                    assertFalse(affinity(cache).mapKeyToPrimaryAndBackupsList(key).contains(g.cluster().localNode()));
                 }
             }
             else {
@@ -237,7 +237,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                     if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(g.cluster().localNode(), key))
                         foundEntry = true;
 
-                    if (g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
+                    if (g.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackupsList(key).contains(g.cluster().localNode()))
                         foundAffinityNode = true;
                 }
 

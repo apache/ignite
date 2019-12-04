@@ -100,7 +100,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
     private static UUID primaryId(Ignite ignite, Object key) {
         Affinity aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
-        Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
+        Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackupsList(aff.partition(key));
 
         ClusterNode first = F.first(affNodes);
 

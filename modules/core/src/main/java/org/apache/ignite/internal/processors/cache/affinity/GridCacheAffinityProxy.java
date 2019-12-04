@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -221,24 +222,44 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Use {@link GridCacheAffinityProxy#mapKeyToPrimaryAndBackupsList(Object)} instead.
+     */
+    @Deprecated
     @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+        return mapKeyToPrimaryAndBackupsList(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key) {
         CacheOperationContext old = gate.enter(null);
 
         try {
-            return delegate.mapKeyToPrimaryAndBackups(key);
+            return delegate.mapKeyToPrimaryAndBackupsList(key);
         }
         finally {
             gate.leave(old);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Use {@link GridCacheAffinityProxy#mapKeyToPrimaryAndBackupsList(Object)} instead.
+     */
+    @Deprecated
     @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+        return mapPartitionToPrimaryAndBackupsList(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part) {
         CacheOperationContext old = gate.enter(null);
 
         try {
-            return delegate.mapPartitionToPrimaryAndBackups(part);
+            return delegate.mapPartitionToPrimaryAndBackupsList(part);
         }
         finally {
             gate.leave(old);

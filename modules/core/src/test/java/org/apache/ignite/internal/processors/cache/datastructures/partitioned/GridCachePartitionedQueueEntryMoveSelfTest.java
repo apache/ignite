@@ -182,14 +182,14 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
         CacheConfiguration cCfg = getQueueCache(queue);
 
-        Collection<ClusterNode> aff1 = ignite(0).affinity(cCfg.getName()).mapKeyToPrimaryAndBackups(queueName);
+        Collection<ClusterNode> aff1 = ignite(0).affinity(cCfg.getName()).mapKeyToPrimaryAndBackupsList(queueName);
 
         for (int i = 0, id = GRID_CNT; i < cnt; i++) {
             startGrid(id++);
 
             awaitPartitionMapExchange();
 
-            Collection<ClusterNode> aff2 = ignite(0).affinity(cCfg.getName()).mapKeyToPrimaryAndBackups(queueName);
+            Collection<ClusterNode> aff2 = ignite(0).affinity(cCfg.getName()).mapKeyToPrimaryAndBackupsList(queueName);
 
             if (!aff1.iterator().next().equals(aff2.iterator().next())) {
                 info("Moved queue to new primary node [oldAff=" + aff1 + ", newAff=" + aff2 + ']');

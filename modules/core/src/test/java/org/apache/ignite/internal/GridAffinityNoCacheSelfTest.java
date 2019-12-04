@@ -173,7 +173,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return affinity.mapKeyToPrimaryAndBackups(key);
+                return affinity.mapKeyToPrimaryAndBackupsList(key);
             }
         }, IgniteException.class, EXPECTED_MSG);
 
@@ -191,7 +191,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return affinity.mapPartitionToPrimaryAndBackups(0);
+                return affinity.mapPartitionToPrimaryAndBackupsList(0);
             }
         }, IgniteException.class, EXPECTED_MSG);
 

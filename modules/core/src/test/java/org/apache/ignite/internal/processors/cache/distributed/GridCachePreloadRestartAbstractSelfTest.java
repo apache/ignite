@@ -211,7 +211,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
                 int part = affinity(c).partition(key);
 
                 info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
-                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackupsList(part)) + ']');
             }
         }
     }
@@ -225,7 +225,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
                 int part = affinity(c).partition(key);
 
                 info("Affinity nodes after start [key=" + key + ", partition" + part + ", nodes=" +
-                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
+                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackupsList(part)) + ']');
             }
         }
     }

@@ -277,7 +277,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         int key = -1;
 
         for (int k = 0; k < 100_000; k++) {
-            if (!ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k).contains(ignite.localNode())) {
+            if (!ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(k).contains(ignite.localNode())) {
                 key = k;
                 break;
             }
@@ -287,7 +287,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         int part = ignite.affinity(CACHE_NAME).partition(key);
 
-        Collection<ClusterNode> initialMapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> initialMapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == 2 : initialMapping;
 
@@ -297,7 +297,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         cache.put(key, 1);
 
-        Collection<ClusterNode> mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == mapping.size() : mapping;
         assert initialMapping.containsAll(mapping) : mapping;
@@ -306,12 +306,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == mapping.size() : mapping;
         assert initialMapping.containsAll(mapping) : mapping;
 
-        mapping = newIgnite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = newIgnite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == mapping.size() : mapping;
         assert initialMapping.containsAll(mapping) : mapping;
@@ -328,7 +328,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert mapping.size() == 1 : mapping;
         assert initialMapping.containsAll(mapping);
@@ -343,7 +343,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert mapping.isEmpty() : mapping;
 
@@ -357,7 +357,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert ignite.cluster().nodes().size() == NODE_COUNT + 1;
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == mapping.size() : mapping;
 
@@ -476,7 +476,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         int key = -1;
 
         for (int k = 0; k < 100_000; k++) {
-            if (!ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k).contains(ignite.localNode())) {
+            if (!ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(k).contains(ignite.localNode())) {
                 key = k;
                 break;
             }
@@ -484,7 +484,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assert key >= 0;
 
-        Collection<ClusterNode> initialMapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> initialMapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping.size() == 2 : initialMapping;
 
@@ -502,7 +502,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Collection<ClusterNode> mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert mapping.size() == 1 : mapping;
         assert initialMapping.containsAll(mapping);
@@ -514,7 +514,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Collection<ClusterNode> initialMapping2 = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> initialMapping2 = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping2.size() == 2 : initialMapping2;
 
@@ -522,7 +522,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert mapping.size() == initialMapping2.size() : mapping;
         assert mapping.containsAll(initialMapping2);
@@ -536,7 +536,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Collection<ClusterNode> initialMapping3 = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> initialMapping3 = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert initialMapping3.size() == 2;
 
@@ -546,7 +546,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        mapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert mapping.size() == initialMapping3.size() : mapping;
         assert mapping.containsAll(initialMapping3);
@@ -587,7 +587,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         int key = 1;
 
-        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert affNodes.size() == 2;
 
@@ -673,7 +673,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         int key = 1;
 
-        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        List<ClusterNode> affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assert affNodes.size() == 2;
 
@@ -751,7 +751,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
+        affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackupsList(key);
 
         assertEquals(primary.localNode(), affNodes.get(0));
         assertEquals(backup.localNode(), affNodes.get(1));
@@ -1002,7 +1002,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             IgniteEx ig0 = grid(i);
 
             for (int p = 0; p < 32; p++)
-                assertEqualsCollections(ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p), ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p));
+                assertEqualsCollections(ig.affinity(cacheName).mapPartitionToPrimaryAndBackupsList(p), ig0.affinity(cacheName).mapPartitionToPrimaryAndBackupsList(p));
         }
 
         for (Map.Entry<Integer, String> e : keyToConsId.entrySet()) {

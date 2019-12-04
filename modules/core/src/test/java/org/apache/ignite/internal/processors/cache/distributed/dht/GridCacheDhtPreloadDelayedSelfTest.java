@@ -409,7 +409,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Affinity nodes.
      */
     private Collection<ClusterNode> affinityNodes(Ignite g, int p) {
-        return affinity(g).mapPartitionToPrimaryAndBackups(p);
+        return affinity(g).mapPartitionToPrimaryAndBackupsList(p);
     }
 
     /**

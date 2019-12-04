@@ -477,7 +477,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < nodeCount() + 1; g++) {
                 assertEquals("1", grid(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
-                Collection<ClusterNode> nodes = grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(0);
+                Collection<ClusterNode> nodes = grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackupsList(0);
 
                 assertEquals(nodeCount() + 1, nodes.size());
             }
@@ -531,14 +531,14 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 100; i++)
                 assertEquals(i, grid(1).cache(DYNAMIC_CACHE_NAME).get(i));
 
-            info("Affinity nodes: " + grid(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(0));
+            info("Affinity nodes: " + grid(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackupsList(0));
 
             for (int g = 0; g < nodeCount(); g++) {
                 for (int i = 0; i < 100; i++) {
-                    assertFalse(grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(i)
+                    assertFalse(grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackupsList(i)
                         .contains(grid(nodeCount()).cluster().localNode()));
 
-                    assertFalse(grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(i)
+                    assertFalse(grid(g).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackupsList(i)
                         .contains(grid(nodeCount() + 1).cluster().localNode()));
                 }
             }
@@ -1234,7 +1234,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             try {
                 for (int i = 0; i < 100; i++) {
-                    assertFalse(ignite(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackups(i)
+                    assertFalse(ignite(0).affinity(DYNAMIC_CACHE_NAME).mapKeyToPrimaryAndBackupsList(i)
                         .contains(dNode.cluster().localNode()));
 
                     cache.put(i, i);

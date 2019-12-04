@@ -530,7 +530,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 .localUpdateCounters(false);
 
             for (Map.Entry<Integer, Long> e : updCntrs.entrySet()) {
-                if (aff.mapPartitionToPrimaryAndBackups(e.getKey()).contains(grid(i).localNode())) {
+                if (aff.mapPartitionToPrimaryAndBackupsList(e.getKey()).contains(grid(i).localNode())) {
                     int partIdx = act.partitionIndex(e.getKey());
 
                     assertEquals(e.getValue(), (Long)act.updateCounterAt(partIdx));
@@ -684,7 +684,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         List<Integer> keys = testKeys(srvCache, 1);
 
-        Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(keys.get(0));
+        Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackupsList(keys.get(0));
 
         Collection<UUID> ids = F.transform(nodes, new C1<ClusterNode, UUID>() {
             @Override public UUID apply(ClusterNode node) {

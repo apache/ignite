@@ -193,7 +193,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                     while (it.hasNext()) {
                         Integer key = it.next();
 
-                        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
+                        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackupsList(key);
 
                         for (int i = 0; i < gridCnt; i++) {
                             ClusterNode locNode = grid(i).localNode();
@@ -280,7 +280,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             fut.get();
 
             for (int k = 0; k < range; k++) {
-                Collection<ClusterNode> affNodes = affinity(cache).mapKeyToPrimaryAndBackups(k);
+                Collection<ClusterNode> affNodes = affinity(cache).mapKeyToPrimaryAndBackupsList(k);
 
                 // Test is valid with at least one backup.
                 assert affNodes.size() >= 2;
