@@ -2331,7 +2331,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 lock.writeLock().unlock();
             }
 
-            List<List<ClusterNode>> ideal = exchFut.sharedContext().affinity().affinity(groupId()).idealAssignmentRaw();
+            List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
 
             for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
                 // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
