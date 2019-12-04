@@ -1137,13 +1137,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite primary = primaryNode(0, cacheName);
 
-        boolean lasOnJoin = primary.cluster().localNode().order() != 1;
+        boolean laaOnJoin = primary.cluster().localNode().order() != 1;
 
         boolean leftHappen = false;
 
         while (nodes > 1) {
             Map<String, List<List<ClusterNode>>> aff =
-                checkAffinity(nodes, topVer(top, leftHappen ? 0 : (lasOnJoin ? 1 : 0)), true);
+                checkAffinity(nodes, topVer(top, leftHappen ? 0 : (laaOnJoin ? 1 : 0)), true);
 
             ClusterNode owner = aff.get(cacheName).get(/*part*/0).get(/*primary*/0);
 
