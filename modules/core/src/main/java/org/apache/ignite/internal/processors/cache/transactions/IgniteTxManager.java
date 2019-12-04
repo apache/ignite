@@ -827,10 +827,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (node != null && tx.originatingNodeId().equals(node.id())) {
-                res.add(tx.finishFuture());
+            if (node != null) {
+                if (tx.originatingNodeId().equals(node.id())) {
+                    assert needWaitTransaction(tx, topVer);
 
-                assert needWaitTransaction(tx, topVer);
+                    res.add(tx.finishFuture());
+                }
             }
             else if (needWaitTransaction(tx, topVer))
                 res.add(tx.finishFuture());
