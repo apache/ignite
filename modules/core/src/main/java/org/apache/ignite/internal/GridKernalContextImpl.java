@@ -400,10 +400,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    protected IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
-
-    /** */
-    @GridToStringExclude
     private Map<String, ? extends ExecutorService> customExecSvcs;
 
     /** */
@@ -488,8 +484,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
-     * @param rebalanceExecSvc Rebalance excutor service.
-     * @param rebalanceStripedExecSvc Striped rebalance excutor service.
+     * @param rebalanceExecSvc Rebalance executor service.
      * @param customExecSvcs Custom named executors.
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
@@ -518,7 +513,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         ExecutorService rebalanceExecSvc,
-        IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
@@ -549,7 +543,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
         this.rebalanceExecSvc = rebalanceExecSvc;
-        this.rebalanceStripedExecSvc = rebalanceStripedExecSvc;
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
@@ -1175,11 +1168,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService getRebalanceExecutorService() {
         return rebalanceExecSvc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStripedThreadPoolExecutor getStripedRebalanceExecutorService() {
-        return rebalanceStripedExecSvc;
     }
 
     /** {@inheritDoc} */

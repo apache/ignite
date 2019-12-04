@@ -25,6 +25,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -341,13 +344,25 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void handleSupplyMessage(UUID nodeId, final GridDhtPartitionSupplyMessage s) {
-        demander.registerSupplyMessage(nodeId, s, () -> {
+    @Override public void handleSupplyMessage(UUID nodeId, final GridDhtPartitionSupplyMessage msg) {
+        demander.registerSupplyMessage(msg, () -> {
             if (!enterBusy())
                 return;
 
             try {
-                demander.handleSupplyMessage(nodeId, s);
+                demander.handleSupplyMessage(nodeId, msg);
+            }
+            catch (Throwable t) {
+                try {
+                    U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', t);
+                }
+                catch (Throwable e0) {
+                    U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=(failed to log message)", t);
+
+                    U.error(log, "Failed to log message due to an error: ", e0);
+                }
+
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
             }
             finally {
                 leaveBusy();
@@ -357,17 +372,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void handleDemandMessage(int idx, UUID nodeId, GridDhtPartitionDemandMessage d) {
-        ctx.kernalContext().getStripedRebalanceExecutorService().execute(() -> {
-            if (!enterBusy())
-                return;
+        if (!enterBusy())
+            return;
 
-            try {
-                supplier.handleDemandMessage(idx, nodeId, d);
-            }
-            finally {
-                leaveBusy();
-            }
-        }, Math.abs(nodeId.hashCode()));
+        try {
+            supplier.handleDemandMessage(idx, nodeId, d);
+        }
+        finally {
+            leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -552,5 +565,37 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void resume() {
         busyLock.writeLock().unlock();
+    }
+
+    /**
+     * Return supplier.
+     *
+     * @return Supplier.
+     * */
+    public GridDhtPartitionSupplier supplier() {
+        return supplier;
+    }
+
+    /**
+     * @param supplier Supplier.
+     */
+    public void supplier(GridDhtPartitionSupplier supplier) {
+        this.supplier = supplier;
+    }
+
+    /**
+     * Return demander.
+     *
+     * @return Demander.
+     * */
+    public GridDhtPartitionDemander demander() {
+        return demander;
+    }
+
+    /**
+     * @param demander Demander.
+     */
+    public void demander(GridDhtPartitionDemander demander) {
+        this.demander = demander;
     }
 }

@@ -1579,9 +1579,6 @@ public class IgnitionEx {
         /** Rebalance executor service. */
         private ThreadPoolExecutor rebalanceExecSvc;
 
-        /** Rebalance striped executor service. */
-        private IgniteStripedThreadPoolExecutor rebalanceStripedExecSvc;
-
         /** Executor service. */
         private Map<String, ThreadPoolExecutor> customExecSvcs;
 
@@ -1994,14 +1991,6 @@ public class IgnitionEx {
 
             rebalanceExecSvc.allowCoreThreadTimeOut(true);
 
-            rebalanceStripedExecSvc = new IgniteStripedThreadPoolExecutor(
-                cfg.getRebalanceThreadPoolSize(),
-                cfg.getIgniteInstanceName(),
-                "rebalance-striped",
-                oomeHnd,
-                true,
-                DFLT_THREAD_KEEP_ALIVE_TIME);
-
             if (!F.isEmpty(cfg.getExecutorConfiguration())) {
                 validateCustomExecutorsConfiguration(cfg.getExecutorConfiguration());
 
@@ -2053,7 +2042,6 @@ public class IgnitionEx {
                     qryExecSvc,
                     schemaExecSvc,
                     rebalanceExecSvc,
-                    rebalanceStripedExecSvc,
                     customExecSvcs,
                     new CA() {
                         @Override public void apply() {
@@ -2716,10 +2704,6 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), rebalanceExecSvc, log);
 
             rebalanceExecSvc = null;
-
-            U.shutdownNow(getClass(), rebalanceStripedExecSvc, log);
-
-            rebalanceStripedExecSvc = null;
 
             U.shutdownNow(getClass(), stripedExecSvc, log);
 

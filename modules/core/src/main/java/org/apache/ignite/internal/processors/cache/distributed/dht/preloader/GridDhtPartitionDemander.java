@@ -138,8 +138,6 @@ public class GridDhtPartitionDemander {
             syncFut.onDone();
         }
 
-        Map<Integer, Object> tops = new HashMap<>();
-
         rebalanceTopic = GridCachePartitionExchangeManager.rebalanceTopic(0);
     }
 
@@ -600,24 +598,18 @@ public class GridDhtPartitionDemander {
 
     /**
      * Enqueues supply message.
+     *
+     * @param supplyMsg Messqage.
+     * @param r Runnable.
      */
-    public void registerSupplyMessage(final UUID nodeId, final GridDhtPartitionSupplyMessage supplyMsg, final Runnable r) {
+    public void registerSupplyMessage(final GridDhtPartitionSupplyMessage supplyMsg, final Runnable r) {
         final RebalanceFuture fut = rebalanceFut;
 
         if (!topologyChanged(fut) && fut.isActual(supplyMsg.rebalanceId())) {
-            boolean historical = false;
-
-            for (Integer p : supplyMsg.infos().keySet()) {
+            for (Integer p : supplyMsg.infos().keySet())
                 fut.queued.get(p).increment();
 
-                if (fut.historical.contains(p))
-                    historical = true;
-            }
-
-            if (historical) // Can not be reordered.
-                ctx.kernalContext().getStripedRebalanceExecutorService().execute(r, Math.abs(nodeId.hashCode()));
-            else // Can be reordered.
-                ctx.kernalContext().getRebalanceExecutorService().execute(r);
+            ctx.kernalContext().getRebalanceExecutorService().execute(r);
         }
     }
 

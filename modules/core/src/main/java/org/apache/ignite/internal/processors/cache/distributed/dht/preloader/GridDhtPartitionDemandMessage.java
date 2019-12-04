@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -375,6 +376,11 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 10;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte policy() {
+        return GridIoPolicy.REBALANCE_POOL;
     }
 
     /** {@inheritDoc} */
