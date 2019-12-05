@@ -1634,18 +1634,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert fut.context().mergeExchanges();
         assert evts.hasServerJoin() && !evts.hasServerLeft();
 
-        WaitRebalanceInfo waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
-
-        this.waitInfo = waitRebalanceInfo != null && !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
-
-        WaitRebalanceInfo info = this.waitInfo;
-
-        if (crd) {
-            if (log.isDebugEnabled()) {
-                log.debug("Computed new affinity after node join [topVer=" + evts.topologyVersion() +
-                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
-            }
-        }
+        initAffinityOnNodeJoin(fut, crd);
     }
 
     /**
@@ -1775,8 +1764,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         boolean locJoin = fut.firstEvent().eventNode().isLocal();
 
-        WaitRebalanceInfo waitRebalanceInfo = null;
-
         if (locJoin) {
             forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
                 @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
@@ -1802,41 +1789,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         }
         else
-            waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
-
-        this.waitInfo = waitRebalanceInfo != null && !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
-
-        WaitRebalanceInfo info = this.waitInfo;
-
-        if (crd) {
-            if (log.isDebugEnabled()) {
-                log.debug("Computed new affinity after node join [topVer=" + fut.initialVersion() +
-                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
-            }
-        }
+            initAffinityOnNodeJoin(fut, crd);
     }
 
     /**
      * @param fut Exchange future
      * @param crd Coordinator flag.
-     * @throws IgniteCheckedException If failed.
      */
-    public void onBaselineTopologyChanged(final GridDhtPartitionsExchangeFuture fut,
-        boolean crd) throws IgniteCheckedException {
+    public void onBaselineTopologyChanged(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         assert !fut.firstEvent().eventNode().isClient();
 
-        WaitRebalanceInfo waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
-
-        this.waitInfo = waitRebalanceInfo != null && !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
-
-        WaitRebalanceInfo info = this.waitInfo;
-
-        if (crd) {
-            if (log.isDebugEnabled()) {
-                log.debug("Computed new affinity after node join [topVer=" + fut.initialVersion() +
-                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
-            }
-        }
+        initAffinityOnNodeJoin(fut, crd);
     }
 
     /**
@@ -2014,7 +1977,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         synchronized (mux) {
-            this.waitInfo = null;
+            waitInfo = null;
         }
 
         return true;
@@ -2217,9 +2180,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param fut Current exchange future.
      * @param crd Coordinator flag.
-     * @return Rabalance info.
      */
-    @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
+    @Nullable private void initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
         final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(evts.lastServerEventVersion());
@@ -2265,7 +2227,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        return waitRebalanceInfo;
+        synchronized (mux) {
+            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
+        }
+
+        if (crd) {
+            if (log.isDebugEnabled()) {
+                log.debug("Computed new affinity after node join [topVer=" + evts.lastServerEventVersion() +
+                    ", waitGrps=" + groupNames(waitRebalanceInfo.waitGrps.keySet()) + ']');
+            }
+        }
     }
 
     /**
@@ -2603,7 +2574,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
 
         synchronized (mux) {
-            this.waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
+            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
 
             WaitRebalanceInfo info = this.waitInfo;
 
