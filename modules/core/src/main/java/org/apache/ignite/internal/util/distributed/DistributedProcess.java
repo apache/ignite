@@ -124,12 +124,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 else
                     p.resFut.onDone(f.result());
 
-                ClusterNode crdNode = coordinator();
-
                 if (!ctx.clientNode()) {
                     assert crd != null;
 
-                    sendSingleMessage(p, crdNode);
+                    sendSingleMessage(p);
                 }
             });
 
@@ -186,7 +184,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                             initCoordinator(p, discoCache.version());
 
                         if (!ctx.clientNode())
-                            p.resFut.listen(f -> sendSingleMessage(p, crd));
+                            p.resFut.listen(f -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
                         boolean rmvd, isEmpty;
@@ -217,7 +215,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public void start(UUID id, I req) {
         try {
-            InitMessage msg = new InitMessage<>(id, type.ordinal(), req);
+            InitMessage<I> msg = new InitMessage<>(id, type.ordinal(), req);
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -249,19 +247,18 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * Sends single node message to coordinator.
      *
      * @param p Process.
-     * @param crd Coordinator node to send message.
      */
-    private void sendSingleMessage(Process p, ClusterNode crd) {
+    private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type.ordinal(), p.resFut.result(),
             (Exception)p.resFut.error());
 
-        if (crd.isLocal())
-            onSingleNodeMessageReceived(singleMsg, crd.id());
+        if (F.eq(ctx.localNodeId(), p.crdId))
+            onSingleNodeMessageReceived(singleMsg, p.crdId);
         else {
             try {
-                ctx.io().sendToGridTopic(crd, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+                ctx.io().sendToGridTopic(p.crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to send message to coordinator.", e);
@@ -316,7 +313,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 res.put(uuid, msg.response());
         });
 
-        FullMessage msg = new FullMessage<>(p.id, type.ordinal(), res, err);
+        FullMessage<R> msg = new FullMessage<>(p.id, type.ordinal(), res, err);
 
         try {
             ctx.discovery().sendCustomEvent(msg);
@@ -383,6 +380,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see GridEncryptionManager
          */
-        MASTER_KEY_CHANGE_FINISH;
+        MASTER_KEY_CHANGE_FINISH
     }
 }
