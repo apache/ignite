@@ -34,8 +34,8 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Initial channel message type (value is {@code 177}). */
-    public static final short TYPE_CODE = 177;
+    /** Initial channel message type (value is {@code 176}). */
+    public static final short TYPE_CODE = 176;
 
     /** Process id. */
     private UUID processId;
