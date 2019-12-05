@@ -127,7 +127,7 @@ public class VectorGeneratorTest {
             assertArrayEquals(v1.asArray(), v2.asArray(), 1e-7);
         }
         catch (ArrayComparisonFailure e) {
-            //this is valid situation - duplicater should get different features
+            //this is valid situation - duplicator should get different features
         }
     }
 

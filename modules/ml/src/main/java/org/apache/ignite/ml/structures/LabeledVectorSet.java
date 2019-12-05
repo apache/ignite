@@ -31,7 +31,6 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
      * Default constructor (required by Externalizable).
      */
     public LabeledVectorSet() {
-        super();
     }
 
     /**
@@ -101,7 +100,6 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
      * @param featureNames Column names.
      */
     public LabeledVectorSet(double[][] mtx, double[] lbs, String[] featureNames) {
-        super();
         assert mtx != null;
         assert lbs != null;
 
