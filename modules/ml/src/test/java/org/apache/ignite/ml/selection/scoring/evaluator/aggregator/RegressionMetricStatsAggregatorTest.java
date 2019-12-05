@@ -40,7 +40,7 @@ public class RegressionMetricStatsAggregatorTest {
         assertEquals(Double.NaN, agg.ysVariance(), 0.);
         assertEquals(Double.NaN, agg.ysRss(), 0.);
 
-        agg.aggregate(model, VectorUtils.of(1.).labeled(1.));
+        agg.aggregate(mdl, VectorUtils.of(1.).labeled(1.));
         assertEquals(0., agg.getMAE(), 0.);
         assertEquals(0., agg.getMSE(), 0.);
         assertEquals(0., agg.getRss(), 0.);
@@ -55,9 +55,9 @@ public class RegressionMetricStatsAggregatorTest {
     public void testAggregate() {
         RegressionMetricStatsAggregator agg = new RegressionMetricStatsAggregator();
 
-        agg.aggregate(model, VectorUtils.of(1.).labeled(2.));
-        agg.aggregate(model, VectorUtils.of(2.).labeled(4.));
-        agg.aggregate(model, VectorUtils.of(3.).labeled(6.));
+        agg.aggregate(mdl, VectorUtils.of(1.).labeled(2.));
+        agg.aggregate(mdl, VectorUtils.of(2.).labeled(4.));
+        agg.aggregate(mdl, VectorUtils.of(3.).labeled(6.));
         assertEquals(6. / 3, agg.getMAE(), 0.);
         assertEquals(14. / 3, agg.getMSE(), 0.);
         assertEquals(14., agg.getRss(), 0.);
@@ -73,9 +73,9 @@ public class RegressionMetricStatsAggregatorTest {
         RegressionMetricStatsAggregator agg1 = new RegressionMetricStatsAggregator();
         RegressionMetricStatsAggregator agg2 = new RegressionMetricStatsAggregator();
 
-        agg1.aggregate(model, VectorUtils.of(1.).labeled(2.));
-        agg2.aggregate(model, VectorUtils.of(2.).labeled(4.));
-        agg1.aggregate(model, VectorUtils.of(3.).labeled(6.));
+        agg1.aggregate(mdl, VectorUtils.of(1.).labeled(2.));
+        agg2.aggregate(mdl, VectorUtils.of(2.).labeled(4.));
+        agg1.aggregate(mdl, VectorUtils.of(3.).labeled(6.));
 
         RegressionMetricStatsAggregator res = agg1.mergeWith(agg2);
         assertEquals(6. / 3, res.getMAE(), 0.);
@@ -88,7 +88,7 @@ public class RegressionMetricStatsAggregatorTest {
     /**
      *
      */
-    private static IgniteModel<Vector, Double> model = new IgniteModel<Vector, Double>() {
+    private static IgniteModel<Vector, Double> mdl = new IgniteModel<Vector, Double>() {
         @Override public Double predict(Vector input) {
             return input.get(0);
         }

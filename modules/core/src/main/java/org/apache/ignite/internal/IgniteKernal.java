@@ -1380,6 +1380,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                 qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs, ctx.workersRegistry());
 
+            ctx.systemView().registerThreadPools(stripedExecSvc, dataStreamExecSvc);
+
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
         }

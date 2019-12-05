@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,7 +90,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -103,6 +103,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -111,6 +113,7 @@ import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -552,13 +555,39 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         ignite.cluster().active(true);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "auto_adjust", "enable", "timeout", "2000"));
+        int timeout = 2000;
+
+        assertEquals(EXIT_CODE_OK,
+            execute("--baseline", "auto_adjust", "enable", "timeout", String.valueOf(timeout)));
 
         assertEquals(3, ignite.cluster().currentBaselineTopology().size());
 
-        stopGrid(2);
+        CountDownLatch nodeLeftLatch = new CountDownLatch(1);
 
-        assertEquals(3, ignite.cluster().currentBaselineTopology().size());
+        AtomicLong nodeLeftTime = new AtomicLong();
+
+        ignite.events().localListen(event -> {
+            nodeLeftTime.set(event.timestamp());
+
+            nodeLeftLatch.countDown();
+
+            return false;
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        runAsync(() -> stopGrid(2));
+
+        nodeLeftLatch.await();
+
+        while (true) {
+            int bltSize = ignite.cluster().currentBaselineTopology().size();
+
+            if (System.currentTimeMillis() >= nodeLeftTime.get() + timeout)
+                break;
+
+            assertEquals(3, bltSize);
+
+            U.sleep(100);
+        }
 
         assertTrue(waitForCondition(() -> ignite.cluster().currentBaselineTopology().size() == 2, 10000));
 
@@ -1076,7 +1105,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
+        IgniteInternalFuture fut = runAsync(() ->
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump")));
 
         TestRecordingCommunicationSpi.spi(unstable).waitForBlocked();
@@ -1121,7 +1150,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(
+        IgniteInternalFuture fut = runAsync(
             () -> assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"))
         );
 

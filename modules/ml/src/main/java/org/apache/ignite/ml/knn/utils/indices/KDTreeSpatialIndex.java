@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transfomToListOrdered;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
 /**
@@ -44,7 +44,7 @@ public class KDTreeSpatialIndex<L> implements SpatialIndex<L> {
 
     /**
      * Constructs a new instance of KD tree spatial index. To construct KD tree a "randomized" approach is uses, all
-     * nodes are inserted into the tree sequentially without any additional computations and rebalancing.
+     * nodes are inserted into the tree sequentially without any additional computations and re-balancing.
      *
      * @param data Data points.
      * @param distanceMeasure Distance measure.
@@ -64,7 +64,7 @@ public class KDTreeSpatialIndex<L> implements SpatialIndex<L> {
 
         findKClosest(pnt, root, 0, heap, k);
 
-        return transfomToListOrdered(heap);
+        return transformToListOrdered(heap);
     }
 
     /**

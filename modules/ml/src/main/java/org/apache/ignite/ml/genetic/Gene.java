@@ -46,9 +46,9 @@ public class Gene {
     private Object val;
 
     /**
-     * object Object  parameter.
+     * object Object parameter.
      *
-     * @param obj
+     * @param obj Object parameter.
      */
     public Gene(Object obj) {
         id = ID_GEN.incrementAndGet();
