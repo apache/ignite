@@ -35,7 +35,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,7 +60,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     private final Object mux = new Object();
 
     /** */
-    private CountDownLatch latch = new CountDownLatch(1);
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     static {
         GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
@@ -205,11 +205,11 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 MetricRegistry mreg0 = grid(0).context().metric().registry(node1regName);
                 MetricRegistry mreg1 = grid(1).context().metric().registry(node0regName);
 
-                AtomicLongMetric sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+                LongAdderMetric sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
                 assertNotNull(sentMetric);
                 assertEquals(mbean0.getSentMessagesCount(), sentMetric.value());
 
-                AtomicLongMetric rcvMetric = mreg1.findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
+                LongAdderMetric rcvMetric = mreg1.findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
                 assertNotNull(rcvMetric);
                 assertEquals(mbean1.getReceivedMessagesCount(), rcvMetric.value());
 

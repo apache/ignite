@@ -56,7 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -237,13 +237,13 @@ public class GridNioServer<T> {
     @Nullable private final MetricRegistry mreg;
 
     /** Received bytes count metric. */
-    @Nullable private final AtomicLongMetric rcvdBytesCntMetric;
+    @Nullable private final LongAdderMetric rcvdBytesCntMetric;
 
     /** Sent bytes count metric. */
-    @Nullable private final AtomicLongMetric sentBytesCntMetric;
+    @Nullable private final LongAdderMetric sentBytesCntMetric;
 
     /** Outbound messages queue size. */
-    @Nullable private final AtomicLongMetric outboundMessagesQueueSizeMetric;
+    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
 
 
     /** Sessions. */
@@ -437,12 +437,12 @@ public class GridNioServer<T> {
         this.mreg = mreg;
 
         rcvdBytesCntMetric = mreg == null ?
-            null : mreg.longMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
         sentBytesCntMetric = mreg == null ?
-            null : mreg.longMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longMetric(
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
             OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
         );
@@ -2904,9 +2904,7 @@ public class GridNioServer<T> {
      * Gets outbound messages queue size.
      *
      * @return Write queue size.
-     * @deprecated Will be removed in the next major release and replaced with new metrics API.
      */
-    @Deprecated
     public int outboundMessagesQueueSize() {
         if (outboundMessagesQueueSizeMetric == null)
             return -1;

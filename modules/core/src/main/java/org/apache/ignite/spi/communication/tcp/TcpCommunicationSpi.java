@@ -436,16 +436,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final String RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC = "Total number of messages received by current node from the given node";
 
     /** */
-    public static String sentMessagesByTypeMetricName(Short directType) {
-        return MetricUtils.metricName("sentMessagesByType", directType.toString());
-    }
-
-    /** */
-    public static String receivedMessagesByTypeMetricName(Short directType) {
-        return MetricUtils.metricName("receivedMessagesByType", directType.toString());
-    }
-
-    /** */
     private ConnectGateway connectGate;
 
     /** */
