@@ -2536,10 +2536,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         }
                     }
 
-                    if (!owners.isEmpty() && !owners.containsAll(newAssignment.get(p))) {
-                        if (waitRebalanceInfo != null)
-                            waitRebalanceInfo.add(grpHolder.groupId(), p, newNodes);
-                    }
+                    if (!owners.isEmpty() && !owners.containsAll(newAssignment.get(p)))
+                        waitRebalanceInfo.add(grpHolder.groupId(), p, newNodes);
 
                     if (newNodes0 != null) {
                         assert aliveNodes.containsAll(newNodes0) : "Invalid late assignment [grp=" + grpHolder.aff.cacheOrGroupName() +
