@@ -77,7 +77,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheC != null ?
             cacheC.apply(igniteInstanceName) : new CacheConfiguration[] {cacheConfiguration()});
 
-        DataStorageConfiguration cfg1 = new DataStorageConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
 
@@ -88,9 +88,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             cfg.setAutoActivationEnabled(false);
         }
 
-        cfg1.setDefaultDataRegionConfiguration(drCfg);
+        dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
-        cfg.setDataStorageConfiguration(cfg1);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
