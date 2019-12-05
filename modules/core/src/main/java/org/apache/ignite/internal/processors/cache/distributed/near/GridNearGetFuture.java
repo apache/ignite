@@ -482,6 +482,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         assert dht.context().affinityNode() : this;
 
         while (true) {
+            cctx.shared().database().checkpointReadLock();
+
             GridCacheEntryEx dhtEntry = null;
 
             try {
@@ -557,6 +559,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 return false;
             }
             finally {
+                cctx.shared().database().checkpointReadUnlock();
+
                 if (dhtEntry != null)
                     // Near cache is enabled, so near entry will be enlisted in the transaction.
                     // Always touch DHT entry in this case.

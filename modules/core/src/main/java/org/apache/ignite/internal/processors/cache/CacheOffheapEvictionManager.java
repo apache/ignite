@@ -38,6 +38,8 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
         if (e.detached())
             return;
 
+        cctx.shared().database().checkpointReadLock();
+
         try {
             boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false)
                 || e.markObsoleteIfEmpty(null);
@@ -47,6 +49,9 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
     }
 
