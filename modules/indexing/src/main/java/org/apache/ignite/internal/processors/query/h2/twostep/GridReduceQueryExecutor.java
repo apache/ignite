@@ -583,10 +583,13 @@ public class GridReduceQueryExecutor {
 
         for (int attempt = 0;; attempt++) {
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
+                //TODO: GG-26176: Retry logic looks too complicated.
+                // There are few cases when 'retryCause' can be undefined, so we should throw exception with proper message here.
+                if (lastRun == null || lastRun.retryCause() == null)
+                    throw new CacheException("Failed to map SQL query to topology during timeout: " + retryTimeout + "ms");
+
                 UUID retryNodeId = lastRun.retryNodeId();
                 String retryCause = lastRun.retryCause();
-
-                assert !F.isEmpty(retryCause);
 
                 throw new CacheException("Failed to map SQL query to topology on data node [dataNodeId=" + retryNodeId +
                     ", msg=" + retryCause + ']');
@@ -654,10 +657,8 @@ public class GridReduceQueryExecutor {
                 partsMap = nodesParts.partitionsMap();
                 qryMap = nodesParts.queryPartitionsMap();
 
-                if (nodes == null)
+                if (F.isEmpty(nodes))
                     continue; // Retry.
-
-                assert !nodes.isEmpty();
 
                 if (isReplicatedOnly || qry.explain()) {
                     ClusterNode locNode = ctx.discovery().localNode();
@@ -962,7 +963,7 @@ public class GridReduceQueryExecutor {
 
         Collection<ClusterNode> nodes = nodesParts.nodes();
 
-        if (nodes == null)
+        if (F.isEmpty(nodes))
             throw new CacheException("Failed to determine nodes participating in the update. " +
                 "Explanation (Retry update once topology recovers).");
 
@@ -1600,7 +1601,7 @@ public class GridReduceQueryExecutor {
      * @param qryId Query ID.
      * @return Result.
      */
-    private NodesForPartitionsResult nodesForPartitions(List<Integer> cacheIds, AffinityTopologyVersion topVer,
+    protected NodesForPartitionsResult nodesForPartitions(List<Integer> cacheIds, AffinityTopologyVersion topVer,
         int[] parts, boolean isReplicatedOnly, long qryId) {
         Collection<ClusterNode> nodes = null;
         Map<ClusterNode, IntArray> partsMap = null;
