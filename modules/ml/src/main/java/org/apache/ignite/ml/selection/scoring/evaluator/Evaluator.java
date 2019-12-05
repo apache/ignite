@@ -93,7 +93,7 @@ public class Evaluator {
         return evaluate(
             new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter),
             mdl, preprocessor, metric
-        ).getSignle();
+        ).getSingle();
     }
 
     /**
@@ -138,7 +138,7 @@ public class Evaluator {
         return evaluate(
             new CacheBasedDatasetBuilder<>(Ignition.ignite(), dataCache, filter),
             mdl, preprocessor, metric.create()
-        ).getSignle();
+        ).getSingle();
     }
 
     /**
@@ -177,7 +177,7 @@ public class Evaluator {
         IgniteModel<Vector, Double> mdl,
         Preprocessor<K, V> preprocessor,
         Metric metric) {
-        return evaluate(new LocalDatasetBuilder<>(dataCache, filter, 1), mdl, preprocessor, metric).getSignle();
+        return evaluate(new LocalDatasetBuilder<>(dataCache, filter, 1), mdl, preprocessor, metric).getSingle();
     }
 
     /**
@@ -495,7 +495,7 @@ public class Evaluator {
         Metric... metrics
     ) {
         long nonEmptyCtxsCnt = Arrays.stream(metrics)
-            .map(x -> x.makeAggregator().createUnitializedContext())
+            .map(x -> x.makeAggregator().createInitializedContext())
             .filter(x -> ((EvaluationContext)x).needToCompute())
             .count();
 
@@ -504,7 +504,7 @@ public class Evaluator {
 
             for (Metric m : metrics) {
                 MetricStatsAggregator<Double, ?, ?> aggregator = m.makeAggregator();
-                res.put(aggregator.getClass(), (EvaluationContext)m.makeAggregator().createUnitializedContext());
+                res.put(aggregator.getClass(), (EvaluationContext)m.makeAggregator().createInitializedContext());
                 return res;
             }
         }
@@ -518,11 +518,11 @@ public class Evaluator {
             }
 
             Map<Class, EvaluationContext> aggrToEvCtx = new HashMap<>();
-            aggrs.forEach((clazz, aggr) -> aggrToEvCtx.put(clazz, (EvaluationContext)aggr.createUnitializedContext()));
+            aggrs.forEach((clazz, aggr) -> aggrToEvCtx.put(clazz, (EvaluationContext)aggr.createInitializedContext()));
 
             for (int i = 0; i < data.getLabels().length; i++) {
                 LabeledVector<Double> vector = VectorUtils.of(data.getFeatures()[i]).labeled(data.getLabels()[i]);
-                aggrToEvCtx.values().stream().forEach(ctx -> ctx.aggregate(vector));
+                aggrToEvCtx.values().forEach(ctx -> ctx.aggregate(vector));
             }
             return aggrToEvCtx;
         }, (left, right) -> {
@@ -561,8 +561,8 @@ public class Evaluator {
         if (isOnlyLocalEstimation(mdl) && cache != null) {
             Map<Class, MetricStatsAggregator> aggrs = initAggregators(ctxs, metrics);
 
-            try (QueryCursor<Cache.Entry<K, V>> query = cache.query(new ScanQuery<>())) {
-                query.iterator().forEachRemaining(kv -> {
+            try (QueryCursor<Cache.Entry<K, V>> qry = cache.query(new ScanQuery<>())) {
+                qry.iterator().forEachRemaining(kv -> {
                     LabeledVector vector = preprocessor.apply(kv.getKey(), kv.getValue());
 
                     for (Class key : aggrs.keySet()) {

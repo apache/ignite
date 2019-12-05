@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Basic interface for pseudorandom vectors generators.
+ * Basic interface for pseudo-random vectors generators.
  */
 public interface VectorGenerator extends Supplier<Vector> {
     /**
@@ -210,7 +210,7 @@ public interface VectorGenerator extends Supplier<Vector> {
     }
 
     /**
-     * Conterts vectors generator to unlabeled data stream generator.
+     * Convert vectors generator to unlabeled data stream generator.
      *
      * @return Data stream generator.
      */

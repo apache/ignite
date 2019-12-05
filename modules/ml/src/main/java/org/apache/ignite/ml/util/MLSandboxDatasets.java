@@ -64,7 +64,7 @@ public enum MLSandboxDatasets {
     /** Fraud detection problem [part of whole dataset]. Could be found <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud/">here</a>. */
     FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ","),
 
-    /** A dataset with discrete and continious features. */
+    /** A dataset with discrete and continuous features. */
     MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ","),
 
     /** A dataset with categorical features and labels. */

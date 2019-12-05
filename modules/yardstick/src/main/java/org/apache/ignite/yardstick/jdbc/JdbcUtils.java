@@ -17,6 +17,8 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -45,8 +47,8 @@ public class JdbcUtils {
             if (sem.tryAcquire()) {
                 println(cfg, "Create table...");
 
-                StringBuilder qry = new StringBuilder("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG)" +
-                    " WITH \"wrap_value=true");
+                StringBuilder qry =
+                    new StringBuilder("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG) WITH \"wrap_value=true");
 
                 if (atomicMode != null)
                     qry.append(", atomicity=").append(atomicMode.name());
@@ -74,6 +76,77 @@ public class JdbcUtils {
                 }
 
                 qProc.querySqlFields(new SqlFieldsQuery("CREATE INDEX val_idx ON test_long (val)"), true);
+
+                println(cfg, "Finished populating data");
+            }
+            else {
+                // Acquire (wait setup by other client) and immediately release/
+                println(cfg, "Waits for setup...");
+
+                sem.acquire();
+            }
+        }
+        finally {
+            sem.release();
+        }
+    }
+
+    /**
+     * Common method to fill test stand with data.
+     *
+     * @param cfg Benchmark configuration.
+     * @param ignite Ignite instance.
+     * @param tblName Table name for fill and creation.
+     * @param range Data key range.
+     * @param atomicMode Cache creation atomicity mode.
+     */
+    public static void fillTableWithIdx(BenchmarkConfiguration cfg,
+                                        IgniteEx ignite,
+                                        String tblName,
+                                        long range,
+                                        CacheAtomicityMode atomicMode) {
+        IgniteSemaphore sem = ignite.semaphore("sql-setup", 1, true, true);
+
+        try {
+            if (sem.tryAcquire()) {
+                println(cfg, "Create table...");
+
+                StringBuilder qry = new StringBuilder(String.format("CREATE TABLE %s (", tblName) +
+                    "id LONG PRIMARY KEY, " +
+                    "DEC_COL DECIMAL, " +
+                    "DATE_COL DATE, " +
+                    "BIG_INT_COL BIGINT" +
+                    ") WITH \"wrap_value=true");
+
+                if (atomicMode != null)
+                    qry.append(", atomicity=").append(atomicMode.name());
+
+                qry.append("\";");
+
+                String qryStr = qry.toString();
+
+                println(cfg, "Creating table with schema: " + qryStr);
+
+                GridQueryProcessor qProc = ignite.context().query();
+
+                qProc.querySqlFields(new SqlFieldsQuery(qryStr), true);
+
+                println(cfg, "Populate data...");
+
+                for (long r = 1; r < range; ++r) {
+                    qProc.querySqlFields(
+                        new SqlFieldsQuery(String.format("INSERT INTO %s VALUES (?, ?, ?, ?)", tblName))
+                            .setArgs(r, new BigDecimal(r + 1), LocalDate.ofEpochDay(r), r + 2), true);
+
+                    if (r % 10000 == 0)
+                        println(cfg, "Populate " + r);
+                }
+
+                qProc.querySqlFields(new SqlFieldsQuery(String.format("CREATE INDEX idx1 ON %s (DEC_COL, " +
+                    "DATE_COL) inline_size 16", tblName)), true);
+
+                qProc.querySqlFields(new SqlFieldsQuery(String.format("CREATE INDEX idx2 ON %s (DATE_COL, " +
+                    "BIG_INT_COL) inline_size 16", tblName)), true);
 
                 println(cfg, "Finished populating data");
             }

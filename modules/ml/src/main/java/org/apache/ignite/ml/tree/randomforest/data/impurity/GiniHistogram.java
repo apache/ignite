@@ -181,7 +181,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
             return false;
 
         for (Double lbl : unionMappings) {
-            if (lblMapping.get(lbl) != other.lblMapping.get(lbl))
+            if (!lblMapping.get(lbl).equals(other.lblMapping.get(lbl)))
                 return false;
 
             ObjectHistogram<BootstrappedVector> thisHist = getHistForLabel(lbl);
