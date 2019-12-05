@@ -125,10 +125,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
          * @param cacheName Cache name.
          */
         public void stopBlock(String cacheName) {
-            CountDownLatch latch = latches.get(cacheName);
-
-            if (latch == null)
-                throw new IgniteException("Cache wasn't start index rebuild yet. [cacheName=" + cacheName + ']');
+            CountDownLatch latch = latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1));
 
             latch.countDown();
         }
