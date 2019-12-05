@@ -44,7 +44,7 @@ public class StompDestinationsUtils {
     private static final String SPAN_DEST = "/app/agent/spans/";
 
     /** Metrics destination. */
-    private static final String METRICS_DEST = "/app/agent/metrics/";
+    private static final String METRICS_DEST = "/app/agent/metrics/add";
 
     /** Events destination. */
     private static final String EVENTS_DEST = CLUSTER_PREFIX_DEST + "/events/";
@@ -76,8 +76,8 @@ public class StompDestinationsUtils {
     /**
      * @return Metrics destination.
      */
-    public static String buildMetricsDest(UUID clusterId) {
-        return METRICS_DEST + clusterId + "/add";
+    public static String buildMetricsDest() {
+        return METRICS_DEST;
     }
 
     /**
