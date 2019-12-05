@@ -501,7 +501,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 // If no more reservations try to continue delayed renting.
                 if (reservations == 0) {
                     if (delayedRentingTopVer != 0 &&
-                        // Prevents delayed renting on topology which expects owninership.
+                        // Prevents delayed renting on topology which expects ownership.
                         delayedRentingTopVer == ctx.exchange().readyAffinityVersion().topologyVersion())
                         rent(true);
                     else if (getPartState(state) == RENTING)
