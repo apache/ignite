@@ -44,7 +44,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheGroupMetricsRegistryName;
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Tests cache group metrics for index build fail case.
@@ -129,7 +130,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         ignite.cluster().active(true);
 
-        MetricRegistry grpMreg = ignite.context().metric().registry(cacheGroupMetricsRegistryName(GROUP_NAME));
+        MetricRegistry grpMreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
 
         LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
