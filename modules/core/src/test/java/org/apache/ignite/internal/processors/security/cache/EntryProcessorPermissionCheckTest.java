@@ -79,7 +79,7 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
 
         c.accept(CACHE_NAME, entry);
 
-        assertThat(verifierNode.cache(CACHE_NAME).get(entry.getKey()), is(entry.getValue()));
+        assertThat((Integer)(verifierNode.cache(CACHE_NAME).get(entry.getKey())), is(entry.getValue()));
     }
 
     /** */
