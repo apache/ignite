@@ -947,8 +947,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * Captures all prepared operations that we need to wait before we able to perform PME-free switch.
-     * This method must be called only after
-     * {@link GridDhtPartitionTopology#updateTopologyVersion}
+     * This method must be called only after {@link GridDhtPartitionTopology#updateTopologyVersion}
      * method is called so that all new updates will wait to switch to the new version.
      *
      * Captured updates are wrapped in a future that will be completed once pending objects are released.

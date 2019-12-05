@@ -1690,6 +1690,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * different simultaneous owners of the same lock.
      * For the exact list of the objects being awaited for see
      * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
+     * Also, this method can be used to wait for tx recovery only in case of PME-free switch.
+     * See {@link GridCacheSharedContext#partitionRecoveryFuture(AffinityTopologyVersion, ClusterNode)} for additional details.
      *
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
