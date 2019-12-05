@@ -138,8 +138,6 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
             }
         });
 
-        GridTestUtils.waitForCondition(() -> db.checkpointLock.writeLock().isHeldByCurrentThread(), 5000);
-
         IgniteInternalFuture acquireReadLock = GridTestUtils.runAsync(() -> {
             db.checkpointReadLock();
             db.checkpointReadUnlock();
