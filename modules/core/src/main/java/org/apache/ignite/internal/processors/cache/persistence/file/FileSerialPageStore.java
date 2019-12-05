@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
-import java.util.zip.CRC32;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -109,7 +108,7 @@ public class FileSerialPageStore implements Closeable {
             assert PageIdUtils.flag(pageId) == PageMemory.FLAG_DATA;
 
             int crc = PageIO.getCrc(pageBuf);
-            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+            int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
 
             // TODO remove debug
             if (log.isTraceEnabled()) {
@@ -154,7 +153,7 @@ public class FileSerialPageStore implements Closeable {
             pageBuf.flip();
 
             long pageId = PageIO.getPageId(pageBuf);
-            int crc32 = FastCrc.calcCrc(new CRC32(), pageBuf, pageBuf.limit());
+            int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
             int crc = PageIO.getCrc(pageBuf);
 
             if (log.isTraceEnabled()) {
