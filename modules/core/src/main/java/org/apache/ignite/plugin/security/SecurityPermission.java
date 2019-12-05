@@ -69,7 +69,7 @@ public enum SecurityPermission {
     /** Cache create permission. */
     CACHE_CREATE,
 
-    /** Cache create permission. */
+    /** Cache destory permission. */
     CACHE_DESTROY,
 
     /** Join as server node permission. */
