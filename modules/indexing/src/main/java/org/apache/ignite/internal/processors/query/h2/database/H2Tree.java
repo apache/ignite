@@ -706,9 +706,12 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
                 return;
 
             visitLeaves(rowClo, new PurgePageHandler(rowClo) {
+                /** {@inheritDoc} */
                 @Override public void onBefore() {
                     cctx.shared().database().checkpointReadLock();
                 }
+
+                /** {@inheritDoc} */
                 @Override public void onAfter() throws IgniteCheckedException {
                     try {
                         super.onAfter();
