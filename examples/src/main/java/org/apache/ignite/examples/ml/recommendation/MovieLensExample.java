@@ -36,9 +36,9 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of recommendation system based on MovieLens dataset (see https://grouplens.org/datasets/movielens/).
- * In this example we create a cache with MovieLens rating data. Each entry in this cache represnts a rating point
- * (raiting set by a single user to a single movie). Then we pass this cache to {@link RecommendationTrainer} and so
- * that train {@link RecommendationModel}. This model predices rating with assumed to be set by any user to any movie.
+ * In this example we create a cache with MovieLens rating data. Each entry in this cache represents a rating point
+ * (rating set by a single user to a single movie). Then we pass this cache to {@link RecommendationTrainer} and so
+ * that train {@link RecommendationModel}. This model predicts rating with assumed to be set by any user to any movie.
  * When model is ready we calculate R2 score.
  */
 public class MovieLensExample {

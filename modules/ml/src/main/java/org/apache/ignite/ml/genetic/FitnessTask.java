@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
 public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAConfiguration */
     private GAConfiguration cfg;

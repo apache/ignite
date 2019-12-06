@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 // Delete all log files from the work dir
                 Func<string[]> getLogs = () =>
-                    Directory.GetFiles(IgniteHome.Resolve(null), "dotnet-logger-test.log", SearchOption.AllDirectories);
+                    Directory.GetFiles(IgniteHome.Resolve(), "dotnet-logger-test.log", SearchOption.AllDirectories);
 
                 getLogs().ToList().ForEach(File.Delete);
 

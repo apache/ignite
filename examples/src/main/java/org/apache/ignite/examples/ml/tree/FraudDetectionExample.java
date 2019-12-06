@@ -46,6 +46,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * .
  */
 public class FraudDetectionExample {
+    /** Run example. */
     public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -99,7 +100,7 @@ public class FraudDetectionExample {
         IgniteCache<Integer, Vector> dataCache,
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer,
         Vectorizer<Integer, Vector, Integer, Double> vectorizer, TrainTestSplit<Integer, Vector> splitter) {
-        System.out.println(">>> Start traininig.");
+        System.out.println(">>> Start training.");
         IgniteModel<Vector, Double> mdl = trainer.fit(
             ignite, dataCache,
             splitter.getTrainFilter(),

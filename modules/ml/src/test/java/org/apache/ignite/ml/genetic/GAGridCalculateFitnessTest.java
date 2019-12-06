@@ -37,13 +37,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class GAGridCalculateFitnessTest {
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAGrid **/
-    private GAGrid gaGrid = null;
+    private GAGrid gaGrid;
 
-    /** GAConfiguraton */
-    private GAConfiguration gaCfg = null;
+    /** GAConfiguration */
+    private GAConfiguration gaCfg;
 
     /**
      * Setup test
@@ -76,14 +76,13 @@ public class GAGridCalculateFitnessTest {
 
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
     /**
      * Test Calculate Fitness
      */
-
     @Test
     public void testCalculateFitness() {
         try {
@@ -110,7 +109,7 @@ public class GAGridCalculateFitnessTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -128,12 +127,15 @@ public class GAGridCalculateFitnessTest {
             'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^'};
 
         for (int i = 0; i < chars.length; i++) {
-            Gene gene = new Gene(new Character(chars[i]));
+            Gene gene = new Gene(chars[i]);
             list.add(gene);
         }
         return list;
     }
 
+    /**
+     * Stop the Ignite.
+     */
     @After
     public void tearDown() {
 

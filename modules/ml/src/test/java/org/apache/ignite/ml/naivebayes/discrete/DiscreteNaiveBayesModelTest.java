@@ -24,7 +24,6 @@ import org.junit.Test;
 
 /** Tests for {@code DiscreteNaiveBayesModel} */
 public class DiscreteNaiveBayesModelTest {
-
     /** Test. */
     @Test
     public void testPredictWithTwoClasses() {

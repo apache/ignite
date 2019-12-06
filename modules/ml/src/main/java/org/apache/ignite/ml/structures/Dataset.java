@@ -21,14 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Class for set of vectors. This is a base class in hierarchy of datasets.
  */
-public class Dataset<Row extends DatasetRow> implements Serializable, Externalizable {
+public class Dataset<Row extends DatasetRow> implements Externalizable {
     /** Data to keep. */
     protected Row[] data;
 
@@ -40,9 +39,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
 
     /** Amount of attributes in each vector. */
     protected int colSize;
-
-    /**  */
-    protected boolean isDistributed;
 
     /**
      * Default constructor (required by Externalizable).
@@ -68,7 +64,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
      * @param colSize Amount of observed attributes in each vector.
      */
     public Dataset(Row[] data, String[] featureNames, int colSize) {
-        this(data.length, colSize, featureNames, false);
+        this(data.length, colSize, featureNames);
 
         assert data != null;
 
@@ -102,7 +98,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
      * @param colSize Amount of attributes. Should be > 0
      * @param featureNames Column names.
      */
-    public Dataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed) {
+    public Dataset(int rowSize, int colSize, String[] featureNames) {
         assert rowSize > 0;
         assert colSize > 0;
 
@@ -115,7 +111,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
 
         this.rowSize = rowSize;
         this.colSize = colSize;
-        this.isDistributed = isDistributed;
     }
 
     /** */
@@ -193,16 +188,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
         return data[idx];
     }
 
-    /** */
-    public boolean isDistributed() {
-        return isDistributed;
-    }
-
-    /** */
-    public void setDistributed(boolean distributed) {
-        isDistributed = distributed;
-    }
-
     /**
      * Get the features.
      *
@@ -235,7 +220,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
         res = 31 * res + Arrays.hashCode(meta);
         res = 31 * res + rowSize;
         res = 31 * res + colSize;
-        res = 31 * res + (isDistributed ? 1 : 0);
         return res;
     }
 
@@ -245,7 +229,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
         out.writeObject(meta);
         out.writeInt(rowSize);
         out.writeInt(colSize);
-        out.writeBoolean(isDistributed);
     }
 
     /** {@inheritDoc} */
@@ -254,6 +237,5 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
         meta = (FeatureMetadata[]) in.readObject();
         rowSize = in.readInt();
         colSize = in.readInt();
-        isDistributed = in.readBoolean();
     }
 }

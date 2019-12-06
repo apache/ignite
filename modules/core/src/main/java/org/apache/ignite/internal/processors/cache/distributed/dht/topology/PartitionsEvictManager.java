@@ -126,18 +126,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param grp Group context.
-     * @param part Partition to clear tombstones.
-     */
-    public void clearTombstonesAsync(CacheGroupContext grp, GridDhtLocalPartition part) {
-        if (addAsyncTask(grp, part, TaskType.CLEAR_TOMBSTONES)) {
-            if (log.isDebugEnabled())
-                log.debug("Partition has been scheduled for tomstones cleanup [grp=" + grp.cacheOrGroupName()
-                        + ", p=" + part.id() + ", state=" + part.state() + "]");
-        }
-    }
-
-    /**
      * Adds partition to eviction queue and starts eviction process if permit available.
      *
      * @param grp Group context.
@@ -249,10 +237,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         switch (type) {
             case EVICT:
                 task = new PartitionEvictionTask(part, grpEvictionCtx);
-                break;
-
-            case CLEAR_TOMBSTONES:
-                task = new ClearTombstonesTask(part, grpEvictionCtx);
                 break;
 
             default:
@@ -607,12 +591,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                         msg.append(", remainingPartsToEvict=" + (evicts.total - evicts.inProgress)).
                             append(", partsEvictInProgress=" + evicts.inProgress);
                     }
-
-                    TasksStatistics tombstones = stats.get(TaskType.CLEAR_TOMBSTONES);
-                    if (tombstones.total > 0) {
-                        msg.append(", remainingPartsToClearTombstones=" + (tombstones.total - tombstones.inProgress)).
-                            append(", tombstoneClearInProgress=" + tombstones.inProgress);
-                    }
                 }
 
                 msg.append(", totalParts=" + grp.topology().localPartitions().size() + "]");
@@ -628,9 +606,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     private enum TaskType {
         /** */
         EVICT,
-
-        /** */
-        CLEAR_TOMBSTONES,
 
         /** */
         PURGE_ROWCACHE,
@@ -813,34 +788,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    class ClearTombstonesTask extends AbstractEvictionTask {
-        /**
-         * @param part Partition.
-         * @param grpEvictionCtx Eviction context.
-         */
-        private ClearTombstonesTask(
-            GridDhtLocalPartition part,
-            GroupEvictionContext grpEvictionCtx
-        ) {
-            super(part, grpEvictionCtx, TaskType.CLEAR_TOMBSTONES);
-        }
-
-        /** {@inheritDoc} */
-        @Override void scheduleRetry() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean run0() throws IgniteCheckedException {
-            part.clearTombstones(grpEvictionCtx);
-
-            return true;
-        }
-    }
-
-    /**
-     *
-     */
     class BucketQueue {
         /** Queues contains partitions scheduled for eviction. */
         final Queue<AbstractEvictionTask>[] buckets;
@@ -982,7 +929,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** */
         AtomicInteger resultCounter;
 
-        /** Tasks future */
+        /** Tasks future. */
         GridCompoundFuture<Void, Void> resFut = new GridCompoundFuture<>();
 
         /** Allows to cancel index tasks. */

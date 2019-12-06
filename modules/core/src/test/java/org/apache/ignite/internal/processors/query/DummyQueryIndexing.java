@@ -111,7 +111,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String cacheName,
         String qry,
         String typeName,
-        IndexingQueryFilter filter
+        IndexingQueryFilter filter,
+        int limit
     ) throws IgniteCheckedException {
         return null;
     }

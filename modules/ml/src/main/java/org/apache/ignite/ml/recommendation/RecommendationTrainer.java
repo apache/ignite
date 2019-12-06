@@ -53,7 +53,7 @@ public class RecommendationTrainer {
     private int batchSize = 1000;
 
     /** Regularization parameter. */
-    private double regParam = 0.0;
+    private double regParam;
 
     /** Learning rate. */
     private double learningRate = 10.0;
@@ -62,13 +62,13 @@ public class RecommendationTrainer {
     private int maxIterations = 1000;
 
     /** Minimal improvement of the model to continue training. */
-    private double minMdlImprovement = 0.0;
+    private double minMdlImprovement;
 
     /** Number of rows/cols in matrices after factorization. */
     private int k = 10;
 
     /**
-     * Fits prediction model on a data storen in binary format.
+     * Fits prediction model on a data stored in binary format.
      *
      * @param datasetBuilder Dataset builder.
      * @param objFieldName Object field name.
@@ -82,7 +82,7 @@ public class RecommendationTrainer {
     }
 
     /**
-     * Updates prediction model on a data storen in binary format.
+     * Updates prediction model on a data stored in binary format.
      *
      * @param datasetBuilder Dataset builder.
      * @param objFieldName Object field name.
@@ -208,7 +208,7 @@ public class RecommendationTrainer {
     }
 
     /**
-     * Calculates improvement of the model that corresponds to the specified gradient (how significatly model will be
+     * Calculates improvement of the model that corresponds to the specified gradient (how significantly model will be
      * improved after the gradient application).
      *
      * @param grad Matrix factorization gradient.
@@ -311,7 +311,7 @@ public class RecommendationTrainer {
      * @param regParam Regularization parameter.
      * @return This object.
      */
-    public RecommendationTrainer withRegularizer(double regParam) {
+    public RecommendationTrainer withRegularization(double regParam) {
         this.regParam = regParam;
 
         return this;

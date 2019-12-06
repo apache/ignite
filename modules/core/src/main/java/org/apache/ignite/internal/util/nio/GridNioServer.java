@@ -3655,7 +3655,7 @@ public class GridNioServer<T> {
         private boolean directBuf;
 
         /** Byte order. */
-        private ByteOrder byteOrder = ByteOrder.nativeOrder();
+        private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
 
         /** NIO server listener. */
         private GridNioServerListener<T> lsnr;

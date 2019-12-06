@@ -38,7 +38,7 @@ public class MutateJob extends ComputeJobAdapter {
 
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Mutation Rate **/
     private double mutationRate;
@@ -64,7 +64,7 @@ public class MutateJob extends ComputeJobAdapter {
         long[] geneKeys = chromosome.getGenes();
 
         for (int k = 0; k < this.mutatedGeneKeys.size(); k++) {
-            // Mutate gene based on MutatonRate
+            // Mutate gene based on MutationRate
             if (this.mutationRate > Math.random())
                 geneKeys[k] = this.mutatedGeneKeys.get(k);
         }

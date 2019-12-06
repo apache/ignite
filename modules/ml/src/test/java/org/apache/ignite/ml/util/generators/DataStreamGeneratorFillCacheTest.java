@@ -82,9 +82,9 @@ public class DataStreamGeneratorFillCacheTest extends GridCommonAbstractTest {
                          env
                      )) {
 
-                StatPair result = dataset.compute(map, StatPair::sum);
-                assertEquals(datasetSize, result.countOfRows);
-                assertEquals(0.0, result.elementsSum / result.countOfRows, 1e-2);
+                StatPair res = dataset.compute(map, StatPair::sum);
+                assertEquals(datasetSize, res.cntOfRows);
+                assertEquals(0.0, res.elementsSum / res.cntOfRows, 1e-2);
             }
 
             ignite.destroyCache(cacheName);
@@ -97,12 +97,12 @@ public class DataStreamGeneratorFillCacheTest extends GridCommonAbstractTest {
         private double elementsSum;
 
         /** */
-        private int countOfRows;
+        private int cntOfRows;
 
         /** */
-        public StatPair(double elementsSum, int countOfRows) {
+        public StatPair(double elementsSum, int cntOfRows) {
             this.elementsSum = elementsSum;
-            this.countOfRows = countOfRows;
+            this.cntOfRows = cntOfRows;
         }
 
         /** */
@@ -116,7 +116,7 @@ public class DataStreamGeneratorFillCacheTest extends GridCommonAbstractTest {
             else
                 return new StatPair(
                     right.elementsSum + left.elementsSum,
-                    right.countOfRows + left.countOfRows
+                    right.cntOfRows + left.cntOfRows
                 );
         }
     }
