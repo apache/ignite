@@ -596,14 +596,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isNodeInBaseline() {
-        ClusterNode locNode = localNode();
+        ctx.gateway().readLockAnyway();
 
-        if (locNode.isClient() || locNode.isDaemon())
-            return false;
+        try {
+            if (ctx.gateway().getState() != STARTED)
+                return false;
 
-        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+            ClusterNode locNode = localNode();
 
-        return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+            if (locNode.isClient() || locNode.isDaemon())
+                return false;
+
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+            return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+        }
+        finally {
+            ctx.gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -4563,7 +4573,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("longJVMPausesCount", this::getLongJVMPausesCount, ATTR_DESC_LONG_JVM_PAUSES_CNT);
         reg.register("longJVMPausesTotalDuration", this::getLongJVMPausesTotalDuration, ATTR_DESC_LONG_JVM_PAUSES_TOTAL_DURATION);
         reg.register("longJVMPauseLastEvents", this::getLongJVMPauseLastEvents, Map.class, ATTR_DESC_LONG_JVM_PAUSE_LAST_EVENTS);
-        reg.register("active", this::active, Boolean.class, ATTR_DESC_ACTIVE);
+        reg.register("active", () -> ctx.state().clusterState().active()/*this::active*/, Boolean.class, ATTR_DESC_ACTIVE);
         reg.register("readOnlyMode", this::readOnlyMode, Boolean.class, ATTR_DESC_READ_ONLY_MODE);
         reg.register("readOnlyModeDuration", this::getReadOnlyModeDuration, ATTR_DESC_READ_ONLY_MODE_DURATION);
         reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class, ATTR_DESC_USER_ATTRS_FORMATTED);
