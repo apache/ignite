@@ -2573,13 +2573,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         synchronized (mux) {
             waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
+        }
 
-            WaitRebalanceInfo info = this.waitInfo;
-
-            if (log.isDebugEnabled()) {
-                log.debug("Computed new affinity after node left [topVer=" + topVer +
-                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
-            }
+        if (log.isDebugEnabled()) {
+            log.debug("Computed new affinity after node left [topVer=" + topVer +
+                ", waitGrps=" + groupNames(waitRebalanceInfo.waitGrps.keySet()) + ']');
         }
 
         return assignment;
