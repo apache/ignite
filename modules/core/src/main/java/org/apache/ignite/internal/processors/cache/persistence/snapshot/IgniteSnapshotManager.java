@@ -291,22 +291,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
                 for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
-                    if (sctx0.started)
+                    if (sctx0.snpFut.isDone())
                         continue;
 
                     // Gather partitions metainfo for thouse which will be copied.
-                    ctx.collectPartStat(sctx0.parts);
+                    if (sctx0.nextPhase == SnapshotPhase.INIT) {
+                        ctx.collectPartStat(sctx0.parts);
+
+                        sctx0.nextPhase = SnapshotPhase.MARK;
+                    }
                 }
             }
 
             @Override public void onMarkCheckpointBegin(Context ctx) {
-                // No-op.
+                // Write lock is helded. Partition counters has been collected under write lock
+                // in another checkpoint listeners.
             }
 
             @Override public void onMarkCheckpointEnd(Context ctx) {
                 // Under the write lock here. It's safe to add new stores.
                 for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
-                    if (sctx0.started)
+                    if (sctx0.snpFut.isDone())
+                        continue;
+
+                    if (sctx0.nextPhase != SnapshotPhase.MARK)
                         continue;
 
                     try {
@@ -331,6 +339,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             sctx0.partFileLengths.put(pair, store.size());
                             sctx0.partDeltaWriters.get(pair).init(allocRange.getCurrAllocatedPageCnt());
                         }
+
+                        sctx0.nextPhase = SnapshotPhase.START;
                     }
                     catch (IgniteCheckedException e) {
                         sctx0.snpFut.onDone(e);
@@ -340,7 +350,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             @Override public void onCheckpointBegin(Context ctx) {
                 for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
-                    if (sctx0.started || sctx0.snpFut.isDone())
+                    if (sctx0.snpFut.isDone())
+                        continue;
+
+                    if (sctx0.nextPhase != SnapshotPhase.START)
                         continue;
 
                     // Submit all tasks for partitions and deltas processing.
@@ -430,7 +443,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 sctx0.snpFut.onDone(t);
                         });
 
-                    sctx0.started = true;
+                    sctx0.nextPhase = SnapshotPhase.STARTED;
                 }
             }
         });
@@ -793,7 +806,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param snpName Unique snapshot name.
      * @return Future which will be completed when snapshot is done.
      */
-    public IgniteInternalFuture<?> createLocalSnapshot(String snpName, List<Integer> grpIds) {
+    public IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
@@ -1456,6 +1469,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
+    private enum SnapshotPhase {
+        /** Requested partitoins must be registered to collect its partition counters. */
+        INIT,
+
+        /** All counters must be collected under the checkpoint write lock. */
+        MARK,
+
+        /** Tasks must be scheduled to create requested snapshot. */
+        START,
+
+        /** Snapshot tasks has been started. */
+        STARTED;
+    }
+
+    /**
+     *
+     */
     private static class LocalSnapshotContext {
         /** Unique identifier of snapshot process. */
         private final String snpName;
@@ -1494,8 +1524,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Checkpoint end future. */
         private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
-        /** Flag idicates that this snapshot is start copying partitions. */
-        private volatile boolean started;
+        /** Phase of the current snapshot process run. */
+        private volatile SnapshotPhase nextPhase = SnapshotPhase.INIT;
 
         /**
          * @param snpName Unique identifier of snapshot process.
