@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,10 +36,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,6 +68,8 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
     /** */
     private Map<Integer, Set<Integer>> remaining;
+
+    private Map<Integer, Map<Integer, Long>> reinitialized;
 
     /** */
     private Map<Integer, Set<PartCounters>> remainingHist;
@@ -119,6 +130,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
         remaining = new ConcurrentHashMap<>(assigns.size());
         remainingHist = new ConcurrentHashMap<>(assigns.size());
+        reinitialized = new ConcurrentHashMap<>(assigns.size());
 
         for (Map.Entry<Integer, Set<Integer>> entry : assigns.entrySet()) {
             Set<Integer> parts = entry.getValue();
@@ -127,6 +139,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
             assert !remaining.containsKey(grpId);
 
             remaining.put(grpId, new GridConcurrentHashSet<>(entry.getValue()));
+            reinitialized.put(grpId, new ConcurrentHashMap<>());
         }
     }
 
@@ -280,6 +293,65 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         }
 
         return "finished=" + isDone() + ", node=" + node.id() + ", remain=[" + buf + "]";
+    }
+
+    private long reinitPartition(int grpId, int partId, File src) throws IgniteCheckedException {
+        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
+
+        try {
+            File dest = new File(pageStore.getFileAbsolutePath());
+
+            if (log.isDebugEnabled()) {
+                log.debug("Moving downloaded partition file [from=" + src +
+                    " , to=" + dest + " , size=" + src.length() + "]");
+            }
+
+            assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
+                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
+
+            // todo change to "move" when all issues with page memory will be resolved.
+            Files.copy(src.toPath(), dest.toPath());
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to move file [source=" + src +
+                ", target=" + pageStore.getFileAbsolutePath() + "]", e);
+        }
+
+        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+
+        // todo seems we don't need to store this value - just use initial update counter for historical rebalance (lwm in future).
+        return part.dataStore().store(false).reinit();
+    }
+
+    public void onPartitionSnapshotReceived(File file, int grpId, int partId) throws IgniteCheckedException {
+        long initialCntr = reinitPartition(grpId, partId, file);
+
+        // todo check lwm counter, just use counter
+        Map<Integer, Long> parts = reinitialized.get(grpId);
+
+        parts.put(partId, initialCntr);
+
+        if (parts.size() == remaining.get(grpId).size())
+            cctx.filePreloader()
+                .switchPartitions(grpId, parts, this)
+                .listen(f -> {
+                    try {
+                        Map<Integer, T2<Long, Long>> cntrs = f.get();
+
+                        assert cntrs != null;
+
+                        cctx.kernalContext().closure().runLocalSafe(() -> {
+                            for (Map.Entry<Integer, T2<Long, Long>> entry : cntrs.entrySet())
+                                onPartitionRestored(grpId, entry.getKey(), entry.getValue().get1(), entry.getValue().get2());
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Unable to restore partition snapshot [cache=" +
+                            cctx.cache().cacheGroup(grpId) + ", p=" + partId, e);
+
+                        onDone(e);
+                    }
+                });
     }
 
     private static class PartCounters implements Comparable {

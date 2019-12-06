@@ -327,7 +327,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
-        final int topChanges = SF.applyLB(15, 5);
+        final int topChanges = 5;//SF.applyLB(15, 5);
         final boolean allowRemoves = true;
 
         final AtomicBoolean stop = new AtomicBoolean();

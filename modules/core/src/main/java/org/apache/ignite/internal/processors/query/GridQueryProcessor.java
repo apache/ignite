@@ -1779,9 +1779,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     QueryTypeIdKey altTypeId = cand.alternativeTypeId();
                     QueryTypeDescriptorImpl desc = cand.descriptor();
 
-                    if (typesByName.putIfAbsent(new QueryTypeNameKey(cacheName, desc.name()), desc) != null)
-                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
-                            "in cache '" + cacheName + "'.");
+                    typesByName.put(new QueryTypeNameKey(cacheName, desc.name()), desc);
+
+//                    if (typesByName.put(new QueryTypeNameKey(cacheName, desc.name()), desc) != null)
+//                        throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+//                            "in cache '" + cacheName + "'.");
 
                     types.put(typeId, desc);
 
@@ -1791,14 +1793,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     for (QueryIndexDescriptorImpl idx : desc.indexes0()) {
                         QueryIndexKey idxKey = new QueryIndexKey(schemaName, idx.name());
 
-                        QueryIndexDescriptorImpl oldIdx = idxs.putIfAbsent(idxKey, idx);
+                        idxs.put(idxKey, idx);
 
-                        if (oldIdx != null) {
-                            throw new IgniteException("Duplicate index name [cache=" + cacheName +
-                                ", schemaName=" + schemaName + ", idxName=" + idx.name() +
-                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
-                                ", table=" + desc.tableName() + ']');
-                        }
+//                        QueryIndexDescriptorImpl oldIdx = idxs.put(idxKey, idx);
+//
+//                        if (oldIdx != null) {
+//                            throw new IgniteException("Duplicate index name [cache=" + cacheName +
+//                                ", schemaName=" + schemaName + ", idxName=" + idx.name() +
+//                                ", existingTable=" + oldIdx.typeDescriptor().tableName() +
+//                                ", table=" + desc.tableName() + ']');
+//                        }
                     }
 
                     if (idx != null)
@@ -1808,6 +1812,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
+                e.printStackTrace();
+
                 onCacheStop0(cacheInfo, true);
 
                 throw e;

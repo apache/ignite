@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -71,6 +72,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final Map<String, GridFutureAdapter> regions = new HashMap<>();
 
     /** */
+    private final Map<String, Set<Long>> regionToParts = new HashMap<>();
+
+    /** */
     private final ReentrantLock cancelLock = new ReentrantLock();
 
     /** */
@@ -78,9 +82,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** */
     private final IgniteLogger log;
-
-    /** */
-    private final Map<String, Set<Long>> regionToParts = new HashMap<>();
 
     /** */
     private final Map<Integer, GridDhtPreloaderAssignments> historicalAssignments = new ConcurrentHashMap<>();
@@ -152,6 +153,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                         Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
 
+//                        regionsToGroups.computeIfAbsent(regName, v -> new HashSet<>()).add(grpId);
+
                         Set<Integer> allPartitions = allPartsMap.computeIfAbsent(grpId, v -> new HashSet<>());
 
                         for (Integer partId : entry.getValue()) {
@@ -162,8 +165,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                             allPartitions.add(partId);
                         }
-
-                        regionParts.add(((long)grpId << 32) + INDEX_PARTITION);
                     }
                 }
             }
@@ -191,9 +192,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public synchronized FileRebalanceNodeRoutine nodeRoutine(int grpId, UUID nodeId) {
         int order = cctx.cache().cacheGroup(grpId).config().getRebalanceOrder();
 
-        T2<Integer, UUID> k = new T2<>(order, nodeId);
-
-        return futs.get(k);
+        return futs.get(new T2<>(order, nodeId));
     }
 
     /** {@inheritDoc} */
@@ -285,6 +284,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                     cancelLock.unlock();
                 }
             }
+            else
+            if (log.isInfoEnabled())
+                log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
 
             GridDhtPreloaderAssignments assigns = historicalAssignments.remove(grpId);
 
@@ -370,6 +372,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 if (log.isDebugEnabled())
                     log.debug("Cleaning up region " + region);
 
+                // todo no need to reserve partition, since whole group is MOVING
                 reservePartitions(parts);
 
                 memEx.clearAsync(
@@ -406,8 +409,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         }
     }
 
-    private void invalidatePartitions(Set<Long> partitionSet) throws IgniteCheckedException {
-        for (long partGrp : partitionSet) {
+    private void invalidatePartitions(Set<Long> partSet) throws IgniteCheckedException {
+        for (long partGrp : partSet) {
             int grpId = (int)(partGrp >> 32);
             int partId = (int)partGrp;
 
@@ -419,38 +422,25 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
             if (log.isDebugEnabled())
                 log.debug("Parition truncated [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]");
-
-//            // todo close on switch as others
-//            if (partId == INDEX_PARTITION) {
-//                ((GridCacheOffheapManager.GridCacheDataStore)((IgniteCacheOffheapManagerImpl)grp.offheap()).dataStore(INDEX_PARTITION)).close();
-//            }
         }
     }
 
-    private void reservePartitions(Set<Long> partitionSet) {
-        for (long entry : partitionSet) {
-            GridDhtLocalPartition part = getPartition(entry);
-
-            if (part != null)
-                part.reserve();
-        }
+    private void reservePartitions(Set<Long> partSet) {
+        for (long entry : partSet)
+            localPartition(entry).reserve();
     }
 
-    private void releasePartitions(Set<Long> partitionSet) {
-        for (long entry : partitionSet) {
-            GridDhtLocalPartition part = getPartition(entry);
-
-            if (part != null)
-                part.release();
-        }
+    private void releasePartitions(Set<Long> partSet) {
+        for (long entry : partSet)
+            localPartition(entry).release();
     }
 
-    private GridDhtLocalPartition getPartition(long entry) {
-        int grpId = (int)(entry >> 32);
-        int partId = (int)entry;
+    private GridDhtLocalPartition localPartition(long globalPartId) {
+        int grpId = (int)(globalPartId >> 32);
+        int partId = (int)globalPartId;
 
-        if (partId == INDEX_PARTITION)
-            return null;
+        // todo remove
+        assert partId != INDEX_PARTITION;
 
         GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
 
@@ -465,7 +455,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      * @param grpId Group ID.
      * @throws IgniteCheckedException If the cleanup failed.
      */
-    public void awaitCleanupIfNeeded(int grpId) throws IgniteCheckedException {
+    private void awaitCleanupIfNeeded(int grpId) throws IgniteCheckedException {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
         IgniteInternalFuture fut = regions.get(grp.dataRegion().config().getName());
@@ -483,6 +473,36 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             fut.get();
         } catch (IgniteFutureCancelledCheckedException ignore) {
             // No-op.
+        }
+    }
+
+    public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
+        if (log.isTraceEnabled())
+            log.trace("Processing partition snapshot [path=" + file+"]");
+
+        FileRebalanceNodeRoutine fut = nodeRoutine(grpId, nodeId);
+
+        if (fut == null || fut.isDone()) {
+            if (log.isTraceEnabled())
+                log.trace("Stale future, removing partition snapshot [path=" + file + "]");
+
+            file.delete();
+
+            return;
+        }
+
+        try {
+            awaitCleanupIfNeeded(grpId);
+
+            if (fut.isDone())
+                return;
+
+            fut.onPartitionSnapshotReceived(file, grpId, partId);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Unable to handle partition snapshot", e);
+
+            fut.onDone(e);
         }
     }
 
