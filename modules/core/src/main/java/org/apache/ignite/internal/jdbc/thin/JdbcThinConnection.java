@@ -306,7 +306,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, autoCommit, sql, null), stmt, cliIo);
+                    schema, 1, 1, autoCommit, false, sql, null), stmt, cliIo);
 
                 streamState.start();
             }
@@ -348,7 +348,8 @@ public class JdbcThinConnection implements Connection {
 
         JdbcThinStatement stmt = new JdbcThinStatement(this, resSetHoldability, schema);
 
-        stmt.setQueryTimeout(qryTimeout);
+        // t0d0 timeout from connection properties
+//        stmt.setQueryTimeout(qryTimeout);
 
         synchronized (stmtsMux) {
             stmts.add(stmt);

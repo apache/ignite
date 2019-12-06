@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_2;
 
 /**
  * JDBC query execute request.
@@ -60,6 +61,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
     /** Flag, that signals, that query expects partition response in response. */
     private boolean partResReq;
 
+    // t0d0 consider numeric value
+    private boolean timeout;
+
     /**
      */
     JdbcQueryExecuteRequest() {
@@ -78,7 +82,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      * @param args Arguments list.
      */
     public JdbcQueryExecuteRequest(JdbcStatementType stmtType, String schemaName, int pageSize, int maxRows,
-        boolean autoCommit, String sqlQry, Object[] args) {
+        boolean autoCommit, boolean timeout, String sqlQry, Object[] args) {
         super(QRY_EXEC);
 
         this.schemaName = F.isEmpty(schemaName) ? null : schemaName;
@@ -88,6 +92,7 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         this.args = args;
         this.stmtType = stmtType;
         this.autoCommit = autoCommit;
+        this.timeout = timeout;
     }
 
     /**
@@ -163,6 +168,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (ver.compareTo(VER_2_8_0) >= 0)
             writer.writeBoolean(partResReq);
+
+        if (ver.compareTo(VER_2_8_2) >= 0)
+            writer.writeBoolean(timeout);
     }
 
     /** {@inheritDoc} */
@@ -197,6 +205,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
         if (ver.compareTo(VER_2_8_0) >= 0)
             partResReq = reader.readBoolean();
+
+        if (ver.compareTo(VER_2_8_2) >= 0)
+            timeout = reader.readBoolean();
     }
 
     /**
@@ -211,6 +222,10 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
      */
     public void partitionResponseRequest(boolean partResReq) {
         this.partResReq = partResReq;
+    }
+
+    public boolean isTimeout() {
+        return timeout;
     }
 
     /** {@inheritDoc} */

@@ -46,8 +46,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultWithIo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
@@ -81,6 +81,8 @@ public class JdbcThinStatement implements Statement {
 
     /** Query timeout. */
     private int timeout;
+
+    private boolean explicitTimeout;
 
     /** Request timeout. */
     private int reqTimeout;
@@ -225,7 +227,7 @@ public class JdbcThinStatement implements Statement {
         }
 
         JdbcQueryExecuteRequest req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, conn.getAutoCommit(), sql, args == null ? null : args.toArray(new Object[args.size()]));
+            maxRows, conn.getAutoCommit(), explicitTimeout, sql, args == null ? null : args.toArray(new Object[args.size()]));
 
         JdbcResultWithIo resWithIo = conn.sendRequest(req, this, null);
 
@@ -500,6 +502,8 @@ public class JdbcThinStatement implements Statement {
         this.timeout = timeout * 1000;
 
         reqTimeout = this.timeout;
+
+        explicitTimeout = true;
     }
 
     /** {@inheritDoc} */
