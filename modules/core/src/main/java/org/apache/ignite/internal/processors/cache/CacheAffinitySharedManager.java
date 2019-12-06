@@ -2227,15 +2227,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        synchronized (mux) {
-            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
-        }
-
         if (crd) {
             if (log.isDebugEnabled()) {
                 log.debug("Computed new affinity after node join [topVer=" + evts.lastServerEventVersion() +
                     ", waitGrps=" + groupNames(waitRebalanceInfo.waitGrps.keySet()) + ']');
             }
+        }
+
+        synchronized (mux) {
+            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
         }
     }
 
@@ -2571,13 +2571,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
         });
 
-        synchronized (mux) {
-            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
-        }
-
         if (log.isDebugEnabled()) {
             log.debug("Computed new affinity after node left [topVer=" + topVer +
                 ", waitGrps=" + groupNames(waitRebalanceInfo.waitGrps.keySet()) + ']');
+        }
+
+        synchronized (mux) {
+            waitInfo = !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
         }
 
         return assignment;
