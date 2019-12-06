@@ -3127,8 +3127,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         final long time = System.currentTimeMillis() - start;
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
-                if (log.isInfoEnabled())
-                    log.warning("TCP client creation time more than " + CONNECTION_ESTABLISH_THRESHOLD_MS + "ms [client=" + clientString(client, node) + ", duration=" + time + "ms]");
+                log.warning("Slow TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
             }
             else if (log.isDebugEnabled())
                 log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
