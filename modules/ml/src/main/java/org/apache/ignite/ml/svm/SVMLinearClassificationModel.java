@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -27,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Base class for SVM linear classification model.
  */
-public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
+public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel> {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 

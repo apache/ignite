@@ -63,11 +63,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -79,6 +81,8 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
@@ -725,7 +729,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             qryRes1.close();
             qryRes2.close();
 
-            boolean res = waitForCondition(() -> qrySysView0.isEmpty(), 5_000);
+            boolean res = waitForCondition(() -> systemView(ignite, SCAN_QRY_SYS_VIEW).isEmpty(), 5_000);
 
             assertTrue(res);
         }
@@ -897,6 +901,63 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(found1 && found2);
+    }
+
+    /** */
+    @Test
+    public void testSysStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite.context().getStripedExecutorService(),
+            SYS_POOL_QUEUE_VIEW,
+            "sys");
+    }
+
+    /** */
+    @Test
+    public void testStreamerStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
+            STREAM_POOL_QUEUE_VIEW,
+            "data-streamer");
+    }
+
+    /**
+     * Checks striped executor system view.
+     *
+     * @param execSvc Striped executor.
+     * @param viewName System view.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, String viewName, String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> systemView(viewName).size() == 2, 5_000);
+
+            assertTrue(res);
+
+            TabularDataSupport view = systemView(viewName);
+
+            CompositeData row0 = view.get(new Object[] {0});
+
+            assertEquals(0, row0.get("stripeIndex"));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get("description"));
+            assertEquals(poolName + "-stripe-0", row0.get("threadName"));
+            assertEquals(TestRunnable.class.getName(), row0.get("taskName"));
+
+            CompositeData row1 = view.get(new Object[] {1});
+
+            assertEquals(1, row1.get("stripeIndex"));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get("description"));
+            assertEquals(poolName + "-stripe-1", row1.get("threadName"));
+            assertEquals(TestRunnable.class.getName(), row1.get("taskName"));
+        }
+        finally {
+            latch.countDown();
+        }
     }
 
     /** */
