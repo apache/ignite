@@ -28,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -36,14 +35,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -242,24 +239,25 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         if (isDone())
             return false;
 
-        boolean r = super.onDone(res, err, cancel);
-
         try {
             if (log.isDebugEnabled())
                 log.debug("Stopping file rebalance routine: " + cctx.localNodeId() + " -> " + nodeId());
 
             if (snapFut != null && !snapFut.isDone()) {
-                if (log.isInfoEnabled())
-                    log.info("Cancelling snapshot creation: " + nodeId());
+                if (log.isDebugEnabled())
+                    log.debug("Cancelling snapshot creation: " + nodeId());
 
                 snapFut.cancel();
             }
-            else if (snapFut != null && log.isDebugEnabled())
-                log.debug("snapFut already done: " + nodeId());
+            else if (log.isTraceEnabled() && snapFut != null)
+                log.trace("Snapshot creation already finished, no need to cancel [remote=" + nodeId() + ", snapshot=" + snapFut + "]");
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to finish file rebalancing node routine", e);
         }
+
+        // todo think and rework
+        boolean r = super.onDone(res, err, cancel);
 
         mainFut.onNodeDone(this, res, err, cancel);
 
@@ -289,10 +287,11 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
         for (Map.Entry<Integer, Set<Integer>> entry : new HashMap<>(remaining).entrySet()) {
             buf.append("grp=").append(cctx.cache().cacheGroup(entry.getKey()).cacheOrGroupName()).
-                append(" parts=").append(entry.getValue()).append("; ");
+                append(" parts=").append(entry.getValue()).append("; received=").
+                append(reinitialized.get(entry.getKey()).keySet()).append("; ");
         }
 
-        return "finished=" + isDone() + ", node=" + node.id() + ", remain=[" + buf + "]";
+        return "finished=" + isDone() + ", failed=" + isFailed() + ", cancelled=" + isCancelled() + ", node=" + node.id() + ", remain=[" + buf + "]";
     }
 
     private long reinitPartition(int grpId, int partId, File src) throws IgniteCheckedException {

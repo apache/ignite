@@ -192,7 +192,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             Set<Integer> moving = detectMovingPartitions(grp, exchFut);
 
-            if (!locJoinBaselineChange && !isReadOnlyGroup(grp)) {
+            if (!locJoinBaselineChange && !isReadOnlyGroup(grp, exchFut.topologyVersion())) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped for group " + grp.cacheOrGroupName());
 
@@ -216,9 +216,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
     }
 
-    private boolean isReadOnlyGroup(CacheGroupContext grp) {
+    private boolean isReadOnlyGroup(CacheGroupContext grp, AffinityTopologyVersion topVer) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (!part.dataStore().readOnly())
+            AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
+
+            if (aff.get(part.id()).contains(cctx.localNode()) && !part.dataStore().readOnly())
                 return false;
         }
 
@@ -312,8 +314,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> nodeOrderAssignsMap =
             remapAssignments(assignsMap, exchFut);
 
-        if (nodeOrderAssignsMap.isEmpty())
+        if (nodeOrderAssignsMap.isEmpty()) {
+            if (log.isDebugEnabled())
+                log.debug("Skipping file rebalancing due to empty assignments.");
+
             return null;
+        }
 
         if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
@@ -408,9 +414,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     private String debugInfo() {
-        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() + ", finished=" + fileRebalanceFut.isDone() + "]");
+        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() + ", finished=" + fileRebalanceFut.isDone() + ", failed=" + fileRebalanceFut.isFailed() +", cancelled=" + fileRebalanceFut.isCancelled() + "]");
 
-        if (!fileRebalanceFut.isDone())
+        if (!fileRebalanceFut.isDone() || fileRebalanceFut.isCancelled() || fileRebalanceFut.isFailed())
             buf.append(fileRebalanceFut.toString());
 
         return buf.toString();
@@ -455,9 +461,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             GridDhtPreloaderAssignments assigns = grpEntry.getValue();
-
-            if (!isReadOnlyGroup(grp))
-                continue;
 
             if (!fileRebalanceRequired(grp, assigns, exchFut))
                 continue;
@@ -567,6 +570,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             return false;
         }
+
+        if (!isReadOnlyGroup(grp, exchFut.topologyVersion()))
+            return false;
 
         if (!fileRebalanceSupported(grp, assignments.keySet())) {
             if (log.isDebugEnabled())

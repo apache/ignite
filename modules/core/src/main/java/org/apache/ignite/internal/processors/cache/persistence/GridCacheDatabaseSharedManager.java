@@ -1933,8 +1933,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
-        if (reservedForPreloading.containsKey(new T2<>(grpId, partId)))
+        T2<Long, WALPointer> saved = reservedForPreloading.get(new T2<>(grpId, partId));
+
+        if (saved != null) {
+            assert saved.get1() <= cntr : "reserved=" + saved.get1() + ", required=" + cntr;
+
+            if (log.isDebugEnabled()) {
+                log.debug("History for preloading already reserved [cache=" +
+                    cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + " reserved=" + saved.get1() + "]");
+            }
+
             return true;
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("Reserve history for preloading [cache=" +

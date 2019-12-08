@@ -1,4 +1,21 @@
-package org.apache.ignite.internal.processors.cache;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,6 +47,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -45,7 +66,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJU
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 
-public class IndexedCacheFileRebalanceTest extends GridCommonAbstractTest {
+/**
+ * todo should be removed, CacheFileRebalancingSelfTest should be able to check indexes (it must be included into indexes suite)
+ */
+public class IndexedCacheFileRebalancingTest extends GridCommonAbstractTest {
     /** Cache with enabled indexes. */
     private static final String INDEXED_CACHE = "indexed";
 
@@ -445,25 +469,21 @@ public class IndexedCacheFileRebalanceTest extends GridCommonAbstractTest {
 
         int fails = 0;
 
-        long expSize = 0;
-
         for (int k = 0; k < cnt; k++) {
             if (removes && k % 10 == 0)
                 continue;
-
-            ++expSize;
 
             TestValue exp = new TestValue(k, k, k);;
             TestValue actual = (TestValue)cache.get(k);
 
             if (!Objects.equals(exp, actual)) {
-//                if (fails++ < 100)
-                buf.append("cache=").append(cache.getName()).append(", key=").append(k).append(", expect=").append(exp).append(", actual=").append(actual).append('\n');
-//                else {
-//                    buf.append("\n... and so on\n");
+                if (fails++ < 100)
+                    buf.append("cache=").append(cache.getName()).append(", key=").append(k).append(", expect=").append(exp).append(", actual=").append(actual).append('\n');
+                else {
+                    buf.append("\n... and so on\n");
 
-//                    break;
-//                }
+                    break;
+                }
             }
 
             if ((k + 1) % (cnt / 10) == 0)
@@ -593,7 +613,6 @@ public class IndexedCacheFileRebalanceTest extends GridCommonAbstractTest {
         public void resume() {
             paused = false;
             pause = false;
-
         }
     }
 

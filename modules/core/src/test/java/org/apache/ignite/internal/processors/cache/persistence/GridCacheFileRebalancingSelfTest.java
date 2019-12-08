@@ -80,9 +80,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 
 /**
  * Test cases for checking cancellation rebalancing process if some events occurs.
+ *
+ * todo mixed rebalancing (file + historical)
+ * todo mixed cache configuration (atomic+tx)
+ * todo mixed data region configuration (pds+in-mem)
+ * todo partition size change (start file rebalancing partition, cancel and then partition met)
  */
 @RunWith(Parameterized.class)
-public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
+public class GridCacheFileRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TEST_SIZE = GridTestUtils.SF.applyLB(100_000, 10_000);
 
@@ -151,20 +156,16 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
                     .setInitialSize(10 * 1024 * 1024L)
                     .setMaxSize(4 * 1024 * 1024 * 1024L)
                     .setPersistenceEnabled(true)
-                    .setName("someRegion"))
+                    .setName("customRegion"))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setCheckpointFrequency(3_000)) // todo check with default timeout!
 //                .setWalSegmentSize(4 * 1024 * 1024)
 //                .setMaxWalArchiveSize(32 * 1024 * 1024 * 1024L))
-            .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME).setDataRegionName("someRegion"), cacheConfig(CACHE1), cacheConfig(CACHE2));
+            .setCacheConfiguration(cacheConfig(DEFAULT_CACHE_NAME).setDataRegionName("customRegion"), cacheConfig(CACHE1), cacheConfig(CACHE2));
 
         cfg.setSystemThreadPoolSize(56);
 
         cfg.setConsistentId(igniteInstanceName);
-            //.setCacheConfiguration(cacheConfig(CACHE1));
-
-//        if (getTestIgniteInstanceIndex(igniteInstanceName) == 2)
-//            cfg.setGridLogger(new NullLogger());
 
         return cfg;
     }
@@ -174,17 +175,9 @@ public class GridCacheFileRebalanceSelfTest extends GridCommonAbstractTest {
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setAtomicityMode(cacheAtomicityMode)
             .setWriteSynchronizationMode(cacheWriteSyncMode)
-            //.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
-//                .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction(false, parts))
             .setBackups(backups);
-//            .setCommunicationSpi(new TestRecordingCommunicationSpi()
     }
-
-//    @Test
-//    public void testEvictReadOnlyPartition() {
-//
-//    }
 
     /** */
     @Test
