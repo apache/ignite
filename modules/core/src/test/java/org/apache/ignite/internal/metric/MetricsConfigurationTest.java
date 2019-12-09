@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.mxbean.IgniteMXBean;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,11 +46,6 @@ import static org.junit.Assert.assertNotEquals;
 public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
         cleanPersistenceDir();
     }
 
@@ -66,7 +69,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testHitRateConfiguration() throws Exception {
         try (IgniteEx g = startGrid(0)) {
-            IgniteMXBean bean = (IgniteMXBean)g;
+            MetricsMxBean bean = metricsBean(g);
 
             //Empty name.
             assertThrowsWithCause(
@@ -95,7 +98,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testHistogramConfiguration() throws Exception {
         try (IgniteEx g = startGrid(0)) {
-            IgniteMXBean bean = (IgniteMXBean)g;
+            MetricsMxBean bean = metricsBean(g);
 
             long[] bounds = new long[] {50, 100};
 
@@ -132,7 +135,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             assertNotEquals(bounds.length, g1.context().metric().registry(TX_METRICS)
                 .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
-            ((IgniteMXBean)g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), bounds);
+            metricsBean(g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), bounds);
 
             assertArrayEquals(bounds, g0.context().metric().registry(TX_METRICS)
                 .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
@@ -158,7 +161,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         assertNotEquals(bounds.length, g1.context().metric().registry(TX_METRICS)
             .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
-        ((IgniteMXBean)g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), bounds);
+        metricsBean(g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), bounds);
 
         assertArrayEquals(bounds, g0.context().metric().registry(TX_METRICS)
             .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
@@ -179,5 +182,17 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         assertArrayEquals(bounds, g1.context().metric().registry(TX_METRICS)
             .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+    }
+
+    /** */
+    public static MetricsMxBean metricsBean(IgniteEx g) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeMBeanName(g.name(), "Metrics", MetricsMxBeanImpl.class.getSimpleName());
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            throw new IgniteException("MBean not registered.");
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, MetricsMxBean.class, false);
     }
 }

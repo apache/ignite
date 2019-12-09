@@ -22,10 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-
 /**
  * This interface defines JMX view on kernal.
  */
@@ -499,42 +495,6 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Clears local node map.")
     void clearNodeLocalMap();
-
-    /**
-     * Resets metrics for of a given registry.
-     *
-     * @param registry Metrics registry name.
-     */
-    @MXBeanDescription("Resets metrics of a given registry.")
-    @MXBeanParametersNames("registry")
-    @MXBeanParametersDescriptions("Metrics registry.")
-    public void resetMetrics(String registry);
-
-    /**
-     * Change {@link HitRateMetric} configuration.
-     * Call of this method will change metric configuration across all cluster nodes.
-     *
-     * @param name Metric name.
-     * @param rateTimeInterval New rate time interval.
-     * @throws IgniteException If some error occured.
-     */
-    @MXBeanDescription("Configure hitrate metric by name.")
-    @MXBeanParametersNames({"name", "cfg"})
-    @MXBeanParametersDescriptions({"Metric name.", "New rate time interval."})
-    public void configureHitRateMetric(String name, long rateTimeInterval) throws IgniteException;
-
-    /**
-     * Change {@link HistogramMetric} configuration.
-     * Call of this method will change metric configuration across all cluster nodes.
-     *
-     * @param name Metric name.
-     * @param bounds New bounds.
-     * @throws IgniteException If some error occured.
-     */
-    @MXBeanDescription("Configure histogram metric by name.")
-    @MXBeanParametersNames({"name", "cfg"})
-    @MXBeanParametersDescriptions({"Metric name.", "New bounds."})
-    public void configureHistogramMetric(String name, long[] bounds) throws IgniteException;
 
     /**
      * Gets cluster read-only mode status.

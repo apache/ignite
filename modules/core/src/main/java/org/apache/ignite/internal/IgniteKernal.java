@@ -4602,36 +4602,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics(String registry) {
-        assert registry != null;
-
-        MetricRegistry mreg = ctx.metric().registry(registry);
-
-        if (mreg != null)
-            mreg.reset();
-        else if (log.isInfoEnabled())
-            log.info("\"" + registry + "\" not found.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configureHitRateMetric(String name, long rateTimeInterval) {
-        try {
-            ctx.metric().configureHitRate(name, rateTimeInterval);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configureHistogramMetric(String name, long[] bounds) {
-        try {
-            ctx.metric().configureHistogram(name, bounds);
-        } catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean readOnlyMode() {
         return ctx.state().publicApiReadOnlyMode();
     }

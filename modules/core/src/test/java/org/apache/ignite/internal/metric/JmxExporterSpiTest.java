@@ -464,7 +464,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
+    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
