@@ -443,7 +443,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             "True if possible starvation in striped pool is detected.");
 
         mreg.register("StripesCount",
-            svc::stripes,
+            svc::stripesCount,
             "Stripes count.");
 
         mreg.register("Shutdown",
