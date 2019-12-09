@@ -37,6 +37,16 @@ import static org.junit.Assert.assertNotEquals;
 /** Tests metrics configuration. */
 public class MetricsConfigurationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -170,5 +180,4 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         assertArrayEquals(bounds, g1.context().metric().registry(TX_METRICS)
             .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
     }
-
 }

@@ -32,10 +32,7 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  */
 public class MetricUtils {
     /** Metric name part separator. */
-    public static final char SEPARATOR_CHAR = '.';
-
-    /** Metric name part separator. */
-    public static final String SEPARATOR = "" + SEPARATOR_CHAR;
+    public static final String SEPARATOR = ".";
 
     /** Histogram metric last interval high bound. */
     public static final String INF = "inf";

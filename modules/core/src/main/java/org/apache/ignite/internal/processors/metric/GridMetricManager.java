@@ -186,10 +186,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
     /** Prefix for {@link HitRateMetric} configuration property name. */
-    public static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
+    private static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
 
     /** Prefix for {@link HistogramMetric} configuration property name. */
-    public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
+    private static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
@@ -200,11 +200,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Metric registry remove listeners. */
     private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
-    /** Metastorage. */
-    private volatile DistributedMetaStorage metastorage;
+    /** Read-only metastorage. */
+    private volatile ReadableDistributedMetaStorage roMetastorage;
 
     /** Metastorage lock. */
     private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
+
+    /** Metastorage with the write access. */
+    private volatile DistributedMetaStorage metastorage;
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -276,35 +279,36 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             new DistributedMetastorageLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                    metaLock.writeLock().lock();
+
                     try {
+                        roMetastorage = metastorage;
+
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
                             name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistgoramConfigChanged(
                             name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
-
-                        metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
-                            (name, oldVal, newVal) -> onHitRateConfigChanged(
-                                name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
-
-                        metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
-                            (name, oldVal, newVal) -> onHistgoramConfigChanged(
-                                name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
-                    } catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
                     }
-                }
-
-                /** {@inheritDoc} */
-                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                    metaLock.writeLock().lock();
-
-                    try {
-                        GridMetricManager.this.metastorage = metastorage;
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
                     }
                     finally {
                         metaLock.writeLock().unlock();
                     }
+
+                    metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
+                        (name, oldVal, newVal) -> onHitRateConfigChanged(
+                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
+
+                    metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
+                        (name, oldVal, newVal) -> onHistgoramConfigChanged(
+                            name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                    GridMetricManager.this.metastorage = metastorage;
                 }
             });
     }

@@ -267,15 +267,14 @@ public class MetricRegistry implements Iterable<Metric> {
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
         String fullName = metricName(grpName, name);
 
+        HitRateMetric metric = addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
+
         Long cfgRateTimeInterval = hitRateCfgProvider.apply(fullName);
 
-        if (cfgRateTimeInterval != null) {
-            rateTimeInterval = cfgRateTimeInterval;
+        if (cfgRateTimeInterval != null)
+            metric.reset(cfgRateTimeInterval, DFLT_SZ);
 
-            size = DFLT_SZ;
-        }
-
-        return addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
+        return metric;
     }
 
     /**
@@ -301,12 +300,14 @@ public class MetricRegistry implements Iterable<Metric> {
     public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
         String fullName = metricName(grpName, name);
 
+        HistogramMetric metric = addMetric(name, new HistogramMetric(fullName, desc, bounds));
+
         long[] cfgBounds = histogramCfgProvider.apply(fullName);
 
         if (cfgBounds != null)
-            bounds = cfgBounds;
+            metric.reset(cfgBounds);
 
-        return addMetric(name, new HistogramMetric(fullName, desc, bounds));
+        return metric;
     }
 
     /**
