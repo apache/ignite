@@ -93,6 +93,25 @@ public final class ClientConfiguration implements Serializable {
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
 
     /**
+     * Whether affinity awareness should be enabled.
+     *
+     * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * By default {@code false} only one connection is established at a given moment to a random server node.
+     */
+    private boolean affinityAwarenessEnabled;
+
+    /**
+     * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
+     * attempts to reconnect will be made within {@code reconnectThrottlingPeriod} in case of connection loss.
+     * Throttling is disabled if either {@code reconnectThrottlingRetries} or {@code reconnectThrottlingPeriod} is 0.
+     */
+    private long reconnectThrottlingPeriod = 30_000L;
+
+    /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
+    private int reconnectThrottlingRetries = 3;
+
+    /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
@@ -412,6 +431,60 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setTransactionConfiguration(ClientTransactionConfiguration txCfg) {
         this.txCfg = txCfg;
+
+        return this;
+    }
+
+    /**
+     * @return Whether affinity awareness should be enabled.
+     */
+    public boolean isAffinityAwarenessEnabled() {
+        return affinityAwarenessEnabled;
+    }
+
+    /**
+     * Enable or disable affinity awareness.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAffinityAwarenessEnabled(boolean affinityAwarenessEnabled) {
+        this.affinityAwarenessEnabled = affinityAwarenessEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling period.
+     */
+    public long getReconnectThrottlingPeriod() {
+        return reconnectThrottlingPeriod;
+    }
+
+    /**
+     * Sets reconnect throttling period.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingPeriod(long reconnectThrottlingPeriod) {
+        this.reconnectThrottlingPeriod = reconnectThrottlingPeriod;
+
+        return this;
+    }
+
+    /**
+     * Gets reconnect throttling retries.
+     */
+    public int getReconnectThrottlingRetries() {
+        return reconnectThrottlingRetries;
+    }
+
+    /**
+     * Sets reconnect throttling retries.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReconnectThrottlingRetries(int reconnectThrottlingRetries) {
+        this.reconnectThrottlingRetries = reconnectThrottlingRetries;
 
         return this;
     }

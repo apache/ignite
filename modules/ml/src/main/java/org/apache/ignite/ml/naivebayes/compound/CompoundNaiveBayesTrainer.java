@@ -39,7 +39,6 @@ import java.util.Collections;
  * #setFeatureIdsToSkip()} method.
  */
 public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<CompoundNaiveBayesModel> {
-
     /** Prior probabilities of each class. */
     private double[] priorProbabilities;
 
@@ -77,12 +76,12 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(priorProbabilities);
+            .withPriorProbabilities(priorProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
-            if (priorProbabilities != null) {
+            if (priorProbabilities != null)
                 gaussianNaiveBayesTrainer.setPriorProbabilities(priorProbabilities);
-            }
+
             GaussianNaiveBayesModel model = (mdl == null)
                 ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)))
                 : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)));
@@ -90,13 +89,13 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withGaussianModel(model)
                 .withGaussianFeatureIdsToSkip(gaussianFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(priorProbabilities);
+                .withPriorProbabilities(priorProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
-            if (priorProbabilities != null) {
+            if (priorProbabilities != null)
                 discreteNaiveBayesTrainer.setPriorProbabilities(priorProbabilities);
-            }
+
             DiscreteNaiveBayesModel model = (mdl == null)
                 ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(discreteFeatureIdsToSkip)))
                 : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor.map(skipFeatures(discreteFeatureIdsToSkip)));
@@ -104,7 +103,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withDiscreteModel(model)
                 .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(priorProbabilities);
+                .withPriorProbabilities(priorProbabilities);
         }
 
         return compoundModel;

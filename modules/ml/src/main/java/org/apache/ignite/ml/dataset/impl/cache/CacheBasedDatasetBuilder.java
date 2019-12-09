@@ -185,7 +185,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param isKeepBinary Is keep binary.
      */
     public CacheBasedDatasetBuilder<K, V> withKeepBinary(boolean isKeepBinary){
-        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary, retries);
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary, retries);
     }
 
     /**
@@ -195,7 +195,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @return CacheBasedDatasetBuilder instance.
      */
     public CacheBasedDatasetBuilder<K, V> withRetriesNumber(int retries) {
-        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
     }
 
     /**

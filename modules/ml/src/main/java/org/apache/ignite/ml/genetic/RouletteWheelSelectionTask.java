@@ -47,14 +47,14 @@ import org.jetbrains.annotations.NotNull;
 public class RouletteWheelSelectionTask extends ComputeTaskAdapter<LinkedHashMap<Long, Double>, List<Long>> {
     /** Ignite resource. */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
-    // Inject load balancer.
+    /** Inject load balancer. */
     @LoadBalancerResource
     ComputeLoadBalancer balancer;
 
     /** GAConfiguration */
-    private GAConfiguration cfg = null;
+    private GAConfiguration cfg;
 
     /**
      * @param cfg GAConfiguration
@@ -131,7 +131,7 @@ public class RouletteWheelSelectionTask extends ComputeTaskAdapter<LinkedHashMap
 
         List<Long> keys = new ArrayList();
 
-        parents.stream().forEach((x) -> {
+        parents.forEach((x) -> {
             long[] genes = x.getGenes();
             Chromosome newparent = new Chromosome(genes);
             cache.put(newparent.id(), newparent);

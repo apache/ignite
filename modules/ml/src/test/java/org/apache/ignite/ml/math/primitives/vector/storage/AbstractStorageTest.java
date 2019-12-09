@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
  * Common functionality for vector storage testing.
  */
 public abstract class AbstractStorageTest {
-
     /** */
     @Test
     public void testSetAndGet() {
@@ -60,14 +59,14 @@ public abstract class AbstractStorageTest {
             storage.setRaw(i, i);
             assertTrue(isRaw(storage));
             assertTrue(storage.isNumeric());
-            Integer value = storage.getRaw(i);
-            assertEquals(i, value.intValue());
+            Integer val = storage.getRaw(i);
+            assertEquals(i, val.intValue());
         }
     }
 
     /** */
     @Test
-    public void testToNumericConvertion1() {
+    public void testToNumericConversion1() {
         VectorStorage storage = createStorage(10);
 
         storage.setRaw(0, "123");
@@ -84,7 +83,7 @@ public abstract class AbstractStorageTest {
 
     /** */
     @Test
-    public void testToNumericConvertion2() {
+    public void testToNumericConversion2() {
         VectorStorage storage = createStorage(10);
         double[] exp = new double[storage.size()];
         for(int i = 0; i < storage.size(); i++) {
@@ -122,11 +121,11 @@ public abstract class AbstractStorageTest {
     }
 
     /** */
-    protected void expect(Runnable fun, Class<? extends Exception> exClass) {
+    protected void expect(Runnable fun, Class<? extends Exception> exCls) {
         try {
             fun.run();
         } catch (Exception ex) {
-            assertEquals(exClass, ex.getClass());
+            assertEquals(exCls, ex.getClass());
             return;
         }
 

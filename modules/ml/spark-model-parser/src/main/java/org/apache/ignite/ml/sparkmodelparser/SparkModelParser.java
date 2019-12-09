@@ -478,6 +478,7 @@ public class SparkModelParser {
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
+
                     final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
                     NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
 
@@ -686,7 +687,7 @@ public class SparkModelParser {
      * Load SVM model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLinearSVMModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {
@@ -722,7 +723,7 @@ public class SparkModelParser {
      * Load linear regression model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLinRegModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {
@@ -759,7 +760,7 @@ public class SparkModelParser {
      * Load logistic regression model.
      *
      * @param pathToMdl Path to model.
-     * @param learningEnvironment
+     * @param learningEnvironment Learning environment.
      */
     private static Model loadLogRegModel(String pathToMdl,
         LearningEnvironment learningEnvironment) {

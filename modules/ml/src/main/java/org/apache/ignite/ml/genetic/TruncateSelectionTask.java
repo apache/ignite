@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite resource. */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Fittest keys. */
     private List<Long> fittestKeys;
@@ -91,13 +91,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return List of lists containing keys.
      */
     private List<List<Long>> getEnhancedPopulation() {
-        List<List<Long>> list = new ArrayList<List<Long>>();
+        List<List<Long>> list = new ArrayList<>();
 
         for (Long key : fittestKeys) {
             Chromosome cp = getChromosome(key);
             for (int i = 0; i < numOfCopies; i++) {
                 long[] thegenes = cp.getGenes();
-                List<Long> geneList = new ArrayList<Long>();
+                List<Long> geneList = new ArrayList<>();
                 for (int k = 0; k < cp.getGenes().length; k++)
                     geneList.add(thegenes[k]);
 
@@ -118,10 +118,10 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
 
         int k = 0;
         for (Long key : chromosomeKeys) {
-            TruncateSelectionJob ajob = new TruncateSelectionJob(key, (List)enhancedPopulation.get(k));
+            TruncateSelectionJob ajob = new TruncateSelectionJob(key, enhancedPopulation.get(k));
             ClusterNode primary = affinity.mapKeyToNode(key);
             map.put(ajob, primary);
-            k = k + 1;
+            k += 1;
         }
         return map;
     }

@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -99,4 +100,15 @@ public interface GridSecurityProcessor extends GridProcessor {
      */
     @Deprecated
     public boolean enabled();
+
+    /**
+     * If this method returns true and {@link SecurityManager} is installed,
+     * then the user-defined code will be run inside the Sandbox.
+     *
+     * @return True if sandbox is enabled.
+     * @see IgniteSandbox
+     */
+    public default boolean sandboxEnabled() {
+        return false;
+    }
 }

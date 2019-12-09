@@ -178,7 +178,7 @@ public class CrossValidationTest {
                 .isRunningOnPipeline(false)
                 .withParamGrid(paramGrid);
 
-        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
         assertArrayEquals(crossValidationRes.getBestScore(), new double[]{0.9745762711864406, 1.0, 0.8968253968253969, 0.8661417322834646}, 1e-6);
         assertEquals(crossValidationRes.getBestAvgScore(), 0.9343858500738256, 1e-6);
@@ -227,7 +227,7 @@ public class CrossValidationTest {
                 .isRunningOnPipeline(false)
                 .withParamGrid(paramGrid);
 
-        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
         assertEquals(crossValidationRes.getBestAvgScore(), 0.9343858500738256, 1e-6);
         assertEquals(crossValidationRes.getScoringBoard().size(), 10);
@@ -279,7 +279,7 @@ public class CrossValidationTest {
                 .isRunningOnPipeline(true)
                 .withParamGrid(paramGrid);
 
-        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+        CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
         assertEquals(crossValidationRes.getBestAvgScore(), 0.9343858500738256, 1e-6);
         assertEquals(crossValidationRes.getScoringBoard().size(), 10);
@@ -310,7 +310,7 @@ public class CrossValidationTest {
             .withPreprocessor(vectorizer)
             .withAmountOfFolds(folds)
             .isRunningOnPipeline(false);
-        
+
         double[] scores = scoreCalculator.scoreByFolds();
 
         assertEquals(folds, scores.length);

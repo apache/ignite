@@ -82,7 +82,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private int maxDepth = 5;
 
     /** Min impurity delta. */
-    private double minImpurityDelta = 0.0;
+    private double minImpurityDelta;
 
     /** Features Meta. */
     private List<FeatureMeta> meta;
