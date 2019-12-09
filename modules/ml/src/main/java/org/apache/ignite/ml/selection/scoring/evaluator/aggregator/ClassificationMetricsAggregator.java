@@ -25,7 +25,7 @@ import org.apache.ignite.ml.selection.scoring.evaluator.context.EvaluationContex
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * Class represents aggregations for classification metric (including multiclassification case).
+ * Class represents aggregations for classification metric (including multi-classification case).
  *
  * @param <L> Type of label.
  */
@@ -43,7 +43,7 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
     /**
      * Total number of examples.
      */
-    private long totalNumberOfExamples;
+    private long totalNumOfExamples;
 
     /**
      * Creates an instance of ClassificationMetricsAggregator.
@@ -54,23 +54,23 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
     /**
      * Creates an instance of ClassificationMetricsAggregator.
      *
-     * @param validAnswersCount     Valid answers count.
-     * @param totalNumberOfExamples Total number of examples.
+     * @param validAnswersCnt     Valid answers count.
+     * @param totalNumOfExamples Total number of examples.
      */
-    public ClassificationMetricsAggregator(long validAnswersCount, long totalNumberOfExamples) {
-        this.validAnswersCnt = validAnswersCount;
-        this.totalNumberOfExamples = totalNumberOfExamples;
+    public ClassificationMetricsAggregator(long validAnswersCnt, long totalNumOfExamples) {
+        this.validAnswersCnt = validAnswersCnt;
+        this.totalNumOfExamples = totalNumOfExamples;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public void aggregate(IgniteModel<Vector, L> model, LabeledVector<L> vector) {
-        L modelAns = model.predict(vector.features());
+    @Override public void aggregate(IgniteModel<Vector, L> mdl, LabeledVector<L> vector) {
+        L modelAns = mdl.predict(vector.features());
         L truth = vector.label();
         if (modelAns.equals(truth))
             validAnswersCnt++;
-        totalNumberOfExamples++;
+        totalNumOfExamples++;
     }
 
     /**
@@ -79,21 +79,21 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
     @Override public ClassificationMetricsAggregator<L> mergeWith(ClassificationMetricsAggregator<L> other) {
         return new ClassificationMetricsAggregator<>(
             this.validAnswersCnt + other.validAnswersCnt,
-            this.totalNumberOfExamples + other.totalNumberOfExamples
+            this.totalNumOfExamples + other.totalNumOfExamples
         );
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public EmptyContext<L> createUnitializedContext() {
+    @Override public EmptyContext<L> createInitializedContext() {
         return EvaluationContext.empty();
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public void initByContext(EmptyContext<L> context) {
+    @Override public void initByContext(EmptyContext<L> ctx) {
 
     }
 
@@ -112,6 +112,6 @@ public class ClassificationMetricsAggregator<L extends Serializable> implements 
      * @return totalNumberOfExamples.
      */
     public long getTotalNumberOfExamples() {
-        return totalNumberOfExamples;
+        return totalNumOfExamples;
     }
 }

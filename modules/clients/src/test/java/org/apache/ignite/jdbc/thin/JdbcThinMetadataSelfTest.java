@@ -49,8 +49,8 @@ import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
-import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -349,7 +349,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEWS",
                 "SYS.TABLE_COLUMNS",
                 "SYS.VIEW_COLUMNS",
-                "SYS.CONTINUOUS_QUERIES"
+                "SYS.CONTINUOUS_QUERIES",
+                "SYS.STRIPED_THREADPOOL_QUEUE",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE"
             ))
         );
     }
@@ -752,6 +754,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TABLES.VALUE_ALIAS.null.2147483647",
                 "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
                 "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "SYS.TABLES.IS_INDEX_REBUILD_IN_PROGRESS.null.1",
                 "SYS.METRICS.NAME.null.2147483647",
                 "SYS.METRICS.VALUE.null.2147483647",
                 "SYS.METRICS.DESCRIPTION.null.2147483647",
@@ -851,7 +854,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CONTINUOUS_QUERIES.ROUTINE_ID.null.2147483647",
                 "SYS.CONTINUOUS_QUERIES.REMOTE_FILTER.null.2147483647",
                 "SYS.CONTINUOUS_QUERIES.CACHE_NAME.null.2147483647",
-                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647"
+                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.STRIPED_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.TASK_NAME.null.2147483647"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);

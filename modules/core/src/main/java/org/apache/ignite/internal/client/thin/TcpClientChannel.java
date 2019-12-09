@@ -84,6 +84,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -91,6 +92,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_6_0,
         V1_5_0,
         V1_4_0,
         V1_2_0,

@@ -39,15 +39,11 @@ public class DropCacheContextDuringEvictionTest extends PartitionsEvictManagerAb
     public void testDeactivation() throws Exception {
         T2<IgniteEx, CountDownLatch> nodeAndEvictLatch = makeNodeWithEvictLatch();
 
-        nodeAndEvictLatch.get1().createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        IgniteCache<Object, Object> cache = nodeAndEvictLatch.get1().createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setGroupName("test-grp"));
 
-        try (IgniteDataStreamer<Object, Object> streamer = nodeAndEvictLatch.get1().dataStreamer(DEFAULT_CACHE_NAME)) {
-            streamer.allowOverwrite(true);
-
-            for (int k = 0; k < 100_000; k++)
-                streamer.addData(k, k);
-        }
+        for (int i = 0; i < 100_000; i++)
+            cache.put(i, i);
 
         doActionDuringEviction(nodeAndEvictLatch, () -> nodeAndEvictLatch.get1().cluster().active(false));
 
@@ -64,19 +60,17 @@ public class DropCacheContextDuringEvictionTest extends PartitionsEvictManagerAb
         List<String> caches = new ArrayList<>();
 
         for (int idx = 0; idx < 10; idx++) {
-            String cacheName = DEFAULT_CACHE_NAME + idx;
-
-            nodeAndEvictLatch.get1().createCache(new CacheConfiguration<>(cacheName)
+            IgniteCache<Object, Object> cache = nodeAndEvictLatch.get1().createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME + idx)
                 .setGroupName("test-grp"));
 
-            try (IgniteDataStreamer<Object, Object> streamer = nodeAndEvictLatch.get1().dataStreamer(cacheName)) {
+            caches.add(cache.getName());
+
+            try (IgniteDataStreamer streamer = nodeAndEvictLatch.get1().dataStreamer(cache.getName())) {
                 streamer.allowOverwrite(true);
 
-                for (int k = 0; k < 100_000; k++)
-                    streamer.addData(k, k);
+                for (int i = 0; i < 200_000; i++)
+                    streamer.addData(i, i);
             }
-
-            caches.add(cacheName);
         }
 
         doActionDuringEviction(nodeAndEvictLatch, () -> nodeAndEvictLatch.get1().destroyCaches(caches));

@@ -97,9 +97,9 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
     protected UniformMapper<K, V> mapper = new SHA256UniformMapper<>();
 
     /**
-     * Finds the best set of hyperparameters based on parameter search strategy.
+     * Finds the best set of hyper-parameters based on parameter search strategy.
      */
-    public CrossValidationResult tuneHyperParamterers() {
+    public CrossValidationResult tuneHyperParameters() {
         HyperParameterTuningStrategy hyperParamTuningStgy = paramGrid.getHyperParameterTuningStrategy();
 
         if (hyperParamTuningStgy instanceof BruteForceStrategy) return scoreBruteForceHyperparameterOptimization();
@@ -111,7 +111,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
     }
 
     /**
-     * Finds the best set of hyperparameters based on Genetic Programming approach.
+     * Finds the best set of hyper-parameters based on Genetic Programming approach.
      */
     private CrossValidationResult scoreEvolutionAlgorithmSearchHyperparameterOptimization() {
         EvolutionOptimizationStrategy stgy = (EvolutionOptimizationStrategy) paramGrid.getHyperParameterTuningStrategy();
@@ -336,7 +336,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             M mdl = trainer.fit(trainSet, preprocessor); //TODO: IGNITE-11580
 
             DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
-            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
+            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSingle();
         }
 
         return scores;
@@ -367,7 +367,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
             PipelineMdl<K, V> mdl = pipeline.fit(datasetBuilder);
 
             DatasetBuilder<K, V> testSet = datasetBuilderSupplier.apply(testSetFilter);
-            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSignle();
+            scores[i] = Evaluator.evaluate(testSet, mdl, preprocessor, metric).getSingle();
         }
 
         return scores;

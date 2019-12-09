@@ -65,7 +65,7 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> Perform the training to get the model.");
 
                 // This object is used to extract features and vectors from upstream entities which are
-                // essentialy tuples of the form (key, value) (in our case (Integer, Vector)).
+                // essentially tuples of the form (key, value) (in our case (Integer, Vector)).
                 // Key part of tuple in our example is ignored.
                 // Label is extracted from 0th entry of the value (which is a Vector)
                 // and features are all remaining vector part. Alternatively we could use
