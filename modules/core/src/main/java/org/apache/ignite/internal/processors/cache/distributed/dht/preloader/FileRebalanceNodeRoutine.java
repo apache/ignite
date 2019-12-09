@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -35,14 +32,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -66,13 +59,8 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private Map<Integer, Set<Integer>> remaining;
 
-    private Map<Integer, Map<Integer, Long>> reinitialized;
-
     /** */
-    private Map<Integer, Set<PartCounters>> remainingHist;
-
-    /** {@code True} if the initial demand request has been sent. */
-    private AtomicBoolean initReq = new AtomicBoolean();
+    private Map<Integer, AtomicInteger> received;
 
     /** */
     private final ClusterNode node;
@@ -85,11 +73,6 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
     /** Node snapshot name. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
-
-    /** */
-//    public IgniteInternalFuture<Boolean> snapshotFuture() {
-//        return snapFut;
-//    }
 
     /**
      * Default constructor for the dummy future.
@@ -126,8 +109,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         this.topVer = topVer;
 
         remaining = new ConcurrentHashMap<>(assigns.size());
-        remainingHist = new ConcurrentHashMap<>(assigns.size());
-        reinitialized = new ConcurrentHashMap<>(assigns.size());
+        received = new ConcurrentHashMap<>(assigns.size());
 
         for (Map.Entry<Integer, Set<Integer>> entry : assigns.entrySet()) {
             Set<Integer> parts = entry.getValue();
@@ -136,7 +118,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
             assert !remaining.containsKey(grpId);
 
             remaining.put(grpId, new GridConcurrentHashSet<>(entry.getValue()));
-            reinitialized.put(grpId, new ConcurrentHashMap<>());
+            received.put(grpId, new AtomicInteger());
         }
     }
 
@@ -163,70 +145,43 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         return onDone(false, null, true);
     }
 
-    /**
-     * @param grpId Cache group id to search.
-     * @param partId Cache partition to remove;
-     */
-    public void onPartitionRestored(int grpId, int partId, long min, long max) {
-        Set<Integer> parts = remaining.get(grpId);
-
-        assert parts != null : "Unexpected group identifier: " + grpId;
-
-        remainingHist.computeIfAbsent(grpId, v -> new ConcurrentSkipListSet<>())
-            .add(new PartCounters(partId, min, max));
-
-        if (log.isDebugEnabled()) {
-            log.debug("Partition done [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() +
-                ", p=" + partId + ", remaining=" + parts.size() + "]");
-        }
-
-        boolean rmvd = parts.remove(partId);
-
-        assert rmvd : "Partition not found: " + partId;
-
-        if (parts.isEmpty())
-            onGroupRestored(grpId);
-    }
-
-    private void onGroupRestored(int grpId) {
+    private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
         Set<Integer> parts = remaining.remove(grpId);
 
         if (parts == null)
             return;
 
-        Set<PartCounters> histParts = remainingHist.remove(grpId);
-
-        assert histParts.size() == assigns.get(grpId).size() : "expect=" + assigns.get(grpId).size() + ", actual=" + histParts.size();
+        assert maxCntrs.size() == assigns.get(grpId).size() : "expect=" + assigns.get(grpId).size() + ", actual=" + maxCntrs.size();
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
+        assert !grp.localWalEnabled() : "grp=" + grp.cacheOrGroupName();
+
         GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grpId);
 
-        for (PartCounters desc : histParts) {
-            assert desc.toCntr >= desc.fromCntr : "from=" + desc.fromCntr + ", to=" + desc.toCntr;
+        // For historical rebalancing partitions should be ordered.
+        Map<Integer, T2<Long, Long>> histParts = new TreeMap<>();
 
-            if (desc.fromCntr != desc.toCntr) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Prepare to request historical rebalancing [cache=" + grp.cacheOrGroupName() + ", p=" +
-                        desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
-                }
+        for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
+            int partId = e.getKey();
 
-                // todo histParts.size incorrect
-                msg.partitions().addHistorical(desc.partId, desc.fromCntr, desc.toCntr, histParts.size());
+            long initCntr = grp.topology().localPartition(partId).initialUpdateCounter();
+            long maxCntr = e.getValue();
+
+            assert maxCntr >= initCntr : "from=" + initCntr + ", to=" + maxCntr;
+
+            if (initCntr != maxCntr) {
+                histParts.put(partId, new T2<>(initCntr, maxCntr));
 
                 continue;
             }
 
-            log.debug("Skipping historical rebalancing [p=" +
-                desc.partId + ", from=" + desc.fromCntr + ", to=" + desc.toCntr + "]");
-
-            // No historical rebalancing required  -can own partition.
-            if (grp.localWalEnabled()) {
-                boolean owned = grp.topology().own(grp.topology().localPartition(desc.partId));
-
-                assert owned : "part=" + desc.partId + ", grp=" + grp.cacheOrGroupName();
-            }
+            if (log.isDebugEnabled())
+                log.debug("No need for WAL rebalance [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
         }
+
+        for (Map.Entry<Integer, T2<Long, Long>> e : histParts.entrySet())
+            msg.partitions().addHistorical(e.getKey(), e.getValue().get1(), e.getValue().get2(), histParts.size());
 
         mainFut.onCacheGroupDone(grpId, nodeId(), msg);
 
@@ -288,98 +243,38 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         for (Map.Entry<Integer, Set<Integer>> entry : new HashMap<>(remaining).entrySet()) {
             buf.append("grp=").append(cctx.cache().cacheGroup(entry.getKey()).cacheOrGroupName()).
                 append(" parts=").append(entry.getValue()).append("; received=").
-                append(reinitialized.get(entry.getKey()).keySet()).append("; ");
+                append(received.get(entry.getKey()).get()).append("; ");
         }
 
-        return "finished=" + isDone() + ", failed=" + isFailed() + ", cancelled=" + isCancelled() + ", node=" + node.id() + ", remain=[" + buf + "]";
+        return "finished=" + isDone() + ", failed=" + isFailed() + ", cancelled=" + isCancelled() + ", node=" +
+            node.id() + ", remain=[" + buf + "]";
     }
 
-    private long reinitPartition(int grpId, int partId, File src) throws IgniteCheckedException {
-        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
+    public void onPartitionSnapshotReceived(int grpId, int partId) {
+        AtomicInteger receivedCntr = received.get(grpId);
 
-        try {
-            File dest = new File(pageStore.getFileAbsolutePath());
+        int receivedCnt = receivedCntr.incrementAndGet();
 
-            if (log.isDebugEnabled()) {
-                log.debug("Moving downloaded partition file [from=" + src +
-                    " , to=" + dest + " , size=" + src.length() + "]");
-            }
+        Set<Integer> parts = remaining.get(grpId);
 
-            assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
-                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
+        if (receivedCnt != parts.size())
+            return;
 
-            // todo change to "move" when all issues with page memory will be resolved.
-            Files.copy(src.toPath(), dest.toPath());
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to move file [source=" + src +
-                ", target=" + pageStore.getFileAbsolutePath() + "]", e);
-        }
+        cctx.filePreloader().switchPartitions(grpId, parts, this)
+            .listen(fut -> {
+                try {
+                    Map<Integer, Long> cntrs = fut.get();
 
-        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+                    assert cntrs != null;
 
-        // todo seems we don't need to store this value - just use initial update counter for historical rebalance (lwm in future).
-        return part.dataStore().store(false).reinit();
-    }
+                    cctx.kernalContext().closure().runLocalSafe(() -> onCacheGroupDone(grpId, cntrs));
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Unable to restore partition snapshot [cache=" +
+                        cctx.cache().cacheGroup(grpId) + ", p=" + partId, e);
 
-    public void onPartitionSnapshotReceived(File file, int grpId, int partId) throws IgniteCheckedException {
-        long initialCntr = reinitPartition(grpId, partId, file);
-
-        // todo check lwm counter, just use counter
-        Map<Integer, Long> parts = reinitialized.get(grpId);
-
-        parts.put(partId, initialCntr);
-
-        if (parts.size() == remaining.get(grpId).size())
-            cctx.filePreloader()
-                .switchPartitions(grpId, parts, this)
-                .listen(f -> {
-                    try {
-                        Map<Integer, T2<Long, Long>> cntrs = f.get();
-
-                        assert cntrs != null;
-
-                        cctx.kernalContext().closure().runLocalSafe(() -> {
-                            for (Map.Entry<Integer, T2<Long, Long>> entry : cntrs.entrySet())
-                                onPartitionRestored(grpId, entry.getKey(), entry.getValue().get1(), entry.getValue().get2());
-                        });
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Unable to restore partition snapshot [cache=" +
-                            cctx.cache().cacheGroup(grpId) + ", p=" + partId, e);
-
-                        onDone(e);
-                    }
-                });
-    }
-
-    private static class PartCounters implements Comparable {
-        /** Partition id. */
-        final int partId;
-
-        /** From counter. */
-        final long fromCntr;
-
-        /** To counter. */
-        final long toCntr;
-
-        public PartCounters(int partId, long fromCntr, long toCntr) {
-            this.partId = partId;
-            this.fromCntr = fromCntr;
-            this.toCntr = toCntr;
-        }
-
-        @Override public int compareTo(@NotNull Object o) {
-            PartCounters otherDesc = (PartCounters)o;
-
-            if (partId > otherDesc.partId)
-                return 1;
-
-            if (partId < otherDesc.partId)
-                return -1;
-
-            return 0;
-        }
+                    onDone(e);
+                }
+            });
     }
 }
-

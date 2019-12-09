@@ -130,8 +130,8 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long reinit() {
-        return activeStorage().reinit();
+    @Override public void reinit() {
+        activeStorage().reinit();
     }
 
     /** {@inheritDoc} */

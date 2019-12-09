@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,13 +33,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -46,7 +48,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -298,12 +299,14 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
 
                 // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
-                try {
-                    U.sleep(1_000);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    e.printStackTrace();
-                }
+//                try {
+//                    U.sleep(1_000);
+//                }
+//                catch (IgniteInterruptedCheckedException e) {
+//                    log.warning("Thread was interrupred,", e);
+//
+//                    Thread.currentThread().interrupt();
+//                }
 
                 cctx.kernalContext().getSystemExecutorService().submit(task);
 
@@ -356,15 +359,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Switch all rebalanced partitions to read-only mode and start evicting.
+     *
      */
     public void clearPartitions() {
-        if (isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Cancelling clear and invalidation");
-
+        if (isDone())
             return;
-        }
 
         cancelLock.lock();
 
@@ -381,7 +380,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 if (log.isDebugEnabled())
                     log.debug("Cleaning up region " + region);
 
-                // todo no need to reserve partition, since whole group is MOVING
+                // Eviction of partition  should be prevented while cleanup is in progress.
                 reservePartitions(parts);
 
                 memEx.clearAsync(
@@ -465,20 +464,20 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      * @throws IgniteCheckedException If the cleanup failed.
      */
     private void awaitCleanupIfNeeded(int grpId) throws IgniteCheckedException {
-        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-        IgniteInternalFuture fut = regions.get(grp.dataRegion().config().getName());
-
-        if (fut.isCancelled()) {
-            log.info("The cleaning task has been canceled.");
-
-            return;
-        }
-
-        if (!fut.isDone() && log.isDebugEnabled())
-            log.debug("Wait cleanup [grp=" + grp + "]");
-
         try {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            IgniteInternalFuture fut = regions.get(grp.dataRegion().config().getName());
+
+            if (fut.isCancelled()) {
+                log.info("The cleaning task has been canceled.");
+
+                return;
+            }
+
+            if (!fut.isDone() && log.isDebugEnabled())
+                log.debug("Wait cleanup [grp=" + grp + "]");
+
             fut.get();
         } catch (IgniteFutureCancelledCheckedException ignore) {
             // No-op.
@@ -506,13 +505,35 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             if (fut.isDone())
                 return;
 
-            fut.onPartitionSnapshotReceived(file, grpId, partId);
+            reinitPartition(grpId, partId, file);
+
+            fut.onPartitionSnapshotReceived(grpId, partId);
         }
-        catch (IgniteCheckedException e) {
+        catch (IOException | IgniteCheckedException e) {
             log.error("Unable to handle partition snapshot", e);
 
             fut.onDone(e);
         }
+    }
+
+    private void reinitPartition(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
+        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
+
+        File dest = new File(pageStore.getFileAbsolutePath());
+
+        if (log.isDebugEnabled()) {
+            log.debug("Moving downloaded partition file [from=" + src +
+                " , to=" + dest + " , size=" + src.length() + "]");
+        }
+
+        assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
+            cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
+
+        Files.move(src.toPath(), dest.toPath());
+
+        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+
+        part.dataStore().store(false).reinit();
     }
 
     // todo

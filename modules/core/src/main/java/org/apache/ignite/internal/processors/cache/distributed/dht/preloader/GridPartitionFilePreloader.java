@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,8 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -654,127 +650,21 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return true;
     }
 
-    /**
-     * todo this method should be moved into GridDhtLocalPartition and implemented similar to destroy partition
-     *                                             DhtLocalPartition.restore()
-     *                                               /                   /
-     *                                              /      (1) dataStore.reinit()
-     *                                             /
-     *                             (2) schedulePartition destroy
-     *                                           /
-     *                                    return future (cancel can be implemented similar to destroy)
-     *
-     *  todo  this seems to be the responsibility of the snapshot manager to restore the cache group.
-     *
-     * Restore partition on new file. Partition should be completely destroyed before restore it with new file.
-     *
-     * @param grpId Group id.
-     * @param partId Partition number.
-     * @param src New partition file on the same filesystem.
-     * @param fut
-     * @return Future that will be completed when partition will be fully re-initialized. The future result is the HWM
-     * value of update counter in read-only partition.
-     * @throws IgniteCheckedException If file store for specified partition doesn't exists or partition file cannot be
-     * moved.
-     */
-    public IgniteInternalFuture<T2<Long, Long>> restorePartition(int grpId, int partId, File src,
-        FileRebalanceNodeRoutine fut) throws IgniteCheckedException {
-        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
-
-        try {
-            File dest = new File(pageStore.getFileAbsolutePath());
-
-            if (log.isDebugEnabled()) {
-                log.debug("Moving downloaded partition file [from=" + src +
-                    " , to=" + dest + " , size=" + src.length() + "]");
-            }
-
-            assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
-                cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
-
-            // todo change to "move" when all issues with page memory will be resolved.
-            Files.copy(src.toPath(), dest.toPath());
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Unable to move file [source=" + src +
-                ", target=" + pageStore.getFileAbsolutePath() + "]", e);
-        }
-
-        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
-
-        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-        // Save start counter of restored partition.
-        long minCntr = part.dataStore().store(false).reinit();
-
-        GridFutureAdapter<T2<Long, Long>> endFut = new GridFutureAdapter<>();
-
-        if (log.isTraceEnabled()) {
-            log.info("Schedule partition switch to FULL mode [grp=" + grp.cacheOrGroupName() +
-                ", p=" + part.id() + ", cntr=" + minCntr + ", queued=" + cpLsnr.queue.size() + "]");
-        }
-
-        cpLsnr.schedule(() -> {
-            if (fut.isDone())
-                return;
-
-            assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
-
-            // Save current counter.
-            PartitionUpdateCounter readCntr = part.dataStore().store(true).partUpdateCounter();
-
-            // Save current update counter.
-            PartitionUpdateCounter snapshotCntr = part.dataStore().store(false).partUpdateCounter();
-
-            part.readOnly(false);
-
-            // Clear all on-heap entries.
-            // todo something smarter and check large partition
-            if (grp.sharedGroup()) {
-                for (GridCacheContext ctx : grp.caches())
-                    part.entriesMap(ctx).map.clear();
-            }
-            else
-                part.entriesMap(null).map.clear();
-
-            assert readCntr != snapshotCntr && snapshotCntr != null && readCntr != null : "grp=" +
-                grp.cacheOrGroupName() + ", p=" + partId + ", readCntr=" + readCntr + ", snapCntr=" + snapshotCntr;
-
-            AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
-
-            IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
-
-            // Operations that are in progress now will be lost and should be included in historical rebalancing.
-            // These operations can update the old update counter or the new update counter, so the maximum applied
-            // counter is used after all updates are completed.
-            partReleaseFut.listen(c ->
-                endFut.onDone(
-                    new T2<>(minCntr, Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter()))
-                )
-            );
-        });
-
-        return endFut;
-    }
-
-    public IgniteInternalFuture<Map<Integer, T2<Long, Long>>> switchPartitions(int grpId, Map<Integer, Long> parts, IgniteInternalFuture fut) {
+    public IgniteInternalFuture<Map<Integer, Long>> switchPartitions(int grpId, Set<Integer> parts, IgniteInternalFuture fut) {
         final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-        GridFutureAdapter<Map<Integer, T2<Long, Long>>> endFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Map<Integer, Long>> endFut = new GridFutureAdapter<>();
 
         cpLsnr.schedule(() -> {
             if (fut.isDone())
                 return;
 
-            Map<Integer, T2<Long, Long>> resCntrs = new HashMap<>(U.capacity(parts.size()));
+            Map<Integer, Long> resCntrs = new HashMap<>(U.capacity(parts.size()));
 
             Map<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> tempCntrs = new HashMap<>(U.capacity(parts.size()));
 
             // todo should be under cancel lock?
-            for (Map.Entry<Integer, Long> entry : parts.entrySet()) {
-//                long initialCntr = entry.getValue();
-                int partId = entry.getKey();
-
+            for (Integer partId : parts) {
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
                 assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
@@ -816,7 +706,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                         PartitionUpdateCounter readCntr = entry.getValue().get1();
                         PartitionUpdateCounter snapshotCntr = entry.getValue().get2();
 
-                        resCntrs.put(entry.getKey(), new T2<>(parts.get(partId), Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter())));
+                        resCntrs.put(entry.getKey(), Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter()));
                     }
 
                     endFut.onDone(resCntrs);
@@ -914,18 +804,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void onException(UUID rmtNodeId, Throwable t) {
-//            if (t instanceof CancelledSna) {
-//                if (log.isDebugEnabled())
-//                    log.debug("Snapshot canceled (topology changed): " + snpName);
-//
-////                fileRebalanceFut.cancel();
-//
-//                return;
-//            }
-
             log.error("Unable to create remote snapshot: " + t.getMessage(), t);
-
-//            fileRebalanceFut.onDone(t);
         }
     }
 }

@@ -97,7 +97,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     }
 
     /** {@inheritDoc} */
-    @Override public long reinit() {
+    @Override public void reinit() {
         PartitionUpdateCounter readCntr;
 
         if (grp.mvccEnabled())
@@ -113,8 +113,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
             readCntr.init(cntr0.get(), cntr0.getBytes());
 
         cntr = readCntr;
-
-        return readCntr.get();
     }
 
     /** {@inheritDoc} */

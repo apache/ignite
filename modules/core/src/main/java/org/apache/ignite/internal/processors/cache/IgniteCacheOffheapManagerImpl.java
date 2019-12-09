@@ -1528,7 +1528,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public long reinit() {
+        @Override public void reinit() {
             throw new IllegalStateException("Re-initialization of non-persisted partition is redundant.");
         }
 
