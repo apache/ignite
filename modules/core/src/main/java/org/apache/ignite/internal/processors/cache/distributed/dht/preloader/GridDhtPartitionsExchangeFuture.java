@@ -1567,7 +1567,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ", time=" + U.nanosToMillis(end - start) + "ms]");
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException | IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
         }
     }
