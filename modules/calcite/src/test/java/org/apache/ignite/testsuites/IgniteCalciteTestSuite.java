@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.exchange.OutboxTest;
+import org.apache.ignite.internal.processors.query.calcite.index.CalciteSecondaryIndexTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,5 +30,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     CalciteQueryProcessorTest.class,
     OutboxTest.class,
+    CalciteSecondaryIndexTest.class,
 })
 public class IgniteCalciteTestSuite { }

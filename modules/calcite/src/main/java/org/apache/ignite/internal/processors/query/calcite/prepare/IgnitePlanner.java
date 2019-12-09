@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -29,6 +31,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
+import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptSchema;
@@ -73,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
@@ -129,7 +133,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         Commons.plannerContext(context).planner(this);
     }
 
-    private CalciteConnectionConfig connConfig() {
+    public CalciteConnectionConfig connConfig() {
         CalciteConnectionConfig unwrapped = context.unwrap(CalciteConnectionConfig.class);
         if (unwrapped != null)
             return unwrapped;
@@ -176,6 +180,47 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             open = true;
         }
+    }
+
+    private List<RelOptMaterialization> materializations() {
+        List<RelOptMaterialization> res = new ArrayList<>();
+        try {
+            for (String tableName : defaultSchema.getTableNames()) {
+                IgniteTable tbl = (IgniteTable)defaultSchema.getTable(tableName);
+                for (IgniteTable idx : tbl.indexes().values()) {
+
+                    SqlNode sql = parse(idx.sql());
+
+                    sql = validate(sql);
+
+                    CalciteCatalogReader catalogReader = createCatalogReader();
+
+                    RexBuilder rexBuilder = createRexBuilder();
+                    RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
+                    SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
+                        .withConfig(sqlToRelConverterConfig)
+                        .withTrimUnusedFields(false)
+                        .withConvertTableAccess(false)
+                        .build();
+                    SqlToRelConverter sqlToRelConverter =
+                        new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
+
+                    RelNode rel = sqlToRelConverter.convertQuery(sql, false, true).rel;
+
+                    RelOptTable tbl0 = catalogReader.getTable(Arrays.asList(defaultSchema.getName(), idx.name()));
+
+                    RelNode idxTbl = sqlToRelConverter.toRel(tbl0);
+                    res.add(new RelOptMaterialization(idxTbl, rel, null, Arrays.asList(defaultSchema.getName(), idx.name())));
+
+                }
+
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace(); // TODO implement.
+            throw  new RuntimeException(e);
+        }
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -334,7 +379,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 Program program = Programs.of(rules);
 
                 output = program.run(planner, input, toTraits,
-                    ImmutableList.of(), ImmutableList.of());
+                    materializations(), ImmutableList.of());
 
                 break;
             default:

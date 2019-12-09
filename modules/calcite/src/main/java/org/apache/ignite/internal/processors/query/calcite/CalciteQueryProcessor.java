@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.BiFunction;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -126,10 +129,14 @@ public class CalciteQueryProcessor implements QueryEngine {
 
     /** */
     public IgnitePlanner planner(RelTraitDef[] traitDefs, PlannerContext ctx0) {
+        Context ctx = Contexts.of(new CalciteConnectionConfigImpl(new Properties())
+            .set(CalciteConnectionProperty.CASE_SENSITIVE, String.valueOf(false))
+            .set(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED, String.valueOf(true)));
+
         FrameworkConfig cfg = Frameworks.newConfigBuilder(config())
                 .defaultSchema(ctx0.schema())
                 .traitDefs(traitDefs)
-                .context(ctx0)
+                .context(Contexts.chain(ctx0, ctx))
                 .build();
 
         return new IgnitePlanner(cfg);
@@ -152,7 +159,7 @@ public class CalciteQueryProcessor implements QueryEngine {
             .queryProcessor(this)
             .parentContext(parent)
             .query(query)
-            .schema(schemaHolder.schema())
+            .schema(schemaHolder.rootSchema().getSubSchema("PUBLIC")) // TODO
             .topologyVersion(readyAffinityVersion())
             .distributionService(new TableDistributionServiceImpl(kernalContext))
             .mappingService(new MappingServiceImpl(kernalContext))

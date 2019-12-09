@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.HashMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -37,21 +39,38 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class IgniteTable extends AbstractTable implements TranslatableTable {
-    private final String tableName;
+    private final String name;
     private final String cacheName;
     private final RowType rowType;
+    private final RelCollation collation;
+    private final HashMap<String, IgniteTable> indexes = new HashMap<>(4);
+    private final String sql;
 
-    public IgniteTable(String tableName, String cacheName, RowType rowType) {
-        this.tableName = tableName;
+    public IgniteTable(String name, String cacheName, RowType rowType, RelCollation collation, String sql) {
+        this.name = name;
         this.cacheName = cacheName;
         this.rowType = rowType;
+        this.collation = collation;
+        this.sql = sql;
+    }
+
+    public void addIndex(IgniteTable idx) {
+        indexes.put(idx.name(), idx);
+    }
+
+    public String sql() {
+        return sql;
+    }
+
+    public HashMap<String, IgniteTable> indexes() {
+        return indexes;
     }
 
     /**
      * @return Table name;
      */
-    public String tableName() {
-        return tableName;
+    public String name() {
+        return name;
     }
 
     /**
@@ -66,12 +85,17 @@ public class IgniteTable extends AbstractTable implements TranslatableTable {
         return rowType.asRelDataType(typeFactory);
     }
 
+    public RowType igniteRowType() {
+        return rowType;
+    }
+
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
         PlannerContext ctx = Commons.plannerContext(cluster.getPlanner().getContext());
         RelTraitSet traitSet = cluster.traitSet().replace(IgniteRel.IGNITE_CONVENTION)
-                .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(ctx));
+            .replaceIf(DistributionTraitDef.INSTANCE, () -> distributionTrait(ctx))
+            .replace(collation);
         return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 

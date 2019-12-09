@@ -172,6 +172,6 @@ public final class Commons {
     }
 
     public static PlannerContext plannerContext(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlannerContext.class));
+        return ctx.unwrap(PlannerContext.class);
     }
 }

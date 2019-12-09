@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.rule.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
@@ -83,36 +82,36 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        publicSchema.addTable(new IgniteTable("Developer", "Developer",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
-                .field("name", String.class)
-                .field("projectId", Integer.class)
-                .field("cityId", Integer.class)
-                .build()));
-
-        publicSchema.addTable(new IgniteTable("Project", "Project",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
-                .field("name", String.class)
-                .field("ver", Integer.class)
-                .build()));
-
-
-
-        publicSchema.addTable(new IgniteTable("Country", "Country",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
-                .field("name", String.class)
-                .field("countryCode", Integer.class)
-                .build()));
-
-        publicSchema.addTable(new IgniteTable("City", "City",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
-                .field("name", String.class)
-                .field("countryId", Integer.class)
-                .build()));
+//        publicSchema.addTable(new IgniteTable("Developer", "Developer",
+//            RowType.builder()
+//                .keyField("id", Integer.class, true)
+//                .field("name", String.class)
+//                .field("projectId", Integer.class)
+//                .field("cityId", Integer.class)
+//                .build()));
+//
+//        publicSchema.addTable(new IgniteTable("Project", "Project",
+//            RowType.builder()
+//                .keyField("id", Integer.class, true)
+//                .field("name", String.class)
+//                .field("ver", Integer.class)
+//                .build()));
+//
+//
+//
+//        publicSchema.addTable(new IgniteTable("Country", "Country",
+//            RowType.builder()
+//                .keyField("id", Integer.class, true)
+//                .field("name", String.class)
+//                .field("countryCode", Integer.class)
+//                .build()));
+//
+//        publicSchema.addTable(new IgniteTable("City", "City",
+//            RowType.builder()
+//                .keyField("id", Integer.class, true)
+//                .field("name", String.class)
+//                .field("countryId", Integer.class)
+//                .build()));
 
         schema = Frameworks
             .createRootSchema(false)

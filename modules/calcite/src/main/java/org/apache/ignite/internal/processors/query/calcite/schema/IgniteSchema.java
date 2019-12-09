@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 
 /**
  *
@@ -34,7 +35,9 @@ public class IgniteSchema extends AbstractSchema {
     private final String schemaName;
 
     /** */
-    private final Map<String, Table> tableMap = new ConcurrentHashMap<>();
+    private final Map<String, IgniteTable> tableMap = new ConcurrentHashMap<>();
+
+    private final Map<String, IgniteTable> indexMap = new ConcurrentHashMap<>();
 
     public IgniteSchema(String schemaName) {
         this.schemaName = schemaName;
@@ -45,7 +48,10 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     @Override protected Map<String, Table> getTableMap() {
-        return Collections.unmodifiableMap(tableMap);
+        Map<String, IgniteTable> union = new HashMap<>(tableMap.size() + indexMap.size());
+        union.putAll(tableMap);
+        union.putAll(indexMap);
+        return Collections.unmodifiableMap(union);
     }
 
     /**
@@ -54,31 +60,27 @@ public class IgniteSchema extends AbstractSchema {
      * @param typeDesc Query type descriptor.
      * @param cacheInfo Cache info.
      */
-    public void onSqlTypeCreate(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo cacheInfo) {
-        addTable(new IgniteTable(typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc)));
+    public void createTable(String cacheName, String tblName, RowType rowType, RelCollation collation) {
+        IgniteTable table = new IgniteTable(tblName, cacheName, rowType, collation, null);
+        tableMap.put(table.name(), table);
+    }
+
+    public void createIndex(String idxName, String cacheName, String tblName, RowType rowType, RelCollation collation,
+        String indexViewSql) {
+        IgniteTable index = new IgniteTable(idxName, cacheName, rowType, collation, indexViewSql);
+        IgniteTable table = tableMap.get(tblName);
+        table.addIndex(index);
+
+        IgniteTable old = indexMap.put(idxName, index);
+        assert old == null; // TODO salt index names
     }
 
     /**
      * Callback method.
      *
      * @param typeDesc Query type descriptor.
-     * @param cacheInfo Cache info.
      */
-    public void onSqlTypeDrop(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo cacheInfo) {
-        removeTable(typeDesc.tableName());
-    }
-
-    /**
-     * @param table Table.
-     */
-    public void addTable(IgniteTable table) {
-        tableMap.put(table.tableName(), table);
-    }
-
-    /**
-     * @param tableName Table name.
-     */
-    public void removeTable(String tableName) {
-        tableMap.remove(tableName);
+    public void dropTable(GridQueryTypeDescriptor typeDesc) {
+        tableMap.remove(typeDesc.tableName()); // TODO drop indexes
     }
 }
