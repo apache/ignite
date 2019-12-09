@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.kms;
+package org.apache.ignite.spi.encryption;
 
 import com.amazonaws.encryptionsdk.MasterKeyProvider;
 import com.amazonaws.encryptionsdk.exception.NoSuchMasterKeyException;
@@ -27,7 +27,6 @@ import java.util.Arrays;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -36,7 +35,7 @@ import static com.amazonaws.encryptionsdk.jce.JceMasterKey.getInstance;
 import static com.amazonaws.encryptionsdk.multi.MultipleProviderFactory.buildMultiProvider;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.spi.encryption.kms.AmazonEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.spi.encryption.AmazonEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

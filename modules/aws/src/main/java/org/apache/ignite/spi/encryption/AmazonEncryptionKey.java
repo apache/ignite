@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.encryption.kms;
+package org.apache.ignite.spi.encryption;
 
 import com.amazonaws.encryptionsdk.DataKey;
 import com.amazonaws.encryptionsdk.MasterKey;
