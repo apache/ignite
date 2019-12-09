@@ -2302,6 +2302,9 @@ public final class GridTestUtils {
             try {
                 runx();
             }
+            catch (RuntimeException e) {
+                throw e;
+            }
             catch (Exception e) {
                 throw new IgniteException(e);
             }
@@ -2324,6 +2327,9 @@ public final class GridTestUtils {
         @Override default void run() {
             try {
                 runx();
+            }
+            catch (RuntimeException e) {
+                throw e;
             }
             catch (Exception e) {
                 throw new IgniteException(e);

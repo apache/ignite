@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,9 +33,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
@@ -60,6 +64,9 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String ORG_SQL = "select * from Organization";
+
+    /** */
+    static final String UPDATE_SQL = "UPDATE Person SET name=lower(?) ";
 
     /** */
     private static final String ORG = "org";
@@ -196,7 +203,7 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
 
                         aState.getAndSet(stateVal);
                     }
-                    else 
+                    else
                         startedExecutor.onMessage(nodeId, msg);
                 }
             }.insertRealExecutor(mapQryExec));
@@ -316,6 +323,86 @@ public class RetryCauseMessageSelfTest extends GridCommonAbstractTest {
             GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
         }
         fail();
+    }
+
+    /**
+     * Test query remap failure reason.
+     */
+    public void testQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+
+        final AtomicLong qryIdGen = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "qryIdGen");
+        final GridSpinBusyLock busyLock = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "busyLock");
+
+        final GridReduceQueryExecutor newRdcQryExec = new GridReduceQueryExecutor(qryIdGen, busyLock) {
+            @Override public NodesForPartitionsResult nodesForPartitions(List<Integer> cacheIds,
+                AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                final NodesForPartitionsResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+
+                return new NodesForPartitionsResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+            }
+        };
+
+        GridTestUtils.setFieldValue(newRdcQryExec, GridReduceQueryExecutor.class, "h2", h2Idx);
+        GridTestUtils.setFieldValue(newRdcQryExec, GridReduceQueryExecutor.class, "ctx",
+            GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx"));
+
+        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec", newRdcQryExec);
+
+
+        try {
+            SqlFieldsQuery qry = new SqlFieldsQuery(JOIN_SQL).setArgs("Organization #0");
+
+            final Throwable throwable = GridTestUtils.assertThrows(log, () -> personCache.query(qry).getAll(),
+                CacheException.class, "Failed to map SQL query to topology during timeout:");
+
+            throwable.printStackTrace();
+        }
+        finally {
+            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec", rdcQryExec);
+        }
+    }
+
+    /**
+     * Test update query remap failure reason.
+     */
+    public void testUpdateQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+
+        final AtomicLong qryIdGen = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "qryIdGen");
+        final GridSpinBusyLock busyLock = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "busyLock");
+
+        final GridReduceQueryExecutor newRdcQryExec = new GridReduceQueryExecutor(qryIdGen, busyLock) {
+            @Override public NodesForPartitionsResult nodesForPartitions(List<Integer> cacheIds,
+                AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                final NodesForPartitionsResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+
+                return new NodesForPartitionsResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+            }
+        };
+
+        GridTestUtils.setFieldValue(newRdcQryExec, GridReduceQueryExecutor.class, "h2", h2Idx);
+        GridTestUtils.setFieldValue(newRdcQryExec, GridReduceQueryExecutor.class, "ctx",
+            GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx"));
+
+        GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec", newRdcQryExec);
+
+        try {
+            final SqlFieldsQueryEx qry = new SqlFieldsQueryEx(UPDATE_SQL, false)
+                .setArgs("New Name");
+
+            GridTestUtils.assertThrows(log, () -> personCache.query(qry).getAll(),
+                CacheException.class, "Failed to map SQL query to topology during timeout");
+
+            qry.setArgs("Another Name");
+            qry.setSkipReducerOnUpdate(true);
+
+            GridTestUtils.assertThrows(log, () -> personCache.query(qry).getAll(),
+                CacheException.class, "Failed to determine nodes participating in the update. ");
+        }
+        finally {
+            GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec", rdcQryExec);
+        }
     }
 
     /** {@inheritDoc} */
