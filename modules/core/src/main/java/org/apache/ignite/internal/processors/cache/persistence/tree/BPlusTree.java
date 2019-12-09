@@ -1834,15 +1834,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param hnd Page handler.
      * @throws IgniteCheckedException If failed.
      */
-    public void visitLeaves(TreeRowClosure<L, T> rowClo, VisitorPageHandler hnd)
-        throws IgniteCheckedException {
+    public void visitLeaves(TreeRowClosure<L, T> rowClo, VisitorPageHandler hnd) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
             new LeafVisitor(rowClo, hnd).visit();
         }
-        catch (Throwable t) {
-            throw new IgniteCheckedException(t);
+        catch (RuntimeException | AssertionError e) {
+            throw corruptedTreeException("Runtime failure ", e, grpId);
+        }
+        finally {
+            checkDestroyed();
         }
     }
 
@@ -5469,7 +5471,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lower New exact lower bound.
          */
-        private void updateLowerBound(L lower) {
+        protected void updateLowerBound(L lower) {
             if (lower != null) {
                 lowerShift = 1; // Now we have the full row an need to avoid duplicates.
                 lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
@@ -5765,40 +5767,63 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * Visitor of the leaf pages of the tree.
+     * Accepts a row filter and writing page handler.
      */
-    private class LeafVisitor {
-        /** Current page id. */
-        private long curPageId = 0L;
-
-        /** Forward page id. */
-        private long fwdPageId = 0L;
-
-        /** Last row to get back to if current page turns out removed. */
-        private L lastRow = null;
-
+    private final class LeafVisitor extends AbstractForwardCursor {
         /** Row filter. */
-        TreeRowClosure<L, T> clo;
+        private final TreeRowClosure<L, T> clo;
 
         /** Write page handler. */
-        VisitorPageHandler hnd;
+        private VisitorPageHandler hnd;
+
+        /** Last row to get back to if current page turns out removed. */
+        private L lastRow;
 
         /**
          * @param clo row closure.
          * @param hnd Write page handler.
          */
-        LeafVisitor(TreeRowClosure<L, T> clo, VisitorPageHandler hnd) throws IgniteCheckedException {
+        LeafVisitor(TreeRowClosure<L, T> clo, VisitorPageHandler hnd) {
+            super(null, null);
+
+            assert clo != null;
+            assert hnd != null;
+
             this.clo = clo;
             this.hnd = hnd;
+        }
 
-            checkDestroyed();
+        /** {@inheritDoc} */
+        @Override void init0() {
+            // No-op.
+        }
 
-            long metaPage = acquirePage(metaPageId);
-            try {
-                curPageId = getFirstPageId(metaPageId, metaPage, 0);
+        /** {@inheritDoc} */
+        @Override boolean reinitialize0() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onNotFound(boolean readDone) {
+            if (readDone)
+                nextPageId = 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
+            throws IgniteCheckedException {
+            for (int i = Math.max(startIdx, 0); i < cnt; i++) {
+                if (clo.apply(BPlusTree.this, io, pageAddr, i)) {
+                    nextPageId = PageIO.getPageId(pageAddr);
+
+                    return true;
+                }
             }
-            finally {
-                releasePage(metaPageId, metaPage);
-            }
+
+            if (nextPageId != 0)
+                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
+
+            return false;
         }
 
         /**
@@ -5806,153 +5831,47 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          *
          * @throws IgniteCheckedException If failed.
          */
-        public void visit() throws IgniteCheckedException {
-            while (next()) {
-                hnd.onBefore();
+        private void visit() throws IgniteCheckedException {
+            lastRow = findFirst();
 
-                try {
-                    checkDestroyed();
+            if (lastRow == null)
+                return;
 
-                    assert lastRow != null;
+            lowerBound = lastRow;
 
-                    L row = write(curPageId, hnd, null, 0, lastRow, statisticsHolder());
+            find();
 
-                    if (row != null) {
-                        curPageId = 0L;
+            while (nextPageId != 0) {
+                if (nextPage(lastRow)) {
+                    lastRow = doVisit(nextPageId);
 
-                        lastRow = row;
+                    if (lastRow != null) {
+                        updateLowerBound(lastRow);
+
+                        find();
                     }
-                }
-                finally {
-                    hnd.onAfter();
                 }
             }
         }
 
         /**
-         * Continues scanning the leaf pages of the tree.
+         * Calls page handler to do modifications on the filtered page.
          *
-         * @return {@code true} if there is a row(s) to remove.
+         * @param curPageId Page ID.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean next() throws IgniteCheckedException {
-            checkDestroyed();
+        private L doVisit(long curPageId) throws IgniteCheckedException {
+            hnd.onBefore();
 
-            for (;;) {
-                if (curPageId == 0L && lastRow == null)
-                    return false;
+            try {
+                checkDestroyed();
 
-                // Re-position
-                if (curPageId == 0L) {
-                    Get g = new Get(lastRow, false) {};
+                assert lastRow != null;
 
-                    doFind(g);
-
-                    curPageId = g.pageId;
-                    fwdPageId = g.fwdId;
-                }
-
-                long pageId = curPageId;
-
-                long page = acquirePage(pageId);
-                try {
-                    long pageAddr = readLock(pageId, page);
-
-                    if (pageAddr == 0L) { // this page is deleted. Find from root using lastRow.
-                        curPageId = 0L;
-
-                        continue;
-                    }
-
-                    try {
-                        BPlusIO<L> io = io(pageAddr);
-
-                        if (fwdPageId != 0L && fwdPageId != io.getForward(pageAddr)) {
-                            curPageId = 0L;
-
-                            continue;
-                        }
-
-                        for (;;) {
-                            io = io(pageAddr);
-
-                            assert io.isLeaf();
-
-                            long nextPageId = io.getForward(pageAddr);
-
-                            int cnt = io.getCount(pageAddr);
-
-                            if (cnt == 0) {
-                                assert nextPageId == 0L;
-
-                                curPageId = 0L;
-                                lastRow = null; // Stop.
-
-                                return false;
-                            }
-
-                            for (int idx = 0; idx < cnt; idx++) {
-                                if (clo.apply(BPlusTree.this, io, pageAddr, idx)) {
-                                    lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
-
-                                    curPageId = pageId;
-                                    fwdPageId = nextPageId;
-
-                                    return true;
-                                }
-                            }
-
-                            lastRow = null;
-
-                            if (nextPageId == 0L) {
-                                curPageId = 0L; // Stop.
-
-                                return false;
-                            }
-
-                            long nextPage = acquirePage(nextPageId);
-                            try {
-                                long nextPageAddr = readLock(nextPageId, nextPage);
-
-                                assert nextPageAddr != 0L : "next page removed while back page is being locked";
-
-                                try {
-                                    long pa = pageAddr;
-                                    pageAddr = 0L;
-                                    readUnlock(pageId, page, pa);
-
-                                    long p = page;
-                                    page = 0L;
-                                    releasePage(pageId, p);
-
-                                    pageId = nextPageId;
-                                    page = nextPage;
-                                    pageAddr = nextPageAddr;
-
-                                    nextPageId = 0L;
-                                    nextPageAddr = 0L;
-                                    nextPage = 0L;
-                                }
-                                finally {
-                                    if (nextPageAddr != 0L)
-                                        readUnlock(nextPageId, nextPage, nextPageAddr);
-                                }
-                            }
-                            finally {
-                                if (nextPage != 0L)
-                                    releasePage(nextPageId, nextPage);
-                            }
-                        }
-                    }
-                    finally {
-                        if (pageAddr != 0L)
-                            readUnlock(pageId, page, pageAddr);
-                    }
-                }
-                finally {
-                    if (page != 0L)
-                        releasePage(pageId, page);
-                }
+                return write(curPageId, hnd, null, 0, lastRow, statisticsHolder());
+            }
+            finally {
+                hnd.onAfter();
             }
         }
     }
