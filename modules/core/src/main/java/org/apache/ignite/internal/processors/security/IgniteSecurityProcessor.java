@@ -26,6 +26,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -42,6 +45,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -65,6 +70,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
+
+    /** Instance of IgniteSandbox. */
+    private IgniteSandbox sandbox;
 
     /**
      * @param ctx Grid kernal context.
@@ -152,6 +160,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteSandbox sandbox() {
+        return sandbox;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean enabled() {
         return true;
     }
@@ -161,6 +174,18 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
         secPrc.start();
+
+        if (hasSecurityManager() && secPrc.sandboxEnabled())
+            sandbox = new AccessControllerSandbox(this);
+        else {
+            if (secPrc.sandboxEnabled()) {
+                ctx.log(getClass()).warning("GridSecurityProcessor#sandboxEnabled returns true, " +
+                    "but system SecurityManager is not defined, " +
+                    "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
+            }
+
+            sandbox = new NoOpSandbox();
+        }
     }
 
     /** {@inheritDoc} */
