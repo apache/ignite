@@ -36,7 +36,7 @@ import static com.amazonaws.encryptionsdk.jce.JceMasterKey.getInstance;
 import static com.amazonaws.encryptionsdk.multi.MultipleProviderFactory.buildMultiProvider;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
-import static org.apache.ignite.spi.encryption.kms.KmsEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.spi.encryption.kms.AmazonEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,15 +44,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests {@link KmsEncryptionSpi}.
+ * Tests {@link AmazonEncryptionSpi}.
  */
 @SuppressWarnings("ThrowableNotThrown")
-public class KmsEncryptionSpiSelfTest {
+public class AmazonEncryptionSpiSelfTest {
     /** */
     @Test
     public void testCantStartWithEmptyParam() {
         assertThrowsWithCause(() -> {
-            EncryptionSpi encSpi = new KmsEncryptionSpi<>();
+            EncryptionSpi encSpi = new AmazonEncryptionSpi<>();
 
             encSpi.spiStart("default");
         }, IgniteException.class);
@@ -62,7 +62,7 @@ public class KmsEncryptionSpiSelfTest {
     @Test
     public void testCantLoadMasterKeyDoesntExist() {
         assertThrowsWithCause(() -> {
-            KmsEncryptionSpi<JceMasterKey> encSpi = spi();
+            AmazonEncryptionSpi<JceMasterKey> encSpi = spi();
 
             encSpi.setMasterKeyName("Unknown key name");
 
@@ -138,9 +138,9 @@ public class KmsEncryptionSpiSelfTest {
         assertEquals(k, k2);
     }
 
-    /** @return Instance of {@link KmsEncryptionSpi} with {@link JceMasterKey} master key provider. */
-    @NotNull private KmsEncryptionSpi<JceMasterKey> spi() throws Exception {
-        KmsEncryptionSpi<JceMasterKey> encSpi = new KmsEncryptionSpi<>();
+    /** @return Instance of {@link AmazonEncryptionSpi} with {@link JceMasterKey} master key provider. */
+    @NotNull private AmazonEncryptionSpi<JceMasterKey> spi() throws Exception {
+        AmazonEncryptionSpi<JceMasterKey> encSpi = new AmazonEncryptionSpi<>();
 
         JceMasterKey key1 = getInstance(retrieveEncryptionKey(),
             "Test provider.", DEFAULT_MASTER_KEY_NAME, "AES/GCM/NoPadding");

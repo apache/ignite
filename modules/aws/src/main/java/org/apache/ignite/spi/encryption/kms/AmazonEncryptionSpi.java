@@ -21,6 +21,7 @@ import com.amazonaws.encryptionsdk.CryptoAlgorithm;
 import com.amazonaws.encryptionsdk.DataKey;
 import com.amazonaws.encryptionsdk.MasterKey;
 import com.amazonaws.encryptionsdk.MasterKeyProvider;
+import com.amazonaws.encryptionsdk.kms.KmsMasterKey;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
@@ -49,14 +50,21 @@ import static javax.crypto.Cipher.DECRYPT_MODE;
 import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 /**
- * {@link EncryptionSpi} implementation based on <a href='https://aws.amazon.com/kms'>AWS Key Management Service</a>.
+ * {@link EncryptionSpi} implementation based on
+ * <a href='https://docs.aws.amazon.com/en_us/encryption-sdk/latest/developer-guide/introduction.html'>AWS Encryption
+ * SDK</a>.
+ * <p>
+ * Master key provider can be configured via {@link #setProvider(MasterKeyProvider)}.
+ * <p>
+ * For example, <a href='https://aws.amazon.com/kms'>AWS Key Management Service</a> can be configured by
+ * {@link KmsMasterKey} provider.
  *
  * @see EncryptionSpi
- * @see KmsEncryptionKey
+ * @see AmazonEncryptionKey
  *
  * @param <M> the concrete type of the {@link MasterKey}
  */
-public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter implements EncryptionSpi {
+public class AmazonEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter implements EncryptionSpi {
     /**
      * Default master key name.
      */
@@ -142,10 +150,10 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public KmsEncryptionKey<M> create() throws IgniteException {
+    @Override public AmazonEncryptionKey<M> create() throws IgniteException {
         DataKey<M> key = masterKey.generateDataKey(CRYPTO_ALGO, encCtx);
 
-        return new KmsEncryptionKey<>(key);
+        return new AmazonEncryptionKey<>(key);
     }
 
     /** {@inheritDoc} */
@@ -160,7 +168,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
 
     /** {@inheritDoc} */
     @Override public byte[] decrypt(byte[] data, Serializable key) {
-        assert key instanceof KmsEncryptionKey;
+        assert key instanceof AmazonEncryptionKey;
 
         ensureStarted();
 
@@ -181,7 +189,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
 
     /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        assert key instanceof KmsEncryptionKey;
+        assert key instanceof AmazonEncryptionKey;
 
         ensureStarted();
 
@@ -206,7 +214,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
 
     /** {@inheritDoc} */
     @Override public byte[] encryptKey(Serializable key) {
-        assert key instanceof KmsEncryptionKey;
+        assert key instanceof AmazonEncryptionKey;
 
         DataKey<?> encKey = masterKey.encryptDataKey(CRYPTO_ALGO, encCtx, (DataKey<?>)key);
 
@@ -226,7 +234,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public KmsEncryptionKey<M> decryptKey(byte[] data) {
+    @Override public AmazonEncryptionKey<M> decryptKey(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
 
         int providerInfoLen = buf.getInt();
@@ -245,7 +253,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
 
         DataKey<M> key = masterKey.decryptDataKey(CRYPTO_ALGO, Collections.singleton(encKey), encCtx);
 
-        return new KmsEncryptionKey<>(key);
+        return new AmazonEncryptionKey<>(key);
     }
 
     /** {@inheritDoc} */
@@ -294,7 +302,7 @@ public class KmsEncryptionSpi<M extends MasterKey<M>> extends IgniteSpiAdapter i
      * @param key Encryption key.
      */
     private void doEncryption(ByteBuffer data, Cipher cipher, Serializable key, ByteBuffer res) {
-        assert key instanceof KmsEncryptionKey;
+        assert key instanceof AmazonEncryptionKey;
 
         ensureStarted();
 

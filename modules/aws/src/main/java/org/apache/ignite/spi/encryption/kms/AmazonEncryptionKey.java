@@ -26,16 +26,16 @@ import java.util.Objects;
 /**
  * Amazon KMS encryption key implementation.
  *
- * @see KmsEncryptionSpi
+ * @see AmazonEncryptionSpi
  */
-public class KmsEncryptionKey<M extends MasterKey<M>> extends DataKey<M> implements Serializable {
+public class AmazonEncryptionKey<M extends MasterKey<M>> extends DataKey<M> implements Serializable {
     /** Serializable version Id. */
     private static final long serialVersionUID = 0L;
 
     /**
      * @param key Encryption data key.
      */
-    public KmsEncryptionKey(DataKey<M> key) {
+    public AmazonEncryptionKey(DataKey<M> key) {
         super(key.getKey(), key.getEncryptedDataKey(), key.getProviderInformation(), key.getMasterKey());
     }
 
@@ -47,7 +47,7 @@ public class KmsEncryptionKey<M extends MasterKey<M>> extends DataKey<M> impleme
         if (o == null || getClass() != o.getClass())
             return false;
 
-        KmsEncryptionKey<M> key = (KmsEncryptionKey<M>)o;
+        AmazonEncryptionKey<M> key = (AmazonEncryptionKey<M>)o;
 
         return Objects.equals(getKey(), key.getKey());
     }
