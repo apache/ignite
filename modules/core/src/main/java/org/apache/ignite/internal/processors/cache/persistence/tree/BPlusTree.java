@@ -5986,73 +5986,29 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert io.isLeaf();
 
-            int write = -1;
-            int read = -1;
-            int idxsCnt = 0;
-
             int cnt = io.getCount(pageAddr);
-
-            assert cnt > 0 : cnt; // Empty leaf is nonsensical.
-
-            boolean dirty = false;
-            boolean del = false;
 
             if (idxs == null || idxs.length < cnt)
                 idxs = new int[cnt];
 
-            for (int idx = 0; idx < cnt; idx++) {
-                del = clo.apply(BPlusTree.this, io, pageAddr, idx);
+            int idxsCnt = 0;
 
-                if (del) {
-                    if (idx != cnt - 1)
-                        idxs[idxsCnt++] = idx;
+            for (int idx = 0; idx < cnt - 1; idx++) {
+                if (!clo.apply(BPlusTree.this, io, pageAddr, idx))
+                    continue;
 
-                    if (write < 0)
-                        write = idx;
-                    else if (read >= 0) {
-                        int nb = idx - read;
-
-                        assert read != write : "write=" + write + ", read=" + read + ", cnt=" + cnt;
-
-                        io.copyItems(pageAddr, pageAddr, read, write, nb, false);
-
-                        write += nb;
-
-                        read = -1;
-
-                        dirty = true;
-                    }
-                }
-                else if (write >=0 && read < 0)
-                    read = idx;
+                idxs[idxsCnt++] = idx;
             }
 
-            if (read < 0)
-                read = cnt - 1;
+            if (clo.apply(BPlusTree.this, io, pageAddr, cnt - 1))
+                removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
 
-            if (write >= 0 && read > write) {
-                int nb = cnt - read;
-
-                io.copyItems(pageAddr, pageAddr, read, write, nb, false);
-
-                write += nb;
-
-                dirty = true;
-            }
-
-            if (dirty) {
-                assert write > 0;
-
-                cnt = write;
-
-                io.setCount(pageAddr, cnt);
+            if (idxsCnt > 0) {
+                io.purge(pageAddr, idxs, idxsCnt);
 
                 if (needWalDeltaRecord(pageId, page, null))
-                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt));
+                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
             }
-
-            // Is the rightmost row eligible for removal?
-            removeRow = del ? io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1) : null;
 
             return removeRow;
         }
