@@ -981,4 +981,22 @@ public class H2Utils {
         return keyCols.toArray(new IndexColumn[0]);
     }
 
+    public static String calciteIndexViewSqlString(GridH2IndexBase idx) {
+        StringBuilder sb = new StringBuilder("SELECT * FROM ");
+        sb.append(idx.getTable().getName());
+//            .append(" ORDER BY ");
+//
+//        for (int i = 0; i < idx.getIndexColumns().length; i++) {
+//            IndexColumn idxCol = idx.getIndexColumns()[i];
+//            if (i != 0)
+//                sb.append(", ");
+//            sb.append(idxCol.getSQL());
+//        }
+
+        String res = sb.toString();
+
+        res = res.replace("_KEY", "'_key'").replace("_VAL", "'_val'"); // TODO do we use case-sensitive sql?
+
+        return res;
+    }
 }

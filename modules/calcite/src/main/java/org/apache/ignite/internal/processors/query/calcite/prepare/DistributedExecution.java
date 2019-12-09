@@ -21,11 +21,10 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.RelDistributionTraitDef;
-import org.apache.calcite.rel.RelDistributions;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.sql.SqlNode;
@@ -36,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 
 /**
@@ -50,6 +51,8 @@ public class DistributedExecution implements QueryExecution {
      */
     public DistributedExecution(PlannerContext ctx) {
         this.ctx = ctx;
+
+        //
     }
 
     /** {@inheritDoc} */
@@ -58,7 +61,7 @@ public class DistributedExecution implements QueryExecution {
         Query query = ctx.query();
 
         RelTraitDef[] traitDefs = {
-            RelDistributionTraitDef.INSTANCE,
+            DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE
         };
@@ -83,10 +86,12 @@ public class DistributedExecution implements QueryExecution {
             RelTraitSet desired = rel.getTraitSet()
                 .replace(relRoot.collation)
                 .replace(IgniteConvention.INSTANCE)
-                .replace(RelDistributions.ANY)
+                .replace(IgniteDistributions.single())
                 .simplify();
 
             rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+
+            System.out.println("Result=" + RelOptUtil.toString(rel));
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         } catch (SqlParseException | ValidationException e) {

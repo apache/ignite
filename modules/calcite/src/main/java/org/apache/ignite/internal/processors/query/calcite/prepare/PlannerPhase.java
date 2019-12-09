@@ -17,19 +17,47 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.rel.rules.ProjectRemoveRule;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverter;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverter;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortConverter;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableScanConverter;
 
 /**
  *
  */
 public enum PlannerPhase {
-    /** */
+//    public static final List<RelOptRule> BASE_RULES = ImmutableList.of(
+//    AggregateStarTableRule.INSTANCE,
+//    AggregateStarTableRule.INSTANCE2,
+//    TableScanRule.INSTANCE,
+//    ProjectMergeRule.INSTANCE,
+//    FilterTableScanRule.INSTANCE,
+//    ProjectFilterTransposeRule.INSTANCE,
+//    FilterProjectTransposeRule.INSTANCE,
+//    FilterJoinRule.FILTER_ON_JOIN,
+//    JoinPushExpressionsRule.INSTANCE,
+//    AggregateExpandDistinctAggregatesRule.INSTANCE,
+//    AggregateReduceFunctionsRule.INSTANCE,
+//    FilterAggregateTransposeRule.INSTANCE,
+//    ProjectWindowTransposeRule.INSTANCE,
+//    JoinCommuteRule.INSTANCE,
+//    JoinPushThroughJoinRule.RIGHT,
+//    JoinPushThroughJoinRule.LEFT,
+//    SortProjectTransposeRule.INSTANCE,
+//    SortJoinTransposeRule.INSTANCE,
+//    SortRemoveConstantKeysRule.INSTANCE,
+//    SortUnionTransposeRule.INSTANCE,
+//    ExchangeRemoveConstantKeysRule.EXCHANGE_INSTANCE,
+//    ExchangeRemoveConstantKeysRule.SORT_EXCHANGE_INSTANCE);
+
+    /**
+     *
+     */
     SUBQUERY_REWRITE("Sub-queries rewrites") {
         @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(
@@ -39,14 +67,75 @@ public enum PlannerPhase {
         }
     },
 
-    /** */
+    /**
+     *
+     */
     OPTIMIZATION("Main optimization phase") {
         @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(
                 TableScanConverter.INSTANCE,
+                SortConverter.INSTANCE,
                 JoinConverter.INSTANCE,
                 ProjectConverter.INSTANCE,
-                FilterConverter.INSTANCE);
+                FilterConverter.INSTANCE,
+
+//                AggregateStarTableRule.INSTANCE,
+//                AggregateStarTableRule.INSTANCE2,
+//                TableScanRule.INSTANCE,
+//                ProjectMergeRule.INSTANCE,
+//                FilterTableScanRule.INSTANCE,
+//                ProjectFilterTransposeRule.INSTANCE,
+//                FilterProjectTransposeRule.INSTANCE,
+//                FilterJoinRule.FILTER_ON_JOIN,
+//                JoinPushExpressionsRule.INSTANCE,
+//                AggregateExpandDistinctAggregatesRule.INSTANCE,
+//                AggregateReduceFunctionsRule.INSTANCE,
+//                FilterAggregateTransposeRule.INSTANCE,
+//                ProjectWindowTransposeRule.INSTANCE,
+//                JoinCommuteRule.INSTANCE,
+//                JoinPushThroughJoinRule.RIGHT,
+//                JoinPushThroughJoinRule.LEFT,
+//                SortProjectTransposeRule.INSTANCE,
+//                SortJoinTransposeRule.INSTANCE,
+//                SortRemoveConstantKeysRule.INSTANCE,
+//                SortUnionTransposeRule.INSTANCE,
+//                ExchangeRemoveConstantKeysRule.EXCHANGE_INSTANCE,
+//                ExchangeRemoveConstantKeysRule.SORT_EXCHANGE_INSTANCE,
+//                SortRemoveRule.INSTANCE,
+//                AggregateProjectPullUpConstantsRule.INSTANCE2,
+//                UnionPullUpConstantsRule.INSTANCE,
+//                PruneEmptyRules.UNION_INSTANCE,
+//                PruneEmptyRules.INTERSECT_INSTANCE,
+//                PruneEmptyRules.MINUS_INSTANCE,
+//                PruneEmptyRules.PROJECT_INSTANCE,
+//                PruneEmptyRules.FILTER_INSTANCE,
+//                PruneEmptyRules.SORT_INSTANCE,
+//                PruneEmptyRules.AGGREGATE_INSTANCE,
+//                PruneEmptyRules.JOIN_LEFT_INSTANCE,
+//                PruneEmptyRules.JOIN_RIGHT_INSTANCE,
+//                PruneEmptyRules.SORT_FETCH_ZERO_INSTANCE,
+//                UnionMergeRule.INSTANCE,
+//                UnionMergeRule.INTERSECT_INSTANCE,
+//                UnionMergeRule.MINUS_INSTANCE,
+//                ProjectToWindowRule.PROJECT,
+//                FilterMergeRule.INSTANCE,
+//                DateRangeRules.FILTER_INSTANCE,
+//                IntersectToDistinctRule.INSTANCE,
+//                FilterJoinRule.FILTER_ON_JOIN,
+//                FilterJoinRule.JOIN,
+              //  AbstractConverter.ExpandConversionRule.INSTANCE,
+//                JoinCommuteRule.INSTANCE,
+//                SemiJoinRule.PROJECT,
+//                SemiJoinRule.JOIN,
+//                AggregateRemoveRule.INSTANCE,
+//                UnionToDistinctRule.INSTANCE,
+                ProjectRemoveRule.INSTANCE
+//                AggregateJoinTransposeRule.INSTANCE,
+//                AggregateMergeRule.INSTANCE,
+//                AggregateProjectMergeRule.INSTANCE,
+//                CalcRemoveRule.INSTANCE,
+//                SortRemoveRule.INSTANCE
+            );
         }
     };
 

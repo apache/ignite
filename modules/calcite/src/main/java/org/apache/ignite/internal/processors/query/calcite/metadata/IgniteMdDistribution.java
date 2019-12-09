@@ -115,6 +115,10 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     public static IgniteDistribution _distribution(RelNode rel, RelMetadataQuery mq) {
         IgniteDistribution distr = rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
 
+        if (distr == null)
+            System.out.println();
+
+
         if (distr.getType() != ANY)
             return distr;
 

@@ -59,6 +59,10 @@ public class RowType {
         return keyFields.get(idx);
     }
 
+    public String[] fields() {
+        return fields;
+    }
+
     public static Builder builder() {
         return new Builder();
     }

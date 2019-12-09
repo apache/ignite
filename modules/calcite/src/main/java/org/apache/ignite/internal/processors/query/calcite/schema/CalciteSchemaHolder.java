@@ -17,13 +17,24 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.calcite.jdbc.CalciteSchema;
+import org.apache.calcite.materialize.MaterializationService;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
@@ -31,39 +42,94 @@ import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
  */
 public class CalciteSchemaHolder implements SchemaChangeListener {
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
-    private volatile SchemaPlus schema;
+    private SchemaPlus rootSchema;
 
-    public void schema(SchemaPlus schema) {
-        this.schema = schema;
+    public CalciteSchemaHolder() {
+        this.rootSchema = Frameworks.createRootSchema(false);;
     }
 
-    public SchemaPlus schema() {
-        return schema;
+    public SchemaPlus rootSchema() {
+        return rootSchema;
     }
 
     @Override public synchronized void onSchemaCreate(String schemaName) {
-        schemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
-        rebuild();
+        IgniteSchema schema = new IgniteSchema(schemaName);
+        rootSchema.add(schemaName, schema);
+        schemas.putIfAbsent(schemaName, schema);
     }
 
     @Override public synchronized void onSchemaDrop(String schemaName) {
-        schemas.remove(schemaName);
-        rebuild();
+        throw new UnsupportedOperationException();
     }
 
     @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeCreate(typeDescriptor, cacheInfo);
-        rebuild();
+        IgniteSchema schema = schemas.get(schemaName);
+
+        assert schema != null;
+
+        RowType type = Commons.rowType(typeDescriptor);
+
+        String keyCol = typeDescriptor.keyFieldName();
+
+        assert keyCol != null : "TODO";
+
+        RelCollation collation = null;
+
+        for (int i = 0; i < type.fields().length; i++) {
+            String field = type.fields()[i];
+            if (keyCol.equalsIgnoreCase(field)) {
+                collation = RelCollationTraitDef.INSTANCE.canonize(RelCollations.of(new RelFieldCollation(i, RelFieldCollation.Direction.ASCENDING)));
+
+                break;
+            }
+        }
+
+        schema.createTable(cacheInfo, typeDescriptor.tableName(), type, collation);
     }
 
     @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeDrop(typeDescriptor, cacheInfo);
-        rebuild();
+        IgniteSchema schema = schemas.get(schemaName);
+        assert schema != null;
+        schema.dropTable(typeDescriptor);
     }
 
-    private void rebuild() {
-        SchemaPlus schema = Frameworks.createRootSchema(false);
-        schemas.forEach(schema::add);
-        schema(schema.getSubSchema(QueryUtils.DFLT_SCHEMA));
+    public synchronized void onIndexCreate(String schemaName, String tblName, String idxName, String indexViewSql, GridQueryIndexDescriptor idxDesc) {
+        IgniteSchema schema = schemas.get(schemaName);
+        assert schema != null;
+        System.out.println("INDEXES!");
+
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        String[] fieldsArr = tbl.igniteRowType().fields();
+        HashMap<String, Integer> fieldsMap = new HashMap<>(fieldsArr.length);
+
+        for (int i = 0; i < fieldsArr.length; i++)
+            fieldsMap.put(fieldsArr[i].toUpperCase(), i);
+
+        List<RelFieldCollation> collations = new ArrayList<>(fieldsArr.length);
+
+        for (String field : idxDesc.fields()) {
+            Integer idx = fieldsMap.get(field.toUpperCase());
+
+            boolean descending = idxDesc.descending(field);
+
+            RelFieldCollation collation = new RelFieldCollation(idx,
+                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING);
+
+            collations.add(collation);
+        }
+
+
+        schema.createIndex(idxName, tbl.cacheName(), tbl.name(), tbl.igniteRowType(), RelCollations.of(collations), indexViewSql);
+    }
+
+    public synchronized void onIndexDrop() {
+        // TODO: CODE: implement.
+    }
+
+    private class IgniteTableFactory implements MaterializationService.TableFactory {
+
+        @Override public Table createTable(CalciteSchema schema, String viewSql, List<String> viewSchemaPath) {
+            return null; // TODO: CODE: implement.
+        }
     }
 }

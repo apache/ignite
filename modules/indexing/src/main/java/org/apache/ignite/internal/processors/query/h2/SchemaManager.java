@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -193,6 +194,8 @@ public class SchemaManager {
         // Register PUBLIC schema which is always present.
         schemas.put(QueryUtils.DFLT_SCHEMA, new H2Schema(QueryUtils.DFLT_SCHEMA, true));
 
+        lsnr.onSchemaCreate(QueryUtils.DFLT_SCHEMA);
+
         // Create system views.
         createSystemViews();
 
@@ -329,8 +332,7 @@ public class SchemaManager {
         try {
             conn = connMgr.connectionForThread().connection(schema.schemaName());
 
-            GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
-            lsnr.onSqlTypeCreate(schemaName, type, cacheInfo);
+            GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn, cacheInfo, type);
 
             schema.add(tblDesc);
 
@@ -535,7 +537,7 @@ public class SchemaManager {
      * @throws SQLException If failed to create db table.
      * @throws IgniteCheckedException If failed.
      */
-    private GridH2Table createTable(String schemaName, H2Schema schema, H2TableDescriptor tbl, Connection conn)
+    private GridH2Table createTable(String schemaName, H2Schema schema, H2TableDescriptor tbl, Connection conn, GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor type)
         throws SQLException, IgniteCheckedException {
         assert schema != null;
         assert tbl != null;
@@ -548,6 +550,8 @@ public class SchemaManager {
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, tbl);
+
+        lsnr.onSqlTypeCreate(schemaName, type, cacheInfo); // TODO move to createTable()
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
@@ -622,8 +626,15 @@ public class SchemaManager {
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, false);
 
             connMgr.executeStatement(schemaName, sql);
+
+            String indexViewSql = H2Utils.calciteIndexViewSqlString(h2Idx);
+
+            GridQueryIndexDescriptor qryTypeDesc =  desc.type().indexes().get(h2Idx.getName());
+
+            lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), indexViewSql, qryTypeDesc);
         }
         catch (Exception e) {
+            e.printStackTrace();
             // Rollback and re-throw.
             h2Tbl.rollbackUserIndex(h2Idx.getName());
 
@@ -863,6 +874,15 @@ public class SchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
+
+        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, String indexViewSql,
+            GridQueryIndexDescriptor desc) {
+            // TODO: CODE: implement.
+        }
+
+        @Override public void onIndexDrop() {
+            // TODO: CODE: implement.
+        }
     }
 
     /** */
@@ -892,6 +912,15 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
             lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor, cacheInfo));
+        }
+
+        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, String indexViewSql,
+            GridQueryIndexDescriptor desc) {
+            // TODO: CODE: implement.
+        }
+
+        @Override public void onIndexDrop() {
+            // TODO: CODE: implement.
         }
     }
 }

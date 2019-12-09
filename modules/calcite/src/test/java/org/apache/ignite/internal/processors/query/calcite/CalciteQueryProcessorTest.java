@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +30,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Project;
@@ -678,12 +678,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     public void testSplitterCollocatedReplicatedAndPartitioned() throws Exception {
         developer.identityKey(new Object());
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.id = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
+        String sql = "SELECT * FROM Project ORDER BY name";
 
         MappingService ms = new MappingService() {
             @Override public NodesMapping random(AffinityTopologyVersion topVer) {
@@ -716,7 +711,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE
         };
 
         RelRoot relRoot;
@@ -853,7 +849,10 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 3);
+        if (plan.fragments().size() != 3)
+            System.out.println();
+
+        assertEquals("plan.fragments()=" + plan.fragments(),3, plan.fragments().size());
     }
 
     @Test
@@ -1184,7 +1183,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         private final List<Object[]> data;
         private Object identityKey;
         public TestIgniteTable(String tableName, String cacheName, RowType rowType, List<Object[]> data) {
-            super(tableName, cacheName, rowType, null);
+            super(tableName, cacheName, rowType,  null, null, null);
             this.data = data;
         }
 
