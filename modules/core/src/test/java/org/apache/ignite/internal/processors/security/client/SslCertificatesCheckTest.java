@@ -46,7 +46,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider.ATTR_SECURITY_CERTIFICATES;
 import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -60,10 +59,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
     /** */
-    private boolean failServer;
-
-    /** */
-    private boolean failClient;
+    private boolean fail;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -102,7 +98,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         cfg.setSslContextFactory(sslFactory);
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
             .setSslEnabled(true)
-            .setSslClientAuth(!failClient)
+            .setSslClientAuth(true)
             .setSslFactory(sslFactory));
 
         if (instanceName.endsWith("0"))
@@ -115,7 +111,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
                 new SslClientNodeAttributesFactory() :
                 new SslServerNodeAttributesFactory();
 
-        if (!(isClient && failClient || !isClient && failServer)) {
+        if (!fail) {
             Map<String, Object> attrs = factory.create();
 
             cfg.setUserAttributes(attrs);
@@ -139,11 +135,9 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         assertFalse(ignite.cluster().active());
 
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
-            System.out.println("asd123 1");
             assertTrue(client.connected());
-            System.out.println("asd123 2");
+
             client.state().active(true);
-            System.out.println("asd123 3");
         }
     }
 
@@ -152,8 +146,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      */
     @Test
     public void testSslCertificatesThinClientFail() throws Exception {
-        failClient = true;
-
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -161,6 +153,8 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         startGrid(2);
 
         assertEquals(3, ignite.cluster().topologyVersion());
+
+        fail = true;
 
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
             assertFalse(client.connected());
@@ -179,11 +173,11 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      */
     @Test
     public void testSslCertificatesClientFail() throws Exception {
-        failServer = true;
-
         Ignite ignite = startGrids(1);
 
         assertEquals(1, ignite.cluster().topologyVersion());
+
+        fail = true;
 
         GridTestUtils.assertThrowsAnyCause(log,
             ()-> {
@@ -201,9 +195,9 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      */
     @Test
     public void testSslCertificatesServerFail() throws Exception {
-        failServer = true;
-
         Ignite ignite = startGrid(0);
+
+        fail = true;
 
         GridTestUtils.assertThrowsAnyCause(log,
             ()-> {
@@ -232,6 +226,6 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             .setRouters(Collections.singletonList("127.0.0.1:11211"))
             .setSecurityCredentialsProvider(
                 new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)))
-            .setUserAttrs(failClient ? null : new SslClientNodeAttributesFactory().create());
+            .setUserAttrs(fail ? null : new SslClientNodeAttributesFactory().create());
     }
 }
