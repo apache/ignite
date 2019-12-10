@@ -17,24 +17,14 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider
-    .ATTR_SECURITY_CERTIFICATES;
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
@@ -50,18 +40,6 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
 
     /** {@inheritDoc} */
     @Override protected Map<String, Object> userAttributres() {
-        String clientJksPath = U.getIgniteHome() + "/modules/clients/src/test/keystore/client.jks";
-
-        try (InputStream ksInputStream = new FileInputStream(clientJksPath)) {
-            KeyStore clientKeyStore = KeyStore.getInstance("JKS");
-            clientKeyStore.load(ksInputStream, "123456".toCharArray());
-
-            Certificate[] certs = clientKeyStore.getCertificateChain(CLIENT);
-            JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(null);
-
-            return Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller, certs));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return new SslClientNodeAttributesFactory().create();
     }
 }

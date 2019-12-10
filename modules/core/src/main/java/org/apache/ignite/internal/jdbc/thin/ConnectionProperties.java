@@ -433,14 +433,17 @@ public interface ConnectionProperties {
      */
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 
+    /**
+     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
+     *
+     * @return Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
+     */
     public String getUserAttributes();
 
     /**
-     * Sets the class name of the custom implementation of the Factory&lt;SSLSocketFactory&gt;.
-     * If {@link #getSslMode()} is {@code required} and factory is specified the custom factory will be used
-     * instead of JSSE socket factory. So, other SSL properties will be ignored.
+     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
      *
-     * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
+     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
      */
     public void setUserAttributes(String sslFactory);
 }

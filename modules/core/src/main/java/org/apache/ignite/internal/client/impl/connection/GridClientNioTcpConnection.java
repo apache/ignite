@@ -887,6 +887,19 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             return old;
 
         msg.nodeId(id);
+
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
+
+        return makeRequest(msg, fut);
+    }
+
+    /**
+     * @param inclAttrs Include attributes flag.
+     * @param inclMetrics Include metrics flag.
+     * @param destNodeId Destination node id.
+     * @param msg Message.
+     */
+    private void setupMessage(boolean inclAttrs, boolean inclMetrics, UUID destNodeId, GridClientTopologyRequest msg) {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
@@ -896,8 +909,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             msg.login((String) credentials().getLogin());
             msg.password((String) credentials().getPassword());
         }
-
-        return makeRequest(msg, fut);
     }
 
     /** {@inheritDoc} */
@@ -918,15 +929,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         };
 
         msg.nodeIp(ipAddr);
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(includeMetrics);
-        msg.destinationId(destNodeId);
-        msg.userAttributes(userAttrs);
 
-        if (credentials() != null) {
-            msg.login((String) credentials().getLogin());
-            msg.password((String) credentials().getPassword());
-        }
+        setupMessage(inclAttrs, includeMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }
@@ -950,15 +954,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             }
         };
 
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(inclMetrics);
-        msg.destinationId(destNodeId);
-        msg.userAttributes(userAttrs);
-
-        if (credentials() != null) {
-            msg.login((String) credentials().getLogin());
-            msg.password((String) credentials().getPassword());
-        }
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }

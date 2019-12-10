@@ -40,20 +40,6 @@ public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
     /** Check ssl certificates. */
     protected final boolean checkSslCerts;
 
-//    /** {@inheritDoc} */
-//    @Override public void start(PluginContext ctx) {
-//        super.start(ctx);
-//
-//        SslAbstractNodeAttributesFactory factory = ctx.grid().configuration().isClientMode() ?
-//            new SslClientNodeAttributesFactory() :
-//            new SslServerNodeAttributesFactory();
-//
-//        Map<String, Object> attrs = factory.create();
-//        Object certs = attrs.get(ATTR_SECURITY_CERTIFICATES);
-//
-//        ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_SECURITY_CERTIFICATES, certs);
-//    }
-
     /** */
     public TestSslSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
         boolean globalAuth, boolean checkSslCerts, TestSecurityData... clientData) {
