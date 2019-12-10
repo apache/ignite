@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -399,7 +398,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        boolean sync = tx.syncMode() == FULL_SYNC;
+        boolean sync = !dhtMap.isEmpty() || tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
             sync = true;

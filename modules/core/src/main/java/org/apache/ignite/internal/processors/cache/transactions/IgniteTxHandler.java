@@ -1006,14 +1006,14 @@ public class IgniteTxHandler {
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
 
+            if (!tx.markFinalizing(USER_FINISH)) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not finish transaction (it is handled by another thread) [commit=" + req.commit() + ", tx=" + tx + ']');
+
+                return null;
+            }
+
             if (req.commit()) {
-                if (!tx.markFinalizing(USER_FINISH)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
-
-                    return null;
-                }
-
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitDhtLocalAsync();
 
                 // Only for error logging.

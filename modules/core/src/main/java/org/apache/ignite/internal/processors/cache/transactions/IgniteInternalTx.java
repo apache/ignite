@@ -283,6 +283,11 @@ public interface IgniteInternalTx {
     public boolean markFinalizing(FinalizationStatus status);
 
     /**
+     * @return Finalization status.
+     */
+    public @Nullable FinalizationStatus finalizationStatus();
+
+    /**
      * @param cacheCtx Cache context.
      * @param part Invalid partition.
      */
