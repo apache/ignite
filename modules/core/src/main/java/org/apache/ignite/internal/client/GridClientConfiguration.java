@@ -924,7 +924,7 @@ public class GridClientConfiguration {
     /**
      * @param userAttrs User attributes.
      */
-    public GridClientConfiguration setUserAttrs(Map<String, Object> userAttrs) {
+    public GridClientConfiguration setUserAttributes(Map<String, Object> userAttrs) {
         this.userAttrs = userAttrs;
 
         return this;

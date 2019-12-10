@@ -508,7 +508,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * @param userAttrs User attributes.
      */
-    public ClientConfiguration setUserAttrs(Map<String, Object> userAttrs) {
+    public ClientConfiguration setUserAttributes(Map<String, Object> userAttrs) {
         this.userAttrs = userAttrs;
 
         return this;

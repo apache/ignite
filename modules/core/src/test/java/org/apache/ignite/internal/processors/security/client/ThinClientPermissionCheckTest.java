@@ -236,7 +236,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             new ClientConfiguration().setAddresses(Config.SERVER)
                 .setUserName(userName)
                 .setUserPassword("")
-                .setUserAttrs(userAttributres())
+                .setUserAttributes(userAttributres())
         );
     }
 

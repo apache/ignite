@@ -21,6 +21,13 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
@@ -42,12 +49,14 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
@@ -74,7 +83,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     protected TestSecurityData[] clientData() {
         return new TestSecurityData[]{new TestSecurityData(CLIENT,
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                .appendSystemPermissions(ADMIN_OPS)
+                .appendSystemPermissions(ADMIN_OPS, CACHE_CREATE)
                 .build()
         )};
     }
@@ -99,7 +108,14 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
             .setSslEnabled(true)
             .setSslClientAuth(true)
+            .setSslClientAuth(true)
             .setSslFactory(sslFactory));
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setSslEnabled(true)
+            .setSslClientAuth(true)
+            .setUseIgniteSslContextFactory(false)
+            .setSslContextFactory(sslFactory));
 
         if (instanceName.endsWith("0"))
             cfg.setGridLogger(listeningLog);
@@ -121,6 +137,43 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
     }
 
     /**
+     * @return Grid client configuration.
+     */
+    protected GridClientConfiguration getGridClientConfiguration() {
+        return new GridClientConfiguration()
+            .setSslContextFactory(getClientSslContextFactory()::create)
+            .setRouters(Collections.singletonList("127.0.0.1:11211"))
+            .setSecurityCredentialsProvider(
+                new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
+            .setUserAttributes(fail ? null : new SslClientNodeAttributesFactory().create());
+    }
+
+    /**
+     * @return Client configuration.
+     */
+    protected ClientConfiguration getClientConfiguration() {
+        return new ClientConfiguration()
+            .setSslContextFactory(getClientSslContextFactory())
+            .setAddresses(Config.SERVER)
+            .setUserName(CLIENT)
+            .setUserPassword("")
+            .setUserAttributes(fail ? null : new SslClientNodeAttributesFactory().create())
+            .setSslMode(SslMode.REQUIRED);
+    }
+
+    /**
+     * @return SSL context factory for clients.
+     */
+    @NotNull protected SslContextFactory getClientSslContextFactory() {
+        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
+
+        sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
+                .getAbsolutePath());
+
+        return sslFactory;
+    }
+
+    /**
      *
      */
     @Test
@@ -134,10 +187,16 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         assertEquals(3, ignite.cluster().topologyVersion());
         assertFalse(ignite.cluster().active());
 
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
+        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertTrue(client.connected());
 
             client.state().active(true);
+        }
+
+        try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            client.createCache("test_cache");
+
+            assertEquals(1, client.cacheNames().size());
         }
     }
 
@@ -145,7 +204,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificatesThinClientFail() throws Exception {
+    public void testSslCertificatesGridClientFail() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -156,7 +215,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
 
         fail = true;
 
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration(CLIENT, ""))) {
+        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertFalse(client.connected());
             GridTestUtils.assertThrowsAnyCause(log,
                 ()-> {
@@ -165,6 +224,29 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
                 },
                 GridClientAuthenticationException.class,
                 "SSL certificates are not found.");
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testSslCertificatesIgniteClientFail() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        assertEquals(2, ignite.cluster().topologyVersion());
+
+        startGrid(2);
+
+        assertEquals(3, ignite.cluster().topologyVersion());
+
+        fail = true;
+
+        try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            fail();
+        }
+        catch (ClientAuthenticationException e) {
+            assertTrue(e.getMessage().contains("SSL certificates are not found"));
         }
     }
 
@@ -208,24 +290,5 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             "Authentication failed");
 
         assertEquals(1, ignite.cluster().topologyVersion());
-    }
-
-    /**
-     * @param login Login
-     * @param pwd Password
-     * @return Client configuration.
-     */
-    protected GridClientConfiguration getGridClientConfiguration(String login, String pwd) {
-        SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
-
-        sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
-            .getAbsolutePath());
-
-        return new GridClientConfiguration()
-            .setSslContextFactory(sslFactory::create)
-            .setRouters(Collections.singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(
-                new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)))
-            .setUserAttrs(fail ? null : new SslClientNodeAttributesFactory().create());
     }
 }
