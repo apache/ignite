@@ -185,7 +185,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
         v = val;
-        sb.a(", val: ").a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() :
+        sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.getString() :
             "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         v = ver;
@@ -201,7 +201,7 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))
-                    sb.a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() : "data hidden"));
+                    sb.a(v == null ? "nil" : (S.includeSensitive() ? v.getString() : "data hidden"));
             }
         }
 

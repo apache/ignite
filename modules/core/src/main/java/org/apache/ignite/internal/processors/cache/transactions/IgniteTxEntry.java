@@ -104,7 +104,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private IgniteInternalTx tx;
 
     /** Cache key. */
-    @GridToStringInclude
+    @GridToStringExclude
     private KeyCacheObject key;
 
     /** Cache ID. */
@@ -945,7 +945,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             if (cacheCtx == null)
                 throw new CacheInvalidStateException(
                     "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
-            
+
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
             else if (!cacheCtx.isNear() && near)

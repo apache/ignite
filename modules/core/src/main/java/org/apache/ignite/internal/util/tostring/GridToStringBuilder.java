@@ -33,17 +33,21 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Provides auto-generation framework for {@code toString()} output.
@@ -90,9 +94,17 @@ public class GridToStringBuilder {
     /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
-    /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
-    public static final boolean INCLUDE_SENSITIVE =
-            IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+    /** Supplier for {@link #includeSensitive} with default behavior. */
+    private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
+        new AtomicReference<>(new Supplier<Boolean>() {
+            /** Value of "IGNITE_TO_STRING_INCLUDE_SENSITIVE". */
+            final boolean INCLUDE_SENSITIVE = getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
+
+            /** {@inheritDoc} */
+            @Override public Boolean get() {
+                return INCLUDE_SENSITIVE;
+            }
+        });
 
     /** */
     private static final int COLLECTION_LIMIT =
@@ -121,6 +133,44 @@ public class GridToStringBuilder {
             return new IdentityHashMap<>();
         }
     };
+
+    /**
+     * Implementation of the <a href=
+     * "https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">
+     * "Initialization-on-demand holder idiom"</a>.
+     */
+    private static class Holder {
+        /** Supplier holder for {@link #includeSensitive}. */
+        static final Supplier<Boolean> INCL_SENS_SUP = INCL_SENS_SUP_REF.get();
+    }
+
+    /**
+     * Setting the logic of the {@link #includeSensitive} method. <br/>
+     * By default, it take the value of
+     * {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
+     * IGNITE_TO_STRING_INCLUDE_SENSITIVE} system property. <br/>
+     * <b>Important!</b> Changing the logic is possible only until the first
+     * call of  {@link #includeSensitive} method. <br/>
+     *
+     * @param sup
+     */
+    public static void setIncludeSensitiveSupplier(Supplier<Boolean> sup) {
+        assert nonNull(sup);
+
+        INCL_SENS_SUP_REF.set(sup);
+    }
+
+    /**
+     * Return {@code true} if need to include sensitive data otherwise
+     * {@code false}.
+     *
+     * @return {@code true} if need to include sensitive data otherwise
+     *      {@code false}.
+     * @see GridToStringBuilder#setIncludeSensitiveSupplier(Supplier)
+     */
+    public static boolean includeSensitive() {
+        return Holder.INCL_SENS_SUP.get();
+    }
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -1622,12 +1672,12 @@ public class GridToStringBuilder {
                 Object addVal = addVals[i];
 
                 if (addVal != null) {
-                    if (addSens != null && addSens[i] && !INCLUDE_SENSITIVE)
+                    if (addSens != null && addSens[i] && !includeSensitive())
                         continue;
 
                     GridToStringInclude incAnn = addVal.getClass().getAnnotation(GridToStringInclude.class);
 
-                    if (incAnn != null && incAnn.sensitive() && !INCLUDE_SENSITIVE)
+                    if (incAnn != null && incAnn.sensitive() && !includeSensitive())
                         continue;
                 }
 
@@ -1673,7 +1723,7 @@ public class GridToStringBuilder {
                     // Information is not sensitive when both the field and the field type are not sensitive.
                     // When @GridToStringInclude is not present then the flag is false by default for that attribute.
                     final boolean notSens = (incFld == null || !incFld.sensitive()) && (incType == null || !incType.sensitive());
-                    add = notSens || INCLUDE_SENSITIVE;
+                    add = notSens || includeSensitive();
                 }
                 else if (!f.isAnnotationPresent(GridToStringExclude.class) &&
                         !f.getType().isAnnotationPresent(GridToStringExclude.class)) {
