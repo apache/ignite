@@ -6687,8 +6687,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         protected ComputeJobContext jobCtx;
 
         /** Injected grid instance. */
-        @IgniteInstanceResource
-        protected Ignite ignite;
+        protected IgniteEx ignite;
 
         /** Affinity topology version. */
         protected final AffinityTopologyVersion topVer;
@@ -6712,7 +6711,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!waitAffinityReadyFuture())
                 return null;
 
-            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(cacheName);
+            IgniteInternalCache cache = ignite.context().cache().cache(cacheName);
 
             return localExecute(cache);
         }
@@ -6729,7 +6728,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @return {@code True} if topology check passed.
          */
         private boolean waitAffinityReadyFuture() {
-            GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
             AffinityTopologyVersion locTopVer = cacheProc.context().exchange().readyAffinityVersion();
 
@@ -6741,7 +6740,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ((IgniteEx)ignite).context().closure().runLocalSafe(new Runnable() {
+                            ignite.context().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
                                     jobCtx.callcc();
                                 }
@@ -6754,6 +6753,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             return true;
+        }
+
+        /** */
+        @IgniteInstanceResource
+        private void ignite(Ignite ignite) {
+            if (ignite != null)
+                this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 
