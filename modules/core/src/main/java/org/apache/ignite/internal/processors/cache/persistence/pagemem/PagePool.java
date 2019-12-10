@@ -120,14 +120,14 @@ public class PagePool {
      */
     private long borrowFreePage() {
         while (true) {
-            long freePageRelPtrMasked = GridUnsafe.getLong(null, freePageListPtr);
+            long freePageRelPtrMasked = GridUnsafe.getLongVolatile(null, freePageListPtr);
 
             long freePageRelPtr = freePageRelPtrMasked & ADDRESS_MASK;
 
             if (freePageRelPtr != PageMemoryImpl.INVALID_REL_PTR) {
                 long freePageAbsPtr = absolute(freePageRelPtr);
 
-                long nextFreePageRelPtr = GridUnsafe.getLong(null, freePageAbsPtr) & ADDRESS_MASK;
+                long nextFreePageRelPtr = GridUnsafe.getLongVolatile(null, freePageAbsPtr) & ADDRESS_MASK;
 
                 // nextFreePageRelPtr may be invalid because a concurrent thread may have already polled this value
                 // and used it.
@@ -153,7 +153,7 @@ public class PagePool {
         long limit = region.address() + region.size();
 
         while (true) {
-            long lastIdx = GridUnsafe.getLong(null, lastAllocatedIdxPtr);
+            long lastIdx = GridUnsafe.getLongVolatile(null, lastAllocatedIdxPtr);
 
             // Check if we have enough space to allocate a page.
             if (pagesBase + (lastIdx + 1) * sysPageSize > limit)
@@ -192,13 +192,17 @@ public class PagePool {
             resCntr = pagesCntr.decrementAndGet();
 
         while (true) {
-            long freePageRelPtrMasked = GridUnsafe.getLong(null, freePageListPtr);
+            long freePageRelPtrMasked = GridUnsafe.getLongVolatile(null, freePageListPtr);
 
             long freePageRelPtr = freePageRelPtrMasked & PageMemoryImpl.RELATIVE_PTR_MASK;
 
-            GridUnsafe.putLong(null, absPtr, freePageRelPtr);
+            GridUnsafe.putLongVolatile(null, absPtr, freePageRelPtr);
 
-            if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, relPtr))
+            long cnt = freePageRelPtrMasked & COUNTER_MASK;
+
+            long relPtrWithCnt = (relPtr & ADDRESS_MASK) | cnt;
+
+            if (GridUnsafe.compareAndSwapLong(null, freePageListPtr, freePageRelPtrMasked, relPtrWithCnt))
                 return resCntr;
         }
     }
