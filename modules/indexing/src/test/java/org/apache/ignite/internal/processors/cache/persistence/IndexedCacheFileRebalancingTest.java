@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -197,7 +198,7 @@ public class IndexedCacheFileRebalancingTest extends GridCommonAbstractTest {
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(80);
+        U.sleep(ThreadLocalRandom.current().nextLong(80));
 
         IgniteEx ignite2 = startGrid(2);
 
@@ -205,9 +206,104 @@ public class IndexedCacheFileRebalancingTest extends GridCommonAbstractTest {
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(80);
+        U.sleep(ThreadLocalRandom.current().nextLong(80));
 
         IgniteEx ignite3 = startGrid(3);
+
+        blt.add(ignite3.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        ldrFut.get();
+
+        verifyCacheContent(ignite2.cache(INDEXED_CACHE), cntr.get());
+
+        // Validate indexes on start.
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(INDEXED_CACHE), 0, 0);
+
+        ignite0.cluster().active(false);
+
+        ignite1.context().resource().injectGeneric(clo);
+
+        VisorValidateIndexesJobResult res = clo.call();
+
+        assertFalse(res.hasIssues());
+
+        ignite2.context().resource().injectGeneric(clo);
+
+        res = clo.call();
+
+        assertFalse(res.hasIssues());
+    }
+
+    @Test
+    @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="0")
+    public void testIndexedCacheStartStopLastNodeConstantLoadPartitioned() throws Exception {
+        List<ClusterNode> blt = new ArrayList<>();
+
+        int entriesCnt = 100_000;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        blt.add(ignite0.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        int threads = Runtime.getRuntime().availableProcessors() / 2;
+
+        loadData(ignite0, INDEXED_CACHE, entriesCnt);
+
+        AtomicInteger cntr = new AtomicInteger(entriesCnt);
+
+        ConstantLoader ldr = new ConstantLoader(ignite0.cache(INDEXED_CACHE), cntr, false, threads);
+
+        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "thread");
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        blt.add(ignite1.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(ThreadLocalRandom.current().nextLong(80));
+
+        IgniteEx ignite2 = startGrid(2);
+
+        blt.add(ignite2.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(ThreadLocalRandom.current().nextLong(80));
+
+        IgniteEx ignite3 = startGrid(3);
+
+        ClusterNode node3 = ignite3.localNode();
+
+        blt.add(ignite3.localNode());
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(ThreadLocalRandom.current().nextLong(50));
+
+        stopGrid(3);
+
+        blt.remove(node3);
+
+        ignite0.cluster().setBaselineTopology(blt);
+
+        U.sleep(ThreadLocalRandom.current().nextLong(100));
+
+        ignite3 = startGrid(3);
 
         blt.add(ignite3.localNode());
 
@@ -481,7 +577,6 @@ public class IndexedCacheFileRebalancingTest extends GridCommonAbstractTest {
             }
         }
     }
-
 
     /** */
     private static class ConstantLoader implements Runnable {

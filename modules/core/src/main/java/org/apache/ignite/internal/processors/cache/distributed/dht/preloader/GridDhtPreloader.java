@@ -249,8 +249,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (grp.persistenceEnabled() && exchFut != null && countersMap.updateCounter(p) != part.initialUpdateCounter()) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
-                    if (log.isDebugEnabled())
-                        log.info("Got historical supplier: " + nodeId + " p=" + p + " initial=" + part.initialUpdateCounter() + ", curr=" + part.updateCounter());
+                    if (nodeId != null && log.isDebugEnabled())
+                        log.debug("Historical supplier [node=" + nodeId + " p=" + p + " grp=" + grp.cacheOrGroupName() + " from=" + part.initialUpdateCounter() + ", to=" + part.updateCounter() + "]");
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
@@ -303,7 +303,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             UUID nodeId = exchFut.partitionFileSupplier(grp.groupId(), p, countersMap.updateCounter(p));
 
                             if (nodeId != null) {
-                                log.info("Got file rebalance supplier=" + nodeId + ", p=" + p + "  cache=" + ctx.cache().cacheGroup(grp.groupId()).cacheOrGroupName());
+                                if (log.isDebugEnabled())
+                                    log.debug("File supplier [node=" + nodeId + ", p=" + p + ", grp=" + grp.cacheOrGroupName());
 
                                 n = ctx.discovery().node(nodeId);
 
@@ -337,6 +338,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return assignments;
     }
 
+    /**
+     * @param assignments Assignments.
+     */
     private void debugInfo(GridDhtPreloaderAssignments assignments) {
         if (!log.isDebugEnabled())
             return;
@@ -344,17 +348,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         StringBuilder buf = new StringBuilder("\n****************************************\n\tAssignments on " + ctx.localNodeId() + " grp="+grp.cacheOrGroupName() + "\n");
 
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> entry : assignments.entrySet()) {
-            buf.append("\t\tNode " + entry.getKey().id()+"\n");
+            buf.append("\t\tNode ").append(entry.getKey().id()).append("\n");
 
             buf.append("\t\t\tfull parts: \n");
 
             for (Integer p : entry.getValue().partitions().fullSet())
-                buf.append("\t\t\t\t" + p + "\n");
+                buf.append("\t\t\t\t").append(p).append("\n");
 
             buf.append("\t\t\tHist parts: \n");
 
             for (Integer p : entry.getValue().partitions().historicalSet())
-                buf.append("\t\t\t\t" + p + "\n");
+                buf.append("\t\t\t\t").append(p).append("\n");
         }
 
         log.debug(buf.toString());

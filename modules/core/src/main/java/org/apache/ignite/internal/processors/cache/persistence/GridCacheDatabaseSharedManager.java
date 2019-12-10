@@ -232,12 +232,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** MemoryPolicyConfiguration name reserved for meta store. */
     public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
+    /** */
+    public static final long WAL_REBALANCE_THRESHOLD =
+        getLong(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
     /** Skip sync. */
     private final boolean skipSync = getBoolean(IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
-
-    /** */
-    private final long walRebalanceThreshold =
-        getLong(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
 
     /** */
     private final long fileRebalanceThreshold =
@@ -1790,7 +1790,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Long updCntr = cpEntry.partitionCounter(cctx, grpId, partId);
 
                 if (updCntr != null) {
-                    log.debug("Reserved p="+partId+" grp="+cctx.cache().cacheGroup(grpId).cacheOrGroupName()+", cntr="+updCntr);
+                    log.debug("Reserved p=" + partId + " grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", cntr=" + updCntr);
 
                     reservedForExchange.computeIfAbsent(grpId, k -> new HashMap<>())
                         .put(partId, new T2<>(updCntr, cpEntry.checkpointMark()));
@@ -1819,7 +1819,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 // todo at least one partition should be greater then threshold
-                if (locPart.state() == GridDhtPartitionState.OWNING && (locPart.fullSize() > walRebalanceThreshold ||
+                if (locPart.state() == GridDhtPartitionState.OWNING && (locPart.fullSize() > WAL_REBALANCE_THRESHOLD ||
                     (fileRebalanceSupported && locPart.fullSize() > fileRebalanceThreshold)))
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }

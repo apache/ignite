@@ -138,6 +138,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -3217,13 +3218,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Set<Integer> haveHistory = new HashSet<>();
 
-        // todo
         Collection<ClusterNode> nodes =
             F.concat(false, cctx.localNode(), F.viewReadOnly(msgs.keySet(), v -> cctx.discovery().node(v)));
 
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
-        boolean enableFileRebalance = grp != null && cctx.filePreloader() != null &&
+        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
             cctx.filePreloader().fileRebalanceSupported(grp, nodes);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
@@ -3238,15 +3238,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 //            if (minCntr == maxCntr) // && allOwners(top))
 //                continue;
 
+            // todo historical rebalancing and file rebalancing could not start on same group at the same time.
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
 
                 if (localHistCntr != null) {
-                    // todo   crd node should always have history for max counter - this is redundant
-                    // todo   if minCntr is zero - check that file rebalancing is supported and partition is big enough,
-                    // todo   otherwise - do regular  preloading
-                    // todo  && minCntr == 0
-                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr != 0 && partSizes.get(p) > WAL_REBALANCE_THRESHOLD && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
@@ -3254,8 +3251,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         continue;
                     }
                     else
-                    if (enableFileRebalance && localHistCntr <= maxCntr &&
-                        maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr == 0 && fileRebalanceApplicable && localHistCntr <= maxCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
 
                         haveHistory.add(p);
@@ -3269,8 +3265,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null) {
-                    // todo merge conditions (with else)
-                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr != 0 && partSizes.get(p) > WAL_REBALANCE_THRESHOLD && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);
@@ -3278,7 +3273,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         break;
                     }
                     else
-                    if (enableFileRebalance && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr == 0 && fileRebalanceApplicable && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         // For file rebalancing we need to reserve history from current update counter.
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
 

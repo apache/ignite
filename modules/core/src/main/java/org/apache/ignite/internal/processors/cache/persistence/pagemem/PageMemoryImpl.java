@@ -1837,10 +1837,10 @@ public class PageMemoryImpl implements PageMemoryEx {
             if ((!wasDirty || forceAdd)) {
                 CacheGroupContext grp = ctx.cache().cacheGroup(pageId.groupId());
 
-                int partId = PageIdUtils.partId(pageId.pageId());
-
-                if (grp != null && partId != INDEX_PARTITION && grp.topology().localPartition(partId).dataStore().readOnly())
-                    return;
+//                int partId = PageIdUtils.partId(pageId.pageId());
+//
+//                if (grp != null && partId != INDEX_PARTITION && grp.dataRegion().config().isPersistenceEnabled() && grp.topology().localPartition(partId).dataStore().readOnly())
+//                    return;
 
                 boolean added = segment(pageId.groupId(), pageId.pageId()).dirtyPages.add(pageId);
 

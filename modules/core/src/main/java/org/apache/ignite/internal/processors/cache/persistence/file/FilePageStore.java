@@ -783,9 +783,9 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            // todo why checkpointer syncs read-only partition?
-            if (!inited)
-                return;
+//            // todo why checkpointer syncs read-only partition?
+//            if (!inited)
+//                return;
 
             init();
 

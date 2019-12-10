@@ -199,7 +199,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 log.debug("Set READ-ONLY mode for cache=" + grp.cacheOrGroupName() + " parts=" + moving);
 
             // todo "global" partition size can change and file rebalance will not be applicable to it.
-            //       add test case for specified scenario with global size change.
+            //       add test case for specified scenario with global size change "on the fly".
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 // Partitions that no longer belong to current node should be evicted as usual.
                 boolean toReadOnly = moving != null && moving.contains(part.id());
@@ -324,10 +324,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return null;
         }
 
+        if (log.isInfoEnabled())
+            log.info("Starting file rebalancing");
+
         if (log.isTraceEnabled())
             log.trace(formatMappings(nodeOrderAssignsMap));
-
-        log.info("Starting file rebalancing");
 
         // Start new rebalance session.
         FileRebalanceFuture rebFut = fileRebalanceFut;
