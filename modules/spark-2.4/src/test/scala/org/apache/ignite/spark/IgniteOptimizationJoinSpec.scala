@@ -359,8 +359,6 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
                   |""".stripMargin
 
             val df = igniteSession.sql(qry)
-            df.show()
-            df.explain(true)
 
             checkOptimizationResult(df,
                 "SELECT table1.id as id1, table1.val1, table1.id_2 as id2, table1.val2, jt3.id as id3, jt3.val3 " +
@@ -401,10 +399,7 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
                 "(SELECT JT1.VAL1, JT1.ID, JT2.VAL2 FROM JT1 LEFT JOIN JT2 ON JT1.val1 = JT2.val2 WHERE JT2.val2 is not null) table1 LEFT JOIN " +
                 "JT3 ON table1.val1 = JT3.val3 " +
                 "WHERE CONCAT(table1.val1, table1.val2) = 'BB' OR CONCAT(table1.val1, JT3.val3) = 'AA' AND JT3.val3 is not null")
-
-            df.show()
-            df.explain(true)
-
+            
             val data = Tuple1(2)
 
             checkQueryData(df, data, _ ⇒ 0)
