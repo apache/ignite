@@ -118,7 +118,6 @@ public class LabeledDatasetLoader {
     }
 
     // TODO: IGNITE-7025 add filling with mean, mode, ignoring and so on
-
     /** */
     private static double fillMissedData() {
         return 0.0;

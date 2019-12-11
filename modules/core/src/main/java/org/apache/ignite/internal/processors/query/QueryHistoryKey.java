@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Immutable query metrics key used to group metrics.
  */
-public class QueryHistoryMetricsKey {
+public class QueryHistoryKey {
     /** Textual query representation. */
     private final String qry;
 
@@ -43,7 +43,7 @@ public class QueryHistoryMetricsKey {
      * @param schema Schema.
      * @param loc Local flag of execution query.
      */
-    public QueryHistoryMetricsKey(String qry, String schema, boolean loc) {
+    public QueryHistoryKey(String qry, String schema, boolean loc) {
         assert qry != null;
         assert schema != null;
 
@@ -88,7 +88,7 @@ public class QueryHistoryMetricsKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryHistoryMetricsKey key = (QueryHistoryMetricsKey)o;
+        QueryHistoryKey key = (QueryHistoryKey)o;
 
         return F.eq(qry, key.qry) && F.eq(schema, key.schema) && F.eq(loc, key.loc);
     }

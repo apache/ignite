@@ -38,8 +38,12 @@ import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionVie
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
+import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutor.Stripe;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
@@ -48,13 +52,16 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
@@ -65,6 +72,18 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
+    /** Name of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW = metricName("striped", "threadpool", "queue");
+
+    /** Description of the system view for a system {@link StripedExecutor} queue view. */
+    public static final String SYS_POOL_QUEUE_VIEW_DESC = "Striped thread pool task queue";
+
+    /** Name of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW = metricName("datastream", "threadpool", "queue");
+
+    /** Description of the system view for a data streamer {@link StripedExecutor} queue view. */
+    public static final String STREAM_POOL_QUEUE_VIEW_DESC = "Datastream thread pool task queue";
+
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
@@ -88,6 +107,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         registerWalker(TransactionView.class, new TransactionViewWalker());
         registerWalker(ContinuousQueryView.class, new ContinuousQueryViewWalker());
         registerWalker(ClusterNodeView.class, new ClusterNodeViewWalker());
+        registerWalker(ScanQueryView.class, new ScanQueryViewWalker());
+        registerWalker(StripedExecutorTaskView.class, new StripedExecutorTaskViewWalker());
     }
 
     /** {@inheritDoc} */
@@ -101,6 +122,36 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
+    }
+
+    /**
+     * Registers system views for a striped thread pools.
+     *
+     * @param stripedExecSvc Striped executor.
+     * @param dataStreamExecSvc Data streamer executor service.
+     */
+    public void registerThreadPools(StripedExecutor stripedExecSvc, StripedExecutor dataStreamExecSvc) {
+        ctx.systemView().registerInnerCollectionView(SYS_POOL_QUEUE_VIEW, SYS_POOL_QUEUE_VIEW_DESC,
+            StripedExecutorTaskView.class,
+            Arrays.asList(stripedExecSvc.stripes()),
+            Stripe::queue,
+            StripedExecutorTaskView::new);
+
+        ctx.systemView().registerInnerCollectionView(STREAM_POOL_QUEUE_VIEW, STREAM_POOL_QUEUE_VIEW_DESC,
+            StripedExecutorTaskView.class,
+            Arrays.asList(dataStreamExecSvc.stripes()),
+            Stripe::queue,
+            StripedExecutorTaskView::new);
+    }
+
+    /**
+     * Registers {@link SystemView} instance.
+     *
+     * @param sysView System view.
+     * @param <R> Row type.
+     */
+    public <R> void registerView(SystemView<R> sysView) {
+        registerView0(sysView.name(), sysView);
     }
 
     /**
