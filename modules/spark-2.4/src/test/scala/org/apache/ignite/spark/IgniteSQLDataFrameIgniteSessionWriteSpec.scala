@@ -32,7 +32,8 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSpec {
     describe("Additional features for IgniteSparkSession") {
-        it("Save data frame as a existing table with saveAsTable('table_name') - Overwrite") {
+        // TODO: fix it IGNITE-12435
+        ignore("Save data frame as a existing table with saveAsTable('table_name') - Overwrite") {
             val citiesDataFrame = spark.read.json(
                 resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
@@ -48,7 +49,8 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
                 s"Table json_city should contain data from json file.")
         }
 
-        it("Save data frame as a existing table with saveAsTable('table_name') - Append") {
+        // TODO: fix it IGNITE-12435
+        ignore("Save data frame as a existing table with saveAsTable('table_name') - Append") {
             val citiesDataFrame = spark.read.json(
                 resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
@@ -69,7 +71,8 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
                 s"Table json_city should contain data from json file.")
         }
 
-        it("Save data frame as a new table with saveAsTable('table_name')") {
+        // TODO: fix it IGNITE-12435
+        ignore("Save data frame as a new table with saveAsTable('table_name')") {
             val citiesDataFrame = spark.read.json(
                 resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
