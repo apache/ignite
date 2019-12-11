@@ -844,7 +844,7 @@ public class BinaryClassDescriptor {
         catch (Exception e) {
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to serialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
@@ -918,7 +918,7 @@ public class BinaryClassDescriptor {
         catch (Exception e) {
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to deserialize object [typeId=" + typeId + ']';

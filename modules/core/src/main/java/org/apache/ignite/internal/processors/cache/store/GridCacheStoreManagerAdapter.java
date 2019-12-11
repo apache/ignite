@@ -1340,8 +1340,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        public String toString() {
-            if (!S.INCLUDE_SENSITIVE)
+        @Override public String toString() {
+            if (!S.includeSensitive())
                 return "[size=" + size() + "]";
 
             Iterator<Cache.Entry<?, ?>> it = iterator();
