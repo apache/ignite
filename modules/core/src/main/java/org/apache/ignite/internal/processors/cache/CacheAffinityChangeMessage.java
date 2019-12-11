@@ -62,14 +62,10 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
      * Constructor used when message is created after cache rebalance finished.
      *
      * @param topVer Topology version.
-     * @param assignmentChange Assignment change.
      * @param cacheDeploymentIds Cache deployment ID.
      */
-    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
-        Map<Integer, IgniteUuid> cacheDeploymentIds) {
+    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer, Map<Integer, IgniteUuid> cacheDeploymentIds) {
         this.topVer = topVer;
-        this.assignmentChange = assignmentChange;
         this.cacheDeploymentIds = cacheDeploymentIds;
     }
 

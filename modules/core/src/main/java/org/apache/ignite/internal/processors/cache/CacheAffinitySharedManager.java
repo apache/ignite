@@ -363,33 +363,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (waitInfo.assignments.isEmpty()) // Possible if all awaited caches were destroyed.
             return null;
 
-        Map<Integer, Map<Integer, List<UUID>>> assignmentsChange = U.newHashMap(waitInfo.assignments.size());
-
-        for (Map.Entry<Integer, Map<Integer, List<ClusterNode>>> e : waitInfo.assignments.entrySet()) {
-            Integer grpId = e.getKey();
-
-            Map<Integer, List<ClusterNode>> assignment = e.getValue();
-
-            CacheGroupHolder grpHolder = grpHolders.get(grpId);
-
-            if (grpHolder != null) {
-                List<List<ClusterNode>> origin = grpHolder.affinity().assignments(waitInfo.topVer);
-
-                Map<Integer, List<UUID>> assignment0 = U.newHashMap(assignment.size());
-
-                for (int p : assignment.keySet()) {
-                    // Filter initially ideal assignments.
-                    // This may happen when affinity already equal to ideal, but some backups are not owners.
-                    if (!assignment.get(p).equals(origin.get(p)))
-                        assignment0.put(p, toIds0(assignment.get(p)));
-                }
-
-                if (!assignment0.isEmpty())
-                    assignmentsChange.put(grpId, assignment0);
-            }
-        }
-
-        return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);
+        return new CacheAffinityChangeMessage(waitInfo.topVer, waitInfo.deploymentIds);
     }
 
     /**
@@ -1172,6 +1146,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     ) {
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
         assert msg.partitionsMessage() == null : msg;
+        assert msg.assignmentChange() == null : msg;
 
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
 
@@ -1179,8 +1154,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             log.debug("Process affinity change message [exchVer=" + topVer +
                 ", msgVer=" + msg.topologyVersion() + ']');
         }
-
-        final Map<Integer, Map<Integer, List<UUID>>> affChange = msg.assignmentChange();
 
         final Map<Integer, IgniteUuid> deploymentIds = msg.cacheDeploymentIds();
 
@@ -1202,49 +1175,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     return;
                 }
 
-                Map<Integer, List<UUID>> change = affChange.get(aff.groupId());
-
-                if (change != null) {
-                    assert !change.isEmpty() : msg;
-
-                    List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
-
-                    List<List<ClusterNode>> assignment = new ArrayList<>(curAff);
-
-                    CacheGroupContext grp = cctx.cache().cacheGroup(aff.groupId());
-
-                    GridDhtPartitionTopology top = grp != null ? cctx.cache().cacheGroup(desc.groupId()).topology() : null;
-
-                    for (Map.Entry<Integer, List<UUID>> e : change.entrySet()) {
-                        Integer part = e.getKey();
-
-                        List<ClusterNode> nodes = toNodes(topVer, e.getValue());
-
-                        assert !nodes.contains(cctx.localNode()) || top.localPartition(part).state() == OWNING :
-                            "Invalid local partition state on LAA switch [part=" + top.localPartition(part) +
-                                ", ideal=" + F.nodeIds(nodes) + "]";
-
-                        assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
-                            "[cacheGrp=" + aff.cacheOrGroupName() +
-                            ", part=" + part +
-                            ", cur=" + F.nodeIds(assignment.get(part)) +
-                            ", new=" + F.nodeIds(nodes) +
-                            ", exchVer=" + exchFut.initialVersion() +
-                            ", msgVer=" + msg.topologyVersion() +
-                            ']';
-
-                        assert nodes.equals(aff.idealAssignmentRaw().get(part)) :
-                            "Not an ideal partition distribution set atempt on LAA [part=" + part + ", new=" +
-                                F.nodeIds(nodes) + ", ideal(expected)=" + F.nodeIds(aff.idealAssignmentRaw().get(part)) + ']';
-
-                        assignment.set(part, nodes);
-                    }
-
-                    // Hint: Can be refactored to just a boolean flags set at message (since always ideal).
-                    assert assignment.equals(aff.idealAssignmentRaw()) : aff.cacheOrGroupName();
-
-                    aff.initialize(topVer, assignment);
-                }
+                if (!aff.partitionPrimariesDifferentToIdeal(affTopVer).isEmpty())
+                    aff.initialize(topVer, aff.idealAssignmentRaw());
                 else {
                     assert aff.assignments(aff.lastVersion()).equals(aff.idealAssignmentRaw()) :
                         "Not an ideal distribution duplication attempt on LAA [grp=" + aff.cacheOrGroupName() +
@@ -1254,8 +1186,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
 
                 assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) :
-                    "Not an ideal final distribution on LAA [grp=" + aff.cacheOrGroupName() +
-                        ", changed=" + (change != null) + ", lastAffinity=" + aff.lastVersion() + "]";
+                    "Not an ideal final distribution on LAA [grp=" + aff.cacheOrGroupName() + ", lastAffinity=" +
+                        aff.lastVersion() + "]";
 
                 cctx.exchange().exchangerUpdateHeartbeat();
 
