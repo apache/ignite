@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -57,13 +59,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
-    /** */
+    /** Persistence flag. */
     private boolean persistence;
 
-    /** */
+    /** Cache name. */
     private static final String CACHE_NAME = "testCache";
 
-    /** */
+    /** Cache configuration closure. */
     private IgniteClosure<String, CacheConfiguration[]> cacheC;
 
     /** {@inheritDoc} */
@@ -131,8 +133,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster).
-     * It's not possible to perform switch since primaries may change.
+     * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster). It's not possible to
+     * perform switch since primaries may change.
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
@@ -140,8 +142,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is absent in case of fixed baseline.
-     * It's possible to perform switch since primaries can't change.
+     * Checks Partition Exchange is absent in case of fixed baseline. It's possible to perform switch since primaries
+     * can't change.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
@@ -204,11 +206,34 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testNoTransactionsWaitAtNodeLeftWithZeroBackupsAndLossIgnore() throws Exception {
+        testNoTransactionsWaitAtNodeLeft(0, PartitionLossPolicy.IGNORE);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testNoTransactionsWaitAtNodeLeftWithZeroBackupsAndLossSafe() throws Exception {
+        testNoTransactionsWaitAtNodeLeft(0, PartitionLossPolicy.READ_WRITE_SAFE);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testNoTransactionsWaitAtNodeLeftWithSingleBackup() throws Exception {
+        testNoTransactionsWaitAtNodeLeft(1, PartitionLossPolicy.IGNORE);
+    }
+
+    /**
      * Checks that transaction can be continued on node left and there is no waiting for it's completion in case
      * baseline was not changed and cluster was fully rebalanced.
      */
-    @Test
-    public void testNoTransactionsWaitAtNodeLeft() throws Exception {
+    private void testNoTransactionsWaitAtNodeLeft(int backups, PartitionLossPolicy lossPlc) throws Exception {
         persistence = true;
 
         String cacheName = "three-partitioned";
@@ -220,7 +245,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
                     ccfg.setName(cacheName);
                     ccfg.setWriteSynchronizationMode(FULL_SYNC);
-                    ccfg.setBackups(1);
+                    ccfg.setBackups(backups);
+                    ccfg.setPartitionLossPolicy(lossPlc);
                     ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
                     ccfg.setAffinity(new Map4PartitionsTo4NodesAffinityFunction());
 
@@ -269,7 +295,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             AtomicInteger key_from = new AtomicInteger();
 
-            CountDownLatch readyLatch = new CountDownLatch(4 * multiplicator);
+            CountDownLatch readyLatch = new CountDownLatch((backups > 0 ? 4 : 2) * multiplicator);
             CountDownLatch failedLatch = new CountDownLatch(1);
 
             IgniteCache<Integer, Integer> failedCache = failed.getOrCreateCache(cacheName);
@@ -306,7 +332,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 }
             }, multiplicator);
 
-            IgniteInternalFuture<?> primaryThenPrimaryFut = multithreadedAsync(() -> {
+            IgniteInternalFuture<?> primaryThenPrimaryFut = backups > 0 ? multithreadedAsync(() -> {
                 try {
                     List<Integer> keys = primaryKeys(failedCache, 2, key_from.addAndGet(100));
 
@@ -338,7 +364,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     fail("Should not happen [exception=" + e + "]");
                 }
-            }, multiplicator);
+            }, multiplicator) : new GridFinishedFuture<>();
 
             IgniteInternalFuture<?> nearThenPrimaryFut = multithreadedAsync(() -> {
                 try {
@@ -372,7 +398,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 }
             }, multiplicator);
 
-            IgniteInternalFuture<?> nearThenBackupFut = multithreadedAsync(() -> {
+            IgniteInternalFuture<?> nearThenBackupFut = backups > 0 ? multithreadedAsync(() -> {
                 try {
                     Integer key0 = nearKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
                     Integer key1 = backupKeys(failedCache, 1, key_from.addAndGet(100)).get(0);
@@ -400,7 +426,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 catch (Exception e) {
                     fail("Should not happen [exception=" + e + "]");
                 }
-            }, multiplicator);
+            }, multiplicator) : new GridFinishedFuture<>();
 
             readyLatch.await();
 
@@ -451,27 +477,25 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
             List<List<ClusterNode>> res = new ArrayList<>(4);
 
-            // Partitions by owners (node{parts}): 0{0,3}, 1{0,1}, 2{1,2}, 3{2,3}
+            int backups = affCtx.backups();
+
             if (affCtx.currentTopologySnapshot().size() == 4) {
                 List<ClusterNode> p0 = new ArrayList<>();
-
-                p0.add(affCtx.currentTopologySnapshot().get(0));
-                p0.add(affCtx.currentTopologySnapshot().get(1));
-
                 List<ClusterNode> p1 = new ArrayList<>();
-
-                p1.add(affCtx.currentTopologySnapshot().get(1));
-                p1.add(affCtx.currentTopologySnapshot().get(2));
-
                 List<ClusterNode> p2 = new ArrayList<>();
-
-                p2.add(affCtx.currentTopologySnapshot().get(2));
-                p2.add(affCtx.currentTopologySnapshot().get(3));
-
                 List<ClusterNode> p3 = new ArrayList<>();
 
+                p0.add(affCtx.currentTopologySnapshot().get(0));
+                p1.add(affCtx.currentTopologySnapshot().get(1));
+                p2.add(affCtx.currentTopologySnapshot().get(2));
                 p3.add(affCtx.currentTopologySnapshot().get(3));
-                p3.add(affCtx.currentTopologySnapshot().get(0));
+
+                if (backups == 1) {
+                    p0.add(affCtx.currentTopologySnapshot().get(1));
+                    p1.add(affCtx.currentTopologySnapshot().get(2));
+                    p2.add(affCtx.currentTopologySnapshot().get(3));
+                    p3.add(affCtx.currentTopologySnapshot().get(0));
+                }
 
                 res.add(p0);
                 res.add(p1);
