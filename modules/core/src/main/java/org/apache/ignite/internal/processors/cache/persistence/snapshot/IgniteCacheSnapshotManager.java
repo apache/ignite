@@ -121,14 +121,14 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      * @param cctx Cctx.
      */
-    public void onCacheStop(GridCacheContext cctx) {
+    public void onCacheStop(GridCacheContext<?, ?> cctx, boolean destroy) {
         // No-op.
     }
 
     /**
      * @param gctx Cctx.
      */
-    public void onCacheGroupStop(CacheGroupContext gctx) {
+    public void onCacheGroupStop(CacheGroupContext gctx, boolean destroy) {
         // No-op.
     }
 
