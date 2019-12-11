@@ -86,6 +86,7 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 
 /**
  * Continuous queries manager.
@@ -535,6 +536,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         locTransLsnr,
                         rmtFilterFactory,
                         rmtTransFactory,
+                        securitySubjectId(cctx.kernalContext()),
                         true,
                         false,
                         !includeExpired,
@@ -550,6 +552,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilterFactory,
+                        securitySubjectId(cctx.kernalContext()),
                         true,
                         false,
                         !includeExpired,
@@ -568,6 +571,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilter,
+                        securitySubjectId(cctx.kernalContext()),
                         true,
                         false,
                         !includeExpired,
@@ -615,6 +619,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilter,
+                        securitySubjectId(cctx.kernalContext()),
                         true,
                         sync,
                         true,
@@ -1065,6 +1070,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
                                 rmtFilterFactory,
+                                securitySubjectId(cctx.kernalContext()),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,
@@ -1091,6 +1097,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
                                 jCacheFilter,
+                                securitySubjectId(cctx.kernalContext()),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,

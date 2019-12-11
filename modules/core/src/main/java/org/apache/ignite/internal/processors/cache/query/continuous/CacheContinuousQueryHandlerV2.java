@@ -67,6 +67,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
      * @param topic Topic for ordered messages.
      * @param locLsnr Local listener.
      * @param rmtFilterFactory Remote filter factory.
+     * @param subjectId Security subject id.
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
@@ -77,6 +78,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
         Object topic,
         @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
         @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        @Nullable UUID subjectId,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -86,6 +88,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             topic,
             locLsnr,
             null,
+            subjectId,
             oldValRequired,
             sync,
             ignoreExpired,

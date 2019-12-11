@@ -21,9 +21,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -38,11 +41,7 @@ public class SecurityUtils {
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
-        @Override protected Integer initialValue() {
-            return DFLT_SERIALIZE_VERSION;
-        }
-    };
+    private static final ThreadLocal<Integer> SERIALIZE_VERSION = ThreadLocal.withInitial(() -> DFLT_SERIALIZE_VERSION);
 
     /**
      * Private constructor.
@@ -90,6 +89,24 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Gets a current security subject id for communication routines.
+     *
+     * @return Current security subject id if security is enabled and subject id doesn't equal local node id otherwise
+     * null.
+     */
+    public static UUID securitySubjectId(GridKernalContext ctx) {
+        Objects.requireNonNull(ctx, "Parameter 'ctx' cannot be null.");
+
+        if (ctx.security().enabled()) {
+            UUID curSecSubjId = ctx.security().securityContext().subject().id();
+
+            return !ctx.localNodeId().equals(curSecSubjId) ? curSecSubjId : null;
+        }
+
+        return null;
     }
 
     /**

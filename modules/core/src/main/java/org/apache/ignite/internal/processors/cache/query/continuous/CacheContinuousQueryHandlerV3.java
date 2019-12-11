@@ -69,6 +69,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
      * @param locTransLsnr Local listener of transformed events
      * @param rmtFilterFactory Remote filter factory.
      * @param rmtTransFactory Remote transformer factory.
+     * @param subjectId Security subject id.
      * @param oldValRequired OldValRequired flag.
      * @param sync Sync flag.
      * @param ignoreExpired IgnoreExpired flag.
@@ -80,6 +81,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
         EventListener<?> locTransLsnr,
         @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
         Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
+        @Nullable UUID subjectId,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -89,6 +91,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
             topic,
             null,
             rmtFilterFactory,
+            subjectId,
             oldValRequired,
             sync,
             ignoreExpired,

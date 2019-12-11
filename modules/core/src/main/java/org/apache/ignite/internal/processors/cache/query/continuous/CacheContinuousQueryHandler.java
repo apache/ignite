@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -117,6 +118,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** Topic for ordered messages. */
     private Object topic;
+
+    /** Security subject id. */
+    private UUID subjectId;
 
     /** P2P unmarshalling future. */
     protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -219,6 +223,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param topic Topic for ordered messages.
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
+     * @param subjectId Security subject id.
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
@@ -228,6 +233,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         Object topic,
         @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
         @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable UUID subjectId,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -238,6 +244,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.topic = topic;
         this.locLsnr = locLsnr;
         this.rmtFilter = rmtFilter;
+        this.subjectId = subjectId;
         this.oldValRequired = oldValRequired;
         this.sync = sync;
         this.ignoreExpired = ignoreExpired;
@@ -983,8 +990,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean notify = !entry.isFiltered();
 
         try {
-            if (notify && getEventFilter() != null)
-                notify = getEventFilter().evaluate(evt);
+            if (notify && getEventFilter() != null) {
+                try (OperationSecurityContext c = ctx.security().withContext(securitySubject())) {
+                    notify = getEventFilter().evaluate(evt);
+                }
+            }
         }
         catch (Exception e) {
             U.error(log, "CacheEntryEventFilter failed: " + e);
@@ -994,6 +1004,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             entry.markFiltered();
 
         return notify;
+    }
+
+    /** Gets security subject id to create OperationSecurityContext */
+    private UUID securitySubject(){
+        return subjectId != null ? subjectId : nodeId;
     }
 
     /**
@@ -1401,6 +1416,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         else
             out.writeObject(rmtFilter);
 
+        U.writeUuid(out, subjectId);
         out.writeBoolean(internal);
         out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
@@ -1425,6 +1441,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
+        subjectId = U.readUuid(in);
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();
         oldValRequired = in.readBoolean();
@@ -1555,18 +1572,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private CacheContinuousQueryEntry transformToEntry(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
         CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
-        Object transVal = transform(trans, evt);
+        try (OperationSecurityContext c = ctx.security().withContext(securitySubject())) {
+            Object transVal = transform(trans, evt);
 
-        return new CacheContinuousQueryEntry(evt.entry().cacheId(),
-            evt.entry().eventType(),
-            null,
-            transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
-            null,
-            evt.entry().isKeepBinary(),
-            evt.entry().partition(),
-            evt.entry().updateCounter(),
-            evt.entry().topologyVersion(),
-            evt.entry().flags());
+            return new CacheContinuousQueryEntry(evt.entry().cacheId(),
+                evt.entry().eventType(),
+                null,
+                transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
+                null,
+                evt.entry().isKeepBinary(),
+                evt.entry().partition(),
+                evt.entry().updateCounter(),
+                evt.entry().topologyVersion(),
+                evt.entry().flags());
+        }
     }
 
     /**
