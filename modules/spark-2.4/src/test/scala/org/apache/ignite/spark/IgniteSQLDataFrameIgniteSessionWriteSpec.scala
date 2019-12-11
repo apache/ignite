@@ -35,7 +35,7 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
         // TODO: fix it IGNITE-12435
         ignore("Save data frame as a existing table with saveAsTable('table_name') - Overwrite") {
             val citiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
@@ -52,7 +52,7 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
         // TODO: fix it IGNITE-12435
         ignore("Save data frame as a existing table with saveAsTable('table_name') - Append") {
             val citiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
 
             val rowCnt = citiesDataFrame.count()
 
@@ -74,7 +74,7 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
         // TODO: fix it IGNITE-12435
         ignore("Save data frame as a new table with saveAsTable('table_name')") {
             val citiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)

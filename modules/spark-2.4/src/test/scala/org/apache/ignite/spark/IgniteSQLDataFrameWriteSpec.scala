@@ -121,7 +121,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
 
         it("Save another data source data as a Ignite table") {
             val citiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
@@ -149,7 +149,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
 
         it("Should keep first row if allowOverwrite is false") {
             val nonUniqueCitiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities_non_unique.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities_non_unique.json").getAbsolutePath)
 
             nonUniqueCitiesDataFrame.write
                 .format(FORMAT_IGNITE)
@@ -169,7 +169,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
 
         it("Should keep last row if allowOverwrite is true") {
             val nonUniqueCitiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities_non_unique.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities_non_unique.json").getAbsolutePath)
 
             nonUniqueCitiesDataFrame.write
                 .format(FORMAT_IGNITE)

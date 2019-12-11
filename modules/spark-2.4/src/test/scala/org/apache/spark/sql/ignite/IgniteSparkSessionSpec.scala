@@ -34,7 +34,7 @@ class IgniteSparkSessionSpec extends AbstractDataFrameSpec {
     describe("Ignite Spark Session Implementation") {
         it("should keep session state after session clone") {
             val dfProvider = (s: IgniteSparkSession) => {
-                s.read.json(resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                s.read.json(resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
                     .filter("name = 'Denver'")
             }
 

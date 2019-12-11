@@ -143,7 +143,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
 
         it("Should allow register tables based on other datasources") {
             val citiesDataFrame = igniteSession.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
+                resolveIgnitePath("modules/spark-2.4/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.createOrReplaceTempView("JSON_CITIES")
 
