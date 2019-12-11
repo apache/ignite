@@ -349,9 +349,6 @@ public class GridDhtPartitionDemander {
                 return null;
             }
 
-            if (("cache1".equals(grp.cacheOrGroupName()) || "cache2".equals(grp.cacheOrGroupName())) && !rebalanceFut.isDone())
-                U.dumpStack("Created rebalance future: " + rebalanceFut);
-
             return () -> {
                 if (next != null)
                     fut.listen(f -> {
@@ -1279,8 +1276,6 @@ public class GridDhtPartitionDemander {
          * @return {@code True}.
          */
         @Override public boolean cancel() {
-//            U.dumpStack("Rebalancing canceled [grp=" + grp.cacheOrGroupName() + "]");
-
             // Cancel lock is needed only for case when some message might be on the fly while rebalancing is
             // cancelled.
             cancelLock.writeLock().lock();

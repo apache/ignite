@@ -192,7 +192,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped for group " + grp.cacheOrGroupName());
 
-                return;
+                continue;
             }
 
             if (moving != null && !moving.isEmpty() && log.isDebugEnabled())

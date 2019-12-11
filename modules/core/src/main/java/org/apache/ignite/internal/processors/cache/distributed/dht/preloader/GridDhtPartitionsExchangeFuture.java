@@ -1431,17 +1431,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert !cctx.kernalContext().clientNode();
 
-//        if (cctx.filePreloader() != null) {
-//            cctx.exchange().exchangerBlockingSectionBegin();
-//
-//            try {
-//                cctx.filePreloader().onTopologyChanged(this);
-//            }
-//            finally {
-//                cctx.exchange().exchangerBlockingSectionEnd();
-//            }
-//        }
-
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
@@ -1466,10 +1455,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
             partHistReserved = cctx.database().reserveHistoryForExchange();
-
-            log.info("Current future hashCode=" + System.identityHashCode(this));
-
-            log.info(cctx.localNodeId() + " partHistReserved: " + partHistReserved);
         }
         finally {
             cctx.exchange().exchangerBlockingSectionEnd();
@@ -3165,9 +3150,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        //GridDhtPartitionsSingleMessage msg = msgs.values().iterator().next();
-
-        // Also must process counters from the local node.
+       // Also must process counters from the local node.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
 
@@ -3731,7 +3714,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         break;
                     }
-
                 }
             }
 

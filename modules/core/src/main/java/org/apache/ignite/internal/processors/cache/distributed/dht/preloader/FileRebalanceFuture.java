@@ -90,7 +90,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final Map<Integer, GridDhtPreloaderAssignments> historicalAssignments = new ConcurrentHashMap<>();
 
     /** Index rebuild future. */
-    private final GridCompoundFuture idxFuture = new GridCompoundFuture<>();
+    private final GridCompoundFuture idxRebuildFut = new GridCompoundFuture<>();
 
     /** */
     public FileRebalanceFuture() {
@@ -231,12 +231,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                     futs.clear();
 
-                    if (!idxFuture.isDone()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Cancelling index rebuild");
-
-                        idxFuture.cancel();
-                    }
+                    if (log.isDebugEnabled() && !idxRebuildFut.isDone())
+                        log.debug("Index rebuild is still in progress (ignore).");
                 }
             }
             catch (IgniteCheckedException e) {
@@ -266,25 +262,17 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         if (remainingNodes.isEmpty() && allGroupsMap.remove(grpId) != null) {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            // rebuildIndexes
-            // todo should be combined with existsing mechanics - can conflict with same index rebuild at the same time
             GridQueryProcessor qryProc = cctx.kernalContext().query();
 
             if (qryProc.moduleEnabled()) {
                 if (log.isInfoEnabled())
                     log.info("Starting index rebuild for cache group: " + grp.cacheOrGroupName());
 
-                cancelLock.lock();
-                try {
-                    for (GridCacheContext ctx : grp.caches()) {
-                        IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
+                for (GridCacheContext ctx : grp.caches()) {
+                    IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
 
-                        if (fut != null)
-                            idxFuture.add(fut);
-                    }
-
-                } finally {
-                    cancelLock.unlock();
+                    if (fut != null)
+                        idxRebuildFut.add(fut);
                 }
             }
             else
@@ -300,7 +288,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                 // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
 //                try {
-//                    U.sleep(1_000);
+//                    U.sleep(500);
 //                }
 //                catch (IgniteInterruptedCheckedException e) {
 //                    log.warning("Thread was interrupred,", e);
@@ -345,12 +333,18 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             cancelLock.lock();
 
             try {
-                if (!idxFuture.initialized()) {
-                    idxFuture.markInitialized();
+                if (!idxRebuildFut.initialized()) {
+                    idxRebuildFut.markInitialized();
 
-                    idxFuture.listen(clo -> {
-                        onDone(true);
-                    });
+                    if (log.isInfoEnabled()) {
+                        idxRebuildFut.listen(clo -> {
+                            log.info("Rebuilding indexes completed.");
+                        });
+                    }
+
+                    // No need to get attached to the process of rebuilding indexes,
+                    // we can go forward while rebuilding is in progress.
+                    onDone(true);
                 }
             } finally {
                 cancelLock.unlock();
@@ -491,8 +485,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         FileRebalanceNodeRoutine fut = nodeRoutine(grpId, nodeId);
 
         if (fut == null || fut.isDone()) {
-            if (log.isTraceEnabled())
-                log.trace("Stale future, removing partition snapshot [path=" + file + "]");
+            if (log.isDebugEnabled())
+                log.debug("Stale future, removing partition snapshot [path=" + file + "]");
 
             file.delete();
 
@@ -552,7 +546,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + entry.getValue().isFailed() + "\n");
 
         if (!isDone())
-            buf.append("\n\tIndex future fnished=").append(idxFuture.isDone()).append(" failed=").append(idxFuture.isFailed()).append(" futs=").append(idxFuture.futures()).append('\n');
+            buf.append("\n\tIndex future fnished=").append(idxRebuildFut.isDone()).append(" failed=").append(idxRebuildFut.isFailed()).append(" futs=").append(idxRebuildFut.futures()).append('\n');
 
         return buf.toString();
     }
