@@ -82,6 +82,9 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
     /** Flag indicates the custom port should be used. */
     private boolean useCustomPort;
 
+    /** Flag indicates the cache/table should be statically configured. */
+    private boolean useStaticConfiguration = true;
+
     /** Latch allows to block exchange thread. @see Test*/
     private static CountDownLatch START_EXCHANGE = new CountDownLatch(1);
 
@@ -103,21 +106,23 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
 
         cfg.setClientConnectorConfiguration(cliConf);
 
-        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
-        cacheCfg.setSqlSchema("PUBLIC");
-        cacheCfg.setBackups(1);
-        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        if (useStaticConfiguration) {
+            CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
+            cacheCfg.setSqlSchema("PUBLIC");
+            cacheCfg.setBackups(1);
+            cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        QueryEntity e = new QueryEntity();
-        e.setKeyType(Integer.class.getName());
-        e.setValueType(TABLE_NAME);
-        e.setKeyFieldName("id");
-        e.addQueryField("id", Integer.class.getName(), null);
-        e.addQueryField("val", String.class.getName(), null);
+            QueryEntity e = new QueryEntity();
+            e.setKeyType(Integer.class.getName());
+            e.setValueType(TABLE_NAME);
+            e.setKeyFieldName("id");
+            e.addQueryField("id", Integer.class.getName(), null);
+            e.addQueryField("val", String.class.getName(), null);
 
-        cacheCfg.setQueryEntities(Collections.singletonList(e));
+            cacheCfg.setQueryEntities(Collections.singletonList(e));
 
-        cfg.setCacheConfiguration(cacheCfg);
+            cfg.setCacheConfiguration(cacheCfg);
+        }
 
         return cfg;
     }
@@ -178,57 +183,33 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
 
         crd.cluster().active(true);
 
-        fillValues();
+        createTableAndFillValues();
 
         stopGrid(0);
 
         // Let's hang exchange thread when the node is started in order to guarantee that jdbc request will be served
         // when the initial exchange has not started yet.
-        checkJdbcConnectionToRestartedNode2(URL, START_EXCHANGE, FINISH_EXCHANGE);
-//
-//        GridTestUtils.runAsync(() -> startGrid(0));
-//
-//        initialExchangeInProgress.await();
-//
-//        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<String>() {
-//            @Override public String call() throws Exception {
-//                try (Connection con = DriverManager.getConnection(URL)) {
-//                    try (Statement stmt = con.createStatement()) {
-//                        ResultSet rs = stmt.executeQuery(SQL);
-//
-//                        return rs.next() ? rs.getString("val") : "";
-//                    }
-//                }
-//            }
-//        });
-//
-//        // The first attempt to get a result should lead to IgniteFutureTimeoutCheckedException
-//        // because the server node is waiting for the initial exchange.
-//        try {
-////          GridTestUtils.assertThrows(log, () -> fut.get(TIMEOUT, TimeUnit.MILLISECONDS), IgniteFutureTimeoutCheckedException.class, null);
-//
-//            fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
-//
-//            assertTrue("No exception", false);
-//        }
-//        catch (IgniteFutureTimeoutCheckedException e) {
-//            // expected.
-//        }
-//        catch (IgniteCheckedException e) {
-//            e.printStackTrace();
-//            assertTrue("IgniteCheckedException", false);
-//        }
-//        finally {
-//            endLatch.countDown();
-//        }
-//
-//        // After releasing the exchange thread the second attempt should get a result without any exceptions.
-//        try {
-//            fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
-//        }
-//        catch (Exception e) {
-//            assertTrue("Second attempt failed", false);
-//        }
+        checkJdbcConnectionToRestartedNode(URL, START_EXCHANGE, FINISH_EXCHANGE);
+    }
+
+    /**
+     * Tests jdbc connection to the restarted node that is part of baseline topology. The table is statically configured.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJdbcConnectionToRestartedNodeInActiveClusterStaticConfig() throws Exception {
+        connectToRestartedNodeInActiveCluster();
+    }
+
+    /**
+     * Tests jdbc connection to the restarted node that is part of baseline topology. The table is created dynamically.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJdbcConnectionToRestartedNodeInActiveClusterDynamicConfig() throws Exception {
+        useStaticConfiguration = false;
+
+        connectToRestartedNodeInActiveCluster();
     }
 
     /**
@@ -236,7 +217,7 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
      *
      * @throws Exception If failed.
      */
-    public void testJdbcConnectionToRestartedNodeInActiveCluster() throws Exception {
+    private void connectToRestartedNodeInActiveCluster() throws Exception {
         Ignite crd = startGrid(0);
 
         useCustomPort = true;
@@ -245,7 +226,7 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
 
         crd.cluster().active(true);
 
-        fillValues();
+        createTableAndFillValues();
 
         stopGrid(1);
 
@@ -255,70 +236,7 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
         // when the initial exchange has not started yet. It is important to note that the node will be started
         // in the active mode. It means the method GridComponent.onKernalStart will be called with {@code active}
         // equals to {@code true}.
-        checkJdbcConnectionToRestartedNode2(URL + ":" + CUSTOM_JDBC_PORT, START_EXCHANGE, FINISH_EXCHANGE);
-    }
-
-    /**
-     * Tests jdbc connection to a restarted node.
-     *
-     * @param connUrl Connection URL to be used.
-     * @param startLatch Latch that allows to wait for the first exchange task.
-     * @param finishLatch Latch that allows to continue the regular work on the exchange thread.
-     * @throws Exception If failed.
-     */
-    private void checkJdbcConnectionToRestartedNode(
-        String connUrl,
-        CountDownLatch startLatch,
-        CountDownLatch finishLatch
-    ) throws Exception {
-        try {
-            JdbcThinConnectionToRestartedNodeTestPluginProvider.enable(true);
-
-            GridTestUtils.runAsync(() -> startGrid(1));
-
-            startLatch.await();
-
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
-                try (Connection con = DriverManager.getConnection(connUrl)) {
-                    try (Statement stmt = con.createStatement()) {
-                        ResultSet rs = stmt.executeQuery(SQL);
-
-                        return rs.next() ? rs.getString("val") : "";
-                    }
-                }
-            });
-
-            // The first attempt to get a result should lead to IgniteFutureTimeoutCheckedException
-            // because the server node is waiting for the initial exchange.
-            try {
-                //          GridTestUtils.assertThrows(log, () -> fut.get(TIMEOUT, TimeUnit.MILLISECONDS), IgniteFutureTimeoutCheckedException.class, null);
-
-                fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
-
-                assertTrue("No exception", false);
-            }
-            catch (IgniteFutureTimeoutCheckedException e) {
-                // expected.
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-                assertTrue("IgniteCheckedException", false);
-            }
-            finally {
-                finishLatch.countDown();
-            }
-
-            // After releasing the exchange thread the second attempt should get a result without any exceptions.
-            try {
-                fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
-            }
-            catch (Exception e) {
-                assertTrue("Second attempt failed", false);
-            }
-        }
-        finally {
-            JdbcThinConnectionToRestartedNodeTestPluginProvider.enable(false);
-        }
+        checkJdbcConnectionToRestartedNode(URL + ":" + CUSTOM_JDBC_PORT, START_EXCHANGE, FINISH_EXCHANGE);
     }
 
     /**
@@ -329,7 +247,7 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
      * @param finishLatch Latch that allows to continue the regular work on the exchange thread.
      * @throws Exception If failed.
      */
-    private void checkJdbcConnectionToRestartedNode2(
+    private void checkJdbcConnectionToRestartedNode(
         String connUrl,
         CountDownLatch startLatch,
         CountDownLatch finishLatch
@@ -360,24 +278,6 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
 
             finishLatch.countDown();
 
-//            try {
-//
-//
-//                fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
-//
-//                assertTrue("No exception", false);
-//            }
-//            catch (IgniteFutureTimeoutCheckedException e) {
-//                // expected.
-//            }
-//            catch (IgniteCheckedException e) {
-//                e.printStackTrace();
-//                assertTrue("IgniteCheckedException", false);
-//            }
-//            finally {
-//                finishLatch.countDown();
-//            }
-
             // After releasing the exchange thread the second attempt should get a result without any exceptions.
             fut.get(TIMEOUT, TimeUnit.MILLISECONDS);
         }
@@ -387,12 +287,15 @@ public class JdbcThinConnectionToRestartedNodeSelfTest extends JdbcThinAbstractS
     }
 
     /**
-     * Fills initial data into the statically configured table..
+     * Creates a new table if it does not exist and fills initial data into the table.
      */
-    private void fillValues() {
+    private void createTableAndFillValues() {
         CacheConfiguration cacheCfg = new CacheConfiguration<>("DUMMY_CACHE").setSqlSchema("PUBLIC");
 
         IgniteCache cache = grid(0).getOrCreateCache(cacheCfg);
+
+        cache.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS " + TABLE_NAME
+            + " (id INT PRIMARY KEY, val VARCHAR)")).getAll();
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO " + TABLE_NAME + " (id, val) VALUES (?, ?)");
 
