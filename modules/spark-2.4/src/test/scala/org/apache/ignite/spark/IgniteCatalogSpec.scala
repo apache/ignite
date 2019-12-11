@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Long ⇒ JLong}
+import java.lang.{Long => JLong}
 
 import org.apache.ignite.IgniteException
 import org.apache.ignite.cache.query.SqlFieldsQuery
@@ -174,16 +174,18 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             res.count should equal(3)
         }
 
-        /*it("Should allow Spark SQL to create a table") {
+        // TODO: should be fixed in IGNITE-12246
+        ignore("Should allow Spark SQL to create a table") {
             igniteSession.sql(
                 "CREATE TABLE NEW_SPARK_TABLE(id LONG, name STRING) USING JSON OPTIONS ('primaryKeyFields' = 'id')")
 
             val tables = igniteSession.catalog.listTables.collect()
 
             tables.find(_.name == "NEW_SPARK_TABLE").map(_.name) should equal (Some("NEW_SPARK_TABLE"))
-        }*/
+        }
 
-        /*it("Should disallow creation of tables in non-PUBLIC schemas") {
+        // TODO: should be fixed in IGNITE-12246
+        ignore("Should disallow creation of tables in non-PUBLIC schemas") {
             val ex = intercept[IgniteException] {
                 igniteSession.sql(
                     "CREATE TABLE cache3.NEW_SPARK_TABLE(id LONG, name STRING) " +
@@ -191,7 +193,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             }
 
             assertEquals(ex.getMessage, "Can only create new tables in PUBLIC schema, not cache3")
-        }*/
+        }
     }
 
     before {

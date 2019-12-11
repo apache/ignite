@@ -17,15 +17,15 @@
 
 package org.apache.ignite.spark
 
+import java.lang.{Double => JDouble, Long => JLong}
+
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import java.lang.{Double ⇒ JDouble, Long ⇒ JLong}
-
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
 /**
   */
@@ -45,7 +45,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
         }
 
         it("AVG - DECIMAL") {
-            //TODO: write me
+            //TODO: add test for ticket IGNITE-12432
         }
 
         it("AVG - DOUBLE") {

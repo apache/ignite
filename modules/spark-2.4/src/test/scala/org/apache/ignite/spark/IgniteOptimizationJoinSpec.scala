@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spark
 
+import java.lang.{Long => JLong}
+
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
@@ -24,8 +26,6 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-
-import java.lang.{Long ⇒ JLong}
 
 /**
   */
@@ -329,8 +329,6 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
                   |""".stripMargin
 
             val df = igniteSession.sql(qry)
-            df.show()
-            df.explain(true)
 
             checkOptimizationResult(df, "SELECT jt1.id as id1, jt1.val1, jt2.id as id2, jt2.val2 " +
                 "FROM jt1 RIGHT JOIN jt2 ON jt1.val1 = jt2.val2 WHERE jt1.val1 is not null")
@@ -343,7 +341,8 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data, r ⇒ if (r.get(0) == null) 100L else r.getAs[Long](0))
         }
 
-        /*it("JOIN 3 TABLE") {
+        // TODO: Fix multiple joins in IGNITE-12244
+        ignore("JOIN 3 TABLE") {
             val qry =
                 """
                   |SELECT
@@ -375,7 +374,7 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
                 (3, "C", 2, "C", null, null))
 
             checkQueryData(df, data)
-        }*/
+        }
 
         it("JOIN 3 TABLE AND AGGREGATE") {
             val qry =
@@ -539,7 +538,6 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
 
         igniteSession = IgniteSparkSession.builder()
             .config(spark.sparkContext.getConf)
-            //.config("ignite.disableSparkSQLOptimization", "true")
             .igniteConfigProvider(configProvider)
             .getOrCreate()
     }

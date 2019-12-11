@@ -89,7 +89,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
             val name =
                 if (useQualifier)
                     // TODO: add ticket to handle seq with two elements with qualifier for database name: related to the [SPARK-19602][SQL] ticket
-                    ar.qualifier.map(_ + "." + ar.name).seq.last
+                    ar.qualifier.map(_ + "." + ar.name).find(_ => true).getOrElse(ar.name)
                 else
                     ar.name
 

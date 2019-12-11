@@ -22,17 +22,17 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.{TEST_CONFIG_FILE, enclose}
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.testframework.GridTestUtils.resolveIgnitePath
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.apache.spark.sql.functions._
 
 /**
   */
 @RunWith(classOf[JUnitRunner])
 class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSpec {
     describe("Additional features for IgniteSparkSession") {
-        /*it("Save data frame as a existing table with saveAsTable('table_name') - Overwrite") {
+        it("Save data frame as a existing table with saveAsTable('table_name') - Overwrite") {
             val citiesDataFrame = spark.read.json(
                 resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
@@ -82,7 +82,7 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
 
             assert(rowsCount("new_cities") == citiesDataFrame.count(),
                 s"Table json_city should contain data from json file.")
-        }*/
+        }
     }
 
     override protected def createSparkSession(): Unit = {

@@ -18,9 +18,9 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.spark.impl.{IgniteSQLAccumulatorRelation, IgniteSQLRelation, sqlCacheName}
-import org.apache.ignite.spark.impl.optimization.{accumulator, _}
+import org.apache.ignite.spark.impl.optimization._
 import org.apache.ignite.spark.impl.optimization.accumulator._
+import org.apache.ignite.spark.impl.{IgniteSQLAccumulatorRelation, IgniteSQLRelation, sqlCacheName}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -84,7 +84,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     igniteQueryContext = igniteQueryContext,
                     table = Some(igniteSqlRelation.tableName),
                     tableExpression = None,
-                    outputExpressions = output.map(attr ⇒ attr.withQualifier(Seq(igniteSqlRelation.schemaName.toString, igniteSqlRelation.tableName))))
+                    outputExpressions = output.map(attr ⇒ attr.withQualifier(Seq(igniteSqlRelation.tableName))))
 
             case project: Project if !stepSkipped && exprsAllowed(project.projectList) ⇒
                 //Project layer just changes output of current query.
