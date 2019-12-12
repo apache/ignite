@@ -8,7 +8,7 @@ import org.apache.ignite.internal.processors.security.permissions.AccessExtended
  */
 public final class IgniteSecurityConstants {
     /** */
-    public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal.";
+    public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal";
 
     /** Permission to execute set of Ignitionex.grid methods. */
     public static final Permission IGNITIONEX_GRID_PERMISSION =

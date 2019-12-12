@@ -77,6 +77,11 @@ public class AccessControllerSandbox implements IgniteSandbox {
             });
 
         try {
+
+            System.out.println(
+                "MY_DEBUG sandbox#execute class=" + call.getClass().getName()
+            );
+
             return AccessController.doPrivileged((PrivilegedExceptionAction<T>)call::call, acc);
         }
         catch (PrivilegedActionException pae) {

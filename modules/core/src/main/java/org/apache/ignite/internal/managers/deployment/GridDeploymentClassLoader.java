@@ -450,6 +450,11 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                     cls = p2pLoadClass(name, true);
             }
 
+            System.out.println(
+                "MY_DEBUG loadClass name=" + name +
+                    ", cls=" + cls
+            );
+
             if (cls == null)
                 cls = loadClass(name, true);
         }

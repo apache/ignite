@@ -31,12 +31,14 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import sun.security.util.SecurityConstants;
 
 import static org.apache.ignite.internal.processors.security.IgniteSecurityConstants.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -57,28 +59,100 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
         "        }" +
         "}";
 
-    private static final String UTILS_CALLABLE = "import org.apache.ignite.internal.util.typedef.internal.U;\n" +
-        "import org.apache.ignite.lang.IgniteCallable;\n" +
-        "\n" +
-        "public class PrivateUtilsCallable implements IgniteCallable {\n" +
-        "    @Override public Object call() throws Exception {\n" +
-        "        System.out.println(\"MY_DEBUG PrivateUtilsCallable\");\n" +
-        "        return U.hexLong(101L);\n" +
-        "    }\n" +
-        "}";
+    private static final String UTILS_CALLABLE =
+        "import org.apache.ignite.internal.IgnitionEx;\n" +
+            "import org.apache.ignite.lang.IgniteCallable;\n" +
+            "\n" +
+            "public class IgCallable implements IgniteCallable {\n" +
+            "    @Override public Object call() throws Exception {\n" +
+            "        return IgnitionEx.isDaemon();\n" +
+            "    }\n" +
+            "}";
+
+    private static final String U_CALL =
+        "import org.apache.ignite.internal.util.typedef.internal.U;\n" +
+            "import org.apache.ignite.lang.IgniteCallable;\n" +
+            "\n" +
+            "public class UCall implements IgniteCallable {\n" +
+            "    @Override public Object call() throws Exception {\n" +
+            "        return U.hexLong(101L);\n" +
+            "    }\n" +
+            "}";
+
+    private static final String F_EQ =
+        "import org.apache.ignite.internal.util.typedef.F;\n" +
+            "import org.apache.ignite.lang.IgniteCallable;\n" +
+            "\n" +
+            "public class Feq implements IgniteCallable {\n" +
+            "    @Override public Object call() throws Exception {\n" +
+            "        return F.eq(new Object(), new Object());\n" +
+            "    }\n" +
+            "}";
+
+    @Test
+    public void testIgCallable() throws Exception {
+        testStatic("IgCallable", UTILS_CALLABLE);
+    }
+
+    /*@Test
+    public void testUCall() throws Exception {
+        U.hexLong(101L);
+
+        testStatic("UCall", U_CALL);
+    }*/
+
+    @Test
+    public void testFeq() throws Exception {
+        testStatic("Feq", F_EQ);
+    }
+
+    private void testStatic(String clsName, String clsSrc) throws Exception {
+        UUID srvId = grid(SRV).cluster().localNode().id();
+        IgniteCallable<T2<String, String>> c = callable(clsName, clsSrc);
+
+        /*System.out.println("MY_DEBUG local call res=" + c.call());
+
+        Ignite allowed = grid(CLNT_ALLOWED);
+        Object res = allowed.compute(allowed.cluster().forNodeId(srvId)).call(c);
+        System.out.println("MY_DEBUG allowed compute res=" + res);
+        assertNotNull(res);*/
+
+        Ignite forbidden = grid(CLNT_FORBIDDEN);
+
+        assertThrowsWithCause(
+            () -> forbidden.compute(forbidden.cluster().forNodeId(srvId)).call(c),
+            AccessControlException.class);
+    }
 
     /** */
     private Path srcTmpDir;
 
     /** */
     @Before
-    public void prepare() throws IOException {
+    public void prepare() throws Exception {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
+
+        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
+
+        //Node have permission.
+        startGrid(CLNT_ALLOWED, ALLOW_ALL,
+            PermissionsBuilder.create()
+                .add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*"))
+                .add(SecurityConstants.GET_CLASSLOADER_PERMISSION)
+                .get(),
+            true);
+
+        //Node does not have permission.
+        startGrid(CLNT_FORBIDDEN, ALLOW_ALL, true);
+
+        srv.cluster().active(true);
     }
 
     /** */
     @After
     public void cleanup() {
+        G.stopAll(true);
+
         U.delete(srcTmpDir);
 
         String packAccess = Security.getProperty("package.access");
@@ -100,48 +174,12 @@ public class AccessClassInPackageTest extends AbstractSandboxTest {
         }
     }
 
-    /** */
-    @Test
-    public void test() throws Exception {
-        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
 
-        //Node have permission.
-        Ignite clntAllowed = startGrid(CLNT_ALLOWED, ALLOW_ALL,
-            PermissionsBuilder.create()
-                .add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*")).get(),
-            true);
 
-        //Node does not have permission.
-        Ignite clntForbidden = startGrid(CLNT_FORBIDDEN, ALLOW_ALL, true);
 
-        srv.cluster().active(true);
-
-        UUID srvId = srv.cluster().localNode().id();
-
-        //CLNT_ALLOWED node gets an instance of T2.
-        T2<String, String> res = clntAllowed.compute(clntAllowed.cluster().forNodeId(srvId))
-            .call(callable("TestIgniteCallable", CALLABLE_SRC));
-
-        assertNotNull(res);
-
-        Object o = clntAllowed.compute(clntAllowed.cluster().forNodeId(srvId))
-            .call(callable("PrivateUtilsCallable", UTILS_CALLABLE));
-
-        assertNotNull(o);
-
-            //CLNT_FORBIDDEN node cannot create an instance of T2.
-        assertThrowsWithCause(
-            () -> clntForbidden.compute(clntForbidden.cluster().forNodeId(srvId))
-                .call(callable("TestIgniteCallable", CALLABLE_SRC)),
-            AccessControlException.class);
-
-        assertThrowsWithCause(
-            () -> clntForbidden.compute(clntForbidden.cluster().forNodeId(srvId))
-                .call(callable("PrivateUtilsCallable", UTILS_CALLABLE)),
-            AccessControlException.class);
-    }
-
-    /** */
+    /**
+     *
+     */
     IgniteCallable<T2<String, String>> callable(String clsName, String src) {
         try {
             URLClassLoader clsLdr = prepareClassLoader(clsName + ".java", src);

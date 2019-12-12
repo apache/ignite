@@ -212,9 +212,9 @@ public class IgnitionEx {
     /**
      * Enforces singleton.
      */
-    private IgnitionEx() {
+    //private IgnitionEx() {
         // No-op.
-    }
+    //}
 
     /**
      * Sets daemon flag.

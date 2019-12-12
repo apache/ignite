@@ -183,6 +183,12 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
+        setupPackageAccessProperty();
+
+        secPrc.start();
+    }
+
+    private void setupPackageAccessProperty() {
         String packAccess = Security.getProperty("package.access");
 
         if (packAccess != null && !packAccess.contains(IGNITE_INTERNAL_PACKAGE)) {
@@ -191,8 +197,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             Security.setProperty("package.access", packAccess + IGNITE_INTERNAL_PACKAGE);
         }
-
-        secPrc.start();
     }
 
     /** {@inheritDoc} */
