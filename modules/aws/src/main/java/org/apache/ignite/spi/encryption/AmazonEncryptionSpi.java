@@ -21,7 +21,7 @@ import com.amazonaws.encryptionsdk.CryptoAlgorithm;
 import com.amazonaws.encryptionsdk.DataKey;
 import com.amazonaws.encryptionsdk.MasterKey;
 import com.amazonaws.encryptionsdk.MasterKeyProvider;
-import com.amazonaws.encryptionsdk.kms.KmsMasterKey;
+import com.amazonaws.encryptionsdk.kms.KmsMasterKeyProvider;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.security.InvalidAlgorithmParameterException;
@@ -56,7 +56,7 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
  * Master key provider can be configured via {@link #setProvider(MasterKeyProvider)}.
  * <p>
  * For example, <a href='https://aws.amazon.com/kms'>AWS Key Management Service</a> can be configured by
- * {@link KmsMasterKey} provider.
+ * {@link KmsMasterKeyProvider}.
  *
  * @see EncryptionSpi
  * @see AmazonEncryptionKey

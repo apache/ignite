@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Amazon KMS encryption key implementation.
+ * Amazon encryption key implementation.
  *
  * @see AmazonEncryptionSpi
  */
