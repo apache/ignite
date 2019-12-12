@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -115,7 +116,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
 
-            fileRebalanceFut.cancel();
+            fileRebalanceFut.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
             lock.writeLock().unlock();
@@ -546,7 +547,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return false;
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            if (globalSizes.get(p) > FILE_REBALANCE_THRESHOLD)
+            Long size = globalSizes.get(p);
+
+            if (size != null && size > FILE_REBALANCE_THRESHOLD)
                 return true;
         }
 

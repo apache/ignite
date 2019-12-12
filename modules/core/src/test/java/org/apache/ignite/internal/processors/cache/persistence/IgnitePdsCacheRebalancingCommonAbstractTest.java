@@ -68,7 +68,7 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
 
         CacheConfiguration ccfg1 = cacheConfiguration(CACHE)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
-            .setBackups(2)
+            .setBackups(backups())
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setIndexedTypes(Integer.class, Integer.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
@@ -76,7 +76,7 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg2 = cacheConfiguration(INDEXED_CACHE)
-            .setBackups(2)
+            .setBackups(backups())
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -102,7 +102,7 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
         if (filteredCacheEnabled && !gridName.endsWith("0")) {
             CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-                .setBackups(2)
+                .setBackups(backups())
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setNodeFilter(new CoordinatorNodeFilter());
 
@@ -126,6 +126,13 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
         cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
+    }
+
+    /**
+     * @return Number of backups.
+     */
+    protected int backups() {
+        return 2;
     }
 
     /**

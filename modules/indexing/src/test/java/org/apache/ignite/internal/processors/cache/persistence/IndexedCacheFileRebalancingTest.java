@@ -17,19 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -38,62 +34,69 @@ import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanInde
  */
 public class IndexedCacheFileRebalancingTest extends IgnitePdsCacheFileRebalancingTxTest {
     /** {@inheritDoc} */
-    @Override protected void verifyCacheContent(IgniteEx node, String cacheName, int entriesCnt, boolean removes) throws Exception {
-        super.verifyCacheContent(node, cacheName, entriesCnt, removes);
+    @Override protected <V> void verifyCache(IgniteEx node, DataLoader<V> ldr) throws Exception {
+        super.verifyCache(node, ldr);
 
-        IgniteInternalCache cache = node.cachex(cacheName);
+        String name = ldr.cacheName();
 
-        if (!cache.context().isQueryEnabled())
+        if (!name.equals(INDEXED_CACHE))
             return;
+
+        assert node.cachex(name).context().isQueryEnabled();
 
         log.info("Index validation");
 
-        int expSize = removes ? cache.size() : entriesCnt;
+        int cnt = ldr.cnt();
+        boolean removes = ldr.checkRemoves();
 
-        String tbl = "\"" + cacheName + "\"." + TestValue.class.getSimpleName();
+        IgniteCache cache = node.cache(name);
+
+        cache.indexReadyFuture().get(15_000);
+
+        int expSize = removes ? cache.size() : cnt;
+        String tbl = "\"" + name + "\"." + TestValue.class.getSimpleName();
+        String sql = "select COUNT(V1) from " + tbl + " where V1 >= 0 and V1 < 2147483647";
 
         for (Ignite g : G.allGrids()) {
+            UUID nodeId = g.cluster().localNode().id();
+
             boolean idxUsed = isIndexUsed(((IgniteEx)g).context().query(), "V1", tbl, "V1");
 
-            assertTrue("node=" + node.cluster().localNode().id(), idxUsed);
-        }
+            assertTrue("node=" + nodeId, idxUsed);
 
-        String sql = "select count(V1) from TESTVALUE where V1 >= 0 and V1 < 2147483647";
-
-        for (Ignite g : G.allGrids()) {
-            IgniteCache cache0 = g.cache(cacheName);
+            IgniteCache cache0 = g.cache(name);
 
             FieldsQueryCursor<List<Long>> cur = cache0.query(new SqlFieldsQuery(sql));
 
-            long cnt = cur.getAll().get(0).get(0);
+            long idxCnt = cur.getAll().get(0).get(0);
 
-            assertEquals("node=" + g.cluster().localNode().id(), expSize, cnt);
+            assertEquals("node=" + nodeId, expSize, idxCnt);
         }
-
-        // Validate indexes consistency.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(INDEXED_CACHE), 0, 0);
-
-        node.cluster().active(false);
-
-        for (Ignite g : G.allGrids()) {
-            ((IgniteEx)g).context().resource().injectGeneric(clo);
-
-            VisorValidateIndexesJobResult res = clo.call();
-
-            assertFalse(res.hasIssues());
-        }
+//        // Validate indexes consistency.
+//        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(name), 0, 0);
+//
+//        node.cluster().active(false);
+//
+//        for (Ignite g : G.allGrids()) {
+//            ((IgniteEx)g).context().resource().injectGeneric(clo);
+//
+//            VisorValidateIndexesJobResult res = clo.call();
+//
+//            assertFalse(res.hasIssues());
+//        }
     }
 
     /** */
-    private boolean isIndexUsed(GridQueryProcessor qryProc, @Nullable String idxName, String tblName, String... reqFlds) {
+    private boolean isIndexUsed(GridQueryProcessor qryProc, String idxName, String tblName, String... reqFlds) {
+        int len = reqFlds.length;
         String sql = "explain select * from " + tblName + " where ";
 
-        for (int i = 0; i < reqFlds.length; ++i)
-            sql += reqFlds[i] + " > 0 and " + reqFlds[i] + " < 2147483647" + ((i < reqFlds.length - 1) ? " and " : "");
+        for (int i = 0; i < len; ++i)
+            sql += reqFlds[i] + " > 0 and " + reqFlds[i] + " < 2147483647" + ((i < len - 1) ? " and " : "");
 
         String plan = qryProc.querySqlFields(new SqlFieldsQuery(sql), true)
             .getAll().get(0).get(0).toString().toUpperCase();
 
-        return idxName != null ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase())) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
+        return !plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase());
     }
 }

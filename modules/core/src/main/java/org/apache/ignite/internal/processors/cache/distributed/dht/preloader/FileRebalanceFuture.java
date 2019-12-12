@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -33,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -47,12 +49,16 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
+    /** */
+    private static final long MAX_MEM_CLEANUP_TIMEOUT = 60_000;
+
     /** */
     private final Map<T2<Integer, UUID>, FileRebalanceNodeRoutine> futs = new HashMap<>();
 
@@ -218,24 +224,34 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                     cpLsnr.cancelAll();
 
-                    for (IgniteInternalFuture fut : regions.values()) {
-                        if (!fut.isDone())
-                            fut.get();
+                    if (!X.hasCause(err, NodeStoppingException.class)) {
+                        for (IgniteInternalFuture fut : regions.values()) {
+                            if (!fut.isDone())
+                                fut.get(MAX_MEM_CLEANUP_TIMEOUT);
+                        }
                     }
 
-                    // todo eliminate ConcurrentModification
-                    for (FileRebalanceNodeRoutine fut : new HashMap<>(futs).values()) {
-                        if (!fut.isDone())
-                            fut.cancel();
+                    Iterator<FileRebalanceNodeRoutine> itr = futs.values().iterator();
+
+                    while (itr.hasNext()) {
+                        FileRebalanceNodeRoutine routine = itr.next();
+
+                        itr.remove();
+
+                        if (!routine.isDone())
+                            routine.onDone(res, err, cancel);
                     }
 
-                    futs.clear();
+                    assert futs.isEmpty();
 
                     if (log.isDebugEnabled() && !idxRebuildFut.isDone())
                         log.debug("Index rebuild is still in progress (ignore).");
                 }
             }
             catch (IgniteCheckedException e) {
+                if (err != null)
+                    e.addSuppressed(err);
+
                 log.error("Failed to cancel file rebalancing.", e);
             }
             finally {
@@ -314,7 +330,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     public synchronized void onNodeDone(FileRebalanceNodeRoutine fut, Boolean res, Throwable err, boolean cancel) {
         if (err != null || cancel) {
-            onDone(res, err, cancel);
+            // This routine already cancelling
+            if (!cancelLock.isHeldByCurrentThread())
+                onDone(res, err, cancel);
 
             return;
         }

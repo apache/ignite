@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -64,7 +65,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -906,7 +907,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         break;
                     }
                     else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT) {
-                        assert !snpRq.get().isDone() : snpRq.get();
+
+                        if (snpRq.get().isDone()) {
+                            System.out.println("*********************************************************");
+                            System.out.println("  expected fail with concurrent snapshotting - halt jvm");
+                            System.out.println("*********************************************************");
+
+                            Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+                        }
 
                         throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
                     }

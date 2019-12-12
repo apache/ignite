@@ -20,16 +20,24 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -41,6 +49,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE
 
 /**
  * File rebalancing tests.
+ *
+ * todo mixed rebalancing (file + historical)
+ * todo mixed cache configuration (atomic+tx)
+ * todo mixed data region configuration (pds+in-mem)
+ * todo partition size change (start file rebalancing partition, cancel and then partition met)
+ * todo crd joins blt of two nodes
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
@@ -49,29 +63,37 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
     /** Initial entries count. */
     private static final int INITIAL_ENTRIES_COUNT = 100_000;
 
-    private static final int threas = Math.min(2, Runtime.getRuntime().availableProcessors() / 2);
+    /** */
+    private static final int DFLT_LOADER_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
+
+    /** */
+    private final Function<Integer, TestValue> testValProducer = n -> new TestValue(n, n, n);
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
         return 3_000;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 2 * 60 * 1000;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSimpleRebalancingWithConstantLoad() throws Exception {
-        boolean removes = true;
+        boolean checkRemoves = true;
 
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
         ignite0.cluster().baselineAutoAdjustTimeout(0);
 
-        loadData(ignite0, INDEXED_CACHE, INITIAL_ENTRIES_COUNT);
+        DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
 
-        AtomicInteger cntr = new AtomicInteger(INITIAL_ENTRIES_COUNT);
-
-        DataLoader ldr = new DataLoader(ignite0.cache(INDEXED_CACHE), cntr, removes, threas);
-
-        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, 2, "thread");
+        ldr.start();
 
         forceCheckpoint(ignite0);
 
@@ -81,13 +103,100 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
         ldr.stop();
 
-        ldrFut.get();
-
-        verifyCacheContent(ignite0, INDEXED_CACHE, cntr.get(), removes);
+        verifyCache(ignite0, ldr);
     }
 
     @Test
-    public void testIndexedCacheStartStopLastNodeConstantLoadPartitioned() throws Exception {
+    public void testContinuousBltChangeUnderLoad() throws Exception {
+        boolean checkRemoves = false;
+
+        IgniteEx crd = startGrid(0);
+
+        crd.cluster().active(true);
+
+        DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(crd);
+
+        ldr.start();
+
+        Set<ClusterNode> blt = new GridConcurrentHashSet<>();
+
+        blt.add(crd.localNode());
+
+        long timeout = U.currentTimeMillis() + 30_000;
+
+        AtomicInteger nodes = new AtomicInteger(1);
+
+        int grids = 4;
+
+        int backups = backups();
+
+        assert backups > 0;
+
+        BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(4);
+
+        do {
+            GridTestUtils.runMultiThreadedAsync( () -> {
+                U.sleep(ThreadLocalRandom.current().nextLong(100));
+
+                int n = nodes.incrementAndGet();
+
+                Ignite node = startGrid(n);
+
+                queue.add(n);
+
+                blt.add(node.cluster().localNode());
+
+                crd.cluster().setBaselineTopology(blt);
+
+                return null;
+            }, grids, "starter");
+
+            int stopped = 0;
+
+            do {
+                Integer n = queue.poll(30, TimeUnit.SECONDS);
+
+                assert n != null;
+
+                ++stopped;
+
+                ClusterNode node = grid(n).cluster().localNode();
+
+                stopGrid(n);
+
+                blt.remove(node);
+
+                crd.cluster().setBaselineTopology(blt);
+
+                if (stopped % backups == 0) {
+                    awaitPartitionMapExchange();
+
+                    if (stopped != grids) {
+                        ldr.suspend();
+
+                        for (Ignite g : G.allGrids()) {
+                            if (!g.name().equals(crd.name())) {
+                                verifyCache(crd, ldr);
+
+                                break;
+                            }
+                        }
+
+                        ldr.resume();
+                    }
+                }
+            } while (stopped < grids);
+
+            awaitPartitionMapExchange();
+        } while (U.currentTimeMillis() < timeout);
+
+        ldr.stop();
+
+        verifyCache(crd, ldr);
+    }
+
+    @Test
+    public void testIndexedCacheStartStopLastNodeUnderLoad() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         boolean checkRemoves = false;
@@ -100,15 +209,9 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        int threads = Runtime.getRuntime().availableProcessors() / 2;
+        DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
 
-        loadData(ignite0, INDEXED_CACHE, INITIAL_ENTRIES_COUNT);
-
-        AtomicInteger cntr = new AtomicInteger(INITIAL_ENTRIES_COUNT);
-
-        DataLoader ldr = new DataLoader(ignite0.cache(INDEXED_CACHE), cntr, checkRemoves, threads);
-
-        IgniteInternalFuture ldrFut = GridTestUtils.runMultiThreadedAsync(ldr, threads, "thread");
+        ldr.start();
 
         forceCheckpoint(ignite0);
 
@@ -156,30 +259,51 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
         ldr.stop();
 
-        ldrFut.get();
-
-        verifyCacheContent(ignite3, INDEXED_CACHE, cntr.get(), checkRemoves);
+        verifyCache(ignite3, ldr);
     }
 
-    protected void verifyCacheContent(IgniteEx node, String cacheName, int entriesCnt, boolean removes) throws Exception {
-        log.info("Verifying cache contents [node=" + node.cluster().localNode().id() + " cache=" + cacheName + ", size=" + entriesCnt + "]");
+    /**
+     * @param enableRemoves Enabled entries removes.
+     * @param threadsCnt Threads count.
+     * @return make loader for indexed cache.
+     */
+    private DataLoader<TestValue> testValuesLoader(boolean enableRemoves, int threadsCnt) {
+        return new DataLoader<>(
+            grid(0).cache(INDEXED_CACHE),
+            INITIAL_ENTRIES_COUNT,
+            testValProducer,
+            enableRemoves,
+            threadsCnt
+        );
+    }
 
-        IgniteCache cache = node.cache(cacheName);
+    protected <V> void verifyCache(IgniteEx node, DataLoader<V> ldr) throws Exception {
+        String name = ldr.cacheName();
+        int cnt = ldr.cnt();
+        boolean removes = ldr.checkRemoves();
+        Function<Integer, V> valProducer = ldr.valueProducer();
+
+        log.info("Verifying cache contents [node=" +
+            node.cluster().localNode().id() + " cache=" + name + ", size=" + cnt + "]");
+
+        IgniteCache<Integer, V> cache = node.cache(name);
 
         StringBuilder buf = new StringBuilder();
 
         int fails = 0;
 
-        for (int k = 0; k < entriesCnt; k++) {
+        for (int k = 0; k < cnt; k++) {
             if (removes && k % 10 == 0)
                 continue;
 
-            TestValue exp = new TestValue(k, k, k);;
-            TestValue actual = (TestValue)cache.get(k);
+            V exp = valProducer.apply(k);
+            V actual = cache.get(k);
 
             if (!Objects.equals(exp, actual)) {
-                if (fails++ < 100)
-                    buf.append("cache=").append(cache.getName()).append(", key=").append(k).append(", expect=").append(exp).append(", actual=").append(actual).append('\n');
+                if (fails++ < 100) {
+                    buf.append("cache=").append(cache.getName()).append(", key=").append(k).append(", expect=").
+                        append(exp).append(", actual=").append(actual).append('\n');
+                }
                 else {
                     buf.append("\n... and so on\n");
 
@@ -187,41 +311,25 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
                 }
             }
 
-            if ((k + 1) % (entriesCnt / 10) == 0)
-                log.info("Verification: " + (k + 1) * 100 / entriesCnt + "%");
+            if ((k + 1) % (cnt / 10) == 0)
+                log.info("Verification: " + (k + 1) * 100 / cnt + "%");
         }
 
-        if (!removes && entriesCnt != cache.size())
-            buf.append("\ncache=").append(cache.getName()).append(" size mismatch [expect=").append(entriesCnt).append(", actual=").append(cache.size()).append('\n');
+        if (!removes && cnt != cache.size()) {
+            buf.append("\ncache=").append(cache.getName()).append(" size mismatch [expect=").append(cnt).
+                append(", actual=").append(cache.size()).append('\n');
+        }
 
         assertTrue(buf.toString(), buf.length() == 0);
     }
 
-    /**
-     * @param ignite Ignite instance to load.
-     * @param name The cache name to add random data to.
-     * @param size The total size of entries.
-     */
-    private void loadData(Ignite ignite, String name, int size) {
-        try (IgniteDataStreamer<Integer, TestValue> streamer = ignite.dataStreamer(name)) {
-            streamer.allowOverwrite(true);
-
-            for (int i = 0; i < size; i++) {
-                if ((i + 1) % (size / 10) == 0)
-                    log.info("Prepared " + (i + 1) * 100 / (size) + "% entries.");
-
-                streamer.addData(i, new TestValue(i, i, i));
-            }
-        }
-    }
-
     /** */
-    private static class DataLoader implements Runnable {
+    protected static class DataLoader<V> implements Runnable {
         /** */
         private final AtomicInteger cntr;
 
         /** */
-        private final boolean enableRemove;
+        private final boolean enableRmv;
 
         /** */
         private final CyclicBarrier pauseBarrier;
@@ -236,20 +344,29 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         private volatile boolean stop;
 
         /** */
-        private final IgniteCache<Integer, TestValue> cache;
+        private final IgniteCache<Integer, V> cache;
 
         /** */
-        public DataLoader(IgniteCache<Integer, TestValue> cache, AtomicInteger cntr, boolean enableRemove, int threadCnt) {
+        private final Function<Integer, V> valFunc;
+
+        /** */
+        private final int threadCnt;
+
+        /** */
+        private volatile IgniteInternalFuture ldrFut;
+
+        /** */
+        public DataLoader(IgniteCache<Integer, V> cache, int initCnt, Function<Integer, V> valFunc, boolean enableRmv, int threadCnt) {
             this.cache = cache;
-            this.cntr = cntr;
-            this.enableRemove = enableRemove;
+            this.cntr = new AtomicInteger(initCnt);
+            this.enableRmv = enableRmv;
+            this.threadCnt = threadCnt;
             this.pauseBarrier = new CyclicBarrier(threadCnt + 1); // +1 waiter
+            this.valFunc = valFunc;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            String cacheName = cache.getName();
-
             while (!stop && !Thread.currentThread().isInterrupted()) {
                 if (pause) {
                     if (!paused) {
@@ -274,9 +391,9 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
                 int from = cntr.getAndAdd(100);
 
                 for (int i = from; i < from + 100; i++)
-                    cache.put(i, new TestValue(i, i, i));
+                    cache.put(i, valFunc.apply(i));
 
-                if (!enableRemove)
+                if (!enableRmv)
                     continue;
 
                 for (int i = from; i < from + 100; i += 10)
@@ -286,17 +403,24 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
             log.info("Async loader stopped.");
         }
 
+        /** */
+        public void start() {
+            ldrFut = GridTestUtils.runMultiThreadedAsync(this, threadCnt, "thread");
+        }
+
         /**
          * Stop loader thread.
          */
-        public void stop() {
+        public void stop() throws IgniteCheckedException {
             stop = true;
+
+            ldrFut.get(10_000);
         }
 
         /**
          * Pause loading.
          */
-        public void pause() {
+        public void suspend() {
             pause = true;
 
             log.info("Suspending loader threads: " + pauseBarrier.getParties());
@@ -311,8 +435,46 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
          * Resume loading.
          */
         public void resume() {
-            paused = false;
-            pause = false;
+            pause = paused = false;
+        }
+
+        /**
+         * @param node Data originator.
+         * @return Data loader instance.
+         */
+        public DataLoader<V> loadData(Ignite node) {
+            int size = cntr.get();
+
+            try (IgniteDataStreamer<Integer, V> streamer = node.dataStreamer(cache.getName())) {
+                for (int i = 0; i < size; i++) {
+                    if ((i + 1) % (size / 10) == 0)
+                        log.info("Prepared " + (i + 1) * 100 / (size) + "% entries.");
+
+                    streamer.addData(i, valFunc.apply(i));
+                }
+            }
+
+            return this;
+        }
+
+        /** */
+        public int cnt() {
+            return cntr.get();
+        }
+
+        /** */
+        public String cacheName() {
+            return cache.getName();
+        }
+
+        /** */
+        public Function<Integer, V> valueProducer() {
+            return valFunc;
+        }
+
+        /** */
+        public boolean checkRemoves() {
+            return enableRmv;
         }
     }
 }
