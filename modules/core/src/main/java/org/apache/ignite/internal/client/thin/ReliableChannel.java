@@ -93,6 +93,8 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
+                System.out.println(">>>>> reliable channel successfully created " + ch);
+
                 return;
             } catch (ClientConnectionException e) {
                 lastEx = e;

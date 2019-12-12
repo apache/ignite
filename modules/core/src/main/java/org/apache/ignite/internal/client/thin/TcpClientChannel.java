@@ -368,6 +368,8 @@ class TcpClientChannel implements ClientChannel {
 
             sock.setUseClientMode(true);
 
+            System.out.println(">>>>> trying to start handshake addr=" + addr.getHostName() + ", port=" + addr.getPort());
+
             sock.startHandshake();
 
             return sock;
