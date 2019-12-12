@@ -736,10 +736,13 @@ public final class IgniteSystemProperties {
         "IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY";
 
     /**
-     * WAL rebalance threshold.
+     * WAL rebalance threshold (cache entries).
      */
     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
 
+    /**
+     * File rebalance threshold (cache entries).
+     */
     public static final String IGNITE_PDS_FILE_REBALANCE_THRESHOLD = "IGNITE_PDS_FILE_REBALANCE_THRESHOLD";
 
     /** Ignite page memory concurrency level. */

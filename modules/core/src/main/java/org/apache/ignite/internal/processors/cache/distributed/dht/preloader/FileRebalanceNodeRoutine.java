@@ -71,7 +71,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
     /** Cache group rebalance order. */
     private final int rebalanceOrder;
 
-    /** Node snapshot name. */
+    /** Node snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
     /**

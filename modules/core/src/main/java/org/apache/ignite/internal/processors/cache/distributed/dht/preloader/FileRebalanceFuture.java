@@ -211,6 +211,8 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+        boolean nodeIsStopping = X.hasCause(err, NodeStoppingException.class);
+
         if (cancel || err != null) {
             cancelLock.lock();
 
@@ -224,7 +226,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                     cpLsnr.cancelAll();
 
-                    if (!X.hasCause(err, NodeStoppingException.class)) {
+                    if (!nodeIsStopping) {
                         for (IgniteInternalFuture fut : regions.values()) {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);
@@ -239,7 +241,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                         itr.remove();
 
                         if (!routine.isDone())
-                            routine.onDone(res, err, cancel);
+                            routine.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
                     }
 
                     assert futs.isEmpty();
@@ -259,7 +261,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
             }
         }
 
-        return super.onDone(res, err, cancel);
+        return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
     }
 
     public void onCacheGroupDone(int grpId, UUID nodeId, GridDhtPartitionDemandMessage msg) {

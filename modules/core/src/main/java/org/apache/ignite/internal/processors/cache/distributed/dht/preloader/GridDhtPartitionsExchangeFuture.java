@@ -3150,7 +3150,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-       // Also must process counters from the local node.
+        // Also must process counters from the local node.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             GridDhtPartitionState state = top.partitionState(cctx.localNodeId(), part.id());
 

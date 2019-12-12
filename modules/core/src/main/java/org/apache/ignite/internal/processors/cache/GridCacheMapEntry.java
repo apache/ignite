@@ -1438,8 +1438,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
-//        log.info("put key=" + keyValue(false) + " p="+partition() + ", cntr="+cctx.topology().localPartition(partition()).updateCounter());
-
         final boolean valid = valid(tx != null ? tx.topologyVersion() : topVer);
 
         // Lock should be held by now.

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -32,11 +33,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -54,7 +57,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE
  * todo mixed cache configuration (atomic+tx)
  * todo mixed data region configuration (pds+in-mem)
  * todo partition size change (start file rebalancing partition, cancel and then partition met)
- * todo crd joins blt of two nodes
+ * todo [+] crd joins blt
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
@@ -104,6 +107,61 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         ldr.stop();
 
         verifyCache(ignite0, ldr);
+    }
+
+    /**
+     * Check file rebalancing when the coordinator joins the baseline.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCrdNotInBlt() throws Exception {
+        boolean checkRemoves = false;
+
+        IgniteEx node = startGrid(0);
+
+        node.cluster().active(true);
+
+        IgniteEx crd = startGrid(1);
+
+        stopGrid(0);
+
+        node = startGrid(0);
+
+        awaitPartitionMapExchange();
+
+        Collection<Object> baselineIds =
+            F.viewReadOnly(node.cluster().currentBaselineTopology(), BaselineNode::consistentId);
+
+        // Ensure that coordinator node is not in baseline.
+        assert U.oldest(crd.cluster().nodes(), null).equals(crd.localNode());
+        assert !baselineIds.contains(crd.localNode().consistentId()) : baselineIds;
+        assert baselineIds.contains(node.localNode().consistentId()) : baselineIds;
+
+        DataLoader<TestValue> ldr = new DataLoader<>(
+            node.cache(INDEXED_CACHE),
+            INITIAL_ENTRIES_COUNT,
+            testValProducer,
+            checkRemoves,
+            DFLT_LOADER_THREADS
+        ).loadData(node);
+
+        forceCheckpoint(node);
+
+        ldr.start();
+
+        List<ClusterNode> blt = new ArrayList<>();
+
+        blt.add(node.localNode());
+        blt.add(crd.localNode());
+
+        node.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        verifyCache(crd, ldr);
     }
 
     @Test

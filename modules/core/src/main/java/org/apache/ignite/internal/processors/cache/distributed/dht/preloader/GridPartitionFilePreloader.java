@@ -553,6 +553,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 return true;
         }
 
+        // Also should check the sizes of the local partitions.
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+            if (part.fullSize() > FILE_REBALANCE_THRESHOLD)
+                return true;
+        }
+
         return false;
     }
 

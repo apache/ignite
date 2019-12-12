@@ -1554,9 +1554,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         ExchangeActions exchActions,
         Collection<CacheGroupContext> grps
     ) {
-//        if (cctx.localNodeId().toString().endsWith("1"))
-//            U.dumpStack("send single message");
-
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
             clientOnlyExchange,
             cctx.versions().last(),
