@@ -20,12 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -84,8 +81,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
         this.log = log;
 
-        if (!throttleOnlyPagesInCheckpoint)
-            assert cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
+        assert throttleOnlyPagesInCheckpoint || cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
     }
 
     /** {@inheritDoc} */
@@ -181,10 +177,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         notInCheckpointBackoffCntr.set(0);
     }
 
-    /**
-     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
-     */
-    private boolean shouldThrottle() {
+    /** {@inheritDoc} */
+    @Override public boolean shouldThrottle() {
         int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
 
         return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;

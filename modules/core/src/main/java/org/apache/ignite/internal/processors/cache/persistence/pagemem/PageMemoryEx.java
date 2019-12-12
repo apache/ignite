@@ -169,4 +169,14 @@ public interface PageMemoryEx extends PageMemory {
      * @return Future that will be completed when all pages are cleared.
      */
     public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
+
+    /**
+     * Pull page from checkpoint buffer.
+     */
+    public FullPageId pullPageFromCpBuffer();
+
+    /**
+     * Calculates throttling condition.
+     */
+    public boolean shouldThrottle();
 }
