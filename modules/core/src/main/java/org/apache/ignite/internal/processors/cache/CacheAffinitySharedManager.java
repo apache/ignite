@@ -1178,16 +1178,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (!aff.partitionPrimariesDifferentToIdeal(affTopVer).isEmpty())
                     aff.initialize(topVer, aff.idealAssignmentRaw());
                 else {
-                    assert aff.assignments(aff.lastVersion()).equals(aff.idealAssignmentRaw()) :
-                        "Not an ideal distribution duplication attempt on LAA [grp=" + aff.cacheOrGroupName() +
-                            ", lastAffinity=" + aff.lastVersion() + ", cacheAffinity=" + aff.cachedVersions() + "]";
+                    if (!aff.assignments(aff.lastVersion()).equals(aff.idealAssignmentRaw()))
+                        // This should never happen on Late Affinity Assignment switch and must trigger Failure Handler.
+                        throw new AssertionError("Not an ideal distribution duplication attempt on LAA " +
+                            "[grp=" + aff.cacheOrGroupName() + ", lastAffinity=" + aff.lastVersion() +
+                            ", cacheAffinity=" + aff.cachedVersions() + "]");
 
                     aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
                 }
-
-                assert aff.assignments(topVer).equals(aff.idealAssignmentRaw()) :
-                    "Not an ideal final distribution on LAA [grp=" + aff.cacheOrGroupName() + ", lastAffinity=" +
-                        aff.lastVersion() + "]";
 
                 cctx.exchange().exchangerUpdateHeartbeat();
 
