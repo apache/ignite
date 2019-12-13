@@ -38,7 +38,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Test cache permission for Continuous Queries.
+ * Tests check a cache permission for {@code ContinuousQueries}.
  */
 @RunWith(JUnit4.class)
 public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
@@ -59,32 +59,40 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
         srv.cluster().active(true);
     }
 
-    /** Test ContinuousQuery from a client. */
+    /**
+     * Tests {@code ContinuousQuery} from a client.
+     */
     @Test
     public void testClientContinuousQuery() {
         check(n -> startContinuousQuery(grid(CLNT), n));
     }
 
-    /** Test ContinuousQuery from a server. */
+    /**
+     * Tests {@code ContinuousQuery} from a server.
+     */
     @Test
     public void testServerContinuousQuery() {
         check(n -> startContinuousQuery(grid(SRV), n));
     }
 
-    /** Test ContinuousQueryWithTransformer from a client. */
+    /**
+     * Tests {@code ContinuousQueryWithTransformer} from a client.
+     */
     @Test
     public void testClientContinuousQueryWithTransformer() {
         check(n -> startContinuousQueryWithTransformer(grid(CLNT), n));
     }
 
-    /** Test ContinuousQueryWithTransformer from a server. */
+    /**
+     * Tests {@code ContinuousQueryWithTransformer} from a server.
+     */
     @Test
     public void testServerContinuousQueryWithTransformer() {
         check(n -> startContinuousQueryWithTransformer(grid(SRV), n));
     }
 
     /**
-     * @param c Consumer that accepts a cache name.
+     * @param c {@code Consumer} that accepts a cache name.
      */
     private void check(final Consumer<String> c) {
         c.accept(CACHE_NAME);
@@ -116,7 +124,9 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
         }
     }
 
-    /** Permissions */
+    /**
+     * @return Subject Ignite permissions.
+     */
     private SecurityPermissionSet permissions() {
         return SecurityPermissionSetBuilder.create()
             .appendCachePermissions(CACHE_NAME, CACHE_READ)

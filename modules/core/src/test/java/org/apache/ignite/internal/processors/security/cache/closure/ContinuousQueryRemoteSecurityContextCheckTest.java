@@ -24,16 +24,18 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
- * Testing operation security context when the ScanQuery, RemoteFilter or RemoteFilterFactory of a ContinuousQuery is
- * executed on remote node.
+ * Tests check appropriate security context when the {@code ScanQuery}, {@code RemoteFilter}, or {@code
+ * RemoteFilterFactory} of a {@code ContinuousQuery} is executed on a remote node.
  * <p>
- * The initiator node broadcasts a task to 'run' node that starts a ContinuousQuery's component. That component is
- * executed on 'check' node. On every step, it is performed verification that operation securitycontext is the initiator
- * context.
+ * The initiator node broadcasts a task to 'run' node that starts a {@code ContinuousQuery}'s component. That component
+ * is executed on 'check' node. On every step, it is performed verification that operation securitycontext is the
+ * initiator context.
  */
 public class ContinuousQueryRemoteSecurityContextCheckTest extends
     AbstractContinuousQueryRemoteSecurityContextCheckTest {
-    /** Test InitialQuery of ContinuousQuery. */
+    /**
+     * Test {@code InitialQuery} of {@code ContinuousQuery}.
+     */
     @Test
     public void testInitialQuery() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
@@ -46,7 +48,9 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test RemoteFilterFactory of ContinuousQuery. */
+    /**
+     * Tests {@code RemoteFilterFactory} of {@code ContinuousQuery}.
+     */
     @Test
     public void testRemoteFilterFactory() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
@@ -59,7 +63,9 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test RemoteFilter of ContinuousQuery. */
+    /**
+     * Tests {@code RemoteFilter} of {@code ContinuousQuery}.
+     */
     @Test
     public void testRemoteFilter() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
@@ -72,8 +78,11 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test operation. */
-    private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> consumer) {
+    /**
+     * @param c {@code Consumer} that setups a {@code ContinuousQuery}.
+     * @return Test operation.
+     */
+    private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c) {
         return () -> {
             VERIFIER.register();
 
@@ -81,7 +90,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
 
             cq.setLocalListener(e -> {/* No-op. */});
 
-            consumer.accept(cq);
+            c.accept(cq);
 
             openQueryCursor(cq);
         };

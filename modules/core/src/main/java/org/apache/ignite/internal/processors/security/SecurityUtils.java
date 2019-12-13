@@ -121,7 +121,7 @@ public class SecurityUtils {
      * Gets a current security subject id for communication routines.
      *
      * @return Current security subject id if security is enabled and subject id doesn't equal local node id otherwise
-     * null.
+     * {@code null}.
      */
     public static UUID securitySubjectId(GridKernalContext ctx) {
         Objects.requireNonNull(ctx, "Parameter 'ctx' cannot be null.");

@@ -33,7 +33,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import static org.apache.ignite.Ignition.localIgnite;
 
 /**
- * The base class for ContinuousQuery remote SecurityContext tests.
+ * The base class for {@code ContinuousQuery} remote {@code SecurityContext} tests.
  */
 public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -76,7 +76,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
             .expect(SRV_CHECK, 2);
     }
 
-    /** Opens QueryCursor. */
+    /**
+     * Opens {@code QueryCursor}.
+     */
     protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = localIgnite().cache(CACHE_NAME).query(q)) {
             grid(SRV).cache(CACHE_NAME).put(prmKey(grid(SRV_CHECK)), 100);

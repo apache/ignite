@@ -28,16 +28,18 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
- * Testing operation security context when the ScanQuery, RemoteFilterFactory or TransformerFactory of a
- * ContinuousQueryWithTransformer is executed on remote node.
+ * Tests check appropriate security context when the {@code ScanQuery}, {@code TransformerFactory}, or {@code
+ * RemoteFilterFactory} of a {@code ContinuousQueryWithTransformer} is executed on a remote node.
  * <p>
- * The initiator node broadcasts a task to 'run' node that starts a ContinuousQueryWithTransformer's component. That
- * component is executed on 'check' node. On every step, it is performed verification that operation securitycontext is
- * the initiator context.
+ * The initiator node broadcasts a task to 'run' node that starts a {@code ContinuousQueryWithTransformer}'s component.
+ * That component is executed on 'check' node. On every step, it is performed verification that operation
+ * securitycontext is the initiator context.
  */
 public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extends
     AbstractContinuousQueryRemoteSecurityContextCheckTest {
-    /** Test InitialQuery of ContinuousQueryWithTransformer. */
+    /**
+     * Tests {@code InitialQuery} of {@code ContinuousQueryWithTransformer}.
+     */
     @Test
     public void testInitialQuery() {
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
@@ -52,7 +54,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test RemoteFilterFactory of ContinuousQueryWithTransformer. */
+    /**
+     * Tests {@code RemoteFilterFactory} of {@code ContinuousQueryWithTransformer}.
+     */
     @Test
     public void testRemoteFilterFactory() {
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
@@ -67,7 +71,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test TransformerFactory of ContinuousQueryWithTransformer. */
+    /**
+     * Tests {@code TransformerFactory} of {@code ContinuousQueryWithTransformer}.
+     */
     @Test
     public void testTransformerFactory() {
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
@@ -81,7 +87,10 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
     }
 
-    /** Test operation. */
+    /**
+     * @param c {@code Consumer} that setups a {@code ContinuousQueryWithTransformer}.
+     * @return Test operation.
+     */
     private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
         return () -> {
             VERIFIER.register();
@@ -96,12 +105,14 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         };
     }
 
-    /** Test transformer factory. */
+    /** */
     private static class TestTransformerFactory implements Factory {
         /** True if closure should be registered in verifier. */
         private final boolean register;
 
-        /** Constructor. */
+        /**
+         * Constructor.
+         */
         public TestTransformerFactory(boolean register) {
             this.register = register;
         }
@@ -112,7 +123,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         }
     }
 
-    /** Test IgniteClosure. */
+    /** */
     private static class TestIgniteClosure implements IgniteClosure<CacheEntryEvent, Object> {
         /** True if closure should be registered in verifier. */
         private final boolean register;
@@ -120,7 +131,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         /** Calling of closure should be registered one time only. */
         private final AtomicBoolean executed = new AtomicBoolean(false);
 
-        /** Constructor. */
+        /**
+         * Constructor.
+         */
         public TestIgniteClosure(boolean register) {
             this.register = register;
         }
