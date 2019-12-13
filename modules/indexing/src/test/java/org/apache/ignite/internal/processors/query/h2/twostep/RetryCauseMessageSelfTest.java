@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +16,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
@@ -24,16 +25,20 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -62,6 +67,9 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
 
     /** */
     private static final String ORG_SQL = "select * from Organization";
+
+    /** */
+    static final String UPDATE_SQL = "UPDATE Person SET name=lower(?) ";
 
     /** */
     private static final String ORG = "org";
@@ -294,6 +302,82 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
             GridTestUtils.setFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec", mapQryExec);
         }
         fail();
+    }
+
+    /**
+     * Test query remap failure reason.
+     */
+    @Test
+    public void testQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+        final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
+
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
+
+        GridTestUtils.setFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper",
+            new ReducePartitionMapper(ctx, logger) {
+                @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                    final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+
+                    return new ReducePartitionMapResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+                }
+            });
+
+        try {
+            SqlFieldsQuery qry = new SqlFieldsQuery(JOIN_SQL).setArgs("Organization #0");
+
+            final Throwable throwable = GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to map SQL query to topology during timeout:");
+
+            throwable.printStackTrace();
+        }
+        finally {
+            GridTestUtils.setFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper", mapper);
+        }
+    }
+
+    /**
+     * Test update query remap failure reason.
+     */
+    @Test
+    public void testUpdateQueryMappingFailureMessage() {
+        final GridReduceQueryExecutor rdcQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "rdcQryExec");
+        final ReducePartitionMapper mapper = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper");
+
+        final IgniteLogger logger = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "log");
+        final GridKernalContext ctx = GridTestUtils.getFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "ctx");
+
+        GridTestUtils.setFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper",
+            new ReducePartitionMapper(ctx, logger) {
+                @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                    final ReducePartitionMapResult res = super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+
+                    return new ReducePartitionMapResult(Collections.emptyList(), res.partitionsMap(), res.queryPartitionsMap());
+                }
+            });
+
+        try {
+            final SqlFieldsQueryEx qry = new SqlFieldsQueryEx(UPDATE_SQL, false)
+                .setArgs("New Name");
+
+            GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to map SQL query to topology during timeout");
+
+            qry.setArgs("Another Name");
+            qry.setSkipReducerOnUpdate(true);
+
+            GridTestUtils.assertThrows(log, () -> {
+                return personCache.query(qry).getAll();
+            }, CacheException.class, "Failed to determine nodes participating in the update. ");
+        }
+        finally {
+            GridTestUtils.setFieldValue(rdcQryExec, GridReduceQueryExecutor.class, "mapper", mapper);
+        }
     }
 
     /** {@inheritDoc} */
