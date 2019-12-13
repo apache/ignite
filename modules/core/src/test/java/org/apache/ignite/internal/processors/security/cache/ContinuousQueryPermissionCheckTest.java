@@ -143,7 +143,9 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
             .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build();
     }
 
-    /** Test transformer factory. */
+    /**
+     * Test transformer factory.
+     */
     private static class TestTransformerFactory implements Factory {
         /** {@inheritDoc} */
         @Override public IgniteClosure<CacheEntryEvent, Object> create() {

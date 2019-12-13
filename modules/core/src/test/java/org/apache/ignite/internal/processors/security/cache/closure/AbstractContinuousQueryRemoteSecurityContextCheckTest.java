@@ -89,7 +89,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         }
     }
 
-    /** Test remote filter factory. */
+    /**
+     * Test remote filter factory.
+     */
     protected static class TestRemoteFilterFactory implements Factory<CacheEntryEventFilter<Integer, Integer>> {
         /** {@inheritDoc} */
         @Override public CacheEntryEventFilter<Integer, Integer> create() {
@@ -97,7 +99,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         }
     }
 
-    /** Test remote filter. */
+    /**
+     * Test remote filter.
+     */
     protected static class TestCacheEntryEventFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** Calling of filter should be registered one time only. */
         private final AtomicBoolean executed = new AtomicBoolean(false);
