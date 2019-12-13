@@ -52,6 +52,9 @@ public class SecurityUtils {
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
+    /** Ignite internal package. */
+    public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal.";
+
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 

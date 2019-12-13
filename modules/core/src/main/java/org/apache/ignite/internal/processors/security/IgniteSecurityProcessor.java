@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -45,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -175,8 +177,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
         secPrc.start();
 
-        if (hasSecurityManager() && secPrc.sandboxEnabled())
+        if (hasSecurityManager() && secPrc.sandboxEnabled()) {
             sandbox = new AccessControllerSandbox(this);
+
+            updatePackageAccessProperty();
+        }
         else {
             if (secPrc.sandboxEnabled()) {
                 ctx.log(getClass()).warning("GridSecurityProcessor#sandboxEnabled returns true, " +
@@ -186,6 +191,20 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             sandbox = new NoOpSandbox();
         }
+    }
+
+    /**
+     * Updates the package access property to specify the internal Ignite package.
+     */
+    private void updatePackageAccessProperty() {
+        String packAccess = Security.getProperty("package.access");
+
+        if (packAccess != null && !packAccess.isEmpty()) {
+            if (!packAccess.contains(IGNITE_INTERNAL_PACKAGE))
+                Security.setProperty("package.access", packAccess + ',' + IGNITE_INTERNAL_PACKAGE);
+        }
+        else
+            Security.setProperty("package.access", IGNITE_INTERNAL_PACKAGE);
     }
 
     /** {@inheritDoc} */
