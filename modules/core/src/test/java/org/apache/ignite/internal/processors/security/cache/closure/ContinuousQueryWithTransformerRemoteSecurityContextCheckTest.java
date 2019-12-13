@@ -114,6 +114,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
         /**
          * Constructor.
+         *
+         * @param register Register flag.
          */
         public TestTransformerFactory(boolean register) {
             this.register = register;
@@ -137,6 +139,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
         /**
          * Constructor.
+         *
+         * @param register Register flag.
          */
         public TestIgniteClosure(boolean register) {
             this.register = register;
