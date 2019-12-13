@@ -70,7 +70,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         private List<IgniteFunction<Long, VectorGenerator>> componentGenerators = new ArrayList<>();
 
         /**
-         * Adds multidimentional gaussian component.
+         * Adds multidimensional gaussian component.
          *
          * @param mean Mean value.
          * @param variance Variance for each component.

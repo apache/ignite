@@ -44,6 +44,7 @@ enum ClientOperation {
     /** Cache get and replace. */CACHE_GET_AND_REPLACE(1006),
     /** Cache put if absent. */CACHE_PUT_IF_ABSENT(1002),
     /** Cache clear. */CACHE_CLEAR(1013),
+    /** Cache partitions. */CACHE_PARTITIONS(1101),
     /** Query scan. */QUERY_SCAN(2000),
     /** Query scan cursor get page. */QUERY_SCAN_CURSOR_GET_PAGE(2001),
     /** Query sql. */QUERY_SQL(2002),

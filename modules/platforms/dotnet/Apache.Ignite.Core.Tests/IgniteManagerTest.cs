@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (EnvVar.Set(IgniteHome.EnvIgniteHome, null))
             {
-                var home = IgniteHome.Resolve(null);
+                var home = IgniteHome.Resolve();
                 Assert.IsTrue(Directory.Exists(home));
 
                 // Invalid home.

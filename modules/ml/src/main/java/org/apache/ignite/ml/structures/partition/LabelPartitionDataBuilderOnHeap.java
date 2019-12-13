@@ -42,7 +42,7 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /**
      * Constructs a new instance of Label partition data builder.
      *
-     * @param preprocessor Upstream preprocessor (can return vectori with zero size).
+     * @param preprocessor Upstream preprocessor (can return vector with zero size).
      */
     public LabelPartitionDataBuilderOnHeap(Preprocessor<K, V> preprocessor) {
         this.preprocessor = preprocessor;

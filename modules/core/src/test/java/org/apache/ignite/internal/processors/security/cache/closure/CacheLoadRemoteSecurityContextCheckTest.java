@@ -20,14 +20,10 @@ package org.apache.ignite.internal.processors.security.cache.closure;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,11 +66,11 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
             new CacheConfiguration<Integer, Integer>()
                 .setName(CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setCacheStoreFactory(new TestStoreFactory()),
+                .setCacheStoreFactory(new TestStoreFactory(1, 1)),
             new CacheConfiguration<Integer, Integer>()
                 .setName(TRANSITION_LOAD_CACHE)
                 .setCacheMode(CacheMode.PARTITIONED)
-                .setCacheStoreFactory(new TestStoreFactory())
+                .setCacheStoreFactory(new TestStoreFactory(1, 1))
         };
     }
 
@@ -110,40 +106,5 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected Collection<UUID> nodesToCheck() {
         return Collections.singletonList(nodeId(SRV_CHECK));
-    }
-
-    /**
-     * Test store factory.
-     */
-    private static class TestStoreFactory implements Factory<TestCacheStore> {
-        /** {@inheritDoc} */
-        @Override public TestCacheStore create() {
-            return new TestCacheStore();
-        }
-    }
-
-    /**
-     * Test cache store.
-     */
-    private static class TestCacheStore extends CacheStoreAdapter<Integer, Integer> {
-        /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
-            clo.apply(1, 1);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer load(Integer key) {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            // No-op.
-        }
     }
 }

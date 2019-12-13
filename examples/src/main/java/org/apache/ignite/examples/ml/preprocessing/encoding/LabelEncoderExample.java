@@ -36,7 +36,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 /**
  * Example that shows how to use Label Encoder preprocessor to encode labels presented as a strings.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with test data (based on muschrooms dataset).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on mushrooms dataset).</p>
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
  * to double values in specified range.</p>

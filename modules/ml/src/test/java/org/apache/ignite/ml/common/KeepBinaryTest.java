@@ -80,11 +80,11 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-        KMeansModel kmdl = trainer.fit(datasetBuilder, new BinaryObjectVectorizer<Integer>("feature1").labeled("label"));
+        KMeansModel mdl = trainer.fit(datasetBuilder, new BinaryObjectVectorizer<Integer>("feature1").labeled("label"));
 
-        Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
+        Integer zeroCentre = mdl.predict(VectorUtils.num2Vec(0.0));
 
-        assertTrue(kmdl.getCenters()[zeroCentre].get(0) == 0);
+        assertTrue(mdl.getCenters()[zeroCentre].get(0) == 0);
     }
 
     /**

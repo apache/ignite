@@ -33,7 +33,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
- * @param <CO> Type of COordinate for vectorizer.
+ * @param <CO> Type of a coordinate for vectorizer.
  */
 public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
