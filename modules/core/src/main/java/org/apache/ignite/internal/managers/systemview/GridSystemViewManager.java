@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
@@ -200,6 +201,26 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     public <R, D> void registerView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
         Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
         registerView0(name, new SystemViewAdapter<>(name,
+            desc,
+            walker,
+            dataSupplier,
+            rowFunc));
+    }
+
+    /**
+     * Registers {@link FiltrableSystemViewAdapter} view with content filtering capabilities.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param walker Row walker.
+     * @param dataSupplier Data supplier with content filtering capabilities.
+     * @param rowFunc Row function
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerFiltrableView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc) {
+        registerView0(name, new FiltrableSystemViewAdapter<>(name,
             desc,
             walker,
             dataSupplier,

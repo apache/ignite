@@ -30,25 +30,25 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ContinuousQueryViewWalker implements SystemViewRowAttributeWalker<ContinuousQueryView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "cacheName", String.class);
-        v.accept(1, "localListener", String.class);
-        v.accept(2, "remoteFilter", String.class);
-        v.accept(3, "remoteTransformer", String.class);
-        v.accept(4, "localTransformedListener", String.class);
-        v.accept(5, "lastSendTime", long.class);
-        v.accept(6, "autoUnsubscribe", boolean.class);
-        v.accept(7, "bufferSize", int.class);
-        v.accept(8, "delayedRegister", boolean.class);
-        v.accept(9, "interval", long.class);
-        v.accept(10, "isEvents", boolean.class);
-        v.accept(11, "isMessaging", boolean.class);
-        v.accept(12, "isQuery", boolean.class);
-        v.accept(13, "keepBinary", boolean.class);
-        v.accept(14, "nodeId", UUID.class);
-        v.accept(15, "notifyExisting", boolean.class);
-        v.accept(16, "oldValueRequired", boolean.class);
-        v.accept(17, "routineId", UUID.class);
-        v.accept(18, "topic", String.class);
+        v.accept(0, "cacheName", String.class, false);
+        v.accept(1, "localListener", String.class, false);
+        v.accept(2, "remoteFilter", String.class, false);
+        v.accept(3, "remoteTransformer", String.class, false);
+        v.accept(4, "localTransformedListener", String.class, false);
+        v.accept(5, "lastSendTime", long.class, false);
+        v.accept(6, "autoUnsubscribe", boolean.class, false);
+        v.accept(7, "bufferSize", int.class, false);
+        v.accept(8, "delayedRegister", boolean.class, false);
+        v.accept(9, "interval", long.class, false);
+        v.accept(10, "isEvents", boolean.class, false);
+        v.accept(11, "isMessaging", boolean.class, false);
+        v.accept(12, "isQuery", boolean.class, false);
+        v.accept(13, "keepBinary", boolean.class, false);
+        v.accept(14, "nodeId", UUID.class, false);
+        v.accept(15, "notifyExisting", boolean.class, false);
+        v.accept(16, "oldValueRequired", boolean.class, false);
+        v.accept(17, "routineId", UUID.class, false);
+        v.accept(18, "topic", String.class, false);
     }
 
     /** {@inheritDoc} */

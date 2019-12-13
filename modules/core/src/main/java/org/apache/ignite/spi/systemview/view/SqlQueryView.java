@@ -19,7 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -38,19 +38,19 @@ public class SqlQueryView {
     }
 
     /** @return Origin query node. */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public UUID originNodeId() {
         return qry.nodeId();
     }
 
     /** @return Query ID. */
-    @Order
+    @ViewAttribute
     public String queryId() {
         return qry.globalQueryId();
     }
 
     /** @return Query text. */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public String sql() {
         return qry.query();
     }
@@ -61,13 +61,13 @@ public class SqlQueryView {
     }
 
     /** @return Query start time. */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public Date startTime() {
         return new Date(qry.startTime());
     }
 
     /** @return Query duration. */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public long duration() {
         return U.currentTimeMillis() - qry.startTime();
     }

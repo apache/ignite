@@ -19,7 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -39,37 +39,37 @@ public class ServiceView {
     }
 
     /** @return Service name. */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public String name() {
         return serviceInfo.name();
     }
 
     /** @return Service id. */
-    @Order
+    @ViewAttribute
     public IgniteUuid serviceId() {
         return serviceInfo.serviceId();
     }
 
     /** @return Service class. */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public Class<?> serviceClass() {
         return serviceInfo.serviceClass();
     }
 
     /** @return Total count of service instances. */
-    @Order(5)
+    @ViewAttribute(order = 5)
     public int totalCount() {
         return serviceInfo.totalCount();
     }
 
     /** @return Maximum instance count per node. */
-    @Order(6)
+    @ViewAttribute(order = 6)
     public int maxPerNodeCount() {
         return serviceInfo.maxPerNodeCount();
     }
 
     /** @return Cache name. */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public String cacheName() {
         return serviceInfo.cacheName();
     }
@@ -94,7 +94,7 @@ public class ServiceView {
     }
 
     /** @return Origin node id. */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public UUID originNodeId() {
         return serviceInfo.originNodeId();
     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2PkHashIndex;
@@ -53,37 +53,37 @@ public class SqlIndexView {
     }
 
     /** @return Cache name. */
-    @Order(5)
+    @ViewAttribute(order = 5)
     public String cacheName() {
         return tbl.cacheName();
     }
 
     /** @return Schema name. */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public String schemaName() {
         return tbl.getSchema().getName();
     }
 
     /** @return Table name. */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public String tableName() {
         return tbl.identifier().table();
     }
 
     /** @return Index name. */
-    @Order()
+    @ViewAttribute()
     public String indexName() {
         return idx.getName();
     }
 
     /** @return Index type. */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public H2IndexType indexType() {
         return type;
     }
 
     /** @return Indexed columns. */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public String columns() {
         switch (type) {
             case HASH:

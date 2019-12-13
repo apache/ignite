@@ -869,16 +869,32 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             for (int j = 0; j < 1000; j++)
                 cache.put(key++, new byte[pageSize / 2]);
 
-            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_SIZE > 0 " +
+            // Test filtering by 3 columns.
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_NUMBER = 0 " +
+                "AND PART_ID = 0 AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            // Test filtering with invalid cache group id.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHE_GROUP_ID = ?", -1)
+                .isEmpty());
+
+            // Test filtering with invalid partition id.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE PART_ID = ?", -1)
+                .isEmpty());
+
+            // Test filtering with invalid bucket number.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_NUMBER = -1")
+                .isEmpty());
+
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_SIZE > 0 " +
                 "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
 
-            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE STRIPES_COUNT > 0 " +
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE STRIPES_COUNT > 0 " +
                 "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
 
-            assertTrue(!execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHED_PAGES_COUNT > 0 " +
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHED_PAGES_COUNT > 0 " +
                 "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
 
-            assertTrue(!execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%'")
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%'")
                 .isEmpty());
 
             assertEquals(0L, execute(ignite0, "SELECT COUNT(*) FROM SYS.DATA_REGION_PAGE_LISTS " +

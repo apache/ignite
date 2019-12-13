@@ -20,7 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -66,7 +66,7 @@ public class TransactionView {
      * @return Start time of this transaction on this node.
      * @see IgniteInternalTx#startTime()
      */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public long startTime() {
         return tx.startTime();
     }
@@ -75,7 +75,7 @@ public class TransactionView {
      * @return Isolation level.
      * @see IgniteInternalTx#isolation()
      */
-    @Order(5)
+    @ViewAttribute(order = 5)
     public TransactionIsolation isolation() {
         return tx.isolation();
     }
@@ -84,7 +84,7 @@ public class TransactionView {
      * @return Concurrency mode.
      * @see IgniteInternalTx#concurrency()
      */
-    @Order(6)
+    @ViewAttribute(order = 6)
     public TransactionConcurrency concurrency() {
         return tx.concurrency();
     }
@@ -93,7 +93,7 @@ public class TransactionView {
      * @return Current transaction state.
      * @see IgniteInternalTx#state()
      */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public TransactionState state() {
         return tx.state();
     }
@@ -118,7 +118,7 @@ public class TransactionView {
      * @return Transaction UID.
      * @see IgniteInternalTx#xid()
      */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public IgniteUuid xid() {
         return tx.xid();
     }
@@ -183,7 +183,7 @@ public class TransactionView {
      * @return Label of transaction or {@code null} if there was not set.
      * @see IgniteInternalTx#label()
      */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public String label() {
         return tx.label();
     }
@@ -207,7 +207,7 @@ public class TransactionView {
      * @return Originating node id.
      * @see IgniteInternalTx#originatingNodeId()
      */
-    @Order
+    @ViewAttribute
     public UUID originatingNodeId() {
         return tx.originatingNodeId();
     }
@@ -240,7 +240,7 @@ public class TransactionView {
      * @return Count of the cache keys participatint in transaction.
      * @see IgniteInternalTx#allEntries()
      */
-    @Order(7)
+    @ViewAttribute(order = 7)
     public int keysCount() {
         Collection<IgniteTxEntry> entries = tx.allEntries();
 
@@ -254,7 +254,7 @@ public class TransactionView {
      * @return Id of the cashes participating in transaction.
      * @see IgniteTxState#cacheIds()
      */
-    @Order(8)
+    @ViewAttribute(order = 8)
     public String cacheIds() {
         GridIntList cacheIds = tx.txState().cacheIds();
 

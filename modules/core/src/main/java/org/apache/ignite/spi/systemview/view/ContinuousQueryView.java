@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.RoutineInfo;
@@ -66,7 +66,7 @@ public class ContinuousQueryView {
     }
 
     /** @return Cache name. */
-    @Order
+    @ViewAttribute
     public String cacheName() {
         return hnd.cacheName();
     }
@@ -129,7 +129,7 @@ public class ContinuousQueryView {
     }
 
     /** @return Last send time. */
-    @Order(5)
+    @ViewAttribute(order = 5)
     public long lastSendTime() {
         return qry.lastSendTime();
     }
@@ -143,7 +143,7 @@ public class ContinuousQueryView {
      * @return Class name of the local transformed listener.
      * @see ContinuousQuery#setLocalListener(CacheEntryUpdatedListener)
      */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public String localListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -158,7 +158,7 @@ public class ContinuousQueryView {
      * @see ContinuousQuery#setRemoteFilter(CacheEntryEventSerializableFilter)
      * @see ContinuousQuery#setRemoteFilterFactory(Factory)
      */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public String remoteFilter() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -178,7 +178,7 @@ public class ContinuousQueryView {
      * @see ContinuousQueryWithTransformer
      * @see ContinuousQueryWithTransformer#setRemoteTransformerFactory(Factory)
      */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public String remoteTransformer() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
@@ -193,7 +193,7 @@ public class ContinuousQueryView {
      * @see ContinuousQueryWithTransformer
      * @see ContinuousQueryWithTransformer#setLocalListener(ContinuousQueryWithTransformer.EventListener)
      */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public String localTransformedListener() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 

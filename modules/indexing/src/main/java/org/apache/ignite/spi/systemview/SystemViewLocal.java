@@ -20,15 +20,21 @@ package org.apache.ignite.spi.systemview;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumnCondition;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 import org.h2.engine.Session;
@@ -56,19 +62,45 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** System view for export. */
     private final SystemView<R> sysView;
 
+    /** View attribute names. */
+    private final String[] attributeNames;
+
     /**
      * @param ctx Kernal context.
      * @param sysView View to export.
      */
     public SystemViewLocal(GridKernalContext ctx, SystemView<R> sysView) {
-        super(sqlName(sysView.name()), sysView.description(), ctx, columnsList(sysView));
+        super(sqlName(sysView.name()), sysView.description(), ctx, indexes(sysView), columns(sysView));
 
         this.sysView = sysView;
+
+        attributeNames = new String[sysView.walker().count()];
+
+        sysView.walker().visitAll(new AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering) {
+                attributeNames[idx] = name;
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        Iterator<R> rows = sysView.iterator();
+        Iterator<R> rows;
+
+        if (sysView instanceof FiltrableSystemView) {
+            Map<String, Object> filter = new HashMap<>();
+
+            for (int i = 0; i < cols.length; i++) {
+                SqlSystemViewColumnCondition cond = SqlSystemViewColumnCondition.forColumn(i, first, last);
+
+                if (cond.isEquality())
+                    filter.put(attributeNames[i], cond.valueForEquality().getObject());
+            }
+
+            rows = ((FiltrableSystemView<R>)sysView).iterator(filter);
+        }
+        else
+            rows = sysView.iterator();
 
         return new Iterator<Row>() {
             @Override public boolean hasNext() {
@@ -161,13 +193,13 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      *
      * @param sysView System view.
      * @param <R> Row type.
-     * @return SQL column array for {@code rowClass}.
+     * @return SQL column array for {@code sysView}.
      */
-    private static <R> Column[] columnsList(SystemView<R> sysView) {
+    private static <R> Column[] columns(SystemView<R> sysView) {
         Column[] cols = new Column[sysView.walker().count()];
 
         sysView.walker().visitAll(new AttributeVisitor() {
-            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering) {
                 int type;
 
                 if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
@@ -208,6 +240,28 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
         return cols;
     }
 
+    /**
+     * Extract indexes for specific {@link SystemView}.
+     *
+     * @param sysView System view.
+     * @return Indexes array for {@code sysView}.
+     */
+    private static String[] indexes(SystemView<?> sysView) {
+        if (!(sysView instanceof FiltrableSystemView))
+            return null;
+
+        List<String> indexes = new ArrayList<>();
+
+        sysView.walker().visitAll(new AttributeVisitor() {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering) {
+                if (filtering)
+                    indexes.add(sqlName(name));
+            }
+        });
+
+        return new String[] { String.join(",", indexes) };
+    }
+
     /** {@inheritDoc} */
     @Override public long getRowCount() {
         return sysView.size();
@@ -235,7 +289,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param name Name to convert.
      * @return SQL compatible name.
      */
-    public static String sqlName(String name) {
+    private static String sqlName(String name) {
         return name
             .replaceAll("([A-Z])", "_$1")
             .replaceAll('\\' + MetricUtils.SEPARATOR, "_").toUpperCase();

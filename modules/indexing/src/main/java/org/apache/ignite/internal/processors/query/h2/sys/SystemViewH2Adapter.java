@@ -67,17 +67,19 @@ public class SystemViewH2Adapter extends TableBase {
         indexes = new ArrayList<>();
         indexes.add(scanIdx);
 
-        for (String index : view.getIndexes()) {
-            String[] indexedCols = index.split(",");
+        if (view.getIndexes() != null) {
+            for (String index : view.getIndexes()) {
+                String[] indexedCols = index.split(",");
 
-            Column[] cols = new Column[indexedCols.length];
+                Column[] cols = new Column[indexedCols.length];
 
-            for (int i = 0; i < indexedCols.length; i++)
-                cols[i] = getColumn(indexedCols[i]);
+                for (int i = 0; i < indexedCols.length; i++)
+                    cols[i] = getColumn(indexedCols[i]);
 
-            SqlSystemIndex idx = new SqlSystemIndex(this, cols);
+                SqlSystemIndex idx = new SqlSystemIndex(this, cols);
 
-            indexes.add(idx);
+                indexes.add(idx);
+            }
         }
     }
 

@@ -30,14 +30,14 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlQueryHistoryViewWalker implements SystemViewRowAttributeWalker<SqlQueryHistoryView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "schemaName", String.class);
-        v.accept(1, "sql", String.class);
-        v.accept(2, "local", boolean.class);
-        v.accept(3, "executions", long.class);
-        v.accept(4, "failures", long.class);
-        v.accept(5, "durationMin", long.class);
-        v.accept(6, "durationMax", long.class);
-        v.accept(7, "lastStartTime", Date.class);
+        v.accept(0, "schemaName", String.class, false);
+        v.accept(1, "sql", String.class, false);
+        v.accept(2, "local", boolean.class, false);
+        v.accept(3, "executions", long.class, false);
+        v.accept(4, "failures", long.class, false);
+        v.accept(5, "durationMin", long.class, false);
+        v.accept(6, "durationMax", long.class, false);
+        v.accept(7, "lastStartTime", Date.class, false);
     }
 
     /** {@inheritDoc} */

@@ -31,16 +31,16 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ServiceViewWalker implements SystemViewRowAttributeWalker<ServiceView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "serviceId", IgniteUuid.class);
-        v.accept(1, "name", String.class);
-        v.accept(2, "serviceClass", Class.class);
-        v.accept(3, "cacheName", String.class);
-        v.accept(4, "originNodeId", UUID.class);
-        v.accept(5, "totalCount", int.class);
-        v.accept(6, "maxPerNodeCount", int.class);
-        v.accept(7, "affinityKey", String.class);
-        v.accept(8, "nodeFilter", Class.class);
-        v.accept(9, "staticallyConfigured", boolean.class);
+        v.accept(0, "serviceId", IgniteUuid.class, false);
+        v.accept(1, "name", String.class, false);
+        v.accept(2, "serviceClass", Class.class, false);
+        v.accept(3, "cacheName", String.class, false);
+        v.accept(4, "originNodeId", UUID.class, false);
+        v.accept(5, "totalCount", int.class, false);
+        v.accept(6, "maxPerNodeCount", int.class, false);
+        v.accept(7, "affinityKey", String.class, false);
+        v.accept(8, "nodeFilter", Class.class, false);
+        v.accept(9, "staticallyConfigured", boolean.class, false);
     }
 
     /** {@inheritDoc} */

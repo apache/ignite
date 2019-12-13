@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
@@ -42,15 +43,23 @@ public class PagesListView {
     /**
      * @return Cache group id.
      */
-    @Order
+    @ViewAttribute(filtering = true)
     public int cacheGroupId() {
         return pagesList.groupId();
     }
 
     /**
+     * @return Partition id.
+     */
+    @ViewAttribute(order = 1, filtering = true)
+    public int partId() {
+        return PageIdUtils.partId(pagesList.metaPageId);
+    }
+
+    /**
      * @return Pages-list name.
      */
-    @Order(1)
+    @ViewAttribute(order = 2)
     public String name() {
         return pagesList.name;
     }
@@ -58,7 +67,7 @@ public class PagesListView {
     /**
      * @return Bucket number.
      * */
-    @Order(2)
+    @ViewAttribute(order = 3, filtering = true)
     public int bucketNumber() {
         return bucket;
     }
@@ -66,7 +75,7 @@ public class PagesListView {
     /**
      * @return Bucket size.
      */
-    @Order(3)
+    @ViewAttribute(order = 4)
     public long bucketSize() {
         return pagesList.bucketsSize[bucket].get();
     }
@@ -74,7 +83,7 @@ public class PagesListView {
     /**
      * @return Bucket stripes count.
      */
-    @Order(4)
+    @ViewAttribute(order = 5)
     public int stripesCount() {
         PagesList.Stripe[] stripes = pagesList.getBucket(bucket);
 
@@ -84,7 +93,7 @@ public class PagesListView {
     /**
      * @return Count of pages cached onheap.
      */
-    @Order(5)
+    @ViewAttribute(order = 6)
     public int cachedPagesCount() {
         PagesList.PagesCache pagesCache = pagesList.getBucketCache(bucket, false);
 

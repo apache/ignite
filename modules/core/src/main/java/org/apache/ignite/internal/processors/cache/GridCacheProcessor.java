@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -108,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -597,26 +599,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
 
-        ctx.systemView().registerInnerCollectionView(
+        ctx.systemView().registerFiltrableView(
             CACHE_GRP_PAGE_LIST_VIEW,
             CACHE_GRP_PAGE_LIST_VIEW_DESC,
             new PagesListViewWalker(),
-            () -> F.concat(F.iterator(cacheGrps.values().iterator(),
-                grp -> grp.offheap().cacheDataStores().iterator(), true)),
-            dataStore -> {
-                RowStore rowStore = dataStore.rowStore();
-
-                if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
-                    return Collections.emptySet();
-
-                PagesList pagesList = (PagesList)rowStore.freeList();
-
-                return pagesList.bucketsView();
-            },
-            (dataStore, view) -> view
+            this::pagesListViewSupplier,
+            Function.identity()
         );
     }
-
 
     /**
      * @param cfg Initializes cache configuration with proper defaults.
@@ -5341,6 +5331,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public CacheConfigurationEnricher enricher() {
         return enricher;
+    }
+
+    /**
+     * Pages list view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<PagesListView> pagesListViewSupplier(Map<String, Object> filter) {
+        Object cacheGrpId = filter == null ? null : filter.get(PagesListViewWalker.CACHE_GROUP_ID_FILTER);
+
+        Collection<CacheGroupContext> cacheGrps;
+
+        if (cacheGrpId instanceof Integer) {
+            CacheGroupContext cacheGrp = this.cacheGrps.get(cacheGrpId);
+
+            if (cacheGrp == null)
+                return Collections.emptyList();
+
+            cacheGrps = Collections.singletonList(cacheGrp);
+        }
+        else
+            cacheGrps = this.cacheGrps.values();
+
+        Object partFilter = filter == null ? null : filter.get(PagesListViewWalker.PART_ID_FILTER);
+        Integer partId = partFilter instanceof Integer ? (Integer)partFilter : null;
+
+        Object bucketFilter = filter == null ? null : filter.get(PagesListViewWalker.BUCKET_NUMBER_FILTER);
+        Integer bucketNum = bucketFilter instanceof Integer ? (Integer)bucketFilter : null;
+
+        return F.flat(
+            F.iterator(
+                (Iterable<IgniteCacheOffheapManager.CacheDataStore>)F.flat(
+                    F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true)
+                ),
+                dataStore -> {
+                    RowStore rowStore = dataStore.rowStore();
+
+                    if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
+                        return Collections.emptySet();
+
+                    PagesList pagesList = (PagesList)rowStore.freeList();
+
+                    return pagesList.bucketsView(bucketNum);
+                }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
     }
 
     /**

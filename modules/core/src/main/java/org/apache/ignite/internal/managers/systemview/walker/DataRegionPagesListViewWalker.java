@@ -28,11 +28,11 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class DataRegionPagesListViewWalker implements SystemViewRowAttributeWalker<PagesListView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "name", String.class);
-        v.accept(1, "bucketNumber", int.class);
-        v.accept(2, "bucketSize", long.class);
-        v.accept(3, "stripesCount", int.class);
-        v.accept(4, "cachedPagesCount", int.class);
+        v.accept(0, "name", String.class, false);
+        v.accept(1, "bucketNumber", int.class, false);
+        v.accept(2, "bucketSize", long.class, false);
+        v.accept(3, "stripesCount", int.class, false);
+        v.accept(4, "cachedPagesCount", int.class, false);
     }
 
     /** {@inheritDoc} */

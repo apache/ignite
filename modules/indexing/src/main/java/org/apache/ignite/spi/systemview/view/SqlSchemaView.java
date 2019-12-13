@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.internal.processors.query.h2.H2Schema;
 
 /**
@@ -35,7 +35,7 @@ public class SqlSchemaView {
     }
 
     /** @return Schema name. */
-    @Order
+    @ViewAttribute
     public String name() {
         return schema.schemaName();
     }

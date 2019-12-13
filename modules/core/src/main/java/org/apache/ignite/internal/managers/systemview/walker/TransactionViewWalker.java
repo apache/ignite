@@ -34,31 +34,31 @@ import org.apache.ignite.transactions.TransactionState;
 public class TransactionViewWalker implements SystemViewRowAttributeWalker<TransactionView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "originatingNodeId", UUID.class);
-        v.accept(1, "state", TransactionState.class);
-        v.accept(2, "xid", IgniteUuid.class);
-        v.accept(3, "label", String.class);
-        v.accept(4, "startTime", long.class);
-        v.accept(5, "isolation", TransactionIsolation.class);
-        v.accept(6, "concurrency", TransactionConcurrency.class);
-        v.accept(7, "keysCount", int.class);
-        v.accept(8, "cacheIds", String.class);
-        v.accept(9, "colocated", boolean.class);
-        v.accept(10, "dht", boolean.class);
-        v.accept(11, "duration", long.class);
-        v.accept(12, "implicit", boolean.class);
-        v.accept(13, "implicitSingle", boolean.class);
-        v.accept(14, "internal", boolean.class);
-        v.accept(15, "local", boolean.class);
-        v.accept(16, "localNodeId", UUID.class);
-        v.accept(17, "near", boolean.class);
-        v.accept(18, "onePhaseCommit", boolean.class);
-        v.accept(19, "otherNodeId", UUID.class);
-        v.accept(20, "subjectId", UUID.class);
-        v.accept(21, "system", boolean.class);
-        v.accept(22, "threadId", long.class);
-        v.accept(23, "timeout", long.class);
-        v.accept(24, "topVer", String.class);
+        v.accept(0, "originatingNodeId", UUID.class, false);
+        v.accept(1, "state", TransactionState.class, false);
+        v.accept(2, "xid", IgniteUuid.class, false);
+        v.accept(3, "label", String.class, false);
+        v.accept(4, "startTime", long.class, false);
+        v.accept(5, "isolation", TransactionIsolation.class, false);
+        v.accept(6, "concurrency", TransactionConcurrency.class, false);
+        v.accept(7, "keysCount", int.class, false);
+        v.accept(8, "cacheIds", String.class, false);
+        v.accept(9, "colocated", boolean.class, false);
+        v.accept(10, "dht", boolean.class, false);
+        v.accept(11, "duration", long.class, false);
+        v.accept(12, "implicit", boolean.class, false);
+        v.accept(13, "implicitSingle", boolean.class, false);
+        v.accept(14, "internal", boolean.class, false);
+        v.accept(15, "local", boolean.class, false);
+        v.accept(16, "localNodeId", UUID.class, false);
+        v.accept(17, "near", boolean.class, false);
+        v.accept(18, "onePhaseCommit", boolean.class, false);
+        v.accept(19, "otherNodeId", UUID.class, false);
+        v.accept(20, "subjectId", UUID.class, false);
+        v.accept(21, "system", boolean.class, false);
+        v.accept(22, "threadId", long.class, false);
+        v.accept(23, "timeout", long.class, false);
+        v.accept(24, "topVer", String.class, false);
     }
 
     /** {@inheritDoc} */

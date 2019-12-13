@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -54,37 +54,37 @@ public class CacheView {
     }
 
     /** @see CacheGroupDescriptor#cacheOrGroupName() */
-    @Order(5)
+    @ViewAttribute(order = 5)
     public String cacheGroupName() {
         return cache.groupDescriptor().cacheOrGroupName();
     }
 
     /** @see DynamicCacheDescriptor#cacheId() */
-    @Order(1)
+    @ViewAttribute(order = 1)
     public int cacheId() {
         return cache.cacheId();
     }
 
     /** @see CacheConfiguration#getName() */
-    @Order
+    @ViewAttribute
     public String cacheName() {
         return cache.cacheConfiguration().getName();
     }
 
     /** @see DynamicCacheDescriptor#cacheType() */
-    @Order(2)
+    @ViewAttribute(order = 2)
     public CacheType cacheType() {
         return cache.cacheType();
     }
 
     /** @see CacheConfiguration#getCacheMode() */
-    @Order(3)
+    @ViewAttribute(order = 3)
     public CacheMode cacheMode() {
         return cache.cacheConfiguration().getCacheMode();
     }
 
     /** @see CacheConfiguration#getAtomicityMode() */
-    @Order(4)
+    @ViewAttribute(order = 4)
     public CacheAtomicityMode atomicityMode() {
         return cache.cacheConfiguration().getAtomicityMode();
     }

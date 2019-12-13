@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
@@ -157,6 +157,17 @@ public class SystemViewRowAttributeWalkerGenerator {
         code.add(" * @see " + simpleName);
         code.add(" */");
         code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
+
+        forEachMethod(clazz, (m, i) -> {
+            if (m.getAnnotation(ViewAttribute.class) != null && m.getAnnotation(ViewAttribute.class).filtering()) {
+                code.add(TAB + "/* Filter key for attribute \"" + m.getName() + "\" */");
+                code.add(TAB + "public static final String " + m.getName()
+                    .replaceAll("(\\p{Upper})", "_$1")
+                    .toUpperCase() + "_FILTER = \"" + m.getName() + "\";");
+                code.add("");
+            }
+        });
+
         code.add(TAB + "/** {@inheritDoc} */");
         code.add(TAB + "@Override public void visitAll(AttributeVisitor v) {");
 
@@ -170,7 +181,10 @@ public class SystemViewRowAttributeWalkerGenerator {
             if (!retClazz.isPrimitive() && !retClazz.getName().startsWith("java.lang"))
                 addImport(imports, retClazz);
 
-            line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
+            boolean filtering = m.getAnnotation(ViewAttribute.class) != null &&
+                m.getAnnotation(ViewAttribute.class).filtering();
+
+            line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class, " + filtering + ");";
 
             code.add(line);
         });
@@ -187,9 +201,8 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.isPrimitive()) {
+            if (!retClazz.isPrimitive())
                 line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class, row." + m.getName() + "());";
-            }
             else if (retClazz == boolean.class)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getName() + "());";
             else if (retClazz == char.class)
@@ -288,13 +301,13 @@ public class SystemViewRowAttributeWalkerGenerator {
             if (retClazz == void.class)
                 continue;
 
-            if (m.getAnnotation(Order.class) != null)
+            if (m.getAnnotation(ViewAttribute.class) != null)
                 ordered.add(m);
             else
                 notOrdered.add(m);
         }
 
-        Collections.sort(ordered, Comparator.comparingInt(m -> m.getAnnotation(Order.class).value()));
+        Collections.sort(ordered, Comparator.comparingInt(m -> m.getAnnotation(ViewAttribute.class).order()));
         Collections.sort(notOrdered, Comparator.comparing(Method::getName));
 
         for (int i = 0; i < ordered.size(); i++)

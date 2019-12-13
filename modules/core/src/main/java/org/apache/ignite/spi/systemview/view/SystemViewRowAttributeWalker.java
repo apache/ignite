@@ -47,9 +47,10 @@ public interface SystemViewRowAttributeWalker<R> {
          * @param idx Index.
          * @param name Name.
          * @param clazz Value class.
+         * @param filtering Is filtering for this attribute supported.
          * @param <T> Value type.
          */
-        public <T> void accept(int idx, String name, Class<T> clazz);
+        public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering);
     }
 
     /** Attribute visitor. */

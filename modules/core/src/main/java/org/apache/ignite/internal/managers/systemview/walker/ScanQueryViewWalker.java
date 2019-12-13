@@ -30,24 +30,24 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ScanQueryViewWalker implements SystemViewRowAttributeWalker<ScanQueryView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "originNodeId", UUID.class);
-        v.accept(1, "queryId", long.class);
-        v.accept(2, "cacheName", String.class);
-        v.accept(3, "cacheId", int.class);
-        v.accept(4, "cacheGroupId", int.class);
-        v.accept(5, "cacheGroupName", String.class);
-        v.accept(6, "startTime", long.class);
-        v.accept(7, "duration", long.class);
-        v.accept(8, "canceled", boolean.class);
-        v.accept(9, "filter", String.class);
-        v.accept(10, "keepBinary", boolean.class);
-        v.accept(11, "local", boolean.class);
-        v.accept(12, "pageSize", int.class);
-        v.accept(13, "partition", int.class);
-        v.accept(14, "subjectId", UUID.class);
-        v.accept(15, "taskName", String.class);
-        v.accept(16, "topology", String.class);
-        v.accept(17, "transformer", String.class);
+        v.accept(0, "originNodeId", UUID.class, false);
+        v.accept(1, "queryId", long.class, false);
+        v.accept(2, "cacheName", String.class, false);
+        v.accept(3, "cacheId", int.class, false);
+        v.accept(4, "cacheGroupId", int.class, false);
+        v.accept(5, "cacheGroupName", String.class, false);
+        v.accept(6, "startTime", long.class, false);
+        v.accept(7, "duration", long.class, false);
+        v.accept(8, "canceled", boolean.class, false);
+        v.accept(9, "filter", String.class, false);
+        v.accept(10, "keepBinary", boolean.class, false);
+        v.accept(11, "local", boolean.class, false);
+        v.accept(12, "pageSize", int.class, false);
+        v.accept(13, "partition", int.class, false);
+        v.accept(14, "subjectId", UUID.class, false);
+        v.accept(15, "taskName", String.class, false);
+        v.accept(16, "topology", String.class, false);
+        v.accept(17, "transformer", String.class, false);
     }
 
     /** {@inheritDoc} */

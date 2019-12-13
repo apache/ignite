@@ -30,12 +30,12 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ClientConnectionViewWalker implements SystemViewRowAttributeWalker<ClientConnectionView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "connectionId", long.class);
-        v.accept(1, "localAddress", InetSocketAddress.class);
-        v.accept(2, "remoteAddress", InetSocketAddress.class);
-        v.accept(3, "type", String.class);
-        v.accept(4, "user", String.class);
-        v.accept(5, "version", String.class);
+        v.accept(0, "connectionId", long.class, false);
+        v.accept(1, "localAddress", InetSocketAddress.class, false);
+        v.accept(2, "remoteAddress", InetSocketAddress.class, false);
+        v.accept(3, "type", String.class, false);
+        v.accept(4, "user", String.class, false);
+        v.accept(5, "version", String.class, false);
     }
 
     /** {@inheritDoc} */

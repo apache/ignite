@@ -58,12 +58,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -76,6 +78,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
@@ -1013,7 +1016,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 2; i++) {
                 IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("cache" + i)
-                    .setDataRegionName("dr" + i).setAffinity(new RendezvousAffinityFunction().setPartitions(1)));
+                    .setDataRegionName("dr" + i).setAffinity(new RendezvousAffinityFunction().setPartitions(2)));
 
                 int key = 0;
 
@@ -1058,6 +1061,24 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(dr1flPages > 0);
             assertTrue(dr1flStripes > 0);
             assertTrue(dr1flCached > 0);
+
+            // Test filtering.
+            assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
+
+            Iterator<PagesListView> iter = ((FiltrableSystemView<PagesListView>)cacheGrpPageLists).iterator(U.map(
+                PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                PagesListViewWalker.PART_ID_FILTER, 0,
+                PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(1, F.size(iter));
+
+            iter = ((FiltrableSystemView<PagesListView>)cacheGrpPageLists).iterator(U.map(
+                PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(2, F.size(iter));
         }
     }
 

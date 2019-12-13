@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,7 @@ public abstract class PagesList extends DataStructure {
     protected volatile boolean changed;
 
     /** Page ID to store list metadata. */
-    private final long metaPageId;
+    protected final long metaPageId;
 
     /** Number of buckets. */
     private final int buckets;
@@ -1834,9 +1835,16 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * @param bucketFilter If set returns only view for this bucket.
+     *
      * Gets buckets representation for a {@link SystemView}
      */
-    public Collection<PagesListView> bucketsView() {
+    public Collection<PagesListView> bucketsView(Integer bucketFilter) {
+        if (bucketFilter != null) {
+            return bucketFilter >= 0 && bucketFilter < buckets ?
+                Collections.singleton(new PagesListView(this, bucketFilter)) : Collections.emptyList();
+        }
+
         List<PagesListView> views = new ArrayList<>(buckets);
 
         for (int i = 0; i < buckets; i++)

@@ -29,17 +29,17 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlTableColumnViewWalker implements SystemViewRowAttributeWalker<SqlTableColumnView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "columnName", String.class);
-        v.accept(1, "tableName", String.class);
-        v.accept(2, "schemaName", String.class);
-        v.accept(3, "affinityColumn", boolean.class);
-        v.accept(4, "autoIncrement", boolean.class);
-        v.accept(5, "defaultValue", String.class);
-        v.accept(6, "nullable", boolean.class);
-        v.accept(7, "pk", boolean.class);
-        v.accept(8, "precision", int.class);
-        v.accept(9, "scale", int.class);
-        v.accept(10, "type", Class.class);
+        v.accept(0, "columnName", String.class, false);
+        v.accept(1, "tableName", String.class, false);
+        v.accept(2, "schemaName", String.class, false);
+        v.accept(3, "affinityColumn", boolean.class, false);
+        v.accept(4, "autoIncrement", boolean.class, false);
+        v.accept(5, "defaultValue", String.class, false);
+        v.accept(6, "nullable", boolean.class, false);
+        v.accept(7, "pk", boolean.class, false);
+        v.accept(8, "precision", int.class, false);
+        v.accept(9, "scale", int.class, false);
+        v.accept(10, "type", Class.class, false);
     }
 
     /** {@inheritDoc} */

@@ -30,16 +30,16 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlIndexViewWalker implements SystemViewRowAttributeWalker<SqlIndexView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "indexName", String.class);
-        v.accept(1, "indexType", H2IndexType.class);
-        v.accept(2, "columns", String.class);
-        v.accept(3, "schemaName", String.class);
-        v.accept(4, "tableName", String.class);
-        v.accept(5, "cacheName", String.class);
-        v.accept(6, "cacheId", int.class);
-        v.accept(7, "inlineSize", int.class);
-        v.accept(8, "isPk", boolean.class);
-        v.accept(9, "isUnique", boolean.class);
+        v.accept(0, "indexName", String.class, false);
+        v.accept(1, "indexType", H2IndexType.class, false);
+        v.accept(2, "columns", String.class, false);
+        v.accept(3, "schemaName", String.class, false);
+        v.accept(4, "tableName", String.class, false);
+        v.accept(5, "cacheName", String.class, false);
+        v.accept(6, "cacheId", int.class, false);
+        v.accept(7, "inlineSize", int.class, false);
+        v.accept(8, "isPk", boolean.class, false);
+        v.accept(9, "isUnique", boolean.class, false);
     }
 
     /** {@inheritDoc} */
