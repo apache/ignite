@@ -24,7 +24,6 @@ import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
-import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -38,6 +37,9 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSe
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
+import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
+import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
+import org.apache.ignite.internal.util.tostring.TransactionSensitiveDataTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
@@ -96,6 +98,11 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
         suite.addTestSuite(WorkersControlMXBeanTest.class);
+
+        // Sensitive toString.
+        suite.addTestSuite(IncludeSensitiveAtomicTest.class);
+        suite.addTestSuite(IncludeSensitiveTransactionalTest.class);
+        suite.addTestSuite(TransactionSensitiveDataTest.class);
 
         // Metrics.
         suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);

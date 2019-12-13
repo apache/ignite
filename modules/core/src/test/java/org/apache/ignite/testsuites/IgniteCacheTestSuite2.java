@@ -140,6 +140,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalIsolatedN
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLoadAllSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalLockSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.local.GridCacheFastNodeLeftForTransactionTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxTimeoutSelfTest;
@@ -177,6 +178,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
         suite.addTestSuite(GridCacheLocalIsolatedNodesSelfTest.class);
+        suite.addTestSuite(GridCacheFastNodeLeftForTransactionTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
