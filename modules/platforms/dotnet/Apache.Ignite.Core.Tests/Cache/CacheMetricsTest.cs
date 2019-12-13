@@ -126,6 +126,62 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        [Test]
+        public void TestClearStatistics()
+        {
+            var localIgnite = Ignition.GetIgnite();
+            var cacheName = "TestClearStatisticsCache";
+            var localCache = localIgnite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true
+            });
+
+            var remoteIgnite = Ignition.GetIgnite(SecondGridName);
+            var remoteCache = remoteIgnite.GetCache<int, int>(cacheName);
+
+            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
+            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
+
+            var localKey = TestUtils.GetPrimaryKey(localIgnite, cacheName);
+
+            localCache.Put(localKey, 1);
+            localCache.Get(localKey);
+
+            var remoteKey = TestUtils.GetPrimaryKey(remoteIgnite, cacheName);
+            remoteCache.Put(remoteKey, 2);
+            remoteCache.Get(remoteKey);
+
+            // Wait for metrics to propagate.
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            var smokeMetrics = localCache.GetMetrics();
+            Assert.AreEqual(2, smokeMetrics.Size);
+            Assert.AreEqual(2, smokeMetrics.CacheGets);
+
+            localCache.ClearStatistics();
+
+            var localMetrics1 = localCache.GetLocalMetrics();
+            var cacheMetrics1 = remoteCache.GetLocalMetrics();
+            var cacheMetrics2 = localCache.GetMetrics();
+            var metrics2 = remoteCache.GetMetrics();
+
+            var metricsToAssert = new[]
+            {
+                localMetrics1
+            };
+
+            foreach (var metrics in metricsToAssert)
+            {
+                Assert.IsTrue(metrics.IsStatisticsEnabled);
+                Assert.AreEqual(cacheName, metrics.CacheName);
+                Assert.AreEqual(0, smokeMetrics.CachePuts);
+                Assert.AreEqual(0, smokeMetrics.CacheSize);
+
+            }
+        }
+
+        /// <summary>
         /// Tests the metrics propagation.
         /// </summary>
         [Test]

@@ -1203,6 +1203,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public void ClearStatistics()
+        {
+            DoOutInOp((int)CacheOp.ClearStatistics);
+        }
+
+        /** <inheritDoc /> */
         public Task Rebalance()
         {
             return DoOutOpAsync(CacheOp.Rebalance);
