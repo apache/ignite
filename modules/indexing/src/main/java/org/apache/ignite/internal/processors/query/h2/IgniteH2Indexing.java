@@ -1355,6 +1355,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 IgniteQueryErrorCode.STMT_TYPE_MISMATCH);
     }
 
+    /**
+     * Check whether command could be executed with the given cluster state.
+     */
+    private void checkClusterState() {
+        if (!ctx.state().publicApiActiveState(true)) {
+            throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, " +
+                "that the cluster is considered inactive by default if Ignite Persistent Store is used to " +
+                "let all the nodes join the cluster. To activate the cluster call Ignite.cluster().active(true).");
+        }
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
@@ -1364,6 +1374,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (res != null)
             return res;
+
+        checkClusterState();
 
         {
             // First, let's check if we already have a two-step query for this statement...
