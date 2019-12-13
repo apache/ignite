@@ -28,17 +28,17 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
- * Tests check appropriate security context when the {@code ScanQuery}, {@code TransformerFactory}, or {@code
- * RemoteFilterFactory} of a {@code ContinuousQueryWithTransformer} is executed on a remote node.
+ * Tests check appropriate security context when the scan query, transformer factory}, or remote filter factory of a
+ * {@link ContinuousQueryWithTransformer} is executed on a remote node.
  * <p>
- * The initiator node broadcasts a task to 'run' node that starts a {@code ContinuousQueryWithTransformer}'s component.
+ * The initiator node broadcasts a task to 'run' node that starts a {@link ContinuousQueryWithTransformer}'s component.
  * That component is executed on 'check' node. On every step, it is performed verification that operation
  * securitycontext is the initiator context.
  */
 public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extends
     AbstractContinuousQueryRemoteSecurityContextCheckTest {
     /**
-     * Tests {@code InitialQuery} of {@code ContinuousQueryWithTransformer}.
+     * Tests initial query of {@link ContinuousQueryWithTransformer}.
      */
     @Test
     public void testInitialQuery() {
@@ -55,7 +55,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
     }
 
     /**
-     * Tests {@code RemoteFilterFactory} of {@code ContinuousQueryWithTransformer}.
+     * Tests remote filter factory of {@link ContinuousQueryWithTransformer}.
      */
     @Test
     public void testRemoteFilterFactory() {
@@ -72,7 +72,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
     }
 
     /**
-     * Tests {@code TransformerFactory} of {@code ContinuousQueryWithTransformer}.
+     * Tests transformer factory of {@link ContinuousQueryWithTransformer}.
      */
     @Test
     public void testTransformerFactory() {
@@ -88,7 +88,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
     }
 
     /**
-     * @param c {@code Consumer} that setups a {@code ContinuousQueryWithTransformer}.
+     * @param c Consumer that setups a {@link ContinuousQueryWithTransformer}.
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
@@ -105,7 +105,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         };
     }
 
-    /** */
+    /**
+     * Test transformer factory.
+     */
     private static class TestTransformerFactory implements Factory {
         /** True if closure should be registered in verifier. */
         private final boolean register;
@@ -123,7 +125,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         }
     }
 
-    /** */
+    /**
+     * Test Ignite closure.
+     */
     private static class TestIgniteClosure implements IgniteClosure<CacheEntryEvent, Object> {
         /** True if closure should be registered in verifier. */
         private final boolean register;

@@ -24,17 +24,17 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
 /**
- * Tests check appropriate security context when the {@code ScanQuery}, {@code RemoteFilter}, or {@code
- * RemoteFilterFactory} of a {@code ContinuousQuery} is executed on a remote node.
+ * Tests check appropriate security context when the scan query, remote filter, or
+ * remote filter factory of a {@link ContinuousQuery} is executed on a remote node.
  * <p>
- * The initiator node broadcasts a task to 'run' node that starts a {@code ContinuousQuery}'s component. That component
+ * The initiator node broadcasts a task to 'run' node that starts a {@link ContinuousQuery}'s component. That component
  * is executed on 'check' node. On every step, it is performed verification that operation securitycontext is the
  * initiator context.
  */
 public class ContinuousQueryRemoteSecurityContextCheckTest extends
     AbstractContinuousQueryRemoteSecurityContextCheckTest {
     /**
-     * Test {@code InitialQuery} of {@code ContinuousQuery}.
+     * Test initial query of {@link ContinuousQuery}.
      */
     @Test
     public void testInitialQuery() {
@@ -49,7 +49,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
-     * Tests {@code RemoteFilterFactory} of {@code ContinuousQuery}.
+     * Tests remote filter factory of {@link ContinuousQuery}.
      */
     @Test
     public void testRemoteFilterFactory() {
@@ -64,7 +64,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
-     * Tests {@code RemoteFilter} of {@code ContinuousQuery}.
+     * Tests remote filter of {@link ContinuousQuery}.
      */
     @Test
     public void testRemoteFilter() {
@@ -79,7 +79,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
-     * @param c {@code Consumer} that setups a {@code ContinuousQuery}.
+     * @param c Consumer that setups a {@link ContinuousQuery}.
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c) {

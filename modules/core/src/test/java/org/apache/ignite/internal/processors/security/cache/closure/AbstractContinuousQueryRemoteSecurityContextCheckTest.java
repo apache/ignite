@@ -27,13 +27,14 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.Ignition.localIgnite;
 
 /**
- * The base class for {@code ContinuousQuery} remote {@code SecurityContext} tests.
+ * The base class for tests that check continuous queries {@link SecurityContext} on a remote node.
  */
 public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     AbstractCacheOperationRemoteSecurityContextCheckTest {
@@ -77,9 +78,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
-     * Opens {@code QueryCursor}.
+     * Opens query cursor.
      *
-     * @param q Query.
+     * @param q {@link Query}.
      */
     protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = localIgnite().cache(CACHE_NAME).query(q)) {

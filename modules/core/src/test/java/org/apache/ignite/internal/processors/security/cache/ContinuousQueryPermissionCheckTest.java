@@ -38,7 +38,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
- * Tests check a cache permission for {@code ContinuousQueries}.
+ * Tests check a cache permission for continuous queries.
  */
 @RunWith(JUnit4.class)
 public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
@@ -60,7 +60,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Tests {@code ContinuousQuery} from a client.
+     * Tests {@link ContinuousQuery} from a client.
      */
     @Test
     public void testClientContinuousQuery() {
@@ -68,7 +68,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Tests {@code ContinuousQuery} from a server.
+     * Tests {@link ContinuousQuery} from a server.
      */
     @Test
     public void testServerContinuousQuery() {
@@ -76,7 +76,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Tests {@code ContinuousQueryWithTransformer} from a client.
+     * Tests {@link ContinuousQueryWithTransformer} from a client.
      */
     @Test
     public void testClientContinuousQueryWithTransformer() {
@@ -84,7 +84,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Tests {@code ContinuousQueryWithTransformer} from a server.
+     * Tests {@link ContinuousQueryWithTransformer} from a server.
      */
     @Test
     public void testServerContinuousQueryWithTransformer() {
@@ -92,7 +92,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * @param c {@code Consumer} that accepts a cache name.
+     * @param c Consumer that accepts a cache name.
      */
     private void check(final Consumer<String> c) {
         c.accept(CACHE_NAME);
@@ -101,7 +101,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Starts {@code ContinuousQuery}.
+     * Starts {@link ContinuousQuery}.
      *
      * @param node Ignie node.
      * @param cacheName Cache name.
@@ -117,7 +117,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
     }
 
     /**
-     * Starts {@code ContinuousQueryWithTransformer}.
+     * Starts {@link ContinuousQueryWithTransformer}.
      *
      * @param node Ignite node.
      * @param cacheName Cache name.
