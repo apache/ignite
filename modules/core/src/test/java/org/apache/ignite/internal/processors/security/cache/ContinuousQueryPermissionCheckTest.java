@@ -100,7 +100,12 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
         assertThrowsWithCause(() -> c.accept(FORBIDDEN_CACHE), SecurityException.class);
     }
 
-    /** */
+    /**
+     * Starts {@code ContinuousQuery}.
+     *
+     * @param node Ignie node.
+     * @param cacheName Cache name.
+     */
     private void startContinuousQuery(Ignite node, String cacheName) {
         ContinuousQuery<String, Integer> q = new ContinuousQuery<>();
 
@@ -111,7 +116,12 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
         }
     }
 
-    /** */
+    /**
+     * Starts {@code ContinuousQueryWithTransformer}.
+     *
+     * @param node Ignite node.
+     * @param cacheName Cache name.
+     */
     private void startContinuousQueryWithTransformer(Ignite node, String cacheName) {
         ContinuousQueryWithTransformer<String, Integer, String> q = new ContinuousQueryWithTransformer<>();
 

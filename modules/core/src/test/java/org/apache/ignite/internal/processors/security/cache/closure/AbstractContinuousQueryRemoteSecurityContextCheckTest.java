@@ -78,6 +78,8 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
     /**
      * Opens {@code QueryCursor}.
+     *
+     * @param q Query.
      */
     protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = localIgnite().cache(CACHE_NAME).query(q)) {

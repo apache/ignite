@@ -120,6 +120,7 @@ public class SecurityUtils {
     /**
      * Gets a current security subject id for communication routines.
      *
+     * @param ctx Grid kernal context.
      * @return Current security subject id if security is enabled and subject id doesn't equal local node id otherwise
      * {@code null}.
      */
