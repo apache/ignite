@@ -42,10 +42,11 @@ public class SortConverter extends IgniteConverter {
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalSort sort = (LogicalSort) rel;
 
-        RelNode input = convert(sort.getInput(), IgniteConvention.INSTANCE);
-
         RelOptCluster cluster = rel.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
+
+        RelTraitSet desired = cluster.getPlanner().emptyTraitSet().plus(IgniteConvention.INSTANCE).plus(sort.getCollation());
+        RelNode input = convert(sort.getInput(), desired);
 
         List<IgniteDistribution> distrs = IgniteMdDerivedDistribution.deriveDistributions(input, IgniteConvention.INSTANCE, mq);
 
