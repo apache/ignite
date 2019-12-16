@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class HitRateMetric extends AbstractMetric implements LongMetric {
     /** Default counters array size. */
-    public static final int DFLT_SZ = 10;
+    public static final int DFLT_SIZE = 10;
 
     /** Metric instance. */
     private volatile HitRateMetricImpl cntr;
@@ -54,7 +54,9 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        cntr = new HitRateMetricImpl(cntr.rateTimeInterval, cntr.size);
+        HitRateMetricImpl cntr0 = cntr;
+
+        cntr = new HitRateMetricImpl(cntr0.rateTimeInterval, cntr0.size);
     }
 
     /**
@@ -63,7 +65,7 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
      * @param rateTimeInterval New rate time interval.
      */
     public void reset(long rateTimeInterval) {
-        reset(rateTimeInterval, DFLT_SZ);
+        reset(rateTimeInterval, DFLT_SIZE);
     }
 
     /**

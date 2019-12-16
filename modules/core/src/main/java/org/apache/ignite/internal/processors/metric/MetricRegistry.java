@@ -47,7 +47,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SZ;
+import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
@@ -272,7 +272,7 @@ public class MetricRegistry implements Iterable<Metric> {
         Long cfgRateTimeInterval = hitRateCfgProvider.apply(fullName);
 
         if (cfgRateTimeInterval != null)
-            metric.reset(cfgRateTimeInterval, DFLT_SZ);
+            metric.reset(cfgRateTimeInterval, DFLT_SIZE);
 
         return metric;
     }

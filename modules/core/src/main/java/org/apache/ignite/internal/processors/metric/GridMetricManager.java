@@ -186,10 +186,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
     /** Prefix for {@link HitRateMetric} configuration property name. */
-    private static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
+    public static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
 
     /** Prefix for {@link HistogramMetric} configuration property name. */
-    private static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
+    public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
@@ -351,11 +351,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         metaLock.readLock().lock();
 
         try {
-            if (metastorage == null)
+            if (roMetastorage == null)
                 return null;
 
             try {
-                return metastorage.read(key);
+                return roMetastorage.read(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -391,6 +391,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+
+        metaLock.writeLock().lock();
+
+        try {
+            for (Metric m : mreg) {
+                if (m instanceof HitRateMetric)
+                    metastorage.remove(metricName(HITRATE_CFG_PREFIX, m.name()));
+                else if (m instanceof HistogramMetric)
+                    metastorage.remove(metricName(HISTOGRAM_CFG_PREFIX, m.name()));
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            metaLock.writeLock().unlock();
+        }
     }
 
     /**
@@ -488,7 +505,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         }
 
         if (!m.getClass().isAssignableFrom(type)) {
-            log.error("Metric '" + name + "' should be a HitRate[type=" + m.getClass().getSimpleName() + ']');
+            log.error("Metric '" + name + "' has wrong type[type=" + m.getClass().getSimpleName() + ']');
 
             return null;
         }

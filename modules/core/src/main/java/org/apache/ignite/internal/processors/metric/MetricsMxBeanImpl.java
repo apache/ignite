@@ -57,7 +57,8 @@ public class MetricsMxBeanImpl implements MetricsMxBean {
     @Override public void configureHitRateMetric(String name, long rateTimeInterval) {
         try {
             mmgr.configureHitRate(name, rateTimeInterval);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -66,7 +67,8 @@ public class MetricsMxBeanImpl implements MetricsMxBean {
     @Override public void configureHistogramMetric(String name, long[] bounds) {
         try {
             mmgr.configureHistogram(name, bounds);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }

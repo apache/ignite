@@ -46,7 +46,7 @@ public class MetricUtils {
      * @return Parsed names parts.
      */
     public static MetricName parse(String regName) {
-        int firstDot = regName.indexOf(SEPARATOR);
+        int firstDot = regName.indexOf('.');
 
         if (firstDot == -1)
             return new MetricName(null, regName);
