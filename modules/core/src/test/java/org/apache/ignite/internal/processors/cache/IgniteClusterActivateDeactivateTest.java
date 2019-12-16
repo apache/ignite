@@ -618,7 +618,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             fut1.get();
             fut2.get();
 
-            checkCaches(6, 2);
+            checkCaches(6, 2, false);
 
             afterTest();
         }
