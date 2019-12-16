@@ -38,8 +38,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
@@ -465,6 +467,69 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
+    public void testLateAffinityAssignmentOnBackupLeftAndJoin() throws Exception {
+        String cacheName = "single-partitioned";
+
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                ccfg.setName(cacheName);
+                ccfg.setAffinity(new Map1PartitionsTo2NodesAffinityFunction());
+
+                return new CacheConfiguration[] {ccfg};
+            }
+        };
+
+        persistence = true;
+
+        try {
+            startGrid(0); // Primary partition holder.
+            startGrid(1); // Backup partition holder.
+
+            grid(0).cluster().active(true);
+
+            grid(1).close(); // Stopping backup partition holder.
+
+            grid(0).getOrCreateCache(cacheName).put(1, 1); // Updating primary partition to cause rebalance.
+
+            startGrid(1); // Restarting backup partition holder.
+
+            awaitPartitionMapExchange();
+
+            AffinityTopologyVersion topVer = grid(0).context().discovery().topologyVersionEx();
+
+            assertEquals(topVer.topologyVersion(), 4);
+            assertEquals(topVer.minorTopologyVersion(), 1); // LAA happen on backup partition holder restart.
+
+            GridDhtPartitionsExchangeFuture fut4 = null;
+            GridDhtPartitionsExchangeFuture fut41 = null;
+
+            for (GridDhtPartitionsExchangeFuture fut : grid(0).context().cache().context().exchange().exchangeFutures()) {
+                AffinityTopologyVersion ver = fut.topologyVersion();
+
+                if (ver.topologyVersion() == 4) {
+                    if (ver.minorTopologyVersion() == 0)
+                        fut4 = fut;
+                    else if (ver.minorTopologyVersion() == 1)
+                        fut41 = fut;
+                }
+            }
+
+            assertFalse(fut4.rebalanced()); // Backup partition holder restart cause non-rebalanced state.
+
+            assertTrue(fut41.rebalanced()); // LAA.
+
+        }
+        finally {
+            persistence = false;
+        }
+    }
+
+    /**
+     *
+     */
     private static class Map4PartitionsTo4NodesAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Default constructor.
@@ -502,6 +567,34 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 res.add(p2);
                 res.add(p3);
             }
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Map1PartitionsTo2NodesAffinityFunction extends RendezvousAffinityFunction {
+        /**
+         * Default constructor.
+         */
+        public Map1PartitionsTo2NodesAffinityFunction() {
+            super(false, 1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> res = new ArrayList<>(2);
+
+            List<ClusterNode> p0 = new ArrayList<>();
+
+            p0.add(affCtx.currentTopologySnapshot().get(0));
+
+            if (affCtx.currentTopologySnapshot().size() == 2)
+                p0.add(affCtx.currentTopologySnapshot().get(1));
+
+            res.add(p0);
 
             return res;
         }
