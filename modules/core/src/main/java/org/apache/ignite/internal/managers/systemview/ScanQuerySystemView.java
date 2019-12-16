@@ -59,7 +59,7 @@ public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView>
      * @param cctxs Cache data.
      */
     public ScanQuerySystemView(Collection<GridCacheContext<K, V>> cctxs) {
-        super(SCAN_QRY_SYS_VIEW, SCAN_QRY_SYS_VIEW_DESC, ScanQueryView.class, new ScanQueryViewWalker());
+        super(SCAN_QRY_SYS_VIEW, SCAN_QRY_SYS_VIEW_DESC, new ScanQueryViewWalker());
 
         this.cctxs = cctxs;
     }

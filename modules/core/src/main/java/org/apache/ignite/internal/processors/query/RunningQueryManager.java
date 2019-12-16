@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
@@ -83,12 +85,12 @@ public class RunningQueryManager {
         qryHistTracker = new QueryHistoryTracker(histSz);
 
         ctx.systemView().registerView(SQL_QRY_VIEW, SQL_QRY_VIEW_DESC,
-            SqlQueryView.class,
+            new SqlQueryViewWalker(),
             runs.values(),
             SqlQueryView::new);
 
         ctx.systemView().registerView(SQL_QRY_HIST_VIEW, SQL_QRY_HIST_VIEW_DESC,
-            SqlQueryHistoryView.class,
+            new SqlQueryHistoryViewWalker(),
             qryHistTracker.queryHistory().values(),
             SqlQueryHistoryView::new);
     }
