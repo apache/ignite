@@ -1463,17 +1463,17 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     @Test
     public void testCommitTime() {
-        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
 
         HistogramMetric m = metric("CommitTime");
 
-        assertTrue(Arrays.toString(m.value()), Arrays.stream(m.value()).allMatch(v -> v == 0));
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         try (Transaction tx = grid(0).transactions().txStart()) {
-            cache.put(String.valueOf(1), 1);
+            cache.put(1, 1);
 
             tx.commit();
         }
@@ -1484,7 +1484,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** */
     @Test
     public void testRollbackTime() {
-        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
@@ -1494,7 +1494,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
         try (Transaction tx = grid(0).transactions().txStart()) {
-            cache.put(String.valueOf(1), 1);
+            cache.put(1, 1);
 
             tx.rollback();
         }
