@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.security.Permissions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -96,7 +97,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
             "pwd",
             SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                 .appendSystemPermissions(ADMIN_OPS)
-                .build()
+                .build(),
+            new Permissions()
         )};
     }
 
@@ -118,7 +120,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                 "&sslClientCertificateKeyStorePassword=123456" +
                 "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456" +
-                "&userAttributes=org.apache.ignite.jdbc.thin.SslClientNodeAttributesFactory")) {
+                "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory")) {
                 checkConnection(conn);
             }
         }
@@ -177,7 +179,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.jdbc.thin.SslServerNodeAttributesFactory");
+                        "&userAttributes=org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory");
 
                     return null;
                 }
@@ -208,7 +210,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.jdbc.thin.SslClientNodeAttributesFactory");
+                        "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
 
                     return null;
                 }
@@ -237,7 +239,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.jdbc.thin.SslClientNodeAttributesFactory");
+                        "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
 
                     return null;
                 }
