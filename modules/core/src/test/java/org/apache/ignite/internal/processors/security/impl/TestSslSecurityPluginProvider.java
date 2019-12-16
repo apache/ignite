@@ -18,17 +18,9 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Arrays;
-import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.SslAbstractNodeAttributesFactory;
-import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
-import org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
-
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
 /**
  *

@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -801,10 +800,11 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         assert req.clientId() != null;
 
         AuthenticationContext authCtx = new AuthenticationContext();
-        authCtx.nodeAttributes(req.userAttributes());
+
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
         authCtx.address(req.address());
+        authCtx.nodeAttributes(req.userAttributes());
 
         SecurityCredentials creds = credentials(req);
 
