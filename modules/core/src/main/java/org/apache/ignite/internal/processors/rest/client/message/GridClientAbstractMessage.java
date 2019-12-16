@@ -45,8 +45,10 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** Session token. */
     private byte[] sesTok;
 
+    /** Login. */
     private String login;
 
+    /** Password. */
     private String pwd;
 
     /** User attributes. */
