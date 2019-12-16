@@ -67,7 +67,7 @@ public class BostonHousePricesPredictionExample {
                 // Splits dataset to train and test samples with 80/20 proportion.
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.8);
 
-                System.out.println(">>> Start traininig.");
+                System.out.println(">>> Start training.");
                 LinearRegressionModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),

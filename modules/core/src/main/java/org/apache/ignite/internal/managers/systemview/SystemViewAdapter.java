@@ -41,17 +41,15 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
      * @param walker Walker.
      * @param data Data.
      * @param rowFunc Row function.
      */
-    public SystemViewAdapter(String name, String desc, Class<R> rowCls,
-        SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        super(name, desc, rowCls, walker);
+    public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker, Collection<D> data,
+        Function<D, R> rowFunc) {
+        super(name, desc, walker);
 
         A.notNull(data, "data");
-        A.notNull(rowCls, "rowCls");
 
         this.data = data;
         this.rowFunc = rowFunc;
@@ -60,17 +58,15 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
      * @param walker Walker.
      * @param dataSupplier Data supplier.
      * @param rowFunc Row function.
      */
-    public SystemViewAdapter(String name, String desc, Class<R> rowCls,
-        SystemViewRowAttributeWalker<R> walker, Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
-        super(name, desc, rowCls, walker);
+    public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
+        super(name, desc, walker);
 
         A.notNull(dataSupplier, "dataSupplier");
-        A.notNull(rowCls, "rowCls");
 
         this.dataSupplier = dataSupplier;
         this.rowFunc = rowFunc;

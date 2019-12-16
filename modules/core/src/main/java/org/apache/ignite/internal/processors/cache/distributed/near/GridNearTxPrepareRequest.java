@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -277,7 +278,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     private Collection<IgniteTxEntry> cloneEntries(Collection<IgniteTxEntry> c) {
         if (F.isEmpty(c))
-            return c;
+            return Collections.emptyList();
 
         Collection<IgniteTxEntry> cp = new ArrayList<>(c.size());
 

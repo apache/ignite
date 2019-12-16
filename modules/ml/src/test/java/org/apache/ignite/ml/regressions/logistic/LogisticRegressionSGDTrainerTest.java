@@ -90,7 +90,7 @@ public class LogisticRegressionSGDTrainerTest extends TrainerTest {
 
         LogisticRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

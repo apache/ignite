@@ -43,7 +43,7 @@ abstract class RandomProducerWithGenerator implements RandomProducer {
     }
 
     /**
-     * @return Java preudorandom values generator.
+     * @return Java pseudo-random values generator.
      */
     protected Random generator() {
         return rnd;

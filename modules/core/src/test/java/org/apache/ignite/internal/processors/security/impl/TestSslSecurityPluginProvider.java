@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
@@ -43,7 +44,7 @@ public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSslSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, perms),
+            new TestSecurityData(login, pwd, perms, new Permissions()),
             Arrays.asList(clientData),
             globalAuth,
             checkSslCerts);
