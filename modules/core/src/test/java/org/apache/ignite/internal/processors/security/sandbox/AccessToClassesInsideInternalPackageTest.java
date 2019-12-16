@@ -79,7 +79,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     /** */
     private Path srcTmpDir;
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCreateInstance() {
         IgniteCallable<Object> c = callable(srcTmpDir, CREATE_INSTANCE_CLS_NAME, CREATE_INSTANCE_SRC);
@@ -89,7 +91,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         assertThrowsWithCause(() -> compute(grid(CLNT_FORBIDDEN)).call(c), AccessControlException.class);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCallStaticMethod() {
         IgniteCallable<Object> c = callable(srcTmpDir, CALL_INTERNAL_CLASS_METHOD_CLS_NAME,
@@ -138,7 +142,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         U.delete(srcTmpDir);
     }
 
-    /** */
+    /**
+     *
+     */
     @AfterClass
     public static void afterClass() {
         String packAccess = Security.getProperty("package.access");
