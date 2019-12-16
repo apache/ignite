@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 /**
  * Test for rebalancing and persistence integration.
  */
-public class IgnitePdsCacheFileRebalancingTxTest extends IgnitePdsCacheFileRebalancingAbstractTest {
+public class IgniteCacheFileRebalancingTxTest extends IgniteCacheFileRebalancingAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);

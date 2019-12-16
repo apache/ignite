@@ -304,7 +304,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                 Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
 
-                // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
+//                // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
 //                try {
 //                    U.sleep(500);
 //                }

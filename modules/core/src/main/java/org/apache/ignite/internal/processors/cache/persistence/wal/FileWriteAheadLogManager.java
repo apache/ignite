@@ -1004,14 +1004,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         String zipSegmentName = FileDescriptor.fileName(absIdx) + FilePageStoreManager.ZIP_SUFFIX;
 
-        boolean wasInArchive = absIdx <= lastArchivedIndex();
-
         boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
             new File(walArchiveDir, zipSegmentName).exists();
 
         if (inArchive)
             return true;
-        else if (wasInArchive)
+
+        if (absIdx <= lastArchivedIndex())
             return false;
 
         FileWriteHandle cur = currHnd;

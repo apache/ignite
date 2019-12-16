@@ -49,6 +49,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  * File rebalancing tests.
@@ -57,12 +58,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE
  * todo mixed cache configuration (atomic+tx)
  * todo mixed data region configuration (pds+in-mem)
  * todo partition size change (start file rebalancing partition, cancel and then partition met)
- * todo [+] crd joins blt
+ * todo [+/-] crd joins blt
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
-@WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value="0")
-public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePdsCacheRebalancingCommonAbstractTest {
+@WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value = "0")
+public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCacheRebalancingCommonAbstractTest {
     /** Initial entries count. */
     private static final int INITIAL_ENTRIES_COUNT = 100_000;
 
@@ -86,13 +87,12 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
      * @throws Exception If failed.
      */
     @Test
-    public void testSimpleRebalancingWithConstantLoad() throws Exception {
+    public void testSimpleRebalancingWithLoad() throws Exception {
         boolean checkRemoves = true;
 
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
-        ignite0.cluster().baselineAutoAdjustTimeout(0);
 
         DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
 
@@ -100,7 +100,11 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
         forceCheckpoint(ignite0);
 
+        U.sleep(1_000);
+
         startGrid(1);
+
+        ignite0.cluster().setBaselineTopology(2);
 
         awaitPartitionMapExchange();
 
@@ -110,12 +114,62 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+    public void testHistoricalWithFileRebalancing() throws Exception {
+        boolean checkRemoves = false;
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite0.cluster().active(true);
+
+        List<ClusterNode> baseline = new ArrayList<>(3);
+
+        baseline.add(ignite0.localNode());
+        baseline.add(ignite1.localNode());
+
+        //DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
+        for (int i = 0; i < 20_000; i++)
+            ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
+
+        ignite1.close();
+
+        for (int i = 20_000; i < 25_000; i++)
+            ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
+
+//        U.sleep(1_000);
+//        ldr.stop();
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite2 = startGrid(2);
+
+        baseline.add(ignite2.localNode());
+
+//        startGrid(1);
+
+        // we need to start node1 and include node2 into baseline at the same exchange.
+        GridTestUtils.runAsync(() -> startGrid(1));
+
+        ignite0.cluster().setBaselineTopology(baseline);
+
+        awaitPartitionMapExchange();
+
+//        ignite0.cluster().setBaselineTopology(baseline);
+//
+//        awaitPartitionMapExchange();
+    }
+
+    /**
      * Check file rebalancing when the coordinator joins the baseline.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testCrdNotInBlt() throws Exception {
+    public void testCoordinatorJoinsBaselineWithLoad() throws Exception {
         boolean checkRemoves = false;
 
         IgniteEx node = startGrid(0);
@@ -130,13 +184,13 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
         awaitPartitionMapExchange();
 
-        Collection<Object> baselineIds =
+        Collection<Object> constIds =
             F.viewReadOnly(node.cluster().currentBaselineTopology(), BaselineNode::consistentId);
 
         // Ensure that coordinator node is not in baseline.
         assert U.oldest(crd.cluster().nodes(), null).equals(crd.localNode());
-        assert !baselineIds.contains(crd.localNode().consistentId()) : baselineIds;
-        assert baselineIds.contains(node.localNode().consistentId()) : baselineIds;
+        assert !constIds.contains(crd.localNode().consistentId()) : constIds;
+        assert constIds.contains(node.localNode().consistentId()) : constIds;
 
         DataLoader<TestValue> ldr = new DataLoader<>(
             node.cache(INDEXED_CACHE),
@@ -164,8 +218,13 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         verifyCache(crd, ldr);
     }
 
+    /**
+     * Ensures that file rebalancing starts every time the baseline changes.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void testContinuousBltChangeUnderLoad() throws Exception {
+    public void testContinuousBaselineChangeWithLoad() throws Exception {
         boolean checkRemoves = false;
 
         IgniteEx crd = startGrid(0);
@@ -253,8 +312,11 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         verifyCache(crd, ldr);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
-    public void testIndexedCacheStartStopLastNodeUnderLoad() throws Exception {
+    public void testIndexedCacheStartStopLastNodeWithLoad() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         boolean checkRemoves = false;
@@ -335,11 +397,17 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         );
     }
 
-    protected <V> void verifyCache(IgniteEx node, DataLoader<V> ldr) throws Exception {
-        String name = ldr.cacheName();
-        int cnt = ldr.cnt();
-        boolean removes = ldr.checkRemoves();
-        Function<Integer, V> valProducer = ldr.valueProducer();
+    /**
+     * @param node Target node.
+     * @param cfg Testing paramters.
+     * @param <V> Type of value.
+     * @throws Exception If failed.
+     */
+    protected <V> void verifyCache(IgniteEx node, LoadParameters<V> cfg) throws Exception {
+        String name = cfg.cacheName();
+        int cnt = cfg.entriesCnt();
+        boolean removes = cfg.checkRemoves();
+        Function<Integer, V> valProducer = cfg.valueProducer();
 
         log.info("Verifying cache contents [node=" +
             node.cluster().localNode().id() + " cache=" + name + ", size=" + cnt + "]");
@@ -382,7 +450,22 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
     }
 
     /** */
-    protected static class DataLoader<V> implements Runnable {
+    interface LoadParameters<V> {
+        /** */
+        public int entriesCnt();
+
+        /** */
+        public String cacheName();
+
+        /** */
+        public Function<Integer, V> valueProducer();
+
+        /** */
+        public boolean checkRemoves();
+    }
+
+    /** */
+    protected static class DataLoader<V> implements Runnable, LoadParameters<V> {
         /** */
         private final AtomicInteger cntr;
 
@@ -416,11 +499,12 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         /** */
         public DataLoader(IgniteCache<Integer, V> cache, int initCnt, Function<Integer, V> valFunc, boolean enableRmv, int threadCnt) {
             this.cache = cache;
-            this.cntr = new AtomicInteger(initCnt);
             this.enableRmv = enableRmv;
             this.threadCnt = threadCnt;
-            this.pauseBarrier = new CyclicBarrier(threadCnt + 1); // +1 waiter
             this.valFunc = valFunc;
+
+            pauseBarrier = new CyclicBarrier(threadCnt + 1); // +1 waiter (suspend originator)
+            cntr = new AtomicInteger(initCnt);
         }
 
         /** {@inheritDoc} */
@@ -437,7 +521,7 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
 
                     // Busy wait for resume.
                     try {
-                        U.sleep(100);
+                        U.sleep(300);
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         break;
@@ -516,22 +600,22 @@ public abstract class IgnitePdsCacheFileRebalancingAbstractTest extends IgnitePd
         }
 
         /** */
-        public int cnt() {
+        @Override public int entriesCnt() {
             return cntr.get();
         }
 
         /** */
-        public String cacheName() {
+        @Override public String cacheName() {
             return cache.getName();
         }
 
         /** */
-        public Function<Integer, V> valueProducer() {
+        @Override public Function<Integer, V> valueProducer() {
             return valFunc;
         }
 
         /** */
-        public boolean checkRemoves() {
+        @Override public boolean checkRemoves() {
             return enableRmv;
         }
     }

@@ -26,18 +26,19 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
  *
  */
-public class IndexedCacheFileRebalancingTest extends IgnitePdsCacheFileRebalancingTxTest {
+public class IndexedCacheFileRebalancingTest extends IgniteCacheFileRebalancingTxTest {
     /** {@inheritDoc} */
-    @Override protected <V> void verifyCache(IgniteEx node, DataLoader<V> ldr) throws Exception {
-        super.verifyCache(node, ldr);
+    @Override protected <V> void verifyCache(IgniteEx node, LoadParameters<V> cfg) throws Exception {
+        super.verifyCache(node, cfg);
 
-        String name = ldr.cacheName();
+        String name = cfg.cacheName();
 
         if (!name.equals(INDEXED_CACHE))
             return;
@@ -46,21 +47,20 @@ public class IndexedCacheFileRebalancingTest extends IgnitePdsCacheFileRebalanci
 
         log.info("Index validation");
 
-        int cnt = ldr.cnt();
-        boolean removes = ldr.checkRemoves();
+        int cnt = cfg.entriesCnt();
+        boolean removes = cfg.checkRemoves();
 
-        IgniteCache cache = node.cache(name);
-
-        cache.indexReadyFuture().get(15_000);
-
-        int expSize = removes ? cache.size() : cnt;
+        int expSize = removes ? node.cache(name).size() : cnt;
         String tbl = "\"" + name + "\"." + TestValue.class.getSimpleName();
         String sql = "select COUNT(V1) from " + tbl + " where V1 >= 0 and V1 < 2147483647";
 
         for (Ignite g : G.allGrids()) {
+            g.cache(name).indexReadyFuture().get(15_000);
+
             UUID nodeId = g.cluster().localNode().id();
 
-            boolean idxUsed = isIndexUsed(((IgniteEx)g).context().query(), "V1", tbl, "V1");
+            boolean idxUsed = GridTestUtils.waitForCondition(() ->
+                isIndexUsed(((IgniteEx)g).context().query(), "V1", tbl, "V1"), 15_000);
 
             assertTrue("node=" + nodeId, idxUsed);
 
