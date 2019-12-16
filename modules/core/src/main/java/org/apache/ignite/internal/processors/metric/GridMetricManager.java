@@ -358,9 +358,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 return metastorage.read(key);
             }
             catch (IgniteCheckedException e) {
-                log.error("Error read from metastore.", e);
-
-                return null;
+                throw new IgniteException(e);
             }
         }
         finally {
