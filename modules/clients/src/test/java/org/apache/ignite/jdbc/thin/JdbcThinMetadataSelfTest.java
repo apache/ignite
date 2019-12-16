@@ -866,6 +866,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATASTREAM_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
                 "SYS.DATASTREAM_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
                 "SYS.CACHE_GROUP_PAGE_LISTS.CACHE_GROUP_ID.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.PART_ID.null.10",
                 "SYS.CACHE_GROUP_PAGE_LISTS.NAME.null.2147483647",
                 "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_NUMBER.null.10",
                 "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_SIZE.null.19",
