@@ -341,6 +341,11 @@ namespace Apache.Ignite.Core.Impl.Client
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
             _affinityTopologyVersion = affinityTopologyVersion;
+
+            if (_config.EnableAffinityAwareness)
+            {
+                InitSocketMap();
+            }
         }
 
         /// <summary>
