@@ -387,10 +387,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
+        remove(regName, true);
+    }
+
+    /**
+     * Removes metric registry.
+     *
+     * @param regName Metric registry name.
+     * @param rmvCfg Remove metrics configuration.
+     */
+    public void remove(String regName, boolean rmvCfg) {
         MetricRegistry mreg = registries.remove(regName);
 
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+
+        if (!rmvCfg)
+            return;
 
         metaLock.writeLock().lock();
 
@@ -448,7 +461,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param rateTimeInterval New rateTimeInterval.
      * @see HistogramMetric#reset(long[])
      */
-    private void onHitRateConfigChanged(String name, long rateTimeInterval) {
+    private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
+        if (rateTimeInterval == null)
+            return;
+
         A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
 
         HitRateMetric m = find(name, HitRateMetric.class);
@@ -465,8 +481,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Metric name.
      * @param bounds New bounds.
      */
-    private void onHistgoramConfigChanged(String name, long[] bounds) {
-        A.notEmpty(bounds, "bounds");
+    private void onHistgoramConfigChanged(String name, @Nullable long[] bounds) {
+        if (bounds == null)
+            return;
 
         HistogramMetric m = find(name, HistogramMetric.class);
 
