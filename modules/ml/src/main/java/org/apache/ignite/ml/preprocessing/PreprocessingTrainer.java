@@ -135,14 +135,12 @@ public interface PreprocessingTrainer<K, V> {
     }
 
     /**
-     * Returns local learning environment with initialized deploying context by base preptocessor.
+     * Returns local learning environment with initialized deploying context by base preprocessor.
      *
      * @param basePreprocessor Preprocessor.
-     * @param <K> Type of key.
-     * @param <V> Type of value.
      * @return Learning environment.
      */
-    public default <K,V> LearningEnvironment learningEnvironment(Preprocessor<K,V> basePreprocessor) {
+    public default LearningEnvironment learningEnvironment(Preprocessor<K,V> basePreprocessor) {
         LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
         env.initDeployingContext(basePreprocessor);
         return env;

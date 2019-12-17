@@ -84,21 +84,19 @@ public class DiscreteNaiveBayesModel implements BayesModel<DiscreteNaiveBayesMod
     @Override public Double predict(Vector vector) {
         double[] probapilityPowers = probabilityPowers(vector);
 
-        int maxLabelIndex = 0;
+        int maxLbIdx = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(clsProbabilities[i]);
 
-            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
-                maxLabelIndex = i;
-            }
+            if (probapilityPowers[i] > probapilityPowers[maxLbIdx])
+                maxLbIdx = i;
         }
 
-        return labels[maxLabelIndex];
+        return labels[maxLbIdx];
     }
 
     /** {@inheritDoc} */
-    @Override
-    public double[] probabilityPowers(Vector vector) {
+    @Override public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {

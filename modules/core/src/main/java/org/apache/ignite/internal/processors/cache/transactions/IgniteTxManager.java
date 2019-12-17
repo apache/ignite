@@ -45,6 +45,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -353,7 +354,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.txMetrics().onTxManagerStarted();
 
         cctx.kernalContext().systemView().registerView(TXS_MON_LIST, TXS_MON_LIST_DESC,
-            TransactionView.class,
+            new TransactionViewWalker(),
             new ReadOnlyCollectionView2X<>(idMap.values(), nearIdMap.values()),
             TransactionView::new);
     }
@@ -1123,7 +1124,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (tx.pessimistic() && tx.local())
             return; // Nothing else to do in pessimistic mode.
 
-        // Optimistic.
+        // Optimistic or remote tx.
         assert tx.optimistic() || !tx.local();
 
         if (!lockMultiple(tx, entries != null ? entries : tx.optimisticLockEntries())) {
@@ -1929,7 +1930,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             tx + ", invalidPart=" + e.partition() + ']';
 
                         // If partition is invalid, we ignore this entry.
-                        tx.addInvalidPartition(cacheCtx, e.partition());
+                        tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
 
                         break;
                     }
@@ -1970,7 +1971,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Got removed entry in TM txUnlock(..) method (will retry): " + txEntry);
 
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+                try {
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    return; // Ignore and proceed to next lock.
+                }
             }
         }
     }

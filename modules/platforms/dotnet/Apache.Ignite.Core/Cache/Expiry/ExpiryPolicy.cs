@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Cache.Expiry
     using System;
 
     /// <summary>
-    /// Default expiry policy implementation with all durations deinfed explicitly.
+    /// Default expiry policy implementation with all durations defined explicitly.
     /// </summary>
     public class ExpiryPolicy : IExpiryPolicy
     {

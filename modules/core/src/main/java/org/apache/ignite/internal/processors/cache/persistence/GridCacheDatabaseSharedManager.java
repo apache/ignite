@@ -96,7 +96,6 @@ import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -1315,7 +1314,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (fileIO.size() < minimalHdr)
                 throw new IgniteCheckedException("Partition file is too small: " + partFile);
 
-            ByteBuffer hdr = ByteBuffer.allocate(minimalHdr).order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer hdr = ByteBuffer.allocate(minimalHdr).order(ByteOrder.nativeOrder());
 
             fileIO.readFully(hdr);
 
@@ -2438,7 +2437,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private int semaphorePertmits(StripedExecutor exec) {
         // 4 task per-stripe by default.
-        int permits = exec.stripes() * 4;
+        int permits = exec.stripesCount() * 4;
 
         long maxMemory = Runtime.getRuntime().maxMemory();
 
@@ -2516,7 +2515,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert exec != null;
         assert semaphore != null;
 
-        int stripes = exec.stripes();
+        int stripes = exec.stripesCount();
 
         int stripe = U.stripeIdx(stripes, grpId, partId);
 
@@ -3053,7 +3052,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         // Sort and split all dirty pages set to several stripes.
         GridMultiCollectionWrapper<FullPageId> pages = splitAndSortCpPagesIfNeeded(
-            new IgniteBiTuple<>(res, pagesNum), exec.stripes());
+            new IgniteBiTuple<>(res, pagesNum), exec.stripesCount());
 
         // Identity stores set for future fsync.
         Collection<PageStore> updStores = new GridConcurrentHashSet<>();
@@ -3065,7 +3064,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         for (int i = 0; i < pages.collectionsSize(); i++) {
             // Calculate stripe index.
-            int stripeIdx = i % exec.stripes();
+            int stripeIdx = i % exec.stripesCount();
 
             // Inner collection index.
             int innerIdx = i;
@@ -3510,9 +3509,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
         /** Checkpoint started log message format. */
-        private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [checkpointId=%s, startPtr=%s," +
-            " checkpointBeforeLockTime=%dms, checkpointLockWait=%dms, checkpointListenersExecuteTime=%dms, " +
-            "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, %s pages=%d, reason='%s']";
+        private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started [" +
+            "checkpointId=%s, " +
+            "startPtr=%s, " +
+            "checkpointBeforeLockTime=%dms, " +
+            "checkpointLockWait=%dms, " +
+            "checkpointListenersExecuteTime=%dms, " +
+            "checkpointLockHoldTime=%dms, " +
+            "walCpRecordFsyncDuration=%dms, " +
+            "writeCheckpointEntryDuration=%dms, " +
+            "splitAndSortCpPagesDuration=%dms, " +
+            "%s pages=%d, " +
+            "reason='%s']";
 
         /** Temporary write buffer. */
         private final ByteBuffer tmpWriteBuf;
@@ -4185,8 +4193,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 curr.cpMarkerStored.onDone();
 
+                tracker.onSplitAndSortCpPagesStart();
+
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(
                     cpPagesTuple, persistenceCfg.getCheckpointThreads());
+
+                tracker.onSplitAndSortCpPagesEnd();
 
                 if (printCheckpointStats && log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
@@ -4201,6 +4213,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
                             tracker.walCpRecordFsyncDuration(),
+                            tracker.writeCheckpointEntryDuration(),
+                            tracker.splitAndSortCpPagesDuration(),
                             possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
                             cpPages.size(),
                             curr.reason
@@ -4640,8 +4654,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (cmp != 0)
                         return cmp;
 
-                    return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                        PageIdUtils.effectivePageId(o2.pageId()));
+                    return Long.compare(o1.effectivePageId(), o2.effectivePageId());
                 }
             };
 

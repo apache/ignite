@@ -37,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 
 /** Test for {@link CompoundNaiveBayesTrainer} */
 public class CompoundNaiveBayesTrainerTest extends TrainerTest {
-
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
@@ -70,7 +69,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
 
     /** Discrete model assertions. */
     private void assertDiscreteModel(DiscreteNaiveBayesModel model) {
-        double[][][] expectedProbabilites = new double[][][] {
+        double[][][] expectedProbabilities = new double[][][] {
             {
                 {.25, .75},
                 {.5, .5},
@@ -87,9 +86,9 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
             }
         };
 
-        for (int i = 0; i < expectedProbabilites.length; i++) {
-            for (int j = 0; j < expectedProbabilites[i].length; j++)
-                assertArrayEquals(expectedProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
+        for (int i = 0; i < expectedProbabilities.length; i++) {
+            for (int j = 0; j < expectedProbabilities[i].length; j++)
+                assertArrayEquals(expectedProbabilities[i][j], model.getProbabilities()[i][j], PRECISION);
         }
         assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }

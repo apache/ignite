@@ -38,7 +38,7 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
 
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /**
      * @param key Primary key of Chromosome to mutate

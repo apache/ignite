@@ -35,7 +35,7 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
     /**
      * Number of examples in dataset.
      */
-    private long n = 0;
+    private long n;
 
     /**
      * Absolute error.
@@ -43,7 +43,7 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
     private double absoluteError = Double.NaN;
 
     /**
-     * Resudual sum of squares.
+     * Residual sum of squares.
      */
     private double rss = Double.NaN;
 
@@ -114,7 +114,7 @@ public class RegressionMetricStatsAggregator implements MetricStatsAggregator<Do
     /**
      * {@inheritDoc}
      */
-    @Override public EmptyContext createUnitializedContext() {
+    @Override public EmptyContext createInitializedContext() {
         return new EmptyContext();
     }
 

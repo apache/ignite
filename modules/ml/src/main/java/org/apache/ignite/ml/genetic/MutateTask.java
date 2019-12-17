@@ -48,7 +48,7 @@ import org.jetbrains.annotations.NotNull;
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAConfiguration */
     private GAConfiguration cfg;
@@ -66,7 +66,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
-        List<Long> mutatedGenes = new ArrayList<Long>();
+        List<Long> mutatedGenes = new ArrayList<>();
         cfg.getChromosomeLen();
 
         for (int i = 0; i < cfg.getChromosomeLen(); i++)
@@ -127,7 +127,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         if (cfg.getChromosomeCriteria() == null)
             return (selectAnyGene());
         else
-            return (selectGeneByChromsomeCriteria(k));
+            return (selectGeneByChromosomeCriteria(k));
     }
 
     /**
@@ -136,8 +136,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @param k Gene index in Chromosome.
      * @return Primary key of Gene
      */
-    private long selectGeneByChromsomeCriteria(int k) {
-        List<Gene> genes = new ArrayList<Gene>();
+    private long selectGeneByChromosomeCriteria(int k) {
+        List<Gene> genes = new ArrayList<>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");

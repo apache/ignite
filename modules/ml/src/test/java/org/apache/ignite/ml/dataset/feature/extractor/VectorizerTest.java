@@ -34,7 +34,7 @@ public class VectorizerTest {
     @Test
     public void vectorizerShouldReturnAllFeaturesByDefault() {
         double[] features = {1., 2., 3.};
-        DoubleArrayVectorizer<Integer> vectorizer = new DoubleArrayVectorizer<Integer>();
+        DoubleArrayVectorizer<Integer> vectorizer = new DoubleArrayVectorizer<>();
         LabeledVector<Double> res = vectorizer.apply(1, features);
         assertEquals(res.features().size(), 3);
         assertArrayEquals(res.features().asArray(), features, 0.);

@@ -23,10 +23,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.NoDataException;
-import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
-import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.datastructures.EmptyFileException;
+import org.apache.ignite.ml.math.exceptions.datastructures.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.NoDataException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
@@ -39,11 +39,10 @@ public class LabeledDatasetLoader {
      *
      * @param pathToFile Path to file.
      * @param separator Element to tokenize row on separate tokens.
-     * @param isDistributed Generates distributed dataset if true.
      * @param isFallOnBadData Fall on incorrect data if true.
      * @return Labeled Dataset parsed from file.
      */
-    public static LabeledVectorSet loadFromTxtFile(Path pathToFile, String separator, boolean isDistributed,
+    public static LabeledVectorSet loadFromTxtFile(Path pathToFile, String separator,
                                                    boolean isFallOnBadData) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
         List<String> list = new ArrayList<>();
@@ -67,7 +66,7 @@ public class LabeledDatasetLoader {
 
                     try {
                         clsLb = Double.parseDouble(rowData[0]);
-                        Vector vec = parseFeatures(pathToFile, isDistributed, isFallOnBadData, colSize, i, rowData);
+                        Vector vec = parseFeatures(pathToFile, isFallOnBadData, colSize, i, rowData);
                         labels.add(clsLb);
                         vectors.add(vec);
                     }
@@ -91,9 +90,9 @@ public class LabeledDatasetLoader {
     }
 
     /** */
-    @NotNull private static Vector parseFeatures(Path pathToFile, boolean isDistributed, boolean isFallOnBadData,
+    @NotNull private static Vector parseFeatures(Path pathToFile, boolean isFallOnBadData,
         int colSize, int rowIdx, String[] rowData) {
-        final Vector vec = LabeledVectorSet.emptyVector(colSize, isDistributed);
+        final Vector vec = LabeledVectorSet.emptyVector(colSize);
 
         if (isFallOnBadData && rowData.length != colSize + 1)
             throw new CardinalityException(colSize + 1, rowData.length);
@@ -119,7 +118,6 @@ public class LabeledDatasetLoader {
     }
 
     // TODO: IGNITE-7025 add filling with mean, mode, ignoring and so on
-
     /** */
     private static double fillMissedData() {
         return 0.0;

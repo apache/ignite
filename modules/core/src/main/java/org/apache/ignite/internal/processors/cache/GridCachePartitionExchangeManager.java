@@ -160,11 +160,11 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 
 /**
  * Partition exchange manager.
@@ -2532,7 +2532,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param curFut Current active exchange future.
      * @return {@code False} if need wait messages for merged exchanges.
      */
-    public boolean mergeExchangesOnCoordinator(GridDhtPartitionsExchangeFuture curFut) {
+    public boolean mergeExchangesOnCoordinator(
+        GridDhtPartitionsExchangeFuture curFut,
+        @Nullable AffinityTopologyVersion threshold
+    ) {
         if (IGNITE_EXCHANGE_MERGE_DELAY > 0) {
             try {
                 U.sleep(IGNITE_EXCHANGE_MERGE_DELAY);
@@ -2557,6 +2560,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
 
                     DiscoveryEvent evt = fut.firstEvent();
+
+                    if (threshold != null && fut.initialVersion().compareTo(threshold) > 0) {
+                        if (log.isInfoEnabled())
+                            log.info("Stop merge, threshold is exceed: " + evt + ", threshold = " + threshold);
+
+                        break;
+                    }
 
                     if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                         if (log.isInfoEnabled())

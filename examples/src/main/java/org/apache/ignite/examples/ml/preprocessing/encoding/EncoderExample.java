@@ -36,7 +36,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
 /**
  * Example that shows how to use String Encoder preprocessor to encode features presented as a strings.
  * <p>
- * Code in this example launches Ignite grid and fills the cache with test data (based on muschrooms dataset).</p>
+ * Code in this example launches Ignite grid and fills the cache with test data (based on mushrooms dataset).</p>
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and encode string values (categories)
  * to double values in specified range.</p>
@@ -49,7 +49,7 @@ public class EncoderExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Train Decision Tree model on mushrooms.csv dataset.");
 

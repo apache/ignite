@@ -33,7 +33,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
+import org.apache.ignite.ml.math.exceptions.datastructures.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
@@ -135,7 +135,7 @@ public class SandboxMLCache {
 
             for (int i = 0; i < cells.length; i++)
                 try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
+                    if(cells[i].isEmpty()) data[i] = Double.NaN;
                     else data[i] = Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
                     try {
@@ -183,13 +183,9 @@ public class SandboxMLCache {
 
             Object[] res = new Object[cells.length];
 
-            if (cells[0].contains("p"))
-                res[0] = 0.0;
-            else
-                res[0] = 1.0;
+            res[0] = cells[0].contains("p") ? 0.0 : 1.0;
 
-            for (int i = 1; i < cells.length; i++)
-                res[i] = cells[i];
+            System.arraycopy(cells, 1, res, 1, cells.length - 1);
 
             cache.put(cnt++, res);
         }

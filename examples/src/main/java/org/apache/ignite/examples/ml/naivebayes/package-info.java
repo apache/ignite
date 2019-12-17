@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. --> ML naive Bayes classificator examples.
+ * <!-- Package description. --> ML naive Bayes classifier examples.
  */
 
 package org.apache.ignite.examples.ml.naivebayes;

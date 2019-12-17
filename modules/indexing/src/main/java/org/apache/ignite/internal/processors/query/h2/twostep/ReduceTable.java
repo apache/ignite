@@ -116,7 +116,7 @@ public class ReduceTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public TableType getTableType() {
-        return TableType.EXTERNAL_TABLE_ENGINE;
+        return TableType.TABLE;
     }
 
     /** {@inheritDoc} */

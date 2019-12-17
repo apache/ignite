@@ -1300,12 +1300,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return id;
+        return 31 * id + grp.groupId();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridDhtLocalPartition part = (GridDhtLocalPartition)o;
+
+        return id == part.id && grp.groupId() == part.group().groupId();
     }
 
     /** {@inheritDoc} */
