@@ -38,7 +38,7 @@ public enum IoStatisticsType {
     private String metricGroupName;
 
     /**
-     * @param monitoringGroup Monitoring group.
+     * @param metricGroupName Metric group name.
      */
     IoStatisticsType(String metricGroupName) {
         this.metricGroupName = metricGroupName;

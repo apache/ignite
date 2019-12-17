@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 
 import java.util.stream.StreamSupport;
 import javax.management.MalformedObjectNameException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -174,11 +173,6 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      * @param grpName Group name to reset metrics.
      */
     public static void resetMetric(IgniteEx ignite, String grpName) {
-        try {
-            metricsBean(ignite).resetMetrics(grpName);
-        }
-        catch (MalformedObjectNameException e) {
-            throw new IgniteException(e);
-        }
+        metricsBean(ignite).resetMetrics(grpName);
     }
 }
