@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -341,7 +342,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
-     * Reads value from {@link #metastorage}.
+     * Reads value from {@link #roMetastorage}.
      *
      * @param key Key.
      * @param <T> Key type.
@@ -387,23 +388,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        remove(regName, true);
-    }
-
-    /**
-     * Removes metric registry.
-     *
-     * @param regName Metric registry name.
-     * @param rmvCfg Remove metrics configuration.
-     */
-    public void remove(String regName, boolean rmvCfg) {
         MetricRegistry mreg = registries.remove(regName);
 
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
-
-        if (!rmvCfg)
-            return;
 
         metaLock.writeLock().lock();
 
@@ -436,6 +424,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
         metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
     }
 
@@ -450,6 +441,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         A.notNullOrEmpty(name, "name");
         A.notEmpty(bounds, "bounds");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
+        if (ctx.isStopping())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }
