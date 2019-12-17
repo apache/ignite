@@ -998,7 +998,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.removeCacheContext(ctx);
 
-            cache.stop(destroy);
+            cache.stop();
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
@@ -1009,7 +1009,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 // Check whether dht cache has been started.
                 if (dht != null) {
-                    dht.stop(destroy);
+                    dht.stop();
 
                     GridCacheContext<?, ?> dhtCtx = dht.context();
 
