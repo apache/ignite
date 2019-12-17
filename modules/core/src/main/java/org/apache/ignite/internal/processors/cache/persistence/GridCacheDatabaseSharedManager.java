@@ -3530,6 +3530,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void checkpointReadLockTimeout(long val) {
         checkpointReadLockTimeout = val;
     }
+
     /**
      * Partition destroy queue.
      */

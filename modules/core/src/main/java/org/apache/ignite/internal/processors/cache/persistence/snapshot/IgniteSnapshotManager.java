@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -65,7 +64,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -907,14 +905,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         break;
                     }
                     else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT) {
-
-                        if (snpRq.get().isDone()) {
-                            System.out.println("*********************************************************");
-                            System.out.println("  expected fail with concurrent snapshotting - halt jvm");
-                            System.out.println("*********************************************************");
-
-                            Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
-                        }
+                        assert !snpRq.get().isDone() : "expected fail with concurrent snapshotting";
 
                         throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
                     }
@@ -1244,6 +1235,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@code true} means current writer is allowed to handle page writes. */
         private volatile boolean inited;
+
         /**
          * Array of bits. 1 - means pages written, 0 - the otherwise.
          * Size of array can be estimated only under checkpoint write lock.

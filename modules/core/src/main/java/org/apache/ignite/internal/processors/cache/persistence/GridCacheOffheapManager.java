@@ -1101,7 +1101,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = 0;
 
             for (CacheDataStore store : cacheDataStores()) {
-                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, amount - cleared);
+                // todo
+                cleared += ((GridCacheDataStore)(((CacheDataStoreEx)store).store(false))).purgeExpired(cctx, c, amount - cleared);
 
                 if (amount != -1 && cleared >= amount)
                     return true;
@@ -1119,7 +1120,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long size = 0;
 
         for (CacheDataStore store : cacheDataStores())
-            size += ((GridCacheDataStore)store).expiredSize();
+            size += ((GridCacheDataStore)(((CacheDataStoreEx)store).store(false))).expiredSize(); // todo
 
         return size;
     }
@@ -1148,9 +1149,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long freeSpace = 0;
 
         for (CacheDataStore store : partDataStores.values()) {
-            assert store instanceof GridCacheDataStore;
+            assert store instanceof CacheDataStoreEx;
 
-            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
+            // todo
+            AbstractFreeList freeList = ((GridCacheDataStore)(((CacheDataStoreEx)store).store(false))).freeList;
 
             if (freeList == null)
                 continue;
@@ -1170,9 +1172,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long emptyDataPages = 0;
 
         for (CacheDataStore store : partDataStores.values()) {
-            assert store instanceof GridCacheDataStore;
+            assert store instanceof CacheDataStoreEx;
 
-            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
+            // todo
+            AbstractFreeList freeList = ((GridCacheDataStore)(((CacheDataStoreEx)store).store(false))).freeList;
 
             if (freeList == null)
                 continue;

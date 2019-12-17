@@ -577,15 +577,15 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return false;
         }
 
-        if (!isReadOnlyGroup(grp, exchFut.topologyVersion()))
-            return false;
-
         if (!fileRebalanceSupported(grp, assignments.keySet())) {
             if (log.isDebugEnabled())
                 log.debug("File rebalancing not required for group " + grp.cacheOrGroupName() + " - not supported.");
 
             return false;
         }
+
+        if (!isReadOnlyGroup(grp, exchFut.topologyVersion()))
+            return false;
 
         // onExchangeDone should create all partitions
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());

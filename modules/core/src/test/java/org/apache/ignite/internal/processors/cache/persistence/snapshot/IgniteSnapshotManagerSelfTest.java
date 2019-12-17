@@ -254,7 +254,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .pageStore();
 
-
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()

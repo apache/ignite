@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -304,15 +306,15 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                 Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
 
-//                // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
-//                try {
-//                    U.sleep(500);
-//                }
-//                catch (IgniteInterruptedCheckedException e) {
-//                    log.warning("Thread was interrupred,", e);
-//
-//                    Thread.currentThread().interrupt();
-//                }
+                // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
+                try {
+                    U.sleep(500);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    log.warning("Thread was interrupred,", e);
+
+                    Thread.currentThread().interrupt();
+                }
 
                 cctx.kernalContext().getSystemExecutorService().submit(task);
 

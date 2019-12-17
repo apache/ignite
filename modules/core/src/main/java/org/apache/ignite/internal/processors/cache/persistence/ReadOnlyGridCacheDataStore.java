@@ -497,8 +497,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             // No-op.
         }
-
-
     }
 
     /** */
