@@ -88,4 +88,15 @@ public class DistanceTest {
     public void hammingDistance2() {
         new HammingDistance().compute(v1, data2);
     }
+
+    /** */
+    @Test
+    public void chebyshevDistance() {
+        double expRes = 2d;
+
+        ChebyshevDistance distanceMeasure = new ChebyshevDistance();
+
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
 }
