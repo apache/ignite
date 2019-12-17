@@ -8,8 +8,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+/**
+ * Calculates the L<sub>p</sub> (Minkowski) distance between two points.
+ */
 public class MinkowskiDistance implements DistanceMeasure {
+    /** Serializable version identifier. */
+    private static final long serialVersionUID = 1717556319784040040L;
 
+    /** Distance paramenter. */
     private final double p;
 
     /** @param p norm */
