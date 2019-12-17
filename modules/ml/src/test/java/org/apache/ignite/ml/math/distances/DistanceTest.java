@@ -99,4 +99,17 @@ public class DistanceTest {
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
+
+    /** */
+    @Test
+    public void minkowskiDistance() {
+        double expRes = Math.pow(5, 0.5);
+
+        MinkowskiDistance distanceMeasure = new MinkowskiDistance(2d);
+
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+
 }
