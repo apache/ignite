@@ -1,12 +1,15 @@
 package org.apache.ignite.ml.math.distances;
 
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import static org.apache.ignite.ml.math.functions.Functions.PLUS;
 
 /**
  * Calculates the L<sub>p</sub> (Minkowski) distance between two points.
@@ -25,7 +28,10 @@ public class MinkowskiDistance implements DistanceMeasure {
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).kNorm(p);
+        IgniteDoubleFunction<Double> fun = value -> Math.pow(Math.abs(value), p);
+
+        Double result = MatrixUtil.localCopyOf(a).minus(b).foldMap(PLUS, fun, 0d);
+        return Math.pow(result, 1/p);
     }
 
     /** {@inheritDoc} */

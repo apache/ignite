@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-import static java.lang.Double.MIN_VALUE;
 import static java.lang.Math.abs;
 
 /**
@@ -18,12 +17,12 @@ public class ChebyshevDistance implements DistanceMeasure {
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
-        return MatrixUtil.localCopyOf(a).minus(b).foldMap(Math::max, Math::abs, MIN_VALUE);
+        return MatrixUtil.localCopyOf(a).minus(b).foldMap(Math::max, Math::abs, 0d);
     }
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        double res = MIN_VALUE;
+        double res = 0d;
 
         for (int i = 0; i < b.length; i++)
             res = Math.max(abs(b[i] - a.get(i)), res);
