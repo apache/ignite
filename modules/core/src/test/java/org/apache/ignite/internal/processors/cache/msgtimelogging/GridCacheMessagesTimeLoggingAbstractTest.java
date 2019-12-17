@@ -76,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_COMM_SPI_TIME_HIST_BOUNDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_MESSAGES_TIME_LOGGING;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Class containing utility methods for testing messages network time.
@@ -104,10 +105,9 @@ public abstract class GridCacheMessagesTimeLoggingAbstractTest extends GridCommo
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicityMode(TRANSACTIONAL);
-
         ccfg.setBackups(2);
-
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setCommunicationSpi(new RecordingSpi());

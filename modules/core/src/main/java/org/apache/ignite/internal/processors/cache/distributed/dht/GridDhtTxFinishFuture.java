@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -38,7 +39,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -257,6 +262,19 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 if (this.tx.syncMode() != PRIMARY_SYNC)
                     this.tx.sendFinishReply(finishErr);
 
+                if (!commit && shouldApplyCountersOnRollbackError(finishErr)) {
+                    TxCounters txCounters = this.tx.txCounters(false);
+
+                    if (txCounters != null) {
+                        try {
+                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
+                        }
+                        catch (IgniteCheckedException e0) {
+                            throw new IgniteException(e0);
+                        }
+                    }
+                }
+
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(futId);
 
@@ -265,6 +283,18 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         }
 
         return false;
+    }
+
+    /**
+     * @param e Exception to check.
+     *
+     * @return {@code True} if counters must be applied.
+     */
+    private boolean shouldApplyCountersOnRollbackError(Throwable e) {
+        return e == null ||
+            e instanceof IgniteTxRollbackCheckedException ||
+            e instanceof IgniteTxTimeoutCheckedException ||
+            e instanceof IgniteTxOptimisticCheckedException;
     }
 
     /**
@@ -405,7 +435,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        boolean sync = tx.syncMode() == FULL_SYNC;
+        boolean sync = !dhtMap.isEmpty() || tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
             sync = true;
