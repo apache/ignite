@@ -32,15 +32,19 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Ignite Join converter.
  */
 public class JoinConverter extends IgniteConverter {
     public static final ConverterRule INSTANCE = new JoinConverter();
 
+    /**
+     * Creates a converter.
+     */
     public JoinConverter() {
         super(LogicalJoin.class, "JoinConverter");
     }
 
+    /** {@inheritDoc} */
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalJoin join = (LogicalJoin) rel;
 
@@ -58,6 +62,7 @@ public class JoinConverter extends IgniteConverter {
         return Commons.transform(suggestions, s -> create(join, left, right, s));
     }
 
+    /** */
     private static RelNode create(LogicalJoin join, RelNode left, RelNode right, IgniteDistributions.BiSuggestion suggest) {
         left = convert(left, suggest.left());
         right = convert(right, suggest.right());

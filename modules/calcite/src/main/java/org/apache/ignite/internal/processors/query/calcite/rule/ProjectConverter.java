@@ -32,15 +32,19 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Ignite Project converter.
  */
 public class ProjectConverter extends IgniteConverter {
     public static final ConverterRule INSTANCE = new ProjectConverter();
 
+    /**
+     * Creates a converter.
+     */
     public ProjectConverter() {
         super(LogicalProject.class, "ProjectConverter");
     }
 
+    /** {@inheritDoc} */
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
 
@@ -54,6 +58,7 @@ public class ProjectConverter extends IgniteConverter {
         return Commons.transform(distrs, d -> create(project, input, d));
     }
 
+    /** */
     private static IgniteProject create(LogicalProject project, RelNode input, IgniteDistribution distr) {
         RelTraitSet traits = project.getTraitSet()
             .replace(IgniteMdDistribution.project(input.getRowType(), distr, project.getProjects()))

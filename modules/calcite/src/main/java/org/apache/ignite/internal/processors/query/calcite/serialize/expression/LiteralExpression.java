@@ -21,17 +21,40 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 
 /**
- *
+ * Describes {@link org.apache.calcite.rex.RexLiteral}.
  */
+@SuppressWarnings("rawtypes")
 public class LiteralExpression implements Expression {
-    public final DataType type;
-    public final Comparable value;
+    /** */
+    private final DataType type;
 
+    /** */
+    private final Comparable value;
+
+    /**
+     * @param type Data type.
+     * @param value Value.
+     */
     public LiteralExpression(RelDataType type, Comparable value) {
         this.type = DataType.fromType(type);
         this.value = value;
     }
 
+    /**
+     * @return Data type.
+     */
+    public DataType dataType() {
+        return type;
+    }
+
+    /**
+     * @return Value.
+     */
+    public Comparable value() {
+        return value;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T implement(ExpImplementor<T> implementor) {
         return implementor.implement(this);
     }

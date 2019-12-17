@@ -20,17 +20,23 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.function.Function;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
+    /** */
     private final Function<Object[], Object[]> projection;
 
+    /**
+     * @param target Target.
+     * @param projection Projection.
+     */
     public ProjectNode(Sink<Object[]> target, Function<Object[], Object[]> projection) {
         super(target);
 
         this.projection = projection;
     }
 
+    /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
@@ -38,10 +44,12 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
         return target.push(projection.apply(row));
     }
 
+    /** {@inheritDoc} */
     @Override public void end() {
         target.end();
     }

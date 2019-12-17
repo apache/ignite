@@ -18,22 +18,38 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
- *
+ * Represents an abstract data consumer.
  */
 public interface Sink<T> {
+    /** */
+    @SuppressWarnings("rawtypes")
     Sink NO_OP = new Sink() {
+        /** {@inheritDoc} */
         @Override public boolean push(Object row) {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public void end() {}
     };
 
+    /**
+     * Pushes a row to consumer.
+     * @param row Data row.
+     * @return {@code True} if a row consumes and processed, {@code false} otherwise. In case the row was not consumed,
+     *      the row has to be send once again as soon as a target consumer become able to process data.
+     */
     boolean push(T row);
+
+    /**
+     * Signals that data is over.
+     */
     void end();
 
-    @SuppressWarnings("unchecked")
+    /**
+     * @return No-op sink object.
+     */
     static <T> Sink<T> noOp() {
-        return NO_OP;
+        return (Sink<T>) NO_OP;
     }
 }

@@ -26,17 +26,29 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 
 /**
- *
+ * Relational expression that computes a set of
+ * 'select expressions' from its input relational expression.
  */
 public class IgniteProject extends Project implements IgniteRel {
+    /**
+     * Creates a Project.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    Input relational expression
+     * @param projects List of expressions for the input columns
+     * @param rowType  Output row type
+     */
     public IgniteProject(RelOptCluster cluster, RelTraitSet traits, RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
         super(cluster, traits, input, projects, rowType);
     }
 
+    /** {@inheritDoc} */
     @Override public Project copy(RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType) {
         return new IgniteProject(getCluster(), traitSet, input, projects, rowType);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

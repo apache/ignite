@@ -25,33 +25,58 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 
 /**
- *
+ * Relational expression that iterates over its input
+ * and sends elements to remote {@link IgniteReceiver}
  */
 public class IgniteSender extends SingleRel implements IgniteRel {
+    /** */
     private RelTarget target;
 
+    /**
+     * Creates a Sender.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    input relational expression
+     * @param target   Remote targets information
+     */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelTarget target) {
         super(cluster, traits, input);
 
         this.target = target;
     }
 
+    /**
+     * Creates a Sender.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    input relational expression
+     */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        super(cluster, traits, input);
+        this(cluster, traits, input, null);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteSender(getCluster(), traitSet, sole(inputs), target);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
+    /**
+     * @return Remote targets information.
+     */
     public RelTarget target() {
         return target;
     }
 
+    /**
+     * @param target Remote targets information.
+     */
     public void target(RelTarget target) {
         this.target = target;
     }

@@ -20,8 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import org.apache.calcite.rel.RelNode;
 
 /**
- *
+ * A superinterface of all Ignite relational nodes.
  */
 public interface IgniteRel extends RelNode {
+    /**
+     * Accepts a visit from a visitor.
+     *
+     * @param visitor Ignite visitor.
+     * @return Visit result.
+     */
     <T> T accept(IgniteRelVisitor<T> visitor);
 }

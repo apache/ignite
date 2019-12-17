@@ -39,28 +39,40 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.Nodes
  *
  */
 public class MappingServiceImpl implements MappingService {
+    /** */
     private final GridKernalContext ctx;
 
+    /**
+     * @param ctx Grid kernal context.
+     */
     public MappingServiceImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping local() {
         return new NodesMapping(Collections.singletonList(ctx.discovery().localNode().id()), null, DEDUPLICATED);
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping random(AffinityTopologyVersion topVer) {
         List<ClusterNode> nodes = ctx.discovery().discoCache(topVer).serverNodes();
 
         return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, DEDUPLICATED);
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
         GridCacheContext<?,?> cctx = ctx.cache().context().cacheContext(cacheId);
 
         return cctx.isReplicated() ? replicatedLocation(cctx, topVer) : partitionedLocation(cctx, topVer);
     }
 
+    /**
+     * @param cctx Cache context.
+     * @param topVer Topology version.
+     * @return Node mapping, describing location of interested data.
+     */
     private NodesMapping partitionedLocation(GridCacheContext<?,?> cctx, AffinityTopologyVersion topVer) {
         byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
 
@@ -96,6 +108,11 @@ public class MappingServiceImpl implements MappingService {
         return new NodesMapping(null, res, flags);
     }
 
+    /**
+     * @param cctx Cache context.
+     * @param topVer Topology version.
+     * @return Node mapping, describing location of interested data.
+     */
     private NodesMapping replicatedLocation(GridCacheContext<?,?> cctx, AffinityTopologyVersion topVer) {
         byte flags = NodesMapping.HAS_REPLICATED_CACHES;
 
@@ -125,6 +142,12 @@ public class MappingServiceImpl implements MappingService {
         return new NodesMapping(res, null, flags);
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param topology Topology version.
+     * @param parts partitions count.
+     * @return {@code True} if all partitions are in {@link GridDhtPartitionState#OWNING} state on the given node.
+     */
     private boolean isOwner(UUID nodeId, GridDhtPartitionTopology topology, int parts) {
         for (int p = 0; p < parts; p++) {
             if (topology.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)

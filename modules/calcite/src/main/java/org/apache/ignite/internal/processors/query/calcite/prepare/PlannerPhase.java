@@ -26,11 +26,12 @@ import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter
 import org.apache.ignite.internal.processors.query.calcite.rule.TableScanConverter;
 
 /**
- *
+ * Represents a planner phase with its description and a used rule set.
  */
 public enum PlannerPhase {
     /** */
     SUBQUERY_REWRITE("Sub-queries rewrites") {
+        /** {@inheritDoc} */
         @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(
                 SubQueryRemoveRule.FILTER,
@@ -41,6 +42,7 @@ public enum PlannerPhase {
 
     /** */
     OPTIMIZATION("Main optimization phase") {
+        /** {@inheritDoc} */
         @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(
                 TableScanConverter.INSTANCE,
@@ -50,11 +52,20 @@ public enum PlannerPhase {
         }
     };
 
+    /** */
     public final String description;
 
+    /**
+     * @param description Phase description.
+     */
     PlannerPhase(String description) {
         this.description = description;
     }
 
+    /**
+     * Returns rule set, calculated on the basis of query, planner context and planner phase.
+     * @param ctx Planner context.
+     * @return Rule set.
+     */
     public abstract RuleSet getRules(PlannerContext ctx);
 }

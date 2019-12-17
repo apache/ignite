@@ -31,15 +31,20 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Ignite Filter converter.
  */
 public class FilterConverter extends IgniteConverter {
+    /** */
     public static final ConverterRule INSTANCE = new FilterConverter();
 
+    /**
+     * Creates a converter.
+     */
     public FilterConverter() {
         super(LogicalFilter.class, "FilterConverter");
     }
 
+    /** {@inheritDoc} */
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalFilter filter = (LogicalFilter) rel;
 
@@ -53,6 +58,7 @@ public class FilterConverter extends IgniteConverter {
         return Commons.transform(distrs, d -> create(filter, input, d));
     }
 
+    /** */
     private static IgniteFilter create(LogicalFilter filter, RelNode input, IgniteDistribution distr) {
         RelTraitSet traits = filter.getTraitSet()
             .replace(distr)

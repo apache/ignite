@@ -27,17 +27,37 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexNode;
 
 /**
+ * Relational expression that combines two relational expressions according to
+ * some condition.
  *
+ * <p>Each output row has columns from the left and right inputs.
+ * The set of output rows is a subset of the cartesian product of the two
+ * inputs; precisely which subset depends on the join condition.
  */
 public class IgniteJoin extends Join implements IgniteRel {
+    /**
+     * Creates a Join.
+     *
+     * @param cluster          Cluster
+     * @param traitSet         Trait set
+     * @param left             Left input
+     * @param right            Right input
+     * @param condition        Join condition
+     * @param joinType         Join type
+     * @param variablesSet     Set variables that are set by the
+     *                         LHS and used by the RHS and are not available to
+     *                         nodes above this Join in the tree
+     */
     public IgniteJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 
+    /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right, JoinRelType joinType, boolean semiJoinDone) {
         return new IgniteJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

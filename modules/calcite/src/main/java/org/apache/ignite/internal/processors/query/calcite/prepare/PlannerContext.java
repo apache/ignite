@@ -30,21 +30,43 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
- *
+ * Planner context, encapsulates services, kernal context, query string and its flags and parameters and helper methods
+ * to work with them.
  */
 public final class PlannerContext implements Context {
+    /** */
     private final Context parentContext;
+
+    /** */
     private final Query query;
+
+    /** */
     private final AffinityTopologyVersion topologyVersion;
+
+    /** */
     private final SchemaPlus schema;
+
+    /** */
     private final IgniteLogger logger;
+
+    /** */
     private final GridKernalContext kernalContext;
+
+    /** */
     private final CalciteQueryProcessor queryProcessor;
+
+    /** */
     private final MappingService mappingService;
+
+    /** */
     private final ExchangeProcessor exchangeProcessor;
 
+    /** */
     private IgnitePlanner planner;
 
+    /**
+     * Private constructor, used by a builder.
+     */
     private PlannerContext(Context parentContext, Query query, AffinityTopologyVersion topologyVersion,
         SchemaPlus schema, IgniteLogger logger, GridKernalContext kernalContext, CalciteQueryProcessor queryProcessor, MappingService mappingService,
         ExchangeProcessor exchangeProcessor) {
@@ -59,68 +81,121 @@ public final class PlannerContext implements Context {
         this.exchangeProcessor = exchangeProcessor;
     }
 
+    /**
+     * @return Query and its parameters.
+     */
     public Query query() {
         return query;
     }
 
+    /**
+     * @return Topology version.
+     */
     public AffinityTopologyVersion topologyVersion() {
         return topologyVersion;
     }
 
+    /**
+     * @return Schema.
+     */
     public SchemaPlus schema() {
         return schema;
     }
 
+    /**
+     * @return Logger.
+     */
     public IgniteLogger logger() {
         return logger;
     }
 
+    /**
+     * @return Kernal context.
+     */
     public GridKernalContext kernalContext() {
         return kernalContext;
     }
 
+    /**
+     * @return Query processor.
+     */
     public CalciteQueryProcessor queryProcessor() {
         return queryProcessor;
     }
 
+    /**
+     * Package private method to set a planner after it creates using provided PlannerContext.
+     *
+     * @param planner Planner.
+     */
     void planner(IgnitePlanner planner) {
         this.planner = planner;
     }
 
+    /**
+     * @return Planner.
+     */
     public IgnitePlanner planner() {
         return planner;
     }
 
+    /**
+     * @return Mapping service.
+     */
     public MappingService mappingService() {
         return mappingService;
     }
 
+    /**
+     * @return Exchange processor.
+     */
     public ExchangeProcessor exchangeProcessor() {
         return exchangeProcessor;
     }
 
     // Helper methods
 
+    /**
+     * @return Type factory.
+     */
     public JavaTypeFactory typeFactory() {
         return planner.getTypeFactory();
     }
 
+    /**
+     * @return Local node mapping that consists of local node only, uses for root query fragment.
+     */
     public NodesMapping mapForLocal() {
         return mappingService.local();
     }
 
-    public NodesMapping mapForRandom(AffinityTopologyVersion topVer) {
-        return mappingService.random(topVer);
+    /**
+     * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
+     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy.
+     *
+     * @return Nodes mapping for intermediate fragments.
+     */
+    public NodesMapping mapForRandom() {
+        return mappingService.random(topologyVersion);
     }
 
-    public NodesMapping mapForCache(int cacheId, AffinityTopologyVersion topVer) {
-        return mappingService.distributed(cacheId, topVer);
+    /**
+     * @param cacheId Cache ID.
+     * @return Nodes mapping for particular table, depends on underlying cache distribution.
+     */
+    public NodesMapping mapForCache(int cacheId) {
+        return mappingService.distributed(cacheId, topologyVersion);
     }
 
+    /**
+     * @return Query provider. Used to execute a query to remote database (federated database case)
+     * or to execute a correlated query.
+     */
     public QueryProvider queryProvider() {
         return null; // TODO
     }
 
+    /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aClass) {
         if (aClass == getClass())
             return aClass.cast(this);
@@ -128,66 +203,130 @@ public final class PlannerContext implements Context {
         return parentContext.unwrap(aClass);
     }
 
+    /**
+     * @return Context builder.
+     */
     public static Builder builder() {
         return new Builder();
     }
 
+    /**
+     * Planner context builder.
+     */
     public static class Builder {
+        /** */
         private Context parentContext;
+
+        /** */
         private Query query;
+
+        /** */
         private AffinityTopologyVersion topologyVersion;
+
+        /** */
         private SchemaPlus schema;
+
+        /** */
         private IgniteLogger logger;
+
+        /** */
         private GridKernalContext kernalContext;
+
+        /** */
         private CalciteQueryProcessor queryProcessor;
+
+        /** */
         private MappingService mappingService;
+
+        /** */
         private ExchangeProcessor exchangeProcessor;
 
+        /**
+         * @param parentContext Parent context.
+         * @return Builder for chaining.
+         */
         public Builder parentContext(Context parentContext) {
             this.parentContext = parentContext;
             return this;
         }
 
+        /**
+         * @param query Query.
+         * @return Builder for chaining.
+         */
         public Builder query(Query query) {
             this.query = query;
             return this;
         }
 
+        /**
+         * @param topologyVersion Topology version.
+         * @return Builder for chaining.
+         */
         public Builder topologyVersion(AffinityTopologyVersion topologyVersion) {
             this.topologyVersion = topologyVersion;
             return this;
         }
 
+        /**
+         * @param schema Schema.
+         * @return Builder for chaining.
+         */
         public Builder schema(SchemaPlus schema) {
             this.schema = schema;
             return this;
         }
 
+        /**
+         * @param logger Logger.
+         * @return Builder for chaining.
+         */
         public Builder logger(IgniteLogger logger) {
             this.logger = logger;
             return this;
         }
 
+        /**
+         * @param kernalContext Kernal context.
+         * @return Builder for chaining.
+         */
         public Builder kernalContext(GridKernalContext kernalContext) {
             this.kernalContext = kernalContext;
             return this;
         }
 
+        /**
+         * @param queryProcessor Query processor.
+         * @return Builder for chaining.
+         */
         public Builder queryProcessor(CalciteQueryProcessor queryProcessor) {
             this.queryProcessor = queryProcessor;
             return this;
         }
 
+        /**
+         * @param mappingService Mapping service.
+         * @return Builder for chaining.
+         */
         public Builder mappingService(MappingService mappingService) {
             this.mappingService = mappingService;
             return this;
         }
 
+        /**
+         * @param exchangeProcessor Exchange processor.
+         * @return Builder for chaining.
+         */
         public Builder exchangeProcessor(ExchangeProcessor exchangeProcessor) {
             this.exchangeProcessor = exchangeProcessor;
             return this;
         }
 
+        /**
+         * Builds planner context.
+         *
+         * @return Planner context.
+         */
         public PlannerContext build() {
             return new PlannerContext(parentContext, query, topologyVersion, schema, logger, kernalContext, queryProcessor, mappingService, exchangeProcessor);
         }

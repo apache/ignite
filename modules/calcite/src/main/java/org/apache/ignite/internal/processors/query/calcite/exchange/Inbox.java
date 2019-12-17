@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
 import org.apache.ignite.internal.processors.query.calcite.exec.Source;
 
 /**
- * TODO
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12448
  */
 public class Inbox<T> implements SingleNode<T> {
     private final GridCacheVersion queryId;

@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
- *
+ * Represents an execution node source. Sources are used to notify children when an execution node is ready to consume data.
  */
 public interface Source {
+    /**
+     * Signals that consumer is ready to consume data. Called by consumer node.
+     */
     void signal();
 }

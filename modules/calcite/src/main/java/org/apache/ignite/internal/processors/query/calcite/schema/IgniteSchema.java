@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Ignite schema.
  */
 public class IgniteSchema extends AbstractSchema {
     /** */
@@ -37,14 +37,23 @@ public class IgniteSchema extends AbstractSchema {
     /** */
     private final Map<String, Table> tableMap = new ConcurrentHashMap<>();
 
+    /**
+     * Creates a Schema.
+     *
+     * @param schemaName Schema name.
+     */
     public IgniteSchema(String schemaName) {
         this.schemaName = schemaName;
     }
 
+    /**
+     * @return Schema name.
+     */
     public String getName() {
         return schemaName;
     }
 
+    /** {@inheritDoc} */
     @Override protected Map<String, Table> getTableMap() {
         return Collections.unmodifiableMap(tableMap);
     }
@@ -55,7 +64,7 @@ public class IgniteSchema extends AbstractSchema {
      * @param typeDesc Query type descriptor.
      * @param cacheInfo Cache info.
      */
-    public void onSqlTypeCreate(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo cacheInfo) {
+    public void onSqlTypeCreate(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?,?> cacheInfo) {
         Object identityKey = cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
 
@@ -68,7 +77,7 @@ public class IgniteSchema extends AbstractSchema {
      * @param typeDesc Query type descriptor.
      * @param cacheInfo Cache info.
      */
-    public void onSqlTypeDrop(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo cacheInfo) {
+    public void onSqlTypeDrop(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?,?> cacheInfo) {
         removeTable(typeDesc.tableName());
     }
 

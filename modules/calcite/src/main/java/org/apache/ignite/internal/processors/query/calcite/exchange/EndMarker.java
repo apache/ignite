@@ -21,13 +21,18 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 
 /**
- *
+ * Poison pill object.
  */
 public final class EndMarker implements Serializable {
+    /** */
     public static final EndMarker INSTANCE = new EndMarker();
 
+    /**
+     * Default constructor.
+     */
     private EndMarker(){}
 
+    /** */
     private Object readResolve() throws ObjectStreamException {
         return INSTANCE;
     }

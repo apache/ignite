@@ -24,17 +24,28 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 
 /**
- *
+ * Relational expression that imposes a particular distribution on its input
+ * without otherwise changing its content.
  */
 public class IgniteExchange extends Exchange implements IgniteRel {
+    /**
+     * Creates an Exchange.
+     *
+     * @param cluster   Cluster this relational expression belongs to
+     * @param traitSet  Trait set
+     * @param input     Input relational expression
+     * @param distribution Distribution specification
+     */
     public IgniteExchange(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelDistribution distribution) {
         super(cluster, traitSet, input, distribution);
     }
 
+    /** {@inheritDoc} */
     @Override public Exchange copy(RelTraitSet traitSet, RelNode newInput, RelDistribution newDistribution) {
         return new IgniteExchange(getCluster(), traitSet, newInput, newDistribution);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

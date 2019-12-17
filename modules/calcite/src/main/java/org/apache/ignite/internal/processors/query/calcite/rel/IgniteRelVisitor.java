@@ -18,22 +18,48 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 /**
- *
+ * A visitor to traverse an Ignite relational nodes tree.
  */
 public interface IgniteRelVisitor<T> {
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteSender rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteFilter rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteProject rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteJoin rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteTableScan rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteReceiver rel);
 
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteExchange rel);
 
-    T visit(IgniteRel other);
+    /**
+     * Visits a relational node and calculates a result on the basis of node meta information.
+     * @param rel Relational node.
+     * @return Visit result.
+     */
+    T visit(IgniteRel rel);
 }

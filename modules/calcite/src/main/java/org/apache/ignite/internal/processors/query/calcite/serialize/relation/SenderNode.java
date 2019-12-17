@@ -21,12 +21,8 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -35,23 +31,19 @@ import org.apache.ignite.internal.util.typedef.F;
 public class SenderNode extends RelGraphNode {
     private final RelTarget target;
 
-    private SenderNode(RelTarget target) {
+    private SenderNode(RelTraitSet traitSet, RelTarget target) {
+        super(traitSet);
         this.target = target;
     }
 
     public static SenderNode create(IgniteSender rel) {
-        return new SenderNode(rel.target());
+        return new SenderNode(rel.getTraitSet(), rel.target());
     }
 
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        RelTraitSet traits = cluster.traitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution._distribution(input, mq));
-
-        return new IgniteSender(cluster, traits, input, target);
+        return new IgniteSender(cluster, traitSet.toTraitSet(cluster), input, target);
     }
 }

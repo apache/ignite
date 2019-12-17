@@ -20,9 +20,14 @@ package org.apache.calcite.interpreter;
 import org.apache.calcite.DataContext;
 
 /**
- *
+ * Utility methods to exploit package private API.
  */
 public class InterpreterUtils {
+    /**
+     * Creates a Interpreter context.
+     * @param ctx Runtime context allowing access to the tables in a database and query parameters.
+     * @return Interpreter context.
+     */
     public static Context createContext(DataContext ctx) {
         return new Context(ctx);
     }

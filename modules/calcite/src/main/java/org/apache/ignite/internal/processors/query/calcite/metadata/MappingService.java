@@ -20,10 +20,27 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
- *
+ * Service is responsible for nodes mapping calculation.
  */
 public interface MappingService {
-    NodesMapping local(); // returns local node with single partition
-    NodesMapping random(AffinityTopologyVersion topVer); // returns random distribution, partitions count depends on nodes count
-    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer); // returns cache distribution
+    /**
+     * @return Local node mapping that consists of local node only, uses for root query fragment.
+     */
+    NodesMapping local();
+
+    /**
+     * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
+     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy.
+     *
+     * @param topVer Topology version.
+     * @return Nodes mapping for intermediate fragments.
+     */
+    NodesMapping random(AffinityTopologyVersion topVer);
+
+    /**
+     * @param cacheId Cache ID.
+     * @param topVer Topology version.
+     * @return Nodes mapping for particular table, depends on underlying cache distribution.
+     */
+    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer);
 }

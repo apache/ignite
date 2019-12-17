@@ -21,6 +21,9 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
  *
  */
 public class LocationMappingException extends Exception {
+    /**
+     * @param message Message.
+     */
     public LocationMappingException(String message) {
         super(message);
     }

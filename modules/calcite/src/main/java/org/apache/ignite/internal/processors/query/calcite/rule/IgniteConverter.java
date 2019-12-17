@@ -30,13 +30,20 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Abstract converter, that converts logical relational expression into one or more physical ones.
  */
 public abstract class IgniteConverter extends ConverterRule {
+    /**
+     * Creates a ConverterRule.
+     *
+     * @param clazz Type of relational expression to consider converting
+     * @param descriptionPrefix Description prefix of rule
+     */
     protected IgniteConverter(Class<? extends RelNode> clazz, String descriptionPrefix) {
         super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix);
     }
 
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         RelNode rel = call.rel(0);
         if (rel.getTraitSet().contains(Convention.NONE)) {
@@ -58,6 +65,7 @@ public abstract class IgniteConverter extends ConverterRule {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode convert(RelNode rel) {
         List<RelNode> converted = convert0(rel);
 
@@ -71,5 +79,10 @@ public abstract class IgniteConverter extends ConverterRule {
         return F.first(converted);
     }
 
+    /**
+     * Converts logical relational expression into one or more physical ones.
+     * @param rel Logical relational expression.
+     * @return A list of physical expressions.
+     */
     protected abstract List<RelNode> convert0(RelNode rel);
 }

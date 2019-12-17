@@ -21,17 +21,39 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 
 /**
- *
+ * Describes {@link org.apache.calcite.rex.RexLocalRef}.
  */
 public class LocalRefExpression implements Expression {
-    public final DataType type;
-    public final int index;
+    /** */
+    private final DataType type;
 
+    /** */
+    private final int index;
+
+    /**
+     * @param type Data type.
+     * @param index Index.
+     */
     public LocalRefExpression(RelDataType type, int index) {
         this.type = DataType.fromType(type);
         this.index = index;
     }
 
+    /**
+     * @return Data type.
+     */
+    public DataType dataType() {
+        return type;
+    }
+
+    /**
+     * @return Index.
+     */
+    public int index() {
+        return index;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T implement(ExpImplementor<T> implementor) {
         return implementor.implement(this);
     }

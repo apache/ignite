@@ -23,13 +23,23 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.Edge;
  *
  */
 public class OptimisticPlanningException extends RuntimeException{
+    /** */
     private final Edge edge;
 
+    /**
+     *
+     * @param message Message.
+     * @param edge Edge of query plan, where the exception was thrown.
+     * @param cause Cause.
+     */
     public OptimisticPlanningException(String message, Edge edge, Throwable cause) {
         super(message, cause);
         this.edge = edge;
     }
 
+    /**
+     * @return Edge of query plan, where the exception was thrown.
+     */
     public Edge edge() {
         return edge;
     }

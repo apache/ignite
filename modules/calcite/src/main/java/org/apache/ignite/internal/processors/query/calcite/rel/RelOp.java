@@ -20,8 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import org.apache.calcite.rel.RelNode;
 
 /**
- *
+ * Operation on relational expression.
  */
 public interface RelOp<T extends RelNode, R> {
+    /**
+     * @param rel Relational expression.
+     * @return Operation result.
+     */
     R go(T rel);
 }

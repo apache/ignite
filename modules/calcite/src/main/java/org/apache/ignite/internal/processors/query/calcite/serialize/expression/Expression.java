@@ -20,8 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.expression
 import java.io.Serializable;
 
 /**
- *
+ * Describes {@link org.apache.calcite.rex.RexNode}
  */
 public interface Expression extends Serializable {
+    /**
+     * Delegates implementation to given implementor using Visitor pattern.
+     *
+     * @param implementor Implementor.
+     * @return Expression implementation.
+     */
     <T> T implement(ExpImplementor<T> implementor);
 }

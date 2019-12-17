@@ -20,17 +20,23 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.function.Predicate;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
+    /** */
     private final Predicate<Object[]> predicate;
 
+    /**
+     * @param target Target.
+     * @param predicate Predicate.
+     */
     public FilterNode(Sink<Object[]> target, Predicate<Object[]> predicate) {
         super(target);
 
         this.predicate = predicate;
     }
 
+    /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
@@ -38,10 +44,12 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
         return !predicate.test(row) || target.push(row);
     }
 
+    /** {@inheritDoc} */
     @Override public void end() {
         target.end();
     }

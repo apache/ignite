@@ -21,24 +21,38 @@ import org.apache.calcite.DataContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- *
+ * Helpers to get named parameters from {@link DataContext}
  */
 public enum ContextValue {
     QUERY_ID("_query_id", GridCacheVersion.class),
     PLANNER_CONTEXT("_planner_context", PlannerContext.class);
 
+    /** */
     private final String valueName;
-    private final Class type;
 
-    ContextValue(String valueName, Class type) {
+    /** */
+    private final Class<?> type;
+
+    /**
+     * @param valueName Value name.
+     * @param type value type.
+     */
+    ContextValue(String valueName, Class<?> type) {
         this.valueName = valueName;
         this.type = type;
     }
 
+    /**
+     * @return valueName.
+     */
     public String valueName() {
         return valueName;
     }
 
+    /**
+     * @param ctx Data context.
+     * @return Parameter value.
+     */
     public <T> T get(DataContext ctx) {
         return (T) type.cast(ctx.get(valueName));
     }

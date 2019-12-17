@@ -24,24 +24,30 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 
 /**
- *
+ * Ignite convention trait.
  */
 public class IgniteConvention extends Convention.Impl {
     public static final IgniteConvention INSTANCE = new IgniteConvention();
 
+    /** */
     private IgniteConvention() {
         super("IGNITE", IgniteRel.class);
     }
 
+    /** {@inheritDoc} */
     @Override public ConventionTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
     }
 
+    /** {@inheritDoc} */
     @Override public void register(RelOptPlanner planner) {
+        // This convention relies on AbstractConverter logic, so, ExpandConversionRule need to be registered.
         planner.addRule(AbstractConverter.ExpandConversionRule.INSTANCE);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean useAbstractConvertersForConversion(RelTraitSet fromTraits, RelTraitSet toTraits) {
+        // use converters for physical nodes only.
         return toTraits.contains(INSTANCE) && fromTraits.contains(INSTANCE);
     }
 }

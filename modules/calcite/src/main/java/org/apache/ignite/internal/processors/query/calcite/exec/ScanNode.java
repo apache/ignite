@@ -21,23 +21,34 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class ScanNode implements SingleNode<Object[]> {
+    /** */
     private static final Object[] END = new Object[0];
 
     /** */
     private final Sink<Object[]> target;
+
+    /** */
     private final Iterable<Object[]> source;
 
+    /** */
     private Iterator<Object[]> it;
+
+    /** */
     private Object[] row;
 
+    /**
+     * @param target Target.
+     * @param source Source.
+     */
     public ScanNode(Sink<Object[]> target, Iterable<Object[]> source) {
         this.target = target;
         this.source = source;
     }
 
+    /** {@inheritDoc} */
     @Override public void signal() {
         if (row == END)
             return;
@@ -61,10 +72,12 @@ public class ScanNode implements SingleNode<Object[]> {
         target.end();
     }
 
+    /** {@inheritDoc} */
     @Override public void sources(List<Source> sources) {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         throw new UnsupportedOperationException();
     }

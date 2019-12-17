@@ -21,24 +21,35 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public abstract class AbstractNode<T> implements Node<T> {
+    /** */
     protected final Sink<T> target;
+
+    /** */
     protected List<Source> sources;
 
+    /**
+     * @param target Target.
+     */
     protected AbstractNode(Sink<T> target) {
         this.target = target;
     }
 
+    /** {@inheritDoc} */
     @Override public void sources(List<Source> sources) {
         this.sources = Collections.unmodifiableList(sources);
     }
 
+    /**
+     * @param idx Index of a source to signal/
+     */
     public void signal(int idx) {
         sources.get(idx).signal();
     }
 
+    /** {@inheritDoc} */
     @Override public void signal() {
         sources.forEach(Source::signal);
     }

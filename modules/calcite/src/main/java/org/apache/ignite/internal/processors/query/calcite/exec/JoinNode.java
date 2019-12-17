@@ -21,17 +21,32 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class JoinNode extends AbstractNode<Object[]> {
+    /** */
     private final BiFunction<Object[], Object[], Object[]> expression;
+
+    /** */
     private final ArraySink<Object[]> left;
+
+    /** */
     private final ArraySink<Object[]> right;
 
+    /** */
     private int leftIdx;
+
+    /** */
     private int rightIdx;
+
+    /** */
     private boolean end;
 
+    /**
+     *
+     * @param target Target.
+     * @param expression Join expression.
+     */
     public JoinNode(Sink<Object[]> target, BiFunction<Object[], Object[], Object[]> expression) {
         super(target);
         this.expression = expression;
@@ -40,6 +55,7 @@ public class JoinNode extends AbstractNode<Object[]> {
         right = new ArraySink<>();
     }
 
+    /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         switch (idx) {
             case 0:
@@ -51,6 +67,7 @@ public class JoinNode extends AbstractNode<Object[]> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void signal() {
         if (end)
             return;
@@ -66,6 +83,7 @@ public class JoinNode extends AbstractNode<Object[]> {
             signal(1);
     }
 
+    /** */
     public void tryFlush() {
         if (left.end && right.end) {
             for (int i = leftIdx; i < left.size(); i++) {
@@ -86,13 +104,17 @@ public class JoinNode extends AbstractNode<Object[]> {
         }
     }
 
+    /** */
     private final class ArraySink<T> extends ArrayList<T> implements Sink<T> {
+        /** */
         private boolean end;
 
+        /** {@inheritDoc} */
         @Override public boolean push(T row) {
             return add(row);
         }
 
+        /** {@inheritDoc} */
         @Override public void end() {
             end = true;
 

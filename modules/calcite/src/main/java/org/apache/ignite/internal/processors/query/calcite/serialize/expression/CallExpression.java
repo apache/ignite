@@ -22,19 +22,48 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSyntax;
 
 /**
- *
+ * Describes {@link org.apache.calcite.rex.RexCall}.
  */
 public class CallExpression implements Expression {
-    public final String opName;
-    public final SqlSyntax opSyntax;
-    public final List<Expression> operands;
+    /** */
+    private final String opName;
+    /** */
+    private final SqlSyntax opSyntax;
+    /** */
+    private final List<Expression> operands;
 
+    /**
+     * @param op Sql operation.
+     * @param operands Operands.
+     */
     public CallExpression(SqlOperator op, List<Expression> operands) {
         this.operands = operands;
         opName = op.getName();
         opSyntax = op.getSyntax();
     }
 
+    /**
+     * @return Operation name.
+     */
+    public String name() {
+        return opName;
+    }
+
+    /**
+     * @return Operation syntax;
+     */
+    public SqlSyntax syntax() {
+        return opSyntax;
+    }
+
+    /**
+     * @return Operands.
+     */
+    public List<Expression> operands() {
+        return operands;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T implement(ExpImplementor<T> implementor) {
         return implementor.implement(this);
     }

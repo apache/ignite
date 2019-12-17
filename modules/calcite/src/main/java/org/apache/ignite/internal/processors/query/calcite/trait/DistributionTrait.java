@@ -23,7 +23,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -135,7 +134,7 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
     }
 
     private Object readResolve() throws ObjectStreamException {
-        return DistributionTraitDef.INSTANCE.canonize(this);
+        return IgniteDistributions.canonize(this);
     }
 
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
@@ -144,10 +143,9 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
 
         assert type == HASH_DISTRIBUTED;
 
-        List<Integer> newKeys = IgniteDistributions.projectDistributionKeys(mapping, keys);
+        ImmutableIntList newKeys = IgniteDistributions.projectDistributionKeys(mapping, keys);
 
-        return newKeys.size() == keys.size() ? IgniteDistributions.hash(newKeys, functionFactory) :
-            IgniteDistributions.random();
+        return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, functionFactory);
     }
 
     @Override public boolean isTop() {

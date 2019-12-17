@@ -42,10 +42,6 @@ import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.rel.core.TableFunctionScan;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
@@ -74,7 +70,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
@@ -85,26 +80,56 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Query planer.
  */
 public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
+    /** */
     private final SqlOperatorTable operatorTable;
+
+    /** */
     private final ImmutableList<Program> programs;
+
+    /** */
     private final FrameworkConfig frameworkConfig;
+
+    /** */
     private final Context context;
+
+    /** */
     private final CalciteConnectionConfig connectionConfig;
+
+    /** */
+    @SuppressWarnings("rawtypes")
     private final ImmutableList<RelTraitDef> traitDefs;
+
+    /** */
     private final SqlParser.Config parserConfig;
+
+    /** */
     private final SqlToRelConverter.Config sqlToRelConverterConfig;
+
+    /** */
     private final SqlRexConvertletTable convertletTable;
+
+    /** */
     private final RexExecutor executor;
+
+    /** */
     private final SchemaPlus defaultSchema;
+
+    /** */
     private final JavaTypeFactory typeFactory;
 
+    /** */
     private boolean open;
 
+    /** */
     private RelOptPlanner planner;
+
+    /** */
     private RelMetadataProvider metadataProvider;
+
+    /** */
     private SqlValidator validator;
 
     /**
@@ -131,6 +156,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         Commons.plannerContext(context).planner(this);
     }
 
+    /** */
     private CalciteConnectionConfig connConfig() {
         CalciteConnectionConfig unwrapped = context.unwrap(CalciteConnectionConfig.class);
         if (unwrapped != null)
@@ -165,6 +191,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         open = false;
     }
 
+    /** */
     private void ready() {
         if (!open) {
             planner = VolcanoUtils.impatient(new VolcanoPlanner(frameworkConfig.getCostFactory(), context));
@@ -174,7 +201,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             validator = new IgniteSqlValidator(operatorTable(), createCatalogReader(), typeFactory, conformance());
             validator.setIdentifierExpansion(true);
 
-            for (RelTraitDef def : traitDefs) {
+            for (RelTraitDef<?> def : traitDefs) {
                 planner.addRelTraitDef(def);
             }
 
@@ -213,6 +240,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return rel(sql).rel;
     }
 
+    /**
+     * Converts intermediate relational nodes tree representation into a relational nodes tree, bounded to the planner.
+     *
+     * @param graph Relational nodes tree representation.
+     * @return Root node of relational tree.
+     */
     public RelNode convert(RelGraph graph) {
         ready();
 
@@ -242,6 +275,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return root;
     }
 
+    /**
+     * Splits relational nodes tree into fragments and returns a query plan.
+     * @param rel Root node of relational tree.
+     * @return Query plan.
+     */
     public QueryPlan plan(RelNode rel) {
         ready();
 
@@ -251,7 +289,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return new Splitter().go((IgniteRel) rel);
     }
 
-    public Graph graph(RelNode rel) {
+    /**
+     * Creates an intermediate relational nodes tree representation for a given relational nodes tree.
+     *
+     * @param rel Root node of relational tree.
+     * @return Relational nodes tree representation.
+     */
+    public RelGraph graph(RelNode rel) {
         ready();
 
         if (rel.getConvention() != IgniteConvention.INSTANCE)
@@ -297,6 +341,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return root2.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
     }
 
+    /** */
     private RelOptCluster createCluster(RexBuilder rexBuilder) {
         RelOptCluster cluster = RelOptCluster.create(planner, rexBuilder);
 
@@ -312,17 +357,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         RelTraitSet toTraits = targetTraits.simplify();
 
-        rel.accept(new MetaDataProviderModifier(metadataProvider));
-
         return programs.get(programIdx).run(planner, rel, toTraits, ImmutableList.of(), ImmutableList.of());
     }
 
+    /**
+     * Converts one relational nodes tree into another relational nodes tree
+     * based on a particular planner type, planning phase and required set of traits.
+     * @param plannerType Planner type.
+     * @param plannerPhase Planner phase.
+     * @param input Root node of relational tree.
+     * @param targetTraits Target traits.
+     * @return The root of the new RelNode tree.
+     */
     public RelNode transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
         ready();
 
         RelTraitSet toTraits = targetTraits.simplify();
-
-        input.accept(new MetaDataProviderModifier(metadataProvider));
 
         RelNode output;
 
@@ -364,22 +414,27 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return typeFactory;
     }
 
+    /** */
     private SqlConformance conformance() {
         return connectionConfig.conformance();
     }
 
+    /** */
     private SqlOperatorTable operatorTable() {
         return operatorTable;
     }
 
+    /** */
     private RexBuilder createRexBuilder() {
         return new RexBuilder(typeFactory);
     }
 
+    /** */
     private RelBuilder createRelBuilder(RelOptCluster cluster, RelOptSchema schema) {
         return sqlToRelConverterConfig.getRelBuilderFactory().create(cluster, schema);
     }
 
+    /** */
     private CalciteCatalogReader createCatalogReader() {
         SchemaPlus rootSchema = rootSchema(defaultSchema);
 
@@ -389,48 +444,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             typeFactory, connectionConfig);
     }
 
+    /** */
     private static SchemaPlus rootSchema(SchemaPlus schema) {
         for (; ; ) {
             if (schema.getParentSchema() == null) {
                 return schema;
             }
             schema = schema.getParentSchema();
-        }
-    }
-
-    /** */
-    private static class MetaDataProviderModifier extends RelShuttleImpl {
-        /** */
-        private final RelMetadataProvider metadataProvider;
-
-        /** */
-        private MetaDataProviderModifier(RelMetadataProvider metadataProvider) {
-            this.metadataProvider = metadataProvider;
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(TableScan scan) {
-            scan.getCluster().setMetadataProvider(metadataProvider);
-            return super.visit(scan);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(TableFunctionScan scan) {
-            scan.getCluster().setMetadataProvider(metadataProvider);
-            return super.visit(scan);
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelNode visit(LogicalValues values) {
-            values.getCluster().setMetadataProvider(metadataProvider);
-            return super.visit(values);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected RelNode visitChild(RelNode parent, int i, RelNode child) {
-            child.accept(this);
-            parent.getCluster().setMetadataProvider(metadataProvider);
-            return parent;
         }
     }
 }

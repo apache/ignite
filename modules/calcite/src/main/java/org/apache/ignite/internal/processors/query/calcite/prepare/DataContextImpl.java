@@ -24,7 +24,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 
 /**
- *
+ * Runtime context allowing access to the tables in a database.
  */
 public class DataContextImpl implements DataContext {
     /** */

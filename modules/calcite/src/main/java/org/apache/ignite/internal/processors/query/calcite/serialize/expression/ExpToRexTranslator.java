@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
@@ -30,71 +27,89 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * A translator of Expressions into Rex nodes.
  */
 public class ExpToRexTranslator implements ExpImplementor<RexNode> {
+    /** */
     private final RexBuilder builder;
-    private final RelDataTypeFactory typeFactory;
+
+    /** */
     private final Map<Pair<String, SqlSyntax>, SqlOperator> ops;
 
-    public ExpToRexTranslator(RexBuilder builder, RelDataTypeFactory typeFactory, SqlOperatorTable opTable) {
+    /**
+     * Creates a Translator.
+     *
+     * @param builder Rex builder.
+     * @param opTable Operators table.
+     */
+    public ExpToRexTranslator(RexBuilder builder, SqlOperatorTable opTable) {
         this.builder = builder;
-        this.typeFactory = typeFactory;
 
         List<SqlOperator> opList = opTable.getOperatorList();
 
-        HashMap<Pair<String, SqlSyntax>, SqlOperator> ops = new HashMap<>(opList.size());
+        HashMap<Pair<String, SqlSyntax>, SqlOperator> ops = U.newHashMap(opList.size());
 
-        for (SqlOperator op : opList) {
+        for (SqlOperator op : opList)
             ops.put(Pair.of(op.getName(), op.getSyntax()), op);
-        }
 
         this.ops = ops;
     }
 
+    /**
+     * Translates a list of expressions into a list of Rex nodes.
+     *
+     * @param exps List of expressions.
+     * @return List of Rex nodes.
+     */
     public List<RexNode> translate(List<Expression> exps) {
-        if (F.isEmpty(exps))
-            return Collections.emptyList();
-
-        if (exps.size() == 1)
-            return F.asList(translate(F.first(exps)));
-
-        List<RexNode> res = new ArrayList<>(exps.size());
-
-        for (Expression exp : exps) {
-            res.add(exp.implement(this));
-        }
-
-        return res;
+        return Commons.transform(exps, this::translate);
     }
 
+    /**
+     * Translates an expression into a RexNode.
+     *
+     * @param exp Expression.
+     * @return RexNode.
+     */
     public RexNode translate(Expression exp) {
         return exp.implement(this);
     }
 
+    /** {@inheritDoc} */
     @Override public RexNode implement(CallExpression exp) {
-        return builder.makeCall(op(exp.opName, exp.opSyntax), translate(exp.operands));
+        return builder.makeCall(op(exp.name(), exp.syntax()), translate(exp.operands()));
     }
 
+    /** {@inheritDoc} */
     @Override public RexNode implement(InputRefExpression exp) {
-        return builder.makeInputRef(exp.type.toRelDataType(typeFactory), exp.index);
+        return builder.makeInputRef(exp.dataType().toRelDataType(builder.getTypeFactory()), exp.index());
     }
 
+    /** {@inheritDoc} */
     @Override public RexNode implement(LiteralExpression exp) {
-        return builder.makeLiteral(exp.value, exp.type.toRelDataType(typeFactory), false);
+        return builder.makeLiteral(exp.value(), exp.dataType().toRelDataType(builder.getTypeFactory()), false);
     }
 
+    /** {@inheritDoc} */
     @Override public RexNode implement(LocalRefExpression exp) {
-        return new RexLocalRef(exp.index, exp.type.toRelDataType(typeFactory));
+        return new RexLocalRef(exp.index(), exp.dataType().toRelDataType(builder.getTypeFactory()));
     }
 
+    /** {@inheritDoc} */
     @Override public RexNode implement(DynamicParamExpression exp) {
-        return builder.makeDynamicParam(exp.type.toRelDataType(typeFactory), exp.index);
+        return builder.makeDynamicParam(exp.dataType().toRelDataType(builder.getTypeFactory()), exp.index());
     }
 
+    /** {@inheritDoc} */
+    @Override public RexNode implement(Expression exp) {
+        return exp.implement(this);
+    }
+
+    /** */
     private SqlOperator op(String name, SqlSyntax syntax) {
         return ops.get(Pair.of(name, syntax));
     }

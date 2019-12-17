@@ -50,14 +50,24 @@ import static org.apache.ignite.internal.processors.query.calcite.prepare.Contex
 import static org.apache.ignite.internal.processors.query.calcite.prepare.ContextValue.QUERY_ID;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<IgniteRel, Node<Object[]>> {
+    /** */
     private final PlannerContext ctx;
+
+    /** */
     private final DataContext root;
+
+    /** */
     private final ScalarFactory factory;
+
+    /** */
     private Deque<Sink<Object[]>> stack;
 
+    /**
+     * @param root Root context.
+     */
     public Implementor(DataContext root) {
         this.root = root;
 
@@ -66,6 +76,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         stack = new ArrayDeque<>();
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         assert stack.isEmpty();
 
@@ -86,6 +97,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
         assert !stack.isEmpty();
 
@@ -98,6 +110,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
         assert !stack.isEmpty();
 
@@ -110,6 +123,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
         assert !stack.isEmpty();
 
@@ -123,6 +137,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
         assert !stack.isEmpty();
 
@@ -131,18 +146,22 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return new ScanNode(stack.pop(), source);
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         throw new AssertionError(); // TODO
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteExchange rel) {
         throw new AssertionError();
     }
 
-    @Override public Node<Object[]> visit(IgniteRel other) {
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteRel rel) {
         throw new AssertionError();
     }
 
+    /** */
     private Source source(RelNode rel) {
         if (rel.getConvention() != IgniteConvention.INSTANCE)
             throw new IllegalStateException("INTERPRETABLE is required.");
@@ -150,6 +169,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return ((IgniteRel) rel).accept(this);
     }
 
+    /** */
     private List<Source> sources(List<RelNode> rels) {
         ArrayList<Source> res = new ArrayList<>(rels.size());
 
@@ -160,6 +180,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> go(IgniteRel rel) {
         if (rel instanceof IgniteSender)
             return visit((IgniteSender) rel);

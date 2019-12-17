@@ -23,20 +23,26 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]>, Iterator<Object[]> {
+    /** */
     private static final int DEFAULT_BUFFER_SIZE = 1000;
+
+    /** */
     private static final Object[] END = new Object[0];
 
+    /** */
     private ArrayDeque<Object[]> buff;
 
+    /** */
     public ConsumerNode() {
         super(Sink.noOp());
 
         buff = new ArrayDeque<>(DEFAULT_BUFFER_SIZE);
     }
 
+    /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
@@ -44,6 +50,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
         if (buff.size() == DEFAULT_BUFFER_SIZE)
             return false;
@@ -53,10 +60,12 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public void end() {
         buff.add(END);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean hasNext() {
         if (buff.isEmpty())
             signal();
@@ -64,6 +73,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         return buff.peek() != END;
     }
 
+    /** {@inheritDoc} */
     @Override public Object[] next() {
         if (buff.isEmpty())
             signal();

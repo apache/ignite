@@ -27,40 +27,55 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
- *
+ * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
 public class CalciteSchemaHolder implements SchemaChangeListener {
+    /** */
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
+
+    /** */
     private volatile SchemaPlus schema;
 
+    /**
+     * Sets updated schema.
+     * @param schema New schema.
+     */
     public void schema(SchemaPlus schema) {
         this.schema = schema;
     }
 
+    /**
+     * @return Actual schema.
+     */
     public SchemaPlus schema() {
         return schema;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void onSchemaCreate(String schemaName) {
         schemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void onSchemaDrop(String schemaName) {
         schemas.remove(schemaName);
         rebuild();
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
         schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeCreate(typeDescriptor, cacheInfo);
         rebuild();
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
         schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeDrop(typeDescriptor, cacheInfo);
         rebuild();
     }
 
+    /** */
     private void rebuild() {
         SchemaPlus schema = Frameworks.createRootSchema(false);
         schemas.forEach(schema::add);

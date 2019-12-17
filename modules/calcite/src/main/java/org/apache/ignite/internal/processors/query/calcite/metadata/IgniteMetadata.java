@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
- *
+ * Utility class, holding metadata related interfaces and metadata providers.
  */
 public class IgniteMetadata {
     public static final RelMetadataProvider METADATA_PROVIDER =

@@ -42,14 +42,11 @@ public class GraphToRelConverter implements ConversionContext {
     private final RelBuilder relBuilder;
     private final ExpToRexTranslator expTranslator;
 
-    public GraphToRelConverter(RelOptTable.ViewExpander viewExpander, RelBuilder relBuilder, SqlOperatorTable operatorTable) {
+    public GraphToRelConverter(RelOptTable.ViewExpander viewExpander, RelBuilder relBuilder, SqlOperatorTable opTable) {
         this.viewExpander = viewExpander;
         this.relBuilder = relBuilder;
 
-        expTranslator = new ExpToRexTranslator(
-            relBuilder.getRexBuilder(),
-            getTypeFactory(),
-            operatorTable);
+        expTranslator = new ExpToRexTranslator(relBuilder.getRexBuilder(), opTable);
     }
 
     @Override public RelDataTypeFactory getTypeFactory() {

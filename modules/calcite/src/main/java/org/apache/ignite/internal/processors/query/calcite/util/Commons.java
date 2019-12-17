@@ -28,8 +28,6 @@ import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -39,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -71,10 +70,6 @@ public final class Commons {
         return b.build();
     }
 
-    public static RelOptRuleOperand any(Class<? extends RelNode> first, Class<? extends RelNode> second) {
-        return RelOptRule.operand(first, RelOptRule.operand(second, RelOptRule.any()));
-    }
-
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
@@ -84,7 +79,7 @@ public final class Commons {
             return intersect0(left, right);
     }
 
-    public static <T> List<T> intersect0(List<T> left, List<T> right) {
+    private static <T> List<T> intersect0(List<T> left, List<T> right) {
         List<T> res = new ArrayList<>(Math.min(left.size(), right.size()));
         HashSet<T> set = new HashSet<>(left);
 
@@ -105,12 +100,15 @@ public final class Commons {
         return res;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> List<T> cast(List<?> src) {
         return (List)src;
     }
 
     public static <T,R> List<R> transform(@NotNull List<T> src, @NotNull Function<T,R> mapFun) {
+        if (F.isEmpty(src))
+            return Collections.emptyList();
+
         List<R> list = new ArrayList<>(src.size());
 
         for (T t : src)
@@ -120,7 +118,10 @@ public final class Commons {
     }
 
     public static <T,R> Set<R> transform(@NotNull Set<T> src, @NotNull Function<T,R> mapFun) {
-        Set<R> set = new HashSet<>(src.size());
+        if (F.isEmpty(src))
+            return Collections.emptySet();
+
+        Set<R> set = U.newHashSet(src.size());
 
         for (T t : src)
             set.add(mapFun.apply(t));

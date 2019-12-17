@@ -24,17 +24,33 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
 
 /**
+ * Relational expression that iterates over its input
+ * and returns elements for which <code>condition</code> evaluates to
+ * <code>true</code>.
  *
+ * <p>If the condition allows nulls, then a null value is treated the same as
+ * false.</p>
  */
 public class IgniteFilter extends Filter implements IgniteRel {
+    /**
+     * Creates a filter.
+     *
+     * @param cluster   Cluster that this relational expression belongs to
+     * @param traits    the traits of this rel
+     * @param input     input relational expression
+     * @param condition boolean expression which determines whether a row is
+     *                  allowed to pass
+     */
     public IgniteFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
         super(cluster, traits, input, condition);
     }
 
+    /** {@inheritDoc} */
     @Override public Filter copy(RelTraitSet traitSet, RelNode input, RexNode condition) {
         return new IgniteFilter(getCluster(), traitSet, input, condition);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

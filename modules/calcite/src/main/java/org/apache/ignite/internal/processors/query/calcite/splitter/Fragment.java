@@ -51,7 +51,7 @@ public class Fragment implements RelSource {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
         if (info.mapping() == null)
-            mapping = remote() ? ctx.mapForRandom(ctx.topologyVersion()) : ctx.mapForLocal();
+            mapping = remote() ? ctx.mapForRandom() : ctx.mapForLocal();
         else
             mapping = info.mapping().deduplicate();
 

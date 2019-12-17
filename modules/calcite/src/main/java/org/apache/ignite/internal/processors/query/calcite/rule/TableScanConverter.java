@@ -27,15 +27,19 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Ignite TableScan converter.
  */
 public class TableScanConverter extends IgniteConverter {
     public static final ConverterRule INSTANCE = new TableScanConverter();
 
+    /**
+     * Creates a converter.
+     */
     public TableScanConverter() {
         super(LogicalTableScan.class, "TableScanConverter");
     }
 
+    /** {@inheritDoc} */
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalTableScan scan = (LogicalTableScan) rel;
 

@@ -25,17 +25,26 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 
 /**
- *
+ * Relational operator that returns the contents of a table.
  */
 public class IgniteTableScan extends TableScan implements IgniteRel {
-    public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
-        super(cluster, traitSet, table);
+    /**
+     * Creates a TableScan.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param table    Table definition.
+     */
+    public IgniteTableScan(RelOptCluster cluster, RelTraitSet traits, RelOptTable table) {
+        super(cluster, traits, table);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

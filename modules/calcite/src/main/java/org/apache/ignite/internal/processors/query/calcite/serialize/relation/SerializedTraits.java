@@ -41,7 +41,7 @@ public class SerializedTraits implements Serializable {
         RelTraitSet traits = cluster.traitSet();
 
         for (Serializable trait : this.traits)
-            traits.replace(fromSerializable(trait));
+            traits = traits.replace(fromSerializable(trait));
 
         return traits.simplify();
     }

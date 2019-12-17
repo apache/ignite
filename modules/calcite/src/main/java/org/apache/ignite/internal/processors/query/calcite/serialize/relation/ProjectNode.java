@@ -21,15 +21,11 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -39,25 +35,22 @@ public class ProjectNode extends RelGraphNode {
     private final List<Expression> projects;
     private final DataType dataType;
 
-    private ProjectNode(List<Expression> projects, DataType dataType) {
+    private ProjectNode(RelTraitSet traitSet, List<Expression> projects, DataType dataType) {
+        super(traitSet);
         this.projects = projects;
         this.dataType = dataType;
     }
 
     public static ProjectNode create(IgniteProject rel, RexToExpTranslator rexTranslator) {
-        return new ProjectNode(rexTranslator.translate(rel.getProjects()),
+        return new ProjectNode(rel.getTraitSet(), rexTranslator.translate(rel.getProjects()),
             DataType.fromType(rel.getRowType()));
     }
 
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
-        List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);
         RelOptCluster cluster = input.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);
 
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.project(mq, input, projects));
-
-        return new IgniteProject(cluster, traits, input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
+        return new IgniteProject(cluster, traitSet.toTraitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
     }
 }

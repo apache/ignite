@@ -28,11 +28,20 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
- *
+ * Relational expression that receives elements from remote {@link IgniteSender}
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
-    private RelSource source;
+    /** */
+    private final RelSource source;
 
+    /**
+     * Creates a Receiver
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param rowType  Output row type
+     * @param source   Remote sources information.
+     */
     public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, RelSource source) {
         super(cluster, traits);
 
@@ -40,22 +49,26 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
         this.source = source;
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteReceiver(getCluster(), traitSet, rowType, source);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
+    /**
+     * @return Remote sources information.
+     */
     public RelSource source() {
         return source;
     }
 
-    public void source(RelSource source) {
-        this.source = source;
-    }
-
+    /**
+     * @return Node distribution.
+     */
     public IgniteDistribution distribution() {
         return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }

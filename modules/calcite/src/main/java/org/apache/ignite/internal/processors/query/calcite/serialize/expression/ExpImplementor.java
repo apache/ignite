@@ -18,16 +18,39 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 /**
- *
+ * Implements Expression tree recursively using Visitor pattern.
  */
 public interface ExpImplementor<T> {
-    T implement(CallExpression callExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(CallExpression exp);
 
-    T implement(InputRefExpression inputRefExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(InputRefExpression exp);
 
-    T implement(LiteralExpression literalExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(LiteralExpression exp);
 
-    T implement(LocalRefExpression localRefExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(LocalRefExpression exp);
 
-    T implement(DynamicParamExpression dynamicParamExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(DynamicParamExpression exp);
+
+    /**
+     * Implements given expression.
+     *
+     * @param exp Expression.
+     * @return Implementation result.
+     */
+    T implement(Expression exp);
 }

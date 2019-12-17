@@ -106,7 +106,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     }
 
     public FragmentInfo fragmentInfo(PlannerContext ctx) {
-        return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName), ctx.topologyVersion()));
+        return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName)));
     }
 
     @Override public Enumerable<Object[]> scan(DataContext root) {

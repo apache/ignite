@@ -21,13 +21,21 @@ import java.util.Collections;
 import java.util.Objects;
 
 /**
- *
+ * A node with a single input
  */
 public interface SingleNode<T> extends Node<T> {
+
+    /**
+     * @return Single sink object.
+     */
     default Sink<T> sink() {
         return Objects.requireNonNull(sink(0));
     }
 
+    /**
+     * Registers a single source.
+     * @param source Source.
+     */
     default void source(Source source) {
         sources(Collections.singletonList(source));
     }

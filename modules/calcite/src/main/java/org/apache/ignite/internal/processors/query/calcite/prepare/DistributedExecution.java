@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 
 /**
- *
+ * Operation object, encapsulates query execution logic.
  */
 public class DistributedExecution implements QueryExecution {
     /** */
