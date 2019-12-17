@@ -23,7 +23,7 @@ import org.apache.calcite.plan.RelTraitSet;
  */
 public class VolcanoUtils {
     public static RelSubset subset(RelSubset subset, RelTraitSet traits) {
-        return subset.set.getOrCreateSubset(subset.getCluster(), traits.simplify());
+        return subset.set.getOrCreateSubset(subset.getCluster(), traits.simplify()); // TODO getSet?
     }
 
     public static VolcanoPlanner impatient(VolcanoPlanner planner) {

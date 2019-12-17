@@ -236,7 +236,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                    // relBuilder = createRelBuilder(cluster, catalogReader);
 
-                    RelNode rel2 = relBuilder.scan(tbl.name()).build();
+                    // TODO normal names :)
+                    RelOptTable tbl1 = catalogReader.getTable(Arrays.asList(defaultSchema.getName(), tbl.name()));
+                    RelNode rel2 = sqlToRelConverter.toRel(tbl1);
+
+                    //RelNode rel2 = relBuilder.scan(tbl.name()).build();
 
                     System.out.println(rel2);
 
