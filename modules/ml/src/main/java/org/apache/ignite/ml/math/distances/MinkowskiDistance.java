@@ -28,6 +28,7 @@ public class MinkowskiDistance implements DistanceMeasure {
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
+        assert a.size() == b.size();
         IgniteDoubleFunction<Double> fun = value -> Math.pow(Math.abs(value), p);
 
         Double result = MatrixUtil.localCopyOf(a).minus(b).foldMap(PLUS, fun, 0d);
@@ -36,6 +37,7 @@ public class MinkowskiDistance implements DistanceMeasure {
 
     /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
+        assert a.size() == b.length;
         double res = 0.0;
 
         for (int i = 0; i < b.length; i++)
