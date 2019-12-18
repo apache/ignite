@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Log
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Factory that produces instances of a specific type.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// Returns <see cref="DateTime.Now"/>.
     /// </summary>
-    public interface IFactory<out T>
+    public class LocalDateTimeProvider : IDateTimeProvider
     {
         /// <summary>
-        /// Creates an instance of type <typeparamref name="T" />.
+        /// Default instance.
         /// </summary>
-        /// <returns>New instance of type <typeparamref name="T" />.</returns>
-        T CreateInstance();
+        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes", 
+            Justification = "Type is immutable.")]
+        public static readonly LocalDateTimeProvider Instance = new LocalDateTimeProvider();
+        
+        /// <summary>
+        /// Gets current <see cref="DateTime"/>.
+        /// </summary>
+        public DateTime Now()
+        {
+            return DateTime.Now;
+        }
     }
 }
