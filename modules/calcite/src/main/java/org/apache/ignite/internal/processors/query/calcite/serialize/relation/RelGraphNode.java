@@ -23,17 +23,25 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.serialize.GraphNode;
 
 /**
- *
+ * A superclass of all relational nodes representations.
  */
 public abstract class RelGraphNode implements GraphNode {
-    protected SerializedTraits traitSet;
+    /** */
+    protected SerializedTraits traits;
 
-    protected RelGraphNode() {
-    }
-
+    /**
+     * @param traits Traits of this relational expression.
+     */
     protected RelGraphNode(RelTraitSet traits) {
-        traitSet = new SerializedTraits(traits);
+        this.traits = new SerializedTraits(traits);
     }
 
+    /**
+     * Converts representation to particular RelNode.
+     *
+     * @param ctx Conversion context.
+     * @param children Input rels.
+     * @return RelNode.
+     */
     public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
 }

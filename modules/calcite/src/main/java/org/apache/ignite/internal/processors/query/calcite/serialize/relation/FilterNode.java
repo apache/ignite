@@ -28,25 +28,38 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.expression.
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Describes {@link IgniteFilter}
  */
 public class FilterNode extends RelGraphNode {
+    /** */
     private final Expression condition;
 
-    private FilterNode(RelTraitSet traitSet, Expression condition) {
-        super(traitSet);
+    /**
+     * @param traits   Traits of this relational expression.
+     * @param condition Condition.
+     */
+    private FilterNode(RelTraitSet traits, Expression condition) {
+        super(traits);
         this.condition = condition;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Filter rel.
+     * @param expTranslator Expression translator.
+     * @return FilterNode.
+     */
     public static FilterNode create(IgniteFilter rel, RexToExpTranslator expTranslator) {
         return new FilterNode(rel.getTraitSet(), expTranslator.translate(rel.getCondition()));
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
         RexNode condition = this.condition.implement(ctx.getExpressionTranslator());
 
-        return new IgniteFilter(cluster, traitSet.toTraitSet(cluster), input, condition);
+        return new IgniteFilter(cluster, traits.toTraitSet(cluster), input, condition);
     }
 }

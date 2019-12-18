@@ -24,14 +24,26 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContex
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
 
 /**
- *
+ * Provides context to complete RelGraph to RelNode tree conversion.
  */
 public interface ConversionContext extends RelOptTable.ToRelContext {
+    /**
+     * @return Type factory.
+     */
     RelDataTypeFactory getTypeFactory();
 
+    /**
+     * @return Schema.
+     */
     RelOptSchema getSchema();
 
+    /**
+     * @return Planner context.
+     */
     PlannerContext getContext();
 
+    /**
+     * @return Expression translator.
+     */
     ExpToRexTranslator getExpressionTranslator();
 }

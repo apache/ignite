@@ -20,41 +20,32 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
-import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- *
+ * Java type.
  */
-public class SimpleType implements DataType {
-    private final Class clazz;
-    private final SqlTypeName typeName;
-    private final int precision;
-    private final int scale;
+public class JavaType implements DataType {
+    /** */
+    private final Class<?> clazz;
 
-    public static SimpleType fromType(RelDataType type) {
-        assert !type.isStruct();
+    /**
+     * Factory method.
+     */
+    public static JavaType fromType(RelDataType type) {
+        assert type instanceof RelDataTypeFactoryImpl.JavaType : type;
 
-        if (type instanceof RelDataTypeFactoryImpl.JavaType)
-            return new SimpleType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass(), null, 0, 0);
-
-        return new SimpleType(null, type.getSqlTypeName(), type.getPrecision(), type.getScale());
+        return new JavaType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass());
     }
 
-    private SimpleType(Class clazz, SqlTypeName typeName, int precision, int scale) {
+    /**
+     * @param clazz Value class.
+     */
+    private JavaType(Class<?> clazz) {
         this.clazz = clazz;
-        this.typeName = typeName;
-        this.precision = precision;
-        this.scale = scale;
     }
 
+    /** {@inheritDoc} */
     @Override public RelDataType toRelDataType(RelDataTypeFactory factory) {
-        if (clazz != null)
-            return factory.createJavaType(clazz);
-        if (typeName.allowsNoPrecNoScale())
-            return factory.createSqlType(typeName);
-        if (typeName.allowsPrecNoScale())
-            return factory.createSqlType(typeName, precision);
-
-        return factory.createSqlType(typeName, precision, scale);
+        return factory.createJavaType(clazz);
     }
 }

@@ -27,27 +27,42 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.RelSourceImp
 
 
 /**
- *
+ * Describes {@link IgniteReceiver}.
  */
 public class ReceiverNode extends RelGraphNode {
+    /** */
     private final DataType dataType;
+
+    /** */
     private final RelSource source;
 
+    /**
+     * @param traits   Traits of this relational expression
+     * @param dataType Output row type
+     * @param source   Remote sources information.
+     */
     private ReceiverNode(RelTraitSet traits, DataType dataType, RelSource source) {
         super(traits);
         this.dataType = dataType;
         this.source = source;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Receiver rel.
+     * @return ReceiverNode.
+     */
     public static ReceiverNode create(IgniteReceiver rel) {
         RelSource source = new RelSourceImpl(rel.source().exchangeId(), rel.source().mapping());
 
         return new ReceiverNode(rel.getTraitSet(), DataType.fromType(rel.getRowType()), source);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         return new IgniteReceiver(ctx.getCluster(),
-            traitSet.toTraitSet(ctx.getCluster()),
+            traits.toTraitSet(ctx.getCluster()),
             dataType.toRelDataType(ctx.getTypeFactory()),
             source);
     }

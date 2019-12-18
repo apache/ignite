@@ -20,14 +20,32 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 import java.io.Serializable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 
 /**
- *
+ * Serializable RelDataType representation.
  */
 public interface DataType extends Serializable {
+    /**
+     * Factory method to construct data type representation from RelDataType.
+     * @param type RelDataType.
+     * @return DataType.
+     */
     static DataType fromType(RelDataType type) {
-        return type.isStruct() ? StructType.fromType(type) : SimpleType.fromType(type);
+        if (type.isStruct())
+            return StructType.fromType(type);
+
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return JavaType.fromType(type);
+
+        return SqlType.fromType(type);
     }
 
+    /**
+     * Perform back conversion from data type representation to RelDataType itself.
+     *
+     * @param factory Type factory.
+     * @return RelDataType.
+     */
     RelDataType toRelDataType(RelDataTypeFactory factory);
 }

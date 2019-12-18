@@ -26,24 +26,38 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Describes {@link IgniteSender}.
  */
 public class SenderNode extends RelGraphNode {
+
+
     private final RelTarget target;
 
-    private SenderNode(RelTraitSet traitSet, RelTarget target) {
-        super(traitSet);
+    /**
+     *
+     * @param traits   Traits of this relational expression
+     * @param target   Remote targets information
+     */
+    private SenderNode(RelTraitSet traits, RelTarget target) {
+        super(traits);
         this.target = target;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Sender rel.
+     * @return SenderNode.
+     */
     public static SenderNode create(IgniteSender rel) {
         return new SenderNode(rel.getTraitSet(), rel.target());
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
 
-        return new IgniteSender(cluster, traitSet.toTraitSet(cluster), input, target);
+        return new IgniteSender(cluster, traits.toTraitSet(cluster), input, target);
     }
 }

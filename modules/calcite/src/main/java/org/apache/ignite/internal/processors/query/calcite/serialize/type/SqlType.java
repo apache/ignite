@@ -17,43 +17,51 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
-import java.util.LinkedHashMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.type.BasicSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
  *
  */
-public class StructType implements DataType {
+public class SqlType implements DataType {
     /** */
-    private final LinkedHashMap<String, DataType> fields;
+    private final SqlTypeName typeName;
+
+    /** */
+    private final int precision;
+
+    /** */
+    private final int scale;
 
     /**
      * Factory method.
      */
-    static StructType fromType(RelDataType type) {
-        assert type.isStruct();
+    public static SqlType fromType(RelDataType type) {
+        assert type instanceof BasicSqlType : type;
 
-        LinkedHashMap<String, DataType> fields = new LinkedHashMap<>();
-
-        for (RelDataTypeField field : type.getFieldList())
-            fields.put(field.getName(), DataType.fromType(field.getType()));
-
-        return new StructType(fields);
+        return new SqlType(type.getSqlTypeName(), type.getPrecision(), type.getScale());
     }
 
     /**
-     * @param fields Fields.
+     * @param typeName Type name
+     * @param precision Precision.
+     * @param scale Scale.
      */
-    private StructType(LinkedHashMap<String, DataType> fields) {
-        this.fields = fields;
+    private SqlType(SqlTypeName typeName, int precision, int scale) {
+        this.typeName = typeName;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType toRelDataType(RelDataTypeFactory factory) {
-        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(factory);
-        fields.forEach((n,f) -> builder.add(n,f.toRelDataType(factory)));
-        return builder.build();
+        if (typeName.allowsNoPrecNoScale())
+            return factory.createSqlType(typeName);
+        if (typeName.allowsPrecNoScale())
+            return factory.createSqlType(typeName, precision);
+
+        return factory.createSqlType(typeName, precision, scale);
     }
 }

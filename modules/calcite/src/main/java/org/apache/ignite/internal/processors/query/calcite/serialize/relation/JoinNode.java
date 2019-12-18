@@ -29,13 +29,24 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.expression.
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 
 /**
- *
+ * Describes {@link IgniteJoin}.
  */
 public class JoinNode extends RelGraphNode {
+    /** */
     private final Expression condition;
+
+    /** */
     private final int[] variables;
+
+    /** */
     private final JoinRelType joinType;
 
+    /**
+     * @param traits   Traits of this relational expression.
+     * @param condition Condition.
+     * @param variables Variables set. See {@link IgniteJoin#getVariablesSet()}.
+     * @param joinType Join type.
+     */
     private JoinNode(RelTraitSet traits, Expression condition, int[] variables, JoinRelType joinType) {
         super(traits);
         this.condition = condition;
@@ -43,6 +54,13 @@ public class JoinNode extends RelGraphNode {
         this.joinType = joinType;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Join rel.
+     * @param expTranslator Expression translator.
+     * @return JoinNode.
+     */
     public static JoinNode create(IgniteJoin rel, RexToExpTranslator expTranslator) {
         return new JoinNode(rel.getTraitSet(),
             expTranslator.translate(rel.getCondition()),
@@ -50,6 +68,7 @@ public class JoinNode extends RelGraphNode {
             rel.getJoinType());
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         assert children.size() == 2;
 
@@ -57,7 +76,7 @@ public class JoinNode extends RelGraphNode {
         RelNode right = children.get(1);
 
         return new IgniteJoin(ctx.getCluster(),
-            traitSet.toTraitSet(ctx.getCluster()),
+            traits.toTraitSet(ctx.getCluster()),
             left,
             right,
             ctx.getExpressionTranslator().translate(condition),

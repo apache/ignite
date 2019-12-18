@@ -29,28 +29,44 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataTy
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Describes {@link IgniteProject}.
  */
 public class ProjectNode extends RelGraphNode {
+    /** */
     private final List<Expression> projects;
+
+    /** */
     private final DataType dataType;
 
-    private ProjectNode(RelTraitSet traitSet, List<Expression> projects, DataType dataType) {
-        super(traitSet);
+    /**
+     * @param traits   Traits of this relational expression.
+     * @param projects Projects.
+     * @param dataType Output row type
+     */
+    private ProjectNode(RelTraitSet traits, List<Expression> projects, DataType dataType) {
+        super(traits);
         this.projects = projects;
         this.dataType = dataType;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Project rel.
+     * @param rexTranslator Expression translator.
+     * @return ProjectNode.
+     */
     public static ProjectNode create(IgniteProject rel, RexToExpTranslator rexTranslator) {
         return new ProjectNode(rel.getTraitSet(), rexTranslator.translate(rel.getProjects()),
             DataType.fromType(rel.getRowType()));
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
         List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);
 
-        return new IgniteProject(cluster, traitSet.toTraitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
+        return new IgniteProject(cluster, traits.toTraitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
     }
 }

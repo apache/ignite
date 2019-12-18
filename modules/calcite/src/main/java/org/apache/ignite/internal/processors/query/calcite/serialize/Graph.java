@@ -21,24 +21,41 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.GridIntList;
 
 /**
- *
+ * A graph, represented by adjacency list.
  */
 public class Graph<T extends GraphNode> implements Serializable {
+    /** */
     private final List<T> nodes = new ArrayList<>();
+
+    /** */
     private final List<GridIntList> edges = new ArrayList<>();
 
+    /**
+     * @return Pairs of node and its ID.
+     */
     public List<Ord<T>> nodes() {
         return Ord.zip(nodes);
     }
 
-    public List<GridIntList> edges() {
-        return Commons.transform(edges, GridIntList::copy);
+    /**
+     * @return Edges.
+     */
+    public List<ImmutableIntList> edges() {
+        return Commons.transform(edges, l -> ImmutableIntList.of(l.array()));
     }
 
+    /**
+     * Adds a new node and link it as a child of node with given ID.
+     *
+     * @param parentId Parent node ID.
+     * @param node Node.
+     * @return New node ID.
+     */
     public int addNode(int parentId, T node) {
         int id = addNode(node);
 
@@ -47,6 +64,12 @@ public class Graph<T extends GraphNode> implements Serializable {
         return id;
     }
 
+    /**
+     * Adds a new node.
+     *
+     * @param node Node.
+     * @return New node ID.
+     */
     public int addNode(T node) {
         assert nodes.size() == edges.size();
 
@@ -58,6 +81,12 @@ public class Graph<T extends GraphNode> implements Serializable {
         return id;
     }
 
+    /**
+     * Adds a new edge.
+     *
+     * @param parentId Parent node ID.
+     * @param childId Child node ID.
+     */
     public void addEdge(int parentId, int childId) {
         assert parentId == -1 || (parentId >= 0 && parentId < edges.size());
         assert nodes.size() == edges.size();
@@ -66,6 +95,12 @@ public class Graph<T extends GraphNode> implements Serializable {
             edges.get(parentId).add(childId);
     }
 
+    /**
+     * Returns children of a node with given ID.
+     *
+     * @param parentId Parent node ID.
+     * @return Pairs of child node and its ID.
+     */
     public List<Ord<T>> children(int parentId) {
         GridIntList children = edges.get(parentId);
 

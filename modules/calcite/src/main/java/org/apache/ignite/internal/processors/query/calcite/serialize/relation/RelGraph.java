@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 
 /**
- *
+ * RelNode tree intermediate representation. Used by communication layer to send a query plan to remote node.
  */
 public class RelGraph extends Graph<RelGraphNode> {
 }
