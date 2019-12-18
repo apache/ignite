@@ -299,8 +299,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             for (JdbcThinTcpIo io : ios(conn))
                 assertEquals(100, io.connectionProperties().getAffinityAwarenessSqlCacheSize());
         }
-
-
     }
 
     /**
