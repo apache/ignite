@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TransactionInteg
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCachePartitionConsistencyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemoteMultiplePartitionReservationTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryWithConcurrentRollbackTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxWithSmallTimeoutAndContentionOneKeyTest;
 
@@ -129,6 +130,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(CacheRebalanceThreadPoolTest.class);
 
         suite.addTestSuite(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
+
+        suite.addTestSuite(TxRecoveryWithConcurrentRollbackTest.class);
 
         return suite;
     }
