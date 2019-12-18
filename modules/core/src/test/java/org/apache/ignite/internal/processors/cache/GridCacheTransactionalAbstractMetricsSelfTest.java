@@ -266,7 +266,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     /** */
     @Test
     public void testCommitTime() {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         HistogramMetric m = metric("CommitTime");
 
