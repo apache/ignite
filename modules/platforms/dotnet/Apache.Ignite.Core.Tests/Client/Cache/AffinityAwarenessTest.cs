@@ -483,8 +483,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
                 @"req=org.apache.ignite.internal.processors.platform.client.cache.ClientCache(\w+)Request@");
 
-            return logger.Messages
-                .Select(m => messageRegex.Match(m))
+            return logger.Entries
+                .Select(m => messageRegex.Match(m.Message))
                 .Where(m => m.Success)
                 .Select(m => m.Groups[1].Value);
         }
