@@ -22,12 +22,16 @@ import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -409,7 +413,7 @@ public class Ignition {
      */
     public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg, false);
+            return sandboxIgniteProxy(IgnitionEx.start(cfg, false));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -483,7 +487,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite() throws IgniteIllegalStateException {
-        return IgnitionEx.grid();
+        return sandboxIgniteProxy(IgnitionEx.grid());
     }
 
     /**
@@ -492,7 +496,17 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return IgnitionEx.allGrids();
+        List<Ignite> res = IgnitionEx.allGrids();
+
+        if (res == null || res.isEmpty())
+            return res;
+
+        Ignite ignite = res.get(0);
+
+        if (ignite instanceof IgniteEx && ((IgniteEx)ignite).context().security().sandbox().enabled())
+            return res.stream().map(Ignition::sandboxIgniteProxy).collect(Collectors.toList());
+
+        return res;
     }
 
     /**
@@ -508,7 +522,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(locNodeId);
+        return sandboxIgniteProxy(IgnitionEx.grid(locNodeId));
     }
 
     /**
@@ -525,7 +539,7 @@ public class Ignition {
      *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
-        return IgnitionEx.grid(name);
+        return sandboxIgniteProxy(IgnitionEx.grid(name));
     }
 
     /**
@@ -540,7 +554,22 @@ public class Ignition {
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
     public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
-        return IgnitionEx.localIgnite();
+        return sandboxIgniteProxy(IgnitionEx.localIgnite());
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     */
+    private static Ignite sandboxIgniteProxy(Ignite ignite) {
+        if (ignite instanceof IgniteEx) {
+            GridKernalContext ctx = ((IgniteEx)ignite).context();
+
+            if (ctx.security().sandbox().enabled())
+                return SandboxIgniteComponentProxy.proxy(Ignite.class, ignite);
+        }
+
+        return ignite;
     }
 
     /**
