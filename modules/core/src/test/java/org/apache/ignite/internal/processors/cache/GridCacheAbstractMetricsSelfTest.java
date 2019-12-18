@@ -1487,7 +1487,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @param name Metric name to find.
      * @return Metric.
      */
-    private <M extends Metric> M metric(String name) {
+    protected  <M extends Metric> M metric(String name) {
         IgniteEx grid = grid(0);
 
         boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
