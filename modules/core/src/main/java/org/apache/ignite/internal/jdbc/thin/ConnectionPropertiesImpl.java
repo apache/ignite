@@ -216,13 +216,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private IntegerProperty qryTimeout = new IntegerProperty("queryTimeout",
         "Sets the number of seconds the driver will wait for a <code>Statement</code> object to execute." +
             " Zero means there is no limits.",
-        0L, false, 0, Integer.MAX_VALUE);
+        0, false, 0, Integer.MAX_VALUE);
 
     /** JDBC connection timeout. */
     private IntegerProperty connTimeout = new IntegerProperty("connectionTimeout",
         "Sets the number of milliseconds JDBC client will waits for server to response." +
             " Zero means there is no limits.",
-        0L, false, 0, Integer.MAX_VALUE);
+        0, false, 0, Integer.MAX_VALUE);
 
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
@@ -1117,7 +1117,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
             if (str == null)
-                val = dfltVal != null ? (int)dfltVal : null;
+                val = dfltVal != null ? (Number)dfltVal : null;
             else {
                 try {
                     setValue(parse(str));
