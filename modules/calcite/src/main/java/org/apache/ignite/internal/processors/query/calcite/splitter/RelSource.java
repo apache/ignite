@@ -32,11 +32,17 @@ public interface RelSource {
     long exchangeId();
 
     /**
+     * Returns source mapping. The mapping contains nodes where data comes from.
+     * It's used to determine that all sources sent all related data.
+     *
      * @return Source mapping.
      */
     NodesMapping mapping();
 
     /**
+     * Binds a source to target and starts source data location calculation.
+     * After this method call the source know where to send data and the target knows where to expect data from.
+     *
      * @param mapping Target mapping.
      * @param distribution Target distribution.
      * @param ctx Context.

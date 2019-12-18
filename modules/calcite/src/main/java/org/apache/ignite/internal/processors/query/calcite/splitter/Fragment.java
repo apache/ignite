@@ -32,21 +32,34 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Fragment of distributed query
  */
 public class Fragment implements RelSource {
+    /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
+    /** */
     private final long exchangeId = ID_GEN.getAndIncrement();
 
+    /** */
     private final RelNode root;
 
+    /** */
     private NodesMapping mapping;
 
+    /**
+     * @param root Root node of the fragment.
+     */
     public Fragment(RelNode root) {
         this.root = root;
     }
 
+    /**
+     * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
+     *
+     * @param ctx Planner context.
+     * @param mq Metadata query used for data location calculation.
+     */
     public void init(PlannerContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
@@ -67,10 +80,12 @@ public class Fragment implements RelSource {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public long exchangeId() {
         return exchangeId;
     }
 
+    /** {@inheritDoc} */
     @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
         assert remote();
 
@@ -79,14 +94,19 @@ public class Fragment implements RelSource {
         init(ctx, mq);
     }
 
+    /**
+     * @return Root node.
+     */
     public RelNode root() {
         return root;
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping mapping() {
         return mapping;
     }
 
+    /** */
     private boolean remote() {
         return root instanceof IgniteSender;
     }

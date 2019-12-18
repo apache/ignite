@@ -21,9 +21,14 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.util.mapping.Mappings;
 
 /**
- *
+ * Ignite distribution trait.
  */
 public interface IgniteDistribution extends RelDistribution {
+    /**
+     * @return Factory, returns a mapping function, that says where to send a particular row.
+     */
     DestinationFunctionFactory destinationFunctionFactory();
+
+    /** {@inheritDoc} */
     @Override IgniteDistribution apply(Mappings.TargetMapping mapping);
 }

@@ -30,15 +30,24 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Distributed query plan.
  */
 public class QueryPlan {
+    /** */
     private final List<Fragment> fragments;
 
+    /**
+     * @param fragments Query fragments.
+     */
     public QueryPlan(List<Fragment> fragments) {
         this.fragments = fragments;
     }
 
+    /**
+     * Inits query fragments.
+     *
+     * @param ctx Planner context.
+     */
     public void init(PlannerContext ctx) {
         int i = 0;
 
@@ -66,11 +75,14 @@ public class QueryPlan {
 
                 fragments.add(fragment);
 
-                parent.replaceInput(edge.childIdx(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
+                parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
             }
         }
     }
 
+    /**
+     * @return Query fragments.
+     */
     public List<Fragment> fragments() {
         return fragments;
     }

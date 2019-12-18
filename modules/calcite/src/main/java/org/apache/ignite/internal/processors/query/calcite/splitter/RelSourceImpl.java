@@ -27,15 +27,21 @@ public class RelSourceImpl implements RelSource, Serializable {
     private final long exchangeId;
     private final NodesMapping mapping;
 
+    /**
+     * @param exchangeId Exchange ID.
+     * @param mapping Source mapping.
+     */
     public RelSourceImpl(long exchangeId, NodesMapping mapping) {
         this.exchangeId = exchangeId;
         this.mapping = mapping;
     }
 
+    /** {@inheritDoc} */
     @Override public long exchangeId() {
         return exchangeId;
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping mapping() {
         return mapping;
     }

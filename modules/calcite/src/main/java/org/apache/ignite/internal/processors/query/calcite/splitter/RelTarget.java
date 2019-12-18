@@ -17,14 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  *
  */
 public interface RelTarget {
+    /**
+     * @return Exchange id, has to be unique in scope of query.
+     */
     long exchangeId();
+
+    /**
+     * Returns target mapping. It's used in calculation where to send a particular row to.
+     * See {@link DestinationFunctionFactory#create(PlannerContext, NodesMapping, ImmutableIntList)}
+     *
+     * @return Target mapping.
+     */
     NodesMapping mapping();
+
+    /**
+     * @return Target distribution.
+     */
     IgniteDistribution distribution();
 }

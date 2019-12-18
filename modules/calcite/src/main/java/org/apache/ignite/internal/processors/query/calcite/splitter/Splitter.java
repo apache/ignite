@@ -39,11 +39,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
 
 /**
- *
+ * Splits a query into a list of query fragments.
  */
 public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, QueryPlan> {
+    /** */
     private List<Fragment> fragments;
 
+    /** {@inheritDoc} */
     @Override public QueryPlan go(IgniteRel root) {
         fragments = new ArrayList<>();
 
@@ -54,12 +56,13 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, Q
         return new QueryPlan(fragments);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteExchange rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet outTraits = rel.getTraitSet();
-
         IgniteRel input = visit(igniteRel(rel.getInput()));
+
         RelTraitSet inTraits = input.getTraitSet();
+        RelTraitSet outTraits = rel.getTraitSet();
 
         Fragment fragment = new Fragment(new IgniteSender(cluster, inTraits, input));
 
@@ -68,34 +71,44 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, Q
         return new IgniteReceiver(cluster, outTraits, input.getRowType(), fragment);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteFilter rel) {
         return visitChild(rel);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteProject rel) {
         return visitChild(rel);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
         return visitChildren(rel);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
         return rel;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteRel rel) {
         return rel.accept(this);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
         throw new AssertionError("An attempt to split an already split task.");
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteSender rel) {
         throw new AssertionError("An attempt to split an already split task.");
     }
 
+    /**
+     * Visits all children of a parent.
+     */
     private IgniteRel visitChildren(IgniteRel rel) {
         for (Ord<RelNode> input : Ord.zip(rel.getInputs()))
             visitChild(rel, input.i, igniteRel(input.e));
@@ -113,7 +126,7 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, Q
     }
 
     /**
-     * Visits a particular child of a parent.
+     * Visits a particular child of a parent and replaces the child if it was changed.
      */
     private void visitChild(IgniteRel parent, int i, IgniteRel child) {
         IgniteRel child2 = visit(child);

@@ -25,10 +25,20 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  *
  */
 public class RelTargetImpl implements RelTarget, Serializable {
+    /** */
     private final long exchangeId;
+
+    /** */
     private final NodesMapping mapping;
+
+    /** */
     private final IgniteDistribution distribution;
 
+    /**
+     * @param exchangeId Exchange ID.
+     * @param mapping Target mapping.
+     * @param distribution Target distribution.
+     */
     public RelTargetImpl(long exchangeId, NodesMapping mapping, IgniteDistribution distribution) {
         this.exchangeId = exchangeId;
         this.mapping = mapping;
