@@ -15,20 +15,33 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
 
     /// <summary>
-    /// Factory that produces instances of a specific type.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// Version attribute for <see cref="ClientOp"/>.
     /// </summary>
-    public interface IFactory<out T>
+    [AttributeUsage(AttributeTargets.Field)]
+    internal sealed class MinVersionAttribute : Attribute
     {
+        /** */
+        private readonly ClientProtocolVersion _version;
+
         /// <summary>
-        /// Creates an instance of type <typeparamref name="T" />.
+        /// Initializes a new instance of <see cref="MinVersionAttribute"/> class.
         /// </summary>
-        /// <returns>New instance of type <typeparamref name="T" />.</returns>
-        T CreateInstance();
+        public MinVersionAttribute(short major, short minor, short maintenance)
+        {
+            _version = new ClientProtocolVersion(major, minor, maintenance);
+        }
+
+        /// <summary>
+        /// Gets the version.
+        /// </summary>
+        public ClientProtocolVersion Version
+        {
+            get { return _version; }
+        }
     }
 }

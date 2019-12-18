@@ -15,20 +15,35 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Tests.Process
 {
-    using System;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Factory that produces instances of a specific type.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// Combines multiple readers.
     /// </summary>
-    public interface IFactory<out T>
+    public class IgniteProcessCompositeOutputReader : IIgniteProcessOutputReader
     {
+        /** */
+        private readonly IIgniteProcessOutputReader[] _readers;
+
         /// <summary>
-        /// Creates an instance of type <typeparamref name="T" />.
+        /// Initializes a new instance of <see cref="IgniteProcessCompositeOutputReader" /> class.
         /// </summary>
-        /// <returns>New instance of type <typeparamref name="T" />.</returns>
-        T CreateInstance();
+        /// <param name="readers">Nested readers.</param>
+        public IgniteProcessCompositeOutputReader(params IIgniteProcessOutputReader[] readers)
+        {
+            IgniteArgumentCheck.NotNull(readers, "readers");
+            _readers = readers;
+        }
+
+        public void OnOutput(Process proc, string data, bool err)
+        {
+            foreach (var reader in _readers)
+            {
+                reader.OnOutput(proc, data, err);
+            }
+        }
     }
 }

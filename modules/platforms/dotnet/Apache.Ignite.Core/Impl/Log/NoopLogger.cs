@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,40 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Impl.Log
 {
     using System;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
-    /// Factory that produces instances of a specific type.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// Logger that does not do anything - for convenience to avoid null checks.
     /// </summary>
-    public interface IFactory<out T>
+    internal class NoopLogger : ILogger
     {
         /// <summary>
-        /// Creates an instance of type <typeparamref name="T" />.
+        /// Singleton instance.
         /// </summary>
-        /// <returns>New instance of type <typeparamref name="T" />.</returns>
-        T CreateInstance();
+        public static readonly NoopLogger Instance = new NoopLogger();
+        
+        /// <summary>
+        /// Initializes a new instance of <see cref="NoopLogger"/> class.
+        /// </summary>
+        private NoopLogger()
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+            string nativeErrorInfo, Exception ex)
+        {
+            // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public bool IsEnabled(LogLevel level)
+        {
+            return false;
+        }
     }
 }

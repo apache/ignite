@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Log
 {
     using System;
 
     /// <summary>
-    /// Factory that produces instances of a specific type.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// <see cref="DateTime"/> abstraction for logging. 
     /// </summary>
-    public interface IFactory<out T>
+    public interface IDateTimeProvider
     {
         /// <summary>
-        /// Creates an instance of type <typeparamref name="T" />.
+        /// Gets current <see cref="DateTime"/>.
         /// </summary>
-        /// <returns>New instance of type <typeparamref name="T" />.</returns>
-        T CreateInstance();
+        DateTime Now();
     }
 }

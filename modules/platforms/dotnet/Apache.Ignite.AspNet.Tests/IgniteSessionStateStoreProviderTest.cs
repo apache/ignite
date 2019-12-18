@@ -20,6 +20,7 @@ namespace Apache.Ignite.AspNet.Tests
     using System;
     using System.Collections.Specialized;
     using System.Configuration;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
@@ -417,8 +418,12 @@ namespace Apache.Ignite.AspNet.Tests
             var statics = data.StaticObjects;
 
             // Modification method is internal.
-            statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(statics, new object[] {"int", typeof(int), false});
+            var method = statics.GetType()
+                .GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic);
+            
+            Debug.Assert(method != null);
+            
+            method.Invoke(statics, new object[] {"int", typeof(int), false});
 
             CheckStoreData(data);
 
