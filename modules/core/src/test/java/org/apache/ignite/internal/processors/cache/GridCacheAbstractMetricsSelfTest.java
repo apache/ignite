@@ -1460,53 +1460,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
-    /** */
-    @Test
-    public void testCommitTime() {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
-            return;
-
-        HistogramMetric m = metric("CommitTime");
-
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
-
-        try (Transaction tx = grid(0).transactions().txStart()) {
-            cache.put(1, 1);
-
-            tx.commit();
-        }
-
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
-    }
-
-    /** */
-    @Test
-    public void testRollbackTime() {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
-            return;
-
-        HistogramMetric m = metric("RollbackTime");
-
-        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
-
-        try (Transaction tx = grid(0).transactions().txStart()) {
-            cache.put(1, 1);
-
-            tx.rollback();
-        }
-
-        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
-    }
-
     /**
      * @param name Metric name to find.
      * @return Metric.
      */
-    private <M extends Metric> M metric(String name) {
+    protected  <M extends Metric> M metric(String name) {
         IgniteEx grid = grid(0);
 
         boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
