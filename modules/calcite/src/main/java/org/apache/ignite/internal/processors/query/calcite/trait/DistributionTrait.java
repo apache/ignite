@@ -34,46 +34,60 @@ import org.apache.calcite.util.mapping.Mappings;
 import static org.apache.calcite.rel.RelDistribution.Type.ANY;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.RANDOM_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.RANGE_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.ROUND_ROBIN_DISTRIBUTED;
 
 /**
- *
+ * Description of the physical distribution of a relational expression.
  */
 public final class DistributionTrait implements IgniteDistribution, Serializable {
+    /** */
     private static final Ordering<Iterable<Integer>> ORDERING =
         Ordering.<Integer>natural().lexicographical();
 
-    private RelDistribution.Type type;
+    /** */
+    private DistributionFunction function;
+
+    /** */
     private ImmutableIntList keys;
-    private DestinationFunctionFactory functionFactory;
 
-    public DistributionTrait() {
+    /**
+     * @param function Distribution function.
+     */
+    DistributionTrait(DistributionFunction function) {
+        assert function.type() != HASH_DISTRIBUTED;
+
+        this.function = function;
+
+        keys = ImmutableIntList.of();
     }
 
-    public DistributionTrait(RelDistribution.Type type, ImmutableIntList keys, DestinationFunctionFactory functionFactory) {
-        if (type == RANGE_DISTRIBUTED || type == ROUND_ROBIN_DISTRIBUTED)
-            throw new IllegalArgumentException("Distribution type " + type + " is unsupported.");
-
-        this.type = type;
+    /**
+     * @param keys Distribution keys.
+     * @param function Distribution function.
+     */
+    DistributionTrait(ImmutableIntList keys, DistributionFunction function) {
         this.keys = keys;
-        this.functionFactory = functionFactory;
+        this.function = function;
     }
 
+    /** {@inheritDoc} */
     @Override public RelDistribution.Type getType() {
-        return type;
+        return function.type();
     }
 
-    @Override public DestinationFunctionFactory destinationFunctionFactory() {
-        return functionFactory;
+    /** {@inheritDoc} */
+    @Override public DistributionFunction function() {
+        return function;
     }
 
+    /** {@inheritDoc} */
     @Override public ImmutableIntList getKeys() {
         return keys;
     }
 
+    /** {@inheritDoc} */
     @Override public void register(RelOptPlanner planner) {}
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -81,26 +95,28 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
         if (o instanceof DistributionTrait) {
             DistributionTrait that = (DistributionTrait) o;
 
-            return type == that.type
-                && Objects.equals(keys, that.keys)
-                && Objects.equals(functionFactory.key(), that.functionFactory.key());
+            return Objects.equals(function, that.function) && Objects.equals(keys, that.keys);
         }
 
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(type, keys);
+        return Objects.hash(function, keys);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return type + (type == Type.HASH_DISTRIBUTED ? "[" + functionFactory.key() + "]" + keys : "");
+        return function.name() + (function.type() == HASH_DISTRIBUTED ? keys : "");
     }
 
+    /** {@inheritDoc} */
     @Override public DistributionTraitDef getTraitDef() {
         return DistributionTraitDef.INSTANCE;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean satisfies(RelTrait trait) {
         if (trait == this)
             return true;
@@ -116,40 +132,24 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
         if (getType() == other.getType())
             return getType() != HASH_DISTRIBUTED
                 || (Objects.equals(keys, other.keys)
-                    && Objects.equals(functionFactory, other.functionFactory));
+                    && Objects.equals(function, other.function));
 
         return other.getType() == RANDOM_DISTRIBUTED && getType() == HASH_DISTRIBUTED;
-    }
-
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.writeObject(type);
-        out.writeObject(keys.toIntArray());
-        out.writeObject(functionFactory);
-    }
-
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        type = (Type) in.readObject();
-        keys = ImmutableIntList.of((int[])in.readObject());
-        functionFactory = (DestinationFunctionFactory) in.readObject();
-    }
-
-    private Object readResolve() throws ObjectStreamException {
-        return IgniteDistributions.canonize(this);
     }
 
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
         if (keys.isEmpty())
             return this;
 
-        assert type == HASH_DISTRIBUTED;
+        assert getType() == HASH_DISTRIBUTED;
 
         ImmutableIntList newKeys = IgniteDistributions.projectDistributionKeys(mapping, keys);
 
-        return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, functionFactory);
+        return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, function);
     }
 
     @Override public boolean isTop() {
-        return type == Type.ANY;
+        return getType() == Type.ANY;
     }
 
     @Override public int compareTo(RelMultipleTrait o) {
@@ -157,17 +157,32 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
 
         final IgniteDistribution distribution = (IgniteDistribution) o;
 
-        if (type == distribution.getType()
-            && (type == Type.HASH_DISTRIBUTED
-            || type == Type.RANGE_DISTRIBUTED)) {
+        if (getType() == distribution.getType() && getType() == Type.HASH_DISTRIBUTED) {
             int cmp = ORDERING.compare(getKeys(), distribution.getKeys());
 
             if (cmp == 0)
-                cmp = Integer.compare(functionFactory.key().hashCode(), distribution.destinationFunctionFactory().key().hashCode());
+                cmp = function.name().compareTo(distribution.function().name());
 
             return cmp;
         }
 
-        return type.compareTo(distribution.getType());
+        return getType().compareTo(distribution.getType());
+    }
+
+    /** */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.writeObject(keys.toIntArray());
+        out.writeObject(function);
+    }
+
+    /** */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        keys = ImmutableIntList.of((int[])in.readObject());
+        function = (DistributionFunction) in.readObject();
+    }
+
+    /** */
+    private Object readResolve() throws ObjectStreamException {
+        return IgniteDistributions.canonize(this);
     }
 }

@@ -21,8 +21,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- *
+ * Determines where to send a row to.
  */
 public interface DestinationFunction {
+    /**
+     * @param row Row.
+     * @return Target nodes list.
+     */
     List<UUID> destination(Object row);
 }

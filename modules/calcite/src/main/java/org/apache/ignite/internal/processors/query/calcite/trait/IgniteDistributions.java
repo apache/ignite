@@ -25,15 +25,15 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Any;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Broadcast;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Hash;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Random;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Singleton;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
-import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.RANDOM_DISTRIBUTED;
-import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
@@ -44,33 +44,33 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 public class IgniteDistributions {
     private static final int BEST_CNT = 3;
 
-    private static final IgniteDistribution BROADCAST_DISTR = new DistributionTrait(BROADCAST_DISTRIBUTED, ImmutableIntList.of(), AllTargetsFactory.INSTANCE);
-    private static final IgniteDistribution SINGLETON_DISTR = new DistributionTrait(SINGLETON, ImmutableIntList.of(), SingleTargetFactory.INSTANCE);
-    private static final IgniteDistribution RANDOM_DISTR = new DistributionTrait(RANDOM_DISTRIBUTED, ImmutableIntList.of(), RandomTargetFactory.INSTANCE);
-    private static final IgniteDistribution ANY_DISTR = new DistributionTrait(ANY, ImmutableIntList.of(), NoOpFactory.INSTANCE);
+    private static final IgniteDistribution BROADCAST = new DistributionTrait(Broadcast.INSTANCE);
+    private static final IgniteDistribution SINGLETON = new DistributionTrait(Singleton.INSTANCE);
+    private static final IgniteDistribution RANDOM = new DistributionTrait(Random.INSTANCE);
+    private static final IgniteDistribution ANY = new DistributionTrait(Any.INSTANCE);
 
     public static IgniteDistribution any() {
-        return canonize(ANY_DISTR);
+        return canonize(ANY);
     }
 
     public static IgniteDistribution random() {
-        return canonize(RANDOM_DISTR);
+        return canonize(RANDOM);
     }
 
     public static IgniteDistribution single() {
-        return canonize(SINGLETON_DISTR);
+        return canonize(SINGLETON);
     }
 
     public static IgniteDistribution broadcast() {
-        return canonize(BROADCAST_DISTR);
+        return canonize(BROADCAST);
     }
 
     public static IgniteDistribution hash(List<Integer> keys) {
-        return canonize(new DistributionTrait(HASH_DISTRIBUTED, ImmutableIntList.copyOf(keys), HashFunctionFactory.INSTANCE));
+        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), Hash.INSTANCE));
     }
 
-    public static IgniteDistribution hash(List<Integer> keys, DestinationFunctionFactory factory) {
-        return canonize(new DistributionTrait(HASH_DISTRIBUTED, ImmutableIntList.copyOf(keys), factory));
+    public static IgniteDistribution hash(List<Integer> keys, DistributionFunction factory) {
+        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), factory));
     }
 
     public static IgniteDistribution canonize(IgniteDistribution distr) {
@@ -143,17 +143,17 @@ public class IgniteDistributions {
         IgniteDistribution out, left, right;
 
         if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.keys()))) {
-            HashSet<DestinationFunctionFactory> factories = U.newHashSet(3);
+            HashSet<DistributionFunction> factories = U.newHashSet(3);
 
             if (leftIn.getKeys().equals(joinInfo.leftKeys))
-                factories.add(leftIn.destinationFunctionFactory());
+                factories.add(leftIn.function());
 
             if (rightIn.getKeys().equals(joinInfo.rightKeys))
-                factories.add(rightIn.destinationFunctionFactory());
+                factories.add(rightIn.function());
 
-            factories.add(HashFunctionFactory.INSTANCE);
+            factories.add(Hash.INSTANCE);
 
-            for (DestinationFunctionFactory factory : factories) {
+            for (DistributionFunction factory : factories) {
                 out = hash(joinInfo.leftKeys, factory);
 
                 left = hash(joinInfo.leftKeys, factory); right = hash(joinInfo.rightKeys, factory);

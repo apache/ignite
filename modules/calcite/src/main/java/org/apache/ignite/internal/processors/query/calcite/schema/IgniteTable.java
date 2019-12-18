@@ -39,7 +39,7 @@ import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.AffinityFactory;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -98,7 +98,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         if (key == null)
             return IgniteDistributions.broadcast();
 
-        return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(CU.cacheId(cacheName), key));
+        return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.Affinity(CU.cacheId(cacheName), key));
     }
 
     protected Object identityKey() {

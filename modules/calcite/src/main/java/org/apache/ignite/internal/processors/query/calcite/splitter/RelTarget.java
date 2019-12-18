@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
@@ -34,7 +34,7 @@ public interface RelTarget {
 
     /**
      * Returns target mapping. It's used in calculation where to send a particular row to.
-     * See {@link DestinationFunctionFactory#create(PlannerContext, NodesMapping, ImmutableIntList)}
+     * See {@link DistributionFunction#toDestination(PlannerContext, NodesMapping, ImmutableIntList)}
      *
      * @return Target mapping.
      */

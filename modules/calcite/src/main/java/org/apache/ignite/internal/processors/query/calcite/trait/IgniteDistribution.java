@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 
 /**
@@ -25,9 +26,12 @@ import org.apache.calcite.util.mapping.Mappings;
  */
 public interface IgniteDistribution extends RelDistribution {
     /**
-     * @return Factory, returns a mapping function, that says where to send a particular row.
+     * @return Distribution function.
      */
-    DestinationFunctionFactory destinationFunctionFactory();
+    DistributionFunction function();
+
+    /** {@inheritDoc} */
+    @Override ImmutableIntList getKeys();
 
     /** {@inheritDoc} */
     @Override IgniteDistribution apply(Mappings.TargetMapping mapping);

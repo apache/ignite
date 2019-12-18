@@ -26,7 +26,6 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.ContextValue.PLANNER_CONTEXT;
@@ -85,8 +83,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         NodesMapping mapping = rel.target().mapping();
         List<UUID> targets = mapping.nodes();
         IgniteDistribution distribution = rel.target().distribution();
-        DestinationFunctionFactory destFactory = distribution.destinationFunctionFactory();
-        DestinationFunction function = destFactory.create(ctx, mapping, ImmutableIntList.copyOf(distribution.getKeys()));
+        DestinationFunction function = distribution.function().toDestination(ctx, mapping, distribution.getKeys());
 
         Outbox<Object[]> res = new Outbox<>(id, exchangeId, targets, function);
 

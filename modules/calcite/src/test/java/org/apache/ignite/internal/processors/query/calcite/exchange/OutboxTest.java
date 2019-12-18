@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
 import org.apache.ignite.internal.processors.query.calcite.exec.Source;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.SingleTargetFactory;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         NodesMapping mapping = new NodesMapping(Collections.singletonList(nodeId), null, NodesMapping.DEDUPLICATED);
 
         targets = mapping.nodes();
-        func = SingleTargetFactory.INSTANCE.create(null, mapping, ImmutableIntList.of());
+        func = DistributionFunction.Singleton.INSTANCE.toDestination(null, mapping, ImmutableIntList.of());
     }
 
 
