@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  */
 public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 2132562226001839898L;
 
     /** */
     static final int BACKUP_ACK_THRESHOLD =
