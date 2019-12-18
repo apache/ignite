@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartT
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryWithConcurrentRollbackTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnMapOnInvalidTopologyTest;
@@ -130,8 +129,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         //suite.addTestSuite(IgniteCacheClientMultiNodeUpdateTopologyLockTest.class);
 
         suite.addTestSuite(TxRollbackOnMapOnInvalidTopologyTest.class);
-
-        suite.addTestSuite(TxRecoveryWithConcurrentRollbackTest.class);
 
         return suite;
     }
