@@ -122,14 +122,14 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         types[cnt] = SimpleType.INTEGER;
 
         try {
-            rowType = new CompositeType(sysView.rowClass().getName(),
+            rowType = new CompositeType(sysView.name(),
                 sysView.description(),
                 fields,
                 fields,
                 types);
 
             info = new OpenMBeanInfoSupport(
-                sysView.rowClass().getName(),
+                sysView.name(),
                 sysView.description(),
                 new OpenMBeanAttributeInfo[] {
                     new OpenMBeanAttributeInfoSupport(VIEWS, VIEWS, rowType, true, false, false)
@@ -140,7 +140,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
             );
 
             sysViewType = new TabularType(
-                sysView.rowClass().getName(),
+                sysView.name(),
                 sysView.description(),
                 rowType,
                 new String[] {ID}

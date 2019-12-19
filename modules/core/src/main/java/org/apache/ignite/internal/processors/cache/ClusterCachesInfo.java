@@ -50,6 +50,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -162,12 +164,12 @@ public class ClusterCachesInfo {
         this.ctx = ctx;
 
         ctx.systemView().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
-            CacheView.class,
+            new CacheViewWalker(),
             registeredCaches.values(),
             CacheView::new);
 
         ctx.systemView().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
-            CacheGroupView.class,
+            new CacheGroupViewWalker(),
             registeredCacheGrps.values(),
             CacheGroupView::new);
 
