@@ -184,9 +184,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
 
-    /** */
-    private static final IgniteProductVersion EXCHANGE_PROTOCOL_3_SINCE = IgniteProductVersion.fromString("2.9.0");
-
     /** Stripe id for cluster activation event. */
     private static final int CLUSTER_ACTIVATION_EVT_STRIPE_ID = Integer.MAX_VALUE;
 
@@ -827,12 +824,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Supported exchange protocol version.
      */
     public static int exchangeProtocolVersion(IgniteProductVersion ver) {
-        if (ver.compareToIgnoreTimestamp(EXCHANGE_PROTOCOL_3_SINCE) >= 0)
-            return 3;
-        else if (ver.compareToIgnoreTimestamp(EXCHANGE_PROTOCOL_2_SINCE) >= 0)
+        if (ver.compareToIgnoreTimestamp(EXCHANGE_PROTOCOL_2_SINCE) >= 0)
             return 2;
-        else
-            return 1;
+
+        return 1;
     }
 
     /**

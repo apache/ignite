@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 
@@ -59,9 +61,12 @@ public class ExchangeContext {
      * @param fut Exchange future.
      */
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
-        int ver = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
+        int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (!compatibilityNode && ver > 2 && fut.wasRebalanced() && fut.isBaselineNodeFailed()) {
+        if (!compatibilityNode &&
+            fut.wasRebalanced() &&
+            fut.isBaselineNodeFailed() &&
+            allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH)) {
             exchangeFreeSwitch = true;
             merge = false;
         }
@@ -73,10 +78,10 @@ public class ExchangeContext {
             boolean startCaches = fut.exchangeId().isJoined() &&
                 fut.sharedContext().cache().hasCachesReceivedFromJoin(fut.exchangeId().eventNode());
 
-            fetchAffOnJoin = ver == 1;
+            fetchAffOnJoin = protocolVer == 1;
 
             merge = !startCaches &&
-                ver > 1 &&
+                protocolVer > 1 &&
                 fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT;
         }
 
