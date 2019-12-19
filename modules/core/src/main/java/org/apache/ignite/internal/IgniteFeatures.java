@@ -75,8 +75,11 @@ public enum IgniteFeatures {
     /** LRT system and user time dump settings.  */
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
-    /** Master key change.  */
-    MASTER_KEY_CHANGE(19);
+    /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
+    PME_FREE_SWITCH(19),
+
+    /** Master key change. */
+    MASTER_KEY_CHANGE(20);
 
     /**
      * Unique feature identifier.
