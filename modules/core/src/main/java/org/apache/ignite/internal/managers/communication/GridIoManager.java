@@ -2707,14 +2707,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rctx.lastState = rctx.lastState == null ?
                 new TransmissionMeta(ex) : rctx.lastState.error(ex);
 
-            rctx.hnd.onException(rctx.rmtNodeId, ex);
-
             if (X.hasCause(ex, TransmissionCancelledException.class)) {
                 if (log.isInfoEnabled())
                     log.info("Transmission receiver has been cancelled [rctx=" + rctx + ']');
             }
-            else
+            else {
+                rctx.hnd.onException(rctx.rmtNodeId, ex);
+
                 U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
+            }
         }
     }
 
