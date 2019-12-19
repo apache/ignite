@@ -29,7 +29,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1673,10 +1673,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final boolean exists;
 
         /** */
-        private final AtomicBoolean init = new AtomicBoolean();
-
-        /** */
-        private final CountDownLatch latch = new CountDownLatch(1);
+        private final AtomicReference<CountDownLatch> init = new AtomicReference<>();
 
         /**
          * @param partId Partition.
@@ -1733,7 +1730,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return null;
             }
 
-            if (init.compareAndSet(false, true)) {
+            CountDownLatch latch = new CountDownLatch(1);
+
+            if (init.compareAndSet(null, latch)) {
                 IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
                 dbMgr.checkpointReadLock();
@@ -1929,17 +1928,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     throw ex;
                 }
                 finally {
+                    // Initialization is finished.
+                    init.set(null);
+
                     latch.countDown();
 
                     dbMgr.checkpointReadUnlock();
                 }
             }
             else {
-                U.await(latch);
+                latch = init.get();
 
-                // todo correct sync on re-initialization
-                while (delegate == null)
-                    U.sleep(400);
+                // Wait for initialization to complete.
+                if (latch != null)
+                    U.await(latch);
 
                 delegate0 = delegate;
 
@@ -2097,17 +2099,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public void reinit() {
             try {
                 // todo hard thinking about checkExists flag + think about initLatch
-//                assert delegate == null : "p=" + partId;
-//                assert !init.get();
-                if (init.compareAndSet(true, false)) {
-                    delegate = null;
-
-                    // TODO add test when the storage is not inited and the current method called
-                }
+                delegate = null;
 
                 CacheDataStore delegate0 = init0(false);
 
-                assert delegate != null && delegate0 != null;
+                assert delegate0 != null;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2116,12 +2112,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         public void close() {
             //todo sync properly
-            if (init.compareAndSet(true, false))
-                delegate = null;
+            CountDownLatch latch = init.get();
 
-            assert delegate == null : "grp=" + grp.cacheOrGroupName() + " p=" + partId;
+            if (latch != null)
+                U.awaitQuiet(latch);
+
+            delegate = null;
         }
-
 
         /** {@inheritDoc} */
         @Override public int partId() {
