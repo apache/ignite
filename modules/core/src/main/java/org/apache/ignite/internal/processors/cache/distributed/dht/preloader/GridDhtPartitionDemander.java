@@ -60,9 +60,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
-import org.apache.ignite.internal.processors.metric.impl.IntGauge;
-import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -123,21 +120,6 @@ public class GridDhtPartitionDemander {
     /** Cache rebalance topic. */
     private final Object rebalanceTopic;
 
-    /** Number of rebalanced partitions left. */
-    private final IntGauge rebalancingPartitionsLeft;
-
-    /** Rebalanced keys count. */
-    private final AtomicLongMetric rebalancingReceivedKeys;
-
-    /** Rebalanced bytes count. */
-    private final AtomicLongMetric rebalancingReceivedBytes;
-
-    /** Rebalancing start time. */
-    private final AtomicLongMetric rebalancingStartTime;
-
-    /** Rebalancing finish time. */
-    private final LongGauge rebalancingFinishTime;
-
     /**
      * @param grp Ccahe group.
      */
@@ -173,21 +155,17 @@ public class GridDhtPartitionDemander {
                         .mapToInt(Collection::size)
                         .sum(), "Number of rebalanced partitions left.");
 
-        rebalancingPartitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
+        mreg.register("RebalancingReceivedKeys",
+            () -> rebalanceFut.rebalancingReceivedKeys.get(), "Number of already rebalanced keys.");
 
-        rebalancingReceivedKeys = mreg.longMetric("RebalancingReceivedKeys",
-            "Number of already rebalanced keys.");
+        mreg.register("RebalancingReceivedBytes",
+            () -> rebalanceFut.rebalancingReceivedBytes.get(), "Number of already rebalanced bytes.");
 
-        rebalancingReceivedBytes = mreg.longMetric("RebalancingReceivedBytes",
-            "Number of already rebalanced bytes.");
+        mreg.register("RebalancingStartTime",
+            () -> rebalanceFut.rebalancingStartTime, "Rebalancing start time.");
 
-        rebalancingStartTime = mreg.longMetric("RebalancingStartTime",
-            "Rebalancing start time.");
-
-        rebalancingStartTime.value(-1L);
-
-        rebalancingFinishTime = mreg.register("RebalancingFinishTime",
-            () -> rebalanceFut.rebalancingFinishTime.get(), "Rebalancing finish time.");
+        mreg.register("RebalancingFinishTime",
+            () -> rebalanceFut.rebalancingFinishTime, "Rebalancing finish time.");
     }
 
     /**
@@ -493,11 +471,8 @@ public class GridDhtPartitionDemander {
                 if (fut.isDone())
                     break;
 
-                if (rebalancingStartTime.value() == -1) {
-                    clearRebalanceCounters();
-
-                    rebalancingStartTime.value(System.currentTimeMillis());
-                }
+                if (rebalanceFut.rebalancingStartTime == -1)
+                    rebalanceFut.rebalancingStartTime = System.currentTimeMillis();
 
                 parts = fut.remaining.get(node.id());
 
@@ -553,21 +528,6 @@ public class GridDhtPartitionDemander {
                 }, true));
             }
         }
-    }
-
-    /**
-     * Clear rebalance counters.
-     */
-    private void clearRebalanceCounters() {
-        rebalancingStartTime.value(-1);
-
-        rebalanceFut.rebalancingFinishTime.set(-1);
-
-        rebalancingReceivedKeys.reset();
-
-        rebalancingReceivedBytes.reset();
-
-        rebalancingPartitionsLeft.reset();
     }
 
     /**
@@ -755,7 +715,7 @@ public class GridDhtPartitionDemander {
 
             final GridDhtPartitionTopology top = grp.topology();
 
-            rebalancingReceivedBytes.add(supplyMsg.messageSize());
+            rebalanceFut.rebalancingReceivedBytes.addAndGet(supplyMsg.messageSize());
 
             if (grp.sharedGroup()) {
                 for (GridCacheContext cctx : grp.caches()) {
@@ -1002,7 +962,7 @@ public class GridDhtPartitionDemander {
                         if (cctx != null) {
                             mvccPreloadEntry(cctx, node, entryHist, topVer, p);
 
-                            rebalancingReceivedKeys.increment();
+                            rebalanceFut.rebalancingReceivedKeys.incrementAndGet();
 
                             updateGroupMetrics();
                         }
@@ -1052,7 +1012,7 @@ public class GridDhtPartitionDemander {
         assert !grp.mvccEnabled();
         assert ctx.database().checkpointLockIsHeldByThread();
 
-        rebalancingReceivedKeys.increment();
+        rebalanceFut.rebalancingReceivedKeys.incrementAndGet();
 
         updateGroupMetrics();
 
@@ -1264,8 +1224,17 @@ public class GridDhtPartitionDemander {
         /** Historical rebalance set. */
         private final Set<Integer> historical = new HashSet<>();
 
+        /** Rebalanced bytes count. */
+        private final AtomicLong rebalancingReceivedBytes = new AtomicLong(0);
+
+        /** Rebalanced keys count. */
+        private final AtomicLong rebalancingReceivedKeys = new AtomicLong(0);
+
+        /** Rebalancing start time. */
+        private volatile long rebalancingStartTime = -1;
+
         /** Rebalancing finish time. */
-        private final AtomicLong rebalancingFinishTime = new AtomicLong(-1);
+        private volatile long rebalancingFinishTime = -1;
 
         /**
          * @param grp Cache group.
@@ -1384,9 +1353,12 @@ public class GridDhtPartitionDemander {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            rebalancingFinishTime.set(U.currentTimeMillis());
+            boolean doneOnThisCall = super.onDone(res, err);
 
-            return super.onDone(res, err);
+            if (doneOnThisCall)
+                rebalancingFinishTime = U.currentTimeMillis();
+
+            return doneOnThisCall;
         }
 
         /**
@@ -1402,7 +1374,7 @@ public class GridDhtPartitionDemander {
 
                 cleanupRemoteContexts(nodeId);
 
-                IgniteDhtDemandedPartitionsMap rmvd = remaining.remove(nodeId);
+                remaining.remove(nodeId);
 
                 onDone(false); // Finishing rebalance future as non completed.
 
