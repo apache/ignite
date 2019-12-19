@@ -120,7 +120,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                 "&sslClientCertificateKeyStorePassword=123456" +
                 "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456" +
-                "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory")) {
+                "&userAttributesFactory=" +
+                "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory")) {
                 checkConnection(conn);
             }
         }
@@ -179,7 +180,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory");
+                        "&userAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory");
 
                     return null;
                 }
@@ -210,7 +212,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
+                        "&userAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
 
                     return null;
                 }
@@ -239,7 +242,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributes=org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
+                        "&userAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
 
                     return null;
                 }

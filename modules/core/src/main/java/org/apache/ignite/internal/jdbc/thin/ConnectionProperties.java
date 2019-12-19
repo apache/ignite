@@ -438,12 +438,12 @@ public interface ConnectionProperties {
      *
      * @return Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
      */
-    public String getUserAttributes();
+    public String getUserAttributesFactory();
 
     /**
      * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
      *
      * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
      */
-    public void setUserAttributes(String sslFactory);
+    public void setUserAttributesFactory(String sslFactory);
 }

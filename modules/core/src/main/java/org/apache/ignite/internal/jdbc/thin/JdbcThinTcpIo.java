@@ -259,7 +259,7 @@ public class JdbcThinTcpIo {
 
             JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
 
-            String userAttrs = connProps.getUserAttributes();
+            String userAttrs = connProps.getUserAttributesFactory();
 
             if (F.isEmpty(userAttrs))
                 writer.writeMap(null);

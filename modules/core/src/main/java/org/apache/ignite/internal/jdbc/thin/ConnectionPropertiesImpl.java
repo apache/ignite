@@ -177,7 +177,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
     /** SSL: Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;. */
-    private StringProperty userAttrs = new StringProperty("userAttributes",
+    private StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
         "Custom class name that implements Factory<Map<String, Object>> (user attributes)", null, null, false, null);
 
     /** User name to authenticate the client on the server side. */
@@ -213,7 +213,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
-        userAttrs,
+        userAttrsFactory,
         user, passwd,
         dataPageScanEnabled,
         affinityAwareness,
@@ -544,13 +544,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String getUserAttributes() {
-        return userAttrs.value();
+    @Override public String getUserAttributesFactory() {
+        return userAttrsFactory.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setUserAttributes(String cls) {
-        userAttrs.setValue(cls);
+    @Override public void setUserAttributesFactory(String cls) {
+        userAttrsFactory.setValue(cls);
     }
 
     /**
