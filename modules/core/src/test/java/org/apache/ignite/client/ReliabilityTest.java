@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.Repeat;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -55,6 +56,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Thin clint failover.
      */
+    @Repeat(100)
     @Test
     public void testFailover() throws Exception {
         final int CLUSTER_SIZE = 3;
@@ -132,7 +134,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Test single server failover.
      */
-    @Test
+//    @Test
     public void testSingleServerFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
@@ -161,7 +163,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Test that failover doesn't lead to silent query inconsistency.
      */
-    @Test
+//    @Test
     public void testQueryConsistencyOnFailover() throws Exception {
         int CLUSTER_SIZE = 2;
 
@@ -199,7 +201,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Test that client works properly with servers txId intersection.
      */
-    @Test
+//    @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
         int CLUSTER_SIZE = 2;
@@ -265,7 +267,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
     /**
      * Test reconnection throttling.
      */
-    @Test
+//    @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testReconnectionThrottling() throws Exception {
         int throttlingRetries = 5;
