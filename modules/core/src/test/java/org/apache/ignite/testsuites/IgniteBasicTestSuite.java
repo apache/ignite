@@ -21,6 +21,7 @@ import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
@@ -242,6 +243,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
+        suite.addTestSuite(FailureProcessorLoggingTest.class);
 
         suite.addTestSuite(RebalanceWithDifferentThreadPoolSizeTest.class);
 
