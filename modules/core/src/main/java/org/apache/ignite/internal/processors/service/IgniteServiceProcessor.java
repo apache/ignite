@@ -55,6 +55,7 @@ import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.systemview.walker.ServiceViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -194,7 +195,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         super(ctx);
 
         ctx.systemView().registerView(SVCS_VIEW, SVCS_VIEW_DESC,
-            ServiceView.class,
+            new ServiceViewWalker(),
             registeredServices.values(),
             ServiceView::new);
     }

@@ -162,7 +162,6 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param sysView System view.
      * @param <R> Row type.
      * @return SQL column array for {@code rowClass}.
-     * @see SystemView#rowClass()
      */
     private static <R> Column[] columnsList(SystemView<R> sysView) {
         Column[] cols = new Column[sysView.walker().count()];
