@@ -213,10 +213,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private static final String CACHE_NAMES_AND_OPERATION_FORMAT = "[cacheNames=%s, operation=%s]";
 
-    /** System view name. */
+    /** System view name for page lists. */
     public static final String CACHE_GRP_PAGE_LIST_VIEW = "cacheGroupPageLists";
 
-    /** System view description. */
+    /** System view description for page lists. */
     public static final String CACHE_GRP_PAGE_LIST_VIEW_DESC = "Cache group page lists";
 
     /** Enables start caches in parallel. */

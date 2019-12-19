@@ -223,8 +223,9 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.isPrimitive())
+            if (!retClazz.isPrimitive()) {
                 line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class, row." + m.getName() + "());";
+            }
             else if (retClazz == boolean.class)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getName() + "());";
             else if (retClazz == char.class)
