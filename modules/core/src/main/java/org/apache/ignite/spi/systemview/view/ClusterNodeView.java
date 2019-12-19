@@ -19,7 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 
@@ -41,7 +41,7 @@ public class ClusterNodeView {
      * @return Node id.
      * @see ClusterNode#id()
      */
-    @ViewAttribute
+    @Order
     public UUID nodeId() {
         return n.id();
     }
@@ -50,7 +50,7 @@ public class ClusterNodeView {
      * @return Node consistend id.
      * @see ClusterNode#consistentId()
      */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public String consistentId() {
         return toStringSafe(n.consistentId());
     }
@@ -59,7 +59,7 @@ public class ClusterNodeView {
      * @return Addresses.
      * @see ClusterNode#addresses()
      * */
-    @ViewAttribute(order = 6)
+    @Order(6)
     public String addresses() {
         return toStringSafe(n.addresses());
     }
@@ -68,7 +68,7 @@ public class ClusterNodeView {
      * @return Addresses string.
      * @see ClusterNode#hostNames()
      */
-    @ViewAttribute(order = 7)
+    @Order(7)
     public String hostnames() {
         return toStringSafe(n.hostNames());
     }
@@ -77,7 +77,7 @@ public class ClusterNodeView {
      * @return Topology order.
      * @see ClusterNode#order()
      */
-    @ViewAttribute(order = 5)
+    @Order(5)
     public long nodeOrder() {
         return n.order();
     }
@@ -86,7 +86,7 @@ public class ClusterNodeView {
      * @return Version.
      * @see ClusterNode#version()
      */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String version() {
         return n.version().toString();
     }
@@ -103,7 +103,7 @@ public class ClusterNodeView {
      * @return {@code True} if node is daemon.
      * @see ClusterNode#isDaemon()
      */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public boolean isDaemon() {
         return n.isDaemon();
     }
@@ -112,7 +112,7 @@ public class ClusterNodeView {
      * @return {@code True} if node is client.
      * @see ClusterNode#isClient() ()
      */
-    @ViewAttribute(order = 3)
+    @Order(3)
     public boolean isClient() {
         return n.isClient();
     }

@@ -31,17 +31,17 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ComputeTaskViewWalker implements SystemViewRowAttributeWalker<ComputeTaskView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinityCacheName", String.class, false);
-        v.accept(1, "affinityPartitionId", int.class, false);
-        v.accept(2, "endTime", long.class, false);
-        v.accept(3, "execName", String.class, false);
-        v.accept(4, "internal", boolean.class, false);
-        v.accept(5, "jobId", IgniteUuid.class, false);
-        v.accept(6, "startTime", long.class, false);
-        v.accept(7, "taskClassName", String.class, false);
-        v.accept(8, "taskName", String.class, false);
-        v.accept(9, "taskNodeId", UUID.class, false);
-        v.accept(10, "userVersion", String.class, false);
+        v.accept(0, "affinityCacheName", String.class);
+        v.accept(1, "affinityPartitionId", int.class);
+        v.accept(2, "endTime", long.class);
+        v.accept(3, "execName", String.class);
+        v.accept(4, "internal", boolean.class);
+        v.accept(5, "jobId", IgniteUuid.class);
+        v.accept(6, "startTime", long.class);
+        v.accept(7, "taskClassName", String.class);
+        v.accept(8, "taskName", String.class);
+        v.accept(9, "taskNodeId", UUID.class);
+        v.accept(10, "userVersion", String.class);
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -36,15 +39,25 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
     /** Filter key for attribute "bucketNumber" */
     public static final String BUCKET_NUMBER_FILTER = "bucketNumber";
 
+    /** List of filtrable attributes. */
+    private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
+        "cacheGroupId", "partId", "bucketNumber"
+    ));
+
+    /** {@inheritDoc} */
+    @Override public List<String> filtrableAttributes() {
+        return FILTRABLE_ATTRS;
+    }
+
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "cacheGroupId", int.class, true);
-        v.accept(1, "partId", int.class, true);
-        v.accept(2, "name", String.class, false);
-        v.accept(3, "bucketNumber", int.class, true);
-        v.accept(4, "bucketSize", long.class, false);
-        v.accept(5, "stripesCount", int.class, false);
-        v.accept(6, "cachedPagesCount", int.class, false);
+        v.accept(0, "cacheGroupId", int.class);
+        v.accept(1, "partId", int.class);
+        v.accept(2, "name", String.class);
+        v.accept(3, "bucketNumber", int.class);
+        v.accept(4, "bucketSize", long.class);
+        v.accept(5, "stripesCount", int.class);
+        v.accept(6, "cachedPagesCount", int.class);
     }
 
     /** {@inheritDoc} */

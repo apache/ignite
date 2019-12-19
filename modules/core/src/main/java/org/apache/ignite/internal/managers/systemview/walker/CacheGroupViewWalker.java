@@ -33,22 +33,22 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class CacheGroupViewWalker implements SystemViewRowAttributeWalker<CacheGroupView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "cacheGroupName", String.class, false);
-        v.accept(1, "cacheCount", int.class, false);
-        v.accept(2, "dataRegionName", String.class, false);
-        v.accept(3, "cacheMode", CacheMode.class, false);
-        v.accept(4, "atomicityMode", CacheAtomicityMode.class, false);
-        v.accept(5, "affinity", String.class, false);
-        v.accept(6, "backups", int.class, false);
-        v.accept(7, "cacheGroupId", int.class, false);
-        v.accept(8, "isShared", boolean.class, false);
-        v.accept(9, "nodeFilter", String.class, false);
-        v.accept(10, "partitionLossPolicy", PartitionLossPolicy.class, false);
-        v.accept(11, "partitionsCount", int.class, false);
-        v.accept(12, "rebalanceDelay", long.class, false);
-        v.accept(13, "rebalanceMode", CacheRebalanceMode.class, false);
-        v.accept(14, "rebalanceOrder", int.class, false);
-        v.accept(15, "topologyValidator", String.class, false);
+        v.accept(0, "cacheGroupName", String.class);
+        v.accept(1, "cacheCount", int.class);
+        v.accept(2, "dataRegionName", String.class);
+        v.accept(3, "cacheMode", CacheMode.class);
+        v.accept(4, "atomicityMode", CacheAtomicityMode.class);
+        v.accept(5, "affinity", String.class);
+        v.accept(6, "backups", int.class);
+        v.accept(7, "cacheGroupId", int.class);
+        v.accept(8, "isShared", boolean.class);
+        v.accept(9, "nodeFilter", String.class);
+        v.accept(10, "partitionLossPolicy", PartitionLossPolicy.class);
+        v.accept(11, "partitionsCount", int.class);
+        v.accept(12, "rebalanceDelay", long.class);
+        v.accept(13, "rebalanceMode", CacheRebalanceMode.class);
+        v.accept(14, "rebalanceOrder", int.class);
+        v.accept(15, "topologyValidator", String.class);
     }
 
     /** {@inheritDoc} */

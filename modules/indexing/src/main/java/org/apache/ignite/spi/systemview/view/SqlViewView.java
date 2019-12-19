@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
 
@@ -34,19 +34,19 @@ public class SqlViewView {
     }
 
     /** View name. */
-    @ViewAttribute
+    @Order
     public String name() {
         return view.getTableName();
     }
 
     /** View description. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String description() {
         return view.getDescription();
     }
 
     /** View schema. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public String schema() {
         return QueryUtils.SCHEMA_SYS;
     }

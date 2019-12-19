@@ -31,13 +31,13 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlQueryViewWalker implements SystemViewRowAttributeWalker<SqlQueryView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "queryId", String.class, false);
-        v.accept(1, "sql", String.class, false);
-        v.accept(2, "originNodeId", UUID.class, false);
-        v.accept(3, "startTime", Date.class, false);
-        v.accept(4, "duration", long.class, false);
-        v.accept(5, "local", boolean.class, false);
-        v.accept(6, "schemaName", String.class, false);
+        v.accept(0, "queryId", String.class);
+        v.accept(1, "sql", String.class);
+        v.accept(2, "originNodeId", UUID.class);
+        v.accept(3, "startTime", Date.class);
+        v.accept(4, "duration", long.class);
+        v.accept(5, "local", boolean.class);
+        v.accept(6, "schemaName", String.class);
     }
 
     /** {@inheritDoc} */

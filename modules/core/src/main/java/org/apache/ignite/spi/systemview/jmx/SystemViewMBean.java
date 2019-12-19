@@ -101,7 +101,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         List<Integer> filterFieldIdxs = new ArrayList<>(cnt);
 
         sysView.walker().visitAll(new AttributeVisitor() {
-            @Override public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering) {
+            @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
 
                 if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
@@ -135,7 +135,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                 else
                     types[idx] = SimpleType.STRING;
 
-                if (filtering)
+                if (sysView.walker().filtrableAttributes().contains(name))
                     filterFieldIdxs.add(idx);
             }
         });

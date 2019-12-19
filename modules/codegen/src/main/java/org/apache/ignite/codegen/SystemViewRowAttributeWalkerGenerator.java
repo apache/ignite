@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PagesListView;
@@ -160,15 +162,36 @@ public class SystemViewRowAttributeWalkerGenerator {
         code.add(" */");
         code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
 
+        List<String> filtrableAttrs = new ArrayList<>();
+
         forEachMethod(clazz, (m, i) -> {
-            if (m.getAnnotation(ViewAttribute.class) != null && m.getAnnotation(ViewAttribute.class).filtering()) {
+            if (m.getAnnotation(Filtrable.class) != null) {
                 code.add(TAB + "/** Filter key for attribute \"" + m.getName() + "\" */");
                 code.add(TAB + "public static final String " + m.getName()
                     .replaceAll("(\\p{Upper})", "_$1")
                     .toUpperCase() + "_FILTER = \"" + m.getName() + "\";");
                 code.add("");
+
+                filtrableAttrs.add(m.getName());
             }
         });
+
+        if (!filtrableAttrs.isEmpty()) {
+            addImport(imports, F.class);
+            addImport(imports, List.class);
+            addImport(imports, Collections.class);
+
+            code.add(TAB + "/** List of filtrable attributes. */");
+            code.add(TAB + "private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(");
+            code.add(TAB + TAB + '\"' + String.join("\", \"", filtrableAttrs) + '\"');
+            code.add(TAB + "));");
+            code.add("");
+            code.add(TAB + "/** {@inheritDoc} */");
+            code.add(TAB + "@Override public List<String> filtrableAttributes() {");
+            code.add(TAB + TAB + "return FILTRABLE_ATTRS;");
+            code.add(TAB + "}");
+            code.add("");
+        }
 
         code.add(TAB + "/** {@inheritDoc} */");
         code.add(TAB + "@Override public void visitAll(AttributeVisitor v) {");
@@ -183,10 +206,7 @@ public class SystemViewRowAttributeWalkerGenerator {
             if (!retClazz.isPrimitive() && !retClazz.getName().startsWith("java.lang"))
                 addImport(imports, retClazz);
 
-            boolean filtering = m.getAnnotation(ViewAttribute.class) != null &&
-                m.getAnnotation(ViewAttribute.class).filtering();
-
-            line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class, " + filtering + ");";
+            line += "v.accept(" + i + ", \"" + name + "\", " + retClazz.getSimpleName() + ".class);";
 
             code.add(line);
         });
@@ -303,13 +323,13 @@ public class SystemViewRowAttributeWalkerGenerator {
             if (retClazz == void.class)
                 continue;
 
-            if (m.getAnnotation(ViewAttribute.class) != null)
+            if (m.getAnnotation(Order.class) != null)
                 ordered.add(m);
             else
                 notOrdered.add(m);
         }
 
-        Collections.sort(ordered, Comparator.comparingInt(m -> m.getAnnotation(ViewAttribute.class).order()));
+        Collections.sort(ordered, Comparator.comparingInt(m -> m.getAnnotation(Order.class).value()));
         Collections.sort(notOrdered, Comparator.comparing(Method::getName));
 
         for (int i = 0; i < ordered.size(); i++)

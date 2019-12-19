@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -30,13 +33,23 @@ public class PagesListViewWalker implements SystemViewRowAttributeWalker<PagesLi
     /** Filter key for attribute "bucketNumber" */
     public static final String BUCKET_NUMBER_FILTER = "bucketNumber";
 
+    /** List of filtrable attributes. */
+    private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
+        "bucketNumber"
+    ));
+
+    /** {@inheritDoc} */
+    @Override public List<String> filtrableAttributes() {
+        return FILTRABLE_ATTRS;
+    }
+
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "name", String.class, false);
-        v.accept(1, "bucketNumber", int.class, true);
-        v.accept(2, "bucketSize", long.class, false);
-        v.accept(3, "stripesCount", int.class, false);
-        v.accept(4, "cachedPagesCount", int.class, false);
+        v.accept(0, "name", String.class);
+        v.accept(1, "bucketNumber", int.class);
+        v.accept(2, "bucketSize", long.class);
+        v.accept(3, "stripesCount", int.class);
+        v.accept(4, "cachedPagesCount", int.class);
     }
 
     /** {@inheritDoc} */

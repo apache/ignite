@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.Column;
@@ -51,19 +51,19 @@ public class SqlTableColumnView {
     }
 
     /** @return Column name. */
-    @ViewAttribute
+    @Order
     public String columnName() {
         return col.getName();
     }
 
     /** @return Schema name. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String schemaName() {
         return tbl.getSchema().getName();
     }
 
     /** @return Table name. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public String tableName() {
         return tbl.identifier().table();
     }

@@ -24,22 +24,14 @@ import java.lang.annotation.Target;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 /**
- * Annotation to mark view row attribute for a {@link SystemViewRowAttributeWalker}.
- * Walker traverse attributes from low to high value of order.
+ * Annotation to set walk order for a {@link SystemViewRowAttributeWalker}.
+ * Walker traverse attributes from low to high value.
  *
  * @see SystemViewRowAttributeWalker
  * @see CacheViewWalker
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ViewAttribute {
-    /**
-     * Attribute walk order.
-     */
-    public int order() default 0;
-
-    /**
-     * View support filtering by this attribute.
-     */
-    public boolean filtering() default false;
+public @interface Order {
+    public int value() default 0;
 }

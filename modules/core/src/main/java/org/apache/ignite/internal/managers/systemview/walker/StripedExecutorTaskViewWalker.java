@@ -29,10 +29,10 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class StripedExecutorTaskViewWalker implements SystemViewRowAttributeWalker<StripedExecutorTaskView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "stripeIndex", int.class, false);
-        v.accept(1, "description", String.class, false);
-        v.accept(2, "threadName", String.class, false);
-        v.accept(3, "taskName", String.class, false);
+        v.accept(0, "stripeIndex", int.class);
+        v.accept(1, "description", String.class);
+        v.accept(2, "threadName", String.class);
+        v.accept(3, "taskName", String.class);
     }
 
     /** {@inheritDoc} */

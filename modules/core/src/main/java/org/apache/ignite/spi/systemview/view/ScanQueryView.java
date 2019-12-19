@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,13 +62,13 @@ public class ScanQueryView {
     }
 
     /** @return Origin node id. */
-    @ViewAttribute
+    @Order
     public UUID originNodeId() {
         return nodeId;
     }
 
     /** @return Local query id. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public long queryId() {
         return qryId;
     }
@@ -79,37 +79,37 @@ public class ScanQueryView {
     }
 
     /** @return Cache name. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String cacheName() {
         return iter.cacheContext().name();
     }
 
     /** @return Cache id. */
-    @ViewAttribute(order = 3)
+    @Order(3)
     public int cacheId() {
         return iter.cacheContext().cacheId();
     }
 
     /** @return Cache group id. */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public int cacheGroupId() {
         return iter.cacheContext().groupId();
     }
 
     /** @return Cache group name. */
-    @ViewAttribute(order = 5)
+    @Order(5)
     public String cacheGroupName() {
         return iter.cacheContext().group().cacheOrGroupName();
     }
 
     /** @return Start time. */
-    @ViewAttribute(order = 6)
+    @Order(6)
     public long startTime() {
         return iter.startTime();
     }
 
     /** @return Query duration. */
-    @ViewAttribute(order = 7)
+    @Order(7)
     public long duration() {
         return U.currentTimeMillis() - iter.startTime();
     }

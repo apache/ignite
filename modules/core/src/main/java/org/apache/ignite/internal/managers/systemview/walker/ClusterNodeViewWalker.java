@@ -30,15 +30,15 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ClusterNodeViewWalker implements SystemViewRowAttributeWalker<ClusterNodeView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "nodeId", UUID.class, false);
-        v.accept(1, "consistentId", String.class, false);
-        v.accept(2, "version", String.class, false);
-        v.accept(3, "isClient", boolean.class, false);
-        v.accept(4, "isDaemon", boolean.class, false);
-        v.accept(5, "nodeOrder", long.class, false);
-        v.accept(6, "addresses", String.class, false);
-        v.accept(7, "hostnames", String.class, false);
-        v.accept(8, "isLocal", boolean.class, false);
+        v.accept(0, "nodeId", UUID.class);
+        v.accept(1, "consistentId", String.class);
+        v.accept(2, "version", String.class);
+        v.accept(3, "isClient", boolean.class);
+        v.accept(4, "isDaemon", boolean.class);
+        v.accept(5, "nodeOrder", long.class);
+        v.accept(6, "addresses", String.class);
+        v.accept(7, "hostnames", String.class);
+        v.accept(8, "isLocal", boolean.class);
     }
 
     /** {@inheritDoc} */

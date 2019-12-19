@@ -26,7 +26,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -55,7 +55,7 @@ public class CacheGroupView {
     }
 
     /** @return Cache group name. */
-    @ViewAttribute()
+    @Order()
     public String cacheGroupName() {
         return grp.cacheOrGroupName();
     }
@@ -66,7 +66,7 @@ public class CacheGroupView {
     }
 
     /** @return Cache count. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public int cacheCount() {
         Map<String, Integer> caches = grp.caches();
 
@@ -74,13 +74,13 @@ public class CacheGroupView {
     }
 
     /** @return Cache mode. */
-    @ViewAttribute(order = 3)
+    @Order(3)
     public CacheMode cacheMode() {
         return ccfg.getCacheMode();
     }
 
     /** @return Atomicity mode. */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public CacheAtomicityMode atomicityMode() {
         return ccfg.getAtomicityMode();
     }
@@ -114,7 +114,7 @@ public class CacheGroupView {
     }
 
     /** @return Data region name. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String dataRegionName() {
         return ccfg.getDataRegionName();
     }

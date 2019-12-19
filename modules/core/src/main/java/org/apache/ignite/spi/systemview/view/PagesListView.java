@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 
 /**
@@ -42,7 +43,7 @@ public class PagesListView {
     /**
      * @return Pages-list name.
      */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String name() {
         return pagesList.name();
     }
@@ -50,7 +51,8 @@ public class PagesListView {
     /**
      * @return Bucket number.
      * */
-    @ViewAttribute(order = 3, filtering = true)
+    @Order(3)
+    @Filtrable
     public int bucketNumber() {
         return bucket;
     }
@@ -58,7 +60,7 @@ public class PagesListView {
     /**
      * @return Bucket size.
      */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public long bucketSize() {
         return pagesList.bucketSize(bucket);
     }
@@ -66,7 +68,7 @@ public class PagesListView {
     /**
      * @return Bucket stripes count.
      */
-    @ViewAttribute(order = 5)
+    @Order(5)
     public int stripesCount() {
         return pagesList.stripesCount(bucket);
     }
@@ -74,7 +76,7 @@ public class PagesListView {
     /**
      * @return Count of pages cached onheap.
      */
-    @ViewAttribute(order = 6)
+    @Order(6)
     public int cachedPagesCount() {
         return pagesList.cachedPagesCount(bucket);
     }

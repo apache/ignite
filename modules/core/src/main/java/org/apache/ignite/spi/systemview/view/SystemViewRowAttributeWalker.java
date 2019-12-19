@@ -17,6 +17,9 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Utility class for quick iteration over row properties.
  */
@@ -40,6 +43,13 @@ public interface SystemViewRowAttributeWalker<R> {
      */
     public void visitAll(R row, AttributeWithValueVisitor visitor);
 
+    /**
+     * @return List of filtrable attributes for this system view.
+     */
+    public default List<String> filtrableAttributes() {
+        return Collections.emptyList();
+    }
+
     /** Attribute visitor. */
     public interface AttributeVisitor {
         /**
@@ -47,10 +57,9 @@ public interface SystemViewRowAttributeWalker<R> {
          * @param idx Index.
          * @param name Name.
          * @param clazz Value class.
-         * @param filtering Is filtering for this attribute supported.
          * @param <T> Value type.
          */
-        public <T> void accept(int idx, String name, Class<T> clazz, boolean filtering);
+        public <T> void accept(int idx, String name, Class<T> clazz);
     }
 
     /** Attribute visitor. */

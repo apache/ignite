@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 
 /**
@@ -40,7 +41,8 @@ public class CachePagesListView extends PagesListView {
     /**
      * @return Cache group id.
      */
-    @ViewAttribute(filtering = true)
+    @Order
+    @Filtrable
     public int cacheGroupId() {
         return pagesList.groupId();
     }
@@ -48,7 +50,8 @@ public class CachePagesListView extends PagesListView {
     /**
      * @return Partition id.
      */
-    @ViewAttribute(order = 1, filtering = true)
+    @Order(1)
+    @Filtrable
     public int partId() {
         return partId;
     }

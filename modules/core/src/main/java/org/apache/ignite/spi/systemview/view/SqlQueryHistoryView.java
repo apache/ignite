@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.QueryHistory;
 
 /**
@@ -36,49 +36,49 @@ public class SqlQueryHistoryView {
     }
 
     /** @return Schema name. */
-    @ViewAttribute
+    @Order
     public String schemaName() {
         return qry.schema();
     }
 
     /** @return Query text. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public String sql() {
         return qry.query();
     }
 
     /** @return {@code True} if query local. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public boolean local() {
         return qry.local();
     }
 
     /** @return Number of executions of the query. */
-    @ViewAttribute(order = 3)
+    @Order(3)
     public long executions() {
         return qry.executions();
     }
 
     /** @return Number of failed execution of the query. */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public long failures() {
         return qry.failures();
     }
 
     /** @return Minimal query duration. */
-    @ViewAttribute(order = 5)
+    @Order(5)
     public long durationMin() {
         return qry.minimumTime();
     }
 
     /** @return Maximum query duration. */
-    @ViewAttribute(order = 6)
+    @Order(6)
     public long durationMax() {
         return qry.maximumTime();
     }
 
     /** @return Last start time. */
-    @ViewAttribute(order = 7)
+    @Order(7)
     public Date lastStartTime() {
         return new Date(qry.lastStartTime());
     }

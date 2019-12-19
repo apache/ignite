@@ -29,8 +29,8 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class SqlSchemaViewWalker implements SystemViewRowAttributeWalker<SqlSchemaView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "name", String.class, false);
-        v.accept(1, "predefined", boolean.class, false);
+        v.accept(0, "name", String.class);
+        v.accept(1, "predefined", boolean.class);
     }
 
     /** {@inheritDoc} */

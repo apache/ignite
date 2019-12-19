@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.table.IndexColumn;
 
@@ -48,55 +48,55 @@ public class SqlTableView {
     }
 
     /** @return Cache id. */
-    @ViewAttribute(order = 3)
+    @Order(3)
     public int cacheId() {
         return tbl.cacheId();
     }
 
     /** @return Cache name. */
-    @ViewAttribute(order = 2)
+    @Order(2)
     public String cacheName() {
         return tbl.cacheName();
     }
 
     /** @return Schema name. */
-    @ViewAttribute(order = 1)
+    @Order(1)
     public String schemaName() {
         return tbl.getSchema().getName();
     }
 
     /** @return Table name. */
-    @ViewAttribute
+    @Order
     public String tableName() {
         return tbl.identifier().table();
     }
 
     /** @return Affinity key column. */
-    @ViewAttribute(order = 4)
+    @Order(4)
     public String affinityKeyColumn() {
         return affColName;
     }
 
     /** @return Key alias. */
-    @ViewAttribute(order = 5)
+    @Order(5)
     public String keyAlias() {
         return tbl.rowDescriptor().type().keyFieldAlias();
     }
 
     /** @return Value alias. */
-    @ViewAttribute(order = 6)
+    @Order(6)
     public String valueAlias() {
         return tbl.rowDescriptor().type().valueFieldAlias();
     }
 
     /** @return Key type name. */
-    @ViewAttribute(order = 7)
+    @Order(7)
     public String keyTypeName() {
         return tbl.rowDescriptor().type().keyTypeName();
     }
 
     /** @return Value type name. */
-    @ViewAttribute(order = 8)
+    @Order(8)
     public String valueTypeName() {
         return tbl.rowDescriptor().type().valueTypeName();
     }
