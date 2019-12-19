@@ -59,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -80,11 +79,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
     private static final boolean FILE_REBALANCE_ENABLED = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED, false);
+        IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED, true);
 
     /** */
     private static final long FILE_REBALANCE_THRESHOLD = IgniteSystemProperties.getLong(
-        IGNITE_PDS_FILE_REBALANCE_THRESHOLD, DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
 
     /** */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
