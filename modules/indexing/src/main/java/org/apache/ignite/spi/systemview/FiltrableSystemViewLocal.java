@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumnCondition;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
@@ -73,6 +74,7 @@ public class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
      * @return Indexes array for {@code sysView}.
      */
     private static String[] indexes(SystemView<?> sysView) {
-        return new String[] { String.join(",", sysView.walker().filtrableAttributes()) };
+        return new String[] {sysView.walker().filtrableAttributes().stream().map(SystemViewLocal::sqlName)
+                .collect(Collectors.joining(","))};
     }
 }

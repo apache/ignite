@@ -251,7 +251,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param name Name to convert.
      * @return SQL compatible name.
      */
-    private static String sqlName(String name) {
+    protected static String sqlName(String name) {
         return name
             .replaceAll("([A-Z])", "_$1")
             .replaceAll('\\' + MetricUtils.SEPARATOR, "_").toUpperCase();
