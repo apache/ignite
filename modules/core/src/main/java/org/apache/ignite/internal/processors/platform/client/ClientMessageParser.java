@@ -74,6 +74,8 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
 
 /**
  * Thin client message parser.
@@ -230,6 +232,16 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_CLUSTER_GET_WAL_STATE = 5003;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_IDS = 5100;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_INFO = 5101;
+
+    /* Custom queries working through processors registry. */
+    /** */
+    private static final short OP_CUSTOM_QUERY = 32_000;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -422,6 +434,15 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_CLUSTER_GET_WAL_STATE:
                 return new ClientClusterWalGetStateRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_IDS:
+                return new ClientClusterGroupGetNodeIdsRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_INFO:
+                return new ClientClusterGroupGetNodesDetailsRequest(reader);
+
+            case OP_CUSTOM_QUERY:
+                return new ClientCustomQueryRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
