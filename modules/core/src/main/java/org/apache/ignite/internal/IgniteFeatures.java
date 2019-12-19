@@ -73,7 +73,10 @@ public enum IgniteFeatures {
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
+    PME_FREE_SWITCH(19);
 
     /**
      * Unique feature identifier.
