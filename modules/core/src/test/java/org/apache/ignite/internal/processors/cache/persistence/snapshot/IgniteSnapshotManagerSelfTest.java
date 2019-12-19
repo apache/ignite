@@ -82,7 +82,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SUFFIX;
 
 /**
@@ -259,11 +258,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        File cacheWorkDir = storeMgr.cacheWorkDir(defaultCacheCfg);
         File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
             .checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-        File cacheBackup = cacheWorkDir(mgr.localSnapshotDir(SNAPSHOT_NAME), cacheDirName(defaultCacheCfg));
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -456,8 +453,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         fut.cancel();
 
-        System.out.println(">>>> cancelled, started new");
-
         IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
             owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
 
@@ -588,8 +583,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig0(File ccfg, String cacheDirName, GroupPartitionId pair) {
-            delegate.sendCacheConfig(ccfg, cacheDirName, pair);
+        @Override public void sendCacheConfig0(File ccfg, String cacheDirName) {
+            delegate.sendCacheConfig(ccfg, cacheDirName);
         }
 
         /** {@inheritDoc} */

@@ -94,9 +94,8 @@ abstract class SnapshotSender implements Closeable {
     /**
      * @param ccfg Cache configuration file.
      * @param cacheDirName Cache group directory name.
-     * @param pair Group id with partition id pair.
      */
-    public final void sendCacheConfig(File ccfg, String cacheDirName, GroupPartitionId pair) {
+    public final void sendCacheConfig(File ccfg, String cacheDirName) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -104,7 +103,7 @@ abstract class SnapshotSender implements Closeable {
             if (stopped)
                 return;
 
-            sendCacheConfig0(ccfg, cacheDirName, pair);
+            sendCacheConfig0(ccfg, cacheDirName);
         }
         finally {
             lock.readLock().unlock();
@@ -198,9 +197,8 @@ abstract class SnapshotSender implements Closeable {
     /**
      * @param ccfg Cache configuration file.
      * @param cacheDirName Cache group directory name.
-     * @param pair Group id with partition id pair.
      */
-    protected void sendCacheConfig0(File ccfg, String cacheDirName, GroupPartitionId pair) {
+    protected void sendCacheConfig0(File ccfg, String cacheDirName) {
         // No-op by default.
     }
 
