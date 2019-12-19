@@ -181,7 +181,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static final String SNP_NAME_PARAM = "snpName";
 
     /** Map of registered cache snapshot processes and their corresponding contexts. */
-    private final ConcurrentMap<String, LocalSnapshotContext> localSnpCtxs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, LocalSnapshotContext> locSnpCtxs = new ConcurrentHashMap<>();
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -295,7 +295,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
             @Override public void beforeCheckpointBegin(Context ctx) {
-                for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
+                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
                     // Gather partitions metainfo for thouse which will be copied.
                     if (sctx0.state(SnapshotState.MARK))
                         ctx.collectPartStat(sctx0.parts);
@@ -309,7 +309,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             @Override public void onMarkCheckpointEnd(Context ctx) {
                 // Under the write lock here. It's safe to add new stores.
-                for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
+                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
                     if (!sctx0.state(SnapshotState.START))
                         continue;
 
@@ -343,7 +343,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
 
             @Override public void onCheckpointBegin(Context ctx) {
-                for (LocalSnapshotContext sctx0 : localSnpCtxs.values()) {
+                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
                     if (!sctx0.state(SnapshotState.STARTED))
                         continue;
 
@@ -734,7 +734,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         try {
             dbMgr.removeCheckpointListener(cpLsnr);
 
-            for (LocalSnapshotContext ctx : localSnpCtxs.values()) {
+            for (LocalSnapshotContext ctx : locSnpCtxs.values()) {
                 // Try stop all snapshot processing if not yet.
                 ctx.snpFut.onDone(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
@@ -944,7 +944,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         Executor exec,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        if (localSnpCtxs.containsKey(snpName))
+        if (locSnpCtxs.containsKey(snpName))
             throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
 
         isCacheSnapshotSupported(parts.keySet(),
@@ -969,7 +969,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             sctx = new LocalSnapshotContext(log,
                 snpName,
                 snapshotWorkDir(snpName),
-                localSnpCtxs::remove,
+                locSnpCtxs::remove,
                 nodeSnpDir,
                 parts,
                 exec,
@@ -1011,7 +1011,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
-            LocalSnapshotContext ctx0 = localSnpCtxs.putIfAbsent(snpName, sctx);
+            LocalSnapshotContext ctx0 = locSnpCtxs.putIfAbsent(snpName, sctx);
 
             assert ctx0 == null : ctx0;
 
