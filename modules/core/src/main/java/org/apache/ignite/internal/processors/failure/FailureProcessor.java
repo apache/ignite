@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.failure;
 
+import java.util.EnumMap;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -24,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
@@ -33,13 +36,19 @@ import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT;
+
 /**
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
     /** Value of the system property that enables threads dumping on failure. */
     private final boolean igniteDumpThreadsOnFailure =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, false);
+        IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE, false);
+
+    /** Timeout for throttling of thread dumps generation. */
+    long dumpThreadsTrottlingTimeout;
 
     /** Ignored failure log message. */
     static final String IGNORED_FAILURE_LOG_MSG = "Possible failure suppressed accordingly to a configured handler ";
@@ -47,6 +56,9 @@ public class FailureProcessor extends GridProcessorAdapter {
     /** Failure log message. */
     static final String FAILURE_LOG_MSG = "Critical system error detected. " +
         "Will be handled accordingly to configured handler ";
+
+    /** Thread dump per failure type timestamps. */
+    private Map<FailureType, Long> threadDumpPerFailureTypeTime;
 
     /** Ignite. */
     private final Ignite ignite;
@@ -66,7 +78,22 @@ public class FailureProcessor extends GridProcessorAdapter {
     public FailureProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        this.ignite = ctx.grid();
+        ignite = ctx.grid();
+
+        if (igniteDumpThreadsOnFailure) {
+            dumpThreadsTrottlingTimeout =
+                    IgniteSystemProperties.getLong(
+                            IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT,
+                            ctx.config().getFailureDetectionTimeout()
+                    );
+
+            if (dumpThreadsTrottlingTimeout > 0) {
+                threadDumpPerFailureTypeTime = new EnumMap<>(FailureType.class);
+
+                for (FailureType type : FailureType.values())
+                    threadDumpPerFailureTypeTime.put(type, 0L);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -152,7 +179,7 @@ public class FailureProcessor extends GridProcessorAdapter {
                 " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
                 " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
 
-        if (igniteDumpThreadsOnFailure)
+        if (igniteDumpThreadsOnFailure && !throttleThreadDump(failureCtx.type()))
             U.dumpThreads(log, !failureTypeIgnored(failureCtx, hnd));
 
         DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
@@ -169,6 +196,36 @@ public class FailureProcessor extends GridProcessorAdapter {
         }
 
         return invalidated;
+    }
+
+    /**
+     * Defines whether thread dump should be throttled for givn failure type or not.
+     *
+     * @param type Failure type.
+     * @return {@code True} if thread dump generation should be throttled fro given failure type.
+     */
+    private boolean throttleThreadDump(FailureType type) {
+        if (dumpThreadsTrottlingTimeout <= 0)
+            return false;
+
+        long curr = U.currentTimeMillis();
+
+        Long last = threadDumpPerFailureTypeTime.get(type);
+
+        assert last != null : "Unknown failure type " + type;
+
+        boolean throttle = curr - last < dumpThreadsTrottlingTimeout;
+
+        if (!throttle)
+            threadDumpPerFailureTypeTime.put(type, curr);
+        else {
+            if (log.isInfoEnabled()) {
+                log.info("Thread dump is hidden due to throttling settings. " +
+                        "Set IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT property to 0 to see all thread dumps.");
+            }
+        }
+
+        return throttle;
     }
 
     /**
