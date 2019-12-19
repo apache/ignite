@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
@@ -40,8 +41,15 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
  */
 public class FailureProcessor extends GridProcessorAdapter {
     /** Value of the system property that enables threads dumping on failure. */
-    private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, true);
+    private final boolean igniteDumpThreadsOnFailure =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, false);
+
+    /** Ignored failure log message. */
+    static final String IGNORED_FAILURE_LOG_MSG = "Possible failure suppressed accordingly to a configured handler ";
+
+    /** Failure log message. */
+    static final String FAILURE_LOG_MSG = "Critical system error detected. " +
+        "Will be handled accordingly to configured handler ";
 
     /** Ignite. */
     private final Ignite ignite;
@@ -128,8 +136,14 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (this.failureCtx != null) // Node already terminating, no reason to process more errors.
             return false;
 
-        U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
-            "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+        if (failureTypeIgnored(failureCtx, hnd)) {
+            U.quietAndWarn(ignite.log(), IGNORED_FAILURE_LOG_MSG +
+                "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+        }
+        else {
+            U.error(ignite.log(), FAILURE_LOG_MSG +
+                "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+        }
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
@@ -141,8 +155,8 @@ public class FailureProcessor extends GridProcessorAdapter {
                 " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
                 " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
 
-        if (IGNITE_DUMP_THREADS_ON_FAILURE)
-            U.dumpThreads(log);
+        if (igniteDumpThreadsOnFailure)
+            U.dumpThreads(log, !failureTypeIgnored(failureCtx, hnd));
 
         DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
 
@@ -158,5 +172,14 @@ public class FailureProcessor extends GridProcessorAdapter {
         }
 
         return invalidated;
+    }
+
+    /**
+     * @param failureCtx Failure context.
+     * @param hnd Handler.
+     */
+    private static boolean failureTypeIgnored(FailureContext failureCtx, FailureHandler hnd) {
+        return hnd instanceof AbstractFailureHandler &&
+            ((AbstractFailureHandler)hnd).getIgnoredFailureTypes().contains(failureCtx.type());
     }
 }
