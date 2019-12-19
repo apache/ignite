@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
@@ -246,6 +247,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(OomFailureHandlerTest.class);
         suite.addTestSuite(TransactionIntegrityWithSystemWorkerDeathTest.class);
         suite.addTestSuite(FailureProcessorLoggingTest.class);
+        suite.addTestSuite(FailureProcessorThreadDumpThrottlingTest.class);
 
         suite.addTestSuite(RebalanceWithDifferentThreadPoolSizeTest.class);
 
