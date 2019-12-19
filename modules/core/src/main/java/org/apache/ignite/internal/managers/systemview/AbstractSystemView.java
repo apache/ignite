@@ -63,5 +63,4 @@ abstract class AbstractSystemView<R> implements SystemView<R> {
     @Override public SystemViewRowAttributeWalker<R> walker() {
         return walker;
     }
-
 }
