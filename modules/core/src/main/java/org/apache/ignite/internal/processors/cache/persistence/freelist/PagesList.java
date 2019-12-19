@@ -96,7 +96,7 @@ public abstract class PagesList extends DataStructure {
     protected volatile boolean changed;
 
     /** Page ID to store list metadata. */
-    protected final long metaPageId;
+    private final long metaPageId;
 
     /** Number of buckets. */
     private final int buckets;

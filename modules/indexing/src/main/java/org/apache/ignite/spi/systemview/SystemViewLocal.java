@@ -62,7 +62,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param indexes Indexed fields.
      */
     protected SystemViewLocal(GridKernalContext ctx, SystemView<R> sysView, String[] indexes) {
-        super(sqlName(sysView.name()), sysView.description(), ctx, indexes, columns(sysView));
+        super(sqlName(sysView.name()), sysView.description(), ctx, indexes, columnsList(sysView));
 
         this.sysView = sysView;
     }
@@ -179,7 +179,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
      * @param <R> Row type.
      * @return SQL column array for {@code sysView}.
      */
-    private static <R> Column[] columns(SystemView<R> sysView) {
+    private static <R> Column[] columnsList(SystemView<R> sysView) {
         Column[] cols = new Column[sysView.walker().count()];
 
         sysView.walker().visitAll(new AttributeVisitor() {
