@@ -106,33 +106,33 @@
         </category>
     -->
 
-    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
-        <level value="DEBUG"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">-->
+<!--        <level value="DEBUG"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader">
-        <level value="TRACE"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader">-->
+<!--        <level value="TRACE"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceFuture">
-        <level value="TRACE"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceFuture">-->
+<!--        <level value="TRACE"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceNodeRoutine">
-        <level value="TRACE"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceNodeRoutine">-->
+<!--        <level value="TRACE"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl">
-        <level value="DEBUG"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl">-->
+<!--        <level value="DEBUG"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager">
-        <level value="DEBUG"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager">-->
+<!--        <level value="DEBUG"/>-->
+<!--    </category>-->
 
-    <category name="org.apache.ignite.internal.processors.cache.preload">
-        <level value="DEBUG"/>
-    </category>
+<!--    <category name="org.apache.ignite.internal.processors.cache.preload">-->
+<!--        <level value="DEBUG"/>-->
+<!--    </category>-->
 
     <!--
         Uncomment to enable transactions debugging.
