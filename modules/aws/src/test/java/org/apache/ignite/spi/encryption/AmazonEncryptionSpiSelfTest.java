@@ -153,7 +153,7 @@ public class AmazonEncryptionSpiSelfTest {
 
         encSpi.setMasterKeyName(DEFAULT_MASTER_KEY_NAME);
 
-        GridTestUtils.invoke(encSpi, "onBeforeStart");
+        encSpi.onBeforeStart();
 
         encSpi.spiStart("default");
 

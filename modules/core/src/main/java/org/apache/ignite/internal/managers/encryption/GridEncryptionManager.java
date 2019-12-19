@@ -391,10 +391,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (res != null)
             return res;
 
-        NodeEncryptionKeys nodeEncKeys;
+        NodeEncryptionKeys nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData();
 
-        if (!discoData.hasJoiningNodeData() ||
-            (nodeEncKeys = (NodeEncryptionKeys)discoData.joiningNodeData()) == null) {
+        if (!discoData.hasJoiningNodeData() || nodeEncKeys == null) {
             return new IgniteNodeValidationResult(ctx.localNodeId(),
                 "Joining node doesn't have encryption data [node=" + node.id() + "]",
                 "Joining node doesn't have encryption data.");

@@ -91,7 +91,6 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
             default:
                 throw new IllegalArgumentException("Unknown encryption subcommand: " + cmd);
         }
-
     }
 
     /** {@inheritDoc} */
