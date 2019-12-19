@@ -15,23 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.GridKernalContext;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Determines where to send a row to.
- */
-public interface DestinationFunction {
-    /**
-     * @param row Row.
-     * @return Target nodes list.
-     */
-    List<UUID> destination(Object row);
+/** No op implementation. */
+public class NoOpQueryEngine implements QueryEngine {
+    /** {@inheritDoc} */
+    @Override public void start(GridKernalContext ctx) {}
 
-    /**
-     * @return All target nodes.
-     */
-    List<UUID> targets();
+    /** {@inheritDoc} */
+    @Override public void stop() {}
+
+    /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
 }

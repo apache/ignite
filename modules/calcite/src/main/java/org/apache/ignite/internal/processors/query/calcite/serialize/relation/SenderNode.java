@@ -29,8 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
  * Describes {@link IgniteSender}.
  */
 public class SenderNode extends RelGraphNode {
-
-
+    /** */
     private final RelTarget target;
 
     /**

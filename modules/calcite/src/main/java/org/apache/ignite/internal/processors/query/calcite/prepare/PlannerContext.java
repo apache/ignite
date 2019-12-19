@@ -22,6 +22,7 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -114,6 +115,16 @@ public final class PlannerContext implements Context {
      */
     public GridKernalContext kernalContext() {
         return kernalContext;
+    }
+
+    /**
+     * Returns an affinityFunction for a given cache ID.
+     *
+     * @param cacheId Cache ID.
+     * @return Affinity function.
+     */
+    public AffinityFunction affinityFunction(int cacheId) {
+        return kernalContext.cache().context().cacheContext(cacheId).group().affinityFunction();
     }
 
     /**

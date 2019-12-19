@@ -52,6 +52,7 @@ public class RelToGraphConverter implements RelOp<IgniteRel, RelGraph> {
     private static final class Item {
         /** */
         private final int parentId;
+
         /** */
         private final List<IgniteRel> children;
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,17 +78,31 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.i
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
-
+    /** */
     private GridTestKernalContext kernalContext;
+
+    /** */
     private CalciteQueryProcessor proc;
+
+    /** */
     private SchemaPlus schema;
+
+    /** */
     private List<UUID> nodes;
 
+    /** */
     private TestIgniteTable city;
+
+    /** */
     private TestIgniteTable country;
+
+    /** */
     private TestIgniteTable project;
+
+    /** */
     private TestIgniteTable developer;
 
+    /** */
     @Before
     public void setup() {
         kernalContext = new GridTestKernalContext(log);
@@ -155,6 +168,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testLogicalPlan() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -194,6 +210,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(relRoot.rel);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testLogicalPlanDefaultSchema() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -231,10 +250,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(relRoot.rel);
-
-
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testCorrelatedQuery() throws Exception {
         String sql = "SELECT d.id, (SELECT p.name FROM Project p WHERE p.id = d.id) name, d.projectId " +
@@ -270,6 +290,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(relRoot.rel);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testHepPlaner() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -316,6 +339,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(relRoot.rel);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testVolcanoPlanerDistributed() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -376,6 +402,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertNotNull(expressions);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testPlanSerializationDeserialization() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -452,6 +481,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         Object key = new Object();
@@ -521,6 +553,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testPhysicalPlan() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.name0, p.ver0 " +
@@ -592,6 +627,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterCollocatedReplicatedReplicated() throws Exception {
         String sql = "SELECT d.id, (d.id + 1) as id2, d.name, d.projectId, p.id0, p.ver0 " +
@@ -674,6 +712,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterCollocatedReplicatedAndPartitioned() throws Exception {
         developer.identityKey(new Object());
@@ -765,6 +806,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterPartiallyCollocated() throws Exception {
         developer.identityKey(new Object());
@@ -856,6 +900,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 3);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterNonCollocated() throws Exception {
         String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
@@ -940,6 +987,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 3);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterPartiallyReplicated1() throws Exception {
         developer.identityKey(new Object());
@@ -1031,6 +1081,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 2);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSplitterPartiallyReplicated2() throws Exception {
         developer.identityKey(new Object());
@@ -1122,6 +1175,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertTrue(plan.fragments().size() == 3);
     }
 
+    /** */
     private static <T> List<T> select(List<T> src, int... idxs) {
         ArrayList<T> res = new ArrayList<>(idxs.length);
 
@@ -1132,6 +1186,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /** */
     private PlannerContext context(Context c, Query q) {
         MappingService ms = new MappingService() {
             @Override public NodesMapping random(AffinityTopologyVersion topVer) {
@@ -1167,6 +1222,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         return context(c, q, ms);
     }
 
+    /** */
     private PlannerContext context(Context parent, Query query, MappingService ms) {
         return PlannerContext.builder()
             .parentContext(parent)
@@ -1180,22 +1236,31 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .build();
     }
 
-    public static class TestIgniteTable extends IgniteTable {
+    /** */
+    private static class TestIgniteTable extends IgniteTable {
+        /** */
         private final List<Object[]> data;
+
+        /** */
         private Object identityKey;
-        public TestIgniteTable(String tableName, String cacheName, RowType rowType, List<Object[]> data) {
+
+        /** */
+        private TestIgniteTable(String tableName, String cacheName, RowType rowType, List<Object[]> data) {
             super(tableName, cacheName, rowType, null);
             this.data = data;
         }
 
-        public void identityKey(Object identityKey) {
+        /** */
+        private void identityKey(Object identityKey) {
             this.identityKey = identityKey;
         }
 
+        /** {@inheritDoc} */
         @Override public Object identityKey() {
             return identityKey;
         }
 
+        /** {@inheritDoc} */
         @Override public Enumerable<Object[]> scan(DataContext root) {
             return Linq4j.asEnumerable(data);
         }

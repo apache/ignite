@@ -21,15 +21,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Any;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Broadcast;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Hash;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Random;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.Singleton;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.HashDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.RandomDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.SingletonDistribution;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -42,46 +43,96 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
  *
  */
 public class IgniteDistributions {
+    /** */
     private static final int BEST_CNT = 3;
 
-    private static final IgniteDistribution BROADCAST = new DistributionTrait(Broadcast.INSTANCE);
-    private static final IgniteDistribution SINGLETON = new DistributionTrait(Singleton.INSTANCE);
-    private static final IgniteDistribution RANDOM = new DistributionTrait(Random.INSTANCE);
-    private static final IgniteDistribution ANY = new DistributionTrait(Any.INSTANCE);
+    /** */
+    private static final IgniteDistribution BROADCAST = new DistributionTrait(BroadcastDistribution.INSTANCE);
 
+    /** */
+    private static final IgniteDistribution SINGLETON = new DistributionTrait(SingletonDistribution.INSTANCE);
+
+    /** */
+    private static final IgniteDistribution RANDOM = new DistributionTrait(RandomDistribution.INSTANCE);
+
+    /** */
+    private static final IgniteDistribution ANY = new DistributionTrait(AnyDistribution.INSTANCE);
+
+    /**
+     * @return Any distribution.
+     */
     public static IgniteDistribution any() {
         return canonize(ANY);
     }
 
+    /**
+     * @return Random distribution.
+     */
     public static IgniteDistribution random() {
         return canonize(RANDOM);
     }
 
+    /**
+     * @return Single distribution.
+     */
     public static IgniteDistribution single() {
         return canonize(SINGLETON);
     }
 
+    /**
+     * @return Broadcast distribution.
+     */
     public static IgniteDistribution broadcast() {
         return canonize(BROADCAST);
     }
 
+    /**
+     * @param keys Distribution keys.
+     * @return Hash distribution.
+     */
     public static IgniteDistribution hash(List<Integer> keys) {
-        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), Hash.INSTANCE));
+        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), HashDistribution.INSTANCE));
     }
 
-    public static IgniteDistribution hash(List<Integer> keys, DistributionFunction factory) {
-        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), factory));
+    /**
+     * @param keys Distribution keys.
+     * @param function Specific hash function.
+     * @return Hash distribution.
+     */
+    public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
+        return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
     }
 
+    /**
+     * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
+     */
     public static IgniteDistribution canonize(IgniteDistribution distr) {
         return DistributionTraitDef.INSTANCE.canonize(distr);
     }
 
+    /**
+     * Suggests possible join distributions.
+     *
+     * @param leftIn Left distribution.
+     * @param rightIn Right distribution.
+     * @param joinInfo Join info.
+     * @param joinType Join type.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
+     */
     public static List<BiSuggestion> suggestJoin(IgniteDistribution leftIn, IgniteDistribution rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
         return topN(suggestJoin0(leftIn, rightIn, joinInfo, joinType), BEST_CNT);
     }
 
+    /**
+     * Suggests possible join distributions.
+     *
+     * @param leftIn Left distributions.
+     * @param rightIn Right distributions.
+     * @param joinInfo Join info.
+     * @param joinType Join type.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
+     */
     public static List<BiSuggestion> suggestJoin(List<IgniteDistribution> leftIn, List<IgniteDistribution> rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
         HashSet<BiSuggestion> suggestions = new HashSet<>();
@@ -151,7 +202,7 @@ public class IgniteDistributions {
             if (rightIn.getKeys().equals(joinInfo.rightKeys))
                 factories.add(rightIn.function());
 
-            factories.add(Hash.INSTANCE);
+            factories.add(HashDistribution.INSTANCE);
 
             for (DistributionFunction factory : factories) {
                 out = hash(joinInfo.leftKeys, factory);
@@ -243,9 +294,16 @@ public class IgniteDistributions {
      * Distribution suggestion for BiRel.
      */
     public static class BiSuggestion implements Comparable<BiSuggestion> {
+        /** */
         private final IgniteDistribution out;
+
+        /** */
         private final IgniteDistribution left;
+
+        /** */
         private final IgniteDistribution right;
+
+        /** */
         private final int needExchange;
 
         /**

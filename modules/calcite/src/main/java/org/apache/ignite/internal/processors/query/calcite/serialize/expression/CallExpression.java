@@ -27,8 +27,10 @@ import org.apache.calcite.sql.SqlSyntax;
 public class CallExpression implements Expression {
     /** */
     private final String opName;
+
     /** */
     private final SqlSyntax opSyntax;
+
     /** */
     private final List<Expression> operands;
 

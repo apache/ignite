@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exchange;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -39,13 +38,19 @@ import org.junit.Test;
  *
  */
 public class OutboxTest extends GridCommonAbstractTest {
+    /** */
     private static UUID nodeId;
-    private static GridCacheVersion queryId;
-    private static DestinationFunction func;
-    private static Collection<UUID> targets;
 
+    /** */
+    private static GridCacheVersion queryId;
+
+    /** */
+    private static DestinationFunction func;
+
+    /** */
     private Outbox<Object[]> outbox;
 
+    /** */
     @BeforeClass
     public static void setupClass() {
         nodeId = UUID.randomUUID();
@@ -53,18 +58,20 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         NodesMapping mapping = new NodesMapping(Collections.singletonList(nodeId), null, NodesMapping.DEDUPLICATED);
 
-        targets = mapping.nodes();
-        func = DistributionFunction.Singleton.INSTANCE.toDestination(null, mapping, ImmutableIntList.of());
+        func = DistributionFunction.SingletonDistribution.INSTANCE.toDestination(null, mapping, ImmutableIntList.of());
     }
 
-
+    /** */
     @Before
     public void setUp() {
-        outbox = new Outbox<>(queryId, 0, targets, func);
+        outbox = new Outbox<>(queryId, 0, func);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
-    public void testBasicOps() {
+    public void testBasicOps() throws Exception {
         TestSource source = new TestSource();
         TestExchangeService exch = new TestExchangeService();
 
@@ -116,46 +123,61 @@ public class OutboxTest extends GridCommonAbstractTest {
         assertEquals(EndMarker.INSTANCE, F.last(exch.lastBatch));
     }
 
+    /** */
     private static class TestExchangeService implements ExchangeProcessor {
+        /** */
         private boolean registered;
+
+        /** */
         private boolean unregistered;
+
+        /** */
         private List<Integer> ids = new ArrayList<>();
 
+        /** */
         private List<?> lastBatch;
 
-
+        /** {@inheritDoc} */
         @Override public <T> Outbox<T> register(Outbox<T> outbox) {
             registered = true;
 
             return outbox;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> void unregister(Outbox<T> outbox) {
             unregistered = true;
         }
 
+        /** {@inheritDoc} */
         @Override public void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows) {
             ids.add(batchId);
 
             lastBatch = rows;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> Inbox<T> register(Inbox<T> inbox) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public <T> void unregister(Inbox<T> inbox) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void acknowledge(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId) {
             throw new AssertionError();
         }
     }
 
+    /** */
     private static class TestSource implements Source {
+        /** */
         boolean signal;
 
+        /** {@inheritDoc} */
         @Override public void signal() {
             signal = true;
         }

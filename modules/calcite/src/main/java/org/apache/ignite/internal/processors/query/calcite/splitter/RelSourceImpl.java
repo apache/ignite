@@ -24,7 +24,10 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
  *
  */
 public class RelSourceImpl implements RelSource, Serializable {
+    /** */
     private final long exchangeId;
+
+    /** */
     private final NodesMapping mapping;
 
     /**

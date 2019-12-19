@@ -99,10 +99,13 @@ public class RowType {
     public static class Builder {
         /** */
         private int affinityKey;
+
         /** */
         private final LinkedHashSet<String> fields;
+
         /** */
         private final BitSet keyFields;
+
         /** */
         private final ArrayList<Class> types;
 

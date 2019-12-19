@@ -21,14 +21,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.UUID;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.ScannableTable;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -41,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
+import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -78,14 +76,11 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     @Override public Node<Object[]> visit(IgniteSender rel) {
         assert stack.isEmpty();
 
-        GridCacheVersion id = QUERY_ID.get(root);
-        long exchangeId = rel.target().exchangeId();
-        NodesMapping mapping = rel.target().mapping();
-        List<UUID> targets = mapping.nodes();
-        IgniteDistribution distribution = rel.target().distribution();
-        DestinationFunction function = distribution.function().toDestination(ctx, mapping, distribution.getKeys());
+        RelTarget target = rel.target();
+        IgniteDistribution distribution = target.distribution();
+        DestinationFunction function = distribution.function().toDestination(ctx, target.mapping(), distribution.getKeys());
 
-        Outbox<Object[]> res = new Outbox<>(id, exchangeId, targets, function);
+        Outbox<Object[]> res = new Outbox<>(QUERY_ID.get(root), target.exchangeId(), function);
 
         stack.push(res.sink());
 

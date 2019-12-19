@@ -48,11 +48,24 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable {
+    /** */
     private final String tableName;
+
+    /** */
     private final String cacheName;
+
+    /** */
     private final RowType rowType;
+
+    /** */
     private final Object identityKey;
 
+    /**
+     * @param tableName Table name.
+     * @param cacheName Cache name.
+     * @param rowType Row type.
+     * @param identityKey Affinity identity key.
+     */
     public IgniteTable(String tableName, String cacheName, RowType rowType, Object identityKey) {
         this.tableName = tableName;
         this.cacheName = cacheName;
@@ -102,7 +115,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         if (key == null)
             return IgniteDistributions.broadcast();
 
-        return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.Affinity(CU.cacheId(cacheName), key));
+        return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.AffinityDistribution(CU.cacheId(cacheName), key));
     }
 
     /**

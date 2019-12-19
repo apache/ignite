@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exchange;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,21 +33,31 @@ import org.apache.ignite.internal.util.typedef.F;
  * TODO https://issues.apache.org/jira/browse/IGNITE-12448
  */
 public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T> {
+    /** */
     private final Map<UUID, Destination> perNode = new HashMap<>();
 
+    /** */
     private final GridCacheVersion queryId;
+
+    /** */
     private final long exchangeId;
-    private final Collection<UUID> targets;
+
+    /** */
     private final DestinationFunction function;
 
+    /** */
     private ExchangeProcessor srvc;
 
-    public Outbox(GridCacheVersion queryId, long exchangeId, Collection<UUID> targets, DestinationFunction function) {
+    /**
+     *
+     * @param queryId Query ID.
+     * @param exchangeId Exchange ID.
+     * @param function Destination function.
+     */
+    public Outbox(GridCacheVersion queryId, long exchangeId, DestinationFunction function) {
         super(Sink.noOp());
         this.queryId = queryId;
         this.exchangeId = exchangeId;
-
-        this.targets = targets;
         this.function = function;
     }
 
@@ -61,7 +70,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     }
 
     public void acknowledge(UUID nodeId, int batchId) {
-        perNode.get(nodeId).acknowledge(batchId);
+        perNode.get(nodeId).onAcknowledge(batchId);
     }
 
     @Override public Sink<T> sink(int idx) {
@@ -98,26 +107,39 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     }
 
     @Override public void end() {
-        for (UUID node : targets)
+        for (UUID node : function.targets())
             perNode.computeIfAbsent(node, Destination::new).end();
 
         srvc.unregister(this);
     }
 
+    /** */
     private final class Destination {
+        /** */
         private final UUID nodeId;
 
+        /** */
         private int hwm = -1;
+
+        /** */
         private int lwm = -1;
 
+        /** */
         private ArrayList<Object> curr = new ArrayList<>(ExchangeProcessor.BATCH_SIZE + 1); // extra space for end marker;
 
+        /** */
         private boolean needSignal;
 
+        /** */
         private Destination(UUID nodeId) {
             this.nodeId = nodeId;
         }
 
+        /**
+         * Adds a row to current batch.
+         *
+         * @param row Row.
+         */
         public void add(T row) {
             if (curr.size() == ExchangeProcessor.BATCH_SIZE) {
                 assert ready() && srvc != null;
@@ -130,6 +152,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             curr.add(row);
         }
 
+        /**
+         * Signals data is over.
+         */
         public void end() {
             curr.add(EndMarker.INSTANCE);
 
@@ -141,11 +166,21 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             hwm = Integer.MAX_VALUE;
         }
 
+        /**
+         * Checks whether there is a place for a new row.
+         *
+         * @return {@code True} is it possible to add a row to a batch.
+         */
         boolean ready() {
             return hwm - lwm < ExchangeProcessor.PER_NODE_BATCH_COUNT || curr.size() < ExchangeProcessor.BATCH_SIZE;
         }
 
-        void acknowledge(int id) {
+        /**
+         * Callback method.
+         *
+         * @param id batch ID.
+         */
+        void onAcknowledge(int id) {
             if (lwm < id) {
                 lwm = id;
 
@@ -157,6 +192,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             }
         }
 
+        /**
+         * Sets "needSignal" flag.
+         */
         public void needSignal() {
             needSignal = true;
         }

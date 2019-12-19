@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 public final class QueryContext {
     /** */
     private static final Object[] EMPTY = {};
+    
     /** */
     private final Object[] params;
 
