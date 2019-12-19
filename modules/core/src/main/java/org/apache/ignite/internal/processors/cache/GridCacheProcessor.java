@@ -5355,7 +5355,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             cacheGrps = this.cacheGrps.values();
 
-        Object partFilter = filter == null ? null : filter.get(CachePagesListViewWalker.PART_ID_FILTER);
+        Object partFilter = filter == null ? null : filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
         Integer partId = partFilter instanceof Integer ? (Integer)partFilter : null;
 
         Object bucketFilter = filter == null ? null : filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);

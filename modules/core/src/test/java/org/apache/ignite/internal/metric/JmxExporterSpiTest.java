@@ -904,7 +904,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
             CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
-            CachePagesListViewWalker.PART_ID_FILTER, 0,
+            CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
             CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
         ));
 

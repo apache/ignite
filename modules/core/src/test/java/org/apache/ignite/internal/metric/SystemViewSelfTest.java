@@ -1068,7 +1068,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
-                CachePagesListViewWalker.PART_ID_FILTER, 0,
+                CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));
 

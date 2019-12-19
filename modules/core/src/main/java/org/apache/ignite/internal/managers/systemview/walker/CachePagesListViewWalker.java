@@ -33,15 +33,15 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
     /** Filter key for attribute "cacheGroupId" */
     public static final String CACHE_GROUP_ID_FILTER = "cacheGroupId";
 
-    /** Filter key for attribute "partId" */
-    public static final String PART_ID_FILTER = "partId";
+    /** Filter key for attribute "partitionId" */
+    public static final String PARTITION_ID_FILTER = "partitionId";
 
     /** Filter key for attribute "bucketNumber" */
     public static final String BUCKET_NUMBER_FILTER = "bucketNumber";
 
     /** List of filtrable attributes. */
     private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
-        "cacheGroupId", "partId", "bucketNumber"
+        "cacheGroupId", "partitionId", "bucketNumber"
     ));
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
         v.accept(0, "cacheGroupId", int.class);
-        v.accept(1, "partId", int.class);
+        v.accept(1, "partitionId", int.class);
         v.accept(2, "name", String.class);
         v.accept(3, "bucketNumber", int.class);
         v.accept(4, "bucketSize", long.class);
@@ -63,7 +63,7 @@ public class CachePagesListViewWalker implements SystemViewRowAttributeWalker<Ca
     /** {@inheritDoc} */
     @Override public void visitAll(CachePagesListView row, AttributeWithValueVisitor v) {
         v.acceptInt(0, "cacheGroupId", row.cacheGroupId());
-        v.acceptInt(1, "partId", row.partId());
+        v.acceptInt(1, "partitionId", row.partitionId());
         v.accept(2, "name", String.class, row.name());
         v.acceptInt(3, "bucketNumber", row.bucketNumber());
         v.acceptLong(4, "bucketSize", row.bucketSize());

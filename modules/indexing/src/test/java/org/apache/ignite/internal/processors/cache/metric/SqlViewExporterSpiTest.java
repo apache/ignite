@@ -871,14 +871,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
             // Test filtering by 3 columns.
             assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_NUMBER = 0 " +
-                "AND PART_ID = 0 AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+                "AND PARTITION_ID = 0 AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
 
             // Test filtering with invalid cache group id.
             assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHE_GROUP_ID = ?", -1)
                 .isEmpty());
 
             // Test filtering with invalid partition id.
-            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE PART_ID = ?", -1)
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE PARTITION_ID = ?", -1)
                 .isEmpty());
 
             // Test filtering with invalid bucket number.

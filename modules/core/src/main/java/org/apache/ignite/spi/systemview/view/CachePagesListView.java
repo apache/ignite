@@ -52,7 +52,7 @@ public class CachePagesListView extends PagesListView {
      */
     @Order(1)
     @Filtrable
-    public int partId() {
+    public int partitionId() {
         return partId;
     }
 }
