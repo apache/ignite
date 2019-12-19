@@ -62,7 +62,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
-import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -903,16 +903,16 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             cache.put(i, i);
 
         TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
-            PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
-            PagesListViewWalker.PART_ID_FILTER, 0,
-            PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.PART_ID_FILTER, 0,
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
         ));
 
         assertEquals(1, view.size());
 
         view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
-            PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
-            PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
         ));
 
         assertEquals(2, view.size());

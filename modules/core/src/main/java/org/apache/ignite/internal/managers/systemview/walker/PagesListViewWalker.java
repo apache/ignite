@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 /**
@@ -27,39 +27,29 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
  * @see PagesListView
  */
 public class PagesListViewWalker implements SystemViewRowAttributeWalker<PagesListView> {
-    /* Filter key for attribute "cacheGroupId" */
-    public static final String CACHE_GROUP_ID_FILTER = "cacheGroupId";
-
-    /* Filter key for attribute "partId" */
-    public static final String PART_ID_FILTER = "partId";
-
-    /* Filter key for attribute "bucketNumber" */
+    /** Filter key for attribute "bucketNumber" */
     public static final String BUCKET_NUMBER_FILTER = "bucketNumber";
 
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "cacheGroupId", int.class, true);
-        v.accept(1, "partId", int.class, true);
-        v.accept(2, "name", String.class, false);
-        v.accept(3, "bucketNumber", int.class, true);
-        v.accept(4, "bucketSize", long.class, false);
-        v.accept(5, "stripesCount", int.class, false);
-        v.accept(6, "cachedPagesCount", int.class, false);
+        v.accept(0, "name", String.class, false);
+        v.accept(1, "bucketNumber", int.class, true);
+        v.accept(2, "bucketSize", long.class, false);
+        v.accept(3, "stripesCount", int.class, false);
+        v.accept(4, "cachedPagesCount", int.class, false);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(PagesListView row, AttributeWithValueVisitor v) {
-        v.acceptInt(0, "cacheGroupId", row.cacheGroupId());
-        v.acceptInt(1, "partId", row.partId());
-        v.accept(2, "name", String.class, row.name());
-        v.acceptInt(3, "bucketNumber", row.bucketNumber());
-        v.acceptLong(4, "bucketSize", row.bucketSize());
-        v.acceptInt(5, "stripesCount", row.stripesCount());
-        v.acceptInt(6, "cachedPagesCount", row.cachedPagesCount());
+        v.accept(0, "name", String.class, row.name());
+        v.acceptInt(1, "bucketNumber", row.bucketNumber());
+        v.acceptLong(2, "bucketSize", row.bucketSize());
+        v.acceptInt(3, "stripesCount", row.stripesCount());
+        v.acceptInt(4, "cachedPagesCount", row.cachedPagesCount());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 7;
+        return 5;
     }
 }

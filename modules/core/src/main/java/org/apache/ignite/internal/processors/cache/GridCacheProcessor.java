@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,7 +76,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
-import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -109,7 +110,6 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -177,6 +177,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -602,7 +603,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.systemView().registerFiltrableView(
             CACHE_GRP_PAGE_LIST_VIEW,
             CACHE_GRP_PAGE_LIST_VIEW_DESC,
-            new PagesListViewWalker(),
+            new CachePagesListViewWalker(),
             this::pagesListViewSupplier,
             Function.identity()
         );
@@ -5338,8 +5339,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param filter Filter.
      */
-    private Iterable<PagesListView> pagesListViewSupplier(Map<String, Object> filter) {
-        Object cacheGrpId = filter == null ? null : filter.get(PagesListViewWalker.CACHE_GROUP_ID_FILTER);
+    private Iterable<CachePagesListView> pagesListViewSupplier(Map<String, Object> filter) {
+        Object cacheGrpId = filter == null ? null : filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
 
         Collection<CacheGroupContext> cacheGrps;
 
@@ -5354,10 +5355,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             cacheGrps = this.cacheGrps.values();
 
-        Object partFilter = filter == null ? null : filter.get(PagesListViewWalker.PART_ID_FILTER);
+        Object partFilter = filter == null ? null : filter.get(CachePagesListViewWalker.PART_ID_FILTER);
         Integer partId = partFilter instanceof Integer ? (Integer)partFilter : null;
 
-        Object bucketFilter = filter == null ? null : filter.get(PagesListViewWalker.BUCKET_NUMBER_FILTER);
+        Object bucketFilter = filter == null ? null : filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
         Integer bucketNum = bucketFilter instanceof Integer ? (Integer)bucketFilter : null;
 
         return F.flat(
@@ -5373,7 +5374,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     PagesList pagesList = (PagesList)rowStore.freeList();
 
-                    return pagesList.bucketsView(bucketNum);
+                    if (bucketNum != null) {
+                        return bucketNum >= 0 && bucketNum < pagesList.bucketsCount() ?
+                            Collections.singleton(new CachePagesListView(pagesList, bucketNum, dataStore.partId())) :
+                            Collections.emptyList();
+                    }
+
+                    return IntStream.range(0, pagesList.bucketsCount())
+                        .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
+                        .collect(Collectors.toList());
                 }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
     }
 

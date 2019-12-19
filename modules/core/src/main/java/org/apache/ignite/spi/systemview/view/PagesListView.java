@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.freelist;
+package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 
 /**
  * Pages-list representation for a {@link SystemView}.
@@ -41,27 +40,11 @@ public class PagesListView {
     }
 
     /**
-     * @return Cache group id.
-     */
-    @ViewAttribute(filtering = true)
-    public int cacheGroupId() {
-        return pagesList.groupId();
-    }
-
-    /**
-     * @return Partition id.
-     */
-    @ViewAttribute(order = 1, filtering = true)
-    public int partId() {
-        return PageIdUtils.partId(pagesList.metaPageId);
-    }
-
-    /**
      * @return Pages-list name.
      */
     @ViewAttribute(order = 2)
     public String name() {
-        return pagesList.name;
+        return pagesList.name();
     }
 
     /**
@@ -77,7 +60,7 @@ public class PagesListView {
      */
     @ViewAttribute(order = 4)
     public long bucketSize() {
-        return pagesList.bucketsSize[bucket].get();
+        return pagesList.bucketSize(bucket);
     }
 
     /**
@@ -85,9 +68,7 @@ public class PagesListView {
      */
     @ViewAttribute(order = 5)
     public int stripesCount() {
-        PagesList.Stripe[] stripes = pagesList.getBucket(bucket);
-
-        return stripes == null ? 0 : stripes.length;
+        return pagesList.stripesCount(bucket);
     }
 
     /**
@@ -95,8 +76,6 @@ public class PagesListView {
      */
     @ViewAttribute(order = 6)
     public int cachedPagesCount() {
-        PagesList.PagesCache pagesCache = pagesList.getBucketCache(bucket, false);
-
-        return pagesCache == null ? 0 : pagesCache.size();
+        return pagesList.cachedPagesCount(bucket);
     }
 }

@@ -34,7 +34,8 @@ import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.ignite.internal.managers.systemview.walker.ViewAttribute;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -98,6 +99,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SqlQueryHistoryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(StripedExecutorTaskView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PagesListView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
@@ -160,7 +162,7 @@ public class SystemViewRowAttributeWalkerGenerator {
 
         forEachMethod(clazz, (m, i) -> {
             if (m.getAnnotation(ViewAttribute.class) != null && m.getAnnotation(ViewAttribute.class).filtering()) {
-                code.add(TAB + "/* Filter key for attribute \"" + m.getName() + "\" */");
+                code.add(TAB + "/** Filter key for attribute \"" + m.getName() + "\" */");
                 code.add(TAB + "public static final String " + m.getName()
                     .replaceAll("(\\p{Upper})", "_$1")
                     .toUpperCase() + "_FILTER = \"" + m.getName() + "\";");

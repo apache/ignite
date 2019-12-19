@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1835,22 +1836,48 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * @param bucketFilter If set returns only view for this bucket.
-     *
-     * Gets buckets representation for a {@link SystemView}
+     * Pages list name.
      */
-    public Collection<PagesListView> bucketsView(Integer bucketFilter) {
-        if (bucketFilter != null) {
-            return bucketFilter >= 0 && bucketFilter < buckets ?
-                Collections.singleton(new PagesListView(this, bucketFilter)) : Collections.emptyList();
-        }
+    public String name() {
+        return name;
+    }
 
-        List<PagesListView> views = new ArrayList<>(buckets);
+    /**
+     * Buckets count.
+     */
+    public int bucketsCount() {
+        return buckets;
+    }
 
-        for (int i = 0; i < buckets; i++)
-            views.add(i, new PagesListView(this, i));
+    /**
+     * Bucket size.
+     *
+     * @param bucket Bucket.
+     */
+    public long bucketSize(int bucket) {
+        return bucketsSize[bucket].get();
+    }
 
-        return views;
+    /**
+     * Stripes count.
+     *
+     * @param bucket Bucket.
+     */
+    public int stripesCount(int bucket) {
+        Stripe[] stripes = getBucket(bucket);
+
+        return stripes == null ? 0 : stripes.length;
+    }
+
+    /**
+     * Cached pages count.
+     *
+     * @param bucket Bucket.
+     */
+    public int cachedPagesCount(int bucket) {
+        PagesCache pagesCache = getBucketCache(bucket, false);
+
+        return pagesCache == null ? 0 : pagesCache.size();
     }
 
     /**

@@ -58,9 +58,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
-import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesListView;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -1044,13 +1045,13 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertTrue(dr0flPages > 0);
             assertTrue(dr0flStripes > 0);
 
-            SystemView<PagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
+            SystemView<CachePagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
 
             long dr1flPages = 0;
             int dr1flStripes = 0;
             int dr1flCached = 0;
 
-            for (PagesListView pagesListView : cacheGrpPageLists) {
+            for (CachePagesListView pagesListView : cacheGrpPageLists) {
                 if (pagesListView.cacheGroupId() == cacheId("cache1")) {
                     dr1flPages += pagesListView.bucketSize();
                     dr1flStripes += pagesListView.stripesCount();
@@ -1065,17 +1066,17 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             // Test filtering.
             assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
 
-            Iterator<PagesListView> iter = ((FiltrableSystemView<PagesListView>)cacheGrpPageLists).iterator(U.map(
-                PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
-                PagesListViewWalker.PART_ID_FILTER, 0,
-                PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.PART_ID_FILTER, 0,
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));
 
             assertEquals(1, F.size(iter));
 
-            iter = ((FiltrableSystemView<PagesListView>)cacheGrpPageLists).iterator(U.map(
-                PagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
-                PagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));
 
             assertEquals(2, F.size(iter));
