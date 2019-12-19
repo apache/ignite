@@ -21,13 +21,17 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 
 /**
- *
+ * Ignite type factory.
  */
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+    /** */
     public IgniteTypeFactory() {
         super(IgniteTypeSystem.DEFAULT);
     }
 
+    /**
+     * @param typeSystem Type system.
+     */
     public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
         super(typeSystem);
     }

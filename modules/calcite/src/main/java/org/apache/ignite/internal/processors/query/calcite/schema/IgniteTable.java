@@ -79,6 +79,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return rowType.asRelDataType(typeFactory);
     }
 
+    /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
         return new TableStatistics();
     }
@@ -87,12 +88,15 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
         RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::getDistribution);
+                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
         return new LogicalTableScan(cluster, traitSet, relOptTable);
     }
 
-    public IgniteDistribution getDistribution() {
+    /**
+     * @return Table distribution trait.
+     */
+    public IgniteDistribution distribution() {
         Object key = identityKey();
 
         if (key == null)
@@ -101,37 +105,51 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.Affinity(CU.cacheId(cacheName), key));
     }
 
+    /**
+     * @return Affinity identity key.
+     */
     protected Object identityKey() {
         return identityKey;
     }
 
+    /**
+     * @param ctx Planner context.
+     * @return Fragment meta information.
+     */
     public FragmentInfo fragmentInfo(PlannerContext ctx) {
         return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName)));
     }
 
+    /** {@inheritDoc} */
     @Override public Enumerable<Object[]> scan(DataContext root) {
         throw new AssertionError(); // TODO
     }
 
+    /** */
     private class TableStatistics implements Statistic {
+        /** {@inheritDoc} */
         @Override public Double getRowCount() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isKey(ImmutableBitSet columns) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public List<RelReferentialConstraint> getReferentialConstraints() {
             return ImmutableList.of();
         }
 
+        /** {@inheritDoc} */
         @Override public List<RelCollation> getCollations() {
             return ImmutableList.of();
         }
 
+        /** {@inheritDoc} */
         @Override public RelDistribution getDistribution() {
-            return IgniteTable.this.getDistribution();
+            return distribution();
         }
     }
 }

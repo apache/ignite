@@ -66,6 +66,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     /** */
     private GridKernalContext kernalContext;
 
+    /** */
     public CalciteQueryProcessor() {
         config = Frameworks.newConfigBuilder()
             .parserConfig(SqlParser.configBuilder()
@@ -108,6 +109,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     @Override public void stop() {
     }
 
+    /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
         PlannerContext context = context(Commons.convert(ctx), query, params, this::buildContext);
         QueryExecution execution = prepare(context);
@@ -115,20 +117,18 @@ public class CalciteQueryProcessor implements QueryEngine {
         return Collections.singletonList(cur);
     }
 
-    public FrameworkConfig config() {
-        return config;
-    }
-
-    public IgniteLogger log() {
-        return log;
-    }
-
-    /** */
-    public IgnitePlanner planner(RelTraitDef[] traitDefs, PlannerContext ctx0) {
-        FrameworkConfig cfg = Frameworks.newConfigBuilder(config())
-                .defaultSchema(ctx0.schema())
+    /**
+     * Creates a planner.
+     *
+     * @param traitDefs Trait definitions.
+     * @param ctx Planner context.
+     * @return Ignite planner.
+     */
+    public IgnitePlanner planner(RelTraitDef[] traitDefs, PlannerContext ctx) {
+        FrameworkConfig cfg = Frameworks.newConfigBuilder(config)
+                .defaultSchema(ctx.schema())
                 .traitDefs(traitDefs)
-                .context(ctx0)
+                .context(ctx)
                 .build();
 
         return new IgnitePlanner(cfg);
@@ -144,6 +144,7 @@ public class CalciteQueryProcessor implements QueryEngine {
         return clo.apply(Contexts.chain(ctx, config.getContext()), new Query(query, params));
     }
 
+    /** */
     private PlannerContext buildContext(@NotNull Context parent, @NotNull Query query) {
         return PlannerContext.builder()
             .logger(log)
@@ -157,10 +158,12 @@ public class CalciteQueryProcessor implements QueryEngine {
             .build();
     }
 
+    /** */
     private QueryExecution prepare(PlannerContext ctx) {
         return new DistributedExecution(ctx);
     }
 
+    /** */
     private AffinityTopologyVersion readyAffinityVersion() {
         return kernalContext.cache().context().exchange().readyAffinityVersion();
     }

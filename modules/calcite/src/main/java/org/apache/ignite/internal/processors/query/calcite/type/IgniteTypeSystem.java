@@ -22,7 +22,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 
 /**
- *
+ * Ignite type system.
  */
 public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
     public static final RelDataTypeSystem DEFAULT = new IgniteTypeSystem();

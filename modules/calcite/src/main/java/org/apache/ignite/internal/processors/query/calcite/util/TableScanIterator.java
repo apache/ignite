@@ -32,26 +32,28 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /**
- *
+ * Table scan iterator.
  */
 public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
+    /** */
     private final int cacheId;
+
+    /** */
     private final Iterator<GridDhtLocalPartition> parts;
+
+    /** */
     private final Function<CacheDataRow, T> typeWrapper;
+
+    /** */
     private final Predicate<CacheDataRow> typeFilter;
 
-    /**
-     *
-     */
+    /** */
     private GridCursor<? extends CacheDataRow> cur;
-    /**
-     *
-     */
+
+    /** */
     private GridDhtLocalPartition curPart;
 
-    /**
-     *
-     */
+    /** */
     private T next;
 
     public TableScanIterator(int cacheId, Iterator<GridDhtLocalPartition> parts, Function<CacheDataRow, T> typeWrapper,
@@ -62,8 +64,8 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
         this.typeFilter = typeFilter;
     }
 
-    @Override
-    protected T onNext() {
+    /** {@inheritDoc} */
+    @Override protected T onNext() {
         if (next == null)
             throw new NoSuchElementException();
 
@@ -74,8 +76,8 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
         return next;
     }
 
-    @Override
-    protected boolean onHasNext() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override protected boolean onHasNext() throws IgniteCheckedException {
         if (next != null)
             return true;
 
@@ -113,9 +115,13 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
         return next != null;
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
+    @Override protected void onClose() {
+        if (curPart != null)
+            releaseCurrentPartition();
+    }
+
+    /** */
     private void releaseCurrentPartition() {
         GridDhtLocalPartition p = curPart;
 
@@ -126,9 +132,7 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
         p.release();
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean reservePartition(GridDhtLocalPartition p) {
         if (p != null && p.reserve()) {
             curPart = p;
@@ -137,13 +141,5 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
         }
 
         return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void onClose() {
-        if (curPart != null)
-            releaseCurrentPartition();
     }
 }
