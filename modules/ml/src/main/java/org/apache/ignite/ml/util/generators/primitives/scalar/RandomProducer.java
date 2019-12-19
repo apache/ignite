@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.generators.primitives.vector.VectorGenerator;
 
 /**
- * Represents a generator of preudorandom scalar values.
+ * Represents a generator of pseudo-random scalar values.
  */
 public interface RandomProducer extends Supplier<Double> {
     /**

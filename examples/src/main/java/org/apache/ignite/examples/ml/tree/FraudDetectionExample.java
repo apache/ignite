@@ -100,7 +100,7 @@ public class FraudDetectionExample {
         IgniteCache<Integer, Vector> dataCache,
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer,
         Vectorizer<Integer, Vector, Integer, Double> vectorizer, TrainTestSplit<Integer, Vector> splitter) {
-        System.out.println(">>> Start traininig.");
+        System.out.println(">>> Start training.");
         IgniteModel<Vector, Double> mdl = trainer.fit(
             ignite, dataCache,
             splitter.getTrainFilter(),

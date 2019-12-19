@@ -75,8 +75,11 @@ public enum IgniteFeatures {
     /** LRT system and user time dump settings.  */
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
+    /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
+    PME_FREE_SWITCH(19),
+
     /** Persistence caches can be snapshotted.  */
-    PERSISTENCE_CACHE_SNAPSHOT(19);
+    PERSISTENCE_CACHE_SNAPSHOT(20);
 
     /**
      * Unique feature identifier.

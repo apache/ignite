@@ -66,7 +66,7 @@ public abstract class AbstractStorageTest {
 
     /** */
     @Test
-    public void testToNumericConvertion1() {
+    public void testToNumericConversion1() {
         VectorStorage storage = createStorage(10);
 
         storage.setRaw(0, "123");
@@ -83,7 +83,7 @@ public abstract class AbstractStorageTest {
 
     /** */
     @Test
-    public void testToNumericConvertion2() {
+    public void testToNumericConversion2() {
         VectorStorage storage = createStorage(10);
         double[] exp = new double[storage.size()];
         for(int i = 0; i < storage.size(); i++) {

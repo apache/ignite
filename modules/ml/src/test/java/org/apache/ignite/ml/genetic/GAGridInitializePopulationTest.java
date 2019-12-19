@@ -42,9 +42,11 @@ public class GAGridInitializePopulationTest {
     /** GAGrid **/
     private GAGrid gaGrid;
 
+    /**
+     * Initialize the population.
+     */
     @Before
     public void initialize() {
-
         try {
 
             // Create an Ignite instance as you would in any other use case.
@@ -68,9 +70,11 @@ public class GAGridInitializePopulationTest {
         }
     }
 
+    /**
+     * Check the initialization of genes.
+     */
     @Test
     public void testInitializeGenes() {
-
         try {
             IgniteCache<Long, Gene> geneCache = ignite.cache(GAGridConstants.GENE_CACHE);
             gaGrid.initializeGenePopulation();
@@ -95,6 +99,9 @@ public class GAGridInitializePopulationTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testInitializePopulation() {
         try {
@@ -137,12 +144,15 @@ public class GAGridInitializePopulationTest {
             'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^'};
 
         for (int i = 0; i < chars.length; i++) {
-            Gene gene = new Gene(new Character(chars[i]));
+            Gene gene = new Gene(chars[i]);
             list.add(gene);
         }
         return list;
     }
 
+    /**
+     * Stop the Ignite.
+     */
     @After
     public void tearDown() {
 

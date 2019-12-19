@@ -64,7 +64,7 @@ public class ParamGrid {
     }
 
     /**
-     * Set up the hyperparameter searching strategy.
+     * Set up the hyper-parameter searching strategy.
      *
      * @param paramSearchStgy Parameter search strategy.
      */
