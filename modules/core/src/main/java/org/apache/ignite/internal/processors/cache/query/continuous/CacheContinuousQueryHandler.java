@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  */
 public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** */
-    private static final long serialVersionUID = 2132562226001839898L;
+    private static final long serialVersionUID = 0L;
 
     /** */
     static final int BACKUP_ACK_THRESHOLD =
@@ -120,7 +120,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private Object topic;
 
     /** Security subject id. */
-    private UUID subjectId;
+    protected UUID subjectId;
 
     /** P2P unmarshalling future. */
     protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -1420,7 +1420,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         else
             out.writeObject(rmtFilter);
 
-        U.writeUuid(out, subjectId);
         out.writeBoolean(internal);
         out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
@@ -1428,6 +1427,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         out.writeBoolean(ignoreExpired);
         out.writeInt(taskHash);
         out.writeBoolean(keepBinary);
+
+        if(!(this instanceof CacheContinuousQueryHandlerV2))
+            U.writeUuid(out, subjectId);
     }
 
     /** {@inheritDoc} */
@@ -1445,7 +1447,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
-        subjectId = U.readUuid(in);
         internal = in.readBoolean();
         notifyExisting = in.readBoolean();
         oldValRequired = in.readBoolean();
@@ -1455,6 +1456,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         keepBinary = in.readBoolean();
 
         cacheId = CU.cacheId(cacheName);
+
+        if(!(this instanceof CacheContinuousQueryHandlerV2))
+            subjectId = U.readUuid(in);
     }
 
     /**

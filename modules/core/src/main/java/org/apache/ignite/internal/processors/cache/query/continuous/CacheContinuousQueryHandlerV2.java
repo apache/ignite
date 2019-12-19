@@ -164,6 +164,9 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             out.writeObject(rmtFilterFactory);
 
         out.writeByte(types);
+
+        if(!(this instanceof CacheContinuousQueryHandlerV3))
+            U.writeUuid(out, subjectId);
     }
 
     /** {@inheritDoc} */
@@ -182,5 +185,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             rmtFilterFactory = (Factory)in.readObject();
 
         types = in.readByte();
+
+        if(!(this instanceof CacheContinuousQueryHandlerV3))
+            subjectId = U.readUuid(in);
     }
 }
