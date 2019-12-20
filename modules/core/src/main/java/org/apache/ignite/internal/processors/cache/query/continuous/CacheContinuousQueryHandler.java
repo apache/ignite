@@ -1010,9 +1010,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @return Security subject id to create {@link OperationSecurityContext}.
      */
     private UUID securitySubject(){
-        assert nodeId != null : "Field 'nodeId' cannot be null.";
+        if(ctx.security().enabled())
+            return internal ? nodeId : subjectId;
 
-        return subjectId != null ? subjectId : nodeId;
+        return null;
     }
 
     /**

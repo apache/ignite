@@ -54,6 +54,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDh
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -86,8 +88,6 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.continuousQuerySecurityAwareSupported;
 
 /**
  * Continuous queries manager.
@@ -528,7 +528,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     {
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
-        continuousQuerySecurityAwareSupported(cctx.kernalContext());
+        continuousQuerySecurityAwareSupported();
 
         if (rmtTransFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
@@ -539,7 +539,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         locTransLsnr,
                         rmtFilterFactory,
                         rmtTransFactory,
-                        securitySubjectId(cctx.kernalContext()),
+                        securitySubjectId(),
                         true,
                         false,
                         !includeExpired,
@@ -555,7 +555,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilterFactory,
-                        securitySubjectId(cctx.kernalContext()),
+                        securitySubjectId(),
                         true,
                         false,
                         !includeExpired,
@@ -574,7 +574,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilter,
-                        securitySubjectId(cctx.kernalContext()),
+                        securitySubjectId(),
                         true,
                         false,
                         !includeExpired,
@@ -594,6 +594,32 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             loc,
             keepBinary,
             false);
+    }
+
+    /**
+     * Gets a current security subject id for communication routines.
+     *
+     * @return Current security subject id if security is enabled and subject id doesn't equal local node id otherwise
+     * {@code null}.
+     */
+    private UUID securitySubjectId() {
+        IgniteSecurity security = cctx.kernalContext().security();
+
+        return security.enabled() ? security.securityContext().subject().id() : null;
+    }
+
+    /**
+     * Checks cluster nodes version is compatible with ContinuousQuery with subject id.
+     */
+    private void continuousQuerySecurityAwareSupported() {
+        Collection<ClusterNode> nodes = cctx.kernalContext().discovery().allNodes();
+
+        for (ClusterNode node : nodes) {
+            if (!IgniteFeatures.nodeSupports(node, IgniteFeatures.CONT_QRY_SECURITY_AWARE)) {
+                throw new IgniteException("Can't start ContinuousQuery, because some nodes in cluster doesn't " +
+                    "support ContinuousQuery with security subject identifier: " + node);
+            }
+        }
     }
 
     /**
@@ -1054,7 +1080,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             if (types == 0)
                 throw new IgniteCheckedException("Listener must implement one of CacheEntryListener sub-interfaces.");
 
-            continuousQuerySecurityAwareSupported(cctx.kernalContext());
+            continuousQuerySecurityAwareSupported();
 
             final byte types0 = types;
 
@@ -1075,7 +1101,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
                                 rmtFilterFactory,
-                                securitySubjectId(cctx.kernalContext()),
+                                securitySubjectId(),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,
@@ -1102,7 +1128,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
                                 jCacheFilter,
-                                securitySubjectId(cctx.kernalContext()),
+                                securitySubjectId(),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,

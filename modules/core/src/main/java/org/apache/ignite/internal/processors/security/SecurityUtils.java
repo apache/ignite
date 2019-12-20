@@ -30,15 +30,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -117,41 +114,6 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
-    }
-
-    /**
-     * Gets a current security subject id for communication routines.
-     *
-     * @param ctx Grid kernal context.
-     * @return Current security subject id if security is enabled and subject id doesn't equal local node id otherwise
-     * {@code null}.
-     */
-    public static UUID securitySubjectId(GridKernalContext ctx) {
-        Objects.requireNonNull(ctx, "Parameter 'ctx' cannot be null.");
-
-        if (ctx.security().enabled()) {
-            UUID curSecSubjId = ctx.security().securityContext().subject().id();
-
-            return !ctx.localNodeId().equals(curSecSubjId) ? curSecSubjId : null;
-        }
-
-        return null;
-    }
-
-    /**
-     * Checks cluster nodes version is compatible with ContinuousQuery with subject id.
-     *
-     * @param ctx Grid kernal context.
-     */
-    public static void continuousQuerySecurityAwareSupported(GridKernalContext ctx) {
-        Collection<ClusterNode> nodes = ctx.discovery().allNodes();
-
-        for (ClusterNode node : nodes) {
-            if (!IgniteFeatures.nodeSupports(node, IgniteFeatures.CONT_QRY_SECURITY_AWARE)) {
-                throw new IgniteException("Can't start ContinuousQuery, because some nodes in cluster doesn't " +
-                    "support ContinuousQuery with security subject identifier: " + node);
-            }
-        }
     }
 
     /**
