@@ -144,7 +144,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File name template for index delta pages. */
     public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
-    /** The reason of checkpoint start for needs of bakcup. */
+    /** The reason of checkpoint start for needs of snapshot. */
     public static final String SNAPSHOT_CP_REASON = "Wakeup for checkpoint to take snapshot [name=%s]";
 
     /** Default working directory for snapshot temporary files. */
@@ -994,7 +994,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
-                    "bakcup directory for cache group: " + gctx.groupId(),
+                    "snapshot directory for cache group: " + gctx.groupId(),
                     null);
 
                 CompletableFuture<Boolean> cpEndFut0 = sctx.cpEndFut;
