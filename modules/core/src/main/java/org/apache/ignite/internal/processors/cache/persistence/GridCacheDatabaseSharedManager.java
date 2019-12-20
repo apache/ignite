@@ -4591,6 +4591,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
+                @Override public IgniteInternalFuture<?> cpFinishFut() {
+                    return delegate.cpFinishFut();
+                }
+
+                /** {@inheritDoc} */
                 @Override public Map<Integer, Set<Integer>> collectPartStat() {
                     assert delegate != null;
 
@@ -4765,6 +4770,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public boolean nextSnapshot() {
                 return curr.nextSnapshot;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteInternalFuture<?> cpFinishFut() {
+                return curr.cpFinishFut;
             }
 
             /** {@inheritDoc} */
