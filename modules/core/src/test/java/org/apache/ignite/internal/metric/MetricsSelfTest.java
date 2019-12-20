@@ -358,7 +358,6 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
-
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {
         List<IgniteInternalFuture> futs = new ArrayList<>();

@@ -68,7 +68,6 @@ public class SandboxMLCache {
         return cache;
     }
 
-
     /**
      * Loads dataset as a list of rows.
      *
@@ -98,7 +97,6 @@ public class SandboxMLCache {
 
         return res;
     }
-
 
     /**
      * Fills cache with data and returns it.

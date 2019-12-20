@@ -2645,7 +2645,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     }
 
-
     /**
      * Returns metric set.
      *

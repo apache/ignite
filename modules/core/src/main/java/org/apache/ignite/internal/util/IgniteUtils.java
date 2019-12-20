@@ -137,8 +137,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Consumer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -5414,7 +5414,6 @@ public abstract class IgniteUtils {
 
         return map;
     }
-
 
     /**
      * Calculate a hashCode for an array.
