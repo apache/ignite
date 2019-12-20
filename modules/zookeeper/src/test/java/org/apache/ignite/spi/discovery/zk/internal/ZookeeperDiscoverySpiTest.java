@@ -703,6 +703,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 assertEquals(zkSesTimeout == 0 ? (long)grid.configuration().getFailureDetectionTimeout(): zkSesTimeout,
                     bean.getZkSessionTimeout());
             }
+
+            validateMbeans(grid(0), "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
         }
         finally {
             stopAllGrids();
