@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
