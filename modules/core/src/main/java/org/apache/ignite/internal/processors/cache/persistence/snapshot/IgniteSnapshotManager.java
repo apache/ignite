@@ -456,7 +456,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             assert t == null : "Excepction must never be thrown since a wrapper is used " +
                                 "for each snapshot task: " + t;
 
-                            sctx0.close();
+                            LocalSnapshotContext snpCtx = locSnpCtxs.remove(sctx0.snpName);
+
+                            snpCtx.close();
                         });
                 }
             }
@@ -751,6 +753,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 sctx.close();
             }
 
+            locSnpCtxs.clear();
+
             SnapshotRequestFuture snpTrFut = snpRq.get();
 
             if (snpTrFut != null)
@@ -980,7 +984,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             sctx = new LocalSnapshotContext(log,
                 snpName,
                 snapshotWorkDir(snpName),
-                locSnpCtxs::remove,
                 nodeSnpDir,
                 parts,
                 exec,
@@ -1036,9 +1039,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 log.info("Snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
-            sctx.acceptException(e);
+            LocalSnapshotContext sctx0 = locSnpCtxs.remove(snpName);
 
-            sctx.close();
+            sctx0.acceptException(e);
+            sctx0.close();
 
             if (nodeSnpDir != null)
                 nodeSnpDir.delete();
@@ -1563,9 +1567,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Snapshot workgin directory on file system. */
         private final File snpWorkDir;
 
-        /** Operation for cleanup local snapshot operation. */
-        private final Consumer<String> removeSnpCtx;
-
         /** Absolute snapshot storage path. */
         private final File nodeSnpDir;
 
@@ -1618,7 +1619,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             IgniteLogger log,
             String snpName,
             File snpWorkDir,
-            Consumer<String> removeSnpCtx,
             File nodeSnpDir,
             Map<Integer, GridIntList> parts,
             Executor exec,
@@ -1633,7 +1633,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             this.log = log.getLogger(LocalSnapshotContext.class);
             this.snpName = snpName;
             this.snpWorkDir = snpWorkDir;
-            this.removeSnpCtx = removeSnpCtx;
             this.nodeSnpDir = nodeSnpDir;
             this.exec = exec;
             this.snpSndr = snpSndr;
@@ -1693,8 +1692,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void close() {
             if (state(SnapshotState.STOPPED)) {
-                removeSnpCtx.accept(snpName);
-
                 for (PageStoreSerialWriter writer : partDeltaWriters.values())
                     U.closeQuiet(writer);
 
