@@ -32,6 +32,12 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -45,6 +51,7 @@ import org.junit.runners.Suite;
     ScanQueryPermissionCheckTest.class,
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
+    ThinClientPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -54,9 +61,15 @@ import org.junit.runners.Suite;
     EntryProcessorRemoteSecurityContextCheckTest.class,
     DataStreamerRemoteSecurityContextCheckTest.class,
     CacheLoadRemoteSecurityContextCheckTest.class,
-    ThinClientPermissionCheckTest.class,
 
     InvalidServerTest.class,
+
+    CacheSandboxTest.class,
+    DataStreamerSandboxTest.class,
+    ComputeSandboxTest.class,
+    DoPrivilegedOnRemoteNodeTest.class,
+    IgniteOperationsInsideSandboxTest.class,
+    SecuritySubjectPermissionsTest.class
 })
 public class SecurityTestSuite {
 }

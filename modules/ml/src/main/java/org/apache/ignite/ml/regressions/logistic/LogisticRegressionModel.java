@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.regressions.logistic;
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -27,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
-public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>, Serializable {
+public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel> {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 

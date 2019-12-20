@@ -41,7 +41,7 @@ import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * This example demostrates an ability of using custom client classes in cluster in case of absence of these classes on
+ * This example demonstrates an ability of using custom client classes in cluster in case of absence of these classes on
  * server nodes. Preprocessors (see {@link Preprocessor}, preprocessor trainers (see {@link PreprocessingTrainer} and
  * vectorizers (see {@link Vectorizer}) can be defined in client code and deployed to server nodes during training
  * phase.

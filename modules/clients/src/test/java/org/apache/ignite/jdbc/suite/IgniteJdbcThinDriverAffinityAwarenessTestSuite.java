@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.suite;
 
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessReconnectionAndFailoverSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAffinityAwarenessTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
@@ -38,6 +39,7 @@ import org.junit.runners.Suite;
     JdbcThinStatementSelfTest.class,
     JdbcThinAffinityAwarenessSelfTest.class,
     JdbcThinAffinityAwarenessTransactionsSelfTest.class,
+    JdbcThinAffinityAwarenessReconnectionAndFailoverSelfTest.class,
 })
 public class IgniteJdbcThinDriverAffinityAwarenessTestSuite {
     /**

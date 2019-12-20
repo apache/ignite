@@ -46,10 +46,10 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
         assertEquals(0, aggregator.getTruePositive());
         assertEquals(0, aggregator.getFalsePositive());
 
-        aggregator.aggregate(model, VectorUtils.of(0.).labeled(0.));
-        aggregator.aggregate(model, VectorUtils.of(1.).labeled(0.));
-        aggregator.aggregate(model, VectorUtils.of(1.).labeled(1.));
-        aggregator.aggregate(model, VectorUtils.of(0.).labeled(1.));
+        aggregator.aggregate(mdl, VectorUtils.of(0.).labeled(0.));
+        aggregator.aggregate(mdl, VectorUtils.of(1.).labeled(0.));
+        aggregator.aggregate(mdl, VectorUtils.of(1.).labeled(1.));
+        aggregator.aggregate(mdl, VectorUtils.of(0.).labeled(1.));
 
         assertEquals(1, aggregator.getTrueNegative());
         assertEquals(1, aggregator.getFalseNegative());
@@ -68,10 +68,10 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
         agg1.initByContext(new BinaryClassificationEvaluationContext<>(0., 1.));
         agg2.initByContext(new BinaryClassificationEvaluationContext<>(0., 1.));
 
-        agg1.aggregate(model, VectorUtils.of(0.).labeled(0.));
-        agg1.aggregate(model, VectorUtils.of(1.).labeled(0.));
-        agg2.aggregate(model, VectorUtils.of(1.).labeled(1.));
-        agg2.aggregate(model, VectorUtils.of(0.).labeled(1.));
+        agg1.aggregate(mdl, VectorUtils.of(0.).labeled(0.));
+        agg1.aggregate(mdl, VectorUtils.of(1.).labeled(0.));
+        agg2.aggregate(mdl, VectorUtils.of(1.).labeled(1.));
+        agg2.aggregate(mdl, VectorUtils.of(0.).labeled(1.));
 
         BinaryClassificationPointwiseMetricStatsAggregator<Double> res = agg1.mergeWith(agg2);
         assertEquals(1, res.getTrueNegative());
@@ -96,12 +96,9 @@ public class BinaryClassificationPointwiseMetricStatsAggregatorTest {
     /**
      *
      */
-    private IgniteModel<Vector, Double> model = new IgniteModel<Vector, Double>() {
+    private IgniteModel<Vector, Double> mdl = new IgniteModel<Vector, Double>() {
         @Override public Double predict(Vector input) {
-            if (input.get(0) == 0.0)
-                return 0.;
-            else
-                return 1.;
+            return input.get(0) == 0.0 ? 0. : 1.;
         }
     };
 }

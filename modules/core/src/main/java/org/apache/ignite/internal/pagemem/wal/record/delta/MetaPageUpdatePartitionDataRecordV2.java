@@ -28,12 +28,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Partition meta page delta record.
- * Contains reference to update counters gaps.
+ *
  */
 public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartitionDataRecord {
     /** */
-    private long gapsLink;
+    private long link;
 
     /**
      * @param grpId Group id.
@@ -44,7 +43,7 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
      * @param cntrsPageId Cntrs page id.
      * @param state State.
      * @param allocatedIdxCandidate Allocated index candidate.
-     * @param gapsLink Link.
+     * @param link Link.
      */
     public MetaPageUpdatePartitionDataRecordV2(
         int grpId,
@@ -55,10 +54,9 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
         long cntrsPageId,
         byte state,
         int allocatedIdxCandidate,
-        long gapsLink
-    ) {
+        long link) {
         super(grpId, pageId, updateCntr, globalRmvId, partSize, cntrsPageId, state, allocatedIdxCandidate);
-        this.gapsLink = gapsLink;
+        this.link = link;
     }
 
     /**
@@ -67,7 +65,7 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
     public MetaPageUpdatePartitionDataRecordV2(DataInput in) throws IOException {
         super(in);
 
-        this.gapsLink = in.readLong();
+        this.link = in.readLong();
     }
 
     /** {@inheritDoc} */
@@ -76,21 +74,21 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
 
         PagePartitionMetaIOV2 io = (PagePartitionMetaIOV2)PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-        io.setGapsLink(pageAddr, gapsLink);
+        io.setGapsLink(pageAddr, link);
     }
 
     /**
      *
      */
-    public long gapsLink() {
-        return gapsLink;
+    public long link() {
+        return link;
     }
 
     /** {@inheritDoc} */
     @Override public void toBytes(ByteBuffer buf) {
         super.toBytes(buf);
 
-        buf.putLong(gapsLink());
+        buf.putLong(link());
     }
 
     /** {@inheritDoc} */

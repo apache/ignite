@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -194,7 +193,7 @@ class ServiceDeploymentTask {
                         Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
                         if (!services.isEmpty()) {
-                            Map<Integer, Map<Integer, List<UUID>>> change = msg0.assignmentChange();
+                            Map<Integer, IgniteUuid> change = msg0.cacheDeploymentIds();
 
                             if (change != null) {
                                 Set<String> names = new HashSet<>();
