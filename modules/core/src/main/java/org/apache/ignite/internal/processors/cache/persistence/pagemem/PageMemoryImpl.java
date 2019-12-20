@@ -96,6 +96,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.pagemem.FullPageId.NULL_PAGE;
+import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePool.SEGMENT_INDEX_MASK;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -1266,8 +1267,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 copyInBuffer(tmpAbsPtr, buf);
 
-                PageHeader.pageId(tmpAbsPtr, NULL_PAGE.pageId());
-                PageHeader.pageGroupId(tmpAbsPtr, NULL_PAGE.groupId());
+                PageHeader.fullPageId(tmpAbsPtr, NULL_PAGE);
 
                 GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
@@ -1621,8 +1621,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             PageHeader.dirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);
             // info for checkpoint buffer cleaner.
-            PageHeader.pageId(tmpAbsPtr, fullId.pageId());
-            PageHeader.pageGroupId(tmpAbsPtr, fullId.groupId());
+            PageHeader.fullPageId(tmpAbsPtr, fullId);
 
             assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
             assert PageIO.getCrc(tmpAbsPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
@@ -1874,14 +1873,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long freePageAbsPtr = checkpointPool.absolute(relative);
 
-            long pageId = PageHeader.readPageId(freePageAbsPtr);
+            FullPageId pageToReplace = PageHeader.fullPageId(freePageAbsPtr);
 
-            int grpId = PageHeader.readPageGroupId(freePageAbsPtr);
-
-            if (pageId == NULL_PAGE.pageId() || grpId == NULL_PAGE.groupId())
+            if (pageToReplace.pageId() == NULL_PAGE.pageId() || pageToReplace.groupId() == NULL_PAGE.groupId())
                 continue;
-
-            FullPageId pageToReplace = new FullPageId(pageId, grpId);
 
             if (!isInCheckpoint(pageToReplace))
                 continue;
