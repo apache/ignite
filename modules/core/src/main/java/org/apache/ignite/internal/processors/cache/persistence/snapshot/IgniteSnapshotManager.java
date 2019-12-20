@@ -1039,10 +1039,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 log.info("Snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
-            LocalSnapshotContext sctx0 = locSnpCtxs.remove(snpName);
+            locSnpCtxs.remove(snpName, sctx);
 
-            sctx0.acceptException(e);
-            sctx0.close();
+            sctx.acceptException(e);
+            sctx.close();
 
             if (nodeSnpDir != null)
                 nodeSnpDir.delete();
