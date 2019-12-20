@@ -52,8 +52,6 @@ import javax.management.ObjectName;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -123,6 +121,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
@@ -703,6 +703,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 assertEquals(zkSesTimeout == 0 ? (long)grid.configuration().getFailureDetectionTimeout(): zkSesTimeout,
                     bean.getZkSessionTimeout());
             }
+
+            validateMbeans(grid(0), "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
         }
         finally {
             stopAllGrids();
