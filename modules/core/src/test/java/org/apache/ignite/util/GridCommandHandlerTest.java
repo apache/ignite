@@ -110,7 +110,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
-import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -1815,40 +1814,5 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
 
         assertContains(log, testOut.toString(), "LOST partitions:");
-    }
-
-    /**
-     * Test cluster master key change works via control.sh
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testMasterKeyChange() throws Exception {
-        encriptionEnabled = true;
-
-        Ignite ignite = startGrids(1);
-
-        ignite.cluster().active(true);
-
-        CommandHandler h = new CommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
-
-        Object res = h.getLastOperationResult();
-
-        assertEquals(ignite.encryption().getMasterKeyName(), res);
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
-
-        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
-
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
-
-        res = h.getLastOperationResult();
-
-        assertEquals(MASTER_KEY_NAME_2, res);
-
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-            execute("--encryption", "change_master_key", "non-existing-master-key-name"));
     }
 }
