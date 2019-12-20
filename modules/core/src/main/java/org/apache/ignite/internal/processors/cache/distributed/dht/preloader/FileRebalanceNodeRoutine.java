@@ -204,8 +204,8 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
                 snapFut.cancel();
             }
-            else if (log.isTraceEnabled() && snapFut != null)
-                log.trace("Snapshot creation already finished, no need to cancel [remote=" + nodeId() + ", snapshot=" + snapFut + "]");
+//            else if (log.isTraceEnabled() && snapFut != null)
+//                log.trace("Snapshot creation already finished, no need to cancel [remote=" + nodeId() + ", snapshot=" + snapFut + "]");
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to finish file rebalancing node routine", e);

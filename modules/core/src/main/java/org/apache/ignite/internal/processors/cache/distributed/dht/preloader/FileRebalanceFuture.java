@@ -501,8 +501,10 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     }
 
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
+        assert file != null;
+
         if (log.isTraceEnabled())
-            log.trace("Processing partition snapshot [path=" + file+"]");
+            log.trace("Processing partition snapshot [path=" + file + "]");
 
         FileRebalanceNodeRoutine fut = nodeRoutine(grpId, nodeId);
 

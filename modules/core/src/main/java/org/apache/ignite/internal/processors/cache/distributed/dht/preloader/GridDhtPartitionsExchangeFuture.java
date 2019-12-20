@@ -3271,13 +3271,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Set<Integer> haveHistory = new HashSet<>();
 
-        Collection<ClusterNode> nodes =
-            F.concat(false, cctx.localNode(), F.viewReadOnly(msgs.keySet(), v -> cctx.discovery().node(v)));
-
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
-            cctx.filePreloader().fileRebalanceSupported(grp, nodes);
+            cctx.filePreloader().fileRebalanceSupported(grp, cctx.discovery().aliveServerNodes());
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
