@@ -915,7 +915,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         // After activation/deactivation new view for data region pages lists should be created, check that new view
         // correctly reflects changes in free-lists.
-        assertTrue(!execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%' AND " +
+        assertFalse(execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%' AND " +
             "BUCKET_SIZE > 0").isEmpty());
     }
 

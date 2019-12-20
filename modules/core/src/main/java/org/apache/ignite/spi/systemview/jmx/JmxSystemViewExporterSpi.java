@@ -72,19 +72,11 @@ public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements System
         try {
             SystemViewMBean mlBean = new SystemViewMBean<>(sysView);
 
-            MBeanServer jmx = ignite.configuration().getMBeanServer();
-
-            ObjectName objName = U.makeMBeanName(igniteInstanceName, VIEWS, sysView.name());
-
-            if (jmx.isRegistered(objName)) {
-                unregBean(ignite, objName);
-
-                mBeans.remove(objName);
-            }
-
             ObjectName mbean = U.registerMBean(
-                jmx,
-                objName,
+                ignite().configuration().getMBeanServer(),
+                igniteInstanceName,
+                VIEWS,
+                sysView.name(),
                 mlBean,
                 SystemViewMBean.class);
 

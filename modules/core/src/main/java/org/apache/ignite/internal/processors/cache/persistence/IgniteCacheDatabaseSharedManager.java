@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
@@ -98,10 +99,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
-    /** System view name. */
+    /** System view name for page lists. */
     public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
 
-    /** System view description. */
+    /** System view description for page lists. */
     public static final String DATA_REGION_PAGE_LIST_VIEW_DESC = "Data region page lists";
 
     /** Minimum size of memory chunk */
@@ -161,6 +162,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
+
+        cctx.kernalContext().systemView().registerView(
+            DATA_REGION_PAGE_LIST_VIEW,
+            DATA_REGION_PAGE_LIST_VIEW_DESC,
+            new PagesListViewWalker(),
+            () -> {
+                Map<String, CacheFreeList> freeLists = freeListMap;
+
+                if (freeLists == null)
+                    return Collections.emptyList();
+
+                return freeLists.values().stream().flatMap(fl -> IntStream.range(0, fl.bucketsCount()).mapToObj(
+                    bucket -> new PagesListView(fl, bucket))).collect(Collectors.toList());
+            },
+            Function.identity()
+        );
     }
 
     /**
@@ -255,15 +272,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     protected void initPageMemoryDataStructures(DataStorageConfiguration dbCfg) throws IgniteCheckedException {
         freeListMap = U.newHashMap(dataRegionMap.size());
-
-        cctx.kernalContext().systemView().registerInnerCollectionView(
-            DATA_REGION_PAGE_LIST_VIEW,
-            DATA_REGION_PAGE_LIST_VIEW_DESC,
-            new PagesListViewWalker(),
-            freeListMap.values(),
-            freeList -> IntStream.range(0, freeList.bucketsCount()).boxed().collect(Collectors.toList()),
-            PagesListView::new
-        );
 
         String dfltMemPlcName = dbCfg.getDefaultDataRegionConfiguration().getName();
 

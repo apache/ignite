@@ -136,9 +136,4 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
 
         return sql.toString();
     }
-
-    /** {@inheritDoc} */
-    @Override public String getDropSQL() {
-        return "DROP TABLE IF EXISTS " + getTableName();
-    }
 }

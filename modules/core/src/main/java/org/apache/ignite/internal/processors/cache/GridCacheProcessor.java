@@ -5340,11 +5340,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param filter Filter.
      */
     private Iterable<CachePagesListView> pagesListViewSupplier(Map<String, Object> filter) {
-        Object cacheGrpId = filter == null ? null : filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
+        Integer cacheGrpId = (Integer)filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
 
         Collection<CacheGroupContext> cacheGrps;
 
-        if (cacheGrpId instanceof Integer) {
+        if (cacheGrpId != null) {
             CacheGroupContext cacheGrp = this.cacheGrps.get(cacheGrpId);
 
             if (cacheGrp == null)
@@ -5355,35 +5355,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             cacheGrps = this.cacheGrps.values();
 
-        Object partFilter = filter == null ? null : filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
-        Integer partId = partFilter instanceof Integer ? (Integer)partFilter : null;
+        Integer partId = (Integer)filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
+        Integer bucketNum = (Integer)filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
 
-        Object bucketFilter = filter == null ? null : filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
-        Integer bucketNum = bucketFilter instanceof Integer ? (Integer)bucketFilter : null;
+        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores =
+            F.flat(F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true));
 
-        return F.flat(
-            F.iterator(
-                (Iterable<IgniteCacheOffheapManager.CacheDataStore>)F.flat(
-                    F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true)
-                ),
-                dataStore -> {
-                    RowStore rowStore = dataStore.rowStore();
+        return F.flat(F.iterator(dataStores, dataStore -> {
+            RowStore rowStore = dataStore.rowStore();
 
-                    if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
-                        return Collections.emptySet();
+            if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
+                return Collections.emptySet();
 
-                    PagesList pagesList = (PagesList)rowStore.freeList();
+            PagesList pagesList = (PagesList)rowStore.freeList();
 
-                    if (bucketNum != null) {
-                        return bucketNum >= 0 && bucketNum < pagesList.bucketsCount() ?
-                            Collections.singleton(new CachePagesListView(pagesList, bucketNum, dataStore.partId())) :
-                            Collections.emptyList();
-                    }
+            if (bucketNum != null) {
+                return bucketNum >= 0 && bucketNum < pagesList.bucketsCount() ?
+                    Collections.singleton(new CachePagesListView(pagesList, bucketNum, dataStore.partId())) :
+                    Collections.emptyList();
+            }
 
-                    return IntStream.range(0, pagesList.bucketsCount())
-                        .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
-                        .collect(Collectors.toList());
-                }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
+            return IntStream.range(0, pagesList.bucketsCount())
+                .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
+                .collect(Collectors.toList());
+        }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
     }
 
     /**

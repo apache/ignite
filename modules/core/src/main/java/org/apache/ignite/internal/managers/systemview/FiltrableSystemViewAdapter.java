@@ -59,17 +59,7 @@ public class FiltrableSystemViewAdapter<R, D> extends AbstractSystemView<R> impl
         if (filter == null)
             filter = Collections.emptyMap();
 
-        Iterator<D> dataIter = dataSupplier.apply(filter).iterator();
-
-        return new Iterator<R>() {
-            @Override public boolean hasNext() {
-                return dataIter.hasNext();
-            }
-
-            @Override public R next() {
-                return rowFunc.apply(dataIter.next());
-            }
-        };
+        return F.iterator(dataSupplier.apply(filter), rowFunc::apply, true);
     }
 
     /** {@inheritDoc} */
