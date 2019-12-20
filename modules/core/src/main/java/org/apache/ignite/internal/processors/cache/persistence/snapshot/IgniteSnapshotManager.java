@@ -297,8 +297,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             @Override public void beforeCheckpointBegin(Context ctx) {
                 for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
                     // Gather partitions metainfo for thouse which will be copied.
-                    if (sctx0.state(SnapshotState.MARK))
-                        ctx.collectPartStat(sctx0.parts);
+                    if (!sctx0.state(SnapshotState.MARK))
+                        continue;
+
+                    ctx.collectPartStat(sctx0.parts);
+
+                    ctx.cpFinishFut().listen(f -> {
+                        if (f.error() == null)
+                            sctx0.cpEndFut.complete(true);
+                        else
+                            sctx0.cpEndFut.completeExceptionally(f.error());
+                    });
                 }
             }
 
@@ -1018,14 +1027,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
 
             // todo must fix checkpoint start issue since a checkpoint beforeBegin can be concurrently executed.
-            cpFut.finishFuture()
-                .listen(f -> {
-                    if (f.error() == null)
-                        sctx0.cpEndFut.complete(true);
-                    else
-                        sctx0.cpEndFut.completeExceptionally(f.error());
-                });
-
             cpFut.beginFuture()
                 .get();
 
