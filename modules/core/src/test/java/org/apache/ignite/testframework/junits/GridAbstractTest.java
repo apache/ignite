@@ -247,12 +247,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /**
-     * Page handler wrapper for {@link BPlusTree}, it can be saved here and overrided for test purposes,
-     * then it must be restored using value of this field.
-     */
-    private transient PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;
-
     /** */
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
@@ -330,7 +324,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        regularPageHndWrapper = BPlusTree.pageHndWrapper == null ? ((tree, hnd) -> hnd) : BPlusTree.pageHndWrapper;
+        // Checking that no test wrapper is set before test execution.
+        assert BPlusTree.testHndWrapper == null;
     }
 
     /**
@@ -342,8 +337,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        //restoring page handler wrapper
-        BPlusTree.pageHndWrapper = regularPageHndWrapper == null ? ((tree, hnd) -> hnd) : regularPageHndWrapper;
+        // No-op.
     }
 
     /**

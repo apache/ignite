@@ -90,7 +90,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        BPlusTree.pageHndWrapper = (tree, hnd) -> {
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
             if (hnd instanceof BPlusTree.Insert) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -126,6 +126,8 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        BPlusTree.testHndWrapper = null;
 
         super.afterTest();
     }
