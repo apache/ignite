@@ -176,8 +176,6 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
             out.writeObject(rmtTransFactoryDep);
         else
             out.writeObject(rmtTransFactory);
-
-        U.writeUuid(out, subjectId);
     }
 
     /** {@inheritDoc} */
@@ -193,7 +191,5 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
                 p2pUnmarshalFut = new GridFutureAdapter<>();
         } else
             rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
-
-        subjectId = U.readUuid(in);
     }
 }

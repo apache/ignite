@@ -33,10 +33,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -134,6 +136,22 @@ public class SecurityUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Checks cluster nodes version is compatible with ContinuousQuery with subject id.
+     *
+     * @param ctx Grid kernal context.
+     */
+    public static void continuousQuerySecurityAwareSupported(GridKernalContext ctx) {
+        Collection<ClusterNode> nodes = ctx.discovery().allNodes();
+
+        for (ClusterNode node : nodes) {
+            if (!IgniteFeatures.nodeSupports(node, IgniteFeatures.CONT_QRY_SECURITY_AWARE)) {
+                throw new IgniteException("Can't start ContinuousQuery, because some nodes in cluster doesn't " +
+                    "support ContinuousQuery with security subject identifier: " + node);
+            }
+        }
     }
 
     /**

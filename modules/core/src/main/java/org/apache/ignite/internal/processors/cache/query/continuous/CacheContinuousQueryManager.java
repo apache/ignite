@@ -87,6 +87,7 @@ import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.continuousQuerySecurityAwareSupported;
 
 /**
  * Continuous queries manager.
@@ -527,6 +528,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     {
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
+        continuousQuerySecurityAwareSupported(cctx.kernalContext());
+
         if (rmtTransFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
@@ -619,7 +622,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
                         rmtFilter,
-                        securitySubjectId(cctx.kernalContext()),
+                        null,
                         true,
                         sync,
                         true,
@@ -1050,6 +1053,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
             if (types == 0)
                 throw new IgniteCheckedException("Listener must implement one of CacheEntryListener sub-interfaces.");
+
+            continuousQuerySecurityAwareSupported(cctx.kernalContext());
 
             final byte types0 = types;
 

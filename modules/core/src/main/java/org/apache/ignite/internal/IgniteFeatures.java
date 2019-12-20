@@ -73,7 +73,10 @@ public enum IgniteFeatures {
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** ContinuousQuery with security subject id support. */
+    CONT_QRY_SECURITY_AWARE(22);
 
     /**
      * Unique feature identifier.

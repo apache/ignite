@@ -120,7 +120,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private Object topic;
 
     /** Security subject id. */
-    protected UUID subjectId;
+    private UUID subjectId;
 
     /** P2P unmarshalling future. */
     protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -1421,15 +1421,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             out.writeObject(rmtFilter);
 
         out.writeBoolean(internal);
+
+        if (!internal)
+            U.writeUuid(out, subjectId);
+
         out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
         out.writeBoolean(sync);
         out.writeBoolean(ignoreExpired);
         out.writeInt(taskHash);
         out.writeBoolean(keepBinary);
-
-        if(!(this instanceof CacheContinuousQueryHandlerV2))
-            U.writeUuid(out, subjectId);
     }
 
     /** {@inheritDoc} */
@@ -1448,6 +1449,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
+
+        if (!internal)
+            subjectId = U.readUuid(in);
+
         notifyExisting = in.readBoolean();
         oldValRequired = in.readBoolean();
         sync = in.readBoolean();
@@ -1456,9 +1461,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         keepBinary = in.readBoolean();
 
         cacheId = CU.cacheId(cacheName);
-
-        if(!(this instanceof CacheContinuousQueryHandlerV2))
-            subjectId = U.readUuid(in);
     }
 
     /**
