@@ -49,7 +49,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CheckpointProgress.State.FINISHED;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
