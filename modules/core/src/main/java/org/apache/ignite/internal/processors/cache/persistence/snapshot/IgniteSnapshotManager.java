@@ -743,10 +743,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         try {
             dbMgr.removeCheckpointListener(cpLsnr);
 
-            for (LocalSnapshotContext ctx : locSnpCtxs.values()) {
+            for (LocalSnapshotContext sctx : locSnpCtxs.values()) {
                 // Try stop all snapshot processing if not yet.
-                ctx.snpFut.onDone(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
+                sctx.acceptException(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
+
+                sctx.close();
             }
 
             SnapshotRequestFuture snpTrFut = snpRq.get();
@@ -1034,7 +1036,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 log.info("Snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
-            closeSnapshotResources(sctx);
+            sctx.acceptException(e);
+
+            sctx.close();
 
             if (nodeSnpDir != null)
                 nodeSnpDir.delete();
@@ -1099,30 +1103,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         assert snpRunner != null;
 
         return snpRunner;
-    }
-
-    /**
-     * @param sctx Context to clouse all resources.
-     */
-    private void closeSnapshotResources(LocalSnapshotContext sctx) {
-        if (sctx == null)
-            return;
-
-        for (PageStoreSerialWriter writer : sctx.partDeltaWriters.values())
-            U.closeQuiet(writer);
-
-        U.closeQuiet(sctx.snpSndr);
-        U.delete(sctx.nodeSnpDir);
-
-        // Delete snapshot directory if no other files exists.
-        try {
-            if (U.fileCount(snapshotWorkDir(sctx.snpName).toPath()) == 0)
-                U.delete(snapshotWorkDir(sctx.snpName).toPath());
-
-        }
-        catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + sctx.snpName + ", dir=" + snapshotWorkDir() + ']');
-        }
     }
 
     /**
