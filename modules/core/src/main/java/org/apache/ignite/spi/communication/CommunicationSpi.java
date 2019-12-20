@@ -100,7 +100,6 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
 
     /**
      * Resets metrics for this SPI instance.
-     *
      */
     public void resetMetrics();
 
