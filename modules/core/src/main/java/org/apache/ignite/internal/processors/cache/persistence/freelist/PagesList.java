@@ -1904,7 +1904,7 @@ public abstract class PagesList extends DataStructure {
         private volatile int size;
 
         /** Count of flush calls with empty cache. */
-        private volatile int emptyFlushCnt;
+        private int emptyFlushCnt;
 
         /**
          * Default constructor.
@@ -2024,9 +2024,10 @@ public abstract class PagesList extends DataStructure {
          * @param pageId Page id.
          * @return {@code True} if page can be added, {@code false} if list is full.
          */
-        public synchronized boolean add(long pageId) {
+        public boolean add(long pageId) {
             assert pageId != 0L;
 
+            // Ok with race here.
             if (size >= MAX_SIZE)
                 return false;
 
