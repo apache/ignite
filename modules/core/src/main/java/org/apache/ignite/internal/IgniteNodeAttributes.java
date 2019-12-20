@@ -195,7 +195,7 @@ public final class IgniteNodeAttributes {
     /**
      * Encryption master key digest.
      *
-     * @deprecated {@link DiscoveryDataBag} is used instead it since version 2.8.
+     * @deprecated {@link DiscoveryDataBag} is used instead it since version 2.9.
      */
     @Deprecated
     public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
