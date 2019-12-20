@@ -908,11 +908,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                         break;
                     }
-                    else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT) {
-                        assert !snpRq.get().isDone() : "expected fail with concurrent snapshotting";
-
+                    else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT)
                         throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
-                    }
 
                     U.sleep(200);
                 }
