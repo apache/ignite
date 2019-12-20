@@ -1386,6 +1386,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     @MetricManagerResource
     private void injectMetricManager(GridMetricManager mmgr) {
+        assert mmgr != null : "Null metrics manager injected";
+
         if (mmgr != null)
             metricsLsnr = new TcpCommunicationMetricsListener(mmgr);
     }
