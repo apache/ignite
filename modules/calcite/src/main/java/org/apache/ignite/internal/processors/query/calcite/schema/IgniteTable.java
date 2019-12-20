@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -29,7 +28,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScannableTable;
@@ -39,6 +37,8 @@ import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -100,10 +100,10 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
+        RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-        return new LogicalTableScan(cluster, traitSet, relOptTable);
+        return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 
     /**

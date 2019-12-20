@@ -146,7 +146,8 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
             res.addAll(_deriveDistributions(rel0, mq));
 
         if (F.isEmpty(res)) {
-            RelSubset newRel = VolcanoUtils.subset(rel, rel.getTraitSet().replace(Convention.NONE));
+            // default traits + NONE convention return a set of all logical rels.
+            RelSubset newRel = VolcanoUtils.subset(rel, rel.getCluster().traitSetOf(Convention.NONE));
 
             if (newRel != rel) {
                 for (RelNode rel0 : newRel.getRels())

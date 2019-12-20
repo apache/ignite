@@ -23,7 +23,6 @@ import org.apache.calcite.tools.RuleSets;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverter;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverter;
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableScanConverter;
 
 /**
  * Represents a planner phase with its description and a used rule set.
@@ -45,7 +44,6 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlannerContext ctx) {
             return RuleSets.ofList(
-                TableScanConverter.INSTANCE,
                 JoinConverter.INSTANCE,
                 ProjectConverter.INSTANCE,
                 FilterConverter.INSTANCE);
