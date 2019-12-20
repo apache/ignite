@@ -183,6 +183,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         awaitPartitionMapExchange();
 
+        forceCheckpoint();
+
         Map<String, Long> fileSizes = new HashMap<>();
         Map<String, Integer> fileCrcs = new HashMap<>();
         Map<String, Serializable> fileParams = new HashMap<>();

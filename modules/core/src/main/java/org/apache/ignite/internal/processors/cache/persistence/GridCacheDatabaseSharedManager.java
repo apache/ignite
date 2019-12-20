@@ -1799,15 +1799,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Long updCntr = cpEntry.partitionCounter(cctx, grpId, partId);
 
                 if (updCntr != null) {
-                    log.debug("Reserved p=" + partId + " grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", cntr=" + updCntr);
+                    if (log.isDebugEnabled())
+                        log.debug("Reserved p=" + partId + " grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", cntr=" + updCntr);
 
                     reservedForExchange.computeIfAbsent(grpId, k -> new HashMap<>())
                         .put(partId, new T2<>(updCntr, cpEntry.checkpointMark()));
 
                     grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
                 }
-                else
-                    log.debug("NOT RESERVED p="+partId+" grp="+cctx.cache().cacheGroup(grpId).cacheOrGroupName()+", cntr="+updCntr);
+                else if (log.isDebugEnabled())
+                    log.debug("NOT RESERVED p=" + partId + " grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", cntr=" + updCntr);
             }
         }
 

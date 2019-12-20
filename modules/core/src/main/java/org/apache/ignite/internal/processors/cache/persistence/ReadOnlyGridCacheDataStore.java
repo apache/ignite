@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.PartitionAtomicUpdateCounterI
 import org.apache.ignite.internal.processors.cache.PartitionMvccTxUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
@@ -358,18 +357,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeWithTombstone(GridCacheContext cctx, KeyCacheObject key, GridCacheVersion ver,
-        GridDhtLocalPartition part) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public long tombstonesCount() {
-        // todo think
-        return delegate.tombstonesCount();
-    }
-
     @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key,
         MvccSnapshot snapshot) throws IgniteCheckedException {
         return delegate.mvccFind(cctx, key, snapshot);
@@ -429,37 +416,31 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key,
-        CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
+        Object x) throws IgniteCheckedException {
         return delegate.mvccAllVersionsCursor(cctx, key, x);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<? extends CacheDataRow> cursor(boolean withTombstones) throws IgniteCheckedException {
-        return delegate.cursor(withTombstones);
-    }
-
-    /** {@inheritDoc} */
     @Override
-    public GridCursor<? extends CacheDataRow> cursor(CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
+    public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
         return delegate.cursor(x);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-        boolean withTombstones) throws IgniteCheckedException {
-        return delegate.cursor(cacheId, withTombstones);
+    @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId) throws IgniteCheckedException {
+        return delegate.cursor(cacheId);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower, KeyCacheObject upper,
-        CacheDataRowAdapter.RowData x) throws IgniteCheckedException {
+        Object x) throws IgniteCheckedException {
         return delegate.cursor(cacheId, lower, upper, x);
     }
 
     /** {@inheritDoc} */
     @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId, KeyCacheObject lower, KeyCacheObject upper,
-        CacheDataRowAdapter.RowData x, MvccSnapshot snapshot, boolean withTombstones) throws IgniteCheckedException {
-        return delegate.cursor(cacheId, lower, upper, x, snapshot, withTombstones);
+        Object x, MvccSnapshot snapshot) throws IgniteCheckedException {
+        return delegate.cursor(cacheId, lower, upper, x, snapshot);
     }
 
     /** */

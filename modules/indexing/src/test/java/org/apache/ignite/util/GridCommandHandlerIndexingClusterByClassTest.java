@@ -181,7 +181,8 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
         int cacheGrpId = grpName == null ? cacheName.hashCode() : grpName.hashCode();
 
         GridDhtLocalPartition locPart = ctx.dht().topology().localPartition(partId);
-        IgniteCacheOffheapManager.CacheDataStore dataStore = ig0.context().cache().context().cache().cacheGroup(cacheGrpId).offheap().dataStore(locPart);
+
+        IgniteCacheOffheapManager.CacheDataStore dataStore = locPart.dataStore().store(false);
 
         Iterator<Cache.Entry> it = ig.cache(cacheName).withKeepBinary().query(scanQry).iterator();
 
