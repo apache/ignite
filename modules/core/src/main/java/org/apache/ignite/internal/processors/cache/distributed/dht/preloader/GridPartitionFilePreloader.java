@@ -523,7 +523,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
     public boolean fileRebalanceSupported(CacheGroupContext grp) {
-        if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled())
+        if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled() || grp.isLocal())
             return false;
 
         if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
