@@ -63,6 +63,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageResultsCollector;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.managers.systemview.walker.ContinuousQueryViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -181,7 +182,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.systemView().registerView(CQ_SYS_VIEW, CQ_SYS_VIEW_DESC,
-            ContinuousQueryView.class,
+            new ContinuousQueryViewWalker(),
             new ReadOnlyCollectionView2X<>(rmtInfos.entrySet(), locInfos.entrySet()),
             e -> new ContinuousQueryView(e.getKey(), e.getValue()));
 

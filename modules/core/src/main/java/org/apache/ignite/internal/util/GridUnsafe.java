@@ -1362,6 +1362,26 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Atomically increments value stored in an integer pointed by {@code ptr}.
+     *
+     * @param ptr Pointer to an integer.
+     * @return Updated value.
+     */
+    public static int incrementAndGetInt(long ptr) {
+        return UNSAFE.getAndAddInt(null, ptr, 1) + 1;
+    }
+
+    /**
+     * Atomically increments value stored in an integer pointed by {@code ptr}.
+     *
+     * @param ptr Pointer to an integer.
+     * @return Updated value.
+     */
+    public static int decrementAndGetInt(long ptr) {
+        return UNSAFE.getAndAddInt(null, ptr, -1) - 1;
+    }
+
+    /**
      * Gets byte value with volatile semantic.
      *
      * @param obj Object.

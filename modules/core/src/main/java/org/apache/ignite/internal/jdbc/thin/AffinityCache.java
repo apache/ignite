@@ -107,7 +107,7 @@ public final class AffinityCache {
      * @param cacheId Cache Id.
      * @return Cache partitoins distribution for given cache Id or null.
      */
-    UUID[] cacheDistribution(int cacheId) {
+    public UUID[] cacheDistribution(int cacheId) {
         return cachePartitionsDistribution.get(cacheId);
     }
 }
