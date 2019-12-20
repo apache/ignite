@@ -94,7 +94,7 @@ public class DistanceTest {
     public void chebyshevDistance() {
         double expRes = 2d;
 
-        ChebyshevDistance distanceMeasure = new ChebyshevDistance();
+        DistanceMeasure distanceMeasure = new ChebyshevDistance();
 
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
@@ -105,10 +105,21 @@ public class DistanceTest {
     public void minkowskiDistance() {
         double expRes = Math.pow(5, 0.5);
 
-        MinkowskiDistance distanceMeasure = new MinkowskiDistance(2d);
+        DistanceMeasure distanceMeasure = new MinkowskiDistance(2d);
 
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void cosineSimilarityDistance() {
+        double expRes = 0.9449111825230682d;
+
+        DistanceMeasure distanceMeasure = new CosineSimilarityDistance();
+
+//        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(new double[]{1,2,3}), new DenseVector(new double[]{1,1,4})), PRECISION);
     }
 
 
