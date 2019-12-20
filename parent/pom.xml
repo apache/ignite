@@ -813,41 +813,41 @@
     <profiles>
         <profile>
             <id>checkstyle</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-checkstyle-plugin</artifactId>
-                        <version>${maven.checkstyle.plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>style</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>validate</phase>
-                                <configuration>
-                                    <consoleOutput>true</consoleOutput>
-                                    <logViolationsToConsole>true</logViolationsToConsole>
-                                    <failsOnError>true</failsOnError>
-                                    <failOnViolation>true</failOnViolation>
-                                    <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
-                                    <configLocation>../checkstyle/checkstyle.xml</configLocation>
-                                    <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
-                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                        <dependencies>
-                            <dependency>
-                                <groupId>com.puppycrawl.tools</groupId>
-                                <artifactId>checkstyle</artifactId>
-                                <version>${checkstyle.puppycrawl.version}</version>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                </plugins>
-            </build>
+<!--            <build>-->
+<!--                <plugins>-->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-checkstyle-plugin</artifactId>-->
+<!--                        <version>${maven.checkstyle.plugin.version}</version>-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <id>style</id>-->
+<!--                                <goals>-->
+<!--                                    <goal>check</goal>-->
+<!--                                </goals>-->
+<!--                                <phase>validate</phase>-->
+<!--                                <configuration>-->
+<!--                                    <consoleOutput>true</consoleOutput>-->
+<!--                                    <logViolationsToConsole>true</logViolationsToConsole>-->
+<!--                                    <failsOnError>true</failsOnError>-->
+<!--                                    <failOnViolation>true</failOnViolation>-->
+<!--                                    <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>-->
+<!--                                    <configLocation>../checkstyle/checkstyle.xml</configLocation>-->
+<!--                                    <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>-->
+<!--                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                        <dependencies>-->
+<!--                            <dependency>-->
+<!--                                <groupId>com.puppycrawl.tools</groupId>-->
+<!--                                <artifactId>checkstyle</artifactId>-->
+<!--                                <version>${checkstyle.puppycrawl.version}</version>-->
+<!--                            </dependency>-->
+<!--                        </dependencies>-->
+<!--                    </plugin>-->
+<!--                </plugins>-->
+<!--            </build>-->
         </profile>
 
         <profile>
