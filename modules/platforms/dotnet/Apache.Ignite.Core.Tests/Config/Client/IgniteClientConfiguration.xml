@@ -38,4 +38,6 @@
         <string>bar:123</string>
         <string>baz:100..103</string>
     </endpoints>
+
+    <logger type="Apache.Ignite.Core.Log.ConsoleLogger" minLevel="Debug"  />
 </igniteClientConfiguration>

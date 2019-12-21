@@ -434,6 +434,61 @@ public interface ConnectionProperties {
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 
     /**
+     * @return SQL cache size that is used within affinity awareness optimizations.
+     */
+    public int getAffinityAwarenessSqlCacheSize();
+
+    /**
+     * Sets SQL cache size that is used within affinity awareness optimizations.
+     *
+     * @param affinityAwarenessSqlCacheSize SQL cache size.
+     * @throws SQLException On error.
+     */
+    public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSqlCacheSize) throws SQLException;
+
+    /**
+     * @return Partition distributions cache size that is used within affinity awareness optimizations.
+     */
+    public int getAffinityAwarenessPartitionDistributionsCacheSize();
+
+    /**
+     * Sets partition distributions cache size that is used within affinity awareness optimizations.
+     *
+     * @param affinityAwarenessPartDistributionsCacheSize Partition distributions cache size.
+     * @throws SQLException On error.
+     */
+    public void setAffinityAwarenessPartitionDistributionsCacheSize(
+        int affinityAwarenessPartDistributionsCacheSize) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Query timeout in seconds.
+     */
+    @Nullable public Integer getQueryTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param qryTimeout Query timeout in seconds.
+     */
+    public void setQueryTimeout(@Nullable Integer qryTimeout) throws SQLException;
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @return Connection timeout in milliseconds.
+     */
+    @Nullable public int getConnectionTimeout();
+
+    /**
+     * Note: zero value means there is no limits.
+     *
+     * @param connTimeout Connection timeout in milliseconds.
+     */
+    public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
      * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
      *
      * @return Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.

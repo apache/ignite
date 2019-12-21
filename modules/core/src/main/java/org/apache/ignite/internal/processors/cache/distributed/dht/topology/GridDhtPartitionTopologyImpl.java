@@ -2330,14 +2330,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 lock.writeLock().unlock();
             }
 
+            List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
+
             for (Map.Entry<UUID, Set<Integer>> entry : addToWaitGroups.entrySet()) {
                 // Add to wait groups to ensure late assignment switch after all partitions are rebalanced.
                 for (Integer part : entry.getValue()) {
                     ctx.cache().context().affinity().addToWaitGroup(
                         groupId(),
                         part,
-                        entry.getKey(),
-                        topologyVersionFuture().initialVersion()
+                        topologyVersionFuture().initialVersion(),
+                        ideal.get(part)
                     );
                 }
             }
@@ -2727,10 +2729,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
-    /**
-     * Pre-processes partition update counters before exchange.
-     */
-    @Override public void finalizeUpdateCounters() {
+    /** {@inheritDoc} */
+    @Override public void finalizeUpdateCounters(Set<Integer> parts) {
         // It is need to acquire checkpoint lock before topology lock acquiring.
         ctx.database().checkpointReadLock();
 
@@ -2740,8 +2740,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.readLock().lock();
 
             try {
-                for (int i = 0; i < locParts.length(); i++) {
-                    GridDhtLocalPartition part = locParts.get(i);
+                for (int p : parts) {
+                    GridDhtLocalPartition part = locParts.get(p);
 
                     if (part != null && part.state().active()) {
                         // We need to close all gaps in partition update counters sequence. We assume this finalizing is
