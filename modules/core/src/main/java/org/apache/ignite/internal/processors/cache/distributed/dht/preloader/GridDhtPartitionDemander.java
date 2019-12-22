@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -120,6 +121,12 @@ public class GridDhtPartitionDemander {
     /** Cache rebalance topic. */
     private final Object rebalanceTopic;
 
+    /** Rebalancing last cancelled time. */
+    private final AtomicLong rebalancingLastCancelledTime = new AtomicLong(-1);
+
+    /** Rebalancing last cancelled time metric. */
+    private final LongGauge rebalancingLastCancelledTimeMetric;
+
     /**
      * @param grp Ccahe group.
      */
@@ -150,22 +157,25 @@ public class GridDhtPartitionDemander {
 
         MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
 
-        mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.remaining.values().stream()
-                        .map(IgniteDhtDemandedPartitionsMap::fullSet)
-                        .mapToInt(Collection::size)
-                        .sum(), "Number of rebalanced partitions left.");
+        mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.rebalancingPartitionsLeft.get(),
+            "The number of cache group partitions left to be rebalanced.");
 
-        mreg.register("RebalancingReceivedKeys",
-            () -> rebalanceFut.rebalancingReceivedKeys.get(), "Number of already rebalanced keys.");
+        mreg.register("RebalancingReceivedKeys", () -> rebalanceFut.rebalancingReceivedKeys.get(),
+            "The number of currently rebalanced keys for the whole cache group.");
 
-        mreg.register("RebalancingReceivedBytes",
-            () -> rebalanceFut.rebalancingReceivedBytes.get(), "Number of already rebalanced bytes.");
+        mreg.register("RebalancingReceivedBytes", () -> rebalanceFut.rebalancingReceivedBytes.get(),
+            "The number of currently rebalanced bytes of this cache group.");
 
-        mreg.register("RebalancingStartTime",
-            () -> rebalanceFut.rebalancingStartTime, "Rebalancing start time.");
+        mreg.register("RebalancingStartTime", () -> rebalanceFut.rebalancingStartTime,
+            "Rebalancing start time.");
 
-        mreg.register("RebalancingFinishTime",
-            () -> rebalanceFut.rebalancingFinishTime, "Rebalancing finish time.");
+        rebalancingLastCancelledTimeMetric = mreg.register("RebalancingLastCancelledTime", () ->
+                rebalancingLastCancelledTime.accumulateAndGet(rebalanceFut.rebalancingEndTime.get(), (curVal, newVal) ->
+                (newVal != -1 && (rebalanceFut.isCancelled() || rebalanceFut.isFailed())) ? newVal : curVal),
+            "Rebalancing last cancelled time.");
+
+        mreg.register("RebalancingEndTime", () -> rebalanceFut.rebalancingEndTime.get(),
+            "Rebalancing end time.");
     }
 
     /**
@@ -471,8 +481,11 @@ public class GridDhtPartitionDemander {
                 if (fut.isDone())
                     break;
 
-                if (rebalanceFut.rebalancingStartTime == -1)
+                if (rebalanceFut.rebalancingStartTime == -1) {
                     rebalanceFut.rebalancingStartTime = System.currentTimeMillis();
+
+                    rebalanceFut.listen(f -> rebalancingLastCancelledTimeMetric.value());
+                }
 
                 parts = fut.remaining.get(node.id());
 
@@ -1230,11 +1243,14 @@ public class GridDhtPartitionDemander {
         /** Rebalanced keys count. */
         private final AtomicLong rebalancingReceivedKeys = new AtomicLong(0);
 
+        /** The number of cache group partitions left to be rebalanced. */
+        private final AtomicLong rebalancingPartitionsLeft = new AtomicLong(0);
+
         /** Rebalancing start time. */
         private volatile long rebalancingStartTime = -1;
 
-        /** Rebalancing finish time. */
-        private volatile long rebalancingFinishTime = -1;
+        /** Rebalancing end time. */
+        private final AtomicLong rebalancingEndTime = new AtomicLong(-1);
 
         /**
          * @param grp Cache group.
@@ -1258,6 +1274,8 @@ public class GridDhtPartitionDemander {
                     "Partitions are null [grp=" + grp.cacheOrGroupName() + ", fromNode=" + k.id() + "]";
 
                 remaining.put(k.id(), v.partitions());
+
+                rebalancingPartitionsLeft.addAndGet(v.partitions().size());
 
                 historical.addAll(v.partitions().historicalSet());
 
@@ -1352,13 +1370,11 @@ public class GridDhtPartitionDemander {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            boolean doneOnThisCall = super.onDone(res, err);
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+            if (rebalancingStartTime != -1)
+                rebalancingEndTime.compareAndSet(-1, System.currentTimeMillis());
 
-            if (doneOnThisCall)
-                rebalancingFinishTime = U.currentTimeMillis();
-
-            return doneOnThisCall;
+            return super.onDone(res, err, cancel);
         }
 
         /**
@@ -1453,6 +1469,9 @@ public class GridDhtPartitionDemander {
 
                 assert rmvd : "Partition already done [grp=" + grp.cacheOrGroupName() + ", fromNode=" + nodeId +
                     ", part=" + p + ", left=" + parts + "]";
+
+                if (rmvd)
+                    rebalancingPartitionsLeft.decrementAndGet();
 
                 if (parts.isEmpty()) {
                     int remainingRoutines = remaining.size() - 1;
