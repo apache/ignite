@@ -126,14 +126,14 @@ if (!$skipJava) {
     }
 
     # Install Maven Wrapper
-    iex "$mv -N io.takari:maven:wrapper -Dmaven='3.5.2'"
+    iex "$mv --% -N io.takari:maven:wrapper -Dmaven=3.5.2"
     $mv = "mvnw.cmd"
 
     # Run Maven
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    iex "$mv $mvnTargets -DskipTests $mavenOpts"
+    iex "$mv --% $mvnTargets -DskipTests $mavenOpts"
 
     # Check result
     if ($LastExitCode -ne 0) {
