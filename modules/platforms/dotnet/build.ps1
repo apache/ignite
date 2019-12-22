@@ -175,19 +175,30 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 echo "Using NuGet from: $ng"
 
 if (!$skipDotNet) {
-	# Detect MSBuild 4.0+
-	for ($i=20; $i -ge 4; $i--) {
-		$regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
-		if (Test-Path $regKey) { break }
-	}
+    $msBuild = "msbuild"
 
-	if (!(Test-Path $regKey)) {
-		echo "Failed to detect MSBuild path, exiting."
-		exit -1
-	}
+    if ((Get-Command $msBuild -ErrorAction SilentlyContinue) -eq $null)
+    {
+        # Detect MSBuild 4.0+
+        for ($i = 20; $i -ge 4; $i--) {
+            $regKey = "HKLM:\software\Microsoft\MSBuild\ToolsVersions\$i.0"
+            if (Test-Path $regKey)
+            {
+                break
+            }
+        }
 
-	$msbuildExe = (join-path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
-	echo "MSBuild detected at '$msbuildExe'."
+        if (!(Test-Path $regKey))
+        {
+            echo "Failed to detect MSBuild path, exiting."
+            exit -1
+        }
+
+        $msBuild = (Join-Path -path (Get-ItemProperty $regKey)."MSBuildToolsPath" -childpath "msbuild.exe")
+        $msBuild = "`"$msBuild`""  # Put in quotes and escape to handle whitespace in path
+    }
+    
+    echo "MSBuild detected at '$msBuild'."
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
@@ -196,7 +207,7 @@ if (!$skipDotNet) {
 	# Build
 	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-	$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+	$msBuildCommand = "$msBuild --% Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
 	echo "Starting MsBuild: '$msBuildCommand'"
 	iex $msBuildCommand   
 
