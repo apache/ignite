@@ -49,6 +49,11 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartDefault()
         {
+            // TODO:
+            var prop = typeof(System.AppDomain).GetProperty("DefaultDomain", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var defaultDomain = prop.GetValue(null, null);
+            Console.WriteLine(defaultDomain);
+            
             var cfg = new IgniteConfiguration {JvmClasspath = TestUtils.CreateTestClasspath()};
 
             var grid = Ignition.Start(cfg);
