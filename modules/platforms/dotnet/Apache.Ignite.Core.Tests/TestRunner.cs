@@ -75,11 +75,9 @@ namespace Apache.Ignite.Core.Tests
             var basicTests = new[]
             {
                 typeof(ComputeApiTest),
-                typeof(CacheLinqTest),
                 typeof(SqlDmlTest),
                 typeof(LinqTest),
                 typeof(PersistenceTest),
-                typeof(ClientConnectionTest),
                 typeof(CacheTest)
             };
 
