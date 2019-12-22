@@ -126,14 +126,14 @@ if (!$skipJava) {
     }
 
     # Install Maven Wrapper
-    cmd /c "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    iex "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
     $mv = "mvnw.cmd"
 
     # Run Maven
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    cmd /c "$mv $mvnTargets -DskipTests $mavenOpts"
+    iex "$mv $mvnTargets -DskipTests $mavenOpts"
 
     # Check result
     if ($LastExitCode -ne 0) {
@@ -197,7 +197,7 @@ if (!$skipDotNet) {
 	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
 	$msBuildCommand = "`"$msBuildExe`" Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
 	echo "Starting MsBuild: '$msBuildCommand'"
-	cmd /c $msBuildCommand   
+	iex $msBuildCommand   
 
 	# Check result
 	if ($LastExitCode -ne 0) {
@@ -213,12 +213,12 @@ if(!$skipDotNetCore) {
     if ($clean) {
         $cleanCommand = "dotnet clean $targetSolution -c $configuration"
         echo "Starting dotnet clean: '$cleanCommand'"
-        cmd /c $cleanCommand
+        iex $cleanCommand
     }
 
     $publishCommand = "dotnet publish $targetSolution -c $configuration"
 	echo "Starting dotnet publish: '$publishCommand'"
-	cmd /c $publishCommand    
+	iex $publishCommand    
 
     # Check result
     if ($LastExitCode -ne 0) {
