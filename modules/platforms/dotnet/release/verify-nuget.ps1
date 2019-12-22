@@ -48,7 +48,7 @@ if (!(Test-Path $dir)) {
     throw "Path does not exist: '$packageDir' (resolved to '$dir')"
 }
 
-$packages = ls $dir *.nupkg
+$packages = Get-ChildItem $dir *.nupkg
 if ($packages.Length -eq 0) {
     throw "nupkg files not found in '$dir'"
 }
@@ -59,8 +59,8 @@ echo "Verifying $($packages.Length) packages from '$dir'..."
 
 # Create test dir
 $testDir = Join-Path $PSScriptRoot "test-proj"
-mkdir -Force $testDir
-del -Force $testDir\*.*
+New-Item -Path $testDir -ItemType "directory" -Force
+Remove-Item -Force $testDir\*.*
 cd $testDir
 
 
