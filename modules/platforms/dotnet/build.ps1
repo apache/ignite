@@ -126,7 +126,7 @@ if (!$skipJava) {
     }
 
     # Install Maven Wrapper
-    iex "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    iex "$mv -N io.takari:maven:wrapper -Dmaven='3.5.2'"
     $mv = "mvnw.cmd"
 
     # Run Maven
