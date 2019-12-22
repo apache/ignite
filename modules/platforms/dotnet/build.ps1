@@ -143,7 +143,7 @@ if (!$skipJava) {
 
     # Install Maven Wrapper
     Exec "$mv --% -N io.takari:maven:wrapper -Dmaven=3.5.2"
-    $mv = If ($IsLinux) { "./mvnw" } else { "mvnw.cmd" }
+    $mv = If ($IsLinux) { "./mvnw" } else { ".\mvnw.cmd" }
 
     # Run Maven
     echo "Starting Java (Maven) build..."
