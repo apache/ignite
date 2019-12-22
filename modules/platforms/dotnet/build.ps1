@@ -97,6 +97,12 @@ param (
 	[string]$version=""
  )
 
+# 0) Functions
+function Make-Dir([string]$dirPath) {
+    New-Item -Path $dirPath -ItemType "directory" -Force
+    Remove-Item -Force $dirPath\*.*
+}
+
 # 1) Build Java (Maven)
 # Detect Ignite root directory
 cd $PSScriptRoot\..
@@ -146,8 +152,7 @@ else {
 
 # Copy (relevant) jars
 $libsDir = "$PSScriptRoot\bin\libs"
-New-Item -Path $libsDir -ItemType "directory" -Force
-Remove-Item -Force $libsDir\*.*
+Make-Dir($libsDir)
 
 Get-ChildItem $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
@@ -250,15 +255,13 @@ if ($asmDirs) {
 
         if ($projName.StartsWith("Apache.Ignite")) {
             $target = "$projName\bin\Release"
-            New-Item -Force -ItemType "directory" $target
-            Copy-Item -Force $_.FullName $target
+            Make-Dir($target)
         }
     }    
 }
 
 # Copy binaries
-New-Item -Force -ItemType "directory" bin
-Remove-Item -Force -Recurse bin\*.*
+Make-Dir("bin")
 
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
@@ -279,8 +282,7 @@ if (!$skipNuGet) {
     }
 
     $nupkgDir = "nupkg"
-    New-Item -Force -ItemType "directory" $nupkgDir
-    Remove-Item -Force $nupkgDir\*.*
+    Make-Dir($nupkgDir)
 
     # Detect version
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
