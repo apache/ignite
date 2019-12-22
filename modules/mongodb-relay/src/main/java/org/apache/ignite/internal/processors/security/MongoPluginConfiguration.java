@@ -28,7 +28,7 @@ public class MongoPluginConfiguration implements PluginConfiguration {
     /** Host. */
     private String host = "127.0.0.1";
     
-    private int port = 20018;
+    private int port = 27018;
 
     /** Number of backups in mongodb storage cache. */
     private Integer mdlStorageBackups;

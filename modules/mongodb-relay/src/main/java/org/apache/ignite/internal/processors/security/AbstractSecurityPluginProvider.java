@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.BindException;
+import java.net.Socket;
 import java.util.UUID;
 
 import org.apache.ignite.Ignite;
@@ -66,7 +69,7 @@ public abstract class AbstractSecurityPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public String copyright() {
-        return "zjf copy right reservece";
+        return "apache copy right";
     }
 
     /** {@inheritDoc} */
@@ -127,15 +130,25 @@ public abstract class AbstractSecurityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
         // start mongodb
-       IgniteBackend backend = new IgniteBackend(this.ignite);
-       backend.setKeepBinary(cfg.isWithBinaryStorage());
-       mongoServer = new MongoServer(backend);
-       mongoServer.bind(cfg.getHost(),cfg.getPort());
+    	if(cfg!=null) {
+	       IgniteBackend backend = new IgniteBackend(this.ignite);
+	       backend.setKeepBinary(cfg.isWithBinaryStorage());	       
+	       try {	    	  
+	    	   mongoServer = new MongoServer(backend);
+	    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
+	    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
+	       }catch(Exception e) {
+	    	   log.error("mongoServer bind fail.",e);
+	       }
+    	}
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-    	 mongoServer.shutdownNow();
+    	if(mongoServer!=null) {
+    	   log.info("mongoServer","shutting down "+ mongoServer.toString());
+    	   mongoServer.shutdownNow();
+    	}
     }
 
     /** {@inheritDoc} */

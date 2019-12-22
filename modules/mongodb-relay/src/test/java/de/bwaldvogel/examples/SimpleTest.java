@@ -31,8 +31,12 @@ public class SimpleTest {
         // bind on a random local port
         //InetSocketAddress serverAddress = server.bind();
 
-        client = new MongoClient("127.0.0.1:27018");
-        collection = client.getDatabase("testdb").getCollection("testcollection");
+        client = new MongoClient("127.0.0.1:20018");
+        
+        for(String name:client.getDatabase("default").listCollectionNames()) {
+        	System.out.println(name);
+        }
+        collection = client.getDatabase("default").getCollection("testcollection");
     }
 
     @After

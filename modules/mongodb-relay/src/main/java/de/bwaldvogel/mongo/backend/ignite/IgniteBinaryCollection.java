@@ -2,6 +2,7 @@ package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,10 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.stream.StreamVisitor;
 import org.slf4j.Logger;
@@ -35,6 +38,7 @@ import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Missing;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
+import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 
 public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 
@@ -69,9 +73,12 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
         } else {
             key = UUID.randomUUID();
         }
+        if(dataMap.containsKey(key)) {
+        	throw new DuplicateKeyError(this.getCollectionName(),"Document with key '" + key + "' already existed");
+        }
         BinaryObject obj = this.documentToBinaryObject(document);
-        BinaryObject previous = dataMap.getAndPut(Missing.ofNullable(key), obj);
-        Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
+        dataMap.put(Missing.ofNullable(key), obj);
+        //Assert.isNull(previous, () -> "Document with key '" + key + "' already existed in " + this + ": " + previous);
         return key;
     }
 
@@ -83,7 +90,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     @Override
     protected Document getDocument(Object position) {
     	BinaryObject obj = dataMap.get(position);
-    	return this.binaryObjectToDocument(obj);
+    	return this.binaryObjectToDocument(position,obj);
     }
 
     @Override
@@ -153,7 +160,7 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 		QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
 		//Iterator<Cache.Entry<Object, BinaryObject>> it = cursor.iterator();
 	    for (Cache.Entry<Object, BinaryObject> entry: cursor) {	 	    	
-	    	Document document = this.binaryObjectToDocument(entry.getValue());
+	    	Document document = this.binaryObjectToDocument(entry.getKey(),entry.getValue());
 	    	if (documentMatchesQuery(document, query)) {
                 matchedDocuments.add(document);
             }
@@ -214,14 +221,24 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
     		 
     	 QueryCursor<Cache.Entry<Object, BinaryObject>>  cursor = dataMap.query(scan);
     	//Iterator<Cache.Entry<Object, Document>> it = cursor.iterator();
-    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getValue()), entry.getKey()));		
+    	 return StreamSupport.stream(cursor.spliterator(),false).map(entry -> new DocumentWithPosition<>(binaryObjectToDocument(entry.getKey(),entry.getValue()), entry.getKey()));		
          
     }
     
     public BinaryObject documentToBinaryObject(Document obj){	
     	Ignite ignite = Ignition.ignite();
-    	String typeName = obj.getOrDefault("_class", this.getCollectionName()).toString();
-		BinaryObjectBuilder bb = ignite.binary().builder(typeName);
+    	
+    	Object typeName = obj.get("_class");
+    	
+    	CacheConfiguration cfg = dataMap.getConfiguration(CacheConfiguration.class);
+    	if(!cfg.getQueryEntities().isEmpty()) {
+    		Iterator<QueryEntity> qeit = cfg.getQueryEntities().iterator();
+    		typeName = qeit.next().getValueType();    		
+    	}
+    	if(typeName==null) {
+    		typeName = dataMap.getName();
+    	}
+		BinaryObjectBuilder bb = ignite.binary().builder(typeName.toString());
 		Set<Map.Entry<String,Object>> ents = obj.entrySet();
 	    for(Map.Entry<String,Object> ent: ents){	    	
 	    	String $key =  ent.getKey();
@@ -233,10 +250,15 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 					//-$value = $arr.toArray();
 					$value = ($arr);
 				}
+				else if($value instanceof Document){
+					Document $arr = (Document)$value;
+					//-$value = new HashMap<String,Object>($arr);
+					$value = ($arr.asMap());
+				}
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;
-					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr);
+					//$value = new HashMap($arr);
+					//$value = ($arr);
 				}
 				Object bValue = ignite.binary().toBinary($value);
 				bb.setField($key, bValue);
@@ -249,9 +271,15 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 	    return bb.build();
 	}
     
-    public Document binaryObjectToDocument(BinaryObject obj){	    	
-    	Document doc = new Document();
-	
+    public Document binaryObjectToDocument(Object key,BinaryObject obj){	    	
+    	Document doc = new Document();	
+    	if(key!=null) {
+    		if(key instanceof BinaryObject){
+				BinaryObject $arr = (BinaryObject)key;					
+				key = $arr.deserialize().toString();
+			}	
+    		doc.append(this.idField, key);
+    	}
 	    for(String field: obj.type().fieldNames()){	    	
 	    	String $key =  field;
 	    	Object $value = obj.field(field);
@@ -265,12 +293,11 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 				else if($value instanceof Map){
 					Map $arr = (Map)$value;
 					//-$value = new HashMap<String,Object>($arr);
-					$value = ($arr);
+					$value = new Document($arr);
 				}
 				if($value instanceof BinaryObject){
-					BinaryObject $arr = (BinaryObject)$value;
-					//-$value = $arr.toArray();
-					$value = $arr.deserialize();
+					BinaryObject $arr = (BinaryObject)$value;					
+					$value = binaryObjectToDocument(null,$arr);
 				}				
 				doc.append($key, $value);
 				
@@ -280,6 +307,6 @@ public class IgniteBinaryCollection extends AbstractMongoCollection<Object> {
 			}	    	
 	    }
 	    return doc;
-	}
+	}    
 
 }
