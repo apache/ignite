@@ -146,12 +146,13 @@ else {
 
 # Copy (relevant) jars
 $libsDir = "$PSScriptRoot\bin\libs"
-mkdir -Force $libsDir; del -Force $libsDir\*.*
+New-Item -Path $libsDir -ItemType "directory" -Force
+Remove-Item -Force $libsDir\*.*
 
 ls $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
    -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
-   | % { copy -Force $_ $libsDir }
+   | % { Copy-Item -Force $_ $libsDir }
    
 # Restore directory
 cd $PSScriptRoot
