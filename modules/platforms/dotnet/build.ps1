@@ -103,6 +103,16 @@ function Make-Dir([string]$dirPath) {
     Remove-Item -Force $dirPath\*.*
 }
 
+function Exec([string]$command) {
+    try {
+        iex "& $command"
+    } catch {
+        echo "Command failed: $command"
+        throw
+        exit -1
+    }
+}
+
 # 1) Build Java (Maven)
 # Detect Ignite root directory
 cd $PSScriptRoot\..
@@ -132,19 +142,14 @@ if (!$skipJava) {
     }
 
     # Install Maven Wrapper
-    iex "$mv --% -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    Exec "$mv --% -N io.takari:maven:wrapper -Dmaven=3.5.2"
     $mv = If ($IsLinux) { "./mvnw" } else { "mvnw.cmd" }
 
     # Run Maven
     echo "Starting Java (Maven) build..."
     
     $mvnTargets = if ($clean)  { "clean package" } else { "package" }
-    iex "$mv --% $mvnTargets -DskipTests $mavenOpts"
-
-    # Check result
-    if ($LastExitCode -ne 0) {
-        echo "Java (Maven) build failed."; exit -1
-    }
+    Exec "$mv --% $mvnTargets -DskipTests $mavenOpts"
 }
 else {
     echo "Java (Maven) build skipped."
@@ -207,20 +212,14 @@ if (!$skipDotNet) {
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
-	& $ng restore Apache.Ignite.sln
+	Exec "$ng restore Apache.Ignite.sln"
 
 	# Build
 	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
 	$codeAnalysis = if ($skipCodeAnalysis) {"/p:RunCodeAnalysis=false"} else {""}
-	$msBuildCommand = "$msBuild --% Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
+	$msBuildCommand = "$msBuild Apache.Ignite.sln /target:$targets /p:Configuration=$configuration /p:Platform=`"$platform`" $codeAnalysis /p:UseSharedCompilation=false"
 	echo "Starting MsBuild: '$msBuildCommand'"
-	iex $msBuildCommand   
-
-	# Check result
-	if ($LastExitCode -ne 0) {
-		echo ".NET build failed."
-		exit -1
-	}
+	Exec $msBuildCommand   
 }
 
 if(!$skipDotNetCore) {
@@ -230,18 +229,12 @@ if(!$skipDotNetCore) {
     if ($clean) {
         $cleanCommand = "dotnet clean $targetSolution -c $configuration"
         echo "Starting dotnet clean: '$cleanCommand'"
-        iex $cleanCommand
+        Exec $cleanCommand
     }
 
     $publishCommand = "dotnet publish $targetSolution -c $configuration"
 	echo "Starting dotnet publish: '$publishCommand'"
-	iex $publishCommand    
-
-    # Check result
-    if ($LastExitCode -ne 0) {
-        echo ".NET Core build failed."
-        exit -1
-    }
+	Exec $publishCommand    
 }
 
 if ($asmDirs) {
@@ -266,9 +259,9 @@ Make-Dir("bin")
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*Benchmarks*" | % {
-    $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj") -or $IsLinux) `
+    $binDir = if (($platform -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj") -or $IsLinux) `
                 {"bin\$configuration"} else {"bin\$platform\$configuration"}
-    $dir = join-path (split-path -parent $_) $binDir    
+    $dir = join-path (split-path -parent $_) $binDir
     Copy-Item -Force $dir\*.* bin
 }
 
@@ -290,13 +283,7 @@ if (!$skipNuGet) {
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
     Get-ChildItem *.nuspec -Recurse  `
         | % { 
-            & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
-
-            # check result
-            if ($LastExitCode -ne 0)
-            {
-                echo "NuGet pack failed."; exit -1
-            }
+            Exec "$ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir"
         }
 
     echo "NuGet packages created in '$pwd\$nupkgDir'."
