@@ -149,7 +149,7 @@ $libsDir = "$PSScriptRoot\bin\libs"
 New-Item -Path $libsDir -ItemType "directory" -Force
 Remove-Item -Force $libsDir\*.*
 
-ls $jarDirs.Split(',') *.jar -recurse `
+Get-ChildItem $jarDirs.Split(',') *.jar -recurse `
    -include "ignite-core*","ignite-indexing*","ignite-shmem*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
    -exclude "*-sources*","*-javadoc*","*-tests*","*optional*" `
    | % { Copy-Item -Force $_ $libsDir }
@@ -240,7 +240,7 @@ if(!$skipDotNetCore) {
 }
 
 if ($asmDirs) {
-    ls $asmDirs.Split(',') | % `
+    Get-ChildItem $asmDirs.Split(',') | % `
     {
         $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
 
@@ -260,7 +260,7 @@ if ($asmDirs) {
 New-Item -Force -ItemType "directory" bin
 Remove-Item -Force -Recurse bin\*.*
 
-ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
+Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*Benchmarks*" | % {
     $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
@@ -286,7 +286,7 @@ if (!$skipNuGet) {
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
 
     # Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present)
-    ls *.nuspec -Recurse  `
+    Get-ChildItem *.nuspec -Recurse  `
         | % { 
             & $ng pack $_ -Prop Configuration=Release -Prop Platform=AnyCPU -Version $ver -OutputDirectory $nupkgDir
 
