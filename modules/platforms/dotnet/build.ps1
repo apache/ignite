@@ -263,7 +263,7 @@ Remove-Item -Force -Recurse bin\*.*
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
                      | where Name -NotLike "*Benchmarks*" | % {
-    $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
+    $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj") -or $IsLinux) `
                 {"bin\$configuration"} else {"bin\$platform\$configuration"}
     $dir = join-path (split-path -parent $_) $binDir    
     Copy-Item -Force $dir\*.* bin
