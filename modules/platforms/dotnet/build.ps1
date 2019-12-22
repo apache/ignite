@@ -250,9 +250,8 @@ if ($asmDirs) {
 
         if ($projName.StartsWith("Apache.Ignite")) {
             $target = "$projName\bin\Release"
-            mkdir -Force $target
-
-            xcopy /s /y $_.FullName $target
+            Create-Item -Force -ItemType "directory" $target
+            Copy-Item -Force $_.FullName $target
         }
     }    
 }
