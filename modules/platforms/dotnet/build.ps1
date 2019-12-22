@@ -168,7 +168,7 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe")    
 	}
 }
 
@@ -242,22 +242,23 @@ if(!$skipDotNetCore) {
 if ($asmDirs) {
     ls $asmDirs.Split(',') | % `
     {
-        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name);
+        $projName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
 
         if ($_.Name.EndsWith(".exe.config")) {
-            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName);
+            $projName = [System.IO.Path]::GetFileNameWithoutExtension($projName)
         }
 
         if ($projName.StartsWith("Apache.Ignite")) {
             $target = "$projName\bin\Release"
-            Create-Item -Force -ItemType "directory" $target
+            New-Item -Force -ItemType "directory" $target
             Copy-Item -Force $_.FullName $target
         }
     }    
 }
 
 # Copy binaries
-mkdir -Force bin; del -Force -Recurse bin\*.*
+New-Item -Force -ItemType "directory" bin
+Remove-Item -Force -Recurse bin\*.*
 
 ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
@@ -265,7 +266,7 @@ ls *.csproj -Recurse | where Name -NotLike "*Examples*" `
     $binDir = if (($configuration -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj")) `
                 {"bin\$configuration"} else {"bin\$platform\$configuration"}
     $dir = join-path (split-path -parent $_) $binDir    
-    xcopy /s /y $dir\*.* bin
+    Copy-Item -Force $dir\*.* bin
 }
 
 
@@ -278,7 +279,8 @@ if (!$skipNuGet) {
     }
 
     $nupkgDir = "nupkg"
-    mkdir -Force $nupkgDir; del -Force $nupkgDir\*.*
+    New-Item -Force -ItemType "directory" $nupkgDir
+    Remove-Item -Force $nupkgDir\*.*
 
     # Detect version
     $ver = if ($version) { $version } else { (gi Apache.Ignite.Core\bin\Release\Apache.Ignite.Core.dll).VersionInfo.ProductVersion }
