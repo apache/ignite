@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
@@ -101,14 +102,18 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final GridCompoundFuture idxRebuildFut = new GridCompoundFuture<>();
 
     /** */
+    private final GridDhtPartitionExchangeId exchId;
+
+    /** */
     public FileRebalanceFuture() {
-        this(null, null, null, null, 0, null);
+        this(null, null, null, null, 0, null, null);
 
         onDone(true);
     }
 
     /**
      * @param lsnr Checkpoint listener.
+     * @param exchId Exchange ID.
      */
     public FileRebalanceFuture(
         GridPartitionFilePreloader.CheckpointListener lsnr,
@@ -116,14 +121,15 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         long rebalanceId,
-        IgniteLogger log
-    ) {
+        IgniteLogger log,
+        GridDhtPartitionExchangeId exchId) {
         cpLsnr = lsnr;
         topVer = startVer;
 
         this.log = log;
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
+        this.exchId = exchId;
 
         // The dummy future does not require initialization.
         if (assignsMap != null)
@@ -250,6 +256,13 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                     if (log.isDebugEnabled() && !idxRebuildFut.isDone())
                         log.debug("Index rebuild is still in progress (ignore).");
+
+                    for (Integer grpId : allGroupsMap.keySet()) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                        if (grp != null)
+                            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
+                    }
                 }
             }
             catch (IgniteCheckedException e) {
@@ -300,6 +313,10 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
 
             GridDhtPreloaderAssignments assigns = historicalAssignments.remove(grpId);
+
+            // File rebalancing is finished.
+            // todo historical rebalancing will send separate events
+            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
             if (assigns != null) {
                 GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
@@ -380,6 +397,10 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public void clearPartitions() {
         if (isDone())
             return;
+
+        // todo should we call this only when we starting preloading specified group?
+        for (Integer grpId : allGroupsMap.keySet())
+            cctx.cache().cacheGroup(grpId).preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
 
         cancelLock.lock();
 
@@ -549,9 +570,13 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
         Files.move(src.toPath(), dest.toPath());
 
-        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+        GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
         part.dataStore().store(false).reinit();
+
+        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }
 
     // todo

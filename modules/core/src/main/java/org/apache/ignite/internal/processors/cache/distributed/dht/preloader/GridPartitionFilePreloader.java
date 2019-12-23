@@ -166,7 +166,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             assert lastAffChangeTopVer.compareTo(exchFut.topologyVersion()) != 0;
 
             if (log.isDebugEnabled())
-                log.debug("Skipping file rebalancing initialization affinity was not changed: " + exchId);
+                log.debug("Skipping file rebalancing initialization affinity not changed: " + exchId);
 
             return;
         }
@@ -295,14 +295,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
      * @param assignsMap A map of cache assignments grouped by grpId.
-     * @param force {@code true} if must cancel previous rebalance.
      * @param rebalanceId Current rebalance id.
      * @return Runnable to execute the chain.
      */
     public Runnable addNodeAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap,
         AffinityTopologyVersion topVer,
-        boolean force,
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> nodeOrderAssignsMap =
@@ -337,7 +335,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!rebFut.isDone())
                 rebFut.cancel();
 
-            fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, nodeOrderAssignsMap, topVer, cctx, rebalanceId, log);
+            fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, nodeOrderAssignsMap, topVer, cctx, rebalanceId, log, exchFut.exchangeId());
 
             FileRebalanceNodeRoutine lastFut = null;
 
