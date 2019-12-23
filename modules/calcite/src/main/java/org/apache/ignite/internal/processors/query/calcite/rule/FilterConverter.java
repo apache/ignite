@@ -16,18 +16,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
+import java.util.Map;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -42,21 +42,23 @@ public class FilterConverter extends IgniteConverter {
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalFilter filter = (LogicalFilter) rel;
 
-        RelNode input = convert(filter.getInput(), IgniteConvention.INSTANCE);
+        RelNode input = filter.getInput();
 
-        RelOptCluster cluster = rel.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        Map<RelNode, RelTraitSet> allChildrenTraits = new HashMap<>();
 
-        List<IgniteDistribution> distrs = IgniteMdDerivedDistribution.deriveDistributions(input, IgniteConvention.INSTANCE, mq);
+        VolcanoUtils.deriveAllPossibleTraits(input, allChildrenTraits);
 
-        return Commons.transform(distrs, d -> create(filter, input, d));
-    }
+        List<RelNode> converted = new ArrayList<>(allChildrenTraits.size());
 
-    private static IgniteFilter create(LogicalFilter filter, RelNode input, IgniteDistribution distr) {
-        RelTraitSet traits = filter.getTraitSet()
-            .replace(distr)
-            .replace(IgniteConvention.INSTANCE);
+        for (RelTraitSet traitSet : new HashSet<>(allChildrenTraits.values())) {
+            traitSet = traitSet.replace(IgniteConvention.INSTANCE);
 
-        return new IgniteFilter(filter.getCluster(), traits, convert(input, distr), filter.getCondition());
+            RelNode convertedNode =
+                new IgniteFilter(filter.getCluster(), traitSet, convert(input, traitSet), filter.getCondition());
+
+            converted.add(convertedNode);
+        }
+
+        return converted;
     }
 }

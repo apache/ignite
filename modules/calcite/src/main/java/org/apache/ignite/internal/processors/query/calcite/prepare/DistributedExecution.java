@@ -81,15 +81,27 @@ public class DistributedExecution implements QueryExecution {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
-
+            //rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
             RelTraitSet desired = rel.getTraitSet()
                 .replace(relRoot.collation)
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+
+            rel = planner.optimize(rel, desired);
+            //System.out.println("1 AFTER=" + RelOptUtil.toString(rel));
+
+
+
+
+
+//            System.out.println("2 BEFORE=" + RelOptUtil.toString(rel));
+//            rel = planner.convertToPhysical(rel, rel.getTraitSet());
+//            System.out.println("2 AFTER=" + RelOptUtil.toString(rel));
+
+
+         //   rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
 
             System.out.println("Result=" + RelOptUtil.toString(rel));
 

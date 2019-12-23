@@ -39,6 +39,7 @@ public class TableScanNode extends RelGraphNode {
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         return new IgniteTableScan(ctx.getCluster(),
             traitSet.toTraitSet(ctx.getCluster()),
-            ctx.getSchema().getTableForMember(tableName));
+            ctx.getSchema().getTableForMember(tableName),
+            null, null); // TODO store filters and projects.
     }
 }

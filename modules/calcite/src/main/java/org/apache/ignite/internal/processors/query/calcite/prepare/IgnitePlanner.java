@@ -36,6 +36,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -53,6 +54,11 @@ import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.FilterJoinRule;
+import org.apache.calcite.rel.rules.FilterMergeRule;
+import org.apache.calcite.rel.rules.FilterProjectTransposeRule;
+import org.apache.calcite.rel.rules.ProjectRemoveRule;
+import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
@@ -72,11 +78,19 @@ import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.IgnitePushFilterProjectIntoScanRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableScanConverter;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.serialize.Graph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
@@ -238,6 +252,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                     // TODO normal names :)
                     RelOptTable tbl1 = catalogReader.getTable(Arrays.asList(defaultSchema.getName(), tbl.name()));
+
                     RelNode rel2 = sqlToRelConverter.toRel(tbl1);
 
                     //RelNode rel2 = relBuilder.scan(tbl.name()).build();
@@ -247,7 +262,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                     RelOptTable tbl0 = catalogReader.getTable(Arrays.asList(defaultSchema.getName(), idx.name()));
 
                     RelNode idxTbl = sqlToRelConverter.toRel(tbl0);
-                    res.add(new RelOptMaterialization(idxTbl, rel2, null, Arrays.asList(defaultSchema.getName(), idx.name())));
+
+                    IgniteTableScan idxPhysTable = new IgniteTableScan(idxTbl.getCluster(),
+                        idxTbl.getTraitSet().replace(IgniteConvention.INSTANCE), tbl0, null, null);
+
+                    res.add(new RelOptMaterialization(idxPhysTable, rel2, null, Arrays.asList(defaultSchema.getName(), idx.name())));
 
                 }
 
@@ -385,6 +404,75 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return programs.get(programIdx).run(planner, rel, toTraits, ImmutableList.of(), ImmutableList.of());
     }
 
+    public RelNode optimize(RelNode input, RelTraitSet targetTraits) {
+        ready(); // TODO WTF?
+        Program filterPushDownProgram = Programs.of(RuleSets.ofList(
+            FilterProjectTransposeRule.INSTANCE,
+            FilterJoinRule.JOIN,
+            FilterJoinRule.FILTER_ON_JOIN,
+            SortConverter.INSTANCE,
+            FilterMergeRule.INSTANCE,
+            FilterConverter.INSTANCE,
+            JoinConverter.INSTANCE,
+            ProjectConverter.INSTANCE,
+            SortConverter.INSTANCE,
+            TableScanConverter.INSTANCE,
+            IgnitePushFilterProjectIntoScanRule.FILTER_INTO_SCAN,
+            IgnitePushFilterProjectIntoScanRule.PROJECT_INTO_SCAN,
+            SortRemoveRule.INSTANCE,
+            ProjectRemoveRule.INSTANCE
+        ));
+
+        System.out.println("1 BEFORE=" + RelOptUtil.toString(input));
+        RelNode output = filterPushDownProgram.run(planner, input, targetTraits.simplify().replace(IgniteConvention.INSTANCE),
+            materializations(), ImmutableList.of());
+//
+//        System.out.println("1 After=" + RelOptUtil.toString(output));
+//
+//        Program filterProjectPushDown = Programs.of(RuleSets.ofList(
+//            FilterProjectTransposeRule.INSTANCE,
+//            FilterJoinRule.JOIN,
+//            FilterJoinRule.FILTER_ON_JOIN,
+//            SortConverter.INSTANCE,
+//            FilterMergeRule.INSTANCE,
+//            FilterConverter.INSTANCE,
+//            JoinConverter.INSTANCE,
+//            ProjectConverter.INSTANCE,
+//            SortConverter.INSTANCE,
+//            TableScanConverter.INSTANCE,
+//            IgnitePushFilterProjectIntoScanRule.FILTER_INTO_SCAN,
+//            IgnitePushFilterProjectIntoScanRule.PROJECT_INTO_SCAN,
+//            SortRemoveRule.INSTANCE
+//            //ProjectRemoveRule.INSTANCE
+//        ));
+//
+//        System.out.println("2 Before=" + RelOptUtil.toString(output));
+//        output = filterPushDownProgram.run(planner, output, targetTraits.simplify().replace(IgniteConvention.INSTANCE),
+//            materializations(), ImmutableList.of());
+//
+//        System.out.println("2 After=" + RelOptUtil.toString(output));
+
+        return output;
+    }
+
+    public RelNode convertToPhysical(RelNode input, RelTraitSet targetTraits) {
+        ready(); // TODO WTF?
+
+        Program program = Programs.of(RuleSets.ofList(
+            FilterConverter.INSTANCE,
+            JoinConverter.INSTANCE,
+            ProjectConverter.INSTANCE,
+            SortConverter.INSTANCE,
+            TableScanConverter.INSTANCE,
+            IgnitePushFilterProjectIntoScanRule.FILTER_INTO_SCAN
+        ));
+
+        RelNode output = program.run(planner, input, targetTraits.simplify().replace(IgniteConvention.INSTANCE),
+            materializations(), ImmutableList.of());
+
+        return output;
+    }
+
     public RelNode transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
         ready();
 
@@ -417,7 +505,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 Program program = Programs.of(plannerPhase.getRules(Commons.plannerContext(context)));
 
                 output = program.run(planner, input, toTraits,
-                    materializations(), ImmutableList.of());
+                    ImmutableList.of(), ImmutableList.of());
 
                 break;
             default:

@@ -39,6 +39,6 @@ public class TableScanConverter extends IgniteConverter {
         LogicalTableScan scan = (LogicalTableScan) rel;
 
         RelTraitSet traitSet = scan.getTraitSet().replace(IgniteConvention.INSTANCE);
-        return F.asList(new IgniteTableScan(rel.getCluster(), traitSet, scan.getTable()));
+        return F.asList(new IgniteTableScan(rel.getCluster(), traitSet, scan.getTable(), null, null));
     }
 }

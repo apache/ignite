@@ -16,19 +16,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
+import java.util.Map;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -43,21 +42,23 @@ public class ProjectConverter extends IgniteConverter {
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
 
-        RelNode input = convert(project.getInput(), IgniteConvention.INSTANCE);
+        RelNode input = project.getInput();
 
-        RelOptCluster cluster = rel.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        Map<RelNode, RelTraitSet> allChildrenTraits = new HashMap<>();
 
-        List<IgniteDistribution> distrs = IgniteMdDerivedDistribution.deriveDistributions(input, IgniteConvention.INSTANCE, mq);
+        VolcanoUtils.deriveAllPossibleTraits(input, allChildrenTraits);
 
-        return Commons.transform(distrs, d -> create(project, input, d));
-    }
+        List<RelNode> converted = new ArrayList<>(allChildrenTraits.size());
 
-    private static IgniteProject create(LogicalProject project, RelNode input, IgniteDistribution distr) {
-        RelTraitSet traits = project.getTraitSet()
-            .replace(IgniteMdDistribution.project(input.getRowType(), distr, project.getProjects()))
-            .replace(IgniteConvention.INSTANCE);
+        for (RelTraitSet traitSet : new HashSet<>(allChildrenTraits.values())) {
+            traitSet = traitSet.replace(IgniteConvention.INSTANCE);
 
-        return new IgniteProject(project.getCluster(), traits, convert(input, distr), project.getProjects(), project.getRowType());
+            RelNode convertedNode =
+                new IgniteProject(project.getCluster(), traitSet, convert(input, traitSet), project.getProjects(), project.getRowType());
+
+            converted.add(convertedNode);
+        }
+
+        return converted;
     }
 }

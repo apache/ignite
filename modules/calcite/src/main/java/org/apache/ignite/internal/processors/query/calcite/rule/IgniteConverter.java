@@ -16,17 +16,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -38,37 +34,23 @@ public abstract class IgniteConverter extends ConverterRule {
 
     @Override public void onMatch(RelOptRuleCall call) {
         RelNode rel = call.rel(0);
+
         if (rel.getTraitSet().contains(Convention.NONE)) {
-            List<RelNode> rels = convert0(rel);
-            if (F.isEmpty(rels))
-                return;
+            List<RelNode> convertedRels = convert0(rel);
 
-            Map<RelNode, RelNode> equiv = ImmutableMap.of();
-
-            if (rels.size() > 1) {
-                equiv = new HashMap<>();
-
-                for (int i = 1; i < rels.size(); i++) {
-                    equiv.put(rels.get(i), rel);
-                }
+            for (RelNode convertedRel : convertedRels) {
+                call.transformTo(convertedRel);
             }
-
-            call.transformTo(F.first(rels), equiv);
-        }
-    }
-
-    @Override public RelNode convert(RelNode rel) {
-        List<RelNode> converted = convert0(rel);
-
-        if (converted.size() > 1) {
-            RelOptPlanner planner = rel.getCluster().getPlanner();
-
-            for (int i = 1; i < converted.size(); i++)
-                planner.ensureRegistered(converted.get(i), rel);
         }
 
-        return F.first(converted);
+        VolcanoUtils.ensureRootConverters(rel.getCluster().getPlanner());
     }
 
     protected abstract List<RelNode> convert0(RelNode rel);
+
+    @Override public RelNode convert(RelNode rel) {
+        throw new AssertionError("Should not be called");
+    }
+
+
 }

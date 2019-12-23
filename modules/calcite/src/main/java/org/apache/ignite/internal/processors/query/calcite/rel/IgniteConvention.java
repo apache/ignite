@@ -41,6 +41,6 @@ public class IgniteConvention extends Convention.Impl {
     }
 
     @Override public boolean useAbstractConvertersForConversion(RelTraitSet fromTraits, RelTraitSet toTraits) {
-        return toTraits.contains(INSTANCE) && fromTraits.contains(INSTANCE);
+        return false;//toTraits.contains(INSTANCE) && fromTraits.contains(INSTANCE);
     }
 }

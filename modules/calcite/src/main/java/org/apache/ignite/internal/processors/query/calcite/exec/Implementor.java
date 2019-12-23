@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.schema.FilterableTable;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Outbox;
@@ -125,7 +125,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
         assert !stack.isEmpty();
 
-        Iterable<Object[]> source = rel.getTable().unwrap(ScannableTable.class).scan(root);
+        Iterable<Object[]> source = rel.getTable().unwrap(FilterableTable.class).scan(root,  null /* TODO*/);
 
         return new ScanNode(stack.pop(), source);
     }

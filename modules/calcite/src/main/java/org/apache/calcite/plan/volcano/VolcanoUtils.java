@@ -16,7 +16,11 @@
 
 package org.apache.calcite.plan.volcano;
 
+import java.util.Map;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
 /**
  *
@@ -30,5 +34,34 @@ public class VolcanoUtils {
         planner.impatient = true;
 
         return planner;
+    }
+
+    public static void deriveAllPossibleTraits(RelNode node, Map<RelNode, RelTraitSet> traitsAcc) {
+        if (!(node instanceof RelSubset))
+            traitsAcc.put(node, node.getTraitSet().replace(IgniteConvention.INSTANCE));
+
+        RelSubset subSet = (RelSubset)node;
+        RelSet set = subSet.set;
+
+
+        for (RelSubset subset : set.subsets)
+            traitsAcc.put(subset, subset.getTraitSet().replace(IgniteConvention.INSTANCE));
+
+        for (RelNode peerNode : set.rels) {
+            for (RelNode input : peerNode.getInputs()) {
+                if (!traitsAcc.containsKey(input))
+                    deriveAllPossibleTraits(input, traitsAcc);
+            }
+        }
+
+    }
+
+    public static boolean isPhysicalNode(RelNode node) {
+        return node.getTraitSet().contains(IgniteConvention.INSTANCE);
+    }
+
+    public static void ensureRootConverters(RelOptPlanner planner) {
+        if (planner instanceof VolcanoPlanner)
+            ((VolcanoPlanner)planner).ensureRootConverters();
     }
 }

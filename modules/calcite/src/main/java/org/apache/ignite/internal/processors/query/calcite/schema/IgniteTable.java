@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -31,16 +30,18 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.AffinityFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -49,7 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable {
+public class IgniteTable extends AbstractTable implements TranslatableTable, ProjectableFilterableTable {
     private final String name;
     private final String cacheName;
     private final RowType rowType;
@@ -109,13 +110,13 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
+        RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replaceIf(DistributionTraitDef.INSTANCE, this::getDistribution);
 
         if (collation != null)
             traitSet = traitSet.replaceIf(RelCollationTraitDef.INSTANCE, () -> collation);
 
-        return new LogicalTableScan(cluster, traitSet, relOptTable);
+        return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
     }
 
     public IgniteDistribution getDistribution() {
@@ -135,8 +136,8 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName), ctx.topologyVersion()));
     }
 
-    @Override public Enumerable<Object[]> scan(DataContext root) {
-        throw new AssertionError(); // TODO
+    @Override public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        return null; // TODO: CODE: implement.
     }
 
     private class TableStatistics implements Statistic {

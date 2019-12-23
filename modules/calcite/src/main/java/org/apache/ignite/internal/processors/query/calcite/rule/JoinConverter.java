@@ -41,6 +41,9 @@ public class JoinConverter extends IgniteConverter {
     }
 
     @Override protected List<RelNode> convert0(RelNode rel) {
+//        if (true)
+//            throw new UnsupportedOperationException("suggestJoin for both collation and distribution");
+
         LogicalJoin join = (LogicalJoin) rel;
 
         RelNode left = convert(join.getLeft(), IgniteConvention.INSTANCE);

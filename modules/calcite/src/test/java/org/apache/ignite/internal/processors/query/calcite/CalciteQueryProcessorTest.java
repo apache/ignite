@@ -34,6 +34,7 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
@@ -1195,7 +1196,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             return identityKey;
         }
 
-        @Override public Enumerable<Object[]> scan(DataContext root) {
+        @Override public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
             return Linq4j.asEnumerable(data);
         }
     }

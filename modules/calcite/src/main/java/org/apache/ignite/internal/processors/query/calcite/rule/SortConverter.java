@@ -15,18 +15,18 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
+import java.util.Map;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalSort;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * TODO: Add class description.
@@ -42,22 +42,27 @@ public class SortConverter extends IgniteConverter {
     @Override protected List<RelNode> convert0(RelNode rel) {
         LogicalSort sort = (LogicalSort) rel;
 
-        RelOptCluster cluster = rel.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        RelNode input = sort.getInput();
 
-        RelTraitSet desired = cluster.getPlanner().emptyTraitSet().plus(IgniteConvention.INSTANCE).plus(sort.getCollation());
-        RelNode input = convert(sort.getInput(), desired);
+        Map<RelNode, RelTraitSet> allChildrenTraits = new HashMap<>();
 
-        List<IgniteDistribution> distrs = IgniteMdDerivedDistribution.deriveDistributions(input, IgniteConvention.INSTANCE, mq);
+        VolcanoUtils.deriveAllPossibleTraits(input, allChildrenTraits);
 
-        return Commons.transform(distrs, d -> create(sort, input, d));
-    }
+        List<RelNode> converted = new ArrayList<>(allChildrenTraits.size());
 
-    private static IgniteSort create(LogicalSort sort, RelNode input, IgniteDistribution distr) {
-        RelTraitSet traits = sort.getTraitSet()
-            .replace(distr)
-            .replace(IgniteConvention.INSTANCE);
+        RelTraitSet newTraitSet = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
 
-        return new IgniteSort(sort.getCluster(), traits, convert(input, distr), sort.getCollation());
+        for (RelTraitSet childTraitSet : new HashSet<>(allChildrenTraits.values())) {
+            childTraitSet = childTraitSet.replace(IgniteConvention.INSTANCE);
+
+            if (!newTraitSet.satisfies(childTraitSet)) {
+                RelNode convertedNode = new IgniteSort(sort.getCluster(), newTraitSet, convert(input, childTraitSet), sort.getCollation());
+
+                converted.add(convertedNode);
+            }
+
+        }
+
+        return converted;
     }
 }

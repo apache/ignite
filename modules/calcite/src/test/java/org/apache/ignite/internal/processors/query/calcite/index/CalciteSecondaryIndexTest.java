@@ -60,17 +60,28 @@ public class CalciteSecondaryIndexTest extends GridCommonAbstractTest {
 
 
     @Test
-    public void testSelect() {
+    public void testIndexSortedness() {
 //        System.out.println("No sort: scan should be selected.");
 //        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project");
 
         System.out.println("Sort is in the same direction as index: index scan should be selected.");
-        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
 
 //        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
 //        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
     }
 
+    @Test
+    public void testIndexFiltering() {
+//        System.out.println("No sort: scan should be selected.");
+//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project");
+
+        System.out.println("Sort is in the same direction as index: index scan should be selected.");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE name = 'Ignite' ORDER BY name");
+
+//        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
+//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
+    }
 
     private CacheConfiguration<Object, Object> cache(QueryEntity ent) {
         return new CacheConfiguration<>(ent.getTableName())
