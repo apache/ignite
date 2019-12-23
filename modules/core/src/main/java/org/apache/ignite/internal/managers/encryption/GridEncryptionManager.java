@@ -170,11 +170,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
-    /** Master key change future. */
+    /** Master key change future. Not {@code null} on request iniciator. */
     private volatile MasterKeyChangeFuture masterKeyChangeFut;
 
     /** Pending master key request or {@code null} if there is no master key change process. */
-    private volatile PendingMasterKey pendingMasterKey;
+    private volatile MasterKeyChangeRequest masterKeyChangeRequest;
 
     /** Digest of last changed master key or {@code null} if master key was not changed. */
     private volatile byte[] lastChangedMasterKeyDigest;
@@ -183,10 +183,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * finish process.
      */
-    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> prepareProc;
+    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> prepareProc;
 
     /** Master key change finish process. Changes master key. */
-    private DistributedProcess<PendingMasterKey, MasterKeyChangeResult> finishProc;
+    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> finishProc;
 
     /**
      * @param ctx Kernel context.
@@ -306,7 +306,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             disconnected = true;
 
-            pendingMasterKey = null;
+            masterKeyChangeRequest = null;
 
             lastChangedMasterKeyDigest = null;
 
@@ -552,17 +552,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (ctx.clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
+            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
+
+        // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
+        // can be partially reencrypted in case of node stop without the possibility of recovery.
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Master key change was rejected. The cluster is inactive.");
 
-        checkMasterKeyChangeSupported();
-
         if (masterKeyName.equals(getMasterKeyName()))
-            throw new IgniteException("Master key change was rejected. Master key with provided name is already set.");
+            throw new IgniteException("Master key change was rejected. New name equal to the current.");
 
         byte[] digest = masterKeyDigest(masterKeyName);
 
-        PendingMasterKey request = new PendingMasterKey(UUID.randomUUID(), encryptKeyName(masterKeyName), digest);
+        MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
+            digest);
 
         synchronized (opsMux) {
             if (disconnected) {
@@ -752,7 +756,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** @return {@code True} if the master key change process in progress. */
     public boolean isMasterKeyChangeInProgress() {
-        return pendingMasterKey != null;
+        return masterKeyChangeRequest != null;
     }
 
     /** */
@@ -1074,31 +1078,30 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         });
     }
 
-    /** Checks that the master key change process supported by all nodes in cluster. */
-    public void checkMasterKeyChangeSupported() {
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
-    }
-
     /**
      * Prepares master key change. Checks master key consistency.
      *
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<MasterKeyChangeResult> prepareMasterKeyChange(PendingMasterKey req) {
-        if (pendingMasterKey != null) {
+    private IgniteInternalFuture<MasterKeyChangeResult> prepareMasterKeyChange(MasterKeyChangeRequest req) {
+        if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "Previous change was not completed."));
         }
 
-        pendingMasterKey = req;
+        masterKeyChangeRequest = req;
 
         if (ctx.clientNode())
             return new GridFinishedFuture<>();
 
         try {
-            byte[] digest = masterKeyDigest(decryptKeyName(req.encKeyName()));
+            String masterKeyName = decryptKeyName(req.encKeyName());
+
+            if (masterKeyName.equals(getMasterKeyName()))
+                throw new IgniteException("Master key change was rejected. New name equal to the current.");
+
+            byte[] digest = masterKeyDigest(masterKeyName);
 
             if (!Arrays.equals(req.digest, digest)) {
                 return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master " +
@@ -1123,13 +1126,13 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private void finishPrepareMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
         if (!err.isEmpty()) {
-            if (pendingMasterKey != null && pendingMasterKey.requestId().equals(id))
-                pendingMasterKey = null;
+            if (masterKeyChangeRequest != null && masterKeyChangeRequest.requestId().equals(id))
+                masterKeyChangeRequest = null;
 
-            doneMasterKeyChangeFuture(id, err);
+            completeMasterKeyChangeFuture(id, err);
         }
         else if (isCoordinator())
-            finishProc.start(id, pendingMasterKey);
+            finishProc.start(id, masterKeyChangeRequest);
     }
 
     /**
@@ -1138,12 +1141,12 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<MasterKeyChangeResult> masterKeyChange(PendingMasterKey req) {
-        if (pendingMasterKey == null || !pendingMasterKey.equals(req))
+    private IgniteInternalFuture<MasterKeyChangeResult> masterKeyChange(MasterKeyChangeRequest req) {
+        if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
         if (!ctx.state().clusterState().active()) {
-            pendingMasterKey = null;
+            masterKeyChangeRequest = null;
 
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
                 "The cluster is inactive."));
@@ -1152,7 +1155,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!ctx.clientNode())
             changeMasterKeyAndReencryptGroupKeys(decryptKeyName(req.encKeyName()));
 
-        pendingMasterKey = null;
+        masterKeyChangeRequest = null;
 
         lastChangedMasterKeyDigest = req.digest();
 
@@ -1167,14 +1170,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param err Errors.
      */
     private void finishMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
-        doneMasterKeyChangeFuture(id, err);
+        completeMasterKeyChangeFuture(id, err);
     }
 
     /**
      * @param reqId Request id.
      * @param err Exception.
      */
-    private void doneMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
+    private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
         synchronized (opsMux) {
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
                 masterKeyChangeFut.id().equals(reqId)) {
@@ -1219,9 +1222,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Pending master key.
+     * Master key change request.
      */
-    private static class PendingMasterKey implements Serializable {
+    private static class MasterKeyChangeRequest implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -1239,7 +1242,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
          * @param encKeyName Encrypted master key name.
          * @param digest Master key digest.
          */
-        private PendingMasterKey(UUID reqId, byte[] encKeyName, byte[] digest) {
+        private MasterKeyChangeRequest(UUID reqId, byte[] encKeyName, byte[] digest) {
             this.reqId = reqId;
             this.encKeyName = encKeyName;
             this.digest = digest;
@@ -1265,10 +1268,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (this == o)
                 return true;
 
-            if (!(o instanceof PendingMasterKey))
+            if (!(o instanceof MasterKeyChangeRequest))
                 return false;
 
-            PendingMasterKey key = (PendingMasterKey)o;
+            MasterKeyChangeRequest key = (MasterKeyChangeRequest)o;
 
             return Arrays.equals(encKeyName, key.encKeyName) &&
                 Arrays.equals(digest, key.digest) &&
@@ -1287,7 +1290,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(PendingMasterKey.class, this);
+            return S.toString(MasterKeyChangeRequest.class, this);
         }
     }
 
@@ -1380,15 +1383,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change future.
      */
     private static class MasterKeyChangeFuture extends GridFutureAdapter<Void> {
-        /** */
+        /** Request ID. */
         private final UUID id;
 
-        /** @param id Future ID. */
+        /** @param id Request ID. */
         private MasterKeyChangeFuture(UUID id) {
             this.id = id;
         }
 
-        /** */
+        /** @return Request ID. */
         public UUID id() {
             return id;
         }
