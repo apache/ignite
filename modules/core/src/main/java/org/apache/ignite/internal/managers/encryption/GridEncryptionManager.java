@@ -170,10 +170,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
-    /** Master key change future. Not {@code null} on request iniciator. */
+    /** Master key change future. Not {@code null} on request initiator. */
     private volatile MasterKeyChangeFuture masterKeyChangeFut;
 
-    /** Pending master key request or {@code null} if there is no master key change process. */
+    /** Pending master key request or {@code null} if there is no ongoing master key change process. */
     private volatile MasterKeyChangeRequest masterKeyChangeRequest;
 
     /** Digest of last changed master key or {@code null} if master key was not changed. */
@@ -185,7 +185,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> prepareMKChangeProc;
 
-    /** Master key change finish process. Changes master key. */
+    /** Process to perform the master key change. Changes master key and reencrypt group keys. */
     private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> performMKChangeProc;
 
     /**
@@ -657,6 +657,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (!forceWriteAllKeysToMetaStore) {
                 String masterKeyName = (String)metastorage.read(MASTER_KEY_NAME_PREFIX);
 
+                log.info("Set up master key name from Metastore [masterKeyName=" + masterKeyName + ']');
+
                 if (masterKeyName != null)
                     getSpi().setMasterKeyName(masterKeyName);
             }
@@ -685,7 +687,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "will be changed locally and group keys will be re-encrypted before join to cluster [masterKeyName=" +
                 newMasterKeyName + ']');
 
-            changeMasterKeyAndReencryptGroupKeys(newMasterKeyName);
+            doChangeMasterKey(newMasterKeyName);
         }
     }
 
@@ -788,7 +790,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         }
         else {
-            MasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
+            MasterKeyChangeRecord rec = createMasterKeyChangeRecord();
 
             ctx.cache().context().wal().log(rec);
 
@@ -927,7 +929,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      *
      * @param name New master key name.
      */
-    private void changeMasterKeyAndReencryptGroupKeys(String name) {
+    private void doChangeMasterKey(String name) {
         log.info("Start master key change [masterKeyName=" + name + ']');
 
         masterKeyChangeLock.writeLock().lock();
@@ -935,7 +937,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             getSpi().setMasterKeyName(name);
 
-            MasterKeyChangeRecord rec = prepareMasterKeyChangeRecord();
+            MasterKeyChangeRecord rec = createMasterKeyChangeRecord();
 
             ctx.cache().context().database().checkpointReadLock();
 
@@ -963,7 +965,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             U.error(log, "Unable to change master key locally.", e);
 
             ctx.failure().process(new FailureContext(CRITICAL_ERROR,
-                new Exception("Unable to change master key locally.", e)));
+                new IgniteException("Unable to change master key locally.", e)));
         }
         finally {
             masterKeyChangeLock.writeLock().unlock();
@@ -971,7 +973,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** @return Master key change record. */
-    private MasterKeyChangeRecord prepareMasterKeyChangeRecord() {
+    private MasterKeyChangeRecord createMasterKeyChangeRecord() {
         Map<Integer, byte[]> reencryptedKeys = new HashMap<>();
 
         for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet())
@@ -987,6 +989,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     public void applyKeys(MasterKeyChangeRecord rec) {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
+
+        log.info("Set up master key name from WAL [masterKeyName=" + rec.getMasterKeyName() + ']');
 
         try {
             getSpi().setMasterKeyName(rec.getMasterKeyName());
@@ -1153,7 +1157,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         if (!ctx.clientNode())
-            changeMasterKeyAndReencryptGroupKeys(decryptKeyName(req.encKeyName()));
+            doChangeMasterKey(decryptKeyName(req.encKeyName()));
 
         masterKeyChangeRequest = null;
 
@@ -1179,16 +1183,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private void completeMasterKeyChangeFuture(UUID reqId, Map<UUID, Exception> err) {
         synchronized (opsMux) {
-            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
-                masterKeyChangeFut.id().equals(reqId)) {
-                if (!F.isEmpty(err)) {
-                    Exception e = err.values().stream().findFirst().get();
+            boolean isInitiator = masterKeyChangeFut != null && masterKeyChangeFut.id().equals(reqId);
 
-                    masterKeyChangeFut.onDone(e);
-                }
-                else
-                    masterKeyChangeFut.onDone();
+            if (!isInitiator || masterKeyChangeFut.isDone())
+                return;
+
+            if (!F.isEmpty(err)) {
+                Exception e = err.values().stream().findFirst().get();
+
+                masterKeyChangeFut.onDone(e);
             }
+            else
+                masterKeyChangeFut.onDone();
         }
     }
 
