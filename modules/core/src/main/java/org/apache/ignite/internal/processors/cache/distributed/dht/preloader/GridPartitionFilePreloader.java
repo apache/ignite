@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -188,7 +189,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             Set<Integer> moving = detectMovingPartitions(grp, exchFut);
 
-            if (!locJoinBaselineChange && !isReadOnlyGroup(grp, exchFut.topologyVersion())) {
+            if (!locJoinBaselineChange && !hasReadOnlyParts(grp, exchFut.topologyVersion())) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped for group " + grp.cacheOrGroupName());
 
@@ -212,15 +213,16 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
     }
 
-    private boolean isReadOnlyGroup(CacheGroupContext grp, AffinityTopologyVersion topVer) {
+    private boolean hasReadOnlyParts(CacheGroupContext grp, AffinityTopologyVersion topVer) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+            // todo seems we don't need check that part belongs to local node?
             AffinityAssignment aff = grp.affinity().readyAffinity(topVer);
 
-            if (aff.get(part.id()).contains(cctx.localNode()) && !part.dataStore().readOnly())
-                return false;
+            if (aff.get(part.id()).contains(cctx.localNode()) && part.dataStore().readOnly())
+                return true;
         }
 
-        return true;
+        return false;
     }
 
     private boolean isLocalBaselineChange(GridDhtPartitionsExchangeFuture exchFut) {
@@ -583,7 +585,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return false;
         }
 
-        if (!isReadOnlyGroup(grp, exchFut.topologyVersion()))
+        if (!hasReadOnlyParts(grp, exchFut.topologyVersion()))
             return false;
 
         // onExchangeDone should create all partitions
