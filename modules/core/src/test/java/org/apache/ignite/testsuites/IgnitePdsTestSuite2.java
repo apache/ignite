@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAl
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.FullHistRebalanceOnClientStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebalancingOnNotStableTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
@@ -164,6 +165,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(SlowHistoricalRebalanceSmallHistoryTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
+
+        suite.addTestSuite(FullHistRebalanceOnClientStopTest.class);
 
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
