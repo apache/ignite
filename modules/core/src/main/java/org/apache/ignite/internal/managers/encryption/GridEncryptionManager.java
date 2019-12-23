@@ -183,10 +183,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
      * finish process.
      */
-    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> prepareProc;
+    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> prepareMKChangeProc;
 
     /** Master key change finish process. Changes master key. */
-    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> finishProc;
+    private DistributedProcess<MasterKeyChangeRequest, MasterKeyChangeResult> performMKChangeProc;
 
     /**
      * @param ctx Kernel context.
@@ -267,11 +267,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        prepareProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
+        prepareMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
             this::finishPrepareMasterKeyChange);
 
-        finishProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::masterKeyChange,
-            this::finishMasterKeyChange);
+        performMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::performMasterKeyChange,
+            this::finishPerformMasterKeyChange);
     }
 
     /** {@inheritDoc} */
@@ -583,7 +583,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
         }
 
-        prepareProc.start(request.requestId(), request);
+        prepareMKChangeProc.start(request.requestId(), request);
 
         return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
@@ -1132,7 +1132,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             completeMasterKeyChangeFuture(id, err);
         }
         else if (isCoordinator())
-            finishProc.start(id, masterKeyChangeRequest);
+            performMKChangeProc.start(id, masterKeyChangeRequest);
     }
 
     /**
@@ -1141,7 +1141,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param req Request.
      * @return Result future.
      */
-    private IgniteInternalFuture<MasterKeyChangeResult> masterKeyChange(MasterKeyChangeRequest req) {
+    private IgniteInternalFuture<MasterKeyChangeResult> performMasterKeyChange(MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest == null || !masterKeyChangeRequest.equals(req))
             return new GridFinishedFuture<>(new IgniteException("Unknown master key change was rejected."));
 
@@ -1169,7 +1169,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param res Results.
      * @param err Errors.
      */
-    private void finishMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
+    private void finishPerformMasterKeyChange(UUID id, Map<UUID, MasterKeyChangeResult> res, Map<UUID, Exception> err) {
         completeMasterKeyChangeFuture(id, err);
     }
 
@@ -1181,7 +1181,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (opsMux) {
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone() &&
                 masterKeyChangeFut.id().equals(reqId)) {
-                if (err != null && !err.isEmpty()) {
+                if (!F.isEmpty(err)) {
                     Exception e = err.values().stream().findFirst().get();
 
                     masterKeyChangeFut.onDone(e);
