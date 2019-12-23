@@ -120,7 +120,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private Object topic;
 
     /** Security subject id. */
-    private UUID subjectId;
+    UUID subjectId;
 
     /** P2P unmarshalling future. */
     protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
@@ -223,7 +223,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param topic Topic for ordered messages.
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
-     * @param subjectId Security subject id.
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
@@ -233,7 +232,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         Object topic,
         @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
         @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
-        @Nullable UUID subjectId,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -244,7 +242,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.topic = topic;
         this.locLsnr = locLsnr;
         this.rmtFilter = rmtFilter;
-        this.subjectId = subjectId;
         this.oldValRequired = oldValRequired;
         this.sync = sync;
         this.ignoreExpired = ignoreExpired;
@@ -1009,9 +1006,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Security subject id to create {@link OperationSecurityContext}.
      */
-    private UUID securitySubject(){
-        if(ctx.security().enabled())
-            return internal ? nodeId : subjectId;
+    private UUID securitySubject() {
+        assert ctx != null : "Field 'ctx' shouldn't be null.";
+
+        if (ctx.security().enabled())
+            return subjectId != null ? subjectId : ctx.security().securityContext().subject().id();
 
         return null;
     }
@@ -1422,10 +1421,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             out.writeObject(rmtFilter);
 
         out.writeBoolean(internal);
-
-        if (!internal)
-            U.writeUuid(out, subjectId);
-
         out.writeBoolean(notifyExisting);
         out.writeBoolean(oldValRequired);
         out.writeBoolean(sync);
@@ -1450,10 +1445,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
         internal = in.readBoolean();
-
-        if (!internal)
-            subjectId = U.readUuid(in);
-
         notifyExisting = in.readBoolean();
         oldValRequired = in.readBoolean();
         sync = in.readBoolean();

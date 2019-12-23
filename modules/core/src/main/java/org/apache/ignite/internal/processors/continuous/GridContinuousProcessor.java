@@ -782,7 +782,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             TOPIC_CACHE.topic(topicPrefix, ctx.localNodeId(), seq.incrementAndGet()),
             locLsnr,
             rmtFilter,
-            null,
             true,
             false,
             true,
