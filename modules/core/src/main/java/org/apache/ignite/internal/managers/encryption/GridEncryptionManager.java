@@ -147,7 +147,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private volatile boolean writeToMetaStoreEnabled;
 
     /** {@code True} if need to write all keys (and rewrite existing) when metastore will ready for write. */
-    private boolean reencryptOnMetaStoreReadyForWrite;
+    private boolean writeAllToMetastore;
+
+    /** {@code True} if master key name restored from WAL. */
+    private boolean restoredFromWAL;
 
     /** Prefix for a encryption group key in meta store. */
     public static final String ENCRYPTION_KEY_PREFIX = "grp-encryption-key-";
@@ -654,10 +657,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
         try {
             // There is no need to set master key in case of recovery, as it is already relevant.
-            if (!reencryptOnMetaStoreReadyForWrite) {
+            if (!restoredFromWAL) {
                 String masterKeyName = (String)metastorage.read(MASTER_KEY_NAME_PREFIX);
 
-                log.info("Set up master key name from Metastore [masterKeyName=" + masterKeyName + ']');
+                log.info("Master key name loaded from metastrore [masterKeyName=" + masterKeyName + ']');
 
                 if (masterKeyName != null)
                     getSpi().setMasterKeyName(masterKeyName);
@@ -683,6 +686,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         String newMasterKeyName = IgniteSystemProperties.getString(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP);
 
         if (newMasterKeyName != null) {
+            if (newMasterKeyName.equals(getSpi().getMasterKeyName())){
+                log.info("Restored master key name equals to name from system property " +
+                    IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP + ". This system property will be ignored and " +
+                    "recommended to remove [masterKeyName=" + newMasterKeyName + ']');
+
+                return;
+            }
+
             log.info("System property " + IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP + " is set. Master key " +
                 "will be changed locally and group keys will be re-encrypted before join to cluster [masterKeyName=" +
                 newMasterKeyName + ']');
@@ -698,10 +709,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             writeToMetaStoreEnabled = true;
 
-            if (reencryptOnMetaStoreReadyForWrite)
-                reencryptToMetaStore();
-            else
-                writeAllToMetaStore();
+            writeAllToMetaStore();
         }
     }
 
@@ -784,40 +792,17 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void writeAllToMetaStore() throws IgniteCheckedException {
+        if (writeAllToMetastore)
+            metaStorage.write(MASTER_KEY_NAME_PREFIX, getSpi().getMasterKeyName());
+
         for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet()) {
-            if (metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
+            if (!writeAllToMetastore && metaStorage.read(ENCRYPTION_KEY_PREFIX + entry.getKey()) != null)
                 continue;
 
             writeToMetaStore(entry.getKey(), getSpi().encryptKey(entry.getValue()));
         }
-    }
 
-    /**
-     * Writes all group keys and master key name to metaStorage.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private void reencryptToMetaStore() throws IgniteCheckedException {
-        ctx.cache().context().database().checkpointReadLock();
-
-        try {
-            MasterKeyChangeRecord rec = createMasterKeyChangeRecord();
-
-            ctx.cache().context().wal().log(rec);
-
-            if (writeToMetaStoreEnabled) {
-                metaStorage.write(MASTER_KEY_NAME_PREFIX, rec.getMasterKeyName());
-
-                for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
-                    metaStorage.write(ENCRYPTION_KEY_PREFIX + entry.getKey(), entry.getValue());
-
-                reencryptOnMetaStoreReadyForWrite = false;
-            }
-            else
-                reencryptOnMetaStoreReadyForWrite = true;
-        } finally {
-            ctx.cache().context().database().checkpointReadUnlock();
-        }
+        writeAllToMetastore = false;
     }
 
     /**
@@ -954,10 +939,21 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             getSpi().setMasterKeyName(name);
 
-            synchronized (metaStorageMux) {
-                reencryptToMetaStore();
-            }
+            ctx.cache().context().database().checkpointReadLock();
 
+            try {
+                MasterKeyChangeRecord rec = createMasterKeyChangeRecord();
+
+                ctx.cache().context().wal().log(rec);
+
+                synchronized (metaStorageMux) {
+                    writeAllToMetastore = true;
+
+                    writeAllToMetaStore();
+                }
+            } finally {
+                ctx.cache().context().database().checkpointReadUnlock();
+            }
             log.info("Master key successfully changed [masterKeyName=" + name + ']');
         }
         catch (Exception e) {
@@ -989,7 +985,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void applyKeys(MasterKeyChangeRecord rec) {
         assert !writeToMetaStoreEnabled && !ctx.state().clusterState().active();
 
-        log.info("Set up master key name from WAL [masterKeyName=" + rec.getMasterKeyName() + ']');
+        log.info("Master key name loaded from WAL [masterKeyName=" + rec.getMasterKeyName() + ']');
 
         try {
             getSpi().setMasterKeyName(rec.getMasterKeyName());
@@ -997,7 +993,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
                 grpEncKeys.computeIfAbsent(entry.getKey(), k -> getSpi().decryptKey(entry.getValue()));
 
-            reencryptOnMetaStoreReadyForWrite = true;
+            restoredFromWAL = true;
+
+            writeAllToMetastore = true;
         } catch (IgniteSpiException e) {
             log.warning("Unable to apply group keys from WAL record [masterKeyName=" + rec.getMasterKeyName() + ']', e);
         }
