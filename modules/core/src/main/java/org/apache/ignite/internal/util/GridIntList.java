@@ -146,12 +146,12 @@ public class GridIntList implements Message, Externalizable {
         if (ints == null)
             return new GridIntList(0);
 
-        GridIntList intParts = new GridIntList(ints.size());
+        GridIntList res = new GridIntList(ints.size());
 
-        for (Integer partId : ints)
-            intParts.add(partId);
+        for (Integer i : ints)
+            res.add(i);
 
-        return intParts;
+        return res;
     }
 
     /**

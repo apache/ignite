@@ -83,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -747,10 +746,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             for (LocalSnapshotContext sctx : locSnpCtxs.values()) {
                 // Try stop all snapshot processing if not yet.
-                sctx.acceptException(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
+                sctx.close(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
-
-                sctx.close();
             }
 
             locSnpCtxs.clear();
@@ -845,10 +842,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         File rootSnpDir0 = localSnapshotDir(snpName);
 
         try {
-            return scheduleSnapshot(snpName,
+            IgniteInternalFuture<Boolean> snpFut = scheduleSnapshot(snpName,
                 parts,
                 snpRunner,
                 localSnapshotSender(rootSnpDir0));
+
+            LocalSnapshotContext sctx = locSnpCtxs.get(snpName);
+
+            assert sctx != null : "Just started snapshot cannot has an empty context: " + snpName;
+
+            dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName))
+                .beginFuture()
+                .get();
+
+            // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
+            // due to checkpoint aready running and we need to schedule the next one
+            // right afther current will be completed.
+            if (sctx.state.ordinal() == SnapshotState.INIT.ordinal())
+                dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
+
+            U.await(sctx.startedLatch);
+
+            return snpFut;
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -1029,20 +1044,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             assert ctx0 == null : ctx0;
 
-            CheckpointFuture cpFut = dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
-
-            // todo must fix checkpoint start issue since a checkpoint beforeBegin can be concurrently executed.
-            cpFut.beginFuture()
-                .get();
-
             if (log.isInfoEnabled())
                 log.info("Snapshot operation scheduled with the following context: " + sctx);
         }
         catch (IOException e) {
             locSnpCtxs.remove(snpName, sctx);
 
-            sctx.acceptException(e);
-            sctx.close();
+            sctx.close(e);
 
             if (nodeSnpDir != null)
                 nodeSnpDir.delete();
@@ -1309,8 +1317,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             assert buf.position() == 0 : buf.position();
             assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
-            Throwable t = null;
-
             lock.readLock().lock();
 
             try {
@@ -1350,14 +1356,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
             }
             catch (Throwable ex) {
-                t = ex;
+                exConsumer.accept(ex);
             }
             finally {
                 lock.readLock().unlock();
             }
-
-            if (t != null)
-                exConsumer.accept(t);
         }
 
         /**
@@ -1414,9 +1417,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Set cancelling state to snapshot. */
         private final Runnable doCancel;
 
-        /** Latch of awaiting cancellation. */
-        private final CountDownLatch cancelLatch = new CountDownLatch(1);
-
         /**
          * @param doCancel Set cancelling state to snapshot.
          */
@@ -1428,19 +1428,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         @Override public boolean cancel() throws IgniteCheckedException {
             doCancel.run();
 
-            U.await(cancelLatch);
-
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            boolean changed;
-
-            if (changed = super.onDone(res, err, cancel) && cancel)
-                cancelLatch.countDown();
-
-            return changed;
+            return  super.onDone(res, err, cancel);
         }
     }
 
@@ -1589,7 +1582,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** Future of result completion. */
         @GridToStringExclude
-        private final SnapshotFuture snpFut;
+        private final SnapshotFuture snpFut = new SnapshotFuture(() -> {
+            cancelled = true;
+
+            close();
+        });
 
         /** Snapshot data sender. */
         @GridToStringExclude
@@ -1606,6 +1603,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@code true} if operation has been cancelled. */
         private volatile boolean cancelled;
+
+        /** Latch to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
+        private final CountDownLatch startedLatch = new CountDownLatch(1);
 
         /** Phase of the current snapshot process run. */
         private volatile SnapshotState state = SnapshotState.INIT;
@@ -1643,11 +1643,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 while(iter.hasNext())
                     this.parts.add(new GroupPartitionId(e.getKey(), iter.next()));
             }
-
-            snpFut = new SnapshotFuture(() -> {
-                if (state(SnapshotState.STOPPING))
-                    cancelled = true;
-            });
         }
 
         /**
@@ -1665,6 +1660,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 if (state == SnapshotState.STOPPING) {
                     this.state = SnapshotState.STOPPING;
 
+                    startedLatch.countDown();
+
                     return true;
                 }
 
@@ -1673,6 +1670,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 if (state.ordinal() > this.state.ordinal()) {
                     this.state = state;
+
+                    if (state == SnapshotState.STARTED)
+                        startedLatch.countDown();
 
                     return true;
                 }
@@ -1689,9 +1689,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 lastTh = th;
         }
 
-        /** {@inheritDoc} */
-        @Override public void close() {
+        /**
+         * @param th Occurred exception during processing or {@code null} if not.
+         */
+        public void close(Throwable th) {
             if (state(SnapshotState.STOPPED)) {
+                if (lastTh == null)
+                    lastTh = th;
+
                 for (PageStoreSerialWriter writer : partDeltaWriters.values())
                     U.closeQuiet(writer);
 
@@ -1709,6 +1714,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 snpFut.onDone(true, lastTh, cancelled);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            close(null);
         }
 
         /** {@inheritDoc} */

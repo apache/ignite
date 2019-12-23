@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,7 +80,6 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SUFFIX;
 
 /**
  * TODO backup must fail in case of parallel cache stop operation
@@ -104,14 +101,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_KEYS_RANGE = 1024;
 
     /** */
-    private static final PathMatcher DELTA_FILE_MATCHER =
-        FileSystems.getDefault().getPathMatcher("glob:**" + DELTA_SUFFIX);
-
-    /** */
     private static final DataStorageConfiguration memCfg = new DataStorageConfiguration()
         .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true))
+        .setCheckpointFrequency(3000)
         .setPageSize(PAGE_SIZE)
         .setWalMode(WALMode.LOG_ONLY);
 
@@ -248,20 +242,21 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), GridIntList.valueOf(ints));
 
-        FilePageStoreManager storeMgr = (FilePageStoreManager)ig.context()
-            .cache()
-            .context()
-            .pageStore();
-
-
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
             .snapshotMgr();
 
-        File cpDir = ((GridCacheDatabaseSharedManager) ig.context().cache().context().database())
-            .checkpointDirectory();
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context()
+            .cache()
+            .context()
+            .database();
+
+        File cpDir = dbMgr.checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
+
+        // listener will be executed inside checkpoint thread
+        dbMgr.waitForCheckpoint("fix all data", f -> dbMgr.enableCheckpoints(false));
 
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -287,6 +282,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                         }
                     }
                 });
+
+        dbMgr.enableCheckpoints(true);
+
+        dbMgr.forceCheckpoint("snapshot is ready to be created")
+            .beginFuture()
+            .get();
 
         // Change data after backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
@@ -319,8 +320,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         ig2.cluster().active(true);
 
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            assertEquals(i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
+            assertEquals("snapshot data consistency violation [key=" + i + ']',
+                i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+        }
     }
 
     /**
