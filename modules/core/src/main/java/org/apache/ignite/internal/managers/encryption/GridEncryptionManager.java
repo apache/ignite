@@ -171,7 +171,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private DiscoveryEventListener discoLsnr;
 
     /** Master key change future. Not {@code null} on request initiator. */
-    private volatile MasterKeyChangeFuture masterKeyChangeFut;
+    private MasterKeyChangeFuture masterKeyChangeFut;
 
     /** Pending master key request or {@code null} if there is no ongoing master key change process. */
     private volatile MasterKeyChangeRequest masterKeyChangeRequest;
@@ -581,11 +581,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 throw new IgniteException("Master key change was rejected. Previous change was not completed.");
 
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
+
+            prepareMKChangeProc.start(request.requestId(), request);
+
+            return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
-
-        prepareMKChangeProc.start(request.requestId(), request);
-
-        return new IgniteFutureImpl<>(masterKeyChangeFut);
     }
 
     /** {@inheritDoc} */
@@ -937,22 +937,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         try {
             getSpi().setMasterKeyName(name);
 
-            MasterKeyChangeRecord rec = createMasterKeyChangeRecord();
-
             ctx.cache().context().database().checkpointReadLock();
 
             try {
-                ctx.cache().context().wal().log(rec);
-
                 synchronized (metaStorageMux) {
-                    if (writeToMetaStoreEnabled) {
-                        metaStorage.write(MASTER_KEY_NAME_PREFIX, rec.getMasterKeyName());
+                    forceWriteAllKeysToMetaStore = true;
 
-                        for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
-                            metaStorage.write(ENCRYPTION_KEY_PREFIX + entry.getKey(), entry.getValue());
-                    }
-                    else
-                        forceWriteAllKeysToMetaStore = true;
+                    if (writeToMetaStoreEnabled)
+                        writeAllToMetaStore();
                 }
 
                 log.info("Master key successfully changed [masterKeyName=" + name + ']');
@@ -1195,6 +1187,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
             else
                 masterKeyChangeFut.onDone();
+
+            masterKeyChangeFut = null;
         }
     }
 
