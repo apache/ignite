@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -29,10 +30,18 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexDynamicParam;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isBinaryComparison;
 
 /**
  *
@@ -40,6 +49,9 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteTableScan extends TableScan implements IgniteRel {
     private final List<RexNode> filters;
     private final ImmutableIntList projects;
+    private final RexNode indexPredicate;
+    private final List<RexNode> complementaryPredicates;
+
 
     public IgniteTableScan(RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -56,24 +68,102 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
         this.filters = filters;
         this.projects = projects;
-    }
-
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        RelOptCost currentCost = super.computeSelfCost(planner, mq);
-
 
         if (!F.isEmpty(filters)) {
-            System.out.println("!");
-//            RexNode finalFilter = RexUtil.removeCast() getCluster().getRexBuilder();
-//
-//            mq.getSelectivity(this, filters);
+            // TODO multicolumn indexes support
+            // TODO Merge OR filters result using several index cursors
+            // TODO simplify and merge overlapping conditions
+
+            // TODO do we always scan over index?
+            int firstIdxCol = getCollationList().get(0).getFieldCollations().get(0).getFieldIndex();
+            double bestSelectivity = Double.MAX_VALUE;
+            RexCall bestPredicate = null;
+
+            List<RexNode> predicates = RexUtil.flattenAnd(filters);
+            complementaryPredicates = new ArrayList<>(predicates.size());
+
+            for (RexNode exp : predicates) {
+                if (!isBinaryComparison(exp)) {
+                    complementaryPredicates.add(exp);
+
+                    continue;
+                }
+
+                RexCall call = (RexCall)exp;
+
+                RexNode leftOp = call.getOperands().get(0);
+                RexNode rightOp = call.getOperands().get(1);
+
+                if (leftOp.isA(SqlKind.CAST))
+                    leftOp = ((RexCall)leftOp).getOperands().get(0);
+
+                if (rightOp.isA(SqlKind.CAST))
+                    rightOp = ((RexCall)rightOp).getOperands().get(0);
+
+                int colIdx;
+
+                // TODO handle correlVariable as constant?
+                if (leftOp instanceof RexInputRef  && (rightOp instanceof RexLiteral || rightOp instanceof RexDynamicParam))
+                    colIdx = ((RexInputRef)leftOp).getIndex();
+                else if ((leftOp instanceof RexLiteral || leftOp instanceof RexDynamicParam)  && rightOp instanceof RexInputRef)
+                    colIdx = ((RexInputRef)rightOp).getIndex();
+                else {
+                    complementaryPredicates.add(exp);
+
+                    continue;
+                }
+
+                if (firstIdxCol == colIdx) { // Congrats! We have an indexed column in the predicate.
+                    double curSelectivity = guessSelectivity(call);
+                    if (bestPredicate == null || curSelectivity < bestSelectivity) {
+                        if (bestPredicate != null)
+                            complementaryPredicates.add(bestPredicate); // Move previous best to the complementary.
+
+                        bestPredicate = call;
+                        bestSelectivity = curSelectivity;
+                    }
+                    else {
+                        complementaryPredicates.add(bestPredicate);
+                    }
+                }
+                else {
+                    complementaryPredicates.add(exp);
+                }
+            }
+
+            indexPredicate = bestPredicate;
+        }
+        else {
+            indexPredicate = null;
+            complementaryPredicates = null;
+        }
+    }
+
+
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rows = table.getRowCount();
+        double cpu = rows;
+
+        if (!F.isEmpty(filters)) {
+            Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.
+            rows *= selectivity;
+
+            if (indexPredicate != null) {
+                cpu *=  mq.getSelectivity(this, indexPredicate);
+
+                rows *= 0.5; // TODO raising cpu is not enough for victory. Is it a bug? So let's reduce rows count a little.
+            }
         }
 
-        if (!F.isEmpty(filters) && table.getQualifiedName().get(1).contains("IDX"))
-            return currentCost.multiplyBy(0.1);
+        RelOptCost cost = planner.getCostFactory().makeCost(rows, cpu, 0);
 
-        return currentCost;
+        if (!F.isEmpty(filters))
+            System.out.println("==Cost=" + cost + " for tbl=" + toString());
+
+        // TODO count projects.
+        return cost;
     }
+
 
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return this;
@@ -109,5 +199,22 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             builder.add(fieldList.get(project));
 
         return builder.build();
+    }
+
+
+    private static double guessSelectivity(RexCall call) {
+        switch (call.getKind()) {
+            case EQUALS:
+                return 0.1;
+
+            case LESS_THAN:
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQUAL:
+            case LESS_THAN_OR_EQUAL:
+                return 0.3;
+
+            default:
+                throw new AssertionError("Wrong argument type: " + call);
+        }
     }
 }

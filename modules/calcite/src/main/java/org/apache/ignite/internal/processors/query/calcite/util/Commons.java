@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,9 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
@@ -41,10 +45,22 @@ import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.calcite.sql.SqlKind.EQUALS;
+import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
+import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.LESS_THAN;
+import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+
 /**
  *
  */
 public final class Commons {
+    public static final Set<SqlKind> TREE_INDEX_COMPARISON =
+        EnumSet.of(
+            EQUALS,
+            LESS_THAN, GREATER_THAN,
+            GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
+
     private Commons(){}
 
     public static Context convert(QueryContext ctx) {
@@ -144,6 +160,11 @@ public final class Commons {
     }
 
 
+    public static boolean isBinaryComparison(RexNode exp) {
+        return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
+            (exp instanceof RexCall) && // TODO is it possible to be the not RexCall here?
+            ((RexCall)exp).getOperands().size() == 2;
+    }
 
 
 }

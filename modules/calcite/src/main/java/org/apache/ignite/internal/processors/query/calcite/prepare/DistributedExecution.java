@@ -27,6 +27,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.ValidationException;
@@ -103,7 +104,7 @@ public class DistributedExecution implements QueryExecution {
 
          //   rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
 
-            System.out.println("Result=" + RelOptUtil.toString(rel));
+            System.out.println("Result=" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES));
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         } catch (SqlParseException | ValidationException e) {

@@ -73,14 +73,11 @@ public class CalciteSecondaryIndexTest extends GridCommonAbstractTest {
 
     @Test
     public void testIndexFiltering() {
-//        System.out.println("No sort: scan should be selected.");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project");
+//        grid(0).context().query().getQueryEngine().query(QueryContext.of(),
+//            "SELECT * FROM Project WHERE (name = 'Ignite' OR (id > 1 AND NOT id =3)) AND (ver > id AND name > 'A') AND (id BETWEEN 1 AND 3) AND ver IN (1,2) AND  3 = ver AND id = ? ORDER BY name");
 
-        System.out.println("Sort is in the same direction as index: index scan should be selected.");
-        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE name = 'Ignite' ORDER BY name");
-
-//        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
+        System.out.println("SELECT * FROM Project WHERE id = 1");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE id = 1");
     }
 
     private CacheConfiguration<Object, Object> cache(QueryEntity ent) {

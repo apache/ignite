@@ -16,8 +16,15 @@
 
 package org.apache.calcite.plan.volcano;
 
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelTrait;
+import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -31,7 +38,7 @@ public class VolcanoUtils {
     }
 
     public static VolcanoPlanner impatient(VolcanoPlanner planner) {
-        planner.impatient = true;
+       // planner.impatient = true;
 
         return planner;
     }
@@ -61,7 +68,40 @@ public class VolcanoUtils {
     }
 
     public static void ensureRootConverters(RelOptPlanner planner) {
-        if (planner instanceof VolcanoPlanner)
-            ((VolcanoPlanner)planner).ensureRootConverters();
+        if (!(planner instanceof VolcanoPlanner))
+            return;
+
+        VolcanoPlanner volcanoPlanner = (VolcanoPlanner)planner;
+        RelSubset root = (RelSubset)planner.getRoot();
+
+        final Set<RelSubset> subsets = new HashSet<>();
+        for (RelNode rel : root.getRels()) {
+            if (rel instanceof AbstractConverter) {
+                subsets.add((RelSubset) ((AbstractConverter) rel).getInput());
+            }
+        }
+        for (RelSubset subset : root.set.subsets) {
+            final ImmutableList<RelTrait> difference =
+                root.getTraitSet().difference(subset.getTraitSet());
+
+            List<RelTrait> diffSet = new ArrayList<>(difference.size());
+
+            for (RelTrait trait : difference) {
+                RelTraitDef def = trait.getTraitDef();
+                RelTrait rootTrait = root.getTraitSet().getTrait(def);
+
+                if (!trait.satisfies(rootTrait))
+                    diffSet.add(trait);
+            }
+
+            if (diffSet.size() == 1 && subsets.add(subset)) {
+                volcanoPlanner.register(
+                    new AbstractConverter(subset.getCluster(), subset,
+                        diffSet.get(0).getTraitDef(), root.getTraitSet()),
+                    root);
+            }
+        }
+
+        ((VolcanoPlanner)planner).ensureRootConverters();
     }
 }

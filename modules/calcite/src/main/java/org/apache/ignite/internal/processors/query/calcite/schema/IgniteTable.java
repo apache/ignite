@@ -142,7 +142,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
 
     private class TableStatistics implements Statistic {
         @Override public Double getRowCount() {
-            return null;
+            return 10_000.0;
         }
 
         @Override public boolean isKey(ImmutableBitSet columns) {
@@ -154,7 +154,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
         }
 
         @Override public List<RelCollation> getCollations() {
-            return ImmutableList.of();
+            return ImmutableList.of(collation);
         }
 
         @Override public RelDistribution getDistribution() {
