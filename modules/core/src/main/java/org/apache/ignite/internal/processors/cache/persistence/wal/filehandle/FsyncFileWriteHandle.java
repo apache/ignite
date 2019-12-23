@@ -640,7 +640,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
                         int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                        if (rollOver && written + switchSegmentRecSize < maxSegmentSize) {
                             final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
 
                             segmentRecord.position(new FileWALPointer(getSegmentId(), (int)written, switchSegmentRecSize));
