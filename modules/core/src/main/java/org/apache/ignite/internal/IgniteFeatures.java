@@ -79,7 +79,7 @@ public enum IgniteFeatures {
     PME_FREE_SWITCH(19),
 
     /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(22);
+    CONT_QRY_SECURITY_AWARE(20);
 
     /**
      * Unique feature identifier.

@@ -56,7 +56,11 @@ public class SecurityUtils {
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = ThreadLocal.withInitial(() -> DFLT_SERIALIZE_VERSION);
+    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
+        @Override protected Integer initialValue() {
+            return DFLT_SERIALIZE_VERSION;
+        }
+    };
 
     /** Permissions that contain {@code AllPermission}. */
     public static final Permissions ALL_PERMISSIONS;
