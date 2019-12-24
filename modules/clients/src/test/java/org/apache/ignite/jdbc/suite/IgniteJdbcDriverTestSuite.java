@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.suite;
 
+import java.security.Security;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
@@ -85,10 +86,20 @@ import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
  */
 public class IgniteJdbcDriverTestSuite extends TestSuite {
     /**
+     * Enable NULL algorithm and keep 3DES_EDE_CBC disabled. See {@link JdbcThinConnectionSSLTest#testDisabledCustomCipher()}
+     * for details.
+     */
+    private static void init() {
+        Security.setProperty("jdk.tls.disabledAlgorithms", "3DES_EDE_CBC");
+    }
+
+    /**
      * @return JDBC Driver Test Suite.
      * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
+        init();
+
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
         // Thin client based driver tests.
