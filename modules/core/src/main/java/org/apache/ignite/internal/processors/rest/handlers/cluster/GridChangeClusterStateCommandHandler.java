@@ -23,27 +23,25 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
-import org.apache.ignite.internal.processors.rest.request.GridRestReadOnlyChangeModeRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_READ_ONLY_MODE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_DISABLE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_STATE;
 
 /**
  *
  */
-public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandlerAdapter {
+public class GridChangeClusterStateCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
-    private static final Collection<GridRestCommand> COMMANDS =
-        U.sealList(CLUSTER_CURRENT_READ_ONLY_MODE, CLUSTER_READ_ONLY_DISABLE, CLUSTER_READ_ONLY_ENABLE);
+    private static final Collection<GridRestCommand> COMMANDS = U.sealList(CLUSTER_SET_STATE, CLUSTER_STATE);
 
     /**
      * @param ctx Context.
      */
-    public GridChangeReadOnlyModeCommandHandler(GridKernalContext ctx) {
+    public GridChangeClusterStateCommandHandler(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -54,7 +52,7 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest restReq) {
-        GridRestReadOnlyChangeModeRequest req = (GridRestReadOnlyChangeModeRequest)restReq;
+        GridRestClusterStateRequest req = (GridRestClusterStateRequest)restReq;
 
         final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
@@ -62,18 +60,20 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
 
         try {
             switch (req.command()) {
-                case CLUSTER_CURRENT_READ_ONLY_MODE:
-                    res.setResponse(ctx.grid().cluster().readOnly());
+                case CLUSTER_STATE:
+                    assert req.isReqCurrentMode() : req;
+
+                    res.setResponse(ctx.grid().cluster().state());
 
                     break;
 
                 default:
-                    if (req.readOnly())
-                        U.log(log, "Received enable read-only mode request from client node with ID: " + req.clientId());
-                    else
-                        U.log(log, "Received disable read-only mode request from client node with ID: " + req.clientId());
+                    assert req.state() != null : req;
 
-                    ctx.grid().cluster().readOnly(req.readOnly());
+                    U.log(log, "Received cluster state change request to " + req.state() +
+                        " state from client node with ID: " + req.clientId());
+
+                    ctx.grid().cluster().state(req.state());
 
                     res.setResponse(req.command().key() + " done");
 

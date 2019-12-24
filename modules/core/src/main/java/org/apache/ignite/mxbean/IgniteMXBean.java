@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+import org.apache.ignite.cluster.ClusterState;
 
 /**
  * This interface defines JMX view on kernal.
@@ -507,30 +508,30 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Gets cluster read-only mode status.
+     * Checks cluster state.
      *
-     * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.
+     * @return String representation of current cluster state.
+     * See {@link ClusterState}.
      */
-    @MXBeanDescription("Cluster read-only mode status.")
-    boolean readOnlyMode();
+    @MXBeanDescription("Checks cluster state.")
+    public String clusterState();
 
     /**
-     * Enable or disable cluster read-only mode. If {@code readOnly} flag is {@code true} read-only mode will be
-     * enabled. If {@code readOnly} flag is {@code false} read-only mode will be disabled.
+     * Changes current cluster state.
      *
-     * @param readOnly enable/disable cluster read-only mode flag.
+     * @param state String representation of new cluster state.
+     * See {@link ClusterState}
      */
-    @MXBeanDescription("Enable or disable cluster read-only mode.")
-    @MXBeanParametersNames("readOnly")
-    @MXBeanParametersDescriptions("True - enable read-only mode, false - disable read-only mode.")
-    void readOnlyMode(boolean readOnly);
+    @MXBeanDescription("Changes current cluster state.")
+    @MXBeanParametersNames("state")
+    @MXBeanParametersDescriptions("New cluster state.")
+    public void clusterState(String state);
 
     /**
-     * Gets duration of read-only mode enabled on cluster.
+     * Gets last cluster state change operation.
      *
-     * @return {@code 0} if cluster read-only mode disabled, and time in milliseconds since enabling cluster read-only
-     * mode.
+     * @return Unix time of last cluster state change operation.
      */
-    @MXBeanDescription("Duration of read-only mode enabled on cluster.")
-    long getReadOnlyModeDuration();
+    @MXBeanDescription("Unix time of last cluster state change operation.")
+    public long lastClusterStateChangeTime();
 }

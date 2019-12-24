@@ -1,4 +1,20 @@
 /*
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ *
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,23 +31,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cluster;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCluster;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception defines modification data error in read-only cluster. See {@link IgniteCluster#readOnly()}
+ * This exception is used to indicate that the cluster is in a read-only state
  */
-public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException {
+public class IgniteClusterReadOnlyException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Create empty exception.
      */
-    public ClusterReadOnlyModeCheckedException() {
+    public IgniteClusterReadOnlyException() {
         // No-op.
     }
 
@@ -40,7 +55,7 @@ public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException 
      *
      * @param msg Error message.
      */
-    public ClusterReadOnlyModeCheckedException(String msg) {
+    public IgniteClusterReadOnlyException(String msg) {
         super(msg);
     }
 
@@ -50,7 +65,7 @@ public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException 
      *
      * @param cause Non-null throwable cause.
      */
-    public ClusterReadOnlyModeCheckedException(Throwable cause) {
+    public IgniteClusterReadOnlyException(Throwable cause) {
         super(cause);
     }
 
@@ -62,7 +77,7 @@ public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException 
      * @param writableStackTrace whether or not the stack trace should
      *                           be writable
      */
-    public ClusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
+    public IgniteClusterReadOnlyException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
         super(msg, cause, writableStackTrace);
     }
 
@@ -72,7 +87,7 @@ public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException 
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public ClusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause) {
+    public IgniteClusterReadOnlyException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }
