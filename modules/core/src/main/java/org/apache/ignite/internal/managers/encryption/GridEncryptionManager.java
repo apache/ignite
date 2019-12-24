@@ -716,7 +716,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             if (recoveryMasterKeyName)
                 writeKeysToWal();
 
-            writeAllToMetaStore(restoredFromWAL || recoveryMasterKeyName);
+            writeKeysToMetaStore(restoredFromWAL || recoveryMasterKeyName);
 
             restoredFromWAL = false;
 
@@ -731,7 +731,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 writeToMetaStoreEnabled = metaStorage != null;
 
                 if (writeToMetaStoreEnabled)
-                    writeAllToMetaStore(false);
+                    writeKeysToMetaStore(false);
             }
 
             return null;
@@ -795,7 +795,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @param writeAll {@code True} if force rewrite all keys.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeAllToMetaStore(boolean writeAll) throws IgniteCheckedException {
+    private void writeKeysToMetaStore(boolean writeAll) throws IgniteCheckedException {
         if (writeAll)
             metaStorage.write(MASTER_KEY_NAME_PREFIX, getSpi().getMasterKeyName());
 
@@ -931,7 +931,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 synchronized (metaStorageMux) {
                     assert writeToMetaStoreEnabled;
 
-                    writeAllToMetaStore(true);
+                    writeKeysToMetaStore(true);
                 }
             } finally {
                 ctx.cache().context().database().checkpointReadUnlock();
