@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  *  Security aware transformer factory.
  */
 @SuppressWarnings("rawtypes")
-public class SecurityAwareTransformerFactory extends SecurityAwareComponent implements Factory<IgniteClosure> {
+public class SecurityAwareTransformerFactory extends AbstractSecurityAwareComponent implements Factory<IgniteClosure> {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Abstract security aware component of countinuous query.
  */
-public abstract class SecurityAwareComponent implements Externalizable {
+public abstract class AbstractSecurityAwareComponent implements Externalizable {
     /** Security subject id. */
     protected UUID subjectId;
 
@@ -39,7 +39,7 @@ public abstract class SecurityAwareComponent implements Externalizable {
     /**
      * Default constructor.
      */
-    protected SecurityAwareComponent() {
+    protected AbstractSecurityAwareComponent() {
         // No-op.
     }
 
@@ -47,7 +47,7 @@ public abstract class SecurityAwareComponent implements Externalizable {
      * @param subjectId Security subject id.
      * @param original Original component.
      */
-    protected SecurityAwareComponent(UUID subjectId, Object original) {
+    protected AbstractSecurityAwareComponent(UUID subjectId, Object original) {
         this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
         this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
     }
