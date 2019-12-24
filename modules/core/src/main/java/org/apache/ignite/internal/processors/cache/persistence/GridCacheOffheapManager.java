@@ -303,8 +303,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     ) throws IgniteCheckedException {
         assert store instanceof CacheDataStoreEx : store.getClass().getName();
 
-        if (store instanceof CacheDataStoreEx && ((CacheDataStoreEx)store).readOnly())
+        if (store instanceof CacheDataStoreEx && ((CacheDataStoreEx)store).readOnly()) {
+            assert !savePagesCount : "You should not request partition while store is read-only: " + store;
+
             return;
+        }
 
         RowStore rowStore0 = store.rowStore();
 
