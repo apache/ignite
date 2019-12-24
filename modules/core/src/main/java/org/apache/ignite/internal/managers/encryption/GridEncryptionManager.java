@@ -600,11 +600,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return withMasterKeyChangeReadLock(() -> getSpi().getMasterKeyName());
     }
 
-    /** @return Digest of last changed master key or {@code null} if master key was not changed. */
-    public byte[] lastChangedMasterKeyDigest() {
-        return lastChangedMasterKeyDigest;
-    }
-
     /**
      * Removes encryption key.
      *
@@ -987,84 +982,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @param masterKeyName Master key name.
-     * @return Master key digest.
-     * @throws IgniteException if unable to get master key digest.
-     */
-    private byte[] masterKeyDigest(String masterKeyName) {
-        byte[] digest;
-
-        masterKeyChangeLock.writeLock().lock();
-
-        try {
-            String curName = getSpi().getMasterKeyName();
-
-            try {
-                getSpi().setMasterKeyName(masterKeyName);
-
-                digest = getSpi().masterKeyDigest();
-            } catch (Exception e) {
-                throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
-            } finally {
-                getSpi().setMasterKeyName(curName);
-            }
-        }
-        finally {
-            masterKeyChangeLock.writeLock().unlock();
-        }
-
-        return digest;
-    }
-
-    /**
-     * @param keyName Master key name to encrypt.
-     * @return Encrypted master key name.
-     */
-    private byte[] encryptKeyName(String keyName) {
-        return withMasterKeyChangeReadLock(() -> {
-            Serializable key = getSpi().create();
-
-            byte[] encKey = getSpi().encryptKey(key);
-
-            byte[] serKeyName = U.toBytes(keyName);
-
-            ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
-                getSpi().encryptedSize(serKeyName.length));
-
-            res.putInt(encKey.length);
-            res.put(encKey);
-
-            getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
-
-            return res.array();
-        });
-    }
-
-    /**
-     * @param data Byte array with encrypted a master key name.
-     * @return Decrypted master key name.
-     */
-    private String decryptKeyName(byte[] data) {
-        return withMasterKeyChangeReadLock(() -> {
-            ByteBuffer buf = ByteBuffer.wrap(data);
-
-            int keyLen = buf.getInt();
-
-            byte[] encKey = new byte[keyLen];
-
-            buf.get(encKey);
-
-            byte[] encKeyName = new byte[buf.remaining()];
-
-            buf.get(encKeyName);
-
-            byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
-
-            return U.fromBytes(serKeyName);
-        });
-    }
-
-    /**
      * Prepares master key change. Checks master key consistency.
      *
      * @param req Request.
@@ -1216,6 +1133,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return masterKeyChangeRequest != null;
     }
 
+    /** @return Digest of last changed master key or {@code null} if master key was not changed. */
+    public byte[] lastChangedMasterKeyDigest() {
+        return lastChangedMasterKeyDigest;
+    }
+
     /**
      * @param c Callable to run with master key change read lock.
      * @return Computed result.
@@ -1232,6 +1154,84 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         finally {
             masterKeyChangeLock.readLock().unlock();
         }
+    }
+
+    /**
+     * @param masterKeyName Master key name.
+     * @return Master key digest.
+     * @throws IgniteException if unable to get master key digest.
+     */
+    private byte[] masterKeyDigest(String masterKeyName) {
+        byte[] digest;
+
+        masterKeyChangeLock.writeLock().lock();
+
+        try {
+            String curName = getSpi().getMasterKeyName();
+
+            try {
+                getSpi().setMasterKeyName(masterKeyName);
+
+                digest = getSpi().masterKeyDigest();
+            } catch (Exception e) {
+                throw new IgniteException("Unable to set master key locally [masterKeyName=" + masterKeyName + ']', e);
+            } finally {
+                getSpi().setMasterKeyName(curName);
+            }
+        }
+        finally {
+            masterKeyChangeLock.writeLock().unlock();
+        }
+
+        return digest;
+    }
+
+    /**
+     * @param keyName Master key name to encrypt.
+     * @return Encrypted master key name.
+     */
+    private byte[] encryptKeyName(String keyName) {
+        return withMasterKeyChangeReadLock(() -> {
+            Serializable key = getSpi().create();
+
+            byte[] encKey = getSpi().encryptKey(key);
+
+            byte[] serKeyName = U.toBytes(keyName);
+
+            ByteBuffer res = ByteBuffer.allocate(/*Encrypted key length*/4 + encKey.length +
+                getSpi().encryptedSize(serKeyName.length));
+
+            res.putInt(encKey.length);
+            res.put(encKey);
+
+            getSpi().encrypt(ByteBuffer.wrap(serKeyName), key, res);
+
+            return res.array();
+        });
+    }
+
+    /**
+     * @param data Byte array with encrypted a master key name.
+     * @return Decrypted master key name.
+     */
+    private String decryptKeyName(byte[] data) {
+        return withMasterKeyChangeReadLock(() -> {
+            ByteBuffer buf = ByteBuffer.wrap(data);
+
+            int keyLen = buf.getInt();
+
+            byte[] encKey = new byte[keyLen];
+
+            buf.get(encKey);
+
+            byte[] encKeyName = new byte[buf.remaining()];
+
+            buf.get(encKeyName);
+
+            byte[] serKeyName = getSpi().decrypt(encKeyName, getSpi().decryptKey(encKey));
+
+            return U.fromBytes(serKeyName);
+        });
     }
 
     /**
