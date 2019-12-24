@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -54,7 +55,6 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -87,6 +87,8 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.IgniteFeatures.CONT_QRY_SECURITY_AWARE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 
 /**
  * Continuous queries manager.
@@ -534,8 +536,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locTransLsnr,
-                        rmtFilterFactory,
-                        rmtTransFactory,
+                        securityAwareFilterFactory(rmtFilterFactory),
+                        securityAwareTransformerFactory(rmtTransFactory),
                         true,
                         false,
                         !includeExpired,
@@ -550,7 +552,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
-                        rmtFilterFactory,
+                        securityAwareFilterFactory(rmtFilterFactory),
                         true,
                         false,
                         !includeExpired,
@@ -568,7 +570,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                         cctx.name(),
                         TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                         locLsnr,
-                        rmtFilter,
+                        securityAwareFilter(rmtFilter),
                         true,
                         false,
                         !includeExpired,
@@ -733,7 +735,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         boolean skipPrimaryCheck = loc && cctx.config().getCacheMode() == CacheMode.REPLICATED && cctx.affinityNode();
 
-        final CacheContinuousQueryHandler hnd = securityAwareHandler(clsr.apply());
+        final CacheContinuousQueryHandler hnd = clsr.apply();
 
         boolean locOnly = cctx.isLocal() || loc;
 
@@ -853,30 +855,50 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Creats a handler wrapper with security subject id.
-     *
-     * @param hnd Original handler.
-     * @return The wrapper of the handler.
+     * @param factory Original factory.
+     * @return Security aware factory.
      */
-    private <K, V> CacheContinuousQueryHandler<K, V> securityAwareHandler(final CacheContinuousQueryHandler<K, V> hnd) {
-        final GridKernalContext ctx = cctx.kernalContext();
-
-        if (ctx.security().enabled() && continuousQuerySecurityAwareSupported(ctx)) {
-            final UUID subjectId = ctx.security().securityContext().subject().id();
-
-            return new SecurityAwareContinuousQueryHandler<>(hnd, subjectId);
-        }
-
-        return hnd;
+    @SuppressWarnings("rawtypes")
+    private Factory securityAwareTransformerFactory(Factory factory) {
+        return securityAwareComponent(factory, SecurityAwareTransformerFactory::new);
     }
 
     /**
-     * @return True if cluster nodes version is compatible with ContinuousQuery with subject id.
+     * @param factory Original factory.
+     * @return Security aware factory.
      */
-    private boolean continuousQuerySecurityAwareSupported(GridKernalContext ctx) {
-        Collection<ClusterNode> nodes = ctx.discovery().allNodes();
+    @SuppressWarnings("rawtypes")
+    private Factory securityAwareFilterFactory(Factory factory) {
+        return securityAwareComponent(factory, SecurityAwareFilterFactory::new);
+    }
 
-        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CONT_QRY_SECURITY_AWARE);
+    /**
+     * @param filter Original filter.
+     * @return Security aware filter.
+     */
+    @SuppressWarnings("rawtypes")
+    private CacheEntryEventSerializableFilter securityAwareFilter(CacheEntryEventSerializableFilter filter) {
+        return securityAwareComponent(filter, SecurityAwareFilter::new);
+    }
+
+    /**
+     * @param component Original component.
+     * @param f Function that converts the original component to a security aware component.
+     * @return Security aware component.
+     */
+    private <T> T securityAwareComponent(T component, BiFunction<UUID, T, T> f) {
+        if (component == null)
+            return null;
+
+        GridKernalContext ctx = cctx.kernalContext();
+
+        if (ctx.security().enabled() && allNodesSupports(ctx.discovery().allNodes(), CONT_QRY_SECURITY_AWARE)) {
+            final UUID subjectId = ctx.security().securityContext().subject().id();
+
+            return f.apply(subjectId, component);
+        }
+
+        return component;
     }
 
     /**
@@ -1092,7 +1114,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 cctx.name(),
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
-                                rmtFilterFactory,
+                                securityAwareFilterFactory(rmtFilterFactory),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,
@@ -1118,7 +1140,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                 cctx.name(),
                                 TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
                                 locLsnr,
-                                jCacheFilter,
+                                securityAwareFilter(jCacheFilter),
                                 cfg.isOldValueRequired(),
                                 cfg.isSynchronous(),
                                 false,
