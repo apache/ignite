@@ -362,7 +362,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
                     IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
                     IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');
 
-
                     assertEquals(state == ACTIVE ? 100 : 0, atomicCache.size());
                     assertEquals(state == ACTIVE ? 100 : 0, txCache.size());
 

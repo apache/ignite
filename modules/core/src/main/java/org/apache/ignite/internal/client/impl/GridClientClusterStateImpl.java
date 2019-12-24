@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.impl;
 
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
@@ -26,7 +25,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 
 /**
  *
