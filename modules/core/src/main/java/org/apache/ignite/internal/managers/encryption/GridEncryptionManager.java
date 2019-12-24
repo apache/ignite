@@ -737,13 +737,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        withMasterKeyChangeReadLock(() -> {
-            synchronized (metaStorageMux) {
-                writeToMetaStoreEnabled = false;
-            }
-
-            return null;
-        });
+        synchronized (metaStorageMux) {
+            writeToMetaStoreEnabled = false;
+        }
     }
 
     /**
