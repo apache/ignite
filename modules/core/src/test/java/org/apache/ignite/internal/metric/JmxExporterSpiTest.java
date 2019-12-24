@@ -735,103 +735,73 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         }
     }
 
-    /**
-     *
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testIgniteKernal() throws Exception {
         DynamicMBean mbn = metricRegistry(ignite.name(), null, IGNITE_METRICS);
 
         assertNotNull(mbn);
 
-        int cnt = 36;
+        assertEquals(36, mbn.getMBeanInfo().getAttributes().length);
 
-        for (MBeanAttributeInfo info : mbn.getMBeanInfo().getAttributes()) {
-            cnt--;
+        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a-> F.isEmpty(a.getDescription())));
 
-            assertFalse(F.isEmpty(info.getDescription()));
-            Object val = mbn.getAttribute(info.getName());
+        assertFalse(F.isEmpty((String)mbn.getAttribute("fullVersion")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("copyright")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("osInformation")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("jdkInformation")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("vmName")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("discoverySpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("communicationSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("deploymentSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("checkpointSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("collisionSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("eventStorageSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("failoverSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("loadBalancingSpiFormatted")));
 
-            switch (info.getName()) {
-                case "fullVersion":
-                case "copyright":
-                case "osInformation":
-                case "jdkInformation":
-                case "vmName":
-                case "discoverySpiFormatted":
-                case "communicationSpiFormatted":
-                case "deploymentSpiFormatted":
-                case "checkpointSpiFormatted":
-                case "collisionSpiFormatted":
-                case "eventStorageSpiFormatted":
-                case "failoverSpiFormatted":
-                case "loadBalancingSpiFormatted":
-                    assertFalse(F.isEmpty(val.toString()));
-                    break;
-                case "osUser":
-                    assertEquals(System.getProperty("user.name"), val.toString());
-                    break;
-                case "startTimestampFormatted":
-                    assertNotNull(DateFormat.getDateTimeInstance().parse(val.toString()));
-                    break;
-                case "uptimeFormatted":
-                    assertNotNull(LocalTime.parse(val.toString()));
-                    break;
-                case "isRebalanceEnabled":
-                case "isNodeInBaseline":
-                case "active":
-                    assertTrue((boolean)val);
-                    break;
-                case "readOnlyMode":
-                    assertFalse((boolean)val);
-                    break;
-                case "startTimestamp":
-                case "uptime":
-                    assertTrue((long)val > 0);
-                    break;
-                case "instanceName":
-                    assertEquals(ignite.name(), val.toString());
-                    break;
-                case "userAttributesFormatted":
-                case "lifecycleBeansFormatted":
-                    assertEquals(Collections.emptyList(), val);
-                    break;
-                case "longJVMPauseLastEvents":
-                    assertEquals(Collections.emptyMap(), val);
-                    break;
-                case "longJVMPausesCount":
-                case "longJVMPausesTotalDuration":
-                case "readOnlyModeDuration":
-                    assertEquals(0L, val);
-                    break;
-                case "executorServiceFormatted":
-                    assertEquals(String.valueOf(ignite.configuration().getPublicThreadPoolSize()), val.toString());
-                    break;
-                case "isPeerClassLoadingEnabled":
-                    assertEquals(ignite.configuration().isPeerClassLoadingEnabled(), val);
-                    break;
-                case "currentCoordinatorFormatted":
-                    assertTrue(val.toString().contains(ignite.localNode().id().toString()));
-                    break;
-                case "igniteHome":
-                    assertEquals(ignite.configuration().getIgniteHome(), val.toString());
-                    break;
-                case "localNodeId":
-                    assertEquals(ignite.localNode().id(), val);
-                    break;
-                case "gridLoggerFormatted":
-                    assertEquals(ignite.configuration().getGridLogger().toString(), val.toString());
-                    break;
-                case "mBeanServerFormatted":
-                    assertEquals(ignite.configuration().getMBeanServer().toString(), val.toString());
-                    break;
-                default:
-                    fail("Unexpected attribute : " + info.getName());
-            }
-        }
+        assertEquals(System.getProperty("user.name"), (String)mbn.getAttribute("osUser"));
 
-        assertEquals(0, cnt);
+        assertNotNull(DateFormat.getDateTimeInstance().parse((String)mbn.getAttribute("startTimestampFormatted")));
+        assertNotNull(LocalTime.parse((String)mbn.getAttribute("uptimeFormatted")));
+
+        assertTrue((boolean)mbn.getAttribute("isRebalanceEnabled"));
+        assertTrue((boolean)mbn.getAttribute("isNodeInBaseline"));
+        assertTrue((boolean)mbn.getAttribute("active"));
+
+        assertFalse((boolean)mbn.getAttribute("readOnlyMode"));
+
+        assertTrue((long)mbn.getAttribute("startTimestamp") > 0);
+        assertTrue((long)mbn.getAttribute("uptime") > 0);
+
+        assertEquals(ignite.name(), (String)mbn.getAttribute("instanceName"));
+
+        assertEquals(Collections.emptyList(), mbn.getAttribute("userAttributesFormatted"));
+        assertEquals(Collections.emptyList(), mbn.getAttribute("lifecycleBeansFormatted"));
+
+        assertEquals(Collections.emptyMap(), mbn.getAttribute("longJVMPauseLastEvents"));
+
+        assertEquals(0L, mbn.getAttribute("longJVMPausesCount"));
+        assertEquals(0L, mbn.getAttribute("longJVMPausesTotalDuration"));
+        assertEquals(0L, mbn.getAttribute("readOnlyModeDuration"));
+
+        assertEquals(String.valueOf(ignite.configuration().getPublicThreadPoolSize()),
+                mbn.getAttribute("executorServiceFormatted"));
+
+        assertEquals(ignite.configuration().isPeerClassLoadingEnabled(), mbn.getAttribute("isPeerClassLoadingEnabled"));
+
+        assertTrue(((String)mbn.getAttribute("currentCoordinatorFormatted"))
+                .contains(ignite.localNode().id().toString()));
+
+        assertEquals(ignite.configuration().getIgniteHome(), (String)mbn.getAttribute("igniteHome"));
+
+        assertEquals(ignite.localNode().id(), mbn.getAttribute("localNodeId"));
+
+        assertEquals(ignite.configuration().getGridLogger().toString(),
+                (String)mbn.getAttribute("gridLoggerFormatted"));
+
+        assertEquals(ignite.configuration().getMBeanServer().toString(),
+                (String)mbn.getAttribute("mBeanServerFormatted"));
     }
 
     /** */
