@@ -1240,7 +1240,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * Array of bits. 1 - means pages written, 0 - the otherwise.
          * Size of array can be estimated only under checkpoint write lock.
          */
-        private volatile AtomicIntegerArray pagesWrittenBits;
+        private volatile AtomicBitSet pagesWrittenBits;
 
         /**
          * @param log Ignite logger to use.
@@ -1283,7 +1283,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             lock.writeLock().lock();
 
             try {
-                pagesWrittenBits = new AtomicIntegerArray(allocPages);
+                pagesWrittenBits = new AtomicBitSet(allocPages);
                 inited = true;
             }
             finally {
@@ -1329,12 +1329,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 if (checkpointComplete.getAsBoolean()) {
                     int pageIdx = PageIdUtils.pageIndex(pageId);
 
-                    // Page out of snapshot scope.
-                    if (pageIdx > pagesWrittenBits.length())
-                        return;
-
                     // Page already written.
-                    if (!pagesWrittenBits.compareAndSet(pageIdx, 0, 1))
+                    if (!pagesWrittenBits.touch(pageIdx))
                         return;
 
                     final ByteBuffer locBuf = localBuff.get();
@@ -1406,6 +1402,50 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
             finally {
                 lock.writeLock().unlock();
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class AtomicBitSet {
+        /** Container of bits. */
+        private final AtomicIntegerArray arr;
+
+        /** Size of array of bits. */
+        private final int size;
+
+        /**
+         * @param size Size of array.
+         */
+        public AtomicBitSet(int size) {
+            this.size = size;
+
+            arr = new AtomicIntegerArray((size + 31) >>> 5);
+        }
+
+        /**
+         * @param off Bit position to change.
+         * @return {@code true} if bit has been set,
+         * {@code false} if bit changed by another thread or out of range.
+         */
+        public boolean touch(long off) {
+            if (off > size)
+                return false;
+
+            int bit = 1 << off;
+            int bucket = (int)(off >>> 5);
+
+            while (true) {
+                int cur = arr.get(bucket);
+                int val = cur | bit;
+
+                if (cur == val)
+                    return false;
+
+                if (arr.compareAndSet(bucket, cur, val))
+                    return true;
             }
         }
     }
@@ -1664,9 +1704,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     return true;
                 }
-
-                assert state != SnapshotState.STOPPED || this.state == SnapshotState.STARTED || this.state == SnapshotState.STOPPING :
-                    "STOPPED state can only be set from STARTED or STOPPING: " + this.state;
 
                 if (state.ordinal() > this.state.ordinal()) {
                     this.state = state;
