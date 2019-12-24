@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.security.sandbox;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteException;
 
 /**
- *
+ * No operation Sandbox.
  */
-public class CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest
-    extends CacheContinuousQueryFailoverAtomicSelfTest {
+public class NoOpSandbox implements IgniteSandbox {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @Override public <T> T execute(Callable<T> call) throws IgniteException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCacheConfiguration() {
-        return super.nearCacheConfiguration();
+    @Override public boolean enabled() {
+        return false;
     }
 }

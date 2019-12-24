@@ -1245,7 +1245,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void finalizeUpdateCounters() {
+    @Override public void finalizeUpdateCounters(Set<Integer> parts) {
         // No-op.
     }
 

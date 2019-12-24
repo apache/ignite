@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -40,11 +41,6 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  * </ul>
  */
 public interface IgniteSecurity {
-    /** */
-    static final String MSG_SEC_PROC_CLS_IS_INVALID = "Local node's grid security processor class " +
-        "is not equal to remote node's grid security processor class " +
-        "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
-
     /**
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
      * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
@@ -119,6 +115,11 @@ public interface IgniteSecurity {
     public default void authorize(SecurityPermission perm) throws SecurityException {
         authorize(null, perm);
     }
+
+    /**
+     * @return Instance of IgniteSandbox.
+     */
+    public IgniteSandbox sandbox();
 
     /**
      * @return True if IgniteSecurity is a plugin implementation,

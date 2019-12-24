@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
@@ -51,6 +53,7 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -62,6 +65,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
@@ -89,6 +93,7 @@ import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFOR
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
@@ -105,6 +110,7 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
+import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.FILTER_OPERATION;
 import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -462,6 +468,34 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             assertEquals(1, attrs.length);
 
             return (TabularDataSupport)caches.getAttribute(VIEWS);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    public TabularDataSupport filteredSystemView(IgniteEx g, String name, Map<String, Object> filter) {
+        try {
+            DynamicMBean mbean = mbean(g, VIEWS, name);
+
+            MBeanOperationInfo[] opers = mbean.getMBeanInfo().getOperations();
+
+            assertEquals(1, opers.length);
+
+            assertEquals(FILTER_OPERATION, opers[0].getName());
+
+            MBeanParameterInfo[] paramInfo = opers[0].getSignature();
+
+            Object params[] = new Object[paramInfo.length];
+            String signature[] = new String[paramInfo.length];
+
+            for (int i = 0; i < paramInfo.length; i++) {
+                params[i] = filter.get(paramInfo[i].getName());
+                signature[i] = paramInfo[i].getType();
+            }
+
+            return (TabularDataSupport)mbean.invoke(FILTER_OPERATION, params, signature);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -928,6 +962,34 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         finally {
             latch.countDown();
         }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        String cacheName = "cacheFL";
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName(cacheName).setAffinity(new RendezvousAffinityFunction().setPartitions(2)));
+
+        // Put some data to cache to init cache partitions.
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
+
+        TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+        ));
+
+        assertEquals(1, view.size());
+
+        view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+        ));
+
+        assertEquals(2, view.size());
     }
 
     /** */
