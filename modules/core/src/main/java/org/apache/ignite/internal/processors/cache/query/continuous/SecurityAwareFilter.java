@@ -67,6 +67,6 @@ public class SecurityAwareFilter extends SecurityAwareComponent implements Cache
     @IgniteInstanceResource
     public void ignite(Ignite ignite) {
         if (ignite != null)
-            this.ignite = IgnitionEx.gridx(ignite.name());
+            this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
     }
 }
