@@ -255,8 +255,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!aff.get(p).contains(cctx.localNode()))
                 continue;
 
-            if (!fatEnough && globalSizes.get(p) >= FILE_REBALANCE_THRESHOLD)
-                fatEnough = true;
+            if (!fatEnough) {
+                Long partSize = globalSizes.get(p);
+
+                if (partSize != null && partSize >= FILE_REBALANCE_THRESHOLD)
+                    fatEnough = true;
+            }
 
             GridDhtLocalPartition part = grp.topology().localPartition(p);
 
