@@ -121,6 +121,17 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * </ul>
  *
  * @see GridCacheProcessor#generateEncryptionKeysAndStartCacheAfter(int, GridPlainClosure)
+ *
+ * <p>Master key change process:</p>
+ * <ol>
+ *     <li>The initiator starts the process.</li>
+ *     <li>Each server node compares the master key digest. If not equals - the process finishes with error.</li>
+ *     <li>Each server node changes the master key: creates WAL record and re-encrypts group keys in MetaStore.</li>
+ *     <li>The initiator gets the result when all server nodes completed the master key change.</li>
+ * </ol>
+ *
+ * @see #prepareMKChangeProc
+ * @see #performMKChangeProc
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements MetastorageLifecycleListener,
     IgniteChangeGlobalStateSupport, IgniteEncryption {
