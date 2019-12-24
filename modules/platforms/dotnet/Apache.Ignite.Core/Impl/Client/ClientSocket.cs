@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Wrapper over framework socket for Ignite thin client operations.
     /// </summary>
-    internal sealed class ClientSocket : IClientSocket
+    internal sealed class ClientSocket : IDisposable
     {
         /** Version 1.0.0. */
         public static readonly ClientProtocolVersion Ver100 = new ClientProtocolVersion(1, 0, 0);
@@ -118,6 +118,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Logger. */
         private readonly ILogger _logger;
 
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -126,13 +129,19 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <param name="host">The host name (required for SSL).</param>
         /// <param name="version">Protocol version.</param>
         /// <param name="topVerCallback">Topology version update callback.</param>
+        /// <param name="marshaller">Marshaller.</param>
         public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, string host,
-            ClientProtocolVersion? version = null,
-            Action<AffinityTopologyVersion> topVerCallback = null)
+            ClientProtocolVersion? version, Action<AffinityTopologyVersion> topVerCallback,
+            Marshaller marshaller)
         {
             Debug.Assert(clientConfiguration != null);
+            Debug.Assert(endPoint != null);
+            Debug.Assert(!string.IsNullOrWhiteSpace(host));
+            Debug.Assert(topVerCallback != null);
+            Debug.Assert(marshaller != null);
 
             _topVerCallback = topVerCallback;
+            _marsh = marshaller;
             _timeout = clientConfiguration.SocketTimeout;
             _logger = (clientConfiguration.Logger ?? NoopLogger.Instance).GetLogger(GetType());
 
@@ -185,8 +194,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs a send-receive operation.
         /// </summary>
-        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             // Encode.
             var reqMsg = WriteMessage(writeAction, opId);
@@ -201,8 +210,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs a send-receive operation asynchronously.
         /// </summary>
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             // Encode.
             var reqMsg = WriteMessage(writeAction, opId);
@@ -308,7 +317,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Decodes the response that we got from <see cref="HandleResponse"/>.
         /// </summary>
-        private T DecodeResponse<T>(BinaryHeapStream stream, Func<IBinaryStream, T> readFunc,
+        private T DecodeResponse<T>(BinaryHeapStream stream, Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc)
         {
             ClientStatusCode statusCode;
@@ -337,7 +346,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (statusCode == ClientStatusCode.Success)
             {
-                return readFunc != null ? readFunc(stream) : default(T);
+                return readFunc != null 
+                    ? readFunc(new ClientResponseContext(stream, _marsh, ServerVersion)) 
+                    : default(T);
             }
 
             var msg = BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString();
@@ -578,9 +589,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Writes the message to a byte array.
         /// </summary>
-        private RequestMessage WriteMessage(Action<IBinaryStream> writeAction, ClientOp opId)
+        private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
-            ValidateOp(opId);
+            ClientUtils.ValidateOp(opId, ServerVersion);
             
             var requestId = Interlocked.Increment(ref _requestId);
             
@@ -595,7 +606,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (writeAction != null)
             {
-                writeAction(stream);
+                var ctx = new ClientRequestContext(stream, _marsh, ServerVersion);
+                writeAction(ctx);
+                ctx.FinishMarshal();
             }
 
             stream.WriteInt(0, stream.Position - 4); // Write message size.
@@ -770,26 +783,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
                 }
             }
-        }
-        
-        /// <summary>
-        /// Validates op code against current protocol version.
-        /// </summary>
-        /// <param name="opId">Op code.</param>
-        private void ValidateOp(ClientOp opId)
-        {
-            var minVersion = opId.GetMinVersion();
-
-            if (ServerVersion >= minVersion)
-            {
-                return;
-            }
-
-            var message = string.Format("Operation {0} is not supported by protocol version {1}. " +
-                                        "Minimum protocol version required is {2}.", 
-                opId, ServerVersion, minVersion);
-                
-            throw new IgniteClientException(message);
         }
 
         /// <summary>

@@ -20,13 +20,11 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -182,22 +180,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// <returns>Topology version with nodes identifiers.</returns>rns>
         private Tuple<long, Guid[]> RequestTopologyInformation(long oldTopVer)
         {
-            Action<IBinaryRawWriter> writeAction = writer =>
+            Action<ClientRequestContext> writeAction = ctx =>
             {
-                writer.WriteLong(oldTopVer);
-                _projection.Write(writer);
+                ctx.Stream.WriteLong(oldTopVer);
+                _projection.Write(ctx.Writer);
             };
 
-            Func<IBinaryRawReader, Tuple<long, Guid[]>> readFunc = reader =>
+            Func<ClientResponseContext, Tuple<long, Guid[]>> readFunc = ctx =>
             {
-                if (!reader.ReadBoolean())
+                if (!ctx.Stream.ReadBool())
                 {
                     // No topology changes.
                     return null;
                 }
 
-                long remoteTopVer = reader.ReadLong();
-                return Tuple.Create(remoteTopVer, ReadNodeIds(reader));
+                long remoteTopVer = ctx.Stream.ReadLong();
+                return Tuple.Create(remoteTopVer, ReadNodeIds(ctx.Reader));
             };
 
             return DoOutInOp(ClientOp.ClusterGroupGetNodeIds, writeAction, readFunc);
@@ -271,22 +269,21 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /// <param name="ids">Node identifiers.</param>
         private void RequestRemoteNodesDetails(List<Guid> ids)
         {
-            Action<IBinaryStream> writeAction = stream =>
+            Action<ClientRequestContext> writeAction = ctx =>
             {
-                stream.WriteInt(ids.Count);
+                ctx.Stream.WriteInt(ids.Count);
                 foreach (var id in ids)
                 {
-                    BinaryUtils.WriteGuid(id, stream);
+                    BinaryUtils.WriteGuid(id, ctx.Stream);
                 }
             };
             
-            Func<IBinaryStream, bool> readFunc = stream =>
+            Func<ClientResponseContext, bool> readFunc = ctx =>
             {
-                var cnt = stream.ReadInt();
-                var reader = _marsh.StartUnmarshal(stream);
+                var cnt = ctx.Stream.ReadInt();
                 for (var i = 0; i < cnt; i++)
                 {
-                    _ignite.SaveClientClusterNode(reader);
+                    _ignite.SaveClientClusterNode(ctx.Reader);
                 }
 
                 return true;
@@ -295,53 +292,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             DoOutInOp(ClientOp.ClusterGroupGetNodesInfo, writeAction, readFunc);
         }
 
-        /// <summary>
-        /// Does the out in op.
-        /// </summary>
-        protected T DoOutInOp<T>(ClientOp opId, Action<IBinaryRawWriter> writeAction,
-            Func<IBinaryRawReader, T> readFunc)
-        {
-            return DoOutInOp(opId, stream => WriteRequest(writeAction, stream), 
-                stream => ReadRequest(readFunc, stream));
-        }
 
         /// <summary>
         /// Does the out in op.
         /// </summary>
-        protected T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc)
+        protected T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc)
         {
             return _ignite.Socket.DoOutInOp(opId, writeAction, readFunc, HandleError<T>);
-        }
-
-        /// <summary>
-        /// Writes the request.
-        /// </summary>
-        private void WriteRequest(Action<IBinaryRawWriter> writeAction, IBinaryStream stream)
-        {
-            if (writeAction != null)
-            {
-                var writer = _marsh.StartMarshal(stream);
-
-                writeAction(writer.GetRawWriter());
-
-                _marsh.FinishMarshal(writer);
-            }
-        }
-
-        /// <summary>
-        /// Reads the request.
-        /// </summary>
-        [ExcludeFromCodeCoverage]
-        private TRes ReadRequest<TRes>(Func<IBinaryRawReader, TRes> readFunc, IBinaryStream stream)
-        {
-            if (readFunc != null)
-            {
-                var reader = _marsh.StartUnmarshal(stream);
-                return readFunc(reader.GetRawReader());
-            }
-
-            return default(TRes);
         }
 
         /// <summary>
