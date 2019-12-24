@@ -52,8 +52,6 @@ public class DistributedExecution implements QueryExecution {
      */
     public DistributedExecution(PlannerContext ctx) {
         this.ctx = ctx;
-
-        //
     }
 
     /** {@inheritDoc} */
@@ -91,18 +89,6 @@ public class DistributedExecution implements QueryExecution {
 
 
             rel = planner.optimize(rel, desired);
-            //System.out.println("1 AFTER=" + RelOptUtil.toString(rel));
-
-
-
-
-
-//            System.out.println("2 BEFORE=" + RelOptUtil.toString(rel));
-//            rel = planner.convertToPhysical(rel, rel.getTraitSet());
-//            System.out.println("2 AFTER=" + RelOptUtil.toString(rel));
-
-
-         //   rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
 
             System.out.println("Result=" + RelOptUtil.toString(rel, SqlExplainLevel.ALL_ATTRIBUTES));
 

@@ -45,6 +45,6 @@ public class IgniteExchange extends Exchange implements IgniteRel {
         double rowCount = mq.getRowCount(this);
         double bytesPerRow = getRowType().getFieldCount();
         return planner.getCostFactory().makeCost(
-            rowCount * bytesPerRow, rowCount, 0);
+            rowCount, rowCount, 0);
     }
 }

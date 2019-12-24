@@ -60,9 +60,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         @Nullable ImmutableIntList projects) {
         super(cluster, traitSet, table);
 
-        if (filters != null)
-            System.out.println("!");
-
         // TODO check if mapping is trivial
 
 
@@ -149,16 +146,14 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             rows *= selectivity;
 
             if (indexPredicate != null) {
-                cpu *=  mq.getSelectivity(this, indexPredicate);
+                Double idxPredSelectivity = mq.getSelectivity(this, indexPredicate);
 
-                rows *= 0.5; // TODO raising cpu is not enough for victory. Is it a bug? So let's reduce rows count a little.
+                cpu *=  idxPredSelectivity;
+                rows *= idxPredSelectivity;
             }
         }
 
         RelOptCost cost = planner.getCostFactory().makeCost(rows, cpu, 0);
-
-        if (!F.isEmpty(filters))
-            System.out.println("==Cost=" + cost + " for tbl=" + toString());
 
         // TODO count projects.
         return cost;
@@ -183,7 +178,8 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .item("filters", filters)
+            .item("indexPredicate", indexPredicate)
+            .item("additionalPredicate", complementaryPredicates)
             .item("projects", projects);
     }
 

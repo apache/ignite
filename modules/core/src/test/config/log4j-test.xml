@@ -101,7 +101,7 @@
         Uncomment to enable debugging of partition counters.
     -->
     <category name="org.apache.calcite.plan">
-        <level value="TRACE"/>
+        <level value="INFO"/>
     </category>
 
     <!-- Disable all open source debugging. -->

@@ -61,14 +61,14 @@ public class CalciteSecondaryIndexTest extends GridCommonAbstractTest {
 
     @Test
     public void testIndexSortedness() {
-//        System.out.println("No sort: scan should be selected.");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project");
+        System.out.println("No sort: scan should be selected.");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project");
 
         System.out.println("Sort is in the same direction as index: index scan should be selected.");
-        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name");
 
-//        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
-//        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
+        System.out.println("Sort is in the opposite direction as index: table scan with sort should be selected.");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project ORDER BY name DESC");
     }
 
     @Test
@@ -76,8 +76,29 @@ public class CalciteSecondaryIndexTest extends GridCommonAbstractTest {
 //        grid(0).context().query().getQueryEngine().query(QueryContext.of(),
 //            "SELECT * FROM Project WHERE (name = 'Ignite' OR (id > 1 AND NOT id =3)) AND (ver > id AND name > 'A') AND (id BETWEEN 1 AND 3) AND ver IN (1,2) AND  3 = ver AND id = ? ORDER BY name");
 
-        System.out.println("SELECT * FROM Project WHERE id = 1");
-        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE id = 1");
+        System.out.println("Equals on id, so PK should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  id = 1");
+
+        System.out.println("Equals on name, so NAME_IDX should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite'");
+
+        System.out.println("Equals on name, inequality on id, so NAME_IDX should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id > 1");
+
+        System.out.println("Inequality on name, equality on id, so PK should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name > 'Ignite' AND id = 1");
+
+
+
+        System.out.println("Equals on name and id, sort on name, so NAME_IDX should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id = 1 ORDER BY name");
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("Equals on name and id, sort on id, so PK should be selected");
+        grid(0).context().query().getQueryEngine().query(QueryContext.of(), "SELECT * FROM Project WHERE  name = 'Ignite' AND id = 1 ORDER BY id");
+
+        System.out.println("planning time=" + (System.currentTimeMillis() - start));
     }
 
     private CacheConfiguration<Object, Object> cache(QueryEntity ent) {

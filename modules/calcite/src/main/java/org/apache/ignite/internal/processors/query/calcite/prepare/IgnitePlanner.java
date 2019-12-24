@@ -36,7 +36,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -257,8 +256,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                     //RelNode rel2 = relBuilder.scan(tbl.name()).build();
 
-                    System.out.println(rel2);
-
                     RelOptTable tbl0 = catalogReader.getTable(Arrays.asList(defaultSchema.getName(), idx.name()));
 
                     RelNode idxTbl = sqlToRelConverter.toRel(tbl0);
@@ -423,7 +420,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             ProjectRemoveRule.INSTANCE
         ));
 
-        System.out.println("1 BEFORE=" + RelOptUtil.toString(input));
         RelNode output = filterPushDownProgram.run(planner, input, targetTraits.simplify().replace(IgniteConvention.INSTANCE),
             materializations(), ImmutableList.of());
 //
