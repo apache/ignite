@@ -196,27 +196,26 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
 
         try {
             if (log.isDebugEnabled())
-                log.debug("Stopping file rebalance routine: " + cctx.localNodeId() + " -> " + nodeId());
+                log.debug("Stopping file rebalance routine [local=" + cctx.localNodeId() + ", remote=" + nodeId() + "]");
 
             if (snapFut != null && !snapFut.isDone()) {
                 if (log.isDebugEnabled())
-                    log.debug("Cancelling snapshot creation: " + nodeId());
+                    log.debug("Cancelling snapshot creation [remote=" + nodeId() + "]");
 
                 snapFut.cancel();
             }
-//            else if (log.isTraceEnabled() && snapFut != null)
-//                log.trace("Snapshot creation already finished, no need to cancel [remote=" + nodeId() + ", snapshot=" + snapFut + "]");
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to finish file rebalancing node routine", e);
         }
 
-        // todo think and rework
-        boolean r = super.onDone(res, err, cancel);
+        if (super.onDone(res, err, cancel)) {
+            mainFut.onNodeDone(this, res, err, cancel);
 
-        mainFut.onNodeDone(this, res, err, cancel);
+            return true;
+        }
 
-        return r;
+        return false;
     }
 
     /**
