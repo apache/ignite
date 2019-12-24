@@ -972,7 +972,7 @@ public class ClusterCachesInfo {
             U.warn(log, "Ignore cache start request during the master key change process.");
 
             IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +
-                "process is not supported. Group keys can be encrypted by the old master key.");
+                "process is not supported. Group keys encrypted by the old master key.");
 
             if (persistedCfgs)
                 res.errs.add(error);

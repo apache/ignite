@@ -113,7 +113,7 @@ public interface EncryptionSpi extends IgniteSpi {
     int blockSize();
 
     /**
-     * Gets current master key name.
+     * Gets the current master key name.
      *
      * @return Master key name.
      *

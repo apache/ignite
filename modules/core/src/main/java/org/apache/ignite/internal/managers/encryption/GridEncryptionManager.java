@@ -168,10 +168,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** System discovery message listener. */
     private DiscoveryEventListener discoLsnr;
 
-    /** {@code True} if master key name restored from WAL. */
+    /** {@code True} if the master key name restored from WAL. */
     private volatile boolean restoredFromWAL;
 
-    /** {@code True} if master key name recovered before startup. */
+    /** {@code True} if the master key name recovered before startup. */
     private volatile boolean recoveryMasterKeyName;
 
     /** Master key change future. Not {@code null} on request initiator. */
@@ -560,7 +560,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
 
         // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
-        // can be partially reencrypted in case of node stop without the possibility of recovery.
+        // can be partially re-encrypted in case of node stop without the possibility of recovery.
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Master key change was rejected. The cluster is inactive.");
 
@@ -582,7 +582,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 throw new IgniteException("Master key change was rejected. Node is stopping.");
 
             if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
-                throw new IgniteException("Master key change was rejected. Previous change was not completed.");
+                throw new IgniteException("Master key change was rejected. The previous change was not completed.");
 
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
 
@@ -945,7 +945,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** Writes the record with all keys and master key name to WAL. */
+    /** Writes the record with the master key name and all keys to WAL. */
     private void writeKeysToWal() throws IgniteCheckedException {
         Map<Integer, byte[]> reencryptedKeys = new HashMap<>();
 
@@ -960,7 +960,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * Apply keys from WAL record during recovery phase.
+     * Apply keys from WAL record during the recovery phase.
      *
      * @param rec Record.
      */
@@ -990,7 +990,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private IgniteInternalFuture<MasterKeyChangeResult> prepareMasterKeyChange(MasterKeyChangeRequest req) {
         if (masterKeyChangeRequest != null) {
             return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. " +
-                "Previous change was not completed."));
+                "The previous change was not completed."));
         }
 
         masterKeyChangeRequest = req;
@@ -1008,7 +1008,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             if (!Arrays.equals(req.digest, digest)) {
                 return new GridFinishedFuture<>(new IgniteException("Master key change was rejected. Master " +
-                    "key digest consistency check failed. Make sure that a new master key is the same at " +
+                    "key digest consistency check failed. Make sure that the new master key is the same at " +
                     "all server nodes [nodeId=" + ctx.localNodeId() + ']'));
             }
         }

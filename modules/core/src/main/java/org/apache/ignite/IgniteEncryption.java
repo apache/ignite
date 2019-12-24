@@ -40,7 +40,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  * Group key encrypts data of cache group caches. Each group key is encrypted by a master key. Encrypted group key and
  * encrypted data are written to disk.
  * <p>
- * Ignite provides ability to change master key. Master keys is identified by a master key name (see {@link
+ * Ignite provides the ability to change the master key. Master keys is identified by a master key name (see {@link
  * EncryptionSpi#getMasterKeyName()}). Follow operations are available for master keys:
  * <ul>
  * <li>Method {@link #getMasterKeyName()} gets current master key name in the cluster.</li>
@@ -49,7 +49,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  */
 public interface IgniteEncryption {
     /**
-     * Gets current master key name.
+     * Gets the current master key name.
      *
      * @return Master key name.
      */
@@ -60,12 +60,12 @@ public interface IgniteEncryption {
      * <p>
      * Each node will re-encrypt group keys stored on the disk.
      * <p>
-     * <b>NOTE:</b> New master key should be available to {@link EncryptionSpi} for each server node. Cache start and
-     * node join during the key change process will be rejected.
+     * <b>NOTE:</b> The new master key should be available to {@link EncryptionSpi} for each server node. Cache start
+     * and node join during the key change process will be rejected.
      * <p>
      * If some node was unavailable during a master key change process it won't be able to join to cluster with old the
-     * master key name. Node should re-encrypt group keys during the startup and recovery process. Set up valid master
-     * key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
+     * master key name. The node should re-encrypt group keys during the startup and recovery process. Set up a valid
+     * master key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
      *
      * @return Future for this operation.
      * @throws IgniteException If the change master key process failed.

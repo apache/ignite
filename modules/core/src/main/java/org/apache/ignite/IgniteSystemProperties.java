@@ -1285,11 +1285,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING = "IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING";
 
     /**
-     * The master key name that node will use during the recovery procedure.
+     * The master key name that the node will use during the recovery procedure.
      * <p>
      * If a node was unavailable during a master key change process it won't be able to join to cluster with old the
-     * master key name. Set up this property to re-encrypt cache keys on startup and join to cluster with valid master
-     * key name.
+     * master key name. Set up this property to re-encrypt cache keys on startup and join to cluster with the valid
+     * master key name.
      */
     public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP =
         "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";

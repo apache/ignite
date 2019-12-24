@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteEncryption;
 @MXBeanDescription("MBean that provides access to encryption features.")
 public interface EncryptionMXBean {
     /**
-     * Gets current master key name.
+     * Gets the current master key name.
      *
      * @return Master key name.
      *

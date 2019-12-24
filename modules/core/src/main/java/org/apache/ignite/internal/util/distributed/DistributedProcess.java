@@ -50,8 +50,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * <p>
  * The process consists of the following phases:
  * <ol>
- *  <li>Initial request starts process. (Sent via discovery)</li>
- *  <li>Each server node process an initial request and send the single node result to the coordinator. (Sent via
+ *  <li>The initial request starts the process. (Sent via discovery)</li>
+ *  <li>Each server node processes an initial request and sends the single node result to the coordinator. (Sent via
  *  communication)</li>
  *  <li>The coordinator accumulate all single nodes results and finish process. (Sent via discovery)</li>
  * </ol>

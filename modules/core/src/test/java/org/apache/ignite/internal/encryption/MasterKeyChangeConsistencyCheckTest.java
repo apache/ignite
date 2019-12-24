@@ -46,7 +46,7 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
     /** */
     private final AtomicBoolean simulateSetMasterKeyError = new AtomicBoolean();
 
-    /** */
+    /** The first handlered failure. */
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
 
     /** @throws Exception If failed. */
     @Test
-    public void testFinishPhaseFailed() throws Exception {
+    public void testFailureHandledOnFailPerformMasterKeyChange() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));

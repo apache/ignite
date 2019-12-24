@@ -30,12 +30,12 @@ import org.junit.Test;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 
 /**
- * Tests {@link EncryptionMXBean}
+ * Tests {@link EncryptionMXBean}.
  */
 public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     /** @throws Exception If failed. */
     @Test
-    public void testMBean() throws Exception {
+    public void testMasterKeyChangeMBeans() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
         ignite.cluster().active(true);
