@@ -110,10 +110,18 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
             checkEncryptedCaches(grids.get1(), ignite);
+
+            stopGrid(GRID_1);
         }
         finally {
             System.clearProperty(IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP);
         }
+
+        IgniteEx grid1 = startGrid(GRID_1);
+
+        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
+
+        checkEncryptedCaches(grids.get1(), grid1);
     }
 
     /** @throws Exception If failed. */
