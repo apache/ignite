@@ -916,24 +916,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /**
-     * @param c Callable to run with master key change read lock.
-     * @return Computed result.
-     */
-    private <T> T withMasterKeyChangeReadLock(Callable<T> c) {
-        masterKeyChangeLock.readLock().lock();
-
-        try {
-            return c.call();
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            masterKeyChangeLock.readLock().unlock();
-        }
-    }
-
-    /**
      * Sets up master key and re-encrypt group keys. Writes changes to WAL and MetaStorage.
      *
      * @param name New master key name.
@@ -1231,6 +1213,24 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             ClusterNode crd = U.oldest(ctx.discovery().aliveServerNodes(), null);
 
             return crd != null && F.eq(ctx.localNodeId(), crd.id());
+        }
+    }
+
+    /**
+     * @param c Callable to run with master key change read lock.
+     * @return Computed result.
+     */
+    private <T> T withMasterKeyChangeReadLock(Callable<T> c) {
+        masterKeyChangeLock.readLock().lock();
+
+        try {
+            return c.call();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            masterKeyChangeLock.readLock().unlock();
         }
     }
 
