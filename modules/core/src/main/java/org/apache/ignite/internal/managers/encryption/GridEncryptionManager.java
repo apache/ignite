@@ -713,15 +713,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             writeToMetaStoreEnabled = true;
 
-            if (recoveryMasterKeyName) {
+            if (recoveryMasterKeyName)
                 writeKeysToWal();
 
-                recoveryMasterKeyName = false;
-            }
-
-            writeAllToMetaStore(restoredFromWAL);
+            writeAllToMetaStore(restoredFromWAL || recoveryMasterKeyName);
 
             restoredFromWAL = false;
+
+            recoveryMasterKeyName = false;
         }
     }
 
