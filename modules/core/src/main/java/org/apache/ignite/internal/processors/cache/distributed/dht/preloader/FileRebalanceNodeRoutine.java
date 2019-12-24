@@ -271,7 +271,7 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
                 }
                 catch (IgniteCheckedException e) {
                     log.error("Unable to restore partition snapshot [cache=" +
-                        cctx.cache().cacheGroup(grpId) + ", p=" + partId, e);
+                        cctx.cache().cacheGroup(grpId) + ", p=" + partId + "]", e);
 
                     onDone(e);
                 }

@@ -493,7 +493,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param sizeChange Size change delta.
      */
     private void release0(int sizeChange) {
-//        U.dumpStack("release " + sizeChange);
         while (true) {
             long state = this.state.get();
 
@@ -715,30 +714,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // Make sure current rebalance future is finished before start clearing
         // to avoid clearing currently rebalancing partition (except "initial" dummy rebalance).
         if (clearingRequested) {
-//            if ("cache".equals(grp.cacheOrGroupName()))
-//                U.dumpStack("Requesting part clearing p=" + id());
-
             GridDhtPartitionDemander.RebalanceFuture rebFut =
                 (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
 
             if (!rebFut.isInitial() && !rebFut.isDone()) {
-                log.warning("Wait for rebalance future, [grp=" + grp.cacheOrGroupName() + ", p=" + id + ", fut=" + rebFut+"]");
-
                 rebFut.listen(fut -> {
                     // Partition could be owned after rebalance future is done. Skip clearing in such case.
                     // Otherwise continue clearing.
-                    log.warning("rebalance future finished [grp=" + grp.cacheOrGroupName() + ", p=" + id + ", err=" + fut.error() + ", state=" + state()+"]");
-
                     if (fut.error() == null && state() == MOVING) {
                         if (freeAndEmpty(state) && !grp.queriesEnabled() && !groupReserved()) {
-                            log.warning("freeAndEmpty [grp=" + grp.cacheOrGroupName() + ", p=" + id + "]");
-
                             clearFuture.finish();
 
                             return;
                         }
-
-                        log.warning("evictPartitionAsync [grp=" + grp.cacheOrGroupName() + ", p=" + id + " ]");
 
                         ctx.evict().evictPartitionAsync(grp, GridDhtLocalPartition.this);
                     }
@@ -811,8 +799,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition has no reservations and empty.
      */
     private boolean freeAndEmpty(long state) {
-        // todo this is a workaround - parts should be switched to full and evicted as usual
-        // todo what to do with initialized partitions - if datastore was already initied
         return isEmpty() && getSize(state) == 0 && getReservations(state) == 0;
     }
 
@@ -990,7 +976,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Release created data store for this partition.
      */
-    public void destroyCacheDataStore() {
+    private void destroyCacheDataStore() {
         try {
             grp.offheap().destroyCacheDataStore(dataStore());
         }
@@ -1381,8 +1367,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(@Nullable CacheMapHolder hld, GridCacheEntryEx e) {
-//        U.dumpStack("increment ");
-
         if (grp.sharedGroup()) {
             if (hld == null)
                 hld = cacheMapHolder(e.context());
@@ -1415,13 +1399,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (this.state.compareAndSet(state, setSize(state, getSize(state) - 1)))
                 return;
         }
-    }
-
-    public void updateSize(int size) {
-        long state = this.state.get();
-
-        this.state.set(setSize(state, size));
-
     }
 
     /**
@@ -1497,7 +1474,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Updated composite state.
      */
     private static long setSize(long state, int size) {
-//        U.dumpStack("setSize " + size);
         return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
     }
 
