@@ -562,8 +562,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         finally {
             System.clearProperty(IGNITE_PME_EXCHANGE_FREE);
         }
-
-
     }
 
     /**
