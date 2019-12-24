@@ -35,8 +35,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -74,6 +76,7 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -101,9 +104,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -171,6 +177,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -200,19 +207,17 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
-    /** Invalid region configuration message. */
-    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
-        "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
-
-    /** Template of message of failed node join because encryption settings are different for the same cache. */
-    private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
-        "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
-
     /** */
     private static final String CACHE_NAME_AND_OPERATION_FORMAT = "[cacheName=%s, operation=%s]";
 
     /** */
     private static final String CACHE_NAMES_AND_OPERATION_FORMAT = "[cacheNames=%s, operation=%s]";
+
+    /** System view name for page lists. */
+    public static final String CACHE_GRP_PAGE_LIST_VIEW = "cacheGroupPageLists";
+
+    /** System view description for page lists. */
+    public static final String CACHE_GRP_PAGE_LIST_VIEW_DESC = "Cache group page lists";
 
     /** Enables start caches in parallel. */
     private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
@@ -594,8 +599,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.state().cacheProcessorStarted();
         ctx.authentication().cacheProcessorStarted();
-    }
 
+        ctx.systemView().registerFiltrableView(
+            CACHE_GRP_PAGE_LIST_VIEW,
+            CACHE_GRP_PAGE_LIST_VIEW_DESC,
+            new CachePagesListViewWalker(),
+            this::pagesListViewSupplier,
+            Function.identity()
+        );
+    }
 
     /**
      * @param cfg Initializes cache configuration with proper defaults.
@@ -5320,6 +5332,53 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public CacheConfigurationEnricher enricher() {
         return enricher;
+    }
+
+    /**
+     * Pages list view supplier.
+     *
+     * @param filter Filter.
+     */
+    private Iterable<CachePagesListView> pagesListViewSupplier(Map<String, Object> filter) {
+        Integer cacheGrpId = (Integer)filter.get(CachePagesListViewWalker.CACHE_GROUP_ID_FILTER);
+
+        Collection<CacheGroupContext> cacheGrps;
+
+        if (cacheGrpId != null) {
+            CacheGroupContext cacheGrp = this.cacheGrps.get(cacheGrpId);
+
+            if (cacheGrp == null)
+                return Collections.emptyList();
+
+            cacheGrps = Collections.singletonList(cacheGrp);
+        }
+        else
+            cacheGrps = this.cacheGrps.values();
+
+        Integer partId = (Integer)filter.get(CachePagesListViewWalker.PARTITION_ID_FILTER);
+        Integer bucketNum = (Integer)filter.get(CachePagesListViewWalker.BUCKET_NUMBER_FILTER);
+
+        Iterable<IgniteCacheOffheapManager.CacheDataStore> dataStores =
+            F.flat(F.iterator(cacheGrps, grp -> grp.offheap().cacheDataStores(), true));
+
+        return F.flat(F.iterator(dataStores, dataStore -> {
+            RowStore rowStore = dataStore.rowStore();
+
+            if (rowStore == null || !(dataStore instanceof GridCacheOffheapManager.GridCacheDataStore))
+                return Collections.emptySet();
+
+            PagesList pagesList = (PagesList)rowStore.freeList();
+
+            if (bucketNum != null) {
+                return bucketNum >= 0 && bucketNum < pagesList.bucketsCount() ?
+                    Collections.singleton(new CachePagesListView(pagesList, bucketNum, dataStore.partId())) :
+                    Collections.emptyList();
+            }
+
+            return IntStream.range(0, pagesList.bucketsCount())
+                .mapToObj(bucket -> new CachePagesListView(pagesList, bucket, dataStore.partId()))
+                .collect(Collectors.toList());
+        }, true, cacheDataStore -> partId == null || cacheDataStore.partId() == partId));
     }
 
     /**

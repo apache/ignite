@@ -17,65 +17,58 @@
 
 package org.apache.ignite.internal.managers.systemview;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.BiFunction;
+import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * System view backed by {@code data} container.
- * Each instance of {@code containers} collections should provide a collection of data.
- *
- * @see SystemView
+ * System view which supports attribute filtering.
  */
-public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemView<R> {
-    /** Iterable of the data containers. */
-    private final Iterable<C> containers;
-
-    /** Function to extract collection of the data from container. */
-    private final Function<C, Collection<D>> dataExtractor;
+public class FiltrableSystemViewAdapter<R, D> extends AbstractSystemView<R> implements FiltrableSystemView<R> {
+    /** Data supplier for the view. */
+    private Function<Map<String, Object>, Iterable<D>> dataSupplier;
 
     /** Row function. */
-    private final BiFunction<C, D, R> rowFunc;
+    private final Function<D, R> rowFunc;
 
     /**
      * @param name Name.
      * @param desc Description.
      * @param walker Walker.
-     * @param containers Container of data.
-     * @param dataExtractor Data extractor function.
+     * @param dataSupplier Data supplier.
      * @param rowFunc Row function.
      */
-    public SystemViewInnerCollectionsAdapter(String name, String desc,
-        SystemViewRowAttributeWalker<R> walker,
-        Iterable<C> containers,
-        Function<C, Collection<D>> dataExtractor,
-        BiFunction<C, D, R> rowFunc) {
+    public FiltrableSystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc) {
         super(name, desc, walker);
 
-        this.containers = containers;
-        this.dataExtractor = dataExtractor;
+        A.notNull(dataSupplier, "dataSupplier");
+
+        this.dataSupplier = dataSupplier;
         this.rowFunc = rowFunc;
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
-        int sz = 0;
+    @NotNull @Override public Iterator<R> iterator(Map<String, Object> filter) {
+        if (filter == null)
+            filter = Collections.emptyMap();
 
-        for (C c : containers)
-            sz += dataExtractor.apply(c).size();
-
-        return sz;
+        return F.iterator(dataSupplier.apply(filter), rowFunc::apply, true);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        return F.concat(F.iterator(containers,
-                c -> F.iterator(dataExtractor.apply(c).iterator(),
-                    d -> rowFunc.apply(c, d), true), true));
+        return iterator(Collections.emptyMap());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return F.size(dataSupplier.apply(Collections.emptyMap()).iterator());
     }
 }
