@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 
@@ -41,6 +43,9 @@ public class ExchangeContext {
 
     /** Per-group affinity fetch on join (old protocol). */
     private boolean fetchAffOnJoin;
+
+    /** PME is not required. */
+    private boolean exchangeFreeSwitch;
 
     /** Merges allowed flag. */
     private final boolean merge;
@@ -58,9 +63,15 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (compatibilityNode || (crd && fut.localJoinExchange())) {
+        if (!compatibilityNode &&
+            fut.wasRebalanced() &&
+            fut.isBaselineNodeFailed() &&
+            allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH)) {
+            exchangeFreeSwitch = true;
+            merge = false;
+        }
+        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
             fetchAffOnJoin = true;
-
             merge = false;
         }
         else {
@@ -98,6 +109,13 @@ public class ExchangeContext {
      */
     public boolean fetchAffinityOnJoin() {
         return fetchAffOnJoin;
+    }
+
+    /**
+     * @return {@code True} if it's safe to perform PME-free switch.
+     */
+    public boolean exchangeFreeSwitch() {
+        return exchangeFreeSwitch;
     }
 
     /**

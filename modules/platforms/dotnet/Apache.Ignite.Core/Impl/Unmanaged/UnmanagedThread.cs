@@ -68,7 +68,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (Os.IsLinux)
             {
                 int tlsIndex;
-                var res = NativeMethodsLinux.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
+                var res = Os.IsMono
+                    ? NativeMethodsMono.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr)
+                    : NativeMethodsLinux.pthread_key_create(new IntPtr(&tlsIndex), callbackPtr);
 
                 NativeMethodsLinux.CheckResult(res);
 
@@ -101,7 +103,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             else if (Os.IsLinux)
             {
-                var res = NativeMethodsLinux.pthread_key_delete(callbackId);
+                var res = Os.IsMono 
+                    ? NativeMethodsMono.pthread_key_delete(callbackId)
+                    : NativeMethodsLinux.pthread_key_delete(callbackId);
+                
                 NativeMethodsLinux.CheckResult(res);
             }
             else
@@ -134,7 +139,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             else if (Os.IsLinux)
             {
-                var res = NativeMethodsLinux.pthread_setspecific(callbackId, threadLocalValue);
+                var res = Os.IsMono 
+                    ? NativeMethodsMono.pthread_setspecific(callbackId, threadLocalValue)
+                    : NativeMethodsLinux.pthread_setspecific(callbackId, threadLocalValue);
+                
                 NativeMethodsLinux.CheckResult(res);
             }
             else
@@ -210,6 +218,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
             [DllImport("libSystem.dylib")]
+            public static extern int pthread_setspecific(int key, IntPtr value);
+        }
+        
+        /// <summary>
+        /// Mono on Linux requires __Internal instead of libcoreclr.so.
+        /// </summary>
+        private static class NativeMethodsMono
+        {
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("__Internal")]
+            public static extern int pthread_key_create(IntPtr key, IntPtr destructorCallback);
+            
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("__Internal")]
+            public static extern int pthread_key_delete(int key);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass", Justification = "Reviewed.")]
+            [DllImport("__Internal")]
             public static extern int pthread_setspecific(int key, IntPtr value);
         }
     }

@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -103,7 +102,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * <p>
      * Blocks the indexes rebuilding until unblocked via {@link #stopBlock(String)}.
      */
-    protected static class BlockingIndexing extends IgniteH2Indexing {
+    public static class BlockingIndexing extends IgniteH2Indexing {
         /** */
         private final ConcurrentHashMap<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 
@@ -125,10 +124,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
          * @param cacheName Cache name.
          */
         public void stopBlock(String cacheName) {
-            CountDownLatch latch = latches.get(cacheName);
-
-            if (latch == null)
-                throw new IgniteException("Cache wasn't start index rebuild yet. [cacheName=" + cacheName + ']');
+            CountDownLatch latch = latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1));
 
             latch.countDown();
         }

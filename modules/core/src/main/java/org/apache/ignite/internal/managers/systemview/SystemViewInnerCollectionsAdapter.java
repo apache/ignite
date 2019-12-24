@@ -45,18 +45,17 @@ public class SystemViewInnerCollectionsAdapter<C, R, D> extends AbstractSystemVi
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
      * @param walker Walker.
      * @param containers Container of data.
      * @param dataExtractor Data extractor function.
      * @param rowFunc Row function.
      */
-    public SystemViewInnerCollectionsAdapter(String name, String desc, Class<R> rowCls,
+    public SystemViewInnerCollectionsAdapter(String name, String desc,
         SystemViewRowAttributeWalker<R> walker,
         Collection<C> containers,
         Function<C, Collection<D>> dataExtractor,
         BiFunction<C, D, R> rowFunc) {
-        super(name, desc, rowCls, walker);
+        super(name, desc, walker);
 
         this.containers = containers;
         this.dataExtractor = dataExtractor;

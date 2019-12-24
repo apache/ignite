@@ -85,6 +85,18 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        // The IgniteSecurity started for this moment,
+        // and we can make a decision on what instance of Ignite injector should be used.
+        if (ctx.security().sandbox().enabled()) {
+            injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
+                new GridResourceProxiedIgniteInjector(ctx.grid());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
         ioc.undeployAll();
 
