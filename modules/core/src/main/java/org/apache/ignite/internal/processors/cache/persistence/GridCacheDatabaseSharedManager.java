@@ -4827,30 +4827,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 List<FullPageId> pagesToRetry = writePages(writePageIds);
 
                 if (pagesToRetry.isEmpty())
-                    doneFut.onDone((Void)null);
+                    doneFut.onDone();
                 else {
                     LT.warn(log, pagesToRetry.size() + " checkpoint pages were not written yet due to unsuccessful " +
                         "page write lock acquisition and will be retried");
 
-                    if (retryWriteExecutor == null) {
-                        while (!pagesToRetry.isEmpty())
-                            pagesToRetry = writePages(pagesToRetry);
+                    while (!pagesToRetry.isEmpty())
+                        pagesToRetry = writePages(pagesToRetry);
 
-                        doneFut.onDone((Void)null);
-                    }
-                    else {
-                        // Submit current retry pages to the end of the queue to avoid starvation.
-                        WriteCheckpointPages retryWritesTask = new WriteCheckpointPages(
-                            tracker,
-                            pagesToRetry,
-                            updStores,
-                            doneFut,
-                            totalPagesToWrite,
-                            beforePageWrite,
-                            retryWriteExecutor);
-
-                        retryWriteExecutor.submit(retryWritesTask);
-                    }
+                    doneFut.onDone();
                 }
             }
             catch (Throwable e) {
@@ -4871,15 +4856,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             ByteBuffer tmpWriteBuf = threadBuf.get();
 
+            boolean throttlingEnabled = resolveThrottlingPolicy() != PageMemoryImpl.ThrottlingPolicy.DISABLED;
+
             for (FullPageId fullId : writePageIds) {
                 if (checkpointer.shutdownNow)
                     break;
 
-                tmpWriteBuf.rewind();
-
                 beforePageWrite.run();
-
-                snapshotMgr.beforePageWrite(fullId);
 
                 int grpId = fullId.groupId();
 
@@ -4901,7 +4884,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     pageMem = (PageMemoryEx)region.pageMemory();
                 }
 
+                snapshotMgr.beforePageWrite(fullId);
+
+                tmpWriteBuf.rewind();
+
                 pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
+
+                if (throttlingEnabled) {
+                    while (pageMem.shouldThrottle()) {
+                        FullPageId cpPageId = pageMem.pullPageFromCpBuffer();
+
+                        if (cpPageId.equals(FullPageId.NULL_PAGE))
+                            break;
+
+                        snapshotMgr.beforePageWrite(cpPageId);
+
+                        tmpWriteBuf.rewind();
+
+                        pageMem.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, tracker);
+                    }
+                }
             }
 
             return pagesToRetry;

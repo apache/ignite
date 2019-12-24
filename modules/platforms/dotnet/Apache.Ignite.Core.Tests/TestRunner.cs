@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary.Serializable;
     using Apache.Ignite.Core.Tests.Cache;
-    using Apache.Ignite.Core.Tests.Cache.Query.Linq;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
@@ -74,10 +73,10 @@ namespace Apache.Ignite.Core.Tests
             var basicTests = new[]
             {
                 typeof(ComputeApiTest),
-                typeof(CacheLinqTest),
                 typeof(SqlDmlTest),
                 typeof(LinqTest),
-                typeof(PersistenceTest)
+                typeof(PersistenceTest),
+                typeof(CacheTest)
             };
 
             Environment.ExitCode = TestAll(basicTests, true);
