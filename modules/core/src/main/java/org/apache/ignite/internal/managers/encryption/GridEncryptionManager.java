@@ -714,6 +714,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             writeToMetaStoreEnabled = true;
 
             writeAllToMetaStore(restoredFromWAL || recoveryMasterKeyName);
+
+            restoredFromWAL = false;
+
+            recoveryMasterKeyName = false;
         }
     }
 
@@ -799,7 +803,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      */
     private void writeAllToMetaStore(boolean writeAll) throws IgniteCheckedException {
         if (recoveryMasterKeyName)
-            logKeysToWal();
+            writeKeysToWal();
 
         if (writeAll)
             metaStorage.write(MASTER_KEY_NAME_PREFIX, getSpi().getMasterKeyName());
@@ -949,7 +953,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             ctx.cache().context().database().checkpointReadLock();
 
             try {
-                logKeysToWal();
+                writeKeysToWal();
 
                 synchronized (metaStorageMux) {
                     assert writeToMetaStoreEnabled;
@@ -972,8 +976,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** Logs the record with all keys and master key name to WAL. */
-    private void logKeysToWal() throws IgniteCheckedException {
+    /** Writes the record with all keys and master key name to WAL. */
+    private void writeKeysToWal() throws IgniteCheckedException {
         Map<Integer, byte[]> reencryptedKeys = new HashMap<>();
 
         for (Map.Entry<Integer, Serializable> entry : grpEncKeys.entrySet())
@@ -1000,7 +1004,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             getSpi().setMasterKeyName(rec.getMasterKeyName());
 
             for (Map.Entry<Integer, byte[]> entry : rec.getGrpKeys().entrySet())
-                grpEncKeys.computeIfAbsent(entry.getKey(), k -> getSpi().decryptKey(entry.getValue()));
+                grpEncKeys.put(entry.getKey(), getSpi().decryptKey(entry.getValue()));
 
             restoredFromWAL = true;
         } catch (IgniteSpiException e) {
