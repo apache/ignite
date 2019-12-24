@@ -364,7 +364,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                     assertEquals(state == ACTIVE ? 100 : 0, atomicCache.size());
                     assertEquals(state == ACTIVE ? 100 : 0, txCache.size());
-
                 }
                 catch (Exception e) {
                     log.error("Error occurred", e);
