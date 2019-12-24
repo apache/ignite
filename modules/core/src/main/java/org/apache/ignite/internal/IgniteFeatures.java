@@ -76,7 +76,10 @@ public enum IgniteFeatures {
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
-    PME_FREE_SWITCH(19);
+    PME_FREE_SWITCH(19),
+
+    /** Long operations dump timeout. */
+    LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
