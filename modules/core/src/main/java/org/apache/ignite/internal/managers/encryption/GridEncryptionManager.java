@@ -774,11 +774,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /** @return {@code True} if the master key change process in progress. */
-    public boolean isMasterKeyChangeInProgress() {
-        return masterKeyChangeRequest != null;
-    }
-
     /** */
     private void sendGenerateEncryptionKeyRequest(GenerateEncryptionKeyFuture fut) throws IgniteCheckedException {
         ClusterNode rndNode = U.randomServerNode(ctx);
@@ -1214,6 +1209,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             return crd != null && F.eq(ctx.localNodeId(), crd.id());
         }
+    }
+
+    /** @return {@code True} if the master key change process in progress. */
+    public boolean isMasterKeyChangeInProgress() {
+        return masterKeyChangeRequest != null;
     }
 
     /**
