@@ -713,11 +713,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             writeToMetaStoreEnabled = true;
 
-            writeAllToMetaStore(restoredFromWAL || recoveryMasterKeyName);
+            if (recoveryMasterKeyName) {
+                writeKeysToWal();
+
+                recoveryMasterKeyName = false;
+            }
+
+            writeAllToMetaStore(restoredFromWAL);
 
             restoredFromWAL = false;
-
-            recoveryMasterKeyName = false;
         }
     }
 
@@ -798,9 +802,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
      * @throws IgniteCheckedException If failed.
      */
     private void writeAllToMetaStore(boolean writeAll) throws IgniteCheckedException {
-        if (recoveryMasterKeyName)
-            writeKeysToWal();
-
         if (writeAll)
             metaStorage.write(MASTER_KEY_NAME_PREFIX, getSpi().getMasterKeyName());
 
@@ -959,6 +960,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             } finally {
                 ctx.cache().context().database().checkpointReadUnlock();
             }
+
             log.info("Master key successfully changed [masterKeyName=" + name + ']');
         }
         catch (Exception e) {
