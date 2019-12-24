@@ -465,6 +465,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                             "a partition not in " + OWNING + " state [grp=" + grp.cacheOrGroupName() +
                                             ", partId=" + store.partId() + ", state=" + state + ']');
                                 }
+
+                                U.warn(log,"Partition Will not be includedto snapshot because it is not in " +
+                                    "OWNING state [grp=" + grp.cacheOrGroupName() + ", partId=" + store.partId() +
+                                    ", state=" + state + ']');
                             }
 
                             changed = true;
