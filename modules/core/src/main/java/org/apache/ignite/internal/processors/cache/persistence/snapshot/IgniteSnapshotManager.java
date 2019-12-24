@@ -236,7 +236,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param partId Cache partition identifier.
      * @return A file representation.
      */
-    public static File getPartionDeltaFile(File snapshotCacheDir, int partId) {
+    private static File getPartionDeltaFile(File snapshotCacheDir, int partId) {
         return new File(snapshotCacheDir, getPartitionDeltaFileName(partId));
     }
 
@@ -289,7 +289,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         U.ensureDirectory(locSnpDir, "local snapshots directory", log);
         U.ensureDirectory(tmpWorkDir, "work directory for snapshots creation", log);
 
-        storeFactory = ((FilePageStoreManager)storeMgr)::getPageStoreFactory;
+        storeFactory = storeMgr::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
         dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
@@ -1680,7 +1680,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
                 GridIntIterator iter = e.getValue().iterator();
 
-                while(iter.hasNext())
+                while (iter.hasNext())
                     this.parts.add(new GroupPartitionId(e.getKey(), iter.next()));
             }
         }
