@@ -407,13 +407,13 @@ public interface ConnectionProperties {
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 
     /**
-     * @return {@code true} if jdbc thin affinity awareness is enabled for this connection,
+     * @return {@code true} if jdbc thin partition awareness is enabled for this connection,
      * {@code false} if it's disabled.
      */
     public boolean isPartitionAwareness();
 
     /**
-     * @param partitionAwareness {@code true} if jdbc thin affinity awareness is enabled
+     * @param partitionAwareness {@code true} if jdbc thin partition awareness is enabled
      * for this connection, if {@code false} then it's disabled.
      */
     public void setPartitionAwareness(boolean partitionAwareness);
@@ -434,12 +434,12 @@ public interface ConnectionProperties {
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 
     /**
-     * @return SQL cache size that is used within affinity awareness optimizations.
+     * @return SQL cache size that is used within partition awareness optimizations.
      */
     public int getPartitionAwarenessSqlCacheSize();
 
     /**
-     * Sets SQL cache size that is used within affinity awareness optimizations.
+     * Sets SQL cache size that is used within partition awareness optimizations.
      *
      * @param partitionAwarenessSqlCacheSize SQL cache size.
      * @throws SQLException On error.
@@ -447,12 +447,12 @@ public interface ConnectionProperties {
     public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize) throws SQLException;
 
     /**
-     * @return Partition distributions cache size that is used within affinity awareness optimizations.
+     * @return Partition distributions cache size that is used within partition awareness optimizations.
      */
     public int getPartitionAwarenessPartitionDistributionsCacheSize();
 
     /**
-     * Sets partition distributions cache size that is used within affinity awareness optimizations.
+     * Sets partition distributions cache size that is used within partition awareness optimizations.
      *
      * @param partitionAwarenessPartDistributionsCacheSize Partition distributions cache size.
      * @throws SQLException On error.

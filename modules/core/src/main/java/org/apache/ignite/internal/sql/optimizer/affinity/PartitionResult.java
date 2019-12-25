@@ -37,13 +37,13 @@ public class PartitionResult {
     /** Affinity function. */
     private final PartitionTableAffinityDescriptor aff;
 
-    /** Affinity topology version. Used within Jdbc thin affinity awareness. */
+    /** Affinity topology version. Used within Jdbc thin partition awareness. */
     private final AffinityTopologyVersion topVer;
 
-    /** Cache name. Used within Jdbc thin affinity awareness. */
+    /** Cache name. Used within Jdbc thin partition awareness. */
     private final String cacheName;
 
-    /** Partitions count. Used within Jdbc thin affinity awareness. */
+    /** Partitions count. Used within Jdbc thin partition awareness. */
     private final int partsCnt;
 
     /**

@@ -93,7 +93,7 @@ public final class ClientConfiguration implements Serializable {
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
 
     /**
-     * Whether affinity awareness should be enabled.
+     * Whether partition awareness should be enabled.
      *
      * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
@@ -436,7 +436,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether affinity awareness should be enabled.
+     * @return Whether partition awareness should be enabled.
      */
     public boolean isPartitionAwarenessEnabled() {
         return partitionAwarenessEnabled;

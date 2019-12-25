@@ -52,7 +52,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Jdbc thin affinity awareness reconnection and query failover test.
+ * Jdbc thin partition awareness reconnection and query failover test.
  */
 public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends JdbcThinAbstractSelfTest {
     /** Rows count. */
@@ -87,7 +87,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     /**
      * Check that background connection establishment works as expected.
      * <p>
-     * Within new reconnection logic in affinity awareness mode when {@code JdbcThinConnection} is created it eagerly
+     * Within new reconnection logic in partition awareness mode when {@code JdbcThinConnection} is created it eagerly
      * establishes a connection to one and only one ignite node. All other connections to nodes specified in connection
      * properties are established by background thread.
      * <p>
@@ -392,11 +392,11 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
      * <li>Create {@code JdbcThinConnection} to all existing nodes.</li>
      * <li>Create a cache and populate it with some data.</li>
      * <li>Submit some failover-applicable sql query with specific condition within where clause,
-     * that assumes affinity awareness. Submit same query one more time. It's necessary in order to warm up affinity
+     * that assumes partition awareness. Submit same query one more time. It's necessary in order to warm up affinity
      * awareness cache.</li>
      * <li>From within affinity cache calculate node that was used to process query. Stop it.</li>
      * <li>Submit sql query, that is equal to initial one, one more time.
-     * Because of affinity awareness, given query will be routed to previously stopped node, so an Exception will be
+     * Because of partition awareness, given query will be routed to previously stopped node, so an Exception will be
      * received. Here query failover goes and resents query to an alive node using another {@code JdbcThinTcpIo}</li>
      * <li>Because of failover, no exceptions are expected on Jdbc thin client side.
      * However within the {@code JdbcThinConnection}, in case of {@code Level.FINE} log level, corresponding log record

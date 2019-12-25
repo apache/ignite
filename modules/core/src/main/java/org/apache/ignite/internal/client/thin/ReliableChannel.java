@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Communication channel with failover and affinity awareness.
+ * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable {
     /** Channel factory. */
@@ -57,10 +57,10 @@ final class ReliableChannel implements AutoCloseable {
     /** Index of the current channel. */
     private int curChIdx;
 
-    /** Affinity awareness enabled. */
+    /** Partition awareness enabled. */
     private final boolean partitionAwarenessEnabled;
 
-    /** Cache affinity awareness context. */
+    /** Cache partition awareness context. */
     private final ClientCacheAffinityContext affinityCtx;
 
     /** Node channels. */

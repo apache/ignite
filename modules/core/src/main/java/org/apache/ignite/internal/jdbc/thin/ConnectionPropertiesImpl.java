@@ -189,7 +189,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
-    /** Affinity awareness flag. */
+    /** Partition awareness flag. */
     private BooleanProperty partitionAwareness = new BooleanProperty(
         "partitionAwareness",
         "Whether jdbc thin partition awareness is enabled.",

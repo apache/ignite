@@ -108,7 +108,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      * @param cacheGroupIds Map of known group IDs.
      * @param affinityVer Affinity topology version.
      * @param cacheDesc Cache descriptor.
-     * @return Null if cache was processed and new client cache affinity awareness group if it does not belong to any
+     * @return Null if cache was processed and new client cache partition awareness group if it does not belong to any
      * existent.
      */
     private static ClientCachePartitionAwarenessGroup processCache(
@@ -154,10 +154,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     }
 
     /**
-     * Get cache affinity awareness group which is compatible with the mapping.
+     * Get cache partition awareness group which is compatible with the mapping.
      * @param groups Group list.
      * @param mapping Partition mapping.
-     * @return Compatible cache affinity awareness group if present, or null.
+     * @return Compatible cache partition awareness group if present, or null.
      */
     @Nullable private static ClientCachePartitionAwarenessGroup getCompatibleGroup(
         List<ClientCachePartitionAwarenessGroup> groups,
@@ -189,7 +189,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /**
      * @param ccfg Cache configuration.
-     * @return True if cache is applicable for affinity awareness optimisation.
+     * @return True if cache is applicable for partition awareness optimisation.
      */
     private static boolean isApplicable(CacheConfiguration ccfg) {
         // Partition could be extracted only from PARTITIONED caches.

@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * JDBC Thin driver test suite to run in affinity awareness mode.
+ * JDBC Thin driver test suite to run in partition awareness mode.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -43,7 +43,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteJdbcThinDriverPartitionAwarenessTestSuite {
     /**
-     * Setup affinity awareness mode.
+     * Setup partition awareness mode.
      */
     @BeforeClass
     public static void setupPartitionAwareness() {

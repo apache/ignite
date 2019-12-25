@@ -43,7 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
 /**
- * Abstract thin client affinity awareness test.
+ * Abstract thin client partition awareness test.
  */
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */

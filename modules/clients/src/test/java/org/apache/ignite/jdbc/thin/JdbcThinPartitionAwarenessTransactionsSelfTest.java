@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
- * Jdbc thin transactional affinity awareness test.
+ * Jdbc thin transactional partition awareness test.
  */
 public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbstractSelfTest {
     /** */

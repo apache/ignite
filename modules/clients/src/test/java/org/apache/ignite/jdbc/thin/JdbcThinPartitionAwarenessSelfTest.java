@@ -297,7 +297,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
 
     /**
-     * Check that in case of non-rendezvous affinity function, client side affinity awareness is skipped.
+     * Check that in case of non-rendezvous affinity function, client side partition awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -317,7 +317,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that in case of custom filters, client side affinity awareness is skipped.
+     * Check that in case of custom filters, client side partition awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -337,7 +337,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that affinity awareness functionality works fine for custom partitions count.
+     * Check that partition awareness functionality works fine for custom partitions count.
      *
      * @throws Exception If failed.
      */
@@ -557,7 +557,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
 
     /**
      * Check that partitionAwarenessSQLCacheSize and partitionAwarenessPartitionDistributionsCacheSize
-     * actually limit corresponding caches within affinity awareness cache.
+     * actually limit corresponding caches within partition awareness cache.
      *
      * @throws Exception If failed.
      */

@@ -1669,7 +1669,7 @@ public class JdbcThinConnection implements Connection {
 
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
                                     connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support affinity awareness mode.",
+                                    "Node doesn't support partition awareness mode.",
                                     INTERNAL_ERROR);
                             }
 

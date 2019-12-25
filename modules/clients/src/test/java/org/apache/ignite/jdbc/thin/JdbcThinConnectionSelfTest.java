@@ -93,10 +93,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         "jdbc:ignite:thin://127.0.0.1:10800..10802" :
         "jdbc:ignite:thin://127.0.0.1";
 
-    /** URL with affinity awareness property. */
+    /** URL with partition awareness property. */
     private String urlWithPartitionAwarenessProp = url + "?partitionAwareness=" + partitionAwareness;
 
-    /** URL with affinity awareness property and semicolon as delimiter. */
+    /** URL with partition awareness property and semicolon as delimiter. */
     private String urlWithPartitionAwarenessPropSemicolon = url + ";partitionAwareness=" + partitionAwareness;
 
     /** Nodes count. */
@@ -280,7 +280,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test affinity awareness Sql cache size property.
+     * Test partition awareness Sql cache size property.
      *
      * @throws Exception If failed.
      */
@@ -302,7 +302,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test affinity awareness Sql cache size property with semicolon.
+     * Test partition awareness Sql cache size property with semicolon.
      *
      * @throws Exception If failed.
      */
@@ -324,7 +324,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test affinity awareness partition distributions cache size property.
+     * Test partition awareness partition distributions cache size property.
      *
      * @throws Exception If failed.
      */
@@ -348,7 +348,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test affinity awareness partition distributions cache size property with semicolon.
+     * Test partition awareness partition distributions cache size property with semicolon.
      *
      * @throws Exception If failed.
      */

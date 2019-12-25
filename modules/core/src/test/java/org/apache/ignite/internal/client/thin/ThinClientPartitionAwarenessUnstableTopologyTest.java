@@ -28,7 +28,7 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.junit.Test;
 
 /**
- * Test affinity awareness of thin client on unstable topology.
+ * Test partition awareness of thin client on unstable topology.
  */
 public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** {@inheritDoc} */
@@ -39,7 +39,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
     }
 
     /**
-     * Test that join of the new node is detected by the client and affects affinity awareness.
+     * Test that join of the new node is detected by the client and affects partition awareness.
      */
     @Test
     public void testPartitionAwarenessOnNodeJoin() throws Exception {
@@ -49,7 +49,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         initClient(getClientConfiguration(1, 2, 3), 1, 2);
 
-        // Test affinity awareness before node join.
+        // Test partition awareness before node join.
         testPartitionAwareness(true);
 
         assertNull(channels[3]);
@@ -77,12 +77,12 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         assertOpOnChannel(channels[3], ClientOperation.CACHE_PUT);
 
-        // Test affinity awareness after node join.
+        // Test partition awareness after node join.
         testPartitionAwareness(false);
     }
 
     /**
-     * Test that node left event affects affinity awareness.
+     * Test that node left event affects partition awareness.
      */
     @Test
     public void testPartitionAwarenessOnNodeLeft() throws Exception {
@@ -92,7 +92,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         initClient(getClientConfiguration(1, 2, 3), 1, 2, 3);
 
-        // Test affinity awareness before node left.
+        // Test partition awareness before node left.
         testPartitionAwareness(true);
 
         stopGrid(3);
@@ -104,7 +104,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         // Next request will also detect topology change.
         initDefaultChannel();
 
-        // Test affinity awareness after node join.
+        // Test partition awareness after node join.
         testPartitionAwareness(true);
     }
 
@@ -119,7 +119,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         initClient(getClientConfiguration(0, 1), 0, 1);
 
-        // Test affinity awareness before connection to node lost.
+        // Test partition awareness before connection to node lost.
         testPartitionAwareness(true);
 
         // Choose node to disconnect (not default node).
@@ -151,12 +151,12 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         // Connection to disconnected node should be restored after retry.
         assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
 
-        // Test affinity awareness.
+        // Test partition awareness.
         testPartitionAwareness(false);
     }
 
     /**
-     * Test that affinity awareness works when reconnecting to the new cluster (with lower topology version)
+     * Test that partition awareness works when reconnecting to the new cluster (with lower topology version)
      */
     @Test
     public void testPartitionAwarenessOnClusterRestart() throws Exception {
@@ -166,7 +166,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         initClient(getClientConfiguration(0, 1, 2), 0, 1, 2);
 
-        // Test affinity awareness before cluster restart.
+        // Test partition awareness before cluster restart.
         testPartitionAwareness(true);
 
         stopAllGrids();
