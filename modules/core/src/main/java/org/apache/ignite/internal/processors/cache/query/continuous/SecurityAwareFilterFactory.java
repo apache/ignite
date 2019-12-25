@@ -24,9 +24,8 @@ import javax.cache.event.CacheEntryEventFilter;
 /**
  * Security aware remote filter factory.
  */
-@SuppressWarnings("rawtypes")
-public class SecurityAwareFilterFactory extends AbstractSecurityAwareExternalizable implements
-    Factory<CacheEntryEventFilter> {
+public class SecurityAwareFilterFactory<K, V> extends AbstractSecurityAwareExternalizable implements
+    Factory<CacheEntryEventFilter<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,14 +40,14 @@ public class SecurityAwareFilterFactory extends AbstractSecurityAwareExternaliza
      * @param subjectId Security subject id.
      * @param original Original factory.
      */
-    public SecurityAwareFilterFactory(UUID subjectId, Factory<CacheEntryEventFilter> original) {
+    public SecurityAwareFilterFactory(UUID subjectId, Factory<CacheEntryEventFilter<K, V>> original) {
         super(subjectId, original);
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter create() {
-        Factory<CacheEntryEventFilter> factory = (Factory<CacheEntryEventFilter>)original;
+    @Override public CacheEntryEventFilter<K, V> create() {
+        Factory<CacheEntryEventFilter<K, V>> factory = (Factory<CacheEntryEventFilter<K, V>>)original;
 
-        return new SecurityAwareFilter(subjectId, factory.create());
+        return new SecurityAwareFilter<>(subjectId, factory.create());
     }
 }

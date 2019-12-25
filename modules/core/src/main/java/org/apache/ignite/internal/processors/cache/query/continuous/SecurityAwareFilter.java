@@ -31,9 +31,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 /**
  * Security aware remote filter.
  */
-@SuppressWarnings("rawtypes")
-public class SecurityAwareFilter extends AbstractSecurityAwareExternalizable implements
-    CacheEntryEventSerializableFilter {
+public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizable implements
+    CacheEntryEventSerializableFilter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,14 +50,15 @@ public class SecurityAwareFilter extends AbstractSecurityAwareExternalizable imp
      * @param subjectId Security subject id.
      * @param original Original filter.
      */
-    public SecurityAwareFilter(UUID subjectId, CacheEntryEventFilter original) {
+    public SecurityAwareFilter(UUID subjectId, CacheEntryEventFilter<K, V> original) {
         super(subjectId, original);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
+    @Override public boolean evaluate(
+        CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
         try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-            return ((CacheEntryEventSerializableFilter)original).evaluate(evt);
+            return ((CacheEntryEventFilter<K, V>)original).evaluate(evt);
         }
     }
 

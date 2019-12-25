@@ -31,9 +31,8 @@ import static java.util.Objects.requireNonNull;
 /**
  *  Security aware transformer factory.
  */
-@SuppressWarnings("rawtypes")
-public class SecurityAwareTransformerFactory extends AbstractSecurityAwareExternalizable implements
-    Factory<IgniteClosure> {
+public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAwareExternalizable implements
+    Factory<IgniteClosure<E, R>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,25 +47,25 @@ public class SecurityAwareTransformerFactory extends AbstractSecurityAwareExtern
      * @param subjectId Security subject id.
      * @param original Original factory.
      */
-    public SecurityAwareTransformerFactory(UUID subjectId, Factory<IgniteClosure> original) {
+    public SecurityAwareTransformerFactory(UUID subjectId, Factory<IgniteClosure<E, R>> original) {
         super(subjectId, original);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClosure create() {
-        Factory<IgniteClosure> factory = (Factory<IgniteClosure>)original;
+    @Override public IgniteClosure<E, R> create() {
+        Factory<IgniteClosure<E, R>> factory = (Factory<IgniteClosure<E, R>>)original;
 
-        return new SecurityAwareIgniteClosure(subjectId, factory.create());
+        return new SecurityAwareIgniteClosure<E, R>(subjectId, factory.create());
     }
 
 
     /** */
-    private static class SecurityAwareIgniteClosure implements IgniteClosure {
+    private static class SecurityAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
         /** Security subject id. */
         private final UUID subjectId;
 
         /** Original transformer. */
-        private final IgniteClosure original;
+        private final IgniteClosure<E, R> original;
 
         /** Ignite. */
         private IgniteEx ignite;
@@ -75,15 +74,15 @@ public class SecurityAwareTransformerFactory extends AbstractSecurityAwareExtern
          * @param subjectId Security subject id.
          * @param original Original transformer.
          */
-        public SecurityAwareIgniteClosure(UUID subjectId, IgniteClosure original) {
+        public SecurityAwareIgniteClosure(UUID subjectId, IgniteClosure<E, R> original) {
             this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
             this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
         }
 
         /** {@inheritDoc} */
-        @Override public Object apply(Object o) {
+        @Override public R apply(E e) {
             try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-                return original.apply(o);
+                return original.apply(e);
             }
         }
 
