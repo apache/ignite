@@ -166,7 +166,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeExchangeFreeFalse() throws Exception {
-        System.setProperty(IGNITE_PME_FREE, Boolean.FALSE.toString());
+        System.setProperty(IGNITE_PME_FREE, "false");
 
         try {
             testBaselineNodeLeftOnFullyRebalancedCluster();
