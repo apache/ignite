@@ -207,7 +207,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
     /** Disable Lightweight PME. */
-    public static final String IGNITE_PME_FREE_DISABLED = "IGNITE_PME_FREE_DISABLED";
+    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
 
     /**
      * Name of the system property defining name of command line program.

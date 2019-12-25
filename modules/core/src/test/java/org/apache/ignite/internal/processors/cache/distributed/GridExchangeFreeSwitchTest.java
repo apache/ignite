@@ -55,7 +55,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -162,17 +162,17 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when IGNITE_PME_FREE_DISABLED is true.
+     * Checks Partition Exchange is regular in case of fixed baseline, when IGNITE_PME_FREE_SWITCH_DISABLED is true.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabled() throws Exception {
-        System.setProperty(IGNITE_PME_FREE_DISABLED, "true");
+        System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
 
         try {
             testBaselineNodeLeftOnFullyRebalancedCluster();
         }
         finally {
-            System.clearProperty(IGNITE_PME_FREE_DISABLED);
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
         }
     }
 
@@ -180,7 +180,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
     private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        boolean pmeFreeDisabled = getBoolean(IGNITE_PME_FREE_DISABLED);
+        boolean pmeFreeSwitch = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
 
         int nodes = 10;
 
@@ -200,7 +200,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cnt.incrementAndGet();
 
-                    if (!persistence || pmeFreeDisabled)
+                    if (!persistence || pmeFreeSwitch)
                         return false;
 
                     return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
@@ -211,16 +211,15 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Random r = new Random();
 
+        boolean absentPme = (persistence && !pmeFreeSwitch);
+        System.err.println(absentPme);
+
         while (nodes > 1) {
             G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            boolean absentPme = persistence && !pmeFreeDisabled;
-
-            int msgCnt = absentPme ? 0 : (nodes - 1);
-
-            assertEquals(msgCnt, cnt.get());
+            assertEquals(absentPme ? 0 : (nodes - 1), cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
