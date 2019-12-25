@@ -18,19 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -48,7 +42,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -68,6 +61,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
+import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -87,10 +81,22 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     private static final String CACHE3 = "cache3";
 
     /** */
+    private static final String CACHE4 = "cache4";
+
+    /** */
+    private static final String CACHE5 = "cache5";
+
+    /** */
     private static final long REBALANCE_DELAY = 5_000;
 
     /** */
     private static final String GROUP = "group1";
+
+    /** */
+    private static final String GROUP2 = "group2";
+
+    /** */
+    private static final int KEYS_COUNT = 10_000;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -130,7 +136,17 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setStatisticsEnabled(true)
             .setRebalanceDelay(REBALANCE_DELAY);
 
-        cfg.setCacheConfiguration(cfg1, cfg2, cfg3);
+        CacheConfiguration cfg4 = new CacheConfiguration()
+            .setAffinity(new RendezvousAffinityFunction())
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setName(CACHE4)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setGroupName(GROUP2);
+
+        CacheConfiguration cfg5 = new CacheConfiguration(cfg4)
+            .setName(CACHE5);
+
+        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4, cfg5);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
@@ -149,7 +165,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache1 = ignite.cache(CACHE1);
         IgniteCache<Object, Object> cache2 = ignite.cache(CACHE2);
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < KEYS_COUNT; i++) {
             cache1.put(i, CACHE1 + "-" + i);
 
             if (i % 2 == 0)
@@ -202,159 +218,23 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheGroupRebalance() throws Exception {
-        Map<String, List<String>> cacheGroups = new HashMap<>();
-        cacheGroups.put("group4", Lists.newArrayList("group4"));
-        cacheGroups.put("group2", Lists.newArrayList("cache4", "cache5"));
-        cacheGroups.put("group3", Lists.newArrayList("cache6", "cache7", "cache8"));
-
-        List<CacheConfiguration> cfgs = cacheGroups.entrySet().stream().map(e -> e.getValue().stream().map(name ->
-            new CacheConfiguration()
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(getDigits(e.getKey() + e.getKey())))
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setName(name)
-            .setCacheMode(CacheMode.REPLICATED)
-            .setGroupName(e.getKey())).collect(Collectors.toList()))
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
-
-        LinkedList<String> rebalancingCacheGroups = new LinkedList<>();
-
-        List<IgniteInternalFuture> results = new ArrayList<>();
-
         IgniteEx ignite0 = startGrid(0);
-        ignite0.createCaches(cfgs);
 
-        for (String cacheGroupName : cacheGroups.keySet()) {
-            for (String cacheName : cacheGroups.get(cacheGroupName)) {
-                IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(cacheName);
-                for (int i = 0, l = 0; i < getDigits(cacheGroupName + cacheName); i++, l++) {
-                    cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
-                }
+        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+
+        for (String cacheName : cacheNames) {
+            IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(cacheName);
+
+            for (int i = 0; i < KEYS_COUNT; i++) {
+                cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
             }
         }
 
         TestRecordingCommunicationSpi.spi(ignite0)
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    return (msg instanceof GridDhtPartitionSupplyMessage) && cacheGroups.keySet().stream()
-                        .filter(groupName -> CU.cacheId(groupName) == ((GridCacheGroupIdMessage)msg).groupId())
-                        .map(rebalancingCacheGroups::add)
-                        .findAny()
-                        .isPresent();
-                }
-            });
-
-        IgniteEx ignite1 = startGrid(1);
-
-        for (int i = 0; i < cacheGroups.size(); i++) {
-            TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
-
-            int rebalancingCacheGroupsCount = i + 1;
-
-            waitForCondition(() -> rebalancingCacheGroups.size() == rebalancingCacheGroupsCount, 1000);
-
-            String cacheGroupName = rebalancingCacheGroups.getLast();
-
-            MetricRegistry mreg = ignite1.context().metric()
-                .registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheGroupName));
-
-            LongMetric startTime = mreg.findMetric("RebalancingStartTime");
-            LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
-            LongMetric endTime = mreg.findMetric("RebalancingEndTime");
-            LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
-            LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
-            LongMetric receivedBytes =  mreg.findMetric("RebalancingReceivedBytes");
-
-            assertEquals("The number of cache group partitions left to be rebalanced was expected to be " +
-                getDigits(cacheGroupName + cacheGroupName) + ", but actual: " + partitionsLeft.value(),
-                getDigits(cacheGroupName + cacheGroupName), partitionsLeft.value());
-
-            assertTrue("Invalid rebalancing start time [rebalancingStartTime=" + startTime.value() +
-                    ", currentTime=" + System.currentTimeMillis() + "]",
-                startTime.value() > -1 && startTime.value() < System.currentTimeMillis());
-
-            assertEquals("Rebalancing last cancelled time was expected to be -1, but actual: " +
-                lastCancelledTime.value(), -1, lastCancelledTime.value());
-
-            assertEquals("Rebalancing end time was expected to be -1, but actual: " +
-                endTime.value(), -1, endTime.value());
-
-            assertEquals("The number of currently rebalanced keys for the whole cache group was expected to be 0," +
-                    " but actual: " + receivedKeys.value(), 0, receivedKeys.value());
-
-            assertEquals("The number of currently rebalanced bytes of this cache group was expected to be 0," +
-                    " but actual: ", 0, receivedBytes.value());
-
-            GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)ignite1.context().
-                cache().internalCache(cacheGroups.get(cacheGroupName).get(0)).preloader().rebalanceFuture();
-
-            results.add(fut.chain(f -> {
-                assertEquals("The number of cache group partitions left to be rebalanced was expected to be 0, " +
-                    "but actual: " + partitionsLeft.value(), 0, partitionsLeft.value());
-
-                assertTrue("Invalid rebalancing start time [rebalancingStartTime=" + startTime.value() +
-                        ", rebalancingEndTime=" + endTime.value() + "]",
-                    startTime.value() > 0 && startTime.value() <= endTime.value());
-
-                assertEquals("Rebalancing last cancelled time was expected to be -1, but actual: " +
-                    lastCancelledTime.value(), -1, lastCancelledTime.value());
-
-                assertTrue("Invalid rebalancing end time [rebalancingEndTime=" + endTime.value() +
-                        ", currentTime=" + System.currentTimeMillis() + "]",
-                    endTime.value() > 0 && endTime.value() <= System.currentTimeMillis());
-
-                int cacheEntriesCount = cacheGroups.get(cacheGroupName).stream()
-                    .mapToInt(name -> getDigits(cacheGroupName + name))
-                    .sum();
-
-                assertEquals("The number of currently rebalanced keys for the whole cache group was expected to be "
-                        + cacheEntriesCount + ", but actual: " + receivedKeys.value(),
-                    cacheEntriesCount, receivedKeys.value());
-
-                assertTrue("The number of currently rebalanced bytes of this cache group was expected more " +
-                        cacheEntriesCount * (Integer.BYTES + Long.BYTES) + " bytes, but actual: " + receivedBytes.value(),
-                    receivedBytes.value() > cacheEntriesCount * (Integer.BYTES + Long.BYTES));
-
-                return null;
-            }));
-
-            TestRecordingCommunicationSpi.spi(ignite0)
-                .stopBlock(true, null, false, true);
-        }
-
-        for (IgniteInternalFuture check : results)
-            check.get();
-
-        assertTrue("Not all cache groups are rebalanced. Expected " + cacheGroups.keySet() + ", but actual: " +
-            rebalancingCacheGroups, cacheGroups.keySet().containsAll(rebalancingCacheGroups));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRebalancingLastCancelledTime() throws Exception {
-        String cacheName = "cache";
-
-        int partitions = 10;
-
-        IgniteEx ignite0 = startGrid(0);
-
-        IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Long>()
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(partitions))
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setName(cacheName)
-            .setCacheMode(CacheMode.REPLICATED));
-
-        for (int i = 0, l = 0; i < 10; i++, l++) {
-            cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
-        }
-
-        TestRecordingCommunicationSpi.spi(ignite0)
-            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
                     return (msg instanceof GridDhtPartitionSupplyMessage) &&
-                        ((GridCacheGroupIdMessage)msg).groupId() == CU.cacheId(cacheName);
+                        CU.cacheId(GROUP2) == ((GridCacheGroupIdMessage)msg).groupId();
                 }
             });
 
@@ -362,76 +242,137 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));
+        MetricRegistry mreg = ignite1.context().metric()
+            .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+
+        LongMetric startTime = mreg.findMetric("RebalancingStartTime");
+        LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
+        LongMetric endTime = mreg.findMetric("RebalancingEndTime");
+        LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
+        LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
+        LongMetric receivedBytes =  mreg.findMetric("RebalancingReceivedBytes");
+
+        assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
+                "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
+
+        long rebalancingStartTime = startTime.value();
+
+        assertNotSame("During rebalancing start, the start time metric must be determined.",
+            -1, startTime.value());
+
+        assertEquals("Rebalancing last cancelled time must be undefined.", -1, lastCancelledTime.value());
+
+        assertEquals("Before the rebalancing is completed, the end time metric must be undefined.",
+            -1, endTime.value());
+
+        assertEquals("Until a partition supply message has been delivered, keys cannot be received.",
+            0, receivedKeys.value());
+
+        assertEquals("Until a partition supply message has been delivered, bytes cannot be received.",
+            0, receivedBytes.value());
+
+        TestRecordingCommunicationSpi.spi(ignite0).stopBlock();
+
+        for (String cacheName : cacheNames)
+            ignite1.context().cache().internalCache(cacheName).preloader().rebalanceFuture().get();
+
+        assertEquals("After completion of rebalancing, there are no partitions of the cache group that are" +
+            " left to rebalance.", 0, partitionsLeft.value());
+
+        assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to the start time " +
+                "measured immediately after the rebalancing start.", rebalancingStartTime, startTime.value());
+
+        assertEquals("Rebalancing last cancelled time must be undefined.", -1, lastCancelledTime.value());
+
+        assertTrue("Rebalancing end time must be determined and must be longer than the start time " +
+                "[rebalancingStartTime=" + rebalancingStartTime + ", rebalancingEndTime=" + endTime.value() + "].",
+            rebalancingStartTime < endTime.value());
+
+        assertEquals("The number of currently rebalanced keys for the whole cache group should be equal to the " +
+                "number of entries in the caches.", KEYS_COUNT * cacheNames.size(), receivedKeys.value());
+
+        assertTrue("The number of currently rebalanced bytes of this cache group was expected more " + KEYS_COUNT *
+                cacheNames.size() * (Integer.BYTES + Long.BYTES) + " bytes, but actual: " + receivedBytes.value(),
+            receivedBytes.value() > KEYS_COUNT * cacheNames.size() * (Integer.BYTES + Long.BYTES));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancingLastCancelledTime() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
+
+        for (String cacheName : cacheNames) {
+            IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(cacheName);
+
+            for (int i = 0; i < KEYS_COUNT; i++) {
+                cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
+            }
+        }
+
+        TestRecordingCommunicationSpi.spi(ignite0)
+            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return (msg instanceof GridDhtPartitionSupplyMessage) &&
+                        ((GridCacheGroupIdMessage)msg).groupId() == CU.cacheId(GROUP2);
+                }
+            });
+
+        IgniteEx ignite1 = startGrid(1);
+
+        TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
+
+        MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
         LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
 
-        assertEquals("The number of cache group partitions left to be rebalanced was expected to be " + partitions
-            + ", but actual: " + partitionsLeft.value(), partitions, partitionsLeft.value());
+        assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
+            "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
 
-        assertTrue("Invalid rebalancing start time [rebalancingStartTime=" + startTime.value() +
-                ", currentTime=" + System.currentTimeMillis() + "]",
-            startTime.value() > 0 && startTime.value() <= System.currentTimeMillis());
+        long rebalancingStartTime = startTime.value();
 
-        assertEquals("Rebalancing last cancelled time was expected to be -1, but actual: " +
-            lastCancelledTime.value(), -1, lastCancelledTime.value());
+        assertNotSame("During rebalancing start, the start time metric must be determined.",
+            -1, startTime.value());
 
-        assertEquals("Rebalancing end time was expected to be -1, but actual: " +
-            endTime.value(), -1, endTime.value());
+        assertEquals("Rebalancing last cancelled time must be undefined.", -1, lastCancelledTime.value());
 
-        GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)ignite1.context().
-            cache().internalCache(cacheName).preloader().rebalanceFuture();
+        assertEquals("Before the rebalancing is completed, the end time metric must be undefined.",
+            -1, endTime.value());
 
         AtomicLong cancelledTime = new AtomicLong();
 
-        IgniteInternalFuture chain = fut.chain(f -> {
-            assertTrue("Invalid rebalancing start time [rebalancingStartTime=" + startTime.value() +
-                    ", rebalancingEndTime=" + endTime.value() + "]",
-                startTime.value() > 0 && startTime.value() <= endTime.value());
+        IgniteInternalFuture chain = ignite1.context().cache().internalCache(CACHE5).preloader().rebalanceFuture()
+            .chain(f -> {
+                    assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to" +
+                        " the start time measured immediately after the rebalancing start.",
+                        rebalancingStartTime, startTime.value());
 
-            assertTrue("Invalid rebalancing end time [rebalancingEndTime=" + endTime.value() +
-                    ", currentTime=" + System.currentTimeMillis() + "]",
-                endTime.value() > 0 && endTime.value() <= System.currentTimeMillis());
+                    assertTrue("Rebalancing end time must be determined and must be longer than the start time " +
+                            "[rebalancingStartTime=" + rebalancingStartTime + ", rebalancingEndTime=" +
+                            endTime.value() + "].", rebalancingStartTime < endTime.value());
 
-            cancelledTime.set(endTime.value());
+                    cancelledTime.set(endTime.value());
 
-            return null;
-        });
+                    return null;
+                });
 
-        TestRecordingCommunicationSpi.spi(ignite0).stopBlock(true);
-
-        fut.onCancelled();
+        TestRecordingCommunicationSpi.spi(ignite0).stopBlock(false);
 
         chain.get();
 
-        awaitPartitionMapExchange();
+        assertNotSame("The rebalancing start time must not be equal to the previously measured start time, since" +
+                " the first rebalancing was canceled and restarted.", rebalancingStartTime, startTime.value());
 
-        assertTrue("Rebalancing start time was expected to be -1, but actual: " + startTime.value(),
-             startTime.value() == -1);
+        waitForCondition(() -> lastCancelledTime.value() == cancelledTime.get(), 1000);
 
-        assertEquals("Rebalancing last cancelled time was expected to be " + cancelledTime + ", but actual: " +
-            lastCancelledTime.value(), cancelledTime.get(), lastCancelledTime.value());
-
-        assertEquals("Rebalancing end time was expected to be -1, but actual: " +
-            endTime.value(), -1, endTime.value());
-    }
-
-
-    /**
-     * Extract digits from string.
-     *
-     * @param str String.
-     * @return digits from the string if they are contained, or zero if in other cases.
-     */
-    private int getDigits(String str) {
-        try {
-            return Integer.parseInt(str.replaceAll("[^0-9]", ""));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        assertEquals("The rebalancing last cancelled time must coincide with the rebalancing end time of the " +
+                "first canceled rebalance.", cancelledTime.get(), lastCancelledTime.value());
     }
 
     /**
@@ -638,7 +579,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         final IgniteCache<Object, Object> cache = ig1.cache(CACHE3);
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < KEYS_COUNT; i++)
             cache.put(i, CACHE3 + "-" + i);
 
         long beforeStartTime = U.currentTimeMillis();

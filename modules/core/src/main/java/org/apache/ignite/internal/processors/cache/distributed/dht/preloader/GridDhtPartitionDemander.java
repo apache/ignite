@@ -1305,7 +1305,7 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = -1;
             this.routines = 0;
             this.cancelLock = new ReentrantReadWriteLock();
-            this.lastCancelledTime = null;
+            this.lastCancelledTime = new AtomicLong();
         }
 
         /**
@@ -1367,6 +1367,8 @@ public class GridDhtPartitionDemander {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+            assert !cancel;
+
             long time = System.currentTimeMillis();
 
             if (startTime != -1)
@@ -1374,7 +1376,7 @@ public class GridDhtPartitionDemander {
 
             boolean byThisCall = super.onDone(res, err, cancel);
 
-            if (byThisCall && (isCancelled() || isFailed()) && lastCancelledTime != null)
+            if (byThisCall && (res == false || isFailed()))
                 lastCancelledTime.accumulateAndGet(time, Math::max);
 
             return byThisCall;
