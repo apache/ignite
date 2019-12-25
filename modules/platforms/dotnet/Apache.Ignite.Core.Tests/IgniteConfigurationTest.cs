@@ -661,7 +661,8 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
                                                   !p.Name.Contains("ThreadPoolSize") && p.Name != "MaxSize" &&
-                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel"))
+                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel" &&
+                                                  p.Name != "Logger"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);

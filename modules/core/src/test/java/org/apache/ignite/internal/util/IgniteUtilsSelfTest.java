@@ -128,6 +128,25 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testNextPowOf2() {
+        assertEquals(1, U.nextPowerOf2(0));
+        assertEquals(1, U.nextPowerOf2(1));
+        assertEquals(2, U.nextPowerOf2(2));
+        assertEquals(4, U.nextPowerOf2(3));
+        assertEquals(4, U.nextPowerOf2(4));
+
+        assertEquals(8, U.nextPowerOf2(5));
+        assertEquals(8, U.nextPowerOf2(6));
+        assertEquals(8, U.nextPowerOf2(7));
+        assertEquals(8, U.nextPowerOf2(8));
+
+        assertEquals(32768, U.nextPowerOf2(32767));
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test

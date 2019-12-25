@@ -1830,6 +1830,51 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Pages list name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Buckets count.
+     */
+    public int bucketsCount() {
+        return buckets;
+    }
+
+    /**
+     * Bucket size.
+     *
+     * @param bucket Bucket.
+     */
+    public long bucketSize(int bucket) {
+        return bucketsSize[bucket].get();
+    }
+
+    /**
+     * Stripes count.
+     *
+     * @param bucket Bucket.
+     */
+    public int stripesCount(int bucket) {
+        Stripe[] stripes = getBucket(bucket);
+
+        return stripes == null ? 0 : stripes.length;
+    }
+
+    /**
+     * Cached pages count.
+     *
+     * @param bucket Bucket.
+     */
+    public int cachedPagesCount(int bucket) {
+        PagesCache pagesCache = getBucketCache(bucket, false);
+
+        return pagesCache == null ? 0 : pagesCache.size();
+    }
+
+    /**
      * Singleton reuse bag.
      */
     private static final class SingletonReuseBag implements ReuseBag {
@@ -1904,7 +1949,7 @@ public abstract class PagesList extends DataStructure {
         private volatile int size;
 
         /** Count of flush calls with empty cache. */
-        private volatile int emptyFlushCnt;
+        private int emptyFlushCnt;
 
         /**
          * Default constructor.
@@ -2024,9 +2069,10 @@ public abstract class PagesList extends DataStructure {
          * @param pageId Page id.
          * @return {@code True} if page can be added, {@code false} if list is full.
          */
-        public synchronized boolean add(long pageId) {
+        public boolean add(long pageId) {
             assert pageId != 0L;
 
+            // Ok with race here.
             if (size >= MAX_SIZE)
                 return false;
 

@@ -77,7 +77,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             _header = header;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type id.
+        /// </summary>
         public int TypeId
         {
             get { return _header.TypeId; }
