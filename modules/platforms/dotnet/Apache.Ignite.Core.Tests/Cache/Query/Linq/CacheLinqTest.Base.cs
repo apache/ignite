@@ -498,7 +498,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 if (Equals(x, y))
                     return 0;
 
-                if (x is double)
+                if (x is double && y is double)
                 {
                     var dx = (double) x;
                     var dy = (double) y;
@@ -512,6 +512,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     return Math.Abs((double) x - (double) y) < relEpsilon ? 0 : 1;
                 }
 
+                // ReSharper disable once PossibleNullReferenceException
                 return ((IComparable) x).CompareTo(y);
             }
         }
