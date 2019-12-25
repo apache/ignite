@@ -25,7 +25,7 @@ import javax.cache.event.CacheEntryEventFilter;
  * Security aware remote filter factory.
  */
 @SuppressWarnings("rawtypes")
-public class SecurityAwareFilterFactory extends AbstractSecurityAwareComponent implements
+public class SecurityAwareFilterFactory extends AbstractSecurityAwareExternalizable implements
     Factory<CacheEntryEventFilter> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -27,9 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Abstract security aware component of countinuous query.
+ * Abstract security aware Externalizable.
  */
-public abstract class AbstractSecurityAwareComponent implements Externalizable {
+public abstract class AbstractSecurityAwareExternalizable implements Externalizable {
     /** Security subject id. */
     protected UUID subjectId;
 
@@ -39,7 +39,7 @@ public abstract class AbstractSecurityAwareComponent implements Externalizable {
     /**
      * Default constructor.
      */
-    protected AbstractSecurityAwareComponent() {
+    protected AbstractSecurityAwareExternalizable() {
         // No-op.
     }
 
@@ -47,7 +47,7 @@ public abstract class AbstractSecurityAwareComponent implements Externalizable {
      * @param subjectId Security subject id.
      * @param original Original component.
      */
-    protected AbstractSecurityAwareComponent(UUID subjectId, Object original) {
+    protected AbstractSecurityAwareExternalizable(UUID subjectId, Object original) {
         this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
         this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
     }

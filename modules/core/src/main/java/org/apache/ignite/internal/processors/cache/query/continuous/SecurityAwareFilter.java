@@ -32,7 +32,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  * Security aware remote filter.
  */
 @SuppressWarnings("rawtypes")
-public class SecurityAwareFilter extends AbstractSecurityAwareComponent implements CacheEntryEventSerializableFilter {
+public class SecurityAwareFilter extends AbstractSecurityAwareExternalizable implements
+    CacheEntryEventSerializableFilter {
     /** */
     private static final long serialVersionUID = 0L;
 
