@@ -27,7 +27,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  * <p>
  * Ignite provides Transparent Data Encryption of cache data on disk. Encryption features are provided by {@link
  * EncryptionSpi} and can be configured via {@link IgniteConfiguration#setEncryptionSpi(EncryptionSpi)}. Cache
- * encryption is configured via {@link CacheConfiguration#setEncryptionEnabled(boolean)}.
+ * encryption can be enabled via {@link CacheConfiguration#setEncryptionEnabled(boolean)}.
  * <p>
  * Instance of {@code IgniteEncryption} is obtained from {@link Ignite} as follows:
  * <pre class="brush:java">
@@ -37,11 +37,11 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
  * </pre>
  * Two types of keys are involved in data encryption: group and master keys.
  * <p>
- * Group key encrypts data of cache group caches. Each group key is encrypted by a master key. Encrypted group key and
- * encrypted data are written to disk.
+ * Group key encrypts data of cache group caches. Each group key is encrypted by the master key. Encrypted group key
+ * and encrypted data are written to disk.
  * <p>
- * Ignite provides the ability to change the master key. Master keys is identified by a master key name (see {@link
- * EncryptionSpi#getMasterKeyName()}). Follow operations are available for master keys:
+ * Ignite provides the ability to change the master key. Master keys are identified by a name (see {@link
+ * EncryptionSpi#getMasterKeyName()}). Follow operations are available for master key:
  * <ul>
  * <li>Method {@link #getMasterKeyName()} gets current master key name in the cluster.</li>
  * <li>Method {@link #changeMasterKey(String)} ()} starts master key change process.</li>
@@ -61,11 +61,11 @@ public interface IgniteEncryption {
      * Each node will re-encrypt group keys stored on the disk.
      * <p>
      * <b>NOTE:</b> The new master key should be available to {@link EncryptionSpi} for each server node. Cache start
-     * and node join during the key change process will be rejected.
+     * and node join during the key change process is prohibited and will be rejected.
      * <p>
-     * If some node was unavailable during a master key change process it won't be able to join to cluster with old the
-     * master key name. The node should re-encrypt group keys during the startup and recovery process. Set up a valid
-     * master key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
+     * If some node was unavailable during a master key change process it won't be able to join to cluster with the old
+     * master key. The node should re-encrypt group keys during recovery on startup. The actual master key
+     * name should be set via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
      *
      * @return Future for this operation.
      */

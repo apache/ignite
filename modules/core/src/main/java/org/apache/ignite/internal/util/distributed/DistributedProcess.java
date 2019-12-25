@@ -50,16 +50,19 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * <p>
  * The process consists of the following phases:
  * <ol>
- *  <li>The initial request starts the process. (Sent via discovery)</li>
- *  <li>Each server node processes an initial request and sends the single node result to the coordinator. (Sent via
- *  communication)</li>
- *  <li>The coordinator accumulate all single nodes results and finish process. (Sent via discovery)</li>
+ *  <li>The initial request starts the process. The {@link InitMessage} sent via discovery.</li>
+ *  <li>Each server node processes an initial request and sends the single node result to the coordinator. The
+ *  {@link SingleNodeMessage} sent via communication.</li>
+ *  <li>The coordinator accumulate all single nodes results and finish process. The {@link FullMessage} sent via
+ *  discovery.</li>
  * </ol>
  * <p>
  * Several processes of one type can be started at the same time.
  *
  * @param <I> Request type.
  * @param <R> Result type.
+ * @see InitMessage
+ * @see FullMessage
  */
 public class DistributedProcess<I extends Serializable, R extends Serializable> {
     /** Process type. */
@@ -215,7 +218,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public void start(UUID id, I req) {
         try {
-            InitMessage<I> msg = new InitMessage<>(id, type.ordinal(), req);
+            InitMessage<I> msg = new InitMessage<>(id, type, req);
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -251,7 +254,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type.ordinal(), p.resFut.result(),
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());
 
         if (F.eq(ctx.localNodeId(), p.crdId))
@@ -313,7 +316,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 res.put(uuid, msg.response());
         });
 
-        FullMessage<R> msg = new FullMessage<>(p.id, type.ordinal(), res, err);
+        FullMessage<R> msg = new FullMessage<>(p.id, type, res, err);
 
         try {
             ctx.discovery().sendCustomEvent(msg);
@@ -323,9 +326,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         }
     }
 
-    /**
-     * Handles case when all server nodes have left the grid.
-     */
+    /** Handles case when all server nodes have left the grid. */
     private void onAllServersLeft() {
         processes.clear();
     }
@@ -335,7 +336,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
     }
 
-    /** */
+    /** The process meta information. */
     private class Process {
         /** Process id. */
         private final UUID id;
@@ -364,9 +365,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         }
     }
 
-    /**
-     * Defines distributed processes.
-     */
+    /** Defines distributed processes. */
     public enum DistributedProcessType {
         /**
          * Master key change prepare process.

@@ -22,34 +22,30 @@ import java.util.Map;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 
 /**
- * Logical data record indented for master key change action.
+ * Logical record that stores encryption keys. Written to the WAL on the master key change.
  */
 public class MasterKeyChangeRecord extends WALRecord {
     /** Master key name. */
     private final String masterKeyName;
 
-    /** Group keys. */
+    /** Group keys encrypted by the master key. */
     private final Map<Integer, byte[]> grpKeys;
 
     /**
      * @param masterKeyName Master key name.
-     * @param grpKeys Encrypted cache keys.
+     * @param grpKeys Encrypted group keys.
      */
     public MasterKeyChangeRecord(String masterKeyName, Map<Integer, byte[]> grpKeys) {
         this.masterKeyName = masterKeyName;
         this.grpKeys = grpKeys;
     }
 
-    /**
-     * @return Master key name.
-     */
+    /** @return Master key name. */
     public String getMasterKeyName() {
         return masterKeyName;
     }
 
-    /**
-     * @return Encrypted cache keys.
-     */
+    /** @return Encrypted group keys. */
     public Map<Integer, byte[]> getGrpKeys() {
         return grpKeys;
     }
@@ -59,9 +55,7 @@ public class MasterKeyChangeRecord extends WALRecord {
         return MASTER_KEY_CHANGE_RECORD;
     }
 
-    /**
-     * @return Record's data size.
-     */
+    /** @return Record data size. */
     public int dataSize() {
         int size = /*Master key name length*/4 + masterKeyName.length() + /*Group keys map size*/4;
 

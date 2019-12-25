@@ -51,7 +51,7 @@ public class GenerateEncryptionKeyResponse implements Message {
     /**
      * @param id Request id.
      * @param encKeys Encryption keys.
-     * @param masterKeyDigest Master key digest that encrypted group encryption keys.
+     * @param masterKeyDigest Master key digest.
      */
     public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys, byte[] masterKeyDigest) {
         this.id = id;
@@ -73,9 +73,7 @@ public class GenerateEncryptionKeyResponse implements Message {
         return encKeys;
     }
 
-    /**
-     * @return Master key digest that encrypted group encryption keys.
-     */
+    /** @return Master key digest that encrypted group encryption keys. */
     public byte[] masterKeyDigest() {
         return masterKeyDigest;
     }

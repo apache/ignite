@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.distributed;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -29,6 +30,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Single node result message.
  *
  * @param <R> Result type.
+ * @see DistributedProcess
+ * @see FullMessage
+ * @see InitMessage
  */
 public class SingleNodeMessage<R extends Serializable> implements Message {
     /** Serial version uid. */
@@ -59,9 +63,9 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
      * @param resp Single node response.
      * @param err Error.
      */
-    public SingleNodeMessage(UUID processId, int type, R resp, Exception err) {
+    public SingleNodeMessage(UUID processId, DistributedProcessType type, R resp, Exception err) {
         this.processId = processId;
-        this.type = type;
+        this.type = type.ordinal();
         this.resp = resp;
         this.err = err;
     }

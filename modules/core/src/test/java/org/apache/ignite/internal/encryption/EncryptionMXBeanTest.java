@@ -31,9 +31,7 @@ import org.junit.Test;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/**
- * Tests {@link EncryptionMXBean}.
- */
+/** Tests {@link EncryptionMXBean}. */
 @SuppressWarnings("ThrowableNotThrown")
 public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     /** @throws Exception If failed. */

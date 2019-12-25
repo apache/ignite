@@ -116,7 +116,6 @@ public interface EncryptionSpi extends IgniteSpi {
      * Gets the current master key name.
      *
      * @return Master key name.
-     *
      * @see #setMasterKeyName(String)
      */
     String getMasterKeyName();

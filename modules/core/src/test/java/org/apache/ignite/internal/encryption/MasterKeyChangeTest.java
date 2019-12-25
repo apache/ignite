@@ -49,9 +49,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
-/**
- * Tests master key change process.
- */
+/** Tests master key change process. */
 @SuppressWarnings("ThrowableNotThrown")
 public class MasterKeyChangeTest extends AbstractEncryptionTest {
     /** {@inheritDoc} */
@@ -65,7 +63,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testRecoveryKeysOnClusterRestart() throws Exception {
+    public void testClusterRestart() throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
@@ -404,7 +402,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         runAsync(() -> {
             if (stopCrd)
-                stopGrid(GRID_0);
+                stopGrid(GRID_0, true);
             else
                 stopGrid(GRID_1);
         });

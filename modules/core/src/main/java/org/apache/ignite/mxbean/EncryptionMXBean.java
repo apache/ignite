@@ -28,7 +28,6 @@ public interface EncryptionMXBean {
      * Gets the current master key name.
      *
      * @return Master key name.
-     *
      * @see IgniteEncryption#getMasterKeyName()
      */
     @MXBeanDescription("Current master key name.")
@@ -38,7 +37,6 @@ public interface EncryptionMXBean {
      * Starts master key change process.
      *
      * @param masterKeyName Master key name.
-     *
      * @see IgniteEncryption#changeMasterKey(String)
      */
     @MXBeanDescription("Change master key name.")

@@ -78,7 +78,7 @@ public enum IgniteFeatures {
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
     PME_FREE_SWITCH(19),
 
-    /** Master key change. */
+    /** Master key change. See {@code GridEncryptionManager#changeMasterKey(String)}. */
     MASTER_KEY_CHANGE(20);
 
     /**

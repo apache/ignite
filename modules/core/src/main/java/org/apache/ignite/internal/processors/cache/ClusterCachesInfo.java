@@ -969,10 +969,8 @@ public class ClusterCachesInfo {
         if (ccfg.isEncryptionEnabled()) {
             IgniteCheckedException error = null;
 
-            if (encMgr.isMasterKeyChangeInProgress()) {
-                error = new IgniteCheckedException("Cache start during the master key change " +
-                    "process is not supported.");
-            }
+            if (encMgr.isMasterKeyChangeInProgress())
+                error = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
             else if (encMgr.masterKeyDigest() != null &&
                 !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
                 error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
@@ -980,7 +978,7 @@ public class ClusterCachesInfo {
             }
 
             if (error != null) {
-                U.warn(log, "Ignore cache start request during the master key change process.");
+                U.warn(log, "Ignore cache start request during the master key change process.", error);
 
                 if (persistedCfgs)
                     res.errs.add(error);
