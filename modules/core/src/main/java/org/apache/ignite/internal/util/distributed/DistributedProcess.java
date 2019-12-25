@@ -146,7 +146,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             Process p = processes.get(msg.processId());
 
             if (p == null) {
-                log.warning("Received finish distributed process message for an uninitialized process " +
+                log.warning("Received the finish distributed process message for an uninitialized process " +
                     "(possible cause is message's double delivering) [msg=" +
                     msg + ']');
 

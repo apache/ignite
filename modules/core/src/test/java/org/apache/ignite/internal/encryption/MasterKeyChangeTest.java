@@ -315,7 +315,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         dbMgr.checkpointReadLock();
 
-        // 6. Simulate cache key write error to MetaStore for one node to check recovery from WAL.
+        // 6. Simulate group key write error to MetaStore for one node to check recovery from WAL.
         metaStorage.write(ENCRYPTION_KEY_PREFIX + desc.groupId(), new byte[0]);
 
         dbMgr.checkpointReadUnlock();
@@ -404,7 +404,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             if (stopCrd)
                 stopGrid(GRID_0, true);
             else
-                stopGrid(GRID_1);
+                stopGrid(GRID_1, true);
         });
 
         fut.get();

@@ -385,8 +385,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (isMasterKeyChangeInProgress()) {
             // Prevents new nodes join to avoid inconsistency of the master key.
             return new IgniteNodeValidationResult(ctx.localNodeId(),
-                "Master key change in progress! Node join is rejected. [node=" + node.id() + "]",
-                "Master key change in progress! Node join is rejected.");
+                "Master key change is in progress! Node join is rejected. [node=" + node.id() + "]",
+                "Master key change is in progress! Node join is rejected.");
         }
 
         if (node.isClient() || node.isDaemon())
@@ -1167,7 +1167,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /**
      * Digest of last changed master key or {@code null} if master key was not changed.
-     *
+     * <p>
      * Used to verify the digest on a client node in case of cache start after master key change.
      *
      * @return Digest of last changed master key or {@code null} if master key was not changed.
@@ -1272,9 +1272,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         });
     }
 
-    /**
-     * Master key change request.
-     */
+    /** Master key change request. */
     private static class MasterKeyChangeRequest implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -1430,9 +1428,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
     }
 
-    /**
-     * Master key change future.
-     */
+    /** Master key change future. */
     private static class MasterKeyChangeFuture extends GridFutureAdapter<Void> {
         /** Request ID. */
         private final UUID id;

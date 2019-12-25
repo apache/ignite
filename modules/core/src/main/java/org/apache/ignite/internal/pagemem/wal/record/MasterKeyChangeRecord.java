@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 
@@ -59,7 +60,7 @@ public class MasterKeyChangeRecord extends WALRecord {
     public int dataSize() {
         int size = /*Master key name length*/4 + masterKeyName.length() + /*Group keys map size*/4;
 
-        for (Map.Entry<Integer, byte[]> entry : grpKeys.entrySet())
+        for (Entry<Integer, byte[]> entry : grpKeys.entrySet())
             size += /*grpId*/4 + /*grp key size*/4 + entry.getValue().length;
 
         return size;

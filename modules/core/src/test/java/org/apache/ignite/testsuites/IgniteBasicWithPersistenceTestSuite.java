@@ -30,6 +30,7 @@ import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.encryption.EncryptionMXBeanTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest;
 import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
@@ -73,7 +74,9 @@ import org.junit.runners.Suite;
     SingleNodePersistenceSslTest.class,
 
     MasterKeyChangeTest.class,
-    MasterKeyChangeConsistencyCheckTest.class
+    MasterKeyChangeConsistencyCheckTest.class,
+
+    EncryptionMXBeanTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

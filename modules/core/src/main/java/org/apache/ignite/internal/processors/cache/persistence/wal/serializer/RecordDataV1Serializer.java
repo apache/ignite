@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -1757,7 +1758,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(grpKeys.size());
 
-                for (Map.Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
+                for (Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
                     buf.putInt(entry.getKey());
 
                     buf.putInt(entry.getValue().length);
@@ -1839,7 +1840,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private static void putCacheStates(ByteBuffer buf, Map<Integer, CacheState> states) {
         buf.putShort((short)states.size());
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             buf.putInt(entry.getKey());
 
             CacheState state = entry.getValue();
@@ -2120,7 +2121,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         // Need 4 bytes for the number of caches.
         int size = 2;
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             // Cache ID.
             size += 4;
 
