@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridPlainClosure;
 import org.apache.ignite.internal.util.typedef.F;
@@ -564,36 +565,56 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> changeMasterKey(String masterKeyName) {
-        if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+        if (ctx.clientNode()) {
+            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
+                "perform this operation."));
+        }
 
-        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE))
-            throw new IllegalStateException("Not all nodes in the cluster support the master key change process.");
+        if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), MASTER_KEY_CHANGE)) {
+            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
+                "the master key change process."));
+        }
 
         // WAL is unavailable for write on the inactive cluster. Master key change will not be logged and group keys
         // can be partially re-encrypted in case of node stop without the possibility of recovery.
-        if (!ctx.state().clusterState().active())
-            throw new IgniteException("Master key change was rejected. The cluster is inactive.");
+        if (!ctx.state().clusterState().active()) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                "The cluster is inactive."));
+        }
 
-        if (masterKeyName.equals(getMasterKeyName()))
-            throw new IgniteException("Master key change was rejected. New name equal to the current.");
+        if (masterKeyName.equals(getMasterKeyName())) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                "New name equal to the current."));
+        }
 
-        byte[] digest = masterKeyDigest(masterKeyName);
+        byte[] digest;
+
+        try {
+            digest = masterKeyDigest(masterKeyName);
+        } catch (Exception e) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                "Unable to get the master key digest."));
+        }
 
         MasterKeyChangeRequest request = new MasterKeyChangeRequest(UUID.randomUUID(), encryptKeyName(masterKeyName),
             digest);
 
         synchronized (opsMux) {
             if (disconnected) {
-                throw new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
-                    "Master key change was rejected. Client node disconnected.");
+                return new IgniteFinishedFutureImpl<>(new IgniteClientDisconnectedException(
+                    ctx.cluster().clientReconnectFuture(),
+                    "Master key change was rejected. Client node disconnected."));
             }
 
-            if (stopped)
-                throw new IgniteException("Master key change was rejected. Node is stopping.");
+            if (stopped) {
+                return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                    "Node is stopping."));
+            }
 
-            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone())
-                throw new IgniteException("Master key change was rejected. The previous change was not completed.");
+            if (masterKeyChangeFut != null && !masterKeyChangeFut.isDone()) {
+                return new IgniteFinishedFutureImpl<>(new IgniteException("Master key change was rejected. " +
+                    "The previous change was not completed."));
+            }
 
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
 

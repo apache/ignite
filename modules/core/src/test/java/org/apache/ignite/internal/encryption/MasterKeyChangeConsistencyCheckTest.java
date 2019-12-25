@@ -35,9 +35,7 @@ import org.junit.Test;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
-/**
- * Tests master key change process with master key consistency problems.
- */
+/** Tests master key change process with master key consistency issues. */
 @SuppressWarnings("ThrowableNotThrown")
 public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest {
     /** */
@@ -105,6 +103,8 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
         grids.get2().context().discovery().setCustomEventListener(FullMessage.class,
             (topVer, snd, msg) -> simulateSetMasterKeyError.set(true));
 
+        // Expected successful completing the future in case of successful completition of prepare phase and fail
+        // of the perform phase.
         grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         assertNotNull(failure.get());
@@ -131,8 +131,13 @@ public class MasterKeyChangeConsistencyCheckTest extends AbstractEncryptionTest 
     private class TestKeystoreEncryptionSpi extends KeystoreEncryptionSpi {
         /** {@inheritDoc} */
         @Override public byte[] masterKeyDigest() {
-            if (simulateOtherDigest.get() && ignite.name().equals(GRID_1))
-                return new byte[0];
+            if (simulateOtherDigest.get() && ignite.name().equals(GRID_1)) {
+                byte[] digest = super.masterKeyDigest();
+
+                digest[0] += 1;
+
+                return digest;
+            }
 
             return super.masterKeyDigest();
         }

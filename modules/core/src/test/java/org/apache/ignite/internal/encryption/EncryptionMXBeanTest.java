@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -28,19 +29,21 @@ import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.junit.Test;
 
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests {@link EncryptionMXBean}.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     /** @throws Exception If failed. */
     @Test
-    public void testMasterKeyChangeMBeans() throws Exception {
+    public void testMasterKeyChange() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
         ignite.cluster().active(true);
 
-        EncryptionMXBean mBean = getMBean();
+        EncryptionMXBean mBean = getMBean(GRID_0);
 
         assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
         assertEquals(DEFAULT_MASTER_KEY_NAME, mBean.getMasterKeyName());
@@ -49,6 +52,60 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
         assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
         assertEquals(MASTER_KEY_NAME_2, mBean.getMasterKeyName());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeFromClient() throws Exception {
+        IgniteEx ignite = startGrid(GRID_0);
+
+        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+
+        ignite.cluster().active(true);
+
+        EncryptionMXBean mBean = getMBean(client.name());
+
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+
+        assertThrowsWithCause(mBean::getMasterKeyName, UnsupportedOperationException.class);
+
+        assertThrowsWithCause(() -> mBean.changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
+
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeTheSameKeyName() throws Exception {
+        IgniteEx ignite = startGrid(GRID_0);
+
+        ignite.cluster().active(true);
+
+        EncryptionMXBean mBean = getMBean(GRID_0);
+
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+
+        mBean.changeMasterKey(MASTER_KEY_NAME_2);
+
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
+
+        assertThrowsWithCause(() -> mBean.changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
+
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeOnInactiveCluster() throws Exception {
+        IgniteEx ignite = startGrid(GRID_0);
+
+        EncryptionMXBean mBean = getMBean(GRID_0);
+
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+
+        assertThrowsWithCause(() -> mBean.changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
+
+        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
     }
 
     /** {@inheritDoc} */
@@ -63,9 +120,12 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
         cleanPersistenceDir();
     }
 
-    /** @return Encryption MBean. */
-    private EncryptionMXBean getMBean() throws Exception {
-        ObjectName name = U.makeMBeanName(GRID_0, "Encryption", EncryptionMXBeanImpl.class.getSimpleName());
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @return Encryption MBean.
+     */
+    private EncryptionMXBean getMBean(String igniteInstanceName) throws Exception {
+        ObjectName name = U.makeMBeanName(igniteInstanceName, "Encryption", EncryptionMXBeanImpl.class.getSimpleName());
 
         MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
 
