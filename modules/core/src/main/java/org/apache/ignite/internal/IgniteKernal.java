@@ -1425,6 +1425,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 /** Last completed task count. */
                 private long lastCompletedCntSys;
 
+                /** Last completed task count. */
+                private long lastCompletedCntQry;
+
                 @Override public void run() {
                     if (execSvc instanceof ThreadPoolExecutor) {
                         ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
@@ -1436,6 +1439,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
 
                         lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
+                    }
+
+                    if (qryExecSvc instanceof ThreadPoolExecutor) {
+                        ThreadPoolExecutor exec = (ThreadPoolExecutor)qryExecSvc;
+
+                        lastCompletedCntQry = checkPoolStarvation(exec, lastCompletedCntQry, "query");
                     }
 
                     if (stripedExecSvc != null)

@@ -252,12 +252,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SLOW_TX_WARN_TIMEOUT = "IGNITE_SLOW_TX_WARN_TIMEOUT";
 
     /**
-     * Timeout after which all uncompleted transactions originated by left node will be
-     * salvaged (i.e. invalidated and committed).
-     */
-    public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
-
-    /**
      * Specifies maximum number of iterations for deadlock detection procedure.
      * If value of this property is less then or equal to zero then deadlock detection will be disabled.
      */
