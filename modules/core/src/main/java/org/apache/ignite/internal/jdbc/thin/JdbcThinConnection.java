@@ -137,8 +137,8 @@ public class JdbcThinConnection implements Connection {
     /** No retries. */
     public static final int NO_RETRIES = 0;
 
-    /** Affinity awareness enabled flag. */
-    private final boolean affinityAwareness;
+    /** Partition awareness enabled flag. */
+    private final boolean partitionAwareness;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -235,9 +235,9 @@ public class JdbcThinConnection implements Connection {
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
-        affinityAwareness = connProps.isPartitionAwareness();
+        partitionAwareness = connProps.isPartitionAwareness();
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             baseEndpointVer = connectInBestEffortAffinityMode(null);
 
             connectionsHndScheduledFut = maintenanceExecutor.scheduleWithFixedDelay(new ConnectionHandlerTask(),
@@ -261,7 +261,7 @@ public class JdbcThinConnection implements Connection {
 
         assert ios.isEmpty();
 
-        if (affinityAwareness)
+        if (partitionAwareness)
             connectInBestEffortAffinityMode(baseEndpointVer);
         else
             connectInCommonMode();
@@ -499,7 +499,7 @@ public class JdbcThinConnection implements Connection {
 
         SQLException err = null;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.close();
 
@@ -830,7 +830,7 @@ public class JdbcThinConnection implements Connection {
 
         netTimeout = ms;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.timeout(ms);
         }
@@ -859,7 +859,7 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             return ios.values().stream().map(JdbcThinTcpIo::igniteVersion).min(IgniteProductVersion::compareTo).
                 orElse(baseEndpointVer);
         }
@@ -1004,7 +1004,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If Failed to calculate derived partitions.
      */
     @Nullable private List<UUID> calculateNodeIds(JdbcRequest req) throws IOException, SQLException {
-        if (!affinityAwareness || !(req instanceof JdbcQueryExecuteRequest))
+        if (!partitionAwareness || !(req instanceof JdbcQueryExecuteRequest))
             return null;
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
@@ -1085,14 +1085,14 @@ public class JdbcThinConnection implements Connection {
             return null;
         }
 
-        List<JdbcThinAffinityAwarenessMappingGroup> mappings =
+        List<JdbcThinPartitionAwarenessMappingGroup> mappings =
             ((JdbcCachePartitionsResult)res.response()).getMappings();
 
         // Despite the fact that, at this moment, we request partition distribution only for one cache,
         // we might retrieve multiple caches but exactly with same distribution.
         assert mappings.size() == 1;
 
-        JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.get(0);
+        JdbcThinPartitionAwarenessMappingGroup mappingGrp = mappings.get(0);
 
         cacheDistr = mappingGrp.revertMappings(partCnt);
 
@@ -1205,7 +1205,7 @@ public class JdbcThinConnection implements Connection {
     private void onDisconnect(JdbcThinTcpIo cliIo) {
         assert connCnt.get() > 0;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             cliIo.close();
 
             ios.remove(cliIo.nodeId());
@@ -1457,7 +1457,7 @@ public class JdbcThinConnection implements Connection {
      * @return True if query cancellation supported, false otherwise.
      */
     boolean isQueryCancellationSupported() {
-        return affinityAwareness || singleIo.isQueryCancellationSupported();
+        return partitionAwareness || singleIo.isQueryCancellationSupported();
     }
 
     /**
@@ -1465,7 +1465,7 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite endpoint to use for request/response transferring.
      */
     private JdbcThinTcpIo cliIo(List<UUID> nodeIds) {
-        if (!affinityAwareness)
+        if (!partitionAwareness)
             return singleIo;
 
         if (txIo != null)
@@ -1664,7 +1664,7 @@ public class JdbcThinConnection implements Connection {
                             JdbcThinTcpIo cliIo =
                                 new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
-                            if (!cliIo.isAffinityAwarenessSupported()) {
+                            if (!cliIo.isPartitionAwarenessSupported()) {
                                 cliIo.close();
 
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
@@ -1727,7 +1727,7 @@ public class JdbcThinConnection implements Connection {
      * @param res Jdbc Response.
      */
     private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             AffinityTopologyVersion resAffVer = res.affinityVersion();
 
             if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0)) {
@@ -1770,7 +1770,7 @@ public class JdbcThinConnection implements Connection {
      * @return retries count.
      */
     private int calculateRetryAttemptsCount(JdbcThinTcpIo stickyIo, JdbcRequest req) {
-        if (!affinityAwareness)
+        if (!partitionAwareness)
             return NO_RETRIES;
 
         if (stickyIo != null)
@@ -1911,7 +1911,7 @@ public class JdbcThinConnection implements Connection {
                                     JdbcThinTcpIo cliIo =
                                         new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
-                                    if (!cliIo.isAffinityAwarenessSupported()) {
+                                    if (!cliIo.isPartitionAwarenessSupported()) {
                                         processDelay(sockAddr);
 
                                         LOG.log(Level.WARNING, "Failed to connect to Ignite node [url=" +

@@ -63,8 +63,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ArrayList<ClientCacheAffinityAwarenessGroup> groups = new ArrayList<>(cacheIds.length);
-        HashMap<Integer, ClientCacheAffinityAwarenessGroup> cacheGroupIds = new HashMap<>(cacheIds.length);
+        ArrayList<ClientCachePartitionAwarenessGroup> groups = new ArrayList<>(cacheIds.length);
+        HashMap<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds = new HashMap<>(cacheIds.length);
 
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
@@ -77,7 +77,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (cacheDesc == null)
                 continue;
 
-            ClientCacheAffinityAwarenessGroup grp = processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
 
             // Cache already processed.
             if (grp == null)
@@ -111,17 +111,17 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      * @return Null if cache was processed and new client cache affinity awareness group if it does not belong to any
      * existent.
      */
-    private static ClientCacheAffinityAwarenessGroup processCache(
+    private static ClientCachePartitionAwarenessGroup processCache(
         ClientConnectionContext ctx,
-        List<ClientCacheAffinityAwarenessGroup> groups,
-        Map<Integer, ClientCacheAffinityAwarenessGroup> cacheGroupIds,
+        List<ClientCachePartitionAwarenessGroup> groups,
+        Map<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds,
         ClientAffinityTopologyVersion affinityVer,
         DynamicCacheDescriptor cacheDesc)
     {
         int cacheGroupId = cacheDesc.groupId();
         int cacheId = cacheDesc.cacheId();
 
-        ClientCacheAffinityAwarenessGroup group = cacheGroupIds.get(cacheGroupId);
+        ClientCachePartitionAwarenessGroup group = cacheGroupIds.get(cacheGroupId);
         if (group != null) {
             // Cache group is found. It means that cache belongs to one of cache groups with known mapping.
             // Just adding our cache to this group here.
@@ -150,7 +150,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
-        return new ClientCacheAffinityAwarenessGroup(proc, mapping, cacheDesc);
+        return new ClientCachePartitionAwarenessGroup(proc, mapping, cacheDesc);
     }
 
     /**
@@ -159,10 +159,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      * @param mapping Partition mapping.
      * @return Compatible cache affinity awareness group if present, or null.
      */
-    @Nullable private static ClientCacheAffinityAwarenessGroup getCompatibleGroup(
-        List<ClientCacheAffinityAwarenessGroup> groups,
+    @Nullable private static ClientCachePartitionAwarenessGroup getCompatibleGroup(
+        List<ClientCachePartitionAwarenessGroup> groups,
         ClientCachePartitionMapping mapping) {
-        for (ClientCacheAffinityAwarenessGroup group : groups) {
+        for (ClientCachePartitionAwarenessGroup group : groups) {
             if (group.isCompatible(mapping))
                 return group;
         }

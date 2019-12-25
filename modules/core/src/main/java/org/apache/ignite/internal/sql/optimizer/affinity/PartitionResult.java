@@ -163,7 +163,7 @@ public class PartitionResult {
      *   2. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
     public boolean isClientPartitionAwarenessApplicable() {
-        return aff != null && aff.isClientAffinityAwarenessApplicable() &&
+        return aff != null && aff.isClientPartitionAwarenessApplicable() &&
             !(tree instanceof PartitionNoneNode) && !(tree instanceof PartitionAllNode);
     }
 
