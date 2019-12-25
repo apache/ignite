@@ -418,7 +418,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final String RECEIVED_MESSAGES_METRIC_DESC = "Total number of messages received by current node";
 
     /** */
+    public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
+
+    /** */
     public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type sent by current node";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
 
     /** */
     public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type received by current node";
