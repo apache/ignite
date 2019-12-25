@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// <summary>
     /// Tests affinity awareness functionality.
     /// </summary>
-    public class AffinityAwarenessTest : ClientTestBase
+    public class PartitionAwarenessTest : ClientTestBase
     {
         /** */
         private const string NodeIndexAttr = "test-node-idx";
@@ -47,9 +47,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private ICacheClient<int, int> _cache;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AffinityAwarenessTest"/> class.
+        /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
         /// </summary>
-        public AffinityAwarenessTest() : base(3)
+        public PartitionAwarenessTest() : base(3)
         {
             // No-op.
         }
@@ -308,10 +308,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CacheGet_AffinityAwarenessDisabled_RequestIsRoutedToDefaultNode()
+        public void CacheGet_PartitionAwarenessDisabled_RequestIsRoutedToDefaultNode()
         {
             var cfg = GetClientConfiguration();
-            cfg.EnableAffinityAwareness = false;
+            cfg.EnablePartitionAwareness = false;
 
             using (var client = Ignition.StartClient(cfg))
             {
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetClientConfiguration();
 
-            cfg.EnableAffinityAwareness = true;
+            cfg.EnablePartitionAwareness = true;
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
             cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
 

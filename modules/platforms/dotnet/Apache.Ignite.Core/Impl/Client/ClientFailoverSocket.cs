@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
-            if (!_config.EnableAffinityAwareness)
+            if (!_config.EnablePartitionAwareness)
             {
                 return null;
             }
@@ -322,10 +322,10 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             if (_socket != null &&
-                _config.EnableAffinityAwareness &&
+                _config.EnablePartitionAwareness &&
                 _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
             {
-                _config.EnableAffinityAwareness = false;
+                _config.EnablePartitionAwareness = false;
 
                 _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
                              "is lower than required {1}",
@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             _affinityTopologyVersion = affinityTopologyVersion;
 
-            if (_config.EnableAffinityAwareness)
+            if (_config.EnablePartitionAwareness)
             {
                 InitSocketMap();
             }
@@ -425,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             for (int i = 0; i < size; i++)
             {
-                var grp = new ClientCacheAffinityAwarenessGroup(s);
+                var grp = new ClientCachePartitionAwarenessGroup(s);
 
                 if (grp.PartitionMap == null)
                 {

@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client
             IIgniteClient client = null;
             var clientConfiguration = new IgniteClientConfiguration(JavaServer.GetClientConfiguration())
             {
-                EnableAffinityAwareness = true,
+                EnablePartitionAwareness = true,
                 Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
             };
             
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                     cache.Put(1, 42);
                     Assert.AreEqual(42, cache.Get(1));
-                    Assert.IsTrue(client.GetConfiguration().EnableAffinityAwareness);
+                    Assert.IsTrue(client.GetConfiguration().EnablePartitionAwareness);
                 }
 
                 Assert.Catch(() => client.GetCacheNames());
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                     cache.Put(1, 42);
                     Assert.AreEqual(42, cache.Get(1));
-                    Assert.IsFalse(client.GetConfiguration().EnableAffinityAwareness);
+                    Assert.IsFalse(client.GetConfiguration().EnablePartitionAwareness);
 
                     var log = ((ListLogger) client.GetConfiguration().Logger).Entries.Last();
                     Assert.AreEqual("Partition awareness has been disabled: " +

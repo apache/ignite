@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Client
             Password = cfg.Password;
             Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
-            EnableAffinityAwareness = cfg.EnableAffinityAwareness;
+            EnablePartitionAwareness = cfg.EnablePartitionAwareness;
             Logger = cfg.Logger;
             ProtocolVersion = cfg.ProtocolVersion;
         }
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Client
         /// the primary node for the given cache key.
         /// To do so, connection is established to every known server node at all times.
         /// </summary>
-        public bool EnableAffinityAwareness { get; set; }
+        public bool EnablePartitionAwareness { get; set; }
         
         /// <summary>
         /// Gets or sets the logger.
