@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -307,8 +306,7 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId,
-                (time -> lastCancelledTime.accumulateAndGet(time, Math::max)));
+            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, lastCancelledTime);
 
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -1243,8 +1241,8 @@ public class GridDhtPartitionDemander {
         /** Rebalancing end time. */
         private final AtomicLong endTime = new AtomicLong(-1);
 
-        /** Function to update last cancelled time. */
-        private final Consumer<Long> lastCancelledTimeUpdater;
+        /** Rebalancing last cancelled time. */
+        private final AtomicLong lastCancelledTime;
 
         /**
          * @param grp Cache group.
@@ -1258,13 +1256,13 @@ public class GridDhtPartitionDemander {
             GridDhtPreloaderAssignments assignments,
             IgniteLogger log,
             long rebalanceId,
-            Consumer<Long> lastCancelledTimeUpdater) {
+            AtomicLong lastCancelledTime) {
             assert assignments != null;
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
 
-            this.lastCancelledTimeUpdater = lastCancelledTimeUpdater;
+            this.lastCancelledTime = lastCancelledTime;
 
             assignments.forEach((k, v) -> {
                 assert v.partitions() != null :
@@ -1307,7 +1305,7 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = -1;
             this.routines = 0;
             this.cancelLock = new ReentrantReadWriteLock();
-            this.lastCancelledTimeUpdater = null;
+            this.lastCancelledTime = null;
         }
 
         /**
@@ -1376,8 +1374,8 @@ public class GridDhtPartitionDemander {
 
             boolean byThisCall = super.onDone(res, err, cancel);
 
-            if (byThisCall && (isCancelled() || isFailed()))
-                lastCancelledTimeUpdater.accept(time);
+            if (byThisCall && (isCancelled() || isFailed()) && lastCancelledTime != null)
+                lastCancelledTime.accumulateAndGet(time, Math::max);
 
             return byThisCall;
         }
