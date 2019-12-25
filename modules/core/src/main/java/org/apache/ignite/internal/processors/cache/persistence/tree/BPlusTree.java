@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.util.CallTracker;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -1008,7 +1009,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected final void checkDestroyed() {
         if (destroyed.get())
-            throw new IllegalStateException(CONC_DESTROY_MSG + getName());
+            throw new IllegalStateException(CONC_DESTROY_MSG + getName() + " at\n" + destroyTrace);
     }
 
     /** {@inheritDoc} */
@@ -2484,11 +2485,22 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return pagesCnt;
     }
 
+    /** */
+    private static final CallTracker DESTROY_TRACKER = CallTracker.named("BPlusTree-destroy-tracker");
+
+    /** */
+    private volatile String destroyTrace;
+
     /**
      * @return {@code True} if state was changed.
      */
     private boolean markDestroyed() {
-        return destroyed.compareAndSet(false, true);
+        boolean res = destroyed.compareAndSet(false, true);
+
+        if (res)
+            destroyTrace = DESTROY_TRACKER.track();
+
+        return res;
     }
 
     /**

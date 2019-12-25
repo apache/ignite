@@ -188,6 +188,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
+import org.apache.ignite.internal.util.CallTracker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -2716,6 +2717,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         ">>> not exited grid properly." + NL +
                         NL);
                 }
+
+            if (log.isInfoEnabled())
+                log.info(">>> Tracked calls:" + NL + CallTracker.toStringAll());
 
             try {
                 U.onGridStop();
