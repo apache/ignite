@@ -206,7 +206,7 @@ public final class IgniteSystemProperties {
     /** */
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
-    /** Lightweight PME. */
+    /** Disable Lightweight PME. */
     public static final String IGNITE_PME_FREE_DISABLED = "IGNITE_PME_FREE_DISABLED";
 
     /**
