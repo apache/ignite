@@ -255,7 +255,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
@@ -429,7 +429,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
