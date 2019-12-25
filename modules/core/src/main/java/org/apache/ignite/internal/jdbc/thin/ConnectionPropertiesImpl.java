@@ -546,12 +546,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAffinityAwareness() {
+    @Override public boolean isPartitionAwareness() {
         return affinityAwareness.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwareness(boolean affinityAwareness) {
+    @Override public void setPartitionAwareness(boolean affinityAwareness) {
         this.affinityAwareness.setValue(affinityAwareness);
     }
 
@@ -566,26 +566,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public int getAffinityAwarenessSqlCacheSize() {
+    @Override public int getPartitionAwarenessSqlCacheSize() {
         return affinityAwarenessSQLCacheSize.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSQLCacheSize)
+    @Override public void setPartitionAwarenessSqlCacheSize(int affinityAwarenessSQLCacheSize)
         throws SQLException {
         this.affinityAwarenessSQLCacheSize.setValue(affinityAwarenessSQLCacheSize);
     }
 
     /** {@inheritDoc} */
-    @Override public int getAffinityAwarenessPartitionDistributionsCacheSize() {
+    @Override public int getPartitionAwarenessPartitionDistributionsCacheSize() {
         return affinityAwarenessPartDistributionsCacheSize.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwarenessPartitionDistributionsCacheSize(
-        int affinityAwarenessPartDistributionsCacheSize) throws SQLException {
+    @Override public void setPartitionAwarenessPartitionDistributionsCacheSize(
+        int partitionAwarenessPartDistributionsCacheSize) throws SQLException {
         this.affinityAwarenessPartDistributionsCacheSize.setValue(
-            affinityAwarenessPartDistributionsCacheSize);
+                partitionAwarenessPartDistributionsCacheSize);
     }
 
     /** {@inheritDoc} */

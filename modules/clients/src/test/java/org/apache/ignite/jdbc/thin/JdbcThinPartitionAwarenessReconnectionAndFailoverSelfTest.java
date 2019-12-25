@@ -54,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Jdbc thin affinity awareness reconnection and query failover test.
  */
-public class JdbcThinAffinityAwarenessReconnectionAndFailoverSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends JdbcThinAbstractSelfTest {
     /** Rows count. */
     private static final int ROWS_COUNT = 100;
 

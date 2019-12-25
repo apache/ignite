@@ -56,10 +56,10 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Jdbc thin affinity awareness test.
+ * Jdbc thin partition awareness test.
  */
 @SuppressWarnings({"ThrowableNotThrown"})
-public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
 
@@ -411,7 +411,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testChangeTopologyDetectionWithinAffinityAwarenessUnrelatedQuery() throws Exception {
+    public void testChangeTopologyDetectionWithinPartitionAwarenessUnrelatedQuery() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
         ResultSet rs = stmt.executeQuery(sqlQry);
@@ -428,12 +428,12 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that client side affinity awareness optimizations are skipped if affinityAwareness is switched off.
+     * Check that client side partition awareness optimizations are skipped if affinityAwareness is switched off.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
+    public void testPartitionAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
         try (Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
              Statement stmt = conn.createStatement()) {
@@ -453,12 +453,12 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that client side affinity awareness optimizations are skipped by default.
+     * Check that client side partition awareness optimizations are skipped by default.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityAwarenessIsSkippedByDefault() throws Exception {
+    public void testPartitionAwarenessIsSkippedByDefault() throws Exception {
         try (Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802");
              Statement stmt = conn.createStatement()) {
@@ -562,7 +562,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityAwarenessLimitedCacheSize() throws Exception {
+    public void testPartitionAwarenessLimitedCacheSize() throws Exception {
         try (Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" +
                 "&affinityAwarenessSQLCacheSize=1&affinityAwarenessPartitionDistributionsCacheSize=1");

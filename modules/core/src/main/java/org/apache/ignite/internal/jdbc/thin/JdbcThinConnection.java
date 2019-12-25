@@ -235,7 +235,7 @@ public class JdbcThinConnection implements Connection {
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
-        affinityAwareness = connProps.isAffinityAwareness();
+        affinityAwareness = connProps.isPartitionAwareness();
 
         if (affinityAwareness) {
             baseEndpointVer = connectInBestEffortAffinityMode(null);
@@ -1075,8 +1075,8 @@ public class JdbcThinConnection implements Connection {
         if (affinityCache.version().compareTo(resAffinityVer) < 0) {
             affinityCache = new AffinityCache(
                 resAffinityVer,
-                connProps.getAffinityAwarenessPartitionDistributionsCacheSize(),
-                connProps.getAffinityAwarenessSqlCacheSize());
+                connProps.getPartitionAwarenessPartitionDistributionsCacheSize(),
+                connProps.getPartitionAwarenessSqlCacheSize());
         }
         else if (affinityCache.version().compareTo(resAffinityVer) > 0) {
             // Jdbc thin affinity cache is binded to the newer affinity topology version, so we should ignore retrieved
@@ -1733,8 +1733,8 @@ public class JdbcThinConnection implements Connection {
             if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0)) {
                 affinityCache = new AffinityCache(
                     resAffVer,
-                    connProps.getAffinityAwarenessPartitionDistributionsCacheSize(),
-                    connProps.getAffinityAwarenessSqlCacheSize());
+                    connProps.getPartitionAwarenessPartitionDistributionsCacheSize(),
+                    connProps.getPartitionAwarenessSqlCacheSize());
             }
 
             // Partition result was requested.
