@@ -441,10 +441,10 @@ public interface ConnectionProperties {
     /**
      * Sets SQL cache size that is used within affinity awareness optimizations.
      *
-     * @param affinityAwarenessSqlCacheSize SQL cache size.
+     * @param partitionAwarenessSqlCacheSize SQL cache size.
      * @throws SQLException On error.
      */
-    public void setPartitionAwarenessSqlCacheSize(int affinityAwarenessSqlCacheSize) throws SQLException;
+    public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize) throws SQLException;
 
     /**
      * @return Partition distributions cache size that is used within affinity awareness optimizations.

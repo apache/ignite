@@ -61,7 +61,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 @SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -428,14 +428,14 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that client side partition awareness optimizations are skipped if affinityAwareness is switched off.
+     * Check that client side partition awareness optimizations are skipped if partitionAwareness is switched off.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testPartitionAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=false");
              Statement stmt = conn.createStatement()) {
 
             final String cacheName = "yac";
@@ -556,7 +556,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     }
 
     /**
-     * Check that affinityAwarenessSQLCacheSize and affinityAwarenessPartitionDistributionsCacheSize
+     * Check that partitionAwarenessSQLCacheSize and partitionAwarenessPartitionDistributionsCacheSize
      * actually limit corresponding caches within affinity awareness cache.
      *
      * @throws Exception If failed.
@@ -564,8 +564,8 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     @Test
     public void testPartitionAwarenessLimitedCacheSize() throws Exception {
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" +
-                "&affinityAwarenessSQLCacheSize=1&affinityAwarenessPartitionDistributionsCacheSize=1");
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" +
+                "&partitionAwarenessSQLCacheSize=1&partitionAwarenessPartitionDistributionsCacheSize=1");
              Statement stmt = conn.createStatement()) {
             final String cacheName1 = UUID.randomUUID().toString().substring(0, 6);
 

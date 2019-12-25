@@ -47,6 +47,6 @@ public class IgniteJdbcThinDriverPartitionAwarenessTestSuite {
      */
     @BeforeClass
     public static void setupPartitionAwareness() {
-        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "affinityAwareness", true);
+        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "partitionAwareness", true);
     }
 }

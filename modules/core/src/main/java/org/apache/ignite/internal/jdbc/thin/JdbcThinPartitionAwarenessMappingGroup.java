@@ -142,11 +142,11 @@ public class JdbcThinPartitionAwarenessMappingGroup implements JdbcRawBinaryliza
     }
 
     /**
-     * Reads <code>JdbcThinAffinityAwarenessMappingGroup</code> from provided reader.
+     * Reads <code>JdbcThinPartitionAwarenessMappingGroup</code> from provided reader.
      *
      * @param reader Binary object reader.
      * @param ver Protocol version.
-     * @return Deserialized instance of <code>JdbcThinAffinityAwarenessMappingGroup</code>.
+     * @return Deserialized instance of <code>JdbcThinPartitionAwarenessMappingGroup</code>.
      * @throws BinaryObjectException In case of error.
      */
     public static JdbcThinPartitionAwarenessMappingGroup readGroup(BinaryReaderExImpl reader,

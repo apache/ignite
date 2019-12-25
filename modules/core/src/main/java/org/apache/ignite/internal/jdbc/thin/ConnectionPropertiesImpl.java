@@ -551,8 +551,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void setPartitionAwareness(boolean affinityAwareness) {
-        this.partitionAwareness.setValue(affinityAwareness);
+    @Override public void setPartitionAwareness(boolean partitionAwareness) {
+        this.partitionAwareness.setValue(partitionAwareness);
     }
 
     /** {@inheritDoc} */
@@ -571,9 +571,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void setPartitionAwarenessSqlCacheSize(int affinityAwarenessSQLCacheSize)
+    @Override public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize)
         throws SQLException {
-        this.partitionAwarenessSQLCacheSize.setValue(affinityAwarenessSQLCacheSize);
+        this.partitionAwarenessSQLCacheSize.setValue(partitionAwarenessSqlCacheSize);
     }
 
     /** {@inheritDoc} */

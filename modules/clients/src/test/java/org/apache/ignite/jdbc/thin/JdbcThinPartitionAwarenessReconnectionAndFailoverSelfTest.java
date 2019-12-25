@@ -59,10 +59,10 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     private static final int ROWS_COUNT = 100;
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true";
 
     /** URL with port. */
-    public static final String URL_WITH_ONE_PORT = "jdbc:ignite:thin://127.0.0.1:10800?affinityAwareness=true";
+    public static final String URL_WITH_ONE_PORT = "jdbc:ignite:thin://127.0.0.1:10800?partitionAwareness=true";
 
     /** Nodes count. */
     private static final int INITIAL_NODES_CNT = 3;
@@ -237,7 +237,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     @Test
     public void testReconnectionDelayIncreasing() throws Exception {
         try (Connection ignored = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10810?affinityAwareness=true")) {
+            "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10810?partitionAwareness=true")) {
             logHnd.records.clear();
 
             doSleep(9 * JdbcThinConnection.RECONNECTION_DELAY);
@@ -288,7 +288,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     @Test
     public void testReconnectionDelaySelectiveIncreasing() throws Exception {
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10801?affinityAwareness=true")) {
+            "jdbc:ignite:thin://127.0.0.1:10800..10801?partitionAwareness=true")) {
             // Stop one node and invalidate corresponding connection. Ensure that only one connection left.
             stopGrid(0);
 
@@ -408,7 +408,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     @Test
     public void testQueryFailover() throws Exception {
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true")) {
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true")) {
 
             final String cacheName = UUID.randomUUID().toString().substring(0, 6);
 
@@ -470,7 +470,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
     @Test
     public void testFailoverOnAllNodes() throws Exception {
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true")) {
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true")) {
             Map<UUID, JdbcThinTcpIo> ios = GridTestUtils.getFieldValue(conn, "ios");
 
             assertConnectionsCount(ios, 3);
@@ -516,7 +516,7 @@ public class JdbcThinPartitionAwarenessReconnectionAndFailoverSelfTest extends J
         startGrid(5);
 
         try (Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10805?affinityAwareness=true")) {
+            "jdbc:ignite:thin://127.0.0.1:10800..10805?partitionAwareness=true")) {
 
             Map<UUID, JdbcThinTcpIo> ios = GridTestUtils.getFieldValue(conn, "ios");
 

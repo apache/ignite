@@ -72,7 +72,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
     /** URL with partition awareness enabled. */
     public static final String URL_PARTITION_AWARENESS =
-        "jdbc:ignite:thin://127.0.0.1:10800..10801?affinityAwareness=true";
+        "jdbc:ignite:thin://127.0.0.1:10800..10801?partitionAwareness=true";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

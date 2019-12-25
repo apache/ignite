@@ -1040,12 +1040,12 @@ public class JdbcThinConnection implements Connection {
         if (parts.size() == 1)
             return Collections.singletonList(cacheDistr[parts.iterator().next()]);
         else {
-            List<UUID> affinityAwarenessNodeIds = new ArrayList<>();
+            List<UUID> partitionAwarenessNodeIds = new ArrayList<>();
 
             for (int part : parts)
-                affinityAwarenessNodeIds.add(cacheDistr[part]);
+                partitionAwarenessNodeIds.add(cacheDistr[part]);
 
-            return affinityAwarenessNodeIds;
+            return partitionAwarenessNodeIds;
         }
     }
 
