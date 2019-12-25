@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -2094,7 +2095,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (warnings.canAddMessage()) {
                             warnings.add(longRunningTransactionWarning(tx, curTime));
 
-                            if (ltrDumpLimiter.allowAction(tx))
+                            if (cctx.tm().txOwnerDumpRequestsAllowed()
+                                && !Optional.ofNullable(cctx.kernalContext().config().isClientMode()).orElse(false)
+                                && tx.local()
+                                && tx.state() == TransactionState.ACTIVE
+                                && ltrDumpLimiter.allowAction(tx))
                                 dumpLongRunningTransaction(tx);
                         }
                         else
@@ -2175,76 +2180,74 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param tx Transaction.
      */
     private void dumpLongRunningTransaction(IgniteInternalTx tx) {
-        if (cctx.tm().txOwnerDumpRequestsAllowed() && tx.local() && tx.state() == TransactionState.ACTIVE) {
-            Collection<UUID> masterNodeIds = tx.masterNodeIds();
+        Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
-            if (masterNodeIds.size() == 1) {
-                UUID nearNodeId = masterNodeIds.iterator().next();
+        if (masterNodeIds.size() == 1) {
+            UUID nearNodeId = masterNodeIds.iterator().next();
 
-                long txOwnerThreadId = tx.threadId();
+            long txOwnerThreadId = tx.threadId();
 
-                Ignite ignite = cctx.kernalContext().grid();
+            Ignite ignite = cctx.kernalContext().grid();
 
-                ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
+            ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-                String txRequestInfo = String.format(
-                    "[xidVer=%s, nodeId=%s]",
-                    tx.xidVersion().toString(),
-                    nearNodeId.toString()
-                );
+            String txRequestInfo = String.format(
+                "[xidVer=%s, nodeId=%s]",
+                tx.xidVersion().toString(),
+                nearNodeId.toString()
+            );
 
-                if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
-                    IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+            if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
+                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
 
-                    try {
-                        compute
-                            .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                            .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                                @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                    String traceDump = null;
+                try {
+                    compute
+                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
+                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
+                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                                String traceDump = null;
 
-                                    try {
-                                        traceDump = strIgniteFut.get();
-                                    }
-                                    catch (ClusterGroupEmptyException e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner because near node " +
-                                                    "is now out of topology. " + txRequestInfo
-                                        );
-                                    }
-                                    catch (Exception e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner near node " + txRequestInfo,
-                                            e
-                                        );
-                                    }
-
-                                    if (traceDump != null) {
-                                        U.warn(
-                                            diagnosticLog,
-                                            String.format(
-                                                "Dumping the near node thread that started transaction %s\n%s",
-                                                txRequestInfo,
-                                                traceDump
-                                            )
-                                        );
-                                    }
+                                try {
+                                    traceDump = strIgniteFut.get();
                                 }
-                            });
-                    }
-                    catch (Exception e) {
-                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
-                    }
+                                catch (ClusterGroupEmptyException e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner because near node " +
+                                                "is out of topology now. " + txRequestInfo
+                                    );
+                                }
+                                catch (Exception e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                        e
+                                    );
+                                }
+
+                                if (traceDump != null) {
+                                    U.warn(
+                                        diagnosticLog,
+                                        String.format(
+                                            "Dumping the near node thread that started transaction %s\n%s",
+                                            txRequestInfo,
+                                            traceDump
+                                        )
+                                    );
+                                }
+                            }
+                        });
                 }
-                else {
-                    U.warn(
-                        diagnosticLog,
-                        "Could not send dump request to transaction owner near node: node does not support this feature. " +
-                            txRequestInfo
-                    );
+                catch (Exception e) {
+                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
                 }
+            }
+            else {
+                U.warn(
+                    diagnosticLog,
+                    "Could not send dump request to transaction owner near node: node does not support this feature. " +
+                        txRequestInfo
+                );
             }
         }
     }
