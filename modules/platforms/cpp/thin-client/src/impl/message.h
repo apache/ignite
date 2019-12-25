@@ -773,7 +773,7 @@ namespace ignite
                 /**
                  * Constructor.
                  *
-                 * @param groups Affinity Awareness Groups.
+                 * @param groups Partition awareness Groups.
                  */
                 CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups);
 
@@ -800,9 +800,9 @@ namespace ignite
                 }
 
                 /**
-                 * Get affinity awareness groups.
+                 * Get partition awareness groups.
                  *
-                 * @return Affinity awareness groups.
+                 * @return Partition awareness groups.
                  */
                 const std::vector<PartitionAwarenessGroup>& GetGroups() const
                 {
@@ -813,7 +813,7 @@ namespace ignite
                 /** Affinity topology version. */
                 AffinityTopologyVersion topologyVersion;
 
-                /** Affinity awareness groups. */
+                /** Partition awareness groups. */
                 std::vector<PartitionAwarenessGroup>& groups;
             };
 

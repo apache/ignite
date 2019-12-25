@@ -211,7 +211,7 @@ namespace ignite
              *
              * Disabled by default.
              *
-             * @param enable Enable affinity awareness.
+             * @param enable Enable partition awareness.
              */
             void SetPartitionAwareness(bool enable)
             {
@@ -252,7 +252,7 @@ namespace ignite
             /** SSL client certificate authority path */
             std::string sslCaFile;
 
-            /** Affinity Awareness. */
+            /** Partition awareness. */
             bool partitionAwareness;
         };
     }

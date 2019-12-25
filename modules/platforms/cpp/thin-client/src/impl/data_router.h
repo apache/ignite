@@ -182,11 +182,11 @@ namespace ignite
                 void RefreshAffinityMapping(const std::vector<int32_t>& cacheIds);
 
                 /**
-                 * Checked whether affinity awareness enabled.
+                 * Checked whether partition awareness enabled.
                  *
-                 * @return @c true if affinity awareness enabled.
+                 * @return @c true if partition awareness enabled.
                  */
-                bool IsAffinityAwarenessEnabled() const
+                bool IsPartitionAwarenessEnabled() const
                 {
                     return config.IsPartitionAwareness();
                 }

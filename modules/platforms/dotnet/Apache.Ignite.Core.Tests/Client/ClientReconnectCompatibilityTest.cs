@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Client
     public class ClientReconnectCompatibilityTest
     {
         /// <summary>
-        /// Tests that client reconnect to an old server node disables affinity awareness.
+        /// Tests that client reconnect to an old server node disables partition awareness.
         /// </summary>
         [Test]
         public void TestReconnectToOldNodeDisablesPartitionAwareness()

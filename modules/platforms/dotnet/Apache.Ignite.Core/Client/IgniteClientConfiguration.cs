@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Client
         public string Password { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether affinity awareness should be enabled.
+        /// Gets or sets a value indicating whether partition awareness should be enabled.
         /// <para />
         /// Default is false: only one connection is established at a given moment to a random server node.
         /// When true: for cache operations, Ignite client attempts to send the request directly to

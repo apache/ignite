@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs a send-receive operation with affinity awareness.
+        /// Performs a send-receive operation with partition awareness.
         /// </summary>
         public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs an async send-receive operation with affinity awareness.
+        /// Performs an async send-receive operation with partition awareness.
         /// </summary>
         public Task<T> DoOutInOpAffinityAsync<T, TKey>(
             ClientOp opId,

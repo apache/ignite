@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests affinity awareness functionality.
+    /// Tests partition awareness functionality.
     /// </summary>
     public class PartitionAwarenessTest : ClientTestBase
     {
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void ReplicatedCacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
         {
-            // Test cache for which affinity awareness is not applicable.
+            // Test cache for which partition awareness is not applicable.
             var cfg = new CacheClientConfiguration("replicated_cache") {CacheMode = CacheMode.Replicated};
             var cache = Client.CreateCache<int, int>(cfg);
 
@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 .Where(r => r.Requests.Length > 0)
                 .ToArray();
 
-            // All requests should go to a single (default) node, because affinity awareness is not applicable.
+            // All requests should go to a single (default) node, because partition awareness is not applicable.
             Assert.AreEqual(1, reqs.Length);
 
             // There should be only one partitions request.
@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     .Distinct()
                     .ToArray();
 
-                // Affinity awareness disabled - all requests go to same socket, picked with round-robin on connect.
+                // Partition awareness disabled - all requests go to same socket, picked with round-robin on connect.
                 Assert.AreEqual(1, requestTargets.Length);
             }
         }

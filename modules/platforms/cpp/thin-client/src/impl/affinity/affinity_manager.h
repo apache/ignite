@@ -55,7 +55,7 @@ namespace ignite
                     /**
                      * Update affinity.
                      *
-                     * @param groups Affinity awareness groups.
+                     * @param groups Partition awareness groups.
                      * @param ver Affinity topology version.
                      */
                     void UpdateAffinity(const std::vector<PartitionAwarenessGroup>& groups, const AffinityTopologyVersion& ver);
