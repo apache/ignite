@@ -596,14 +596,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isNodeInBaseline() {
-        ClusterNode locNode = localNode();
+        ctx.gateway().readLockAnyway();
 
-        if (locNode.isClient() || locNode.isDaemon())
-            return false;
+        try {
+            if (ctx.gateway().getState() != STARTED)
+                return false;
 
-        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+            ClusterNode locNode = localNode();
 
-        return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+            if (locNode.isClient() || locNode.isDaemon())
+                return false;
+
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+            return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+        }
+        finally {
+            ctx.gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
