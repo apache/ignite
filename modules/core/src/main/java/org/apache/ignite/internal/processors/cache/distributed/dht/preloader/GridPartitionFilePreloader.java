@@ -670,7 +670,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             Map<Integer, Long> resCntrs = new HashMap<>(U.capacity(parts.size()));
 
-            Map<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> tempCntrs = new HashMap<>(U.capacity(parts.size()));
+            Map<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> cntrs = new HashMap<>(U.capacity(parts.size()));
 
             // todo should be under cancel lock?
             for (Integer partId : parts) {
@@ -698,7 +698,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 assert readCntr != snapshotCntr && snapshotCntr != null && readCntr != null : "grp=" +
                     grp.cacheOrGroupName() + ", p=" + partId + ", readCntr=" + readCntr + ", snapCntr=" + snapshotCntr;
 
-                tempCntrs.put(partId, new T2<>(readCntr, snapshotCntr));
+                cntrs.put(partId, new T2<>(readCntr, snapshotCntr));
             }
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
@@ -709,13 +709,13 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // These operations can update the old update counter or the new update counter, so the maximum applied
             // counter is used after all updates are completed.
             partReleaseFut.listen(c -> {
-                    for (Map.Entry<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> entry : tempCntrs.entrySet()) {
-                        int partId = entry.getKey();
-
+                    for (Map.Entry<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> entry : cntrs.entrySet()) {
                         PartitionUpdateCounter readCntr = entry.getValue().get1();
                         PartitionUpdateCounter snapshotCntr = entry.getValue().get2();
 
-                        resCntrs.put(entry.getKey(), Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter()));
+                        long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
+
+                        resCntrs.put(entry.getKey(), hwm);
                     }
 
                     endFut.onDone(resCntrs);

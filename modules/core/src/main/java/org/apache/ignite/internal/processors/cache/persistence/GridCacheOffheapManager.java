@@ -203,7 +203,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDataStore store = new GridCacheDataStore(p, exists);
         CacheDataStore readOnlyStore = new ReadOnlyGridCacheDataStore(grp, ctx, store, p);
 
-        return new CacheDataStoreExImpl(grp.shared(), store, readOnlyStore, log);
+        return new CacheDataStoreExImpl(grp, store, readOnlyStore, log);
     }
 
     /** {@inheritDoc} */

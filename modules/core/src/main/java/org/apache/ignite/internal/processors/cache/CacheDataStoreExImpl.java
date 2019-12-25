@@ -46,9 +46,9 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * <p>
- *     This is the CacheDataStoreEx implementation. The main purpose is hot switching between different
- *     modes of cache data storage (e.g. between <tt>FULL</tt> and <tt>LOG_ONLY</tt> mode) to guarantee the
- *     consistency for Checkpointer writes and async cache put operations.
+ * Extended cache data store implementation. The main purpose is hot switching between different modes of cache data
+ * storage (e.g. between <i>regular</i> and <i>read-only</i> mode) to guarantee the consistency for Checkpointer writes
+ * and async cache put operations.
  * </p>
  */
 public class CacheDataStoreExImpl implements CacheDataStoreEx {
@@ -56,9 +56,9 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     private final IgniteLogger log;
 
     /** */
-    private final GridCacheSharedContext<?, ?> cctx;
+    private final CacheGroupContext grp;
 
-    /** Currently used data storage state. <tt>FULL</tt> mode is used by default. */
+    /** Currently used data storage state. */
     private final AtomicBoolean readOnly = new AtomicBoolean();
 
     /** */
@@ -72,14 +72,14 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
      * @param secondary The storage to handle only write operation in temporary mode.
      */
     public CacheDataStoreExImpl(
-        GridCacheSharedContext<?, ?> cctx,
+        CacheGroupContext grp,
         CacheDataStore primary,
         CacheDataStore secondary,
         IgniteLogger log
     ) {
         assert primary != null;
 
-        this.cctx = cctx;
+        this.grp = grp;
         this.log = log;
 
         store = primary;
@@ -94,7 +94,10 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     /** {@inheritDoc} */
     @Override public boolean readOnly(boolean readOnly) {
         if (this.readOnly.compareAndSet(!readOnly, readOnly)) {
-            log.info("Changing data store mode to " + (readOnly ? "READ-ONLY" : "FULL") + " [p=" + partId() + "]");
+            if (log.isInfoEnabled()) {
+                log.info("Partition mode changed [grp=" + grp.cacheOrGroupName() +
+                    ", p=" + partId() + ", mode=" + (readOnly ? "READ-ONLY" : "FULL") + "]");
+            }
 
             if (readOnly)
                 readOnlyStore.reinit();
@@ -272,7 +275,6 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
         KeyCacheObject key,
         IgniteCacheOffheapManager.OffheapInvokeClosure c
     ) throws IgniteCheckedException {
-        // todo should be executed under read lock?
         activeStorage().invoke(cctx, key, c);
     }
 
@@ -472,8 +474,7 @@ public class CacheDataStoreExImpl implements CacheDataStoreEx {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
+    @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
         return activeStorage().cursor(x);
     }
 

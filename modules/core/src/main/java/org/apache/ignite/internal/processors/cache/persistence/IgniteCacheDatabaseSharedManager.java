@@ -967,21 +967,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * todo
-     *
-     * @param cacheCtx Cache context to rebuild index at.
-     * @param partPred The partition filter predicate.
-     * @param restore <tt>true</tt> to rebuild indexes from the original store.
-     */
-    public IgniteInternalFuture<?> rebuildIndexesOnDemand(
-        GridCacheContext cacheCtx,
-        Predicate<GridDhtLocalPartition> partPred,
-        boolean restore
-    ) {
-        return null;
-    }
-
-    /**
      * Needed action before any cache will stop
      */
     public void prepareCachesStop() {
@@ -1028,10 +1013,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
         return false;
     }
-
-//    public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> localReserved) {
-//        return false;
-//    }
 
     /**
      * Release reserved update history.

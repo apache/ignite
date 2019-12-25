@@ -1291,7 +1291,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             lsnr
         );
 
-        return new CacheDataStoreExImpl(grp.shared(),
+        return new CacheDataStoreExImpl(grp,
             new CacheDataStoreImpl(
                 p,
                 rowStore,
