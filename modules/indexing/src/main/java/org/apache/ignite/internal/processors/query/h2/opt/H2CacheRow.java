@@ -313,7 +313,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
         sb.a("[ key: ").a(v == null ? "nil" : v.getString());
 
         v = valueWrapped();
-        sb.a(", val: ").a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() :
+        sb.a(", val: ").a(v == null ? "nil" : (S.includeSensitive() ? v.getString() :
             "Data hidden due to " + IGNITE_TO_STRING_INCLUDE_SENSITIVE + " flag."));
 
         sb.a(" ][ ");
@@ -326,7 +326,7 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
                     sb.a(", ");
 
                 if (!desc.isKeyValueOrVersionColumn(i))
-                    sb.a(v == null ? "nil" : (S.INCLUDE_SENSITIVE ? v.getString() : "data hidden"));
+                    sb.a(v == null ? "nil" : (S.includeSensitive() ? v.getString() : "data hidden"));
             }
         }
 

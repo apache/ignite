@@ -33,13 +33,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.nonNull;
@@ -56,9 +53,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Class for checking sensitive data when outputting transactions to the log.
  */
 public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
-    /** Class rule. */
-    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
-
     /** Listener log messages. */
     private static ListeningTestLogger testLog;
 
