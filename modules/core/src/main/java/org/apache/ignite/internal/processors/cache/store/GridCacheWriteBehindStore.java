@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.INCLUDE_SENSITIVE;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -905,7 +906,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     log.error("Failed to update store (value will be lost as current buffer size is greater " +
                         "than 'cacheCriticalSize' or node has been stopped before store was repaired) [" +
-                        (S.includeSensitive() ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
+                        (INCLUDE_SENSITIVE ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
                         "op=" + operation + "]");
                 }
 

@@ -230,7 +230,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (!S.includeSensitive())
+        if (!S.INCLUDE_SENSITIVE)
             return ord >= 0 ? "BinaryEnum" : "null";
 
         // 1. Try deserializing the object.
