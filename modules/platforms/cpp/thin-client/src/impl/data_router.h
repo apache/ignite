@@ -99,7 +99,7 @@ namespace ignite
                 {
                     const AffinityTopologyVersion* ver = rsp.GetAffinityTopologyVersion();
 
-                    if (ver != 0 && config.IsAffinityAwareness())
+                    if (ver != 0 && config.IsPartitionAwareness())
                         affinityManager.UpdateAffinity(*ver);
                 }
 
@@ -188,7 +188,7 @@ namespace ignite
                  */
                 bool IsAffinityAwarenessEnabled() const
                 {
-                    return config.IsAffinityAwareness();
+                    return config.IsPartitionAwareness();
                 }
 
                 /**

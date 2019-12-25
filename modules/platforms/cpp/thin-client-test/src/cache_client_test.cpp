@@ -89,7 +89,7 @@ public:
 
         IgniteClientConfiguration cfg;
         cfg.SetEndPoints("127.0.0.1:11110,127.0.0.1:11111,127.0.0.1:11112");
-        cfg.SetAffinityAwareness(true);
+        cfg.SetPartitionAwareness(true);
 
         IgniteClient client = IgniteClient::Start(cfg);
 
