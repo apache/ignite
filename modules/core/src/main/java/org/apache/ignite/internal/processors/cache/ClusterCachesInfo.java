@@ -50,9 +50,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -966,20 +966,29 @@ public class ClusterCachesInfo {
 
         GridEncryptionManager encMgr = ctx.encryption();
 
-        if (ccfg.isEncryptionEnabled() && (encMgr.isMasterKeyChangeInProgress() ||
-            (encMgr.lastChangedMasterKeyDigest() != null &&
-                !Arrays.equals(encMgr.lastChangedMasterKeyDigest(), req.masterKeyDigest())))) {
-            U.warn(log, "Ignore cache start request during the master key change process.");
+        if (ccfg.isEncryptionEnabled()) {
+            IgniteCheckedException error = null;
 
-            IgniteCheckedException error = new IgniteCheckedException("Cache start during the master key change " +
-                "process is not supported. Group keys encrypted by the old master key.");
+            if (encMgr.isMasterKeyChangeInProgress()) {
+                error = new IgniteCheckedException("Cache start during the master key change " +
+                    "process is not supported.");
+            }
+            else if (encMgr.masterKeyDigest() != null &&
+                !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
+                error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                    "the master key change and can't be processed.");
+            }
 
-            if (persistedCfgs)
-                res.errs.add(error);
-            else
-                ctx.cache().completeCacheStartFuture(req, false, error);
+            if (error != null) {
+                U.warn(log, "Ignore cache start request during the master key change process.");
 
-            return false;
+                if (persistedCfgs)
+                    res.errs.add(error);
+                else
+                    ctx.cache().completeCacheStartFuture(req, false, error);
+
+                return false;
+            }
         }
 
         assert req.cacheType() != null : req;

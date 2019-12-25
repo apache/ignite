@@ -193,7 +193,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private volatile MasterKeyChangeRequest masterKeyChangeRequest;
 
     /** Digest of last changed master key or {@code null} if master key was not changed. */
-    private volatile byte[] lastChangedMasterKeyDigest;
+    private volatile byte[] masterKeyDigest;
 
     /**
      * Master key change prepare process. Checks that all server nodes have the same new master key and then starts
@@ -324,7 +324,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             masterKeyChangeRequest = null;
 
-            lastChangedMasterKeyDigest = null;
+            masterKeyDigest = null;
 
             cancelFutures("Client node was disconnected from topology (operation result is unknown).");
         }
@@ -1092,7 +1092,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
         masterKeyChangeRequest = null;
 
-        lastChangedMasterKeyDigest = req.digest();
+        masterKeyDigest = req.digest();
 
         return new GridFinishedFuture<>(new MasterKeyChangeResult());
     }
@@ -1165,9 +1165,15 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         return masterKeyChangeRequest != null;
     }
 
-    /** @return Digest of last changed master key or {@code null} if master key was not changed. */
-    public byte[] lastChangedMasterKeyDigest() {
-        return lastChangedMasterKeyDigest;
+    /**
+     * Digest of last changed master key or {@code null} if master key was not changed.
+     *
+     * Used to verify the digest on a client node in case of cache start after master key change.
+     *
+     * @return Digest of last changed master key or {@code null} if master key was not changed.
+     */
+    public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /**

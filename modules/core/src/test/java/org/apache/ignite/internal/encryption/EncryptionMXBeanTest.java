@@ -96,16 +96,26 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testMasterKeyChangeOnInactiveCluster() throws Exception {
-        IgniteEx ignite = startGrid(GRID_0);
+    public void testMasterKeyChangeOnInactiveAndReadonlyCluster() throws Exception {
+        IgniteEx grid0 = startGrid(GRID_0);
+
+        assertFalse(grid0.cluster().active());
 
         EncryptionMXBean mBean = getMBean(GRID_0);
 
-        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+        assertEquals(DEFAULT_MASTER_KEY_NAME, grid0.encryption().getMasterKeyName());
 
         assertThrowsWithCause(() -> mBean.changeMasterKey(MASTER_KEY_NAME_2), IgniteException.class);
 
-        assertEquals(DEFAULT_MASTER_KEY_NAME, ignite.encryption().getMasterKeyName());
+        assertEquals(DEFAULT_MASTER_KEY_NAME, grid0.encryption().getMasterKeyName());
+
+        grid0.cluster().active(true);
+
+        grid0.cluster().readOnly(true);
+
+        mBean.changeMasterKey(MASTER_KEY_NAME_2);
+
+        assertEquals(MASTER_KEY_NAME_2, grid0.encryption().getMasterKeyName());
     }
 
     /** {@inheritDoc} */

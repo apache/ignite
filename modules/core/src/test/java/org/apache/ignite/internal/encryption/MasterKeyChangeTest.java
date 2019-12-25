@@ -151,6 +151,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
+        createEncryptedCache(grids.get1(), grids.get2(), "cache2", null);
+
         checkEncryptedCaches(grids.get1(), grids.get2());
     }
 
@@ -191,7 +193,9 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
 
-        srv.cache(cacheName);
+        createEncryptedCache(srv, client, cacheName(), null);
+
+        checkEncryptedCaches(srv, client);
     }
 
     /** @throws Exception If failed. */
@@ -257,29 +261,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testMasterKeyChangeOnInactiveAndReadonlyCluster() throws Exception {
-        IgniteEx grid0 = startGrid(GRID_0);
-
-        assertFalse(grid0.cluster().active());
-
-        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
-
-        assertThrowsWithCause(() -> grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get(), IgniteException.class);
-
-        assertTrue(checkMasterKeyName(DEFAULT_MASTER_KEY_NAME));
-
-        grid0.cluster().active(true);
-
-        grid0.cluster().readOnly(true);
-
-        grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
-
-        assertTrue(checkMasterKeyName(MASTER_KEY_NAME_2));
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testRecoveryFromWalWithCacheOperations() throws Exception {
+        // 1. Start two nodes.
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         IgniteEx grid0 = grids.get1();
@@ -291,6 +274,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setEncryptionEnabled(true);
 
+        // 2. Create cache.
         IgniteCache<Long, String> cache1 = grids.get2().createCache(ccfg);
 
         assertEquals(DEFAULT_MASTER_KEY_NAME, grid0.encryption().getMasterKeyName());
@@ -298,12 +282,13 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)grid0.context()
             .cache().context().database();
 
-        // Prevent checkpoints to recovery from WAL.
+        // 3. Prevent checkpoints to recovery from WAL.
         dbMgr.enableCheckpoints(false).get();
 
         AtomicLong cnt = new AtomicLong();
         AtomicBoolean stop = new AtomicBoolean();
 
+        // 4. Run cache operations.
         IgniteInternalFuture loadFut = runAsync(() -> {
             while (!stop.get()) {
                 try (Transaction tx = grids.get2().transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
@@ -319,6 +304,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         // Put some data before master key change.
         waitForCondition(() -> cnt.get() >= 20, 10_000);
 
+        // 5. Change master key.
         grid0.encryption().changeMasterKey(MASTER_KEY_NAME_2).get();
 
         MetaStorage metaStorage = grid0.context().cache().context().database().metaStorage();
@@ -331,7 +317,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         dbMgr.checkpointReadLock();
 
-        // Simulate cache key write error.
+        // 6. Simulate cache key write error to MetaStore for one node to check recovery from WAL.
         metaStorage.write(ENCRYPTION_KEY_PREFIX + desc.groupId(), new byte[0]);
 
         dbMgr.checkpointReadUnlock();
@@ -344,11 +330,14 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         stop.set(true);
         loadFut.get();
 
+        // 7. Restart node.
         stopGrid(GRID_0, true);
 
         IgniteEx grid = startGrid(GRID_0);
 
+        // 8. Check that restarted node recoveries keys from WAL. Check data.
         assertEquals(MASTER_KEY_NAME_2, grid(GRID_0).encryption().getMasterKeyName());
+        assertEquals(MASTER_KEY_NAME_2, grid(GRID_1).encryption().getMasterKeyName());
 
         IgniteCache<Long, String> cache0 = grid.cache(cacheName());
 
@@ -360,7 +349,33 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testNodeFailsDuringRotation() throws Exception {
+    public void testNodeFailsDuringRotationNotCoordinatorPrepare() throws Exception {
+        checkNodeFailsDuringRotation(false, true);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeFailsDuringRotationCoordinatorPrepare() throws Exception {
+        checkNodeFailsDuringRotation(true, true);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeFailsDuringRotationNotCoordinatorPerform() throws Exception {
+        checkNodeFailsDuringRotation(false, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeFailsDuringRotationCoordinatorPerform() throws Exception {
+        checkNodeFailsDuringRotation(true, false);
+    }
+
+    /**
+     * @param stopCrd {@code True} if stop coordinator.
+     * @param prepare {@code True} if stop on the prepare phase. {@code False} if stop on the perform phase.
+     */
+    private void checkNodeFailsDuringRotation(boolean stopCrd, boolean prepare) throws Exception {
         T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
 
         createEncryptedCache(grids.get1(), grids.get2(), cacheName(), null);
@@ -369,17 +384,34 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grids.get2());
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        AtomicBoolean preparePhase = new AtomicBoolean(true);
 
-        IgniteFuture<Void> fut = grids.get1().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+        spi.blockMessages((node, msg) -> {
+            if (msg instanceof SingleNodeMessage) {
+                boolean isPrepare = preparePhase.compareAndSet(true, false);
+
+                return prepare || !isPrepare;
+            }
+
+            return false;
+        });
+
+        IgniteEx aliveNode = stopCrd ? grids.get2() : grids.get1();
+
+        IgniteFuture<Void> fut  = aliveNode.encryption().changeMasterKey(MASTER_KEY_NAME_2);
 
         spi.waitForBlocked();
 
-        runAsync(() -> stopGrid(GRID_1));
+        runAsync(() -> {
+            if (stopCrd)
+                stopGrid(GRID_0);
+            else
+                stopGrid(GRID_1);
+        });
 
         fut.get();
 
-        assertEquals(MASTER_KEY_NAME_2, grids.get1().encryption().getMasterKeyName());
+        assertEquals(MASTER_KEY_NAME_2, aliveNode.encryption().getMasterKeyName());
     }
 
     /** {@inheritDoc} */
