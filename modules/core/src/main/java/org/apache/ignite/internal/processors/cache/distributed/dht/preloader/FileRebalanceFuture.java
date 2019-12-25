@@ -234,7 +234,7 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                     cpLsnr.cancelAll();
 
-                    if (!nodeIsStopping) {
+                    if (err == null) {
                         for (IgniteInternalFuture fut : regions.values()) {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);

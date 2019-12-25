@@ -235,20 +235,6 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        StringBuilder buf = new StringBuilder();
-
-        for (Map.Entry<Integer, Set<Integer>> entry : new HashMap<>(remaining).entrySet()) {
-            buf.append("grp=").append(cctx.cache().cacheGroup(entry.getKey()).cacheOrGroupName()).
-                append(" parts=").append(entry.getValue()).append("; received=").
-                append(received.get(entry.getKey()).get()).append("; ");
-        }
-
-        return "finished=" + isDone() + ", failed=" + isFailed() + ", cancelled=" + isCancelled() + ", node=" +
-            node.id() + ", remain=[" + buf + "]";
-    }
-
     public void onPartitionSnapshotReceived(int grpId, int partId) {
         AtomicInteger receivedCntr = received.get(grpId);
 
@@ -275,5 +261,19 @@ public class FileRebalanceNodeRoutine extends GridFutureAdapter<Boolean> {
                     onDone(e);
                 }
             });
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        StringBuilder buf = new StringBuilder();
+
+        for (Map.Entry<Integer, Set<Integer>> entry : new HashMap<>(remaining).entrySet()) {
+            buf.append("grp=").append(cctx.cache().cacheGroup(entry.getKey()).cacheOrGroupName()).
+                append(" parts=").append(entry.getValue()).append("; received=").
+                append(received.get(entry.getKey()).get()).append("; ");
+        }
+
+        return "finished=" + isDone() + ", failed=" + isFailed() + ", cancelled=" + isCancelled() + ", node=" +
+            node.id() + ", remain=[" + buf + "]";
     }
 }

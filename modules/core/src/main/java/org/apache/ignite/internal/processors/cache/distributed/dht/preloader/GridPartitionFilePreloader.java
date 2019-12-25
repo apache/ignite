@@ -387,6 +387,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             rebFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
+                    if (fut0.error() != null) {
+                        log.error("File rebalance failed.", fut0.error());
+
+                        return;
+                    }
+
                     if (fut0.isCancelled()) {
                         log.info("File rebalance canceled [topVer=" + topVer + "]");
 
