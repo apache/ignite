@@ -198,6 +198,7 @@ public class PlatformContextImpl implements PlatformContext {
         // Send node info to the native platform
         try (PlatformMemory mem0 = mem.allocate()) {
             PlatformOutputStream out = mem0.output();
+
             BinaryRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
