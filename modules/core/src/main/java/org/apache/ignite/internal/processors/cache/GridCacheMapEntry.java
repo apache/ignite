@@ -206,11 +206,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected final GridCacheContext<?, ?> cctx;
 
     /** Key. */
-    @GridToStringInclude(sensitive = true)
+    @GridToStringInclude
     protected final KeyCacheObject key;
 
     /** Value. */
-    @GridToStringInclude(sensitive = true)
+    @GridToStringInclude
     protected CacheObject val;
 
     /** Version. */

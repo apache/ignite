@@ -140,7 +140,7 @@ public class TxDeadlock {
 
                 sb.append(e.getValue())
                     .append(" [");
-                if (S.includeSensitive())
+                if (S.INCLUDE_SENSITIVE)
                     sb.append("key=")
                         .append(val)
                         .append(", ");

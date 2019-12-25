@@ -671,7 +671,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append("id=").append(id).append(", ");
             buf.append("uuidVar=").append(uuidVar).append(", ");
             buf.append("intVar=").append(intVar).append(", ");
-            if (S.includeSensitive())
+            if (S.INCLUDE_SENSITIVE)
                 buf.append("longVar=").append(longVar).append(", ");
             buf.append("boolVar=").append(boolVar).append(", ");
             buf.append("byteVar=").append(byteVar).append(", ");
@@ -706,7 +706,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             StringBuilder s = new StringBuilder(toStringManual());
             s.setLength(s.length() - 1);
             s.append(", newParam1=").append(1);
-            if (S.includeSensitive())
+            if (S.INCLUDE_SENSITIVE)
                 s.append(", newParam2=").append(2);
             s.append(']');
             return s.toString();

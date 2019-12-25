@@ -24,9 +24,7 @@ import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -47,7 +45,7 @@ public class TxEntryValueHolder implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude(sensitive = true)
+    @GridToStringInclude
     private CacheObject val;
 
     /** */
@@ -55,11 +53,9 @@ public class TxEntryValueHolder implements Message {
     private GridCacheOperation op = NOOP;
 
     /** Flag indicating that value has been set for write. */
-    @GridToStringExclude
     private boolean hasWriteVal;
 
     /** Flag indicating that value has been set for read. */
-    @GridToStringExclude
     @GridDirectTransient
     private boolean hasReadVal;
 
@@ -162,7 +158,7 @@ public class TxEntryValueHolder implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxEntryValueHolder.class, this);
+        return "[op=" + op +", val=" + val + ']';
     }
 
     /** {@inheritDoc} */
