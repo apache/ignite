@@ -68,7 +68,6 @@ public interface IgniteEncryption {
      * master key id via {@link IgniteSystemProperties#IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP}.
      *
      * @return Future for this operation.
-     * @throws IgniteException If the change master key process failed.
      */
     public IgniteFuture<Void> changeMasterKey(String masterKeyName);
 }
