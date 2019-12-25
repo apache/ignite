@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * Test affinity awareness of thin client on unstable topology.
  */
-public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientAbstractAffinityAwarenessTest {
+public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -42,7 +42,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
      * Test that join of the new node is detected by the client and affects affinity awareness.
      */
     @Test
-    public void testAffinityAwarenessOnNodeJoin() throws Exception {
+    public void testPartitionAwarenessOnNodeJoin() throws Exception {
         startGrids(3);
 
         awaitPartitionMapExchange();
@@ -50,7 +50,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         initClient(getClientConfiguration(1, 2, 3), 1, 2);
 
         // Test affinity awareness before node join.
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
 
         assertNull(channels[3]);
 
@@ -78,14 +78,14 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         assertOpOnChannel(channels[3], ClientOperation.CACHE_PUT);
 
         // Test affinity awareness after node join.
-        testAffinityAwareness(false);
+        testPartitionAwareness(false);
     }
 
     /**
      * Test that node left event affects affinity awareness.
      */
     @Test
-    public void testAffinityAwarenessOnNodeLeft() throws Exception {
+    public void testPartitionAwarenessOnNodeLeft() throws Exception {
         startGrids(4);
 
         awaitPartitionMapExchange();
@@ -93,7 +93,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         initClient(getClientConfiguration(1, 2, 3), 1, 2, 3);
 
         // Test affinity awareness before node left.
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
 
         stopGrid(3);
 
@@ -105,7 +105,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         initDefaultChannel();
 
         // Test affinity awareness after node join.
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
     }
 
     /**
@@ -120,7 +120,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         initClient(getClientConfiguration(0, 1), 0, 1);
 
         // Test affinity awareness before connection to node lost.
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
 
         // Choose node to disconnect (not default node).
         int disconnectNodeIdx = dfltCh == channels[0] ? 1 : 0;
@@ -152,14 +152,14 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         assertOpOnChannel(channels[disconnectNodeIdx], ClientOperation.CACHE_PUT);
 
         // Test affinity awareness.
-        testAffinityAwareness(false);
+        testPartitionAwareness(false);
     }
 
     /**
      * Test that affinity awareness works when reconnecting to the new cluster (with lower topology version)
      */
     @Test
-    public void testAffinityAwarenessOnClusterRestart() throws Exception {
+    public void testPartitionAwarenessOnClusterRestart() throws Exception {
         startGrids(3);
 
         awaitPartitionMapExchange();
@@ -167,7 +167,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
         initClient(getClientConfiguration(0, 1, 2), 0, 1, 2);
 
         // Test affinity awareness before cluster restart.
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
 
         stopAllGrids();
 
@@ -191,7 +191,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
 
         awaitChannelsInit(0, 1);
 
-        testAffinityAwareness(true);
+        testPartitionAwareness(true);
     }
 
     /**
@@ -199,7 +199,7 @@ public class ThinClientAffinityAwarenessUnstableTopologyTest extends ThinClientA
      *
      * @param partReq Next operation should request partitions map.
      */
-    private void testAffinityAwareness(boolean partReq) {
+    private void testPartitionAwareness(boolean partReq) {
         ClientCache<Object, Object> clientCache = client.cache(PART_CACHE_NAME);
         IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(PART_CACHE_NAME);
 

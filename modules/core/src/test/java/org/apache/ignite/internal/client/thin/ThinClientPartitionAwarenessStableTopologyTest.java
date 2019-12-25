@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Test affinity awareness of thin client on stable topology.
  */
-public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbstractAffinityAwarenessTest {
+public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();

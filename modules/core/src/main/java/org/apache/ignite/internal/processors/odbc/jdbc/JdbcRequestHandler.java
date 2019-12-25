@@ -1485,7 +1485,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
     private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
-        return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+        return partResRequested && (partRes == null || partRes.isClientPartitionAwarenessApplicable());
     }
 
     /** {@inheritDoc} */

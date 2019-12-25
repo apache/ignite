@@ -45,7 +45,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 /**
  * Abstract thin client affinity awareness test.
  */
-public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommonAbstractTest {
+public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
     private static final long WAIT_TIMEOUT = 5_000L;
 
@@ -146,7 +146,7 @@ public abstract class ThinClientAbstractAffinityAwarenessTest extends GridCommon
         String addrs[] = Arrays.stream(nodeIdxs).mapToObj(nodeIdx -> "127.0.0.1:" + (DFLT_PORT + nodeIdx))
             .toArray(String[]::new);
 
-        return new ClientConfiguration().setAddresses(addrs).setAffinityAwarenessEnabled(true);
+        return new ClientConfiguration().setAddresses(addrs).setPartitionAwarenessEnabled(true);
     }
 
     /**

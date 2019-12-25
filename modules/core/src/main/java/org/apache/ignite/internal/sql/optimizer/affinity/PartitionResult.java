@@ -158,11 +158,11 @@ public class PartitionResult {
     }
 
     /**
-     * @return True if applicable to jdbc thin client side affinity awareness:
+     * @return True if applicable to jdbc thin client side partition awareness:
      *   1. Rendezvous affinity function without map filters was used;
      *   2. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
      */
-    public boolean isClientAffinityAwarenessApplicable() {
+    public boolean isClientPartitionAwarenessApplicable() {
         return aff != null && aff.isClientAffinityAwarenessApplicable() &&
             !(tree instanceof PartitionNoneNode) && !(tree instanceof PartitionAllNode);
     }
