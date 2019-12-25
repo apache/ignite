@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -64,7 +64,7 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (getBoolean(IGNITE_PME_FREE, true) &&
+        if (!getBoolean(IGNITE_PME_FREE_DISABLED) &&
             !compatibilityNode &&
             fut.wasRebalanced() &&
             fut.isBaselineNodeFailed() &&
