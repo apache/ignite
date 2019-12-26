@@ -158,6 +158,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToDefaultNode()
         {
             // Warm-up.
+            Client.GetCacheNames();
+            var defaultGridIndex = GetClientRequestGridIndex("GetNames");
+            
             Assert.AreEqual(1, _cache.Get(1));
 
             // Before topology change.
@@ -184,10 +187,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // Assert: keys 12 and 14 belong to a new node now, but we don't have the new node in the server list.
                 // Requests are routed to default node.
                 Assert.AreEqual(12, _cache.Get(12));
-                Assert.AreEqual(1, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultGridIndex, GetClientRequestGridIndex());
 
                 Assert.AreEqual(14, _cache.Get(14));
-                Assert.AreEqual(1, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultGridIndex, GetClientRequestGridIndex());
             }
         }
 
