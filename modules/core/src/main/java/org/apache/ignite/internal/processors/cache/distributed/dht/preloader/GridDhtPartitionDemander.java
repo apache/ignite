@@ -1371,7 +1371,7 @@ public class GridDhtPartitionDemander {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            assert !cancel;
+            assert !cancel : "RebalanceFuture cancel is not supported. Use res = false.";
 
             boolean byThisCall = super.onDone(res, err, cancel);
             boolean isCancelled = res == Boolean.FALSE || isFailed();
