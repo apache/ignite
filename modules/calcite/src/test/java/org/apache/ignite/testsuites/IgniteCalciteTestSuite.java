@@ -32,4 +32,5 @@ import org.junit.runners.Suite;
     OutboxTest.class,
     ExecutionTest.class
 })
-public class IgniteCalciteTestSuite { }
+public class IgniteCalciteTestSuite {
+}
