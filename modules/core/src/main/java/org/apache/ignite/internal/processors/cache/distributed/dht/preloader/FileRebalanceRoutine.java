@@ -20,14 +20,17 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -58,33 +61,18 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
-public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
+public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private static final long MAX_MEM_CLEANUP_TIMEOUT = 60_000;
 
     /** */
-    private final Map<T2<Integer, UUID>, FileRebalanceNodeRoutine> futs = new HashMap<>();
-
-    /** */
     private final GridPartitionFilePreloader.CheckpointListener cpLsnr;
-
-    /** */
-    private final Map<Integer, Set<Integer>> allPartsMap = new HashMap<>();
-
-    /** */
-    private final Map<Integer, Set<UUID>> allGroupsMap = new ConcurrentHashMap<>();
 
     /** */
     private final AffinityTopologyVersion topVer;
 
     /** */
     private final long rebalanceId;
-
-    /** */
-    private final Map<String, GridFutureAdapter> regions = new HashMap<>();
-
-    /** */
-    private final Map<String, Set<Long>> regionToParts = new HashMap<>();
 
     /** */
     private final ReentrantLock cancelLock = new ReentrantLock();
@@ -95,9 +83,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     /** */
     private final IgniteLogger log;
 
-    /** */
-    private final Map<Integer, GridDhtPreloaderAssignments> historicalAssignments = new ConcurrentHashMap<>();
-
     /** Index rebuild future. */
     private final GridCompoundFuture idxRebuildFut = new GridCompoundFuture<>();
 
@@ -105,7 +90,28 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     private final GridDhtPartitionExchangeId exchId;
 
     /** */
-    public FileRebalanceFuture() {
+    private final List<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments = new ArrayList<>();
+
+    /** */
+    private final Map<Long, UUID> partsToNodes = new HashMap<>();
+
+    /** */
+    private final Map<Integer, Set<Integer>> remaining = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<String, GridFutureAdapter> regions = new HashMap<>();
+
+    /** */
+    private final Map<String, Set<Long>> regionToParts = new HashMap<>();
+
+    /** */
+    private volatile IgniteInternalFuture<Boolean> snapFut;
+
+    /** */
+    public FileRebalanceRoutine() {
         this(null, null, null, null, 0, null, null);
 
         onDone(true);
@@ -115,9 +121,9 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      * @param lsnr Checkpoint listener.
      * @param exchId Exchange ID.
      */
-    public FileRebalanceFuture(
+    public FileRebalanceRoutine(
         GridPartitionFilePreloader.CheckpointListener lsnr,
-        NavigableMap</** order */Integer, Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assignsMap,
+        NavigableMap</** order */Integer, Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         long rebalanceId,
@@ -131,15 +137,13 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
 
-        // The dummy future does not require initialization.
-        if (assignsMap != null)
-            initialize(assignsMap);
+        initialize(assigns);
     }
 
     /** @deprecated used only for debugging, should be removed */
     @Deprecated
     boolean isPreloading(int grpId) {
-        return allGroupsMap.containsKey(grpId) && !isDone();
+        return remaining.containsKey(grpId) && !isDone();
     }
 
     /**
@@ -147,11 +151,10 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
      *
      * @param assignments Assignments.
      */
-    private synchronized void initialize(NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
-        assert assignments != null;
-        assert !assignments.isEmpty();
+    private void initialize(NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
+        if (assignments == null)
+            return;
 
-        // todo redundant?
         cancelLock.lock();
 
         try {
@@ -159,10 +162,10 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                 for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
                     UUID nodeId = mapEntry.getKey().id();
 
+                    orderedAssgnments.add(new T2<>(nodeId, mapEntry.getValue()));
+
                     for (Map.Entry<Integer, Set<Integer>> entry : mapEntry.getValue().entrySet()) {
                         int grpId = entry.getKey();
-
-                        allGroupsMap.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>()).add(nodeId);
 
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -170,15 +173,17 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
 
                         Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
 
-//                        regionsToGroups.computeIfAbsent(regName, v -> new HashSet<>()).add(grpId);
-
-                        Set<Integer> allPartitions = allPartsMap.computeIfAbsent(grpId, v -> new HashSet<>());
+                        Set<Integer> allPartitions = remaining.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>());
 
                         for (Integer partId : entry.getValue()) {
                             assert grp.topology().localPartition(partId).dataStore().readOnly() :
                                 "cache=" + grp.cacheOrGroupName() + " p=" + partId;
 
-                            regionParts.add(((long)grpId << 32) + partId);
+                            long grpAndPart = ((long)grpId << 32) + partId;
+
+                            regionParts.add(grpAndPart);
+
+                            partsToNodes.put(grpAndPart, nodeId);
 
                             allPartitions.add(partId);
                         }
@@ -197,19 +202,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     /** */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    public synchronized void add(int order, FileRebalanceNodeRoutine fut) {
-        T2<Integer, UUID> k = new T2<>(order, fut.nodeId());
-
-        futs.put(k, fut);
-    }
-
-    // todo add/get should be consistent (ORDER or GROUP_ID arg)
-    public synchronized FileRebalanceNodeRoutine nodeRoutine(int grpId, UUID nodeId) {
-        int order = cctx.cache().cacheGroup(grpId).config().getRebalanceOrder();
-
-        return futs.get(new T2<>(order, nodeId));
     }
 
     /** {@inheritDoc} */
@@ -241,23 +233,17 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
                         }
                     }
 
-                    Iterator<FileRebalanceNodeRoutine> itr = futs.values().iterator();
+                    if (snapFut != null && !snapFut.isDone()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
 
-                    while (itr.hasNext()) {
-                        FileRebalanceNodeRoutine routine = itr.next();
-
-                        itr.remove();
-
-                        if (!routine.isDone())
-                            routine.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
+                        snapFut.cancel();
                     }
-
-                    assert futs.isEmpty();
 
                     if (log.isDebugEnabled() && !idxRebuildFut.isDone())
                         log.debug("Index rebuild is still in progress (ignore).");
 
-                    for (Integer grpId : allGroupsMap.keySet()) {
+                    for (Integer grpId : remaining.keySet()) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                         if (grp != null)
@@ -279,116 +265,150 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
         return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
     }
 
-    public void onCacheGroupDone(int grpId, UUID nodeId, GridDhtPartitionDemandMessage msg) {
-        Set<UUID> remainingNodes = allGroupsMap.get(grpId);
+    private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
+        Set<Integer> parts = remaining.remove(grpId);
 
-        boolean rmvd = remainingNodes.remove(nodeId);
+        if (parts == null)
+            return;
 
-        assert rmvd : "Duplicate remove " + nodeId;
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-        if (msg.partitions().hasHistorical()) {
-            GridDhtPartitionExchangeId exchId = cctx.exchange().lastFinishedFuture().exchangeId();
+        assert !grp.localWalEnabled() : "grp=" + grp.cacheOrGroupName();
 
-            historicalAssignments.computeIfAbsent(grpId, v -> new GridDhtPreloaderAssignments(exchId, topVer)).put(cctx.discovery().node(nodeId), msg);
+        Map<UUID, Map<Integer, T2<Long, Long>>> histAssignments = new HashMap<>();
+
+        for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
+            int partId = e.getKey();
+
+            long initCntr = grp.topology().localPartition(partId).initialUpdateCounter();
+            long maxCntr = e.getValue();
+
+            assert maxCntr >= initCntr : "from=" + initCntr + ", to=" + maxCntr;
+
+            if (initCntr != maxCntr) {
+                long uniquePartId = ((long)grpId << 32) + partId;
+
+                UUID nodeId = partsToNodes.get(uniquePartId);
+
+                histAssignments.computeIfAbsent(nodeId, v -> new TreeMap<>()).put(partId, new T2<>(initCntr, maxCntr));
+
+                continue;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("No need for WAL rebalance [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
         }
 
-        if (remainingNodes.isEmpty() && allGroupsMap.remove(grpId) != null) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+        GridQueryProcessor qryProc = cctx.kernalContext().query();
 
-            GridQueryProcessor qryProc = cctx.kernalContext().query();
-
-            if (qryProc.moduleEnabled()) {
-                if (log.isInfoEnabled())
-                    log.info("Starting index rebuild for cache group: " + grp.cacheOrGroupName());
-
-                for (GridCacheContext ctx : grp.caches()) {
-                    IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
-
-                    if (fut != null)
-                        idxRebuildFut.add(fut);
-                }
-            }
-            else
+        if (qryProc.moduleEnabled()) {
             if (log.isInfoEnabled())
-                log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
+                log.info("Starting index rebuild for cache group: " + grp.cacheOrGroupName());
 
-            GridDhtPreloaderAssignments assigns = historicalAssignments.remove(grpId);
+            for (GridCacheContext ctx : grp.caches()) {
+                IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
 
-            // File rebalancing is finished.
-            // todo historical rebalancing will send separate events
-            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
-
-            if (assigns != null) {
-                GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
-
-                Runnable task = grp.preloader().addAssignments(assigns, true, rebalanceId, null, histFut);
-
-                // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
-                try {
-                    U.sleep(500);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    log.warning("Thread was interrupred,", e);
-
-                    Thread.currentThread().interrupt();
-                }
-
-                cctx.kernalContext().getSystemExecutorService().submit(task);
-
-                return;
+                if (fut != null)
+                    idxRebuildFut.add(fut);
             }
+        }
+        else
+        if (log.isInfoEnabled())
+            log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
 
+        // Cache group file rebalancing is finished.
+        // todo historical rebalancing will send separate events
+        grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
+
+        if (histAssignments.isEmpty()) {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
             log.info("Rebalancing complete [group=" + gctx.cacheOrGroupName() + "]");
 
-            if (gctx.localWalEnabled())
-                cctx.exchange().scheduleResendPartitions();
-            else
-                cctx.walState().onGroupRebalanceFinished(gctx.groupId(), topVer);
+            assert !gctx.localWalEnabled() : "Unexpected wal mode for file rebalancing";
+
+            cctx.walState().onGroupRebalanceFinished(gctx.groupId(), topVer);
         }
+        else
+            requestHistoricalRebalance(grp, histAssignments);
+
+        if (remaining.isEmpty())
+            onDone(true);
     }
 
-    public synchronized void onNodeDone(FileRebalanceNodeRoutine fut, Boolean res, Throwable err, boolean cancel) {
-        if (err != null || cancel) {
-            // This routine already cancelling
-            if (!cancelLock.isHeldByCurrentThread())
-                onDone(res, err, cancel);
+    private void requestHistoricalRebalance(CacheGroupContext grp, Map<UUID, Map<Integer, T2<Long, Long>>> assigns) {
+        GridDhtPreloaderAssignments grpAssigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
-            return;
+        for (Map.Entry<UUID, Map<Integer, T2<Long, Long>>> entry : assigns.entrySet()) {
+            ClusterNode node = cctx.discovery().node(entry.getKey());
+            Map<Integer, T2<Long, Long>> nodeAssigns = entry.getValue();
+
+            GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grp.groupId());
+
+            for (Map.Entry<Integer, T2<Long, Long>> e : nodeAssigns.entrySet())
+                msg.partitions().addHistorical(e.getKey(), e.getValue().get1(), e.getValue().get2(), nodeAssigns.size());
+
+            grpAssigns.put(node, msg);
         }
 
-        GridFutureAdapter<Boolean> rmvdFut = futs.remove(new T2<>(fut.order(), fut.nodeId()));
+        // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
+        try {
+            U.sleep(500);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            log.warning("Thread was interrupred,", e);
 
-        assert rmvdFut != null && rmvdFut.isDone() : rmvdFut;
+            Thread.currentThread().interrupt();
+        }
 
-//        if (futs.isEmpty()) {
-//            histFut.listen(c -> {
-//                onDone(true);
-//            });
-//        }
+        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
 
-        if (futs.isEmpty()) {
-            cancelLock.lock();
+        Runnable task = grp.preloader().addAssignments(grpAssigns, true, rebalanceId, null, histFut);
 
-            try {
-                if (!idxRebuildFut.initialized()) {
-                    idxRebuildFut.markInitialized();
+        cctx.kernalContext().getSystemExecutorService().submit(task);
+    }
 
-                    if (log.isInfoEnabled()) {
-                        idxRebuildFut.listen(clo -> {
-                            log.info("Rebuilding indexes completed.");
-                        });
+    public void requestPartitionsSnapshot() {
+        // todo should we send start event only when we starting to preload specified group?
+        for (Integer grpId : remaining.keySet())
+            cctx.cache().cacheGroup(grpId).preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+
+        cctx.kernalContext().getSystemExecutorService().submit(() -> {
+            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+                UUID nodeId = nodeAssigns.get1();
+                Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
+
+                try {
+                    cancelLock.lock();
+
+                    try {
+                        if (isDone())
+                            return;
+
+                        if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
+                            break;
+
+                        snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
+
+                        if (log.isInfoEnabled())
+                            log.info("Start partitions preloading [from=" + nodeId + "]");
+
+                        if (log.isDebugEnabled())
+                            log.debug("Current state: " + this);
+                    }
+                    finally {
+                        cancelLock.unlock();
                     }
 
-                    // No need to get attached to the process of rebuilding indexes,
-                    // we can go forward while rebuilding is in progress.
-                    onDone(true);
+                    // todo
+                    snapFut.get();
                 }
-            } finally {
-                cancelLock.unlock();
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+                }
+
             }
-        }
+        });
     }
 
     /**
@@ -397,10 +417,6 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public void clearPartitions() {
         if (isDone())
             return;
-
-        // todo should we call this only when we starting preloading specified group?
-        for (Integer grpId : allGroupsMap.keySet())
-            cctx.cache().cacheGroup(grpId).preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
 
         cancelLock.lock();
 
@@ -524,34 +540,52 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
         assert file != null;
 
-        if (log.isTraceEnabled())
-            log.trace("Processing partition snapshot [path=" + file + "]");
-
-        FileRebalanceNodeRoutine fut = nodeRoutine(grpId, nodeId);
-
-        if (fut == null || fut.isDone()) {
-            if (log.isDebugEnabled())
-                log.debug("Stale future, removing partition snapshot [path=" + file + "]");
-
-            file.delete();
-
-            return;
+        if (log.isTraceEnabled()) {
+            log.trace("Processing partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
+                ", p=" + partId + ", path=" + file + "]");
         }
+
+        if (isDone())
+            return;
 
         try {
             awaitCleanupIfNeeded(grpId);
 
-            if (fut.isDone())
+            if (isDone())
                 return;
 
             reinitPartition(grpId, partId, file);
 
-            fut.onPartitionSnapshotReceived(grpId, partId);
+            AtomicInteger receivedCntr = received.computeIfAbsent(grpId, cntr -> new AtomicInteger());
+
+            int receivedCnt = receivedCntr.incrementAndGet();
+
+            Set<Integer> parts = remaining.get(grpId);
+
+            if (receivedCnt != parts.size())
+                return;
+
+            cctx.filePreloader().switchPartitions(grpId, parts, this)
+                .listen(fut -> {
+                    try {
+                        Map<Integer, Long> cntrs = fut.get();
+
+                        assert cntrs != null;
+
+                        cctx.kernalContext().closure().runLocalSafe(() -> onCacheGroupDone(grpId, cntrs));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Unable to restore partition snapshot [cache=" +
+                            cctx.cache().cacheGroup(grpId) + ", p=" + partId + "]", e);
+
+                        onDone(e);
+                    }
+                });
         }
         catch (IOException | IgniteCheckedException e) {
             log.error("Unable to handle partition snapshot", e);
 
-            fut.onDone(e);
+            onDone(e);
         }
     }
 
@@ -584,10 +618,11 @@ public class FileRebalanceFuture extends GridFutureAdapter<Boolean> {
     @Override public String toString() {
         StringBuilder buf = new StringBuilder();
 
-        buf.append("\n\tNode routines:\n");
+        buf.append("\n\tReceived: " + received);
+        buf.append("\n\tRemainng: " + remaining);
 
-        for (FileRebalanceNodeRoutine fut : futs.values())
-            buf.append("\t\t" + fut.toString() + "\n");
+        if (!snapFut.isDone())
+            buf.append("\n\tSnapshot: " + snapFut.toString());
 
         buf.append("\n\tMemory regions:\n");
 

@@ -251,6 +251,8 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         BlockingQueue<Integer> queue = new ArrayBlockingQueue<>(4);
 
+        forceCheckpoint();
+
         do {
             GridTestUtils.runMultiThreadedAsync( () -> {
                 U.sleep(ThreadLocalRandom.current().nextLong(100));

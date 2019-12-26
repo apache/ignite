@@ -92,7 +92,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     private final CheckpointListener cpLsnr = new CheckpointListener();
 
     /** */
-    private volatile FileRebalanceFuture fileRebalanceFut = new FileRebalanceFuture();
+    private volatile FileRebalanceRoutine fileRebalanceRoutine = new FileRebalanceRoutine();
 
     /**
      * @param ktx Kernal context.
@@ -115,7 +115,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
 
-            fileRebalanceFut.onDone(false, new NodeStoppingException("Local node is stopping."), false);
+            fileRebalanceRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
             lock.writeLock().unlock();
@@ -145,10 +145,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         AffinityTopologyVersion rebTopVer = cctx.exchange().rebalanceTopologyVersion();
 
-        FileRebalanceFuture rebFut = fileRebalanceFut;
+        FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
 
         boolean forced = rebTopVer == NONE ||
-            (rebFut.isDone() && (rebFut.result() == null || !rebFut.result())) || exchFut.localJoinExchange();
+            (rebRoutine.isDone() && (rebRoutine.result() == null || !rebRoutine.result())) || exchFut.localJoinExchange();
 
         Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
 
@@ -174,10 +174,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         // Should interrupt current rebalance.
         // todo if memory cleanup in progress we should not wait for cleanup-future finish (on cancel)
         //      should somehow "re-set" the old-one cleanup future to new created rebalance future.
-        if (!rebFut.isDone())
-            rebFut.cancel();
+        if (!rebRoutine.isDone())
+            rebRoutine.cancel();
 
-        assert fileRebalanceFut.isDone();
+        assert fileRebalanceRoutine.isDone();
 
         boolean locJoinBaselineChange = isLocalBaselineChange(exchFut);
 
@@ -290,7 +290,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** @deprecated used only for debugging, should be removed */
     @Deprecated
     public boolean isPreloading(int grpId) {
-        return fileRebalanceFut.isPreloading(grpId);
+        return fileRebalanceRoutine.isPreloading(grpId);
     }
 
     /**
@@ -307,10 +307,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         AffinityTopologyVersion topVer,
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut) {
-        NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> nodeOrderAssignsMap =
+        NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> orderedAssignments =
             remapAssignments(assignsMap, exchFut);
 
-        if (nodeOrderAssignsMap.isEmpty()) {
+        if (orderedAssignments.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping file rebalancing due to empty assignments.");
 
@@ -328,64 +328,26 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             log.info("Starting file rebalancing");
 
         if (log.isTraceEnabled())
-            log.trace(formatMappings(nodeOrderAssignsMap));
+            log.trace(formatMappings(orderedAssignments));
 
         // Start new rebalance session.
-        FileRebalanceFuture rebFut = fileRebalanceFut;
+        FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
 
         lock.writeLock().lock();
 
         try {
-            if (!rebFut.isDone())
-                rebFut.cancel();
+            if (!rebRoutine.isDone())
+                rebRoutine.cancel();
 
-            fileRebalanceFut = rebFut = new FileRebalanceFuture(cpLsnr, nodeOrderAssignsMap, topVer, cctx, rebalanceId, log, exchFut.exchangeId());
-
-            FileRebalanceNodeRoutine lastFut = null;
+            fileRebalanceRoutine = rebRoutine =
+                new FileRebalanceRoutine(cpLsnr, orderedAssignments, topVer, cctx, rebalanceId, log, exchFut.exchangeId());
 
             if (log.isInfoEnabled())
-                log.info("Prepare the chain to demand assignments: " + nodeOrderAssignsMap);
+                log.info("Prepare to start file rebalancing: " + orderedAssignments);
 
-            for (Map.Entry<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> entry : nodeOrderAssignsMap.descendingMap().entrySet()) {
-                Map<ClusterNode, Map<Integer, Set<Integer>>> descNodeMap = entry.getValue();
+            cctx.kernalContext().getSystemExecutorService().submit(rebRoutine::clearPartitions);
 
-                int order = entry.getKey();
-
-                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> assignEntry : descNodeMap.entrySet()) {
-                    FileRebalanceNodeRoutine fut = new FileRebalanceNodeRoutine(cctx, fileRebalanceFut, log,
-                        assignEntry.getKey(), order, rebalanceId, assignEntry.getValue(), topVer);
-
-                    // todo seeems we don't need to track all futures through map, we should track only last
-                    rebFut.add(order, fut);
-
-                    if (lastFut != null) {
-                        final FileRebalanceNodeRoutine lastFut0 = lastFut;
-
-                        fut.listen(f -> {
-                            try {
-                                if (f.isCancelled())
-                                    return;
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Running next task, last future result is " + f.get());
-
-                                if (f.get()) // Not cancelled.
-                                    lastFut0.requestPartitions();
-                                // todo check how this chain is cancelling
-                            }
-                            catch (IgniteCheckedException e) {
-                                lastFut0.onDone(e);
-                            }
-                        });
-                    }
-
-                    lastFut = fut;
-                }
-            }
-
-            cctx.kernalContext().getSystemExecutorService().submit(rebFut::clearPartitions);
-
-            rebFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+            rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
                     if (fut0.error() != null) {
                         log.error("File rebalance failed.", fut0.error());
@@ -404,7 +366,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 }
             });
 
-            return lastFut::requestPartitions;
+            return rebRoutine::requestPartitionsSnapshot;
         }
         finally {
             lock.writeLock().unlock();
@@ -417,10 +379,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     private String debugInfo() {
-        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() + ", finished=" + fileRebalanceFut.isDone() + ", failed=" + fileRebalanceFut.isFailed() +", cancelled=" + fileRebalanceFut.isCancelled() + "]");
+        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() + ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
 
-        if (!fileRebalanceFut.isDone() || fileRebalanceFut.isCancelled() || fileRebalanceFut.isFailed())
-            buf.append(fileRebalanceFut.toString());
+        if (!fileRebalanceRoutine.isDone() || fileRebalanceRoutine.isCancelled() || fileRebalanceRoutine.isFailed())
+            buf.append(fileRebalanceRoutine.toString());
 
         return buf.toString();
     }
@@ -487,25 +449,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
 
         return result;
-    }
-
-    /**
-     * todo access
-     * @param fut The future to check.
-     * @return <tt>true</tt> if future can be processed.
-     */
-    boolean staleFuture(FileRebalanceNodeRoutine fut) {
-        return fut == null || fut.isCancelled() || fut.isFailed() || fut.isDone() || topologyChanged(fut);
-    }
-
-    /**
-     * @param fut Future.
-     * @return {@code True} if rebalance topology version changed by exchange thread or force
-     * reassing exchange occurs, see {@link RebalanceReassignExchangeTask} for details.
-     */
-    private boolean topologyChanged(FileRebalanceNodeRoutine fut) {
-        return !cctx.exchange().rebalanceTopologyVersion().equals(fut.topologyVersion());
-        // todo || fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -765,6 +708,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 task.fut.onDone();
         }
 
+        /**
+         * @param task Task to execute.
+         */
         public IgniteInternalFuture<Void> schedule(final Runnable task) {
             CheckpointTask<Void> cpTask = new CheckpointTask<>(() -> {
                 task.run();
@@ -808,18 +754,17 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     private class PartitionSnapshotListener implements SnapshotListener {
         /** {@inheritDoc} */
         @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
-            fileRebalanceFut.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
+            fileRebalanceRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
         }
 
         /** {@inheritDoc} */
         @Override public void onEnd(UUID rmtNodeId) {
             // No-op.
-            // todo add assertion
         }
 
         /** {@inheritDoc} */
         @Override public void onException(UUID rmtNodeId, Throwable t) {
-            log.error("Unable to create remote snapshot: " + t.getMessage(), t);
+            log.error("Unable to receive partition [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
         }
     }
 }
