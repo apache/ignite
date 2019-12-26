@@ -30,9 +30,7 @@ public enum EncryptionSubcommand {
     /** Encryption subcommand name. */
     private final String name;
 
-    /**
-     * @param name Encryption subcommand name.
-     */
+    /** @param name Encryption subcommand name. */
     EncryptionSubcommand(String name) {
         this.name = name;
     }

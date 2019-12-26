@@ -1817,14 +1817,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "LOST partitions:");
     }
 
-    /**
-     * Test cluster master key change works via control.sh
-     *
-     * @throws Exception If failed.
-     */
+    /** @throws Exception If failed. */
     @Test
     public void testMasterKeyChange() throws Exception {
         encriptionEnabled = true;
+
+        injectTestSystemOut();
 
         Ignite ignite = startGrids(1);
 
@@ -1848,7 +1846,34 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(MASTER_KEY_NAME_2, res);
 
+        testOut.reset();
+
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
             execute("--encryption", "change_master_key", "non-existing-master-key-name"));
+
+        assertContains(log, testOut.toString(),
+            "Master key change was rejected. Unable to get the master key digest.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeOnInactiveCluster() throws Exception {
+        encriptionEnabled = true;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
+
+        Object res = h.getLastOperationResult();
+
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
     }
 }

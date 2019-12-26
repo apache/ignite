@@ -27,10 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Result for {@link VisorEncryptionTask}.
  */
 public class VisorEncryptionTaskResult extends IgniteDataTransferObject {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Result. */
     private String result;
 
     /** */
@@ -38,9 +38,7 @@ public class VisorEncryptionTaskResult extends IgniteDataTransferObject {
         // No-op.
     }
 
-    /**
-     * @param payload Result.
-     */
+    /** @param payload Result. */
     public VisorEncryptionTaskResult(String payload) {
         this.result = payload;
     }

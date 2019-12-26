@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Arguments for task {@link VisorEncryptionTask}
  */
 public class VisorEncryptionArgs extends IgniteDataTransferObject {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Encryption subcommand. */
@@ -42,9 +42,7 @@ public class VisorEncryptionArgs extends IgniteDataTransferObject {
         // No-op.
     }
 
-    /**
-     * @param cmd Encryption subcommand.
-     */
+    /** @param cmd Encryption subcommand. */
     public VisorEncryptionArgs(EncryptionSubcommand cmd) {
         this.cmd = cmd;
     }

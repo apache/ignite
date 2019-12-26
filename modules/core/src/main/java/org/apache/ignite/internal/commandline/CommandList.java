@@ -55,7 +55,7 @@ public enum CommandList {
     /** */
     READ_ONLY_DISABLE("--read-only-off", new ClusterReadOnlyModeDisableCommand()),
 
-    /** */
+    /** Encryption features command. */
     ENCRYPTION("--encryption", new EncryptionCommand());
 
     /** Private values copy so there's no need in cloning it every time. */

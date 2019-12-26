@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorEncryptionTask extends VisorOneNodeTask<VisorEncryptionArgs, VisorEncryptionTaskResult> {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
