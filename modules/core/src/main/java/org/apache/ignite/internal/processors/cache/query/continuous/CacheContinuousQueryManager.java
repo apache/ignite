@@ -858,25 +858,22 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param factory Original factory.
      * @return Security aware factory.
      */
-    @SuppressWarnings("rawtypes")
-    private Factory securityAwareTransformerFactory(Factory factory) {
-        return securityAwareComponent(factory, SecurityAwareTransformerFactory::new);
+    private <T extends IgniteClosure> Factory<T> securityAwareTransformerFactory(Factory<T> factory) {
+        return securityAwareComponent(factory, (id, f) -> (Factory<T>)new SecurityAwareTransformerFactory(id, f));
     }
 
     /**
      * @param factory Original factory.
      * @return Security aware factory.
      */
-    @SuppressWarnings("rawtypes")
-    private Factory securityAwareFilterFactory(Factory factory) {
-        return securityAwareComponent(factory, SecurityAwareFilterFactory::new);
+    private <T extends CacheEntryEventFilter> Factory<T> securityAwareFilterFactory(Factory<T> factory) {
+        return securityAwareComponent(factory, (id, f) -> (Factory<T>)new SecurityAwareFilterFactory(id, f));
     }
 
     /**
      * @param filter Original filter.
      * @return Security aware filter.
      */
-    @SuppressWarnings("rawtypes")
     private CacheEntryEventSerializableFilter securityAwareFilter(CacheEntryEventSerializableFilter filter) {
         return securityAwareComponent(filter, SecurityAwareFilter::new);
     }

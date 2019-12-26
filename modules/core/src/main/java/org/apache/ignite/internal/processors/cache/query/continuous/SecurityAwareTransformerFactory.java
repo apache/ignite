@@ -33,6 +33,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAwareExternalizable implements
     Factory<IgniteClosure<E, R>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Default constructor.
      */
@@ -58,6 +61,9 @@ public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAware
 
     /** */
     private static class SecurityAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Security subject id. */
         private final UUID subjectId;
 
