@@ -231,7 +231,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     private boolean serverDownMessage(String text) {
         return text.contains("Failed to send message (node may have left the grid or "
             + "TCP connection cannot be established due to firewall issues)")
-            || text.contains("Failed to send message, node left");
+            || text.contains("Failed to send message, node left")
+            || text.contains("Failed to send message (node left topology)");
     }
 
     /**
