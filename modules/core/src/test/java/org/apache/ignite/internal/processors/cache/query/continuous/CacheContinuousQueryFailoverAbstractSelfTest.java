@@ -258,11 +258,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     @Test
     public void testRebalanceVersion() throws Exception {
-        Ignite ignite0 = startGrid(0);
+        IgniteEx ignite0 = startGrid(0);
 
         int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
 
-        GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
+        boolean replicated = ignite0.context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).isReplicated();
+
+        GridDhtPartitionTopology top0 = ignite0.context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
@@ -299,9 +301,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5, 0);
-        waitRebalanceFinished(ignite2, 5, 0);
-        waitRebalanceFinished(ignite3, 5, 0);
+        waitRebalanceFinished(ignite0, 5, replicated ? 0 : minorVer);
+        waitRebalanceFinished(ignite2, 5, replicated ? 0 : minorVer);
+        waitRebalanceFinished(ignite3, 5, replicated ? 0 : minorVer);
     }
 
     /**
