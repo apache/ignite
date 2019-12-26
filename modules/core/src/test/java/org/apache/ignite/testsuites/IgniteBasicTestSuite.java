@@ -21,6 +21,7 @@ import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
@@ -189,6 +190,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridMbeansMiscTest.class);
         suite.addTestSuite(TransactionsMXBeanImplTest.class);
         suite.addTestSuite(SetTxTimeoutOnPartitionMapExchangeTest.class);
+        suite.addTestSuite(EvictPartitionInLogTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
