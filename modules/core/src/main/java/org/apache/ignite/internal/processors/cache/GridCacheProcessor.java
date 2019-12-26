@@ -3456,11 +3456,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) {
         assert cacheName != null;
 
-        if (checkThreadTx) {
-            checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
-                "dynamicStartCache"));
-        }
-
         GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
             assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
 
@@ -3478,6 +3473,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null);
 
             if (req != null) {
+                if (checkThreadTx) {
+                    checkEmptyTransactionsEx(() -> String.format(CACHE_NAME_AND_OPERATION_FORMAT, cacheName,
+                            "dynamicStartCache"));
+                }
+
                 if (req.clientStartOnly())
                     return startClientCacheChange(F.asMap(req.cacheName(), req), null);
 
