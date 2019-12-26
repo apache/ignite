@@ -108,61 +108,6 @@ public class IgniteCacheTestSuite7 {
         GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
-
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNPEOnStartTest.class, ignoredTests);
 //        GridTestUtils.addTestIfNeeded(suite, Authentication1kUsersNodeRestartTest.class, ignoredTests);
 //
