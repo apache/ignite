@@ -233,7 +233,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             allKeysCount += data.size();
         }
 
-
         TestRecordingCommunicationSpi.spi(ignite0)
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
