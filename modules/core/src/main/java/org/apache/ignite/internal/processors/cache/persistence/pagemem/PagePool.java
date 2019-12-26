@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class PagePool {
     /** Relative pointer chunk index mask. */
-    private static final long SEGMENT_INDEX_MASK = 0xFFFFFF0000000000L;
+    static final long SEGMENT_INDEX_MASK = 0xFFFFFF0000000000L;
 
     /** Address mask to avoid ABA problem. */
     private static final long ADDRESS_MASK = 0xFFFFFFFFFFFFFFL;
@@ -227,7 +227,7 @@ public class PagePool {
      * @param pageIdx Page index in the pool.
      * @return Relative pointer.
      */
-    private long relative(long pageIdx) {
+    long relative(long pageIdx) {
         return pageIdx | ((long)idx) << 40;
     }
 

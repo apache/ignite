@@ -94,6 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(3, aff.GetPartition(4L));
         }
 
+        // ReSharper disable once UnusedType.Local (used from config)
         private class TestFunc : IAffinityFunction   // [Serializable] is not necessary
         {
             [InstanceResource]
