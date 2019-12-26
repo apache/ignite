@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -341,7 +342,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             ref = this;
 
-            arr = new SelfReferencedJob[] {this, this};
+            arr = new SelfReferencedJob[]{this, this};
 
             col = Arrays.asList(this, this, this);
 
@@ -1117,7 +1118,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     if (Integer.valueOf(1).equals(i))
                         throw new IgniteCheckedException(expectedException);
 
-                    return  null;
+                    return null;
                 }
             );
 
