@@ -164,7 +164,7 @@ public class GridDhtPartitionDemander {
 
         mreg.register("RebalancingStartTime", () -> rebalanceFut.startTime, "Rebalancing start time.");
 
-        mreg.register("RebalancingEndTime", () -> rebalanceFut.endTime.get(), "Rebalancing end time.");
+        mreg.register("RebalancingEndTime", () -> rebalanceFut.endTime, "Rebalancing end time.");
 
         mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(),
             "Rebalancing last cancelled time.");
@@ -1239,7 +1239,7 @@ public class GridDhtPartitionDemander {
         private volatile long startTime = -1;
 
         /** Rebalancing end time. */
-        private final AtomicLong endTime = new AtomicLong(-1);
+        private volatile long endTime = -1;
 
         /** Rebalancing last cancelled time. */
         private final AtomicLong lastCancelledTime;
@@ -1369,15 +1369,15 @@ public class GridDhtPartitionDemander {
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
             assert !cancel;
 
-            long time = System.currentTimeMillis();
-
-            if (startTime != -1)
-                endTime.compareAndSet(-1, time);
-
             boolean byThisCall = super.onDone(res, err, cancel);
+            boolean isCancelled = res == Boolean.FALSE || isFailed();
 
-            if (byThisCall && (res == false || isFailed()))
-                lastCancelledTime.accumulateAndGet(time, Math::max);
+            if (byThisCall) {
+                if (isCancelled)
+                    lastCancelledTime.accumulateAndGet(System.currentTimeMillis(), Math::max);
+                else if (startTime != -1)
+                    endTime = System.currentTimeMillis();
+            }
 
             return byThisCall;
         }

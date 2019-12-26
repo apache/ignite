@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import com.google.common.collect.Lists;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -222,13 +222,17 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
 
-        for (String cacheName : cacheNames) {
-            IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(cacheName);
+        int allKeysCount = 0;
 
-            for (int i = 0; i < KEYS_COUNT; i++) {
-                cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
-            }
+        for (String cacheName : cacheNames) {
+            Map<Integer, Long> data = new Random().ints(KEYS_COUNT).distinct().boxed()
+                .collect(Collectors.toMap(i -> i, i -> (long)i));
+
+            ignite0.getOrCreateCache(cacheName).putAll(data);
+
+            allKeysCount += data.size();
         }
+
 
         TestRecordingCommunicationSpi.spi(ignite0)
             .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
@@ -284,16 +288,18 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertEquals("Rebalancing last cancelled time must be undefined.", -1, lastCancelledTime.value());
 
+        waitForCondition(() -> endTime.value() != -1, 1000);
+
         assertTrue("Rebalancing end time must be determined and must be longer than the start time " +
-                "[rebalancingStartTime=" + rebalancingStartTime + ", rebalancingEndTime=" + endTime.value() + "].",
+                "[RebalancingStartTime=" + rebalancingStartTime + ", RebalancingEndTime=" + endTime.value() + "].",
             rebalancingStartTime < endTime.value());
 
         assertEquals("The number of currently rebalanced keys for the whole cache group should be equal to the " +
-                "number of entries in the caches.", KEYS_COUNT * cacheNames.size(), receivedKeys.value());
+                "number of entries in the caches.", allKeysCount, receivedKeys.value());
 
-        assertTrue("The number of currently rebalanced bytes of this cache group was expected more " + KEYS_COUNT *
-                cacheNames.size() * (Integer.BYTES + Long.BYTES) + " bytes, but actual: " + receivedBytes.value(),
-            receivedBytes.value() > KEYS_COUNT * cacheNames.size() * (Integer.BYTES + Long.BYTES));
+        assertTrue("The number of currently rebalanced bytes of this cache group was expected more " + allKeysCount
+                * (Integer.BYTES + Long.BYTES) + " bytes, but actual: " + receivedBytes.value() + ".",
+            receivedBytes.value() > allKeysCount * (Integer.BYTES + Long.BYTES));
     }
 
     /**
@@ -306,11 +312,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
 
         for (String cacheName : cacheNames) {
-            IgniteCache<Integer, Long> cache = ignite0.getOrCreateCache(cacheName);
-
-            for (int i = 0; i < KEYS_COUNT; i++) {
-                cache.put(ThreadLocalRandom.current().nextInt(), ThreadLocalRandom.current().nextLong());
-            }
+            ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).boxed()
+                .collect(Collectors.toMap(i -> i, i -> (long)i)));
         }
 
         TestRecordingCommunicationSpi.spi(ignite0)
@@ -345,34 +348,30 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertEquals("Before the rebalancing is completed, the end time metric must be undefined.",
             -1, endTime.value());
 
-        AtomicLong cancelledTime = new AtomicLong();
-
         IgniteInternalFuture chain = ignite1.context().cache().internalCache(CACHE5).preloader().rebalanceFuture()
             .chain(f -> {
-                    assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to" +
-                        " the start time measured immediately after the rebalancing start.",
-                        rebalancingStartTime, startTime.value());
+                assertEquals("After the rebalancing is ended, the rebalancing start time must be equal to " +
+                        "the start time measured immediately after the rebalancing start.",
+                    rebalancingStartTime, startTime.value());
 
-                    assertTrue("Rebalancing end time must be determined and must be longer than the start time " +
-                            "[rebalancingStartTime=" + rebalancingStartTime + ", rebalancingEndTime=" +
-                            endTime.value() + "].", rebalancingStartTime < endTime.value());
+                assertEquals("If the rebalancing has been cancelled, the end time must not be set.",
+                    -1, endTime.value());
 
-                    cancelledTime.set(endTime.value());
-
-                    return null;
-                });
+                return null;
+            });
 
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock(false);
 
         chain.get();
 
         assertNotSame("The rebalancing start time must not be equal to the previously measured start time, since" +
-                " the first rebalancing was canceled and restarted.", rebalancingStartTime, startTime.value());
+                " the first rebalancing was cancelled and restarted.", rebalancingStartTime, startTime.value());
 
-        waitForCondition(() -> lastCancelledTime.value() == cancelledTime.get(), 1000);
+        waitForCondition(() -> lastCancelledTime.value() != -1, 5000);
 
-        assertEquals("The rebalancing last cancelled time must coincide with the rebalancing end time of the " +
-                "first canceled rebalance.", cancelledTime.get(), lastCancelledTime.value());
+        assertTrue("The rebalancing last cancelled time must be greater than or equal to the start time of the " +
+            "cancelled rebalancing [RebalancingStartTime=" + rebalancingStartTime + ", rebalancingLastCancelledTime=" +
+            lastCancelledTime.value() + "].", rebalancingStartTime <= lastCancelledTime.value());
     }
 
     /**
