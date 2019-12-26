@@ -158,9 +158,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToDefaultNode()
         {
             // Warm-up.
-            Client.GetCacheNames();
-            var defaultGridIndex = GetClientRequestGridIndex("GetNames");
-            
             Assert.AreEqual(1, _cache.Get(1));
 
             // Before topology change.
@@ -183,14 +180,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
                 // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
+                
+                // Get default node index by performing non-partition-aware operation.
+                _cache.GetAll(Enumerable.Range(1, 10));
+                var defaultNodeIdx = GetClientRequestGridIndex("GetAll");
+                Assert.Greater(defaultNodeIdx, -1);
 
                 // Assert: keys 12 and 14 belong to a new node now, but we don't have the new node in the server list.
                 // Requests are routed to default node.
                 Assert.AreEqual(12, _cache.Get(12));
-                Assert.AreEqual(defaultGridIndex, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
 
                 Assert.AreEqual(14, _cache.Get(14));
-                Assert.AreEqual(defaultGridIndex, GetClientRequestGridIndex());
+                Assert.AreEqual(defaultNodeIdx, GetClientRequestGridIndex());
             }
         }
 
@@ -260,7 +262,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             _cache.Get(1);
             _cache.Get(1);
 
-            var requests = GetCacheRequestNames(_loggers[1]).ToArray();
+            var requests = _loggers.SelectMany(GetCacheRequestNames).ToArray();
 
             var expectedRequests = new[]
             {
@@ -270,9 +272,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 "Get"
             };
 
-            Assert.AreEqual(expectedRequests, requests);
+            CollectionAssert.AreEquivalent(expectedRequests, requests);
         }
-
 
         [Test]
         public void ReplicatedCacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
