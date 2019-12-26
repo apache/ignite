@@ -238,7 +238,8 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID,
+            PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
