@@ -32,7 +32,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
 
 /**
- *
+ * A part of exchange.
  */
 public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoCloseable {
     /** */
@@ -80,6 +80,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     /**
      * Inits this Inbox.
      *
+     * @param ctx Execution context.
      * @param sources Source nodes.
      * @param comparator Optional comparator for merge exchange.
      */
@@ -138,6 +139,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         assert sources != null;
 
         if (buffers == null) {
+            // awaits till all sources sent a first bunch of batches
             if (perNodeBuffers.size() != sources.size())
                 return false;
 

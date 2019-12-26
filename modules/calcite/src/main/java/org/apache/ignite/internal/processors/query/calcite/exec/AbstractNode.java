@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ * Abstract node of execution tree.
  */
 public abstract class AbstractNode<T> implements Node<T> {
     /** */
@@ -31,7 +33,11 @@ public abstract class AbstractNode<T> implements Node<T> {
     /** */
     private volatile Sink<T> target;
 
-    /** */
+    /**
+     * {@link Inbox} node may not have proper context at creation time in case it
+     * creates on first message received from a remote source. This case the context
+     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
+     */
     private volatile ExecutionContext ctx;
 
     /**
@@ -81,7 +87,9 @@ public abstract class AbstractNode<T> implements Node<T> {
         return ctx;
     }
 
-    /** */
+    /**
+     * Links the node inputs to the node sinks.
+     */
     protected void link() {
         for (int i = 0; i < inputs.size(); i++)
             inputs.get(i).target(sink(i));

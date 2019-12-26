@@ -23,7 +23,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import org.apache.ignite.IgniteInterruptedException;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ * Client iterator.
  */
 public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]>, Iterator<Object[]> {
     /** */

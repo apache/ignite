@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Iterator;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ * Scan node.
  */
 public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]> {
     /** */
@@ -68,6 +68,6 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
-        throw new UnsupportedOperationException();
+        throw new AssertionError();
     }
 }
