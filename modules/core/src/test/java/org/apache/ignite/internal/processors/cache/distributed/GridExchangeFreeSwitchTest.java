@@ -213,14 +213,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Random r = new Random();
 
-        boolean absentPme = (persistence && !pmeFreeSwitch);
-
         while (nodes > 1) {
             G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(absentPme ? 0 : (nodes - 1), cnt.get());
+            assertEquals(!noBlockMsg ? 0 : (nodes - 1), cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
