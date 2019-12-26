@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -456,4 +457,15 @@ public interface GridQueryIndexing {
      * @return Column information filtered by given patterns.
      */
     Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
+
+    /**
+     * Generates tasks to partially cleanup all indexes in the cache group.
+     * The tasks remove index rows that point to specified data partitions.
+     *
+     * @param grp Cache group context.
+     * @param parts Partitions.
+     * @return Tasks and associated futures.
+     */
+    public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(CacheGroupContext grp,
+        Set<Integer> parts);
 }

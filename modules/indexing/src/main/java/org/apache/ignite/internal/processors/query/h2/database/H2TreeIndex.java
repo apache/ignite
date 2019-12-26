@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -69,8 +70,10 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -885,6 +888,27 @@ public class H2TreeIndex extends H2TreeIndexBase {
         res.values(vals);
 
         return res;
+    }
+
+    /**
+     * Removes all index rows that belong to the specific data partitions.
+     *
+     * @param parts Partitions.
+     * @param shouldStop Allows to check stop condition.
+     */
+    public void purge(Set<Integer> parts, IgniteCallable<Boolean> shouldStop) throws IgniteCheckedException {
+        assert !F.isEmpty(parts) : "Empty parts";
+
+        for (int seg = 0; seg < segments.length; seg++) {
+            // Check that the segment covers at least one partition from the set.
+            for (Integer part : parts) {
+                if (part % segments.length == seg) {
+                    segments[seg].purge(parts, shouldStop);
+
+                    break;
+                }
+            }
+        }
     }
 
     /**

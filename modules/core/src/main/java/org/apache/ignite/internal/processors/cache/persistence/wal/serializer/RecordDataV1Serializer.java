@@ -80,6 +80,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecor
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PurgeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
@@ -531,6 +532,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
+
+            case BTREE_PAGE_PURGE:
+                PurgeRecord purgeRec = (PurgeRecord)record;
+
+                return 4 + 8 + 2 + 2 + 2 * purgeRec.itemsCount();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1147,6 +1153,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case BTREE_PAGE_PURGE:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                int itemsCnt = in.readUnsignedShort();
+
+                int[] items = new int[itemsCnt];
+
+                for (int i = 0; i < itemsCnt; i++)
+                    items[i] = in.readUnsignedShort();
+
+                cnt = in.readUnsignedShort();
+
+                res = new PurgeRecord(cacheId, pageId, items, itemsCnt, cnt);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1709,6 +1732,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SWITCH_SEGMENT_RECORD:
+                break;
+
+            case BTREE_PAGE_PURGE:
+                PurgeRecord purgeRec = (PurgeRecord)rec;
+
+                buf.putInt(purgeRec.groupId());
+                buf.putLong(purgeRec.pageId());
+
+                buf.putShort((short)purgeRec.itemsCount());
+
+                for (int i = 0; i < purgeRec.itemsCount(); i++)
+                    buf.putShort((short)purgeRec.items()[i]);
+
+                buf.putShort((short)purgeRec.count());
+
                 break;
 
             default:

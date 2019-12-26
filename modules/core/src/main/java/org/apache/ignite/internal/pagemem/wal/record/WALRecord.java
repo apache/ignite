@@ -221,7 +221,10 @@ public abstract class WALRecord {
         ROLLBACK_TX_RECORD (57, LOGICAL),
 
         /** Partition meta page containing update counter gaps. */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL);
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
+
+        /** Remove multiple items from the page. */
+        BTREE_PAGE_PURGE(59, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PurgeRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
@@ -1824,6 +1825,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         Boolean res = (Boolean)doRemove(row, false);
 
         return res != null ? res : false;
+    }
+
+    /**
+     * Visits leaf pages and applies page handler to the pages with filtered rows.
+     *
+     * @param rowClo Row filter.
+     * @param hnd Page handler.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void visitLeaves(TreeRowClosure<L, T> rowClo, VisitorPageHandler hnd) throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            new LeafVisitor(rowClo, hnd).visit();
+        }
+        catch (RuntimeException | AssertionError e) {
+            throw corruptedTreeException("Runtime failure ", e, grpId);
+        }
+        finally {
+            checkDestroyed();
+        }
     }
 
     /** {@inheritDoc} */
@@ -5449,7 +5471,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lower New exact lower bound.
          */
-        private void updateLowerBound(L lower) {
+        protected void updateLowerBound(L lower) {
             if (lower != null) {
                 lowerShift = 1; // Now we have the full row an need to avoid duplicates.
                 lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
@@ -5725,6 +5747,203 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override public boolean releaseAfterWrite(int cacheId, long pageId, long page, long pageAddr, G g, int lvl) {
             return g.canRelease(pageId, lvl);
+        }
+    }
+
+    /**
+     * Page handler with additional processing before and after page visit.
+     */
+    private abstract class VisitorPageHandler extends PageHandler<Void, L> {
+        /**
+         * This method is called before the page locks are taken.
+         */
+        public abstract void onBefore() throws IgniteCheckedException;
+
+        /**
+         * This method is called after the page locks are released.
+         */
+        public abstract void onAfter() throws IgniteCheckedException;
+    }
+
+    /**
+     * Visitor of the leaf pages of the tree.
+     * Accepts a row filter and writing page handler.
+     */
+    private final class LeafVisitor extends AbstractForwardCursor {
+        /** Row filter. */
+        private final TreeRowClosure<L, T> clo;
+
+        /** Write page handler. */
+        private VisitorPageHandler hnd;
+
+        /** Last row to get back to if current page turns out removed. */
+        private L lastRow;
+
+        /**
+         * @param clo row closure.
+         * @param hnd Write page handler.
+         */
+        LeafVisitor(TreeRowClosure<L, T> clo, VisitorPageHandler hnd) {
+            super(null, null);
+
+            assert clo != null;
+            assert hnd != null;
+
+            this.clo = clo;
+            this.hnd = hnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override void init0() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean reinitialize0() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onNotFound(boolean readDone) {
+            if (readDone)
+                nextPageId = 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
+            throws IgniteCheckedException {
+            for (int i = Math.max(startIdx, 0); i < cnt; i++) {
+                if (clo.apply(BPlusTree.this, io, pageAddr, i)) {
+                    nextPageId = PageIO.getPageId(pageAddr);
+
+                    return true;
+                }
+            }
+
+            if (nextPageId != 0)
+                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
+
+            return false;
+        }
+
+        /**
+         * Iterates the pages, applies row filter and calls page handler to do modifications on the filtered page.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void visit() throws IgniteCheckedException {
+            lastRow = findFirst();
+
+            if (lastRow == null)
+                return;
+
+            lowerBound = lastRow;
+
+            find();
+
+            while (nextPageId != 0) {
+                if (nextPage(lastRow)) {
+                    lastRow = doVisit(nextPageId);
+
+                    if (lastRow != null) {
+                        updateLowerBound(lastRow);
+
+                        find();
+                    }
+                }
+            }
+        }
+
+        /**
+         * Calls page handler to do modifications on the filtered page.
+         *
+         * @param curPageId Page ID.
+         * @throws IgniteCheckedException If failed.
+         */
+        private L doVisit(long curPageId) throws IgniteCheckedException {
+            hnd.onBefore();
+
+            try {
+                checkDestroyed();
+
+                assert lastRow != null;
+
+                return write(curPageId, hnd, null, 0, lastRow, statisticsHolder());
+            }
+            finally {
+                hnd.onAfter();
+            }
+        }
+    }
+
+    /**
+     * Removes filtered rows from the leaf pages.
+     * The only and the rightmost rows are deleted starting from "root", using regular remove.
+     */
+    public class PurgePageHandler extends VisitorPageHandler {
+        /** Accumulates indexes of rows for the delta wal record. */
+        private int[] idxs;
+
+        /** Row identified to be removed from "root". */
+        private L removeRow;
+
+        /** Row filter. */
+        private TreeRowClosure<L, T> clo;
+
+        /**
+         *
+         * @param clo Row filter.
+         */
+        public PurgePageHandler(TreeRowClosure<L, T> clo) {
+            this.clo = clo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public L run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
+            Void arg, int intArg, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+            BPlusIO<L> io = (BPlusIO<L>)iox;
+
+            assert io.isLeaf();
+
+            int cnt = io.getCount(pageAddr);
+
+            if (idxs == null || idxs.length < cnt)
+                idxs = new int[cnt];
+
+            int idxsCnt = 0;
+
+            for (int idx = 0; idx < cnt - 1; idx++) {
+                if (!clo.apply(BPlusTree.this, io, pageAddr, idx))
+                    continue;
+
+                idxs[idxsCnt++] = idx;
+            }
+
+            if (clo.apply(BPlusTree.this, io, pageAddr, cnt - 1))
+                removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
+            if (idxsCnt > 0) {
+                io.purge(pageAddr, idxs, idxsCnt);
+
+                if (needWalDeltaRecord(pageId, page, null))
+                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
+            }
+
+            return removeRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onBefore() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAfter() throws IgniteCheckedException {
+            if (removeRow != null) {
+                doRemove(removeRow, false);
+
+                removeRow = null;
+            }
         }
     }
 

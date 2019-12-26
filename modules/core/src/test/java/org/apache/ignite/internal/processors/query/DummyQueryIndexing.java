@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -327,5 +329,12 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String tblNamePtrn,
         String colNamePtrn) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(
+        CacheGroupContext grp,
+        Set<Integer> parts) {
+        return Collections.emptyList();
     }
 }
