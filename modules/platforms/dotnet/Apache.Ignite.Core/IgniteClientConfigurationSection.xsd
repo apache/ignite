@@ -216,6 +216,18 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="logger" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>The logger. Default is ConsoleLogger. Set to null to disable logging.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>

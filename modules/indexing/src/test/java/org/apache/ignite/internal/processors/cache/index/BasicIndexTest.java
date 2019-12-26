@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -181,7 +182,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testNoIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -199,6 +200,17 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    private int[] inlineSizeVariations() {
+        int[] baseVariations = {0, 10, 20, 50, 100};
+
+        // Determine if scaling is needed, we are not accurate here
+        if (GridTestUtils.SF.apply(baseVariations.length) < baseVariations.length)
+            return new int[] {0, 20, 100};
+
+        return baseVariations;
+    }
+
+    /** */
     @Test
     public void testAllIndexesNoPersistence() throws Exception {
         indexes = Arrays.asList(
@@ -210,7 +222,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             new QueryIndex("valPojo")
         );
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -230,7 +242,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testDynamicIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -782,7 +794,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -821,7 +833,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -926,7 +938,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -965,7 +977,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1010,7 +1022,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1059,7 +1071,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1099,7 +1111,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
