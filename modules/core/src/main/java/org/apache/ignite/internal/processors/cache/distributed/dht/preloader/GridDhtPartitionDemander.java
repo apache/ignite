@@ -162,12 +162,16 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingReceivedBytes", () -> rebalanceFut.receivedBytes.get(),
             "The number of currently rebalanced bytes of this cache group.");
 
-        mreg.register("RebalancingStartTime", () -> rebalanceFut.startTime, "Rebalancing start time.");
+        mreg.register("RebalancingStartTime", () -> rebalanceFut.startTime, "The time the first partition " +
+            "demand message was sent. If there are no messages to send, the rebalancing time will be undefined.");
 
-        mreg.register("RebalancingEndTime", () -> rebalanceFut.endTime, "Rebalancing end time.");
+        mreg.register("RebalancingEndTime", () -> rebalanceFut.endTime, "The time the rebalancing was " +
+            "completed. If the rebalancing completed with an error, was cancelled, or the start time was undefined, " +
+            "the rebalancing end time will be undefined.");
 
-        mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(),
-            "Rebalancing last cancelled time.");
+        mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(), "The time the " +
+            "rebalancing was completed with an error or was cancelled. If there were several such cases, the metric " +
+            "stores the last time. The metric displays the value even if there is no rebalancing process.");
     }
 
     /**
