@@ -53,7 +53,6 @@ public class IgniteCacheTestSuite7 {
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorSelfTest.class, ignoredTests);
 //        GridTestUtils.addTestIfNeeded(suite, AuthenticationOnNotActiveClusterTest.class, ignoredTests);
 
-
         GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AuthenticationProcessorNodeRestartTest.class, ignoredTests);
