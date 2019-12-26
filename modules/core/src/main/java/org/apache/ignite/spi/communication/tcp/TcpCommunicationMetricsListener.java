@@ -406,20 +406,20 @@ class TcpCommunicationMetricsListener {
      */
     private class ThreadMetrics {
         /** Sent messages count metrics grouped by message type. */
-        private final HashMap<Short, LongAdderMetric> sentMsgsMetricsByType = new HashMap<>();
+        private final Map<Short, LongAdderMetric> sentMsgsMetricsByType = new HashMap<>();
 
         /** Received messages count metrics grouped by message type. */
-        private final HashMap<Short, LongAdderMetric> rcvdMsgsMetricsByType = new HashMap<>();
+        private final Map<Short, LongAdderMetric> rcvdMsgsMetricsByType = new HashMap<>();
 
         /**
          * Sent messages count metrics grouped by message node id.
          */
-        public volatile HashMap<UUID, LongAdderMetric> sentMsgsMetricsByNodeId = new HashMap<>();
+        public volatile Map<UUID, LongAdderMetric> sentMsgsMetricsByNodeId = new HashMap<>();
 
         /**
          * Received messages metrics count grouped by message node id.
          */
-        public volatile HashMap<UUID, LongAdderMetric> rcvdMsgsMetricsByNodeId = new HashMap<>();
+        public volatile Map<UUID, LongAdderMetric> rcvdMsgsMetricsByNodeId = new HashMap<>();
 
 
         /**
