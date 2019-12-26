@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.concurrent.Future;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -37,6 +37,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.cluster.MappingServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.DelegatingStripedExecutor;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ContextFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DistributedExecution;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,6 +68,9 @@ public class CalciteQueryProcessor implements QueryEngine {
 
     /** */
     private GridKernalContext kernalContext;
+
+    /** */
+    private IgniteStripedThreadPoolExecutor executorService;
 
     /** */
     public CalciteQueryProcessor() {
@@ -103,35 +109,43 @@ public class CalciteQueryProcessor implements QueryEngine {
 
         if (prc != null) // Stubbed context doesn't have such processor
             prc.registerSchemaChangeListener(schemaHolder);
+
+        // TODO move to executors
+        executorService = new IgniteStripedThreadPoolExecutor(
+            8,
+            kernalContext.igniteInstanceName(),
+            "calciteQry",
+            null,
+            true,
+            10_000
+        );
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        List<Runnable> scheduled = executorService.shutdownNow();
+
+        for (Runnable task : scheduled) {
+            if (task instanceof Future)
+                ((Future<?>) task).cancel(true);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
-        PlannerContext context = context(Commons.convert(ctx), query, params, this::buildContext);
-        QueryExecution execution = prepare(context);
-        FieldsQueryCursor<List<?>> cur = execution.execute();
-        return Collections.singletonList(cur);
+        QueryExecution execution = prepare(ctx, query, params);
+
+        return Collections.singletonList(execution.execute());
     }
 
     /**
      * Creates a planner.
      *
-     * @param traitDefs Trait definitions.
      * @param ctx Planner context.
      * @return Ignite planner.
      */
-    public IgnitePlanner planner(RelTraitDef[] traitDefs, PlannerContext ctx) {
-        FrameworkConfig cfg = Frameworks.newConfigBuilder(config)
-                .defaultSchema(ctx.schema())
-                .traitDefs(traitDefs)
-                .context(ctx)
-                .build();
-
-        return new IgnitePlanner(cfg);
+    public IgnitePlanner planner(PlannerContext ctx) {
+        return new IgnitePlanner(ctx);
     }
 
     /**
@@ -140,27 +154,53 @@ public class CalciteQueryProcessor implements QueryEngine {
      * @param params Query parameters.
      * @return Query execution context.
      */
-    PlannerContext context(@NotNull Context ctx, String query, Object[] params, BiFunction<Context, Query, PlannerContext> clo) { // Package private visibility for tests.
-        return clo.apply(Contexts.chain(ctx, config.getContext()), new Query(query, params));
+    public PlannerContext buildContext(@Nullable QueryContext ctx, RelTraitDef<?>[] traitDefs, String query, Object[] params) {
+        return buildContext(ctx, traitDefs, query, params, this::buildContext);
+    }
+
+    /**
+     * For tests
+     *
+     * @param ctx External context.
+     * @param query Query string.
+     * @param params Query parameters.
+     * @return Query execution context.
+     */
+    PlannerContext buildContext(@Nullable QueryContext ctx, RelTraitDef<?>[] traitDefs, String query, Object[] params, ContextFactory factory) {
+        Context parent = Contexts.chain(Commons.convert(ctx), config().getContext());
+        return factory.create(parent, new Query(query, params), traitDefs);
     }
 
     /** */
-    private PlannerContext buildContext(@NotNull Context parent, @NotNull Query query) {
+    private PlannerContext buildContext(@NotNull Context parent, @NotNull Query query, @NotNull RelTraitDef<?>[] traitDefs) {
         return PlannerContext.builder()
-            .logger(log)
             .kernalContext(kernalContext)
-            .queryProcessor(this)
             .parentContext(parent)
+            .frameworkConfig(Frameworks.newConfigBuilder(config())
+                .defaultSchema(schemaHolder.schema())
+                .traitDefs(traitDefs)
+                .build())
+            .queryProcessor(this)
             .query(query)
-            .schema(schemaHolder.schema())
             .topologyVersion(readyAffinityVersion())
             .mappingService(new MappingServiceImpl(kernalContext))
+            .executor(new DelegatingStripedExecutor(executorService))
+            .logger(log)
             .build();
     }
 
+
+    /**
+     *
+     * @return Calcite configuration.
+     */
+    FrameworkConfig config() {
+        return config;
+    }
+
     /** */
-    private QueryExecution prepare(PlannerContext ctx) {
-        return new DistributedExecution(ctx);
+    private QueryExecution prepare(@Nullable QueryContext ctx, String query, Object... params) {
+        return new DistributedExecution(ctx, query, params);
     }
 
     /** */

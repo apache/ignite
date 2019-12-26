@@ -17,15 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exchange;
 
+import com.google.common.collect.ImmutableMap;
+import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.calcite.exec.AbstractNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
-import org.apache.ignite.internal.processors.query.calcite.exec.Source;
+import org.apache.ignite.internal.processors.query.calcite.exec.StripedExecutor;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,19 +53,24 @@ public class OutboxTest extends GridCommonAbstractTest {
     private static UUID nodeId;
 
     /** */
-    private static GridCacheVersion queryId;
-
-    /** */
     private static DestinationFunction func;
 
     /** */
     private Outbox<Object[]> outbox;
 
     /** */
+    private TestNode input;
+
+    /** */
+    private TestExchangeService exch;
+
+    /** */
+    private TestExecutor exec;
+
+    /** */
     @BeforeClass
     public static void setupClass() {
         nodeId = UUID.randomUUID();
-        queryId = new GridCacheVersion(0, 0, 0, 0);
 
         NodesMapping mapping = new NodesMapping(Collections.singletonList(nodeId), null, NodesMapping.DEDUPLICATED);
 
@@ -64,7 +80,18 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() {
-        outbox = new Outbox<>(queryId, 0, func);
+        exec = new TestExecutor();
+        exch = new TestExchangeService();
+
+        PlannerContext ctx = PlannerContext.builder()
+            .exchangeProcessor(exch)
+            .executor(exec)
+            .build();
+
+        ExecutionContext ectx = new ExecutionContext(UUID.randomUUID(), ctx, ImmutableMap.of());
+
+        input = new TestNode(ectx);
+        outbox = new Outbox<>(ectx, 0, input, func);
     }
 
     /**
@@ -72,23 +99,22 @@ public class OutboxTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBasicOps() throws Exception {
-        TestSource source = new TestSource();
-        TestExchangeService exch = new TestExchangeService();
+        outbox.request();
 
-        Sink<Object[]> sink = outbox.sink();
+        assertFalse(exec.taskQueue.isEmpty());
 
-        outbox.source(source);
-        outbox.init(exch);
+        exec.execute();
 
         assertTrue(exch.registered);
-        assertTrue(source.signal);
 
-        source.signal = false;
+        assertTrue(input.signal);
+
+        input.signal = false;
 
         int maxRows = ExchangeProcessor.BATCH_SIZE * (ExchangeProcessor.PER_NODE_BATCH_COUNT + 1);
         int rows = 0;
 
-        while (sink.push(new Object[]{new Object()})) {
+        while (input.push(new Object[]{new Object()})) {
             rows++;
 
             assertFalse(rows > maxRows);
@@ -100,23 +126,31 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         assertEquals(ExchangeProcessor.PER_NODE_BATCH_COUNT, exch.ids.size());
 
-        assertFalse(sink.push(new Object[]{new Object()}));
+        assertFalse(input.push(new Object[]{new Object()}));
 
-        assertFalse(source.signal);
+        assertTrue(exec.taskQueue.isEmpty());
 
-        outbox.acknowledge(nodeId, exch.ids.remove(0));
+        assertFalse(input.signal);
 
-        assertTrue(source.signal);
+        outbox.onAcknowledge(nodeId, exch.ids.remove(0));
 
-        source.signal = false;
+        assertFalse(exec.taskQueue.isEmpty());
 
-        outbox.acknowledge(nodeId, exch.ids.remove(0));
+        exec.execute();
 
-        assertFalse(source.signal);
+        assertTrue(input.signal);
 
-        assertTrue(sink.push(new Object[]{new Object()}));
+        input.signal = false;
 
-        sink.end();
+        outbox.onAcknowledge(nodeId, exch.ids.remove(0));
+
+        assertTrue(exec.taskQueue.isEmpty());
+
+        assertFalse(input.signal);
+
+        assertTrue(input.push(new Object[]{new Object()}));
+
+        input.end();
 
         assertTrue(exch.unregistered);
 
@@ -138,48 +172,87 @@ public class OutboxTest extends GridCommonAbstractTest {
         private List<?> lastBatch;
 
         /** {@inheritDoc} */
-        @Override public <T> Outbox<T> register(Outbox<T> outbox) {
+        @Override public void register(Outbox<?> outbox) {
             registered = true;
-
-            return outbox;
         }
 
         /** {@inheritDoc} */
-        @Override public <T> void unregister(Outbox<T> outbox) {
+        @Override public Inbox<?> register(Inbox<?> inbox) {
+            throw new AssertionError();
+        }
+
+        @Override public void unregister(Outbox<?> outbox) {
             unregistered = true;
         }
 
+        @Override public void unregister(Inbox<?> inbox) {
+            throw new AssertionError();
+        }
+
         /** {@inheritDoc} */
-        @Override public void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows) {
+        @Override public void send(UUID queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows) {
             ids.add(batchId);
 
             lastBatch = rows;
         }
 
         /** {@inheritDoc} */
-        @Override public <T> Inbox<T> register(Inbox<T> inbox) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> void unregister(Inbox<T> inbox) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void acknowledge(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId) {
+        @Override public void acknowledge(UUID queryId, long exchangeId, UUID nodeId, int batchId) {
             throw new AssertionError();
         }
     }
 
     /** */
-    private static class TestSource implements Source {
+    private static class TestNode extends AbstractNode<Object[]> {
         /** */
-        boolean signal;
+        private boolean signal;
+
+        protected TestNode(ExecutionContext ctx) {
+            super(ctx);
+        }
+
+        public boolean push(Object[] row) {
+            return target().push(row);
+        }
+
+        public void end() {
+            target().end();
+        }
 
         /** {@inheritDoc} */
-        @Override public void signal() {
+        @Override public void request() {
             signal = true;
+        }
+
+        @Override public Sink<Object[]> sink(int idx) {
+            throw new AssertionError();
+        }
+    }
+
+    /** */
+    private static class TestExecutor implements StripedExecutor {
+        /** */
+        private Queue<Runnable> taskQueue = new ArrayDeque<>();
+
+        /** {@inheritDoc} */
+        @Override public Future<Void> execute(Runnable task, Serializable taskId) {
+            FutureTask<Void> res = new FutureTask<>(task, null);
+
+            taskQueue.offer(res);
+
+            return res;
+        }
+
+        /** */
+        private void execute() {
+            while (true) {
+                Runnable poll = taskQueue.poll();
+
+                if (poll == null)
+                    break;
+
+                poll.run();
+            }
         }
     }
 }

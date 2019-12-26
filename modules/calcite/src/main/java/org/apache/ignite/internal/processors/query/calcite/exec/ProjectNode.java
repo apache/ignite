@@ -27,13 +27,15 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
     private final Function<Object[], Object[]> projection;
 
     /**
-     * @param target Target.
+     * @param ctx Execution context.
      * @param projection Projection.
      */
-    public ProjectNode(Sink<Object[]> target, Function<Object[], Object[]> projection) {
-        super(target);
+    public ProjectNode(ExecutionContext ctx, Node<Object[]> input, Function<Object[], Object[]> projection) {
+        super(ctx, input);
 
         this.projection = projection;
+
+        link();
     }
 
     /** {@inheritDoc} */
@@ -46,11 +48,11 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
 
     /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
-        return target.push(projection.apply(row));
+        return target().push(projection.apply(row));
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        target.end();
+        target().end();
     }
 }

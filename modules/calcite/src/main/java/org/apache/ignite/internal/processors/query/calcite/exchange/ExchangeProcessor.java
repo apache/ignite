@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.exchange;
 
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 
 /**
  *
@@ -35,30 +36,28 @@ public interface ExchangeProcessor {
      * Registers an outbox in Exchange service.
      * Registered outbox will be notified each time a consumer processed a batch of rows.
      * @param outbox Outbox.
-     * @return Registered outbox.
      */
-    <T> Outbox<T> register(Outbox<T> outbox);
-
-    /**
-     * Unregisters an outbox in Exchange service.
-     * @param outbox Outbox to unregister.
-     */
-    <T> void unregister(Outbox<T> outbox);
+    void register(Outbox<?> outbox);
 
     /**
      * Registers an inbox in Exchange service.
      * Registered inbox starts consuming data from remote sources.
      * In case an inbox with the same [queryId, exchangeId] pair is already registered, previously registered inbox is return.
      * @param inbox Inbox.
-     * @return Registered inbox.
      */
-    <T> Inbox<T> register(Inbox<T> inbox);
+    Inbox<?> register(Inbox<?> inbox);
 
     /**
-     * Unregisters an inbox in Exchange service.
-     * @param inbox Inbox to unregister.
+     * Unregisters outbox.
+     * @param outbox Outbox.
      */
-    <T> void unregister(Inbox<T> inbox);
+    void unregister(Outbox<?> outbox);
+
+    /**
+     * Unregisters inbox.
+     * @param inbox Inbox.
+     */
+    void unregister(Inbox<?> inbox);
 
     /**
      * Sends a batch of data to remote node.
@@ -68,7 +67,7 @@ public interface ExchangeProcessor {
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void send(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
+    void send(UUID queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
 
     /**
      * Acknowledges a batch with given ID is processed.
@@ -77,5 +76,5 @@ public interface ExchangeProcessor {
      * @param nodeId Node ID to notify.
      * @param batchId Batch ID.
      */
-    void acknowledge(GridCacheVersion queryId, long exchangeId, UUID nodeId, int batchId);
+    void acknowledge(UUID queryId, long exchangeId, UUID nodeId, int batchId);
 }

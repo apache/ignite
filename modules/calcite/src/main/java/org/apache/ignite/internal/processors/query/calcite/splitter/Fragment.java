@@ -107,7 +107,7 @@ public class Fragment implements RelSource {
     }
 
     /** */
-    private boolean remote() {
+    public boolean remote() {
         return root instanceof IgniteSender;
     }
 }

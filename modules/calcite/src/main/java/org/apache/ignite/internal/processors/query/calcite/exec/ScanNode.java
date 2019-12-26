@@ -18,18 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
-public class ScanNode implements SingleNode<Object[]> {
-    /** */
-    private static final Object[] END = new Object[0];
-
-    /** */
-    private final Sink<Object[]> target;
-
+public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]> {
     /** */
     private final Iterable<Object[]> source;
 
@@ -37,23 +30,24 @@ public class ScanNode implements SingleNode<Object[]> {
     private Iterator<Object[]> it;
 
     /** */
-    private Object[] row;
+    private Object row;
 
     /**
-     * @param target Target.
+     * @param ctx Execution context.
      * @param source Source.
      */
-    public ScanNode(Sink<Object[]> target, Iterable<Object[]> source) {
-        this.target = target;
+    public ScanNode(ExecutionContext ctx, Iterable<Object[]> source) {
+        super(ctx);
+
         this.source = source;
     }
 
     /** {@inheritDoc} */
-    @Override public void signal() {
-        if (row == END)
+    @Override public void request() {
+        if (row == EndMarker.INSTANCE)
             return;
 
-        if (row != null && !target.push(row))
+        if (row != null && !target().push((Object[]) row))
             return;
 
         row = null;
@@ -64,17 +58,12 @@ public class ScanNode implements SingleNode<Object[]> {
         while (it.hasNext()) {
             row = it.next();
 
-            if (!target.push(row))
+            if (!target().push((Object[]) row))
                 return;
         }
 
-        row = END;
-        target.end();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void sources(List<Source> sources) {
-        throw new UnsupportedOperationException();
+        row = EndMarker.INSTANCE;
+        target().end();
     }
 
     /** {@inheritDoc} */

@@ -17,40 +17,73 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collections;
+import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public abstract class AbstractNode<T> implements Node<T> {
     /** */
-    protected final Sink<T> target;
+    private final ImmutableList<Node<T>> inputs;
 
     /** */
-    protected List<Source> sources;
+    private volatile Sink<T> target;
+
+    /** */
+    private volatile ExecutionContext ctx;
 
     /**
-     * @param target Target.
+     * @param ctx Execution context.
      */
-    protected AbstractNode(Sink<T> target) {
-        this.target = target;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void sources(List<Source> sources) {
-        this.sources = Collections.unmodifiableList(sources);
+    protected AbstractNode(ExecutionContext ctx) {
+        this(ctx, ImmutableList.of());
     }
 
     /**
-     * @param idx Index of a source to signal/
+     * @param ctx Execution context.
      */
-    public void signal(int idx) {
-        sources.get(idx).signal();
+    protected AbstractNode(ExecutionContext ctx, @NotNull Node<T> input) {
+        this(ctx, ImmutableList.of(input));
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    protected AbstractNode(ExecutionContext ctx, @NotNull List<Node<T>> inputs) {
+        this.ctx = ctx;
+        this.inputs = ImmutableList.copyOf(inputs);
     }
 
     /** {@inheritDoc} */
-    @Override public void signal() {
-        sources.forEach(Source::signal);
+    @Override public void target(Sink<T> sink) {
+        target = sink;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Sink<T> target() {
+        return target;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Node<T>> inputs() {
+        return inputs;
+    }
+
+    /** */
+    protected void context(ExecutionContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutionContext context() {
+        return ctx;
+    }
+
+    /** */
+    protected void link() {
+        for (int i = 0; i < inputs.size(); i++)
+            inputs.get(i).target(sink(i));
     }
 }

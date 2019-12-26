@@ -19,14 +19,17 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.Context;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
@@ -37,14 +40,13 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.Node;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ContextValue;
-import org.apache.ignite.internal.processors.query.calcite.prepare.DataContextImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -57,12 +59,12 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.expression.
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -180,17 +182,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 + 1" +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -222,17 +224,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -260,17 +262,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         String sql = "SELECT d.id, (SELECT p.name FROM Project p WHERE p.id = d.id) name, d.projectId " +
             "FROM Developer d";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -302,17 +304,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -351,18 +353,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -414,18 +416,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         byte[] convertedBytes;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -468,7 +470,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             assertNotNull(convertedBytes);
         }
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)) {
+        try (IgnitePlanner planner = proc.planner(ctx)) {
             assertNotNull(planner);
 
             RelGraph graph = new JdkMarshaller().unmarshal(convertedBytes, getClass().getClassLoader());
@@ -498,18 +500,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.id = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, this::context);
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -565,16 +567,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{-10}, this::context);
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        MappingService ms = new MappingService() {
+            @Override public NodesMapping random(AffinityTopologyVersion topVer) {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
+            }
+
+            @Override public NodesMapping local() {
+                return new NodesMapping(select(nodes, 0), null, (byte) 0);
+            }
+
+            @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
+                if (cacheId == CU.cacheId("Developer"))
+                    return new NodesMapping(select(nodes, 0), null, NodesMapping.HAS_REPLICATED_CACHES);
+                if (cacheId == CU.cacheId("Project"))
+                    return new NodesMapping(select(nodes, 0), null, NodesMapping.HAS_REPLICATED_CACHES);
+
+                throw new AssertionError("Unexpected cache id:" + cacheId);
+            }
+        };
+
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{-10}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -595,24 +616,38 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             // Transformation chain
             rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
 
-            RelTraitSet desired = rel.getCluster().traitSetOf(IgniteConvention.INSTANCE);
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
 
             RelNode phys = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
 
             assertNotNull(phys);
 
-            Map<String, Object> params = ctx.query().params(F.asMap(ContextValue.QUERY_ID.valueName(), new GridCacheVersion()));
+            QueryPlan plan = new Splitter().go(igniteRel(phys));
 
-            Implementor implementor = new Implementor(new DataContextImpl(params, ctx));
+            assertNotNull(plan);
 
-            Node<Object[]> exec = implementor.go(igniteRel(phys));
+            plan.init(ctx);
 
-            assertNotNull(exec);
+            List<Fragment> fragments = plan.fragments();
 
-            assertTrue(exec instanceof ConsumerNode);
+            ConsumerNode consumer = null;
 
-            ConsumerNode consumer = (ConsumerNode) exec;
+            UUID queryId = UUID.randomUUID();
 
+            for (Fragment fragment : fragments) {
+                Map<String, Object> params = ctx.query().params(new HashMap<>());
+                Implementor implementor = new Implementor(new ExecutionContext(queryId, ctx, params));
+                Node<Object[]> exec = implementor.go(igniteRel(fragment.root()));
+
+                if (fragment.remote())
+                    exec.request();
+                else
+                    consumer = (ConsumerNode) exec;
+            }
+
+            assertNotNull(consumer);
             assertTrue(consumer.hasNext());
 
             ArrayList<Object[]> res = new ArrayList<>();
@@ -658,17 +693,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -751,18 +786,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -845,18 +880,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -932,18 +967,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -1026,18 +1061,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -1120,18 +1155,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.context(Contexts.empty(), sql, new Object[]{2}, (c, q) -> context(c, q, ms));
-
-        assertNotNull(ctx);
-
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
         };
 
+        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{2}, (c, q, t) -> context(c, q, t, ms));
+
+        assertNotNull(ctx);
+
         RelRoot relRoot;
 
-        try (IgnitePlanner planner = proc.planner(traitDefs, ctx)){
+        try (IgnitePlanner planner = proc.planner(ctx)){
             assertNotNull(planner);
 
             Query query = ctx.query();
@@ -1187,7 +1222,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private PlannerContext context(Context c, Query q) {
+    private PlannerContext context(Context c, Query q, RelTraitDef[] t) {
         MappingService ms = new MappingService() {
             @Override public NodesMapping random(AffinityTopologyVersion topVer) {
                 return new NodesMapping(select(nodes, 0,1,2,3), null, (byte) 0);
@@ -1219,20 +1254,27 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        return context(c, q, ms);
+        return context(c, q, t, ms);
     }
 
     /** */
-    private PlannerContext context(Context parent, Query query, MappingService ms) {
+    private PlannerContext context(Context parent, Query query, RelTraitDef<?>[] t, MappingService ms) {
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+
         return PlannerContext.builder()
             .parentContext(parent)
+            .frameworkConfig(Frameworks.newConfigBuilder(proc.config())
+                .defaultSchema(schema)
+                .traitDefs(t)
+                .build())
             .logger(log)
             .kernalContext(kernalContext)
             .queryProcessor(proc)
             .query(query)
-            .schema(schema)
+            .exchangeProcessor(new BypassExchangeProcessor(log()))
             .topologyVersion(AffinityTopologyVersion.NONE)
             .mappingService(ms)
+            .executor((task,id) -> CompletableFuture.runAsync(task, exec))
             .build();
     }
 

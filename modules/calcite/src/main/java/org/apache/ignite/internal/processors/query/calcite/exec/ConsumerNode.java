@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import org.apache.ignite.IgniteInterruptedException;
 
 /**
  * TODO https://issues.apache.org/jira/browse/IGNITE-12449
@@ -30,16 +30,32 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
     private static final int DEFAULT_BUFFER_SIZE = 1000;
 
     /** */
-    private static final Object[] END = new Object[0];
+    private final int bufferSize;
 
     /** */
-    private ArrayDeque<Object[]> buff;
+    private final ArrayBlockingQueue<Object> buff;
 
     /** */
-    public ConsumerNode() {
-        super(Sink.noOp());
+    private Object cur;
 
-        buff = new ArrayDeque<>(DEFAULT_BUFFER_SIZE);
+    /**
+     * @param ctx Execution context.
+     */
+    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input) {
+       this(ctx, input, DEFAULT_BUFFER_SIZE);
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize) {
+        super(ctx, input);
+
+        this.bufferSize = bufferSize;
+
+        buff = new ArrayBlockingQueue<>(bufferSize + 1);
+
+        link();
     }
 
     /** {@inheritDoc} */
@@ -51,36 +67,68 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
     }
 
     /** {@inheritDoc} */
+    @Override public void request() {
+        context().execute(input()::request);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
-        if (buff.size() == DEFAULT_BUFFER_SIZE)
+        if (buff.size() == bufferSize)
             return false;
 
-        buff.add(row);
+        try {
+            buff.put(row);
+        }
+        catch (InterruptedException e) {
+            throw new AssertionError();
+        }
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        buff.add(END);
+        try {
+            buff.put(EndMarker.INSTANCE);
+        }
+        catch (InterruptedException e) {
+            throw new AssertionError();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        if (buff.isEmpty())
-            signal();
+        if (cur == EndMarker.INSTANCE)
+            return false;
 
-        return buff.peek() != END;
+        if (cur == null)
+            cur = take0();
+
+        assert cur != null;
+
+        return cur != EndMarker.INSTANCE;
     }
 
     /** {@inheritDoc} */
     @Override public Object[] next() {
-        if (buff.isEmpty())
-            signal();
-
-        if(!hasNext())
+        if (!hasNext())
             throw new NoSuchElementException();
 
-        return Objects.requireNonNull(buff.poll());
+        Object tmp = cur;
+        cur = null;
+
+        return (Object[]) tmp;
+    }
+
+    private Object take0() {
+        if (buff.isEmpty())
+            request();
+
+        try {
+            return buff.take();
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInterruptedException(e);
+        }
     }
 }

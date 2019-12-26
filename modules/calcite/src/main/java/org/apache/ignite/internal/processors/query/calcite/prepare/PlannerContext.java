@@ -17,24 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.io.Serializable;
+import java.util.Properties;
+import java.util.concurrent.Future;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.StripedExecutor;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Planner context, encapsulates services, kernal context, query string and its flags and parameters and helper methods
  * to work with them.
  */
 public final class PlannerContext implements Context {
+    /** */
+    private final FrameworkConfig frameworkConfig;
+
     /** */
     private final Context parentContext;
 
@@ -43,9 +57,6 @@ public final class PlannerContext implements Context {
 
     /** */
     private final AffinityTopologyVersion topologyVersion;
-
-    /** */
-    private final SchemaPlus schema;
 
     /** */
     private final IgniteLogger logger;
@@ -63,23 +74,45 @@ public final class PlannerContext implements Context {
     private final ExchangeProcessor exchangeProcessor;
 
     /** */
+    private final StripedExecutor executor;
+
+    /** */
     private IgnitePlanner planner;
+
+    /** */
+    private CalciteConnectionConfig connectionConfig;
+
+    /** */
+    private JavaTypeFactory typeFactory;
 
     /**
      * Private constructor, used by a builder.
      */
-    private PlannerContext(Context parentContext, Query query, AffinityTopologyVersion topologyVersion,
-        SchemaPlus schema, IgniteLogger logger, GridKernalContext kernalContext, CalciteQueryProcessor queryProcessor, MappingService mappingService,
-        ExchangeProcessor exchangeProcessor) {
+    private PlannerContext(FrameworkConfig config, Context parentContext, Query query, AffinityTopologyVersion topologyVersion,
+        IgniteLogger logger, GridKernalContext kernalContext, CalciteQueryProcessor queryProcessor, MappingService mappingService,
+        ExchangeProcessor exchangeProcessor, StripedExecutor executor) {
         this.parentContext = parentContext;
         this.query = query;
         this.topologyVersion = topologyVersion;
-        this.schema = schema;
         this.logger = logger;
         this.kernalContext = kernalContext;
         this.queryProcessor = queryProcessor;
         this.mappingService = mappingService;
         this.exchangeProcessor = exchangeProcessor;
+        this.executor = executor;
+
+        // link frameworkConfig#context() to this.
+        Frameworks.ConfigBuilder b = config == null ? Frameworks.newConfigBuilder() :
+            Frameworks.newConfigBuilder(config);
+
+        frameworkConfig = b.context(this).build();
+    }
+
+    /**
+     * @return Framework config.
+     */
+    public FrameworkConfig frameworkConfig() {
+        return frameworkConfig;
     }
 
     /**
@@ -94,13 +127,6 @@ public final class PlannerContext implements Context {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topologyVersion;
-    }
-
-    /**
-     * @return Schema.
-     */
-    public SchemaPlus schema() {
-        return schema;
     }
 
     /**
@@ -167,10 +193,44 @@ public final class PlannerContext implements Context {
     // Helper methods
 
     /**
+     * @return Schema.
+     */
+    public SchemaPlus schema() {
+        return frameworkConfig.getDefaultSchema();
+    }
+
+    /**
      * @return Type factory.
      */
     public JavaTypeFactory typeFactory() {
-        return planner.getTypeFactory();
+        if (typeFactory != null)
+            return typeFactory;
+
+        RelDataTypeSystem typeSystem = connectionConfig().typeSystem(RelDataTypeSystem.class, frameworkConfig.getTypeSystem());
+
+        return typeFactory = new IgniteTypeFactory(typeSystem);
+    }
+
+    /**
+     * @return Connection config. Defines connected user parameters like TimeZone or Locale.
+     */
+    public CalciteConnectionConfig connectionConfig() {
+        if (connectionConfig != null)
+            return connectionConfig;
+
+        CalciteConnectionConfig connConfig = unwrap(CalciteConnectionConfig.class);
+
+        if (connConfig != null)
+            return connectionConfig = connConfig;
+
+        Properties properties = new Properties();
+
+        properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
+            String.valueOf(frameworkConfig.getParserConfig().caseSensitive()));
+        properties.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
+            String.valueOf(frameworkConfig.getParserConfig().conformance()));
+
+        return connectionConfig = new CalciteConnectionConfigImpl(properties);
     }
 
     /**
@@ -206,6 +266,16 @@ public final class PlannerContext implements Context {
         return null; // TODO
     }
 
+    /**
+     * Executes query task.
+     *
+     * @param queryId Query ID.
+     * @param queryTask Query task.
+     */
+    public Future<Void> execute(Serializable queryId, Runnable queryTask) {
+        return executor.execute(queryTask, queryId);
+    }
+
     /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aClass) {
         if (aClass == getClass())
@@ -226,6 +296,9 @@ public final class PlannerContext implements Context {
      */
     public static class Builder {
         /** */
+        private FrameworkConfig frameworkConfig;
+
+        /** */
         private Context parentContext;
 
         /** */
@@ -233,9 +306,6 @@ public final class PlannerContext implements Context {
 
         /** */
         private AffinityTopologyVersion topologyVersion;
-
-        /** */
-        private SchemaPlus schema;
 
         /** */
         private IgniteLogger logger;
@@ -251,6 +321,18 @@ public final class PlannerContext implements Context {
 
         /** */
         private ExchangeProcessor exchangeProcessor;
+
+        /** */
+        private StripedExecutor executor;
+
+        /**
+         * @param frameworkConfig Framework config.
+         * @return Builder for chaining.
+         */
+        public Builder frameworkConfig(FrameworkConfig frameworkConfig) {
+            this.frameworkConfig = frameworkConfig;
+            return this;
+        }
 
         /**
          * @param parentContext Parent context.
@@ -276,15 +358,6 @@ public final class PlannerContext implements Context {
          */
         public Builder topologyVersion(AffinityTopologyVersion topologyVersion) {
             this.topologyVersion = topologyVersion;
-            return this;
-        }
-
-        /**
-         * @param schema Schema.
-         * @return Builder for chaining.
-         */
-        public Builder schema(SchemaPlus schema) {
-            this.schema = schema;
             return this;
         }
 
@@ -334,12 +407,21 @@ public final class PlannerContext implements Context {
         }
 
         /**
+         * @param executor Executor.
+         * @return Builder for chaining.
+         */
+        public Builder executor(StripedExecutor executor) {
+            this.executor = executor;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlannerContext build() {
-            return new PlannerContext(parentContext, query, topologyVersion, schema, logger, kernalContext, queryProcessor, mappingService, exchangeProcessor);
+            return new PlannerContext(frameworkConfig, parentContext, query, topologyVersion, logger, kernalContext, queryProcessor, mappingService, exchangeProcessor, executor);
         }
     }
 }
