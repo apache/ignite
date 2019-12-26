@@ -15,67 +15,59 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.encryption;
+package org.apache.ignite.internal.util.distributed;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
+import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Generate encryption key response.
+ * Single node result message.
+ *
+ * @param <R> Result type.
+ * @see DistributedProcess
+ * @see FullMessage
+ * @see InitMessage
  */
-public class GenerateEncryptionKeyResponse implements Message {
-    /** */
+public class SingleNodeMessage<R extends Serializable> implements Message {
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Request message ID. */
-    private IgniteUuid id;
+    /** Initial channel message type (value is {@code 176}). */
+    public static final short TYPE_CODE = 176;
 
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> encKeys;
+    /** Process id. */
+    private UUID processId;
 
-    /** Master key digest that encrypted group encryption keys. */
-    private byte[] masterKeyDigest;
+    /** Process type. */
+    private int type;
 
-    /** */
-    public GenerateEncryptionKeyResponse() {
+    /** Single node response. */
+    private R resp;
+
+    /** Error. */
+    private Exception err;
+
+    /** Empty constructor for marshalling purposes. */
+    public SingleNodeMessage() {
     }
 
     /**
-     * @param id Request id.
-     * @param encKeys Encryption keys.
-     * @param masterKeyDigest Master key digest.
+     * @param processId Process id.
+     * @param type Process type.
+     * @param resp Single node response.
+     * @param err Error.
      */
-    public GenerateEncryptionKeyResponse(IgniteUuid id, Collection<byte[]> encKeys, byte[] masterKeyDigest) {
-        this.id = id;
-        this.encKeys = encKeys;
-        this.masterKeyDigest = masterKeyDigest;
-    }
-
-    /**
-     * @return Request id.
-     */
-    public IgniteUuid requestId() {
-        return id;
-    }
-
-    /**
-     * @return Encryption keys.
-     */
-    public Collection<byte[]> encryptionKeys() {
-        return encKeys;
-    }
-
-    /** @return Master key digest that encrypted group encryption keys. */
-    public byte[] masterKeyDigest() {
-        return masterKeyDigest;
+    public SingleNodeMessage(UUID processId, DistributedProcessType type, R resp, Exception err) {
+        this.processId = processId;
+        this.type = type.ordinal();
+        this.resp = resp;
+        this.err = err;
     }
 
     /** {@inheritDoc} */
@@ -91,19 +83,25 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("encKeys", encKeys, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeUuid("processId", processId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("id", id))
+                if (!writer.writeInt("type", type))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("masterKeyDigest", masterKeyDigest))
+                if (!writer.writeByteArray("data", U.toBytes(resp)))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeByteArray("err", U.toBytes(err)))
                     return false;
 
                 writer.incrementState();
@@ -121,7 +119,7 @@ public class GenerateEncryptionKeyResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                encKeys = reader.readCollection("encKeys", MessageCollectionItemType.BYTE_ARR);
+                processId = reader.readUuid("processId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,7 +127,7 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                id = reader.readIgniteUuid("id");
+                type = reader.readInt("type");
 
                 if (!reader.isLastRead())
                     return false;
@@ -137,7 +135,15 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                masterKeyDigest = reader.readByteArray("masterKeyDigest");
+                resp = U.fromBytes(reader.readByteArray("data"));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                err = U.fromBytes(reader.readByteArray("err"));
 
                 if (!reader.isLastRead())
                     return false;
@@ -145,26 +151,46 @@ public class GenerateEncryptionKeyResponse implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GenerateEncryptionKeyResponse.class);
+        return reader.afterMessageRead(SingleNodeMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 163;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
-        //No-op.
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GenerateEncryptionKeyResponse.class, this);
+    /** @return Process id. */
+    public UUID processId() {
+        return processId;
+    }
+
+    /** @return Process type. */
+    public int type() {
+        return type;
+    }
+
+    /** @return Response. */
+    public R response() {
+        return resp;
+    }
+
+    /** @return {@code True} if finished with error. */
+    public boolean hasError() {
+        return err != null;
+    }
+
+    /** @return Error. */
+    public Exception error() {
+        return err;
     }
 }
