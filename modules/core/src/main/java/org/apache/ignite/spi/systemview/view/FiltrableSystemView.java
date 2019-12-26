@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
+ * System view with filtering capabilities.
  *
+ * @param <R> Type of the row.
  */
-public class CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest
-    extends CacheContinuousQueryFailoverAtomicSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCacheConfiguration() {
-        return super.nearCacheConfiguration();
-    }
+public interface FiltrableSystemView<R> extends SystemView<R> {
+    /**
+     * @param filter Filter for a view ({@code null} or empty filter means no filtering).
+     * @return Iterator for filtered system view content.
+     */
+    public Iterator<R> iterator(Map<String, Object> filter);
 }

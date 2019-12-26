@@ -877,6 +877,23 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected IgniteEx startGrid(int idx) throws Exception {
         return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
     }
+    
+    /**
+     * Starts new client grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx) throws Exception {
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
+
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+        cfg.setClientMode(true);
+
+        return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+    }
 
     /**
      * Starts new grid with given configuration.
@@ -980,7 +997,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     }
                 }
 
-                Ignite node = IgnitionEx.start(cfg, ctx);
+                Ignite node = IgnitionEx.start(optimize(cfg), ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
 

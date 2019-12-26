@@ -53,7 +53,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private static final int PAGE_SIZE_SMALL = 12;
 
     /** Test duration. */
-    private static final long TEST_DUR = 10_000L;
+    private static final long TEST_DUR = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
