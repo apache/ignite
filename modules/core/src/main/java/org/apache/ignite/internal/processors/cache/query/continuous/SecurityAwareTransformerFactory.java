@@ -33,9 +33,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAwareExternalizable implements
     Factory<IgniteClosure<E, R>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * Default constructor.
      */
