@@ -180,7 +180,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
     private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        boolean pmeFreeSwitch = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
+        boolean pmeFreeSwitchDisable = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
 
         int nodes = 10;
 
@@ -190,7 +190,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        boolean absentPme = (persistence && !pmeFreeSwitch);
+        boolean pmeExpected = (!persistence || pmeFreeSwitchDisable);
 
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
@@ -202,7 +202,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cnt.incrementAndGet();
 
-                    if (!absentPme)
+                    if (pmeExpected)
                         return false;
 
                     return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
@@ -218,7 +218,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(absentPme ? 0 : (nodes - 1), cnt.get());
+            assertEquals(!pmeExpected ? 0 : (nodes - 1), cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
