@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ *
  */
 public class JoinNode extends AbstractNode<Object[]> {
     /** */
@@ -43,16 +44,17 @@ public class JoinNode extends AbstractNode<Object[]> {
     private boolean end;
 
     /**
-     *
-     * @param target Target.
+     * @param ctx Execution context.
      * @param expression Join expression.
      */
-    public JoinNode(Sink<Object[]> target, BiFunction<Object[], Object[], Object[]> expression) {
-        super(target);
-        this.expression = expression;
+    public JoinNode(ExecutionContext ctx, Node<Object[]> left, Node<Object[]> right, BiFunction<Object[], Object[], Object[]> expression) {
+        super(ctx, ImmutableList.of(left, right));
 
-        left = new ArraySink<>();
-        right = new ArraySink<>();
+        this.expression = expression;
+        this.left = new ArraySink<>();
+        this.right = new ArraySink<>();
+
+        link();
     }
 
     /** {@inheritDoc} */
@@ -68,19 +70,17 @@ public class JoinNode extends AbstractNode<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override public void signal() {
+    @Override public void request() {
         if (end)
             return;
 
         if (left.end && right.end)
             tryFlush();
 
-        assert sources != null && sources.size() == 2;
-
         if (!left.end)
-            signal(0);
+            input(0).request();
         if (!right.end)
-            signal(1);
+            input(1).request();
     }
 
     /** */
@@ -90,7 +90,7 @@ public class JoinNode extends AbstractNode<Object[]> {
                 for (int j = rightIdx; j < right.size(); j++) {
                     Object[] row = expression.apply(left.get(i), right.get(j));
 
-                    if (row != null && !target.push(row)) {
+                    if (row != null && !target().push(row)) {
                         leftIdx = i;
                         rightIdx = j;
 
@@ -100,7 +100,7 @@ public class JoinNode extends AbstractNode<Object[]> {
             }
 
             end = true;
-            target.end();
+            target().end();
         }
     }
 

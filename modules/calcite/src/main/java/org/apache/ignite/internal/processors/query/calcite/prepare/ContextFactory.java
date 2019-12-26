@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
+
+import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.RelTraitDef;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Represents an execution node source. Sources are used to notify children when an execution node is ready to consume data.
+ *
  */
-public interface Source {
+@FunctionalInterface
+public interface ContextFactory {
     /**
-     * Signals that consumer is ready to consume data. Called by consumer node.
+     * Creates a new context.
+     *
+     * @param parent Parent context.
+     * @param query Query.
+     * @param traitDefs Traits.
+     * @return Planner context.
      */
-    void signal();
+    PlannerContext create(@NotNull Context parent, @NotNull Query query, @NotNull RelTraitDef<?>[] traitDefs);
 }

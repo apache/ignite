@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.QueryContext;
+import java.io.Serializable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
- * Operation object, encapsulates query execution logic.
+ *
  */
-public class DistributedExecution implements QueryExecution {
-    public DistributedExecution(QueryContext ctx, String query, Object[] params) {
+public class DelegatingStripedExecutor implements StripedExecutor {
+    /** */
+    private final IgniteStripedThreadPoolExecutor delegate;
+
+    /** */
+    public DelegatingStripedExecutor(IgniteStripedThreadPoolExecutor delegate) {
+        this.delegate = delegate;
     }
 
-    /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> execute() {
-        return null; // TODO;
+    @Override public Future<Void> execute(Runnable task, Serializable taskId) {
+        FutureTask<Void> res = new FutureTask<>(task, null);
+
+        delegate.execute(task, U.safeAbs(taskId.hashCode()));
+
+        return res;
     }
 }

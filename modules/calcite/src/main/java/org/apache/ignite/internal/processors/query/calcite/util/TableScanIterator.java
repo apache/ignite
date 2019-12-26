@@ -92,7 +92,8 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
 
                     IgniteCacheOffheapManager.CacheDataStore ds = part.dataStore();
 
-                    cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                    // TODO introduce MvccSnapshot to the table iterator.
+                    cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId, null);
                 } else
                     break;
             }

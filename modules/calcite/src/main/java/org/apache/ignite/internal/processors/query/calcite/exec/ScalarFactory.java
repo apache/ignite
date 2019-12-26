@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -28,6 +29,7 @@ import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.InterpreterUtils;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
 import org.apache.calcite.interpreter.Scalar;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -51,6 +53,19 @@ public class ScalarFactory {
         this.builder = builder;
 
         rexCompiler = new JaninoRexCompiler(builder);
+    }
+
+    /**
+     * Creates a comparator for given data type and collations. Mainly used for sorted exchange.
+     *
+     * @param root Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
+     * @param collations Collations.
+     * @param rowType Input row type.
+     * @return Row comparator.
+     */
+    public <T> Comparator<T> comparator(DataContext root, List<RelCollation> collations, RelDataType rowType) {
+        return null; // TODO
     }
 
     /**

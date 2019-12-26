@@ -20,20 +20,22 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.function.Predicate;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ *
  */
 public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
     /** */
     private final Predicate<Object[]> predicate;
 
     /**
-     * @param target Target.
+     * @param ctx Execution context.
      * @param predicate Predicate.
      */
-    public FilterNode(Sink<Object[]> target, Predicate<Object[]> predicate) {
-        super(target);
+    public FilterNode(ExecutionContext ctx, Node<Object[]> input, Predicate<Object[]> predicate) {
+        super(ctx, input);
 
         this.predicate = predicate;
+
+        link();
     }
 
     /** {@inheritDoc} */
@@ -46,11 +48,11 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
     /** {@inheritDoc} */
     @Override public boolean push(Object[] row) {
-        return !predicate.test(row) || target.push(row);
+        return !predicate.test(row) || target().push(row);
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        target.end();
+        target().end();
     }
 }
