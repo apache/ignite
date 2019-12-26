@@ -23,25 +23,43 @@ import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Represents a query and its parameters.
  */
 public class Query {
+    /** */
     private final String sql;
+
+    /** */
     private final Object[] params;
 
+    /**
+     * @param sql Query text.
+     * @param params Query parameters.
+     */
     public Query(String sql, Object[] params) {
         this.sql = sql;
         this.params = params;
     }
 
+    /**
+     * @return Query text.
+     */
     public String sql() {
         return sql;
     }
 
+    /**
+     * @return Query parameters.
+     */
     public Object[] params() {
         return params;
     }
 
+    /**
+     * Populates a given parameters map with named parameters (using theirs ordinal)
+     * @param stashed Stashed parameters map.
+     * @return Populated parameters map.
+     */
     public Map<String, Object> params(Map<String, Object> stashed) {
         Map<String, Object> res = new HashMap<>(stashed);
         if (!F.isEmpty(params)) {
@@ -52,6 +70,7 @@ public class Query {
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -65,6 +84,7 @@ public class Query {
         return Arrays.equals(params, query.params);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = sql.hashCode();
         result = 31 * result + Arrays.hashCode(params);

@@ -15,15 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query;
 
-import java.io.Serializable;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.GridKernalContext;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Ignite type system.
- */
-public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializable {
-    public static final RelDataTypeSystem DEFAULT = new IgniteTypeSystem();
+/** No op implementation. */
+public class NoOpQueryEngine implements QueryEngine {
+    /** {@inheritDoc} */
+    @Override public void start(GridKernalContext ctx) {}
+
+    /** {@inheritDoc} */
+    @Override public void stop() {}
+
+    /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
 }

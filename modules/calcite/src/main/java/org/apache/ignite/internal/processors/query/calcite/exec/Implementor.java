@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +21,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.UUID;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exchange.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -41,22 +38,32 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
+import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunctionFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.ContextValue.PLANNER_CONTEXT;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.ContextValue.QUERY_ID;
 
 /**
- *
+ * TODO https://issues.apache.org/jira/browse/IGNITE-12449
  */
 public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<IgniteRel, Node<Object[]>> {
+    /** */
     private final PlannerContext ctx;
+
+    /** */
     private final DataContext root;
+
+    /** */
     private final ScalarFactory factory;
+
+    /** */
     private Deque<Sink<Object[]>> stack;
 
+    /**
+     * @param root Root context.
+     */
     public Implementor(DataContext root) {
         this.root = root;
 
@@ -65,18 +72,15 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         stack = new ArrayDeque<>();
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         assert stack.isEmpty();
 
-        GridCacheVersion id = QUERY_ID.get(root);
-        long exchangeId = rel.target().exchangeId();
-        NodesMapping mapping = rel.target().mapping();
-        List<UUID> targets = mapping.nodes();
-        IgniteDistribution distribution = rel.target().distribution();
-        DestinationFunctionFactory destFactory = distribution.destinationFunctionFactory();
-        DestinationFunction function = destFactory.create(ctx, mapping, ImmutableIntList.copyOf(distribution.getKeys()));
+        RelTarget target = rel.target();
+        IgniteDistribution distribution = target.distribution();
+        DestinationFunction function = distribution.function().toDestination(ctx, target.mapping(), distribution.getKeys());
 
-        Outbox<Object[]> res = new Outbox<>(id, exchangeId, targets, function);
+        Outbox<Object[]> res = new Outbox<>(QUERY_ID.get(root), target.exchangeId(), function);
 
         stack.push(res.sink());
 
@@ -85,6 +89,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
         assert !stack.isEmpty();
 
@@ -97,6 +102,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
         assert !stack.isEmpty();
 
@@ -109,6 +115,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
         assert !stack.isEmpty();
 
@@ -122,6 +129,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
         assert !stack.isEmpty();
 
@@ -130,18 +138,22 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return new ScanNode(stack.pop(), source);
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         throw new AssertionError(); // TODO
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteExchange rel) {
         throw new AssertionError();
     }
 
-    @Override public Node<Object[]> visit(IgniteRel other) {
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteRel rel) {
         throw new AssertionError();
     }
 
+    /** */
     private Source source(RelNode rel) {
         if (rel.getConvention() != IgniteConvention.INSTANCE)
             throw new IllegalStateException("INTERPRETABLE is required.");
@@ -149,6 +161,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return ((IgniteRel) rel).accept(this);
     }
 
+    /** */
     private List<Source> sources(List<RelNode> rels) {
         ArrayList<Source> res = new ArrayList<>(rels.size());
 
@@ -159,6 +172,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public Node<Object[]> go(IgniteRel rel) {
         if (rel instanceof IgniteSender)
             return visit((IgniteSender) rel);

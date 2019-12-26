@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,16 +18,39 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 /**
- *
+ * Implements Expression tree recursively using Visitor pattern.
  */
 public interface ExpImplementor<T> {
-    T implement(CallExpression callExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(CallExpression exp);
 
-    T implement(InputRefExpression inputRefExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(InputRefExpression exp);
 
-    T implement(LiteralExpression literalExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(LiteralExpression exp);
 
-    T implement(LocalRefExpression localRefExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(LocalRefExpression exp);
 
-    T implement(DynamicParamExpression dynamicParamExpression);
+    /**
+     * See {@link ExpImplementor#implement(Expression)}
+     */
+    T implement(DynamicParamExpression exp);
+
+    /**
+     * Implements given expression.
+     *
+     * @param exp Expression.
+     * @return Implementation result.
+     */
+    T implement(Expression exp);
 }

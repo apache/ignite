@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,11 +28,20 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTra
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
- *
+ * Relational expression that receives elements from remote {@link IgniteSender}
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
-    private RelSource source;
+    /** */
+    private final RelSource source;
 
+    /**
+     * Creates a Receiver
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param rowType  Output row type
+     * @param source   Remote sources information.
+     */
     public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, RelSource source) {
         super(cluster, traits);
 
@@ -39,22 +49,26 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
         this.source = source;
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteReceiver(getCluster(), traitSet, rowType, source);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
+    /**
+     * @return Remote sources information.
+     */
     public RelSource source() {
         return source;
     }
 
-    public void source(RelSource source) {
-        this.source = source;
-    }
-
+    /**
+     * @return Node distribution.
+     */
     public IgniteDistribution distribution() {
         return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }

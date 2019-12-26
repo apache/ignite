@@ -21,8 +21,13 @@ import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 
 /**
- *
+ * Operation object, encapsulates query execution logic.
  */
 public interface QueryExecution {
+    /**
+     * Executes a query.
+     *
+     * @return Query cursor.
+     */
     FieldsQueryCursor<List<?>> execute();
 }

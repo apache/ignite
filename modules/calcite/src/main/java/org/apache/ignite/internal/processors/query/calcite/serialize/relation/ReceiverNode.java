@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,27 +27,42 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.RelSourceImp
 
 
 /**
- *
+ * Describes {@link IgniteReceiver}.
  */
 public class ReceiverNode extends RelGraphNode {
+    /** */
     private final DataType dataType;
+
+    /** */
     private final RelSource source;
 
+    /**
+     * @param traits   Traits of this relational expression
+     * @param dataType Output row type
+     * @param source   Remote sources information.
+     */
     private ReceiverNode(RelTraitSet traits, DataType dataType, RelSource source) {
         super(traits);
         this.dataType = dataType;
         this.source = source;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Receiver rel.
+     * @return ReceiverNode.
+     */
     public static ReceiverNode create(IgniteReceiver rel) {
         RelSource source = new RelSourceImpl(rel.source().exchangeId(), rel.source().mapping());
 
         return new ReceiverNode(rel.getTraitSet(), DataType.fromType(rel.getRowType()), source);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         return new IgniteReceiver(ctx.getCluster(),
-            traitSet.toTraitSet(ctx.getCluster()),
+            traits.toTraitSet(ctx.getCluster()),
             dataType.toRelDataType(ctx.getTypeFactory()),
             source);
     }

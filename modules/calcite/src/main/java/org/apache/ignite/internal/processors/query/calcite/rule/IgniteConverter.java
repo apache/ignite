@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,13 +30,20 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Abstract converter, that converts logical relational expression into one or more physical ones.
  */
 public abstract class IgniteConverter extends ConverterRule {
+    /**
+     * Creates a ConverterRule.
+     *
+     * @param clazz Type of relational expression to consider converting
+     * @param descriptionPrefix Description prefix of rule
+     */
     protected IgniteConverter(Class<? extends RelNode> clazz, String descriptionPrefix) {
         super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix);
     }
 
+    /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
         RelNode rel = call.rel(0);
         if (rel.getTraitSet().contains(Convention.NONE)) {
@@ -57,6 +65,7 @@ public abstract class IgniteConverter extends ConverterRule {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode convert(RelNode rel) {
         List<RelNode> converted = convert0(rel);
 
@@ -70,5 +79,10 @@ public abstract class IgniteConverter extends ConverterRule {
         return F.first(converted);
     }
 
+    /**
+     * Converts logical relational expression into one or more physical ones.
+     * @param rel Logical relational expression.
+     * @return A list of physical expressions.
+     */
     protected abstract List<RelNode> convert0(RelNode rel);
 }

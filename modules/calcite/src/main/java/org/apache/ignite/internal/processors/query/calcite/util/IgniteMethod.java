@@ -23,19 +23,27 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
 
 /**
- *
+ * Contains methods used in metadata definitions.
  */
 public enum IgniteMethod {
     DERIVED_DISTRIBUTIONS(DerivedDistribution.class, "deriveDistributions"),
     FRAGMENT_INFO(FragmentMetadata.class, "getFragmentInfo");
 
+    /** */
     private final Method method;
 
+    /**
+     * @param clazz Class where to lookup method.
+     * @param methodName Method name.
+     * @param argumentTypes Method parameters types.
+     */
     IgniteMethod(Class clazz, String methodName, Class... argumentTypes) {
         method = Types.lookupMethod(clazz, methodName, argumentTypes);
     }
 
-    /** */
+    /**
+     * @return Method.
+     */
     public Method method() {
         return method;
     }

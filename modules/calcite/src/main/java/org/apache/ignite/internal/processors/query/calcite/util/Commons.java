@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -42,16 +38,24 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Utility methods.
  */
 public final class Commons {
+    /** */
     private Commons(){}
 
+    /**
+     * Converts a QueryContext into a planner context.
+     * @param ctx QueryContext.
+     * @return Planner context.
+     */
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
     }
 
-    /** */
+    /**
+     * Creates a row type for a given type descriptor.
+     */
     public static RowType rowType(GridQueryTypeDescriptor desc) {
         RowType.Builder b = RowType.builder();
 
@@ -71,10 +75,9 @@ public final class Commons {
         return b.build();
     }
 
-    public static RelOptRuleOperand any(Class<? extends RelNode> first, Class<? extends RelNode> second) {
-        return RelOptRule.operand(first, RelOptRule.operand(second, RelOptRule.any()));
-    }
-
+    /**
+     * Intersects two lists.
+     */
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
@@ -84,7 +87,8 @@ public final class Commons {
             return intersect0(left, right);
     }
 
-    public static <T> List<T> intersect0(List<T> left, List<T> right) {
+    /** */
+    private static <T> List<T> intersect0(List<T> left, List<T> right) {
         List<T> res = new ArrayList<>(Math.min(left.size(), right.size()));
         HashSet<T> set = new HashSet<>(left);
 
@@ -96,21 +100,21 @@ public final class Commons {
         return res;
     }
 
-    public static <T> List<T> concat(List<T> col, T... elements) {
-        ArrayList<T> res = new ArrayList<>(col.size() + elements.length);
-
-        res.addAll(col);
-        res.addAll(Arrays.asList(elements));
-
-        return res;
-    }
-
-    @SuppressWarnings("unchecked")
+    /**
+     * Returns a given list as a typed list.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <T> List<T> cast(List<?> src) {
         return (List)src;
     }
 
+    /**
+     * Transforms a given list using map function.
+     */
     public static <T,R> List<R> transform(@NotNull List<T> src, @NotNull Function<T,R> mapFun) {
+        if (F.isEmpty(src))
+            return Collections.emptyList();
+
         List<R> list = new ArrayList<>(src.size());
 
         for (T t : src)
@@ -119,23 +123,23 @@ public final class Commons {
         return list;
     }
 
-    public static <T,R> Set<R> transform(@NotNull Set<T> src, @NotNull Function<T,R> mapFun) {
-        Set<R> set = new HashSet<>(src.size());
-
-        for (T t : src)
-            set.add(mapFun.apply(t));
-
-        return set;
-    }
-
+    /**
+     * Extracts planner context.
+     */
     public static PlannerContext plannerContext(RelNode rel) {
         return plannerContext(rel.getCluster().getPlanner().getContext());
     }
 
+    /**
+     * Extracts planner context.
+     */
     public static PlannerContext plannerContext(Context ctx) {
         return Objects.requireNonNull(ctx.unwrap(PlannerContext.class));
     }
 
+    /**
+     * Casts a given rel to IgniteRel.
+     */
     public static IgniteRel igniteRel(RelNode rel) {
         if (rel.getConvention() != IgniteConvention.INSTANCE)
             throw new AssertionError("Unexpected node: " + rel);

@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,33 +25,58 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 
 /**
- *
+ * Relational expression that iterates over its input
+ * and sends elements to remote {@link IgniteReceiver}
  */
 public class IgniteSender extends SingleRel implements IgniteRel {
+    /** */
     private RelTarget target;
 
+    /**
+     * Creates a Sender.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    input relational expression
+     * @param target   Remote targets information
+     */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelTarget target) {
         super(cluster, traits, input);
 
         this.target = target;
     }
 
+    /**
+     * Creates a Sender.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param input    input relational expression
+     */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        super(cluster, traits, input);
+        this(cluster, traits, input, null);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return new IgniteSender(getCluster(), traitSet, sole(inputs), target);
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }
 
+    /**
+     * @return Remote targets information.
+     */
     public RelTarget target() {
         return target;
     }
 
+    /**
+     * @param target Remote targets information.
+     */
     public void target(RelTarget target) {
         this.target = target;
     }

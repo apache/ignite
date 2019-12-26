@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,6 +31,7 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -38,29 +40,65 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
- *
+ * Implementation class for {@link RelMetadataQueryEx#getFragmentLocation(RelNode)} method call.
  */
 public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
+    /**
+     * Metadata provider, responsible for fragment meta information request. It uses this implementation class under the hood.
+     */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
             IgniteMethod.FRAGMENT_INFO.method(), new IgniteMdFragmentInfo());
 
+    /** {@inheritDoc} */
     @Override public MetadataDef<FragmentMetadata> getDef() {
         return FragmentMetadata.DEF;
     }
 
+    /**
+     * Requests meta information about a fragment with the given relation node at the head of the fragment, mainly it is data
+     * location and a list of nodes, capable to execute the fragment on.
+     *
+     * @param rel Relational node.
+     * @param mq Metadata query instance. Used to request appropriate metadata from node children.
+     * @return Fragment meta information.
+     */
     public FragmentInfo getFragmentInfo(RelNode rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     */
     public FragmentInfo getFragmentInfo(RelSubset rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     *
+     * Prunes involved partitions (hence nodes, involved in query execution) if possible.
+     */
+    public FragmentInfo getFragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
+        return fragmentInfo(rel.getInput(), mq).prune(rel);
+    }
+
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     */
     public FragmentInfo getFragmentInfo(SingleRel rel, RelMetadataQuery mq) {
         return fragmentInfo(rel.getInput(), mq);
     }
 
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     *
+     * {@link LocationMappingException} may be thrown on two children nodes locations merge. This means
+     * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
+     * is needed. This case we throw {@link OptimisticPlanningException} with an edge, where we need the additional
+     * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
+     * information will be recalculated for all fragments.
+     */
     public FragmentInfo getFragmentInfo(Join rel, RelMetadataQuery mq) {
         mq = RelMetadataQueryEx.wrap(mq);
 
@@ -87,19 +125,32 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
         }
     }
 
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     */
     public FragmentInfo getFragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
         return new FragmentInfo(Pair.of(rel, rel.source()));
     }
 
+    /**
+     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     */
     public FragmentInfo getFragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
         return rel.getTable().unwrap(IgniteTable.class).fragmentInfo(Commons.plannerContext(rel));
     }
 
+    /**
+     * Fragment info calculation entry point.
+     * @param rel Root node of a calculated fragment.
+     * @param mq Metadata query instance.
+     * @return Fragment meta information.
+     */
     public static FragmentInfo fragmentInfo(RelNode rel, RelMetadataQuery mq) {
         return RelMetadataQueryEx.wrap(mq).getFragmentLocation(rel);
     }
 
-    private OptimisticPlanningException planningException(BiRel rel, Exception cause, boolean splitLeft) {
+    /** */
+    private static OptimisticPlanningException planningException(BiRel rel, Exception cause, boolean splitLeft) {
         String msg = "Failed to calculate physical distribution";
 
         if (splitLeft)

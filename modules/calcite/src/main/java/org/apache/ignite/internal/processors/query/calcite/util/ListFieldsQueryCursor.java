@@ -85,6 +85,7 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
         return F.iterator(it = enumerable.iterator(), converter::apply, true);
     }
 
+    /** */
     private void closeIterator() {
         if (it instanceof AutoCloseable)
             U.closeQuiet((AutoCloseable)it);

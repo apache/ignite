@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -29,7 +28,6 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScannableTable;
@@ -39,7 +37,9 @@ import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.AffinityFactory;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -48,11 +48,24 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /** */
 public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable {
+    /** */
     private final String tableName;
+
+    /** */
     private final String cacheName;
+
+    /** */
     private final RowType rowType;
+
+    /** */
     private final Object identityKey;
 
+    /**
+     * @param tableName Table name.
+     * @param cacheName Cache name.
+     * @param rowType Row type.
+     * @param identityKey Affinity identity key.
+     */
     public IgniteTable(String tableName, String cacheName, RowType rowType, Object identityKey) {
         this.tableName = tableName;
         this.cacheName = cacheName;
@@ -79,6 +92,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return rowType.asRelDataType(typeFactory);
     }
 
+    /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
         return new TableStatistics();
     }
@@ -86,52 +100,69 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
-        RelTraitSet traitSet = cluster.traitSetOf(Convention.NONE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::getDistribution);
+        RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
+                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-        return new LogicalTableScan(cluster, traitSet, relOptTable);
+        return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 
-    public IgniteDistribution getDistribution() {
+    /**
+     * @return Table distribution trait.
+     */
+    public IgniteDistribution distribution() {
         Object key = identityKey();
 
         if (key == null)
             return IgniteDistributions.broadcast();
 
-        return IgniteDistributions.hash(rowType.distributionKeys(), new AffinityFactory(CU.cacheId(cacheName), key));
+        return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.AffinityDistribution(CU.cacheId(cacheName), key));
     }
 
+    /**
+     * @return Affinity identity key.
+     */
     protected Object identityKey() {
         return identityKey;
     }
 
+    /**
+     * @param ctx Planner context.
+     * @return Fragment meta information.
+     */
     public FragmentInfo fragmentInfo(PlannerContext ctx) {
-        return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName), ctx.topologyVersion()));
+        return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName)));
     }
 
+    /** {@inheritDoc} */
     @Override public Enumerable<Object[]> scan(DataContext root) {
         throw new AssertionError(); // TODO
     }
 
+    /** */
     private class TableStatistics implements Statistic {
+        /** {@inheritDoc} */
         @Override public Double getRowCount() {
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isKey(ImmutableBitSet columns) {
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public List<RelReferentialConstraint> getReferentialConstraints() {
             return ImmutableList.of();
         }
 
+        /** {@inheritDoc} */
         @Override public List<RelCollation> getCollations() {
             return ImmutableList.of();
         }
 
+        /** {@inheritDoc} */
         @Override public RelDistribution getDistribution() {
-            return IgniteTable.this.getDistribution();
+            return distribution();
         }
     }
 }

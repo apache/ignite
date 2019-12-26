@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 
 /**
- *
+ * Operation object, encapsulates query execution logic.
  */
 public class DistributedExecution implements QueryExecution {
     /** */
@@ -92,13 +92,13 @@ public class DistributedExecution implements QueryExecution {
         } catch (SqlParseException | ValidationException e) {
             String msg = "Failed to parse query.";
 
-            proc.log().error(msg, e);
+            ctx.logger().error(msg, e);
 
             throw new IgniteSQLException(msg, IgniteQueryErrorCode.PARSING, e);
         } catch (Exception e) {
             String msg = "Failed to create query execution graph.";
 
-            proc.log().error(msg, e);
+            ctx.logger().error(msg, e);
 
             throw new IgniteSQLException(msg, IgniteQueryErrorCode.UNKNOWN, e);
         }

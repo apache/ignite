@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,17 +25,26 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 
 /**
- *
+ * Relational operator that returns the contents of a table.
  */
 public class IgniteTableScan extends TableScan implements IgniteRel {
-    public IgniteTableScan(RelOptCluster cluster, RelTraitSet traitSet, RelOptTable table) {
-        super(cluster, traitSet, table);
+    /**
+     * Creates a TableScan.
+     *
+     * @param cluster  Cluster that this relational expression belongs to
+     * @param traits   Traits of this relational expression
+     * @param table    Table definition.
+     */
+    public IgniteTableScan(RelOptCluster cluster, RelTraitSet traits, RelOptTable table) {
+        super(cluster, traits, table);
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
     }

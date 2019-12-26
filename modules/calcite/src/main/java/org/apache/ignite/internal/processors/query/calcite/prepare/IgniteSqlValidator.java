@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-/**
- *
- */
-
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataType;
@@ -31,6 +27,14 @@ import org.apache.calcite.sql.validate.SqlValidatorImpl;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
+    /**
+     * Creates a validator.
+     *
+     * @param opTab         Operator table
+     * @param catalogReader Catalog reader
+     * @param typeFactory   Type factory
+     * @param conformance   Compatibility mode
+     */
     public IgniteSqlValidator(SqlOperatorTable opTab,
         CalciteCatalogReader catalogReader, JavaTypeFactory typeFactory,
         SqlConformance conformance) {

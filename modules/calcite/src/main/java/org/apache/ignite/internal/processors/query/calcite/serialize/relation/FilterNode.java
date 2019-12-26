@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,39 +21,45 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Describes {@link IgniteFilter}
  */
 public class FilterNode extends RelGraphNode {
+    /** */
     private final Expression condition;
 
-    private FilterNode(Expression condition) {
+    /**
+     * @param traits   Traits of this relational expression.
+     * @param condition Condition.
+     */
+    private FilterNode(RelTraitSet traits, Expression condition) {
+        super(traits);
         this.condition = condition;
     }
 
+    /**
+     * Factory method.
+     *
+     * @param rel Filter rel.
+     * @param expTranslator Expression translator.
+     * @return FilterNode.
+     */
     public static FilterNode create(IgniteFilter rel, RexToExpTranslator expTranslator) {
-        return new FilterNode(expTranslator.translate(rel.getCondition()));
+        return new FilterNode(rel.getTraitSet(), expTranslator.translate(rel.getCondition()));
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         RelNode input = F.first(children);
-        RexNode condition = this.condition.implement(ctx.getExpressionTranslator());
         RelOptCluster cluster = input.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        RexNode condition = this.condition.implement(ctx.getExpressionTranslator());
 
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replaceIf(DistributionTraitDef.INSTANCE, () -> IgniteMdDistribution.filter(mq, input, condition));
-
-        return new IgniteFilter(cluster, traits, input, condition);
+        return new IgniteFilter(cluster, traits.toTraitSet(cluster), input, condition);
     }
 }

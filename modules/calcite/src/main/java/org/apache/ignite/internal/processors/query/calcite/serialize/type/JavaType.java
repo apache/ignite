@@ -15,46 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
+package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 
 /**
- * Describes {@link org.apache.calcite.rex.RexInputRef}.
+ * Java type.
  */
-public class InputRefExpression implements Expression {
+public class JavaType implements DataType {
     /** */
-    private final DataType type;
-
-    /** */
-    private final int index;
+    private final Class<?> clazz;
 
     /**
-     * @param type Data type.
-     * @param index Index.
+     * Factory method.
      */
-    public InputRefExpression(RelDataType type, int index) {
-        this.type = DataType.fromType(type);
-        this.index = index;
+    public static JavaType fromType(RelDataType type) {
+        assert type instanceof RelDataTypeFactoryImpl.JavaType : type;
+
+        return new JavaType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass());
     }
 
     /**
-     * @return Data type.
+     * @param clazz Value class.
      */
-    public DataType dataType() {
-        return type;
-    }
-
-    /**
-     * @return Index.
-     */
-    public int index() {
-        return index;
+    private JavaType(Class<?> clazz) {
+        this.clazz = clazz;
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T implement(ExpImplementor<T> implementor) {
-        return implementor.implement(this);
+    @Override public RelDataType toRelDataType(RelDataTypeFactory factory) {
+        return factory.createJavaType(clazz);
     }
 }

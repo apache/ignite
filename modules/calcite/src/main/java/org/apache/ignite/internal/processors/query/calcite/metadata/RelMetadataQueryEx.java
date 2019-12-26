@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,10 +33,13 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * See {@link RelMetadataQuery}
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
+    /** */
     private static final RelMetadataQueryEx PROTO = new RelMetadataQueryEx();
+
+    /** */
     public static final JaninoRelMetadataProvider PROVIDER = JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER);
 
     static {
@@ -49,14 +53,28 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
                 IgniteTableScan.class));
     }
 
+    /** */
     private IgniteMetadata.FragmentMetadata.Handler sourceDistributionHandler;
+
+    /** */
     private IgniteMetadata.DerivedDistribution.Handler derivedDistributionsHandler;
 
+    /**
+     * Factory method.
+     *
+     * @return return Metadata query instance.
+     */
     @SuppressWarnings("MethodOverridesStaticMethodOfSuperclass")
     public static RelMetadataQueryEx instance() {
         return new RelMetadataQueryEx(PROTO);
     }
 
+    /**
+     * Wraps an original metadata query instance and reuses its prepared handlers.
+     *
+     * @param mq Original metadata query instance.
+     * @return Wrapped metadata query instance.
+     */
     public static RelMetadataQueryEx wrap(@NotNull RelMetadataQuery mq) {
         if (mq.getClass() == RelMetadataQueryEx.class)
             return (RelMetadataQueryEx) mq;
@@ -64,6 +82,9 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         return new RelMetadataQueryEx(mq);
     }
 
+    /**
+     * @param parent Parent metadata query instance.
+     */
     private RelMetadataQueryEx(@NotNull RelMetadataQueryEx parent) {
         super(PROVIDER, parent);
 
@@ -71,6 +92,9 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         derivedDistributionsHandler = parent.derivedDistributionsHandler;
     }
 
+    /**
+     * @param parent Parent metadata query instance.
+     */
     private RelMetadataQueryEx(@NotNull RelMetadataQuery parent) {
         super(PROVIDER, parent);
 
@@ -78,6 +102,9 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         derivedDistributionsHandler = PROTO.derivedDistributionsHandler;
     }
 
+    /**
+     * Constructs query prototype.
+     */
     private RelMetadataQueryEx() {
         super(JaninoRelMetadataProvider.DEFAULT, RelMetadataQuery.EMPTY);
 
@@ -85,6 +112,12 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         derivedDistributionsHandler = initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
     }
 
+    /**
+     * Calculates fragment meta information, the given relation node is a root of.
+     *
+     * @param rel Relational node.
+     * @return Fragment meta information.
+     */
     public FragmentInfo getFragmentLocation(RelNode rel) {
         for (;;) {
             try {
@@ -95,6 +128,11 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         }
     }
 
+    /**
+     * Requests possible distribution types of given relational node. In case the node is logical and
+     * @param rel Relational node.
+     * @return List of distribution types the given relational node may have.
+     */
     public List<IgniteDistribution> derivedDistributions(RelNode rel) {
         for (;;) {
             try {

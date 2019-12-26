@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,26 +32,39 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Fragment of distributed query
  */
 public class Fragment implements RelSource {
+    /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
+    /** */
     private final long exchangeId = ID_GEN.getAndIncrement();
 
+    /** */
     private final RelNode root;
 
+    /** */
     private NodesMapping mapping;
 
+    /**
+     * @param root Root node of the fragment.
+     */
     public Fragment(RelNode root) {
         this.root = root;
     }
 
+    /**
+     * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
+     *
+     * @param ctx Planner context.
+     * @param mq Metadata query used for data location calculation.
+     */
     public void init(PlannerContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
         if (info.mapping() == null)
-            mapping = remote() ? ctx.mapForRandom(ctx.topologyVersion()) : ctx.mapForLocal();
+            mapping = remote() ? ctx.mapForRandom() : ctx.mapForLocal();
         else
             mapping = info.mapping().deduplicate();
 
@@ -66,10 +80,12 @@ public class Fragment implements RelSource {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public long exchangeId() {
         return exchangeId;
     }
 
+    /** {@inheritDoc} */
     @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
         assert remote();
 
@@ -78,14 +94,19 @@ public class Fragment implements RelSource {
         init(ctx, mq);
     }
 
+    /**
+     * @return Root node.
+     */
     public RelNode root() {
         return root;
     }
 
+    /** {@inheritDoc} */
     @Override public NodesMapping mapping() {
         return mapping;
     }
 
+    /** */
     private boolean remote() {
         return root instanceof IgniteSender;
     }
