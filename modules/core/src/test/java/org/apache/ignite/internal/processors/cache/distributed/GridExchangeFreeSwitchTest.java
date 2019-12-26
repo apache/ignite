@@ -190,7 +190,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        boolean noBlockMsg = (!persistence || pmeFreeSwitch);
+        boolean absentPme = (persistence && !pmeFreeSwitch);
 
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
@@ -202,7 +202,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cnt.incrementAndGet();
 
-                    if (noBlockMsg)
+                    if (!absentPme)
                         return false;
 
                     return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
@@ -218,7 +218,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(!noBlockMsg ? 0 : (nodes - 1), cnt.get());
+            assertEquals(absentPme ? 0 : (nodes - 1), cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
