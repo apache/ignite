@@ -24,5 +24,12 @@ import java.util.concurrent.Future;
  *
  */
 public interface StripedExecutor {
+    /**
+     * Executes a query task in a thread, responsible for particular task.
+     *
+     * @param task Query task.
+     * @param taskId Query task ID.
+     * @return Task execution future.
+     */
     Future<Void> execute(Runnable task, Serializable taskId);
 }

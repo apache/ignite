@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
- *
+ * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
  */
 public class DelegatingStripedExecutor implements StripedExecutor {
     /** */

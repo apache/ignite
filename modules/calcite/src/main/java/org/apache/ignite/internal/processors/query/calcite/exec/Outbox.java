@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunc
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12448
+ * A part of exchange.
  */
 public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>, AutoCloseable {
     /** */
@@ -90,7 +90,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void target(Sink<T> sink) {
-        throw new UnsupportedOperationException();
+        throw new AssertionError();
     }
 
     /** {@inheritDoc} */
