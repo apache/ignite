@@ -180,7 +180,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
     private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        boolean pmeFreeSwitchDisable = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
+        boolean pmeFreeSwitchDisabled = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
 
         int nodes = 10;
 
@@ -190,7 +190,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        boolean pmeExpected = (!persistence || pmeFreeSwitchDisable);
+        boolean pmeExpected = !persistence || pmeFreeSwitchDisabled;
 
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
