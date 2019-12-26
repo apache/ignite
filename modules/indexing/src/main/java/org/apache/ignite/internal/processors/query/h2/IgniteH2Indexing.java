@@ -64,6 +64,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -182,6 +183,7 @@ import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.table.Column;
+import org.h2.index.Index;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
@@ -3037,5 +3039,57 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> purgeIndexPartitions(
+        CacheGroupContext grp, Set<Integer> parts) {
+        if (F.isEmpty(parts))
+            return Collections.emptyList();
+
+        List<IgniteBiTuple<Runnable, IgniteInternalFuture<Void>>> res = new ArrayList<>();
+
+        for (GridCacheContext cctx : grp.caches()) {
+            for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cctx.name())) {
+                assert tblDesc.table() != null;
+
+                for (Index idx : tblDesc.table().getIndexes()) {
+                    if (!(idx instanceof H2TreeIndex))
+                        continue;
+
+                    GridWorkerFuture<Void> fut = new GridWorkerFuture<>();
+
+                    String details = "[grpId=" + grp.groupId() + ", cache=" + cctx.name() + ", idx=" +
+                        idx.getName() + ", partIds=" + Arrays.toString(U.toIntArray(parts)) + "]";
+
+                    GridWorker worker = new GridWorker(cctx.igniteInstanceName(),
+                        "idx-part-purge-" + grp.groupId() + "-" + tblDesc.cacheName() + "-" + idx.getName(), log) {
+                        @Override protected void body() {
+                            try {
+                                if (log.isInfoEnabled())
+                                    log.info("Starting clearing partitions in index. " + details);
+
+                                ((H2TreeIndex)idx).purge(parts, this::isCancelled);
+
+                                fut.onDone();
+                            }
+                            catch (Throwable e) {
+                                fut.onDone(e);
+                            }
+                            finally {
+                                if (log.isInfoEnabled())
+                                    log.info("Finished clearing partitions in index. " + details);
+                            }
+                        }
+                    };
+
+                    fut.setWorker(worker);
+
+                    res.add(new IgniteBiTuple<>(worker, fut));
+                }
+            }
+        }
+
+        return res;
     }
 }

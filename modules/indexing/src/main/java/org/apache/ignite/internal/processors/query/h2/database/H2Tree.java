@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -48,8 +49,10 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -675,5 +678,59 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /**
+     * Purge all rows that belong to specific partitions from the index.
+     *
+     * @param parts Partitions.
+     * @param shouldStop Allows to check stop condition.
+     */
+    public void purge(Set<Integer> parts, IgniteCallable<Boolean> shouldStop) throws IgniteCheckedException {
+        assert !F.isEmpty(parts) : "Empty parts";
+        assert shouldStop != null;
+
+        if (isEmpty())
+            return;
+
+        TreeRowClosure<H2Row, H2Row> rowClo = (tree, io, pageAddr, idx) -> {
+            long link = ((H2RowLinkIO)io).getLink(pageAddr,idx);
+
+            int partId = PageIdUtils.partId(link);
+
+            return parts.contains(partId);
+        };
+
+        InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
+
+        try {
+            visit(findFirst(), findLast(), new PurgeVisitor(rowClo) {
+                @Override public void onBefore() throws IgniteCheckedException {
+                    cctx.shared().database().checkpointReadLock();
+
+                    try {
+                        if (shouldStop.call())
+                            state |= STOP;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    super.onBefore();
+                }
+
+                @Override public void onAfter() throws IgniteCheckedException {
+                    try {
+                        super.onAfter();
+                    }
+                    finally {
+                        cctx.shared().database().checkpointReadUnlock();
+                    }
+                }
+            });
+        }
+        finally {
+            InlineIndexHelper.clearCurrentInlineIndexes();
+        }
     }
 }

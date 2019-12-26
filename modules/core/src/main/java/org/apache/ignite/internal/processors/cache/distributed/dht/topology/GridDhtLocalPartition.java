@@ -164,6 +164,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile long delayedRentingTopVer;
 
+    /** Set if partition is requested for exclusive purge. */
+    private volatile boolean exclPurge;
+
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
@@ -502,6 +505,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         rent(true);
                     else if (getPartState(state) == RENTING)
                         tryContinueClearing();
+                    else if (exclPurge)
+                        ctx.evict().initExclusivePartitionPurge(grp, this);
                 }
 
                 return;
@@ -686,7 +691,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         boolean evictionRequested = partState == RENTING;
         boolean clearingRequested = partState == MOVING;
 
-        if (!evictionRequested && !clearingRequested)
+        if (!evictionRequested && !clearingRequested || exclPurge)
             return;
 
         boolean reinitialized = clearFuture.initialize(updateSeq, evictionRequested);
@@ -810,7 +815,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (true) {
             int cnt = evictGuard.get();
 
-            assert cnt > 0;
+            assert cnt > 0 : cnt;
 
             if (evictGuard.compareAndSet(cnt, cnt - 1)) {
                 free = cnt == 1;
@@ -930,6 +935,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         long state = this.state.get();
 
         if (getReservations(state) != 0 || groupReserved())
+            return false;
+
+        if (exclPurge)
             return false;
 
         if (addEvicting()) {
@@ -1477,6 +1485,44 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void beforeApplyBatch(boolean last) {
         // No-op.
+    }
+
+    /**
+     * Initialize this partition to be a part of a exclusive purge over a set of partitions.
+     *
+     * @param fut Future to listen for completion of a larger purge procedure.
+     * @return {@code true} if successfully initialized, otherwise a retry is required.
+     */
+    public boolean exclusivePurgeAsync(IgniteInternalFuture<?> fut) {
+        long state = this.state.get();
+
+        GridDhtPartitionState state0 = getPartState(state);
+
+        if (state0 != MOVING && state0 != RENTING)
+            return false;
+
+        exclPurge = true;
+
+        if (getReservations(state) != 0 || groupReserved())
+            return false;
+
+        if (!clearFuture.initialize(false, state0 == RENTING))
+            return false;
+
+        if (addEvicting()) {
+            fut.listen(f -> {
+                exclPurge = false;
+
+                if (clearEvicting()) {
+                    if (f.error() == null)
+                        clearFuture.finish();
+                    else
+                        clearFuture.finish(f.error());
+                }
+            });
+        }
+
+        return true;
     }
 
     /**

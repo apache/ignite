@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Set;
+
 /**
  * Row cache cleaner is used by page memory manager to remove updated / evicted links from rows cache.
  */
@@ -27,4 +29,11 @@ public interface GridQueryRowCacheCleaner {
      * @param link Link to remove.
      */
     void remove(long link);
+
+    /**
+     * Remove all rows that belong to the given set of partitions.
+     *
+     * @param parts Partitions.
+     */
+    void removeByPartition(Set<Integer> parts);
 }
