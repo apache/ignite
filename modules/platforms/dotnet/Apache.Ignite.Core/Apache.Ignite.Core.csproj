@@ -57,6 +57,8 @@
     <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IClientCluster.cs" />
+    <Compile Include="Client\IClientClusterGroup.cs" />
+    <Compile Include="Client\IClientClusterNode.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
@@ -90,6 +92,9 @@
     <Compile Include="Impl\Client\Cache\ClientCacheTopologyPartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />
     <Compile Include="Impl\Client\ClientFlags.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterGroup.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterGroupProjection.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\MinVersionAttribute.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
