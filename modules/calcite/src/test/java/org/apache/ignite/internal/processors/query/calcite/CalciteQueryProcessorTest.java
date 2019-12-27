@@ -35,7 +35,6 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
@@ -55,8 +54,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
-import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
@@ -125,6 +122,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             new Object[]{1, null, 1, "Roman", 0, 0}
         ));
 
+        developer.identityKey("hash");
+
         project = new TestIgniteTable("Project", "Project",
             RowType.builder()
                 .keyField("id", Integer.class, true)
@@ -134,6 +133,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             new Object[]{0, null, 0, "Calcite", 1},
             new Object[]{1, null, 1, "Ignite", 1}
         ));
+
+        project.identityKey("hash");
 
         country = new TestIgniteTable("Country", "Country",
             RowType.builder()
@@ -394,14 +395,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
 
         assertNotNull(relRoot.rel);
-
-        RexToExpTranslator translator = new RexToExpTranslator();
-
-        Project proj = (Project) relRoot.rel.getInput(0);
-
-        List<Expression> expressions = translator.translate(proj.getProjects());
-
-        assertNotNull(expressions);
     }
 
     /**
@@ -552,7 +545,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 2);
+        assertEquals(2, plan.fragments().size());
     }
 
     /**
@@ -591,7 +584,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
-        PlannerContext ctx = proc.buildContext(null, traitDefs, sql, new Object[]{-10}, (c, q, t) -> context(c, q, t, ms));
+        developer.identityKey(null);
+        project.identityKey(null);
+
+        PlannerContext ctx = PlannerContext.builder(proc.buildContext(null, traitDefs, sql, new Object[]{-10}, this::context))
+            .localNodeId(nodes.get(0))
+            .mappingService(ms).build();
 
         assertNotNull(ctx);
 
@@ -693,6 +691,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        developer.identityKey(null);
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -744,7 +745,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 2);
+        assertEquals(2, plan.fragments().size());
     }
 
     /**
@@ -786,6 +787,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -838,7 +841,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 2);
+        assertEquals(2, plan.fragments().size());
     }
 
     /**
@@ -880,6 +883,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -932,7 +937,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 3);
+        assertEquals(3, plan.fragments().size());
     }
 
     /**
@@ -967,6 +972,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        developer.identityKey(null);
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -1019,7 +1027,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 3);
+        assertEquals(3, plan.fragments().size());
     }
 
     /**
@@ -1061,6 +1069,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -1113,7 +1123,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 2);
+        assertEquals(2, plan.fragments().size());
     }
 
     /**
@@ -1155,6 +1165,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             }
         };
 
+        project.identityKey(null);
+
         RelTraitDef[] traitDefs = {
             DistributionTraitDef.INSTANCE,
             ConventionTraitDef.INSTANCE
@@ -1207,7 +1219,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertNotNull(plan);
 
-        assertTrue(plan.fragments().size() == 3);
+        assertEquals(3, plan.fragments().size());
     }
 
     /** */
@@ -1274,8 +1286,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .exchangeProcessor(new BypassExchangeProcessor(log()))
             .topologyVersion(AffinityTopologyVersion.NONE)
             .mappingService(ms)
-            .executor((task,id) -> CompletableFuture.runAsync(task, exec))
+            .executor((task,id) -> CompletableFuture.runAsync(task, exec).exceptionally(this::handle))
             .build();
+    }
+
+    /** */
+    private Void handle(Throwable ex) {
+        log().error(ex.getMessage(), ex);
+
+        return null;
     }
 
     /** */

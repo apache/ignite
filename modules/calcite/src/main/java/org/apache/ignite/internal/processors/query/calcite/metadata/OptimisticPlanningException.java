@@ -38,6 +38,16 @@ public class OptimisticPlanningException extends RuntimeException{
     }
 
     /**
+     *
+     * @param message Message.
+     * @param edge Edge of query plan, where the exception was thrown.
+     */
+    public OptimisticPlanningException(String message, Edge edge) {
+        super(message);
+        this.edge = edge;
+    }
+
+    /**
      * @return Edge of query plan, where the exception was thrown.
      */
     public Edge edge() {

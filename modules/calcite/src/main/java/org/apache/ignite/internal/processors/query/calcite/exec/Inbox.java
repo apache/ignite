@@ -250,12 +250,12 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) {
-        exchange().acknowledge(queryId(), exchangeId, nodeId, batchId);
+        exchange().sendAcknowledgment(this, nodeId, queryId(), exchangeId, batchId);
     }
 
     /** */
     private ExchangeProcessor exchange() {
-        return context().plannerContext().exchangeProcessor();
+        return context().exchangeProcessor();
     }
 
     /** */

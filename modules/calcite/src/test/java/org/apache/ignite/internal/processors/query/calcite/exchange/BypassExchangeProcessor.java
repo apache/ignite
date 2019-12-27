@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
@@ -31,10 +30,10 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContex
 /** */
 public class BypassExchangeProcessor implements ExchangeProcessor {
     /** */
-    private final ConcurrentHashMap<Pair<UUID, Long>, Outbox<?>> outboxes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Key, Outbox<?>> outboxes = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentHashMap<Pair<UUID, Long>, Inbox<?>> inboxes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Key, Inbox<?>> inboxes = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -48,47 +47,114 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
 
     /** {@inheritDoc} */
     @Override public void register(Outbox<?> outbox) {
-        outboxes.put(Pair.of(outbox.queryId(), outbox.exchangeId()), outbox);
+        UUID nodeId = outbox.context().plannerContext().localNodeId();
+        UUID queryId = outbox.queryId();
+        long exchangeId = outbox.exchangeId();
+
+        outboxes.put(new Key(nodeId, queryId, exchangeId), outbox);
     }
 
     /** {@inheritDoc} */
     @Override public Inbox<?> register(Inbox<?> inbox) {
-        Inbox<?> old = inboxes.putIfAbsent(Pair.of(inbox.queryId(), inbox.exchangeId()), inbox);
+        UUID nodeId = inbox.context().plannerContext().localNodeId();
+        UUID queryId = inbox.queryId();
+        long exchangeId = inbox.exchangeId();
+
+        Inbox<?> old = inboxes.putIfAbsent(new Key(nodeId, queryId, exchangeId), inbox);
 
         return old != null ? old : inbox;
     }
 
     /** {@inheritDoc} */
     @Override public void unregister(Outbox<?> outbox) {
-        outboxes.remove(Pair.of(outbox.queryId(), outbox.exchangeId()));
+        UUID nodeId = outbox.context().plannerContext().localNodeId();
+        UUID queryId = outbox.queryId();
+        long exchangeId = outbox.exchangeId();
+
+        outboxes.remove(new Key(nodeId, queryId, exchangeId));
     }
 
     /** {@inheritDoc} */
     @Override public void unregister(Inbox<?> inbox) {
-        inboxes.remove(Pair.of(inbox.queryId(), inbox.exchangeId()));
+        UUID nodeId = inbox.context().plannerContext().localNodeId();
+        UUID queryId = inbox.queryId();
+        long exchangeId = inbox.exchangeId();
+
+        inboxes.remove(new Key(nodeId, queryId, exchangeId));
     }
 
     /** {@inheritDoc} */
-    @Override public void send(UUID queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows) {
-        inboxes.computeIfAbsent(Pair.of(queryId, exchangeId), this::newInbox).push(nodeId, batchId, rows);
+    @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
+        Inbox<?> inbox = inboxes.computeIfAbsent(new Key(nodeId, queryId, exchangeId), this::newInbox);
+
+        UUID senderNode = sender.context().plannerContext().localNodeId();
+
+        inbox.push(senderNode, batchId, rows);
     }
 
     /** {@inheritDoc} */
-    @Override public void acknowledge(UUID queryId, long exchangeId, UUID nodeId, int batchId) {
-        Outbox<?> outbox = outboxes.get(Pair.of(queryId, exchangeId));
+    @Override public void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+        Outbox<?> outbox = outboxes.get(new Key(nodeId, queryId, exchangeId));
 
-        if (outbox != null)
-            outbox.onAcknowledge(nodeId, batchId);
+        if (outbox != null) {
+            UUID senderNode = sender.context().plannerContext().localNodeId();
+
+            outbox.onAcknowledge(senderNode, batchId);
+        }
     }
 
     /** */
-    private Inbox<?> newInbox(Pair<UUID, Long> k) {
+    private Inbox<?> newInbox(Key k) {
         PlannerContext ctx = PlannerContext.builder()
+            .localNodeId(k.nodeId)
             .exchangeProcessor(this)
-            .executor((t,i) -> CompletableFuture.completedFuture(null))
+            .executor((t, i) -> CompletableFuture.completedFuture(null))
             .logger(log)
             .build();
 
-        return new Inbox<>(new ExecutionContext(k.left, ctx, ImmutableMap.of()), k.right);
+        return new Inbox<>(new ExecutionContext(k.queryId, ctx, ImmutableMap.of()), k.exchangeId);
+    }
+
+    /** */
+    private static class Key {
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        private final UUID queryId;
+
+        /** */
+        private final long exchangeId;
+
+        /** */
+        private Key(UUID nodeId, UUID queryId, long exchangeId) {
+            this.nodeId = nodeId;
+            this.queryId = queryId;
+            this.exchangeId = exchangeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Key key = (Key) o;
+
+            if (exchangeId != key.exchangeId)
+                return false;
+            if (!nodeId.equals(key.nodeId))
+                return false;
+            return queryId.equals(key.queryId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = nodeId.hashCode();
+            result = 31 * result + queryId.hashCode();
+            result = 31 * result + (int) (exchangeId ^ (exchangeId >>> 32));
+            return result;
+        }
     }
 }

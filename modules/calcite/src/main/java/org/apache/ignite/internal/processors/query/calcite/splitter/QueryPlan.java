@@ -75,7 +75,21 @@ public class QueryPlan {
 
                 fragments.add(fragment);
 
-                parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
+                if (parent != null)
+                    parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
+                else {
+                    // need to fix a distribution of a root of a fragment
+                    int idx = 0;
+
+                    for (; idx < fragments.size(); idx++) {
+                        if (fragments.get(idx).root() == child)
+                            break;
+                    }
+
+                    assert idx < fragments.size();
+
+                    fragments.set(idx, new Fragment(new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment)));
+                }
             }
         }
     }

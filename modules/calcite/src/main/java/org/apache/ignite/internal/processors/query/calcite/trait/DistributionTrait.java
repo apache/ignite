@@ -32,8 +32,10 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 
 import static org.apache.calcite.rel.RelDistribution.Type.ANY;
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.RANDOM_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 
 /**
  * Description of the physical distribution of a relational expression.
@@ -134,7 +136,10 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
                 || (Objects.equals(keys, other.keys)
                     && Objects.equals(function, other.function));
 
-        return other.getType() == RANDOM_DISTRIBUTED && getType() == HASH_DISTRIBUTED;
+        if (other.getType() == RANDOM_DISTRIBUTED)
+            return getType() == HASH_DISTRIBUTED;
+
+        return other.getType() == SINGLETON && getType() == BROADCAST_DISTRIBUTED;
     }
 
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {

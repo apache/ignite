@@ -25,6 +25,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -63,10 +64,14 @@ public class Fragment implements RelSource {
     public void init(PlannerContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
-        if (info.mapping() == null)
+        if (!info.mapped())
             mapping = remote() ? ctx.mapForRandom() : ctx.mapForLocal();
-        else
+        else {
             mapping = info.mapping().deduplicate();
+
+            if (!remote() && !mapping.nodes().contains(ctx.localNodeId()))
+                throw new OptimisticPlanningException("Failed to calculate physical distribution", new Edge(null, root, -1));
+        }
 
         ImmutableList<Pair<IgniteReceiver, RelSource>> sources = info.sources();
 

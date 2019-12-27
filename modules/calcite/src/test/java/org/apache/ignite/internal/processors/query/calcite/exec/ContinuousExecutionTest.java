@@ -18,71 +18,43 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 /**
  *
  */
 @RunWith(Parameterized.class)
-public class ContinuousExecutionTest extends GridCommonAbstractTest {
+public class ContinuousExecutionTest extends AbstractExecutionTest {
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public int rowsCount;
 
-    /** */
-    private ExchangeProcessor exch;
+    @Parameter(1)
+    public int remoteFragmentsCount;
 
-    /** */
-    private List<ExecutorService> executors;
-
-    /** */
-    @Before
-    public void setup() {
-        exch = new BypassExchangeProcessor(log());
-        executors = new ArrayList<>();
-    }
-
-    /** */
-    @After
-    public void tearDown() {
-        for (ExecutorService executor : executors) {
-            List<Runnable> runnables = executor.shutdownNow();
-
-            for (Runnable runnable : runnables) {
-                if (runnable instanceof Future)
-                    ((Future<?>) runnable).cancel(true);
-            }
-        }
-    }
-
-    @Parameterized.Parameters(name = "rowsCount={0}")
+    @Parameterized.Parameters(name = "rowsCount={0}, remoteFragmentsCount={1}")
     public static List<Object[]> parameters() {
         return ImmutableList.of(
-            new Object[]{10},
-            new Object[]{100},
-            new Object[]{100_000},
-            new Object[]{1000_000});
+            new Object[]{10, 1},
+            new Object[]{10, 5},
+            new Object[]{10, 10},
+            new Object[]{100, 1},
+            new Object[]{100, 5},
+            new Object[]{100, 10},
+            new Object[]{100_000, 1},
+            new Object[]{100_000, 5},
+            new Object[]{100_000, 10});
     }
 
     /**
@@ -92,85 +64,61 @@ public class ContinuousExecutionTest extends GridCommonAbstractTest {
     public void testContinuousExecution() throws Exception {
         UUID queryId = UUID.randomUUID();
 
-        ExecutionContext ctx1 = executionContext(queryId);
+        List<UUID> nodes = IntStream.range(0, remoteFragmentsCount + 1)
+            .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
 
-        Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
-            /** */
-            private int cntr;
+        for (int i = 1; i < nodes.size(); i++) {
+            ExecutionContext ctx = executionContext(nodes.get(i), queryId);
 
-            /** */
-            private final Random rnd = new Random();
+            Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
+                /** */
+                private int cntr;
 
-            /** {@inheritDoc} */
-            @Override public boolean hasNext() {
-                return cntr < rowsCount;
-            }
+                /** */
+                private final Random rnd = new Random();
 
-            /** {@inheritDoc} */
-            @Override public Object[] next() {
-                if (cntr >= rowsCount)
-                    throw new NoSuchElementException();
+                /** {@inheritDoc} */
+                @Override public boolean hasNext() {
+                    return cntr < rowsCount;
+                }
 
-                Object[] row = new Object[6];
+                /** {@inheritDoc} */
+                @Override public Object[] next() {
+                    if (cntr >= rowsCount)
+                        throw new NoSuchElementException();
 
-                for (int i = 0; i < row.length; i++)
-                    row[i] = rnd.nextInt(10);
+                    Object[] row = new Object[6];
 
-                cntr++;
+                    for (int i = 0; i < row.length; i++)
+                        row[i] = rnd.nextInt(10);
 
-                return row;
-            }
-        };
+                    cntr++;
 
-        List<UUID> nodes = Collections.singletonList(UUID.randomUUID());
+                    return row;
+                }
+            };
 
-        ScanNode scan = new ScanNode(ctx1, iterable);
-        ProjectNode project = new ProjectNode(ctx1, scan, r -> new Object[]{r[0], r[1], r[5]});
-        FilterNode filter = new FilterNode(ctx1, project, r -> (Integer) r[0] >= 2);
+            ScanNode scan = new ScanNode(ctx, iterable);
+            ProjectNode project = new ProjectNode(ctx, scan, r -> new Object[]{r[0], r[1], r[5]});
+            FilterNode filter = new FilterNode(ctx, project, r -> (Integer) r[0] >= 2);
 
-        Outbox<Object[]> outbox = new Outbox<>(ctx1, 0, filter, new DestinationFunction() {
-            @Override public List<UUID> destination(Object row) {
-                return nodes;
-            }
+            Outbox<Object[]> outbox = new Outbox<>(ctx, 0, filter, new AllNodes(nodes.subList(0, 1)));
 
-            @Override public List<UUID> targets() {
-                return nodes;
-            }
-        });
+            outbox.request();
+        }
 
-        outbox.request();
+        ExecutionContext ctx = executionContext(nodes.get(0), queryId);
 
-        ExecutionContext ctx2 = executionContext(queryId);
+        Inbox<Object[]> inbox = (Inbox<Object[]>) ctx.plannerContext().exchangeProcessor().register(new Inbox<>(ctx, 0));
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) ctx2.plannerContext().exchangeProcessor().register(new Inbox<>(ctx2, 0));
+        inbox.init(ctx, nodes.subList(1, nodes.size()), null);
 
-        inbox.init(ctx2, nodes, null);
-
-        ConsumerNode node = new ConsumerNode(ctx2, inbox);
+        ConsumerNode node = new ConsumerNode(ctx, inbox);
 
         while (node.hasNext()) {
             Object[] row = node.next();
 
             assertTrue((Integer)row[0] >= 2);
         }
-    }
-
-    /** */
-    private ExecutionContext executionContext(UUID queryId) {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-
-        executors.add(exec);
-
-        return new ExecutionContext(queryId, PlannerContext.builder()
-            .executor((t, id) -> CompletableFuture
-                .runAsync(t, exec)
-                .exceptionally((ex) -> {
-                    log().error(ex.getMessage(), ex);
-
-                    return null;
-                }))
-            .exchangeProcessor(exch)
-            .logger(log())
-            .build(), ImmutableMap.of());
     }
 }

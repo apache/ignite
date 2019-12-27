@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.Serializable;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
  * to work with them.
  */
 public final class PlannerContext implements Context {
+    private final UUID localNodeId;
+
     /** */
     private final FrameworkConfig frameworkConfig;
 
@@ -88,9 +91,9 @@ public final class PlannerContext implements Context {
     /**
      * Private constructor, used by a builder.
      */
-    private PlannerContext(FrameworkConfig config, Context parentContext, Query query, AffinityTopologyVersion topologyVersion,
-        IgniteLogger logger, GridKernalContext kernalContext, CalciteQueryProcessor queryProcessor, MappingService mappingService,
-        ExchangeProcessor exchangeProcessor, StripedExecutor executor) {
+    private PlannerContext(UUID localNodeId, Query query, Context parentContext, GridKernalContext kernalContext,
+        FrameworkConfig config, AffinityTopologyVersion topologyVersion, CalciteQueryProcessor queryProcessor,
+        MappingService mappingService, ExchangeProcessor exchangeProcessor, StripedExecutor executor, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.query = query;
         this.topologyVersion = topologyVersion;
@@ -100,12 +103,20 @@ public final class PlannerContext implements Context {
         this.mappingService = mappingService;
         this.exchangeProcessor = exchangeProcessor;
         this.executor = executor;
+        this.localNodeId = localNodeId;
 
         // link frameworkConfig#context() to this.
         Frameworks.ConfigBuilder b = config == null ? Frameworks.newConfigBuilder() :
             Frameworks.newConfigBuilder(config);
 
         frameworkConfig = b.context(this).build();
+    }
+
+    /**
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return localNodeId;
     }
 
     /**
@@ -292,9 +303,30 @@ public final class PlannerContext implements Context {
     }
 
     /**
+     * @return Context builder.
+     */
+    public static Builder builder(PlannerContext template) {
+        return new Builder()
+            .executor(template.executor)
+            .exchangeProcessor(template.exchangeProcessor)
+            .mappingService(template.mappingService)
+            .queryProcessor(template.queryProcessor)
+            .kernalContext(template.kernalContext)
+            .logger(template.logger)
+            .topologyVersion(template.topologyVersion)
+            .query(template.query)
+            .parentContext(template.parentContext)
+            .frameworkConfig(template.frameworkConfig)
+            .localNodeId(template.localNodeId);
+    }
+
+    /**
      * Planner context builder.
      */
     public static class Builder {
+        /** */
+        private UUID localNodeId;
+
         /** */
         private FrameworkConfig frameworkConfig;
 
@@ -324,6 +356,11 @@ public final class PlannerContext implements Context {
 
         /** */
         private StripedExecutor executor;
+
+        public Builder localNodeId(UUID localNodeId) {
+            this.localNodeId = localNodeId;
+            return this;
+        }
 
         /**
          * @param frameworkConfig Framework config.
@@ -421,7 +458,8 @@ public final class PlannerContext implements Context {
          * @return Planner context.
          */
         public PlannerContext build() {
-            return new PlannerContext(frameworkConfig, parentContext, query, topologyVersion, logger, kernalContext, queryProcessor, mappingService, exchangeProcessor, executor);
+            return new PlannerContext(localNodeId, query, parentContext, kernalContext, frameworkConfig,
+                topologyVersion, queryProcessor, mappingService, exchangeProcessor, executor, logger);
         }
     }
 }

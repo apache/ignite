@@ -17,51 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
  *
  */
-public class ExecutionTest extends GridCommonAbstractTest {
-    /** */
-    private ExchangeProcessor exch;
-
-    private List<ExecutorService> executors;
-
-    @Before
-    public void setup() {
-        exch = new BypassExchangeProcessor(log());
-        executors = new ArrayList<>();
-    }
-
-    @After
-    public void tearDown() {
-        for (ExecutorService executor : executors) {
-            List<Runnable> runnables = executor.shutdownNow();
-
-            for (Runnable runnable : runnables) {
-                if (runnable instanceof Future)
-                    ((Future<?>) runnable).cancel(true);
-            }
-        }
-    }
-
+public class ExecutionTest extends AbstractExecutionTest {
     @Test
     public void testSimpleExecution() throws Exception {
         // SELECT P.ID, P.NAME, PR.NAME AS PROJECT
@@ -70,7 +35,7 @@ public class ExecutionTest extends GridCommonAbstractTest {
         // ON P.ID = PR.RESP_ID
         // WHERE P.ID >= 2
 
-        ExecutionContext ctx = executionContext(UUID.randomUUID());
+        ExecutionContext ctx = executionContext(UUID.randomUUID(), UUID.randomUUID());
 
         ScanNode persons = new ScanNode(ctx, Arrays.asList(
             new Object[]{0, "Igor", "Seliverstov"},
@@ -95,30 +60,12 @@ public class ExecutionTest extends GridCommonAbstractTest {
 
         ArrayList<Object[]> rows = new ArrayList<>();
 
-        while (node.hasNext()) {
+        while (node.hasNext())
             rows.add(node.next());
-        }
 
         assertEquals(2, rows.size());
 
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Calcite"}, rows.get(0));
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Ignite"}, rows.get(1));
-    }
-
-    private ExecutionContext executionContext(UUID queryId) {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-        executors.add(exec);
-
-        return new ExecutionContext(queryId, PlannerContext.builder()
-            .executor((t, id) -> CompletableFuture
-                .runAsync(t, exec)
-                .exceptionally((ex) -> {
-                    log().error(ex.getMessage(), ex);
-
-                    return null;
-                }))
-            .exchangeProcessor(exch)
-            .logger(log())
-            .build(), ImmutableMap.of());
     }
 }

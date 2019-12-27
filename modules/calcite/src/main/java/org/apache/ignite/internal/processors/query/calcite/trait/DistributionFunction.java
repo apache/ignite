@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
 import org.apache.calcite.rel.RelDistribution;
@@ -132,7 +131,7 @@ public abstract class DistributionFunction implements Serializable {
 
             List<UUID> nodes = m.nodes();
 
-            return new AllNodesFunction(nodes);
+            return new AllNodes(nodes);
         }
 
         /** */
@@ -157,7 +156,7 @@ public abstract class DistributionFunction implements Serializable {
 
             List<UUID> nodes = m.nodes();
 
-            return new RandomNodeFunction(nodes);
+            return new RandomNode(nodes);
         }
 
         /** */
@@ -183,14 +182,13 @@ public abstract class DistributionFunction implements Serializable {
 
             List<UUID> nodes = Collections.singletonList(Objects.requireNonNull(F.first(m.nodes())));
 
-            return new AllNodesFunction(nodes);
+            return new AllNodes(nodes);
         }
 
         /** */
         private Object readResolve() throws ObjectStreamException {
             return INSTANCE;
         }
-
     }
 
     /** */
@@ -232,7 +230,7 @@ public abstract class DistributionFunction implements Serializable {
 
             List<UUID> nodes = m.nodes();
 
-            return new PartitionFunction(nodes, assignments, rowToPart);
+            return new Partitioned(nodes, assignments, rowToPart);
         }
 
         /** */
@@ -283,88 +281,12 @@ public abstract class DistributionFunction implements Serializable {
 
             List<UUID> nodes = m.nodes();
 
-            return new PartitionFunction(nodes, assignments, rowToPart);
+            return new Partitioned(nodes, assignments, rowToPart);
         }
 
         /** {@inheritDoc} */
         @Override protected String name0() {
             return "affinity[" + key + "]";
-        }
-    }
-
-    /** */
-    private static class PartitionFunction implements DestinationFunction {
-        /** */
-        private final List<UUID> nodes;
-
-        /** */
-        private final List<List<UUID>> assignments;
-
-        /** */
-        private final ToIntFunction<Object> partFun;
-
-        /** */
-        private PartitionFunction(List<UUID> nodes, List<List<UUID>> assignments, ToIntFunction<Object> partFun) {
-            this.nodes = nodes;
-            this.assignments = assignments;
-            this.partFun = partFun;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return assignments.get(partFun.applyAsInt(row) % assignments.size());
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
-        }
-    }
-
-    /** */
-    private static class AllNodesFunction implements DestinationFunction {
-        /** */
-        private final List<UUID> nodes;
-
-        /** */
-        private AllNodesFunction(List<UUID> nodes) {
-            this.nodes = nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
-        }
-    }
-
-    /** */
-    private static class RandomNodeFunction implements DestinationFunction {
-        /** */
-        private final Random random;
-
-        /** */
-        private final List<UUID> nodes;
-
-        /** */
-        private RandomNodeFunction(List<UUID> nodes) {
-            this.nodes = nodes;
-
-            random = new Random();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return Collections.singletonList(nodes.get(random.nextInt(nodes.size())));
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
         }
     }
 }
