@@ -21,7 +21,6 @@ import java.util.UUID;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
