@@ -74,6 +74,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 
 /**
@@ -100,7 +101,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
     /** */
     private final LogListener blockedSysCriticalThreadLsnr =
-        LogListener.matches("Blocked system-critical thread has been detected").build();
+        LogListener.matches("Blocked system-critical thread has been detected. This can lead to cluster-wide undefined behaviour [workerName=db-checkpoint-thread").build();
 
     /** Latch that waits for execution of durable background task. */
     private CountDownLatch pendingDelLatch;
@@ -500,6 +501,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testLongIndexDeletionWithRebalance() throws Exception {
         testLongIndexDeletion(false, true, false, false, true);
     }
