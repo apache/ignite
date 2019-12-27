@@ -71,6 +71,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -1190,7 +1191,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
-            startManager(new GridEncryptionManager(ctx));
 
             ackSecurity();
 
@@ -1199,6 +1199,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             final GridManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
+
+            // Start the encryption manager after assigning the discovery manager to context, so it will be
+            // able to register custom event listener.
+            startManager(new GridEncryptionManager(ctx));
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
@@ -3986,6 +3990,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
+        return ctx.encryption();
     }
 
     /** {@inheritDoc} */
