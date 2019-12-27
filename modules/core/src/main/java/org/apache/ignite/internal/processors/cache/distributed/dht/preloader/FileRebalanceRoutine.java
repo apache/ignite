@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -90,7 +88,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final GridDhtPartitionExchangeId exchId;
 
     /** */
-    private final List<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments = new ArrayList<>();
+    private final Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** */
     private final Map<Long, UUID> partsToNodes = new HashMap<>();
@@ -123,7 +121,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      */
     public FileRebalanceRoutine(
         GridPartitionFilePreloader.CheckpointListener lsnr,
-        NavigableMap</** order */Integer, Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assigns,
+        Collection<Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         long rebalanceId,
@@ -136,6 +134,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
+
+        orderedAssgnments = assigns;
 
         initialize(assigns);
     }
@@ -151,18 +151,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      *
      * @param assignments Assignments.
      */
-    private void initialize(NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
+    private void initialize(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
         if (assignments == null)
             return;
 
         cancelLock.lock();
 
         try {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : assignments.values()) {
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : assignments) {
                 for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
                     UUID nodeId = mapEntry.getKey().id();
-
-                    orderedAssgnments.add(new T2<>(nodeId, mapEntry.getValue()));
 
                     for (Map.Entry<Integer, Set<Integer>> entry : mapEntry.getValue().entrySet()) {
                         int grpId = entry.getKey();
@@ -374,39 +372,42 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             cctx.cache().cacheGroup(grpId).preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
 
         cctx.kernalContext().getSystemExecutorService().submit(() -> {
-            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
-                UUID nodeId = nodeAssigns.get1();
-                Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
-
-                try {
-                    cancelLock.lock();
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
+                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : map.entrySet()) {
+                    UUID nodeId = nodeAssigns.getKey().id();
+                    Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
 
                     try {
-                        if (isDone())
-                            return;
+                        cancelLock.lock();
 
-                        if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
-                            break;
+                        try {
+                            if (isDone())
+                                return;
 
-                        snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
+                            if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
+                                break;
 
-                        if (log.isInfoEnabled())
-                            log.info("Start partitions preloading [from=" + nodeId + "]");
+                            snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Current state: " + this);
+                            if (log.isInfoEnabled())
+                                log.info("Start partitions preloading [from=" + nodeId + "]");
+
+                            if (log.isDebugEnabled())
+                                log.debug("Current state: " + this);
+                        }
+                        finally {
+                            cancelLock.unlock();
+                        }
+
+                        // todo
+                        snapFut.get();
                     }
-                    finally {
-                        cancelLock.unlock();
+                    catch (IgniteCheckedException e) {
+                        log.error(e.getMessage(), e);
+
+                        onDone(e);
                     }
-
-                    // todo
-                    snapFut.get();
                 }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-                }
-
             }
         });
     }
@@ -529,7 +530,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             if (!fut.isDone() && log.isDebugEnabled())
-                log.debug("Wait cleanup [grp=" + grp + "]");
+                log.debug("Wait for region cleanup [grp=" + grp + "]");
 
             fut.get();
         } catch (IgniteFutureCancelledCheckedException ignore) {

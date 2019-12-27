@@ -298,17 +298,16 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event (todo).
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param assignsMap A map of cache assignments grouped by grpId.
+     * @param assignments A map of cache assignments grouped by grpId.
      * @param rebalanceId Current rebalance id.
      * @return Runnable to execute the chain.
      */
     public Runnable addNodeAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap,
+        Map<Integer, GridDhtPreloaderAssignments> assignments,
         AffinityTopologyVersion topVer,
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut) {
-        NavigableMap</**order*/Integer, Map<ClusterNode, Map</**grp*/Integer, Set<Integer>>>> orderedAssignments =
-            remapAssignments(assignsMap, exchFut);
+        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssignments = remapAssignments(assignments, exchFut);
 
         if (orderedAssignments.isEmpty()) {
             if (log.isDebugEnabled())
@@ -339,8 +338,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!rebRoutine.isDone())
                 rebRoutine.cancel();
 
-            fileRebalanceRoutine = rebRoutine =
-                new FileRebalanceRoutine(cpLsnr, orderedAssignments, topVer, cctx, rebalanceId, log, exchFut.exchangeId());
+            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(cpLsnr, orderedAssignments, topVer, cctx,
+                rebalanceId, log, exchFut.exchangeId());
 
             if (log.isInfoEnabled())
                 log.info("Prepare to start file rebalancing: " + orderedAssignments);
@@ -379,7 +378,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     private String debugInfo() {
-        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() + ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
+        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() +
+            ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +
+            ", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
 
         if (!fileRebalanceRoutine.isDone() || fileRebalanceRoutine.isCancelled() || fileRebalanceRoutine.isFailed())
             buf.append(fileRebalanceRoutine.toString());
@@ -387,13 +388,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return buf.toString();
     }
 
-    private String formatMappings(Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> map) {
+    private String formatMappings(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
         StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
 
-        for (Map.Entry<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> entry : map.entrySet()) {
-            buf.append("\torder=").append(entry.getKey()).append('\n');
-
-            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.getValue().entrySet()) {
+        for (Map<ClusterNode, Map<Integer, Set<Integer>>> entry : list) {
+            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.entrySet()) {
                 buf.append("\t\tnode=").append(mapEntry.getKey().id()).append('\n');
 
                 for (Map.Entry<Integer, Set<Integer>> setEntry : mapEntry.getValue().entrySet()) {
@@ -416,7 +415,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param assignsMap The map of cache groups assignments to process.
      * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
-    private NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> remapAssignments(
+    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> remapAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap, GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> result = new TreeMap<>();
 
@@ -448,7 +447,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             }
         }
 
-        return result;
+        return result.values();
     }
 
     /**
