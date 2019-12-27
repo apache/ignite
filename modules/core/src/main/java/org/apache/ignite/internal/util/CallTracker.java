@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -34,7 +35,7 @@ public class CallTracker {
     private static final String NL = U.nl();
 
     /** */
-    private final Map<Integer, String> traces = new ConcurrentHashMap<>();
+    private final Map<Integer, Stats> traces = new ConcurrentHashMap<>();
 
     /**
      * @param name Name.
@@ -46,16 +47,36 @@ public class CallTracker {
     /**
      *
      */
-    public String track() {
-        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+    public Track track() {
+        Thread caller = Thread.currentThread();
 
-        return traces.computeIfAbsent(Arrays.hashCode(trace), t -> toString(trace));
+        StackTraceElement[] trace = caller.getStackTrace();
+
+        Stats stats = traces.compute(Arrays.hashCode(trace), (hc, s) -> {
+            if (s == null)
+                s = new Stats(toString(trace));
+
+            s.totalCalls++;
+
+            s.callsPerThread.compute(caller.getName(), (tn, ts) -> {
+                if (ts == null)
+                    ts = new AtomicInteger(1);
+                else
+                    ts.incrementAndGet();
+
+                return ts;
+            });
+
+            return s;
+        });
+
+        return new Track(caller.getName(), stats.trace);
     }
 
     /**
      *
      */
-    public Collection<String> allTraces() {
+    public Collection<Stats> allTraces() {
         return traces.values();
     }
 
@@ -66,15 +87,21 @@ public class CallTracker {
         StringBuilder sb = new StringBuilder();
 
         for (Map.Entry<String, CallTracker> entry : NAMED_INSTANCES.entrySet()) {
-            Collection<String> traces = entry.getValue().allTraces();
+            Collection<Stats> allStats = entry.getValue().allTraces();
 
             sb.append(entry.getKey())
-                .append(" [traces: ").append(traces.size()).append(']').append(NL);
+                .append(" [traces: ").append(allStats.size()).append(']').append(NL);
 
             int n = 0;
 
-            for (String trace : traces)
-                sb.append('#').append(++n).append(':').append(NL).append(trace);
+            for (Stats stats : allStats) {
+                sb.append('#').append(++n).append(": ").append(stats.totalCalls).append(NL);
+
+                stats.callsPerThread.forEach((name, calls) ->
+                    sb.append("  ").append(name).append(": ").append(calls).append(NL));
+
+                sb.append(stats.trace);
+            }
         }
 
         return sb.toString();
@@ -90,5 +117,47 @@ public class CallTracker {
             sb.append("  ").append(trace[i]).append(NL);
 
         return sb.toString();
+    }
+
+    /**
+     *
+     */
+    public static class Track {
+        /** */
+        private final String threadName;
+        /** */
+        private final String trace;
+
+        /**
+         * @param threadName Thread name.
+         * @param trace Trace.
+         */
+        public Track(String threadName, String trace) {
+            this.threadName = threadName;
+            this.trace = trace;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return threadName + NL + trace;
+        }
+    }
+    /**
+     *
+     */
+    private static class Stats {
+        /** */
+        volatile int totalCalls;
+        /** */
+        final Map<String, AtomicInteger> callsPerThread = new ConcurrentHashMap<>();
+        /** */
+        final String trace;
+
+        /**
+         * @param trace Trace.
+         */
+        Stats(String trace) {
+            this.trace = trace;
+        }
     }
 }

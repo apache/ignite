@@ -1009,7 +1009,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected final void checkDestroyed() {
         if (destroyed.get())
-            throw new IllegalStateException(CONC_DESTROY_MSG + getName() + " at\n" + destroyTrace);
+            throw new IllegalStateException(CONC_DESTROY_MSG + getName() + " at\n" + destroyTrack);
     }
 
     /** {@inheritDoc} */
@@ -2489,7 +2489,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private static final CallTracker DESTROY_TRACKER = CallTracker.named("BPlusTree-destroy-tracker");
 
     /** */
-    private volatile String destroyTrace;
+    private volatile CallTracker.Track destroyTrack;
 
     /**
      * @return {@code True} if state was changed.
@@ -2498,7 +2498,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         boolean res = destroyed.compareAndSet(false, true);
 
         if (res)
-            destroyTrace = DESTROY_TRACKER.track();
+            destroyTrack = DESTROY_TRACKER.track();
 
         return res;
     }

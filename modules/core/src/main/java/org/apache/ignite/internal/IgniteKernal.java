@@ -2445,6 +2445,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.info(msg);
 
             ctx.cache().context().database().dumpStatistics(log);
+
+            if (log.isInfoEnabled())
+                log.info(">>> Tracked calls:" + NL + CallTracker.toStringAll());
         }
         catch (IgniteClientDisconnectedException ignore) {
             // No-op.
