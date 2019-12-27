@@ -218,7 +218,7 @@ public abstract class GridAbstractTest extends TestCase {
     private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTest = new LinkedList<>();
 
     /**
-     * Page handler wrapper for {@link BPlusTree}, it can be saved here and overrided for test purposes,
+     * Page handler wrapper for {@link BPlusTree}, it can be saved here and overridden for test purposes,
      * then it must be restored using value of this field.
      */
     private transient PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;

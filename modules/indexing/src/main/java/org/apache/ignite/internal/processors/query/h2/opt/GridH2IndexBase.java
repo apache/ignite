@@ -174,6 +174,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * Attempts to asyncronously {@link #destroy} index and release all the resources.
+     *
+     * @param rmv Flag remove.
+     */
+    public void asyncDestroy(boolean rmv) {
+        // No-op.
+    }
+
+    /**
      * @return Index segment ID for current query context.
      */
     protected int threadLocalSegment() {

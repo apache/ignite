@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
@@ -61,6 +62,9 @@ import org.jetbrains.annotations.Nullable;
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
     public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
+    /** */
+    private final GridCacheContext cctx;
 
     /** */
     private final H2RowFactory rowStore;
@@ -138,7 +142,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @throws IgniteCheckedException If failed.
      * @param log Logger.
      */
-    protected H2Tree(
+    public H2Tree(
+        GridCacheContext cctx,
         String name,
         String tblName,
         String cacheName,
@@ -173,6 +178,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             failureProcessor,
             null
         );
+
+        this.cctx = cctx;
 
         this.log = log;
         this.rowCache = rowCache;
@@ -673,5 +680,19 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void temporaryReleaseLock() {
+        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
+        cctx.kernalContext().cache().context().database().checkpointReadLock();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long maxLockHoldTime() {
+        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+
+        // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
+        return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);
     }
 }

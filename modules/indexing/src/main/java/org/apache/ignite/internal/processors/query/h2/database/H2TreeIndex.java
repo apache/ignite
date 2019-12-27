@@ -21,20 +21,26 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
-
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
@@ -60,6 +66,7 @@ import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +92,60 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** Tree name. */
     private final String treeName;
+
+    /** Override it for test purposes. */
+    public static H2TreeFactory h2TreeFactory = (
+        cctx,
+        name,
+        tblName,
+        table,
+        cacheName,
+        idxName,
+        reuseList,
+        grpId,
+        grpName,
+        pageMem,
+        wal,
+        globalRmvId,
+        rowStore,
+        metaPageId,
+        initNew,
+        cols,
+        inlineIdxs,
+        inlineSize,
+        pk,
+        affinityKey,
+        rowCache,
+        failureProcessor,
+        log
+        ) -> new H2Tree(
+            cctx,
+            name,
+            tblName,
+            cacheName,
+            idxName,
+            reuseList,
+            grpId,
+            grpName,
+            pageMem,
+            wal,
+            globalRmvId,
+            rowStore,
+            metaPageId,
+            initNew,
+            cols,
+            inlineIdxs,
+            inlineSize,
+            pk,
+            affinityKey,
+            rowCache,
+            failureProcessor,
+            log
+        ) {
+            @Override public int compareValues(Value v1, Value v2) {
+                return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
+            }
+    };
 
     /**
      * @param cctx Cache context.
@@ -141,9 +202,11 @@ public class H2TreeIndex extends GridH2IndexBase {
             try {
                 RootPage page = getMetaPage(i);
 
-                    segments[i] = new H2Tree(
+                    segments[i] = h2TreeFactory.create(
+                        cctx,
                         name,
                         tbl.getName(),
+                        tbl,
                         tbl.cacheName(),
                         name,
                         cctx.offheap().reuseListForIndex(name),
@@ -162,11 +225,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         affinityKey,
                         rowCache,
                         cctx.kernalContext().failure(),
-                        log) {
-                        @Override public int compareValues(Value v1, Value v2) {
-                            return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
-                        }
-                    };
+                        log);
                 }
                 finally {
                     db.checkpointReadUnlock();
@@ -599,6 +658,46 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public void asyncDestroy(boolean rmvIdx) {
+        List<Long> rootPages = new ArrayList<>(segments.length);
+        List<H2Tree> trees = new ArrayList<>(segments.length);
+
+        try {
+            if (cctx.affinityNode() && rmvIdx) {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                for (int i = 0; i < segments.length; i++) {
+                    H2Tree tree = segments[i];
+
+                    tree.markDestroyed();
+
+                    rootPages.add(tree.getMetaPageId());
+                    trees.add(tree);
+
+                    dropMetaPage(i);
+                }
+
+                DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
+                    rootPages,
+                    trees,
+                    cctx.group().name(),
+                    cctx.cache().name(),
+                    table.getSchema().getName(),
+                    getName()
+                );
+
+                cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            super.destroy(rmvIdx);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected H2Tree treeForRead(int segment) {
         return segments[segment];
     }
@@ -779,4 +878,36 @@ public class H2TreeIndex extends GridH2IndexBase {
             return false;
         }
     };
+
+    /**
+     * Interface for {@link H2Tree} factory class.
+     */
+    public interface H2TreeFactory {
+        /** */
+        public H2Tree create(
+            GridCacheContext cctx,
+            String name,
+            String tblName,
+            Table table,
+            String cacheName,
+            String idxName,
+            ReuseList reuseList,
+            int grpId,
+            String grpName,
+            PageMemory pageMem,
+            IgniteWriteAheadLogManager wal,
+            AtomicLong globalRmvId,
+            H2RowFactory rowStore,
+            long metaPageId,
+            boolean initNew,
+            IndexColumn[] cols,
+            List<InlineIndexHelper> inlineIdxs,
+            int inlineSize,
+            boolean pk,
+            boolean affinityKey,
+            @Nullable H2RowCache rowCache,
+            @Nullable FailureProcessor failureProcessor,
+            IgniteLogger log
+        ) throws IgniteCheckedException;
+    }
 }

@@ -31,11 +31,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -73,9 +72,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2PrimaryScanIndex.SCAN_INDEX_NAME_SUFFIX;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2PrimaryScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
  * H2 Table implementation.
@@ -970,7 +969,7 @@ public class GridH2Table extends TableBase {
                         cache().shared().database().checkpointReadLock();
 
                         try {
-                            ((GridH2IndexBase)idx0).destroy(rmIndex);
+                            ((GridH2IndexBase)idx0).asyncDestroy(rmIndex);
                         }
                         finally {
                             cache().shared().database().checkpointReadUnlock();
@@ -982,6 +981,7 @@ public class GridH2Table extends TableBase {
 
                 i++;
             }
+
             this.idxs = idxs;
         }
         finally {
