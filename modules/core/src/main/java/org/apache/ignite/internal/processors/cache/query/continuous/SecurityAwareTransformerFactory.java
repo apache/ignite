@@ -55,7 +55,7 @@ public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAware
     @Override public IgniteClosure<E, R> create() {
         Factory<IgniteClosure<E, R>> factory = (Factory<IgniteClosure<E, R>>)original;
 
-        return new SecurityAwareIgniteClosure<E, R>(subjectId, factory.create());
+        return new SecurityAwareIgniteClosure<>(subjectId, factory.create());
     }
 
 
