@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -41,16 +42,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.crypto.Cipher.DECRYPT_MODE;
@@ -113,23 +112,15 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      */
     private int keySize = DEFAULT_KEY_SIZE;
 
-    /**
-     * Master key name.
-     */
-    private String masterKeyName = DEFAULT_MASTER_KEY_NAME;
+    /** Master key. */
+    private volatile KeystoreEncryptionKey masterKey;
 
-    /**
-     * Master key.
-     */
-    private KeystoreEncryptionKey masterKey;
+    /** Master key name. */
+    private volatile String masterKeyName = DEFAULT_MASTER_KEY_NAME;
 
     /** Logger. */
     @LoggerResource
     protected IgniteLogger log;
-
-    /** Ignite */
-    @IgniteInstanceResource
-    protected Ignite ignite;
 
     /** */
     private static final ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
@@ -153,25 +144,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        assertParameter(!F.isEmpty(keyStorePath), "KeyStorePath shouldn't be empty");
-        assertParameter(keyStorePwd != null && keyStorePwd.length > 0,
-            "KeyStorePassword shouldn't be empty");
-
-        try (InputStream keyStoreFile = keyStoreFile()) {
-            assertParameter(keyStoreFile != null, keyStorePath + " doesn't exists!");
-
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-
-            ks.load(keyStoreFile, keyStorePwd);
-
-            if (log != null)
-                log.info("Successfully load keyStore [path=" + keyStorePath + "]");
-
-            masterKey = new KeystoreEncryptionKey(ks.getKey(masterKeyName, keyStorePwd), null);
-        }
-        catch (GeneralSecurityException | IOException e) {
-            throw new IgniteSpiException(e);
-        }
+        loadMasterKey(masterKeyName);
     }
 
     /** {@inheritDoc} */
@@ -314,7 +287,6 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
             throw new IgniteException("Key is broken!");
 
         return key;
-
     }
 
     /** {@inheritDoc} */
@@ -330,6 +302,19 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     /** {@inheritDoc} */
     @Override public int blockSize() {
         return BLOCK_SZ;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getMasterKeyName() {
+        return masterKeyName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMasterKeyName(String masterKeyName) {
+        this.masterKeyName = masterKeyName;
+
+        if (started())
+            loadMasterKey(masterKeyName);
     }
 
     /**
@@ -480,22 +465,35 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     }
 
     /**
-     * Gets master key name.
-     *
-     * @return Master key name.
-     */
-    public String getMasterKeyName() {
-        return masterKeyName;
-    }
-
-    /**
-     * Sets mater key name.
+     * Loads master key.
      *
      * @param masterKeyName Master key name.
      */
-    public void setMasterKeyName(String masterKeyName) {
-        assert !started() : "Spi already started";
+    private void loadMasterKey(String masterKeyName) {
+        assertParameter(!F.isEmpty(keyStorePath), "KeyStorePath shouldn't be empty");
+        assertParameter(keyStorePwd != null && keyStorePwd.length > 0,
+            "KeyStorePassword shouldn't be empty");
 
-        this.masterKeyName = masterKeyName;
+        try (InputStream keyStoreFile = keyStoreFile()) {
+            assertParameter(keyStoreFile != null, keyStorePath + " doesn't exists!");
+
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+
+            ks.load(keyStoreFile, keyStorePwd);
+
+            if (log != null)
+                log.info("Successfully load keyStore [path=" + keyStorePath + "]");
+
+            Key key = ks.getKey(masterKeyName, keyStorePwd);
+
+            assertParameter(key != null, "No such master key found [masterKeyName="+ masterKeyName + ']');
+
+            masterKey = new KeystoreEncryptionKey(key, null);
+
+            this.masterKeyName = masterKeyName;
+        }
+        catch (GeneralSecurityException | IOException e) {
+            throw new IgniteSpiException(e);
+        }
     }
 }
