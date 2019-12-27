@@ -267,28 +267,23 @@ public class IgniteThrottlingUnitTest {
         }
 
         when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
-        when(pageMemory2g.checkpointBufferPagesCount()).thenReturn(70);
+
+        AtomicInteger checkpointBufferPagesCount = new AtomicInteger(70);
+
+        when(pageMemory2g.checkpointBufferPagesCount()).thenAnswer(mock -> checkpointBufferPagesCount.get());
 
         try {
             loadThreads.forEach(Thread::start);
 
-            for (int i = 0; i < 100_000; i++)
+            for (int i = 0; i < 1_000; i++)
                 loadThreads.forEach(LockSupport::unpark);
 
             // Awaiting that all load threads are parked.
             for (Thread t : loadThreads)
                 assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 500L));
 
-            plc.tryWakeupThrottledThreads();
-
-            // Threads shouldn't wakeup because of throttling enabled.
-            for (Thread t : loadThreads)
-                assertEquals(t.getName(), TIMED_WAITING, t.getState());
-
             // Disable throttling
-            when(pageMemory2g.checkpointBufferPagesCount()).thenReturn(50);
-
-            plc.tryWakeupThrottledThreads();
+            checkpointBufferPagesCount.set(50);
 
             // Awaiting that all load threads are unparked.
             for (Thread t : loadThreads)

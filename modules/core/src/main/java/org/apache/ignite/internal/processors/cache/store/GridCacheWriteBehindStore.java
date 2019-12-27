@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.includeSensitive;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -890,7 +891,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.error(log, e, "Unable to update underlying store: " + store);
+            LT.warn(log, e, "Unable to update underlying store: " + store, false, false);
 
             boolean overflow;
 
@@ -903,9 +904,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
-                    log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                    log.error("Failed to update store (value will be lost as current buffer size is greater " +
+                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [" +
+                        (includeSensitive() ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
+                        "op=" + operation + "]");
                 }
 
                 return true;
