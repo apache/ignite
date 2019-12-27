@@ -443,7 +443,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return wrapping exception
      */
     private BinaryObjectException wrapFieldException(String fieldName, Exception e) {
-        if (S.INCLUDE_SENSITIVE)
+        if (S.includeSensitive())
             return new BinaryObjectException("Failed to read field: " + fieldName, e);
         else
             return new BinaryObjectException("Failed to read field.", e);
