@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  REGISTRY: "docker.pkg.github.com/${{ github.repository }}"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v1
+
+      - name: Login to Image Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: Get current time
+        uses: srfrnk/current-time@master
+        id: current-time
+        with:
+          format: YYYYMMDD-HHmm
+
+      - name: Build
+        env:
+          TIMESTAMP: "${{ steps.current-time.outputs.formattedTime }}"
+        run: |
+          mvn clean package -pl :ignite-web-agent -am -P web-console -DskipTests=true
+          cd modules/web-console
+          docker build . -f docker/compose/backend/Dockerfile -t ${REGISTRY}/web-console-backend:${TIMESTAMP}
+          docker build . -f docker/compose/frontend/Dockerfile -t ${REGISTRY}/web-console-frontend:${TIMESTAMP}
+
+      - name: Push
+        env:
+          TIMESTAMP: "${{ steps.current-time.outputs.formattedTime }}"
+        run: |
+          docker push ${REGISTRY}/web-console-backend:${TIMESTAMP}
+          docker push ${REGISTRY}/web-console-frontend:${TIMESTAMP}
