@@ -186,8 +186,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!fileRebalanceSupported(grp))
                 continue;
 
-            Set<Integer> moving = detectMovingPartitions(grp, exchFut);
-
             if (!locJoinBaselineChange && !hasReadOnlyParts(grp)) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped for group " + grp.cacheOrGroupName());
@@ -195,14 +193,13 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 continue;
             }
 
-            if (moving != null && !moving.isEmpty() && log.isDebugEnabled())
-                log.debug("Set READ-ONLY mode for cache=" + grp.cacheOrGroupName() + " parts=" + moving);
+            Set<Integer> rebalancePartitions = detectRebalancedPartitions(grp, exchFut);
 
             // todo "global" partition size can change and file rebalance will not be applicable to it.
             //       add test case for specified scenario with global size change "on the fly".
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 // Partitions that no longer belong to current node should be evicted as usual.
-                boolean toReadOnly = moving != null && moving.contains(part.id());
+                boolean toReadOnly = rebalancePartitions != null && rebalancePartitions.contains(part.id());
 
                 if (part.dataStore().readOnly(toReadOnly)) {
                     // Should close grid cache data store - no updates expected.
@@ -238,7 +235,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
     }
 
-    private Set<Integer> detectMovingPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
+    private Set<Integer> detectRebalancedPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
 
         assert aff != null;
@@ -252,8 +249,18 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         boolean fatEnough = false;
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
-            if (!aff.get(p).contains(cctx.localNode()))
+            if (!aff.get(p).contains(cctx.localNode())) {
+                if (grp.topology().localPartition(p) != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Detected partition evitction, file rebalancing skipped for this group [grp=" +
+                            grp.cacheOrGroupName() + ", p=" + p + "]");
+                    }
+
+                    return null;
+                }
+
                 continue;
+            }
 
             if (!fatEnough) {
                 Long partSize = globalSizes.get(p);
