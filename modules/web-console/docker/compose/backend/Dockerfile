@@ -32,4 +32,6 @@ COPY web-agent/target/ignite-web-agent-*.zip backend/agent_dists
 
 EXPOSE 3000
 
+WORKDIR /opt/web-console/backend
+
 CMD ["npm", "start"]
