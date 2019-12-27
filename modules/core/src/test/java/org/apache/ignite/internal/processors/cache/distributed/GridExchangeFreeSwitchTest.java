@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -165,15 +166,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks Partition Exchange is regular in case of fixed baseline, when IGNITE_PME_FREE_SWITCH_DISABLED is true.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PME_FREE_SWITCH_DISABLED, value = "true")
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabled() throws Exception {
-        System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-
-        try {
             testBaselineNodeLeftOnFullyRebalancedCluster();
-        }
-        finally {
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
     }
 
     /**
