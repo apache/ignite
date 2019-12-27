@@ -94,9 +94,18 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().active(true);
 
-        DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
+        DataLoader<TestValue> idxLdr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
 
-        ldr.start();
+        DataLoader<Integer> cacheLdr = new DataLoader<>(
+            grid(0).cache(CACHE),
+            INITIAL_ENTRIES_COUNT,
+            n -> n,
+            true,
+            DFLT_LOADER_THREADS
+        ).loadData(ignite0);
+
+        idxLdr.start();
+        cacheLdr.start();
 
         forceCheckpoint(ignite0);
 
@@ -108,9 +117,10 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         awaitPartitionMapExchange();
 
-        ldr.stop();
+        idxLdr.stop();
+        cacheLdr.stop();
 
-        verifyCache(ignite0, ldr);
+        verifyCache(ignite0, idxLdr);
     }
 
     /**

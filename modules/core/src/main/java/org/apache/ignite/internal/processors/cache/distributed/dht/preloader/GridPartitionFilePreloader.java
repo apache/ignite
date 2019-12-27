@@ -209,6 +209,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
     }
 
+    /**
+     * @param grp Cache group.
+     * @return {@code True} if at least one partition of a specified group is in read-only mode.
+     */
     private boolean hasReadOnlyParts(CacheGroupContext grp) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (part.dataStore().readOnly())
@@ -218,6 +222,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return false;
     }
 
+    /**
+     * @param exchFut Exchange future.
+     * @return {@code True} if the cluster baseline was changed by local node join.
+     */
     private boolean isLocalBaselineChange(GridDhtPartitionsExchangeFuture exchFut) {
         if (exchFut.exchangeActions() == null)
             return false;
@@ -377,45 +385,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         finally {
             lock.writeLock().unlock();
         }
-    }
-
-    public void printDiagnostic() {
-        if (log.isInfoEnabled())
-            log.info(debugInfo());
-    }
-
-    private String debugInfo() {
-        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() +
-            ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +
-            ", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
-
-        if (!fileRebalanceRoutine.isDone() || fileRebalanceRoutine.isCancelled() || fileRebalanceRoutine.isFailed())
-            buf.append(fileRebalanceRoutine.toString());
-
-        return buf.toString();
-    }
-
-    private String formatMappings(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
-        StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
-
-        for (Map<ClusterNode, Map<Integer, Set<Integer>>> entry : list) {
-            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.entrySet()) {
-                buf.append("\t\tnode=").append(mapEntry.getKey().id()).append('\n');
-
-                for (Map.Entry<Integer, Set<Integer>> setEntry : mapEntry.getValue().entrySet()) {
-                    buf.append("\t\t\tgrp=").append(cctx.cache().cacheGroup(setEntry.getKey()).cacheOrGroupName()).append('\n');
-
-                    for (int p : setEntry.getValue())
-                        buf.append("\t\t\t\tp=").append(p).append('\n');
-                }
-
-                buf.append('\n');
-            }
-
-            buf.append('\n');
-        }
-
-        return buf.toString();
     }
 
     /**
@@ -679,6 +648,45 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         });
 
         return endFut;
+    }
+
+    public void printDiagnostic() {
+        if (log.isInfoEnabled())
+            log.info(debugInfo());
+    }
+
+    private String debugInfo() {
+        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() +
+            ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +
+            ", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
+
+        if (!fileRebalanceRoutine.isDone() || fileRebalanceRoutine.isCancelled() || fileRebalanceRoutine.isFailed())
+            buf.append(fileRebalanceRoutine.toString());
+
+        return buf.toString();
+    }
+
+    private String formatMappings(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
+        StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
+
+        for (Map<ClusterNode, Map<Integer, Set<Integer>>> entry : list) {
+            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.entrySet()) {
+                buf.append("\t\tnode=").append(mapEntry.getKey().id()).append('\n');
+
+                for (Map.Entry<Integer, Set<Integer>> setEntry : mapEntry.getValue().entrySet()) {
+                    buf.append("\t\t\tgrp=").append(cctx.cache().cacheGroup(setEntry.getKey()).cacheOrGroupName()).append('\n');
+
+                    for (int p : setEntry.getValue())
+                        buf.append("\t\t\t\tp=").append(p).append('\n');
+                }
+
+                buf.append('\n');
+            }
+
+            buf.append('\n');
+        }
+
+        return buf.toString();
     }
 
     /**todo should be elimiaated (see comment about restorepartition) */
