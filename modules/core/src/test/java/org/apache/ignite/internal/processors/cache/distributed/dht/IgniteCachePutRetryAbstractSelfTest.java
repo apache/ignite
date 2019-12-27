@@ -62,7 +62,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static final long DURATION = 60_000;
+    protected static final long DURATION = GridTestUtils.SF.applyLB(30_000, 7_000);
 
     /** */
     protected static final int GRID_CNT = 4;

@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
@@ -149,6 +150,12 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public IClientCluster GetCluster()
+        {
+            return new ClientCluster(this, _marsh);
+        }
+
+        /** <inheritDoc /> */
         public void DestroyCache(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
@@ -157,6 +164,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IIgnite GetIgnite()
         {
             throw GetClientNotSupportedException();
@@ -194,18 +202,21 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IgniteConfiguration Configuration
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public HandleRegistry HandleRegistry
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public ClusterNodeImpl GetNode(Guid? id)
         {
             throw GetClientNotSupportedException();
@@ -218,12 +229,14 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public PluginProcessor PluginProcessor
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             throw GetClientNotSupportedException();

@@ -23,6 +23,7 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.math.exceptions.preprocessing.NonDoubleVectorException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
@@ -32,7 +33,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
- * @param <CO> Type of COordinate for vectorizer.
+ * @param <CO> Type of a coordinate for vectorizer.
  */
 public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
@@ -63,18 +64,19 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
+            if(row.isNumeric()) {
+                if (cols < 0) {
+                    cols = row.size();
+                    features = new double[Math.toIntExact(upstreamDataSize * cols)];
+                } else
+                    assert row.size() == cols : "Feature extractor must return exactly " + cols + " features";
 
-            if (cols < 0) {
-                cols = row.size();
-                features = new double[Math.toIntExact(upstreamDataSize * cols)];
-            }
-            else
-                assert row.size() == cols : "Feature extractor must return exactly " + cols + " features";
+                for (int i = 0; i < cols; i++)
+                    features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
 
-            for (int i = 0; i < cols; i++)
-                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
-
-            ptr++;
+                ptr++;
+            } else
+                throw new NonDoubleVectorException(row);
         }
 
         return new SimpleDatasetData(features, Math.toIntExact(upstreamDataSize));

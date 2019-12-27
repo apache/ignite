@@ -39,7 +39,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
 /**
  * High-level "cache" command implementation.
@@ -155,7 +154,7 @@ public class CacheCommands implements Command<CacheSubcommands> {
         Map<String, String> paramsDesc,
         String... args
     ) {
-        logger.info(INDENT + DELIM);
+        logger.info("");
         logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
         logger.info(DOUBLE_INDENT + description);
 

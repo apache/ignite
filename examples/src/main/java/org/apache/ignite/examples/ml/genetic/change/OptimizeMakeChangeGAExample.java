@@ -33,8 +33,8 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * <a href="https://github.com/martin-steghoefer/jgap/blob/master/examples/src/examples/MinimizingMakeChange.java">
  * JGAP's "Minimize Make Change"</a> example.
  * <p>
- * In this example, the objective is to calculate the minimum number of coins that equal user specified amount of
- * change ie: {@code -DAMOUNTCHANGE}.</p>
+ * In this example, the objective is to calculate the minimum number of coins that equal user specified amount of change
+ * ie: {@code -DAMOUNTCHANGE}.</p>
  * <p>
  * {@code mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample"
  * -DAMOUNTCHANGE=75}</p>
@@ -43,19 +43,19 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * <p>
  * After that it launches the process of evolution on GA grid and outputs the progress and results.</p>
  * <p>
- * You can change the test data and parameters of GA grid used in this example and re-run it to explore
- * this functionality further.</p>
+ * You can change the test data and parameters of GA grid used in this example and re-run it to explore this
+ * functionality further.</p>
  * <p>
  * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
  * <p>
- *  Alternatively you can run ExampleNodeStartup in another JVM which will start node with
- *  {@code examples/config/example-ignite.xml} configuration.</p>
+ * Alternatively you can run ExampleNodeStartup in another JVM which will start node with {@code
+ * examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
     /**
      * Executes example.
-     *
+     * <p>
      * Specify value for {@code -DAMOUNTCHANGE} JVM system variable.
      *
      * @param args Command line arguments, none required.
@@ -89,7 +89,7 @@ public class OptimizeMakeChangeGAExample {
             List<Gene> genes = getGenePool();
 
             // Set selection method.
-            gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
+            gaCfg.setSelectionMtd(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_ELITISM);
             gaCfg.setElitismCnt(10);
 
             // Set the Chromosome Length to '4' since we have 4 coins.
@@ -157,7 +157,7 @@ public class OptimizeMakeChangeGAExample {
 
     /**
      * Helper routine to initialize Gene pool.
-     *
+     * <p>
      * In typical use case genes may be stored in database.
      *
      * @return List of Genes.

@@ -82,7 +82,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private int maxDepth = 5;
 
     /** Min impurity delta. */
-    private double minImpurityDelta = 0.0;
+    private double minImpurityDelta;
 
     /** Features Meta. */
     private List<FeatureMeta> meta;
@@ -110,13 +110,14 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsComposition fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                   Preprocessor<K, V> preprocessor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(preprocessor, amountOfTrees, subSampleSize))) {
+            new BootstrappedDatasetBuilder<>(preprocessor, amountOfTrees, subSampleSize),
+            learningEnvironment())) {
 
             if (!init(dataset))
                 return buildComposition(Collections.emptyList());

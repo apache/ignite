@@ -109,7 +109,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String cacheName,
         String qry,
         String typeName,
-        IndexingQueryFilter filter
+        IndexingQueryFilter filter,
+        int limit
     ) throws IgniteCheckedException {
         return null;
     }
@@ -310,5 +311,21 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<TableInformation> tablesInformation(
+        String schemaNamePtrn,
+        String tblNamePtrn,
+        String... tblTypes) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<ColumnInformation> columnsInformation(
+        String schemaNamePtrn,
+        String tblNamePtrn,
+        String colNamePtrn) {
+        return null;
     }
 }

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.common;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Basic fields and methods for the trainer tests.
@@ -256,7 +255,7 @@ public class TrainerTest {
     };
 
     /** The data is easy separated with classifier by y = x. */
-    protected static final double[][] twoLinearlySeparableClasses = {
+    public static final double[][] twoLinearlySeparableClasses = {
         {0.0, -122.69914721554494, -152.90003228835155},
         {1.0, -988.7803093110984, 39.64498230320555},
         {1.0, -721.0342526056645, -167.29469954420483},
@@ -1182,8 +1181,7 @@ public class TrainerTest {
         for (int i = 0; i < vals.length; i++) {
             double[] row = vals[i];
             double[] convertedRow = new double[row.length];
-            for (int j = 0; j < row.length; j++)
-                convertedRow[j] = row[j];
+            System.arraycopy(row, 0, convertedRow, 0, row.length);
             cacheMock.put(i, convertedRow);
         }
         return cacheMock;

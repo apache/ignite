@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.nio.file.Path;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
@@ -45,7 +45,7 @@ public class FilePageStoreV2 extends FilePageStore {
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
+        LongAdderMetric allocatedTracker) {
         super(type, pathProvider, factory, cfg, allocatedTracker);
 
         hdrSize = cfg.getPageSize();

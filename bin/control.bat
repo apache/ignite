@@ -170,6 +170,11 @@ if %ERRORLEVEL% equ 0 (
 )
 
 ::
+:: Uncomment to enable experimental commands [--wal]
+::
+:: set JVM_OPTS=%JVM_OPTS% -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true
+
+::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 ::
 :: set JVM_OPTS=%JVM_OPTS% -XX:+UseG1GC

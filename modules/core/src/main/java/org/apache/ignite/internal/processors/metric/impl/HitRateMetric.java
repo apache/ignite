@@ -40,7 +40,7 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rateTimeInterval Rate time interval.
+     * @param rateTimeInterval Rate time interval in milliseconds.
      * @param size Counters array size.
      */
     public HitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
@@ -81,6 +81,11 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
     /** {@inheritDoc} */
     @Override public long value() {
         return cntr.value();
+    }
+
+    /** @return Rate time interval in milliseconds. */
+    public long rateTimeInterval() {
+        return cntr.rateTimeInterval;
     }
 
     /**

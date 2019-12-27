@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
@@ -74,6 +76,16 @@ public interface Command<T> {
     public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
 
     /**
+     * Prepares confirmation for the command.
+     *
+     * @param clientCfg Thin client configuration.
+     * @throws Exception If error occur.
+     */
+    default void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception{
+        //no-op
+    }
+
+    /**
      * @return Message text to show user for. If null it means that confirmantion is not needed.
      */
     public default String confirmationPrompt() {
@@ -105,4 +117,22 @@ public interface Command<T> {
      * @return command name.
      */
     String name();
+
+    /**
+     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
+     */
+    default boolean experimentalEnabled() {
+        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
+    }
+
+    /**
+     * Return {@code true} if the command is experimental or {@code false}
+     * otherwise.
+     *
+     * @return {@code true} if the command is experimental or {@code false}
+     *      otherwise.
+     */
+    default boolean experimental() {
+        return false;
+    }
 }

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.Map;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.T2;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -31,6 +33,9 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
 public class MetricUtils {
     /** Metric name part separator. */
     public static final String SEPARATOR = ".";
+
+    /** Histogram metric last interval high bound. */
+    public static final String INF = "inf";
 
     /**
      * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
@@ -90,8 +95,8 @@ public class MetricUtils {
      * @return {@code true} if successful. False return indicates that
      * the actual value was not equal to the expected value.
      */
-    public static boolean compareAndSet(LongMetricImpl m, long expect, long update) {
-        return LongMetricImpl.updater.compareAndSet(m, expect, update);
+    public static boolean compareAndSet(AtomicLongMetric m, long expect, long update) {
+        return AtomicLongMetric.updater.compareAndSet(m, expect, update);
     }
 
     /**
@@ -100,10 +105,10 @@ public class MetricUtils {
      * @param m Metric to update.
      * @param update New value.
      */
-    public static void setIfLess(LongMetricImpl m, long update) {
+    public static void setIfLess(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v > update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+        while (v > update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
     }
 
@@ -113,10 +118,10 @@ public class MetricUtils {
      * @param m Metric to update.
      * @param update New value.
      */
-    public static void setIfGreater(LongMetricImpl m, long update) {
+    public static void setIfGreater(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v < update && !LongMetricImpl.updater.compareAndSet(m, v, update))
+        while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
             v = m.value();
     }
 
@@ -131,6 +136,44 @@ public class MetricUtils {
             assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
 
         return true;
+    }
+
+    /**
+     * Gets histogram bucket names.
+     *
+     * Example of metric names if bounds are 10,100:
+     *  histogram_0_10 (less than 10)
+     *  histogram_10_100 (between 10 and 100)
+     *  histogram_100_inf (more than 100)
+     *
+     * @param metric Histogram metric.
+     * @param cache Map that caches computed bucket names.
+     * @return Histogram intervals names.
+     */
+    public static String[] histogramBucketNames(HistogramMetric metric, Map<String, T2<long[], String[]>> cache) {
+        String name = metric.name();
+        long[] bounds = metric.bounds();
+
+        T2<long[], String[]> tuple = cache.get(name);
+
+        if (tuple != null && tuple.get1() == bounds)
+            return tuple.get2();
+
+        String[] names = new String[bounds.length + 1];
+
+        long min = 0;
+
+        for (int i = 0; i < bounds.length; i++) {
+            names[i] = name + '_' + min + '_' + bounds[i];
+
+            min = bounds[i];
+        }
+
+        names[bounds.length] = name + '_' + min + '_' + INF;
+
+        cache.put(name, new T2<>(bounds, names));
+
+        return names;
     }
 
     /**

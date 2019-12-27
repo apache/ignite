@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -71,9 +72,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.Nullable;
@@ -970,9 +971,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
-
-        if (cliCtx.dataPageScanEnabled() != null)
-            qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+        qry.setTimeout(0, TimeUnit.MILLISECONDS);
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
@@ -1074,7 +1073,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName());
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
 
             JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
@@ -1357,7 +1356,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      *
      * @return True if supported, false otherwise.
      */
-    private boolean isCancellationSupported() {
+    @Override public boolean isCancellationSupported() {
         return (protocolVer.compareTo(VER_2_8_0) >= 0);
     }
 
@@ -1487,5 +1486,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private static boolean isClientAffinityAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
         return partResRequested && (partRes == null || partRes.isClientAffinityAwarenessApplicable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
     }
 }

@@ -25,16 +25,18 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
 /**
  * This example demonstrates how to create a {@link IFitnessFunction}.
  * <p>
- * Your fitness function will vary depending on your particular use case. For this fitness function, we want
- * to calculate the value of an individual solution relative to other solutions.</p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we want to
+ * calculate the value of an individual solution relative to other solutions.</p>
  * <p>
- * To do this, we increase fitness score by number of times genre is found in list of movies. In addition,
- * we increase score by fictional IMDB rating.</p>
+ * To do this, we increase fitness score by number of times genre is found in list of movies. In addition, we increase
+ * score by fictional IMDB rating.</p>
  * <p>
  * If there are duplicate movies in selection, we automatically apply a '0' fitness score.</p>
  */
 public class MovieFitnessFunction implements IFitnessFunction {
-    /** Genres. */
+    /**
+     * Genres.
+     */
     private List<String> genres;
 
     /**
@@ -46,7 +48,9 @@ public class MovieFitnessFunction implements IFitnessFunction {
         this.genres = genres;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public double evaluate(List<Gene> genes) {
         double score = 0;
         List<String> duplicates = new ArrayList<>();
@@ -77,9 +81,9 @@ public class MovieFitnessFunction implements IFitnessFunction {
     private double getGenreScore(Movie movie) {
         double genreScore = 0;
 
-        for (String genre : this.genres) {
+        for (String genre : genres) {
             if (movie.getGenre().contains(genre))
-                genreScore = genreScore + 1;
+                genreScore += 1;
         }
         return genreScore;
     }

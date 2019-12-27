@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Package contains implementation of convergency checking algorithms for gradient boosting.
+ * Package contains implementation of convergence checking algorithms for gradient boosting.
  * This algorithms may stop training of gradient boosting if it achieve error on dataset less than precision
  * specified by user.
  */

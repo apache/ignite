@@ -662,4 +662,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
             super.sendMessage(node, msg, ackC);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
+    }
 }

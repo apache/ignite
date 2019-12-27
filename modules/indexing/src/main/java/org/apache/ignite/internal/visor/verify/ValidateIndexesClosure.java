@@ -64,9 +64,9 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -738,7 +738,16 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             }
         }
 
-        String uniqueIdxName = "[cacheGroup=" + ctx.group().name() + ", cache=" + ctx.name() + ", idx=" + idx.getName() + "]";
+        CacheGroupContext group = ctx.group();
+
+        String uniqueIdxName = String.format(
+            "[cacheGroup=%s, cacheGroupId=%s, cache=%s, cacheId=%s, idx=%s]",
+            group.name(),
+            group.groupId(),
+            ctx.name(),
+            ctx.cacheId(),
+            idx.getName()
+        );
 
         processedIndexes.incrementAndGet();
 

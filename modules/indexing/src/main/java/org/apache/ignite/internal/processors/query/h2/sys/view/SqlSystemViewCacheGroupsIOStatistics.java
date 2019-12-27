@@ -65,8 +65,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
             MetricRegistry mreg = ctx.metric().registry(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
 
-            IntMetric grpId = (IntMetric)mreg.findMetric("grpId");
-            ObjectMetric<String> grpName = (ObjectMetric<String>)mreg.findMetric("name");
+            IntMetric grpId = mreg.findMetric("grpId");
+            ObjectMetric<String> grpName = mreg.findMetric("name");
 
             if (grpId == null)
                 emptyIterator();
@@ -98,7 +98,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
     /** */
     private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mreg) {
-        IntMetric grpIdMetric = (IntMetric)mreg.findMetric("grpId");
+        IntMetric grpIdMetric = mreg.findMetric("grpId");
 
         if (grpIdMetric == null)
             return createRow(ses, grpId, grpName, 0, 0);
@@ -107,8 +107,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             ses,
             grpId,
             grpName,
-            ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value(),
-            ((LongMetric)mreg.findMetric(LOGICAL_READS)).value()
+            mreg.<LongMetric>findMetric(PHYSICAL_READS).value(),
+            mreg.<LongMetric>findMetric(LOGICAL_READS).value()
         );
     }
 

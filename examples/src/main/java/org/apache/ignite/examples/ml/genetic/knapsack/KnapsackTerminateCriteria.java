@@ -31,16 +31,20 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.</p>
  */
 public class KnapsackTerminateCriteria implements ITerminateCriteria {
-    /** Ignite instance. */
+    /**
+     * Ignite instance.
+     */
     private final Ignite ignite;
 
-    /** */
+    /**
+     *
+     */
     private final Consumer<String> logConsumer;
 
     /**
      * Create class instance.
      *
-     * @param ignite Ignite instance.
+     * @param ignite      Ignite instance.
      * @param logConsumer Logging consumer.
      */
     KnapsackTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
@@ -48,7 +52,9 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
         this.logConsumer = logConsumer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
         boolean isTerminate = true;
@@ -59,7 +65,7 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
                 + "\n Fittest is Chromosome Key: " + fittestChromosome
                 + "\nTotal value is: " + fittestChromosome.getFitnessScore()
                 + "\nTotal weight is: " + calculateTotalWeight(
-                    GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
+                GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
                 + "\nChromosome: " + fittestChromosome
                 + "\n" + reportItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome))
                 + "\n##########################################################################################");
@@ -79,7 +85,7 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
     private double calculateTotalWeight(List<Gene> genes) {
         double totalWeight = 0;
         for (Gene gene : genes)
-            totalWeight = totalWeight + ((Item)gene.getVal()).getWeight();
+            totalWeight += ((Item)gene.getVal()).getWeight();
 
         return totalWeight;
     }

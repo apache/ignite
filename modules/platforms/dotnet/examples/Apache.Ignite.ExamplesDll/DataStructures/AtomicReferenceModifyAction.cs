@@ -33,6 +33,7 @@ namespace Apache.Ignite.ExamplesDll.DataStructures
         public const string AtomicReferenceName = "dotnet_atomic_reference";
 
         /** */
+        // ReSharper disable once UnassignedReadonlyField
         [InstanceResource] private readonly IIgnite _ignite;
 
         /// <summary>

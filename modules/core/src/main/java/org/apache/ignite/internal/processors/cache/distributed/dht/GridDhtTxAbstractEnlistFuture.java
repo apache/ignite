@@ -215,7 +215,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert threadId == tx.threadId();
 
         this.threadId = threadId;
         this.cctx = cctx;

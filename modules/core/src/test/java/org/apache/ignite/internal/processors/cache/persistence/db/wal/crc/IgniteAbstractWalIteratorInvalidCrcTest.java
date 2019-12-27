@@ -218,7 +218,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
             // WAL iterator advances to the next record and only then returns current one,
             // so next record has to be valid as well.
-            assertEquals(lastReadPtr.next(), beforeCorruptedPtr);
+            assertEquals(lastReadPtr, beforeCorruptedPtr);
         }
         else
             try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {

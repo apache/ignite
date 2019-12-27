@@ -21,6 +21,9 @@ package org.apache.ignite.ml.util;
  * The names of popular datasets used in examples.
  */
 public enum MLSandboxDatasets {
+    /** Movielens dataset with ratings. */
+    MOVIELENS("modules/ml/src/main/resources/datasets/ratings.csv", true, ","),
+
     /** The full Iris dataset from Machine Learning Repository. */
     IRIS("modules/ml/src/main/resources/datasets/iris.txt", false, "\t"),
 
@@ -59,7 +62,13 @@ public enum MLSandboxDatasets {
     WHOLESALE_CUSTOMERS("modules/ml/src/main/resources/datasets/wholesale_customers.csv", true, ","),
 
     /** Fraud detection problem [part of whole dataset]. Could be found <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud/">here</a>. */
-    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ",");
+    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ","),
+
+    /** A dataset with discrete and continuous features. */
+    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ","),
+
+    /** A dataset with categorical features and labels. */
+    MUSHROOMS("modules/ml/src/main/resources/datasets/mushrooms.csv", true, ",");
 
     /** Filename. */
     private final String filename;

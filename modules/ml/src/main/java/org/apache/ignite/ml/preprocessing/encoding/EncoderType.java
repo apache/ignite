@@ -27,5 +27,11 @@ public enum EncoderType {
     ONE_HOT_ENCODER,
 
     /** String encoder. */
-    STRING_ENCODER
+    STRING_ENCODER,
+
+    /** Frequency encoder. */
+    FREQUENCY_ENCODER,
+
+    /** Label encoder. */
+    LABEL_ENCODER
 }

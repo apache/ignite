@@ -260,11 +260,31 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.notifyExisting = notifyExisting;
     }
 
+    /** @return {@code True} if handler should obtain existing entries,{@code false} otherwise. */
+    public boolean notifyExisting() {
+        return notifyExisting;
+    }
+
+    /** @return {@code True} if old value required for handler, {@code false} otherwise. */
+    public boolean oldValueRequired() {
+        return oldValRequired;
+    }
+
+    /** @return Local listener. */
+    public CacheEntryUpdatedListener<K, V> localListener() {
+        return locLsnr;
+    }
+
     /**
      * @param locOnly Local only.
      */
     public void localOnly(boolean locOnly) {
         this.locOnly = locOnly;
+    }
+
+    /** @return {@code True} if handler are local only, {@code false} otherwise. */
+    public boolean localOnly() {
+        return locOnly;
     }
 
     /**
@@ -737,14 +757,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Cache entry event transformer.
      */
-    @Nullable protected IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
+    @Nullable public IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> getTransformer() {
         return null;
     }
 
     /**
      * @return Local listener of transformed events.
      */
-    @Nullable protected EventListener<?> localTransformedEventListener() {
+    @Nullable public EventListener<?> localTransformedEventListener() {
         return null;
     }
 

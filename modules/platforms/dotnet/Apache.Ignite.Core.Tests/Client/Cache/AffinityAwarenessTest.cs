@@ -270,6 +270,43 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(expectedRequests, requests);
         }
 
+
+        [Test]
+        public void ReplicatedCacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
+        {
+            // Test cache for which affinity awareness is not applicable.
+            var cfg = new CacheClientConfiguration("replicated_cache") {CacheMode = CacheMode.Replicated};
+            var cache = Client.CreateCache<int, int>(cfg);
+
+            // Init the replicated cache and start the new one to enforce partition mapping request.
+            cache.PutAll(Enumerable.Range(1, 3).ToDictionary(x => x, x => x));
+            Client.CreateCache<int, int>("repeat-call-test-replicated");
+            ClearLoggers();
+
+            cache.Get(1);
+            cache.Get(2);
+            cache.Get(3);
+
+            var reqs = _loggers
+                .Select(l => new {Logger = l, Requests = GetCacheRequestNames(l).ToArray()})
+                .Where(r => r.Requests.Length > 0)
+                .ToArray();
+
+            // All requests should go to a single (default) node, because affinity awareness is not applicable.
+            Assert.AreEqual(1, reqs.Length);
+
+            // There should be only one partitions request.
+            var expectedRequests = new[]
+            {
+                "Partitions",
+                "Get",
+                "Get",
+                "Get"
+            };
+
+            Assert.AreEqual(expectedRequests, reqs[0].Requests);
+        }
+
         [Test]
         public void CacheGet_AffinityAwarenessDisabled_RequestIsRoutedToDefaultNode()
         {
@@ -446,8 +483,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
                 @"req=org.apache.ignite.internal.processors.platform.client.cache.ClientCache(\w+)Request@");
 
-            return logger.Messages
-                .Select(m => messageRegex.Match(m))
+            return logger.Entries
+                .Select(m => messageRegex.Match(m.Message))
                 .Where(m => m.Success)
                 .Select(m => m.Groups[1].Value);
         }

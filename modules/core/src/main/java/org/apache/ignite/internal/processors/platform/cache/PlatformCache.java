@@ -720,7 +720,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_INVOKE_ASYNC: {
                     Object key = reader.readObjectDetached();
 
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     readAndListenFuture(reader, cache.invokeAsync(key, proc), WRITER_INVOKE);
 
@@ -730,7 +732,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_INVOKE_ALL_ASYNC: {
                     Set<Object> keys = PlatformUtils.readSet(reader);
 
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     readAndListenFuture(reader, cache.invokeAllAsync(keys, proc), WRITER_INVOKE_ALL);
 
@@ -745,16 +749,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_INVOKE: {
                     Object key = reader.readObjectDetached();
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     return writeResult(mem, cache.invoke(key, proc));
                 }
 
                 case OP_INVOKE_ALL: {
                     Set<Object> keys = PlatformUtils.readSet(reader);
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     Map results = cache.invokeAll(keys, proc);
 
@@ -1417,6 +1421,11 @@ public class PlatformCache extends PlatformAbstractTarget {
         String txt = reader.readString();
         String typ = reader.readString();
         final int pageSize = reader.readInt();
+
+        //TODO: IGNITE-12266, uncomment when limit parameter is added to Platforms
+        //
+        // final int limit = reader.readInt();
+        // return new TextQuery(typ, txt, limit).setPageSize(pageSize).setLocal(loc);
 
         return new TextQuery(typ, txt).setPageSize(pageSize).setLocal(loc);
     }

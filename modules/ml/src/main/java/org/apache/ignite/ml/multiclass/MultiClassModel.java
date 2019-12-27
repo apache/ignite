@@ -22,11 +22,10 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-import java.io.Serializable;
 import java.util.*;
 
 /** Base class for multi-classification model for set of classifiers. */
-public class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel>, Serializable {
+public final class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel> {
     /** */
     private static final long serialVersionUID = -114986533359917L;
 

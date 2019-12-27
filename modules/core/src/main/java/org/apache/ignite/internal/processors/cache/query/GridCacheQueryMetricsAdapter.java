@@ -24,8 +24,8 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -34,22 +34,22 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     /** Minimum time of execution. */
-    private final LongMetricImpl minTime;
+    private final AtomicLongMetric minTime;
 
     /** Maximum time of execution. */
-    private final LongMetricImpl maxTime;
+    private final AtomicLongMetric maxTime;
 
     /** Sum of execution time for all completed queries. */
-    private final LongAdderMetricImpl sumTime;
+    private final LongAdderMetric sumTime;
 
     /** Number of executions. */
-    private final LongAdderMetricImpl execs;
+    private final LongAdderMetric execs;
 
     /** Number of completed executions. */
-    private final LongAdderMetricImpl completed;
+    private final LongAdderMetric completed;
 
     /** Number of fails. */
-    private final LongAdderMetricImpl fails;
+    private final LongAdderMetric fails;
 
     /**
      * @param mmgr Metrics manager.
@@ -59,10 +59,10 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
         MetricRegistry mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
-        minTime = mreg.metric("QueryMinimalTime", null);
+        minTime = mreg.longMetric("QueryMinimalTime", null);
         minTime.value(Long.MAX_VALUE);
 
-        maxTime = mreg.metric("QueryMaximumTime", null);
+        maxTime = mreg.longMetric("QueryMaximumTime", null);
         sumTime = mreg.longAdderMetric("QuerySumTime", null);
         execs = mreg.longAdderMetric("QueryExecuted", null);
         completed = mreg.longAdderMetric("QueryCompleted", null);
@@ -71,31 +71,31 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
-        long min = minTime.get();
+        long min = minTime.value();
 
         return min == Long.MAX_VALUE ? 0 : min;
     }
 
     /** {@inheritDoc} */
     @Override public long maximumTime() {
-        return maxTime.get();
+        return maxTime.value();
     }
 
     /** {@inheritDoc} */
     @Override public double averageTime() {
-        double val = completed.longValue();
+        double val = completed.value();
 
-        return val > 0 ? sumTime.longValue() / val : 0.0;
+        return val > 0 ? sumTime.value() / val : 0.0;
     }
 
     /** {@inheritDoc} */
     @Override public int executions() {
-        return (int)execs.longValue();
+        return (int)execs.value();
     }
 
     /** {@inheritDoc} */
     @Override public int fails() {
-        return (int)fails.longValue();
+        return (int)fails.value();
     }
 
     /**
@@ -122,14 +122,14 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
 
     /** @return Current metrics values. */
     public QueryMetrics snapshot() {
-        long minTimeVal = minTime.longValue();
+        long minTimeVal = minTime.value();
 
         return new QueryMetricsSnapshot(
             minTimeVal == Long.MAX_VALUE ? 0 : minTimeVal,
-            maxTime.longValue(),
+            maxTime.value(),
             averageTime(),
-            (int)execs.longValue(),
-            (int)fails.longValue());
+            (int)execs.value(),
+            (int)fails.value());
     }
 
     /** Resets query metrics. */

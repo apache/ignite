@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.inference.storage.model;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Set;
@@ -254,8 +252,27 @@ public class DefaultModelStorage implements ModelStorage {
      * @return Parent directory path.
      */
     private String getParent(String path) {
-        Path parentPath = Paths.get(path).getParent();
-        return parentPath == null ? null : parentPath.toString();
+        String[] splittedPath = path.split("/");
+
+        int cnt = 0;
+        for (int i = 0; i < splittedPath.length; i++) {
+            if (!splittedPath[i].isEmpty())
+                cnt++;
+        }
+
+        if (cnt == 0)
+            return null;
+
+        StringBuilder parentPath = new StringBuilder("/");
+        for (int i = 0; i < splittedPath.length; i++) {
+            if (!splittedPath[i].isEmpty() && --cnt > 0)
+                parentPath.append(splittedPath[i]).append("/");
+        }
+
+        if (parentPath.length() > 1)
+            parentPath.delete(parentPath.length() - 1, parentPath.length());
+
+        return parentPath.toString();
     }
 
     /**
@@ -273,6 +290,7 @@ public class DefaultModelStorage implements ModelStorage {
 
     /**
      * Wraps task execution into locks. Util method.
+     *
      * @param task Task to executed.
      * @param locks List of locks.
      */
@@ -288,7 +306,7 @@ public class DefaultModelStorage implements ModelStorage {
             res = task.get();
         }
         finally {
-            for (i = i - 1; i >= 0; i--) {
+            for (i -= 1; i >= 0; i--) {
                 try {
                     locks[i].unlock();
                 }
@@ -300,10 +318,10 @@ public class DefaultModelStorage implements ModelStorage {
 
         if (ex != null) {
             if (ex instanceof RuntimeException)
-                throw (RuntimeException) ex;
+                throw (RuntimeException)ex;
 
             if (ex instanceof Error)
-                throw (Error) ex;
+                throw (Error)ex;
 
             throw new IllegalStateException("Unexpected type of throwable");
         }

@@ -18,11 +18,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.NestedTxMode;
-
 import java.util.List;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 
 /**
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
@@ -62,41 +59,7 @@ public class QueryParameters {
      */
     private final int updateBatchSize;
 
-    /**
-     * Create parameters from query.
-     *
-     * @param qry Query.
-     * @return Parameters.
-     */
-    public static QueryParameters fromQuery(SqlFieldsQuery qry) {
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-        boolean autoCommit = true;
-        List<Object[]> batchedArgs = null;
 
-        if (qry instanceof SqlFieldsQueryEx) {
-            SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
-
-            if (qry0.getNestedTxMode() != null)
-                nestedTxMode = qry0.getNestedTxMode();
-
-            autoCommit = qry0.isAutoCommit();
-
-            batchedArgs = qry0.batchedArguments();
-        }
-
-        return new QueryParameters(
-            qry.getArgs(),
-            qry.getPartitions(),
-            qry.getTimeout(),
-            qry.isLazy(),
-            qry.getPageSize(),
-            qry.isDataPageScanEnabled(),
-            nestedTxMode,
-            autoCommit,
-            batchedArgs,
-            qry.getUpdateBatchSize()
-        );
-    }
 
     /**
      * Constructor.
@@ -112,8 +75,7 @@ public class QueryParameters {
      * @param batchedArgs Batched arguments.
      * @param updateBatchSize Update internal batch size.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    private QueryParameters(
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") QueryParameters(
         Object[] args,
         int[] parts,
         int timeout,

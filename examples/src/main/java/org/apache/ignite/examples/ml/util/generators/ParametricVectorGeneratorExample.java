@@ -24,10 +24,9 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProdu
 import org.apache.ignite.ml.util.generators.primitives.vector.ParametricVectorGenerator;
 
 /**
- * Examples of using {@link ParametricVectorGenerator} for generating two dimensional data.
- * {@link ParametricVectorGenerator} allows to create surfaces in N-dinensional spaces where each
- * dimension depends on one parameter 't'. In such generator just one random producer is used, it
- * defines a set of values for parameter 't'.
+ * Examples of using {@link ParametricVectorGenerator} for generating two dimensional data. {@link
+ * ParametricVectorGenerator} allows to create surfaces in N-dimensional spaces where each dimension depends on one
+ * parameter 't'. In such generator just one random producer is used, it defines a set of values for parameter 't'.
  */
 public class ParametricVectorGeneratorExample {
     /**
@@ -61,5 +60,6 @@ public class ParametricVectorGeneratorExample {
         ).asDataStream();
 
         Tracer.showClassificationDatasetHtml("Butterfly", butterfly, 2000, 0, 1, false);
+        System.out.flush();
     }
 }

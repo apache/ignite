@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
@@ -57,8 +58,29 @@ public enum IgniteFeatures {
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
+    /** Support of cluster read-only mode. */
+    CLUSTER_READ_ONLY_MODE(9),
+
+    /** Support of suspend/resume operations for pessimistic transactions. */
+    SUSPEND_RESUME_PESSIMISTIC_TX(10),
+
     /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11);
+    DISTRIBUTED_METASTORAGE(11),
+
+    /** The node can communicate with others via socket channel. */
+    CHANNEL_COMMUNICATION(12),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
+
+    /** LRT system and user time dump settings.  */
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
+    PME_FREE_SWITCH(19),
+
+    /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
+    MASTER_KEY_CHANGE(20);
 
     /**
      * Unique feature identifier.

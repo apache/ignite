@@ -779,9 +779,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             add(fut); // Append new future.
 
-            if (tx.pessimistic() && !useCompletedVer)
-                cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
-
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
 

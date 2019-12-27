@@ -59,6 +59,8 @@ import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimize
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientReadOnlyModeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
@@ -818,6 +820,23 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
+    @Override public GridClientFuture<?> changeReadOnlyState(
+        boolean readOnly,
+        UUID destNodeId
+    ) throws GridClientClosedException, GridClientConnectionResetException {
+        return readOnly ?
+            makeRequest(GridClientReadOnlyModeRequest.enableReadOnly(), destNodeId) :
+            makeRequest(GridClientReadOnlyModeRequest.disableReadOnly(), destNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<Boolean> readOnlyState(
+        UUID destNodeId
+    ) throws GridClientClosedException, GridClientConnectionResetException {
+        return makeRequest(GridClientReadOnlyModeRequest.currentReadOnlyMode(), destNodeId);
+    }
+
+    /** {@inheritDoc} */
     @Override public GridClientFuture<Boolean> currentState(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException {
         GridClientStateRequest msg = new GridClientStateRequest();
@@ -930,6 +949,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         makeRequest((GridClientMessage)msg, res, true);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<String> clusterName(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        return makeRequest(new GridClientClusterNameRequest(), destNodeId);
     }
 
     /**

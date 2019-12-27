@@ -70,6 +70,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -145,6 +146,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }

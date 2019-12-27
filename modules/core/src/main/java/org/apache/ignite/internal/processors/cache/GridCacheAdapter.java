@@ -5050,7 +5050,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Checks and repairs entries across the topology.
+     * Checks the given {@code keys} and repairs entries across the topology if needed.
+     *
+     * @param keys Keys.
+     * @param opCtx Operation context.
+     * @param skipVals Skip values flag.
+     * @return Compound future that represents a result of repair action.
      */
     protected IgniteInternalFuture<Void> repairAsync(
         Collection<? extends K> keys,
@@ -5067,7 +5072,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Checks and repairs entry across the topology.
+     * Checks the given {@code key} and repairs entry across the topology if needed.
+     *
+     * @param key Key.
+     * @param opCtx Operation context.
+     * @param skipVals Skip values flag.
+     * @return Recover future.
      */
     protected IgniteInternalFuture<Void> repairAsync(
         final K key,
@@ -6677,8 +6687,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         protected ComputeJobContext jobCtx;
 
         /** Injected grid instance. */
-        @IgniteInstanceResource
-        protected Ignite ignite;
+        protected IgniteEx ignite;
 
         /** Affinity topology version. */
         protected final AffinityTopologyVersion topVer;
@@ -6702,7 +6711,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!waitAffinityReadyFuture())
                 return null;
 
-            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(cacheName);
+            IgniteInternalCache cache = ignite.context().cache().cache(cacheName);
 
             return localExecute(cache);
         }
@@ -6719,7 +6728,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @return {@code True} if topology check passed.
          */
         private boolean waitAffinityReadyFuture() {
-            GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
             AffinityTopologyVersion locTopVer = cacheProc.context().exchange().readyAffinityVersion();
 
@@ -6731,7 +6740,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ((IgniteEx)ignite).context().closure().runLocalSafe(new Runnable() {
+                            ignite.context().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
                                     jobCtx.callcc();
                                 }
@@ -6744,6 +6753,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             return true;
+        }
+
+        /** */
+        @IgniteInstanceResource
+        private void ignite(Ignite ignite) {
+            if (ignite != null)
+                this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 
