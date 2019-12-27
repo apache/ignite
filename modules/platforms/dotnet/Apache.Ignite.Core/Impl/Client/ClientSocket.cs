@@ -592,7 +592,12 @@ namespace Apache.Ignite.Core.Impl.Client
             stream.WriteInt(0); // Reserve message size.
             stream.WriteShort((short) opId);
             stream.WriteLong(requestId);
-            writeAction(stream);
+
+            if (writeAction != null)
+            {
+                writeAction(stream);
+            }
+
             stream.WriteInt(0, stream.Position - 4); // Write message size.
 
             return new RequestMessage(requestId, stream.GetArray(), stream.Position);
