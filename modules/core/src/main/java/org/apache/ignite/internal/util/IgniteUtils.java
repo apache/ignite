@@ -299,6 +299,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
+    public static final long MB = 1024L * 1024;
+
+    /** */
     public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */

@@ -449,6 +449,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         stopGrid("srv1");
 
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
+
         long topVer = ignite0.cluster().topologyVersion();
 
         ignite0.cluster().setBaselineTopology(topVer);
