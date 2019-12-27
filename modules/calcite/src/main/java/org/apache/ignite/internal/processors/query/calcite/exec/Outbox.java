@@ -140,12 +140,12 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** */
     private void send(UUID nodeId, int batchId, List<?> rows) {
-        exchange().send(queryId(), exchangeId, nodeId, batchId, rows);
+        exchange().sendBatch(this, nodeId, queryId(), exchangeId, batchId, rows);
     }
 
     /** */
     private ExchangeProcessor exchange() {
-        return context().plannerContext().exchangeProcessor();
+        return context().exchangeProcessor();
     }
 
     /** */

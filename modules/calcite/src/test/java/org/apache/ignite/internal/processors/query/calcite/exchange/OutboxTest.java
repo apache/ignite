@@ -27,7 +27,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -35,10 +34,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
 import org.apache.ignite.internal.processors.query.calcite.exec.StripedExecutor;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -71,10 +69,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     @BeforeClass
     public static void setupClass() {
         nodeId = UUID.randomUUID();
-
-        NodesMapping mapping = new NodesMapping(Collections.singletonList(nodeId), null, NodesMapping.DEDUPLICATED);
-
-        func = DistributionFunction.SingletonDistribution.INSTANCE.toDestination(null, mapping, ImmutableIntList.of());
+        func = new AllNodes(Collections.singletonList(nodeId));
     }
 
     /** */
@@ -84,6 +79,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         exch = new TestExchangeService();
 
         PlannerContext ctx = PlannerContext.builder()
+            .localNodeId(nodeId)
             .exchangeProcessor(exch)
             .executor(exec)
             .build();
@@ -190,14 +186,14 @@ public class OutboxTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(UUID queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows) {
+        @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
             ids.add(batchId);
 
             lastBatch = rows;
         }
 
         /** {@inheritDoc} */
-        @Override public void acknowledge(UUID queryId, long exchangeId, UUID nodeId, int batchId) {
+        @Override public void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
     }
@@ -207,14 +203,17 @@ public class OutboxTest extends GridCommonAbstractTest {
         /** */
         private boolean signal;
 
-        protected TestNode(ExecutionContext ctx) {
+        /** */
+        private TestNode(ExecutionContext ctx) {
             super(ctx);
         }
 
+        /** */
         public boolean push(Object[] row) {
             return target().push(row);
         }
 
+        /** */
         public void end() {
             target().end();
         }
@@ -224,6 +223,7 @@ public class OutboxTest extends GridCommonAbstractTest {
             signal = true;
         }
 
+        /** {@inheritDoc} */
         @Override public Sink<Object[]> sink(int idx) {
             throw new AssertionError();
         }

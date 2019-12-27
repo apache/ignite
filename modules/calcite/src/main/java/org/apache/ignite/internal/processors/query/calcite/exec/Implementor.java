@@ -95,7 +95,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
-        ExchangeProcessor exchange = ctx.plannerContext().exchangeProcessor();
+        ExchangeProcessor exchange = ctx.exchangeProcessor();
         RelSource source = rel.source();
 
         Inbox<Object[]> inbox = (Inbox<Object[]>) exchange.register(new Inbox<>(ctx, source.exchangeId()));

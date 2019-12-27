@@ -61,20 +61,22 @@ public interface ExchangeProcessor {
 
     /**
      * Sends a batch of data to remote node.
+     * @param sender Sender.
+     * @param nodeId Target node ID.
      * @param queryId Query ID.
      * @param exchangeId Exchange ID.
-     * @param nodeId Target node ID.
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void send(UUID queryId, long exchangeId, UUID nodeId, int batchId, List<?> rows);
+    void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows);
 
     /**
      * Acknowledges a batch with given ID is processed.
+     * @param sender Sender.
+     * @param nodeId Node ID to notify.
      * @param queryId Query ID.
      * @param exchangeId Exchange ID.
-     * @param nodeId Node ID to notify.
      * @param batchId Batch ID.
      */
-    void acknowledge(UUID queryId, long exchangeId, UUID nodeId, int batchId);
+    void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId);
 }

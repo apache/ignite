@@ -174,6 +174,7 @@ public class CalciteQueryProcessor implements QueryEngine {
     /** */
     private PlannerContext buildContext(@NotNull Context parent, @NotNull Query query, @NotNull RelTraitDef<?>[] traitDefs) {
         return PlannerContext.builder()
+            .localNodeId(kernalContext.localNodeId())
             .kernalContext(kernalContext)
             .parentContext(parent)
             .frameworkConfig(Frameworks.newConfigBuilder(config())
