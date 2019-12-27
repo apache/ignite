@@ -24,7 +24,6 @@ import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -37,7 +36,8 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     private static final long serialVersionUID = 0L;
 
     /** Ignite. */
-    private transient IgniteEx ignite;
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /**
      * Default constructor.
@@ -57,17 +57,8 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     /** {@inheritDoc} */
     @Override public boolean evaluate(
         CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
-        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
+        try (OperationSecurityContext c = ((IgniteEx)ignite).context().security().withContext(subjectId)) {
             return original.evaluate(evt);
         }
-    }
-
-    /**
-     * @param ignite Ignite.
-     */
-    @IgniteInstanceResource
-    public void ignite(Ignite ignite) {
-        if (ignite != null)
-            this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
     }
 }

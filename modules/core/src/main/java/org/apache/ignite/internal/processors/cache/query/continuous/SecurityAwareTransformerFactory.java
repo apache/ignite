@@ -21,7 +21,6 @@ import java.util.UUID;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -29,7 +28,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 /**
  *  Security aware transformer factory.
  */
-public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements
+public class SecurityAwareTransformerFactory<E, R> extends
+    AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements
     Factory<IgniteClosure<E, R>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,22 +55,14 @@ public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAware
 
         return new IgniteClosure<E, R>() {
             /** Ignite. */
-            private IgniteEx ignite;
+            @IgniteInstanceResource
+            private Ignite ignite;
 
             /** {@inheritDoc} */
             @Override public R apply(E e) {
-                try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
+                try (OperationSecurityContext c = ((IgniteEx)ignite).context().security().withContext(subjectId)) {
                     return cl.apply(e);
                 }
-            }
-
-            /**
-             * @param ignite Ignite.
-             */
-            @IgniteInstanceResource
-            public void ignite(Ignite ignite) {
-                if (ignite != null)
-                    this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
             }
         };
     }

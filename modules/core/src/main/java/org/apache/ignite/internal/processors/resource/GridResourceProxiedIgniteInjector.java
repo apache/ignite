@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -31,6 +32,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isSystemType;
 import static org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy.proxy;
 
 /** Ignite instance injector. */
@@ -66,6 +68,9 @@ public class GridResourceProxiedIgniteInjector extends GridResourceBasicInjector
      * @return True if {@code target} should get a proxy instance of Ignite.
      */
     private boolean shouldUseProxy(Object target){
+        if (isSystemType(((IgniteEx)getResource()).context(), target))
+            return false;
+
         for (Class cls : PROXIED_CLASSES) {
             if (cls.isInstance(target))
                 return true;

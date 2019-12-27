@@ -866,8 +866,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param factory Original factory.
      * @return Security aware factory.
      */
-    private Factory<CacheEntryEventFilter<K, V>> securityAwareFilterFactory(
-        Factory<CacheEntryEventFilter<K, V>> factory) {
+    private Factory<CacheEntryEventFilter<K, V>> securityAwareFilterFactory(Factory<CacheEntryEventFilter<K, V>> factory) {
         return securityAwareComponent(factory, SecurityAwareFilterFactory::new);
     }
 
@@ -875,8 +874,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @param filter Original filter.
      * @return Security aware filter.
      */
-    private CacheEntryEventSerializableFilter<K, V> securityAwareFilter(
-        CacheEntryEventSerializableFilter<K, V> filter) {
+    private CacheEntryEventSerializableFilter<K, V> securityAwareFilter(CacheEntryEventSerializableFilter<K, V> filter) {
         return securityAwareComponent(filter, SecurityAwareFilter::new);
     }
 
