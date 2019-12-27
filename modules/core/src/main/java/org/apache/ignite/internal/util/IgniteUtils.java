@@ -5425,7 +5425,6 @@ public abstract class IgniteUtils {
         return map;
     }
 
-
     /**
      * Calculate a hashCode for an array.
      *

@@ -52,7 +52,6 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private volatile DataStorageConfiguration memCfg;
 
-
     /** */
     private IgniteLogger logger;
 
