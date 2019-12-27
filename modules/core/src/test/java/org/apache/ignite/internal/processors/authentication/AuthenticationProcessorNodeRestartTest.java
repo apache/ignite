@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -209,12 +210,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                     assertNotNull(actx);
                 }
             }
-            catch (IgniteCheckedException e) {
-                // Skip exception if server down.
-                if (!serverDownMessage(e.getMessage())) {
-                    e.printStackTrace();
-                    fail("Unexpected exception: " + e.getMessage());
-                }
+            catch (ClusterTopologyCheckedException ignored) {
+                // No-op.
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -223,16 +220,6 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         }, testUsersCnt, "user-op");
 
         restartFut.get();
-    }
-
-    /**
-     * Exception messages from {@code org.apache.ignite.internal.managers.communication.GridIoManager#send}.
-     */
-    private boolean serverDownMessage(String text) {
-        return text.contains("Failed to send message (node may have left the grid or "
-            + "TCP connection cannot be established due to firewall issues)")
-            || text.contains("Failed to send message, node left")
-            || text.contains("Failed to send message (node left topology)");
     }
 
     /**
