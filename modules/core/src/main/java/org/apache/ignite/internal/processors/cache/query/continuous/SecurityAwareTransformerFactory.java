@@ -56,11 +56,11 @@ public class SecurityAwareTransformerFactory<E, R> extends
         return new IgniteClosure<E, R>() {
             /** Ignite. */
             @IgniteInstanceResource
-            private Ignite ignite;
+            private IgniteEx ignite;
 
             /** {@inheritDoc} */
             @Override public R apply(E e) {
-                try (OperationSecurityContext c = ((IgniteEx)ignite).context().security().withContext(subjectId)) {
+                try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
                     return cl.apply(e);
                 }
             }

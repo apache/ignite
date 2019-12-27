@@ -771,7 +771,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         /** Injected Ignite instance. */
         @IgniteInstanceResource
-        private transient Ignite ignite;
+        private transient IgniteEx ignite;
 
         /**
          * @param cacheName Cache name.
@@ -786,7 +786,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** {@inheritDoc} */
         @SuppressWarnings("RedundantIfStatement")
         @Override public boolean apply(ClusterNode n) {
-            GridDiscoveryManager disco = ((IgniteEx)ignite).context().discovery();
+            GridDiscoveryManager disco = ignite.context().discovery();
 
             if (affNodes && disco.cacheAffinityNode(n, cacheName))
                 return true;

@@ -37,7 +37,7 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
 
     /** Ignite. */
     @IgniteInstanceResource
-    private transient Ignite ignite;
+    private transient IgniteEx ignite;
 
     /**
      * Default constructor.
@@ -57,7 +57,7 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     /** {@inheritDoc} */
     @Override public boolean evaluate(
         CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
-        try (OperationSecurityContext c = ((IgniteEx)ignite).context().security().withContext(subjectId)) {
+        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
             return original.evaluate(evt);
         }
     }
