@@ -69,6 +69,18 @@ public class ListeningTestLogger implements IgniteLogger {
     }
 
     /**
+     * @param dbg If set to {@code true}, enables debug and trace log messages processing.
+     * @param echo Logger to echo all messages, limited by {@code dbg} flag.
+     * @param lsnrs LogListeners to register instantly.
+     */
+    public ListeningTestLogger(boolean dbg, @Nullable IgniteLogger echo, @NotNull LogListener... lsnrs) {
+        this(dbg, echo);
+
+        for (LogListener lsnr : lsnrs)
+            registerListener(lsnr);
+    }
+
+    /**
      * Registers message listener.
      *
      * @param lsnr Message listener.

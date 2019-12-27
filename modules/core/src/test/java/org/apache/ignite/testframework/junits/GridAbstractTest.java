@@ -885,7 +885,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected IgniteEx startGrid(int idx) throws Exception {
         return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
     }
-    
+
     /**
      * Starts new client grid with given index.
      *

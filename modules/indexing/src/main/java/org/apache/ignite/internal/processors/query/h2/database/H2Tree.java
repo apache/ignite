@@ -152,7 +152,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2Tree(
+    public H2Tree(
         GridCacheContext cctx,
         GridH2Table table,
         String name,
@@ -675,5 +675,19 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void temporaryReleaseLock() {
+        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
+        cctx.kernalContext().cache().context().database().checkpointReadLock();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long maxLockHoldTime() {
+        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+
+        // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
+        return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);
     }
 }

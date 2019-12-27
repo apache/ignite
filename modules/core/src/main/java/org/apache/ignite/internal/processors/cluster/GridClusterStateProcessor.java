@@ -493,6 +493,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             ctx.cache().onStateChangeFinish(msg);
 
+            ctx.durableBackgroundTasksProcessor().onStateChangeFinish(msg);
+
             boolean prev = ctx.cache().context().readOnlyMode();
 
             if (prev != globalState.readOnly()) {
