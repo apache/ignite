@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
@@ -154,7 +155,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
      * @param <D> Collection data type.
      */
     public <C, R, D> void registerInnerCollectionView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
-        Collection<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
+        Iterable<C> container, Function<C, Collection<D>> dataExtractor, BiFunction<C, D, R> rowFunc) {
         registerView0(name, new SystemViewInnerCollectionsAdapter<>(name,
             desc,
             walker,
@@ -207,15 +208,33 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     }
 
     /**
+     * Registers {@link FiltrableSystemViewAdapter} view with content filtering capabilities.
+     *
+     * @param name Name.
+     * @param desc Description.
+     * @param walker Row walker.
+     * @param dataSupplier Data supplier with content filtering capabilities.
+     * @param rowFunc Row function
+     * @param <R> View row type.
+     * @param <D> Collection data type.
+     */
+    public <R, D> void registerFiltrableView(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Function<Map<String, Object>, Iterable<D>> dataSupplier, Function<D, R> rowFunc) {
+        registerView0(name, new FiltrableSystemViewAdapter<>(name,
+            desc,
+            walker,
+            dataSupplier,
+            rowFunc));
+    }
+
+    /**
      * Registers view.
      *
      * @param name Name.
      * @param sysView System view.
      */
     private void registerView0(String name, SystemView sysView) {
-        SystemView<?> old = systemViews.putIfAbsent(name, sysView);
-
-        assert old == null;
+        systemViews.put(name, sysView);
 
         notifyListeners(sysView, viewCreationLsnrs, log);
     }
