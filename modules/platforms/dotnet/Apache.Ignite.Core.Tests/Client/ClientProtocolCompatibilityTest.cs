@@ -175,12 +175,12 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client with specified protocol version.
         /// </summary>
-        private IgniteClient GetClient(ClientProtocolVersion version, bool EnableAffinityAwareness = false)
+        private IgniteClient GetClient(ClientProtocolVersion version, bool enableAffinityAwareness = false)
         {
             var cfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
                 ProtocolVersion = version,
-                EnableAffinityAwareness = EnableAffinityAwareness
+                EnableAffinityAwareness = enableAffinityAwareness
             };
 
             return (IgniteClient) Ignition.StartClient(cfg);

@@ -15,25 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.managers.encryption;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import org.apache.ignite.internal.GridKernalContextImpl;
+import org.apache.ignite.mxbean.EncryptionMXBean;
 
 /**
- *
+ * Encryption features MBean.
  */
-public class CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest
-    extends CacheContinuousQueryFailoverAtomicSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+public class EncryptionMXBeanImpl implements EncryptionMXBean {
+    /** Encryption manager. */
+    private final GridEncryptionManager encryptionMgr;
+
+    /** @param ctx Context. */
+    public EncryptionMXBeanImpl(GridKernalContextImpl ctx) {
+        encryptionMgr = ctx.encryption();
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCacheConfiguration() {
-        return super.nearCacheConfiguration();
+    @Override public String getMasterKeyName() {
+        return encryptionMgr.getMasterKeyName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void changeMasterKey(String masterKeyName) {
+        encryptionMgr.changeMasterKey(masterKeyName).get();
     }
 }
