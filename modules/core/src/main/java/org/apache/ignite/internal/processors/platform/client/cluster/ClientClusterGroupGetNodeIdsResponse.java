@@ -21,31 +21,46 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import java.util.UUID;
+
 /**
- * Change cache WAL state response.
+ * Cluster group get nodes identifiers response.
  */
-public class ClientClusterWalChangeStateResponse extends ClientResponse {
-    /**
-     * Operation result.
-     */
-    private final boolean res;
+public class ClientClusterGroupGetNodeIdsResponse extends ClientResponse {
+    /** Topology version. */
+    private final long topVer;
+
+    /** Node ids. */
+    private final UUID[] nodeIds;
 
     /**
-     * Ctor.
+     * Constructor.
      *
      * @param reqId Request id.
-     * @param res   Operation result.
+     * @param topVer Topology version.
+     * @param nodeIds Node ids.
      */
-    ClientClusterWalChangeStateResponse(long reqId, boolean res) {
+    public ClientClusterGroupGetNodeIdsResponse(long reqId, long topVer, UUID[] nodeIds) {
         super(reqId);
-
-        this.res = res;
+        this.topVer = topVer;
+        this.nodeIds = nodeIds;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeBoolean(res);
+        writer.writeBoolean(true);
+        writer.writeLong(topVer);
+
+        // At this moment topology version might have advanced, and due to this race
+        // we return outdated top ver to the callee. But this race is benign, the only
+        // possible side effect is that the user will re-request nodes and we will return
+        // the same set of nodes but with more recent topology version.
+        writer.writeInt(nodeIds.length);
+        for (UUID node: nodeIds) {
+            writer.writeLong(node.getMostSignificantBits());
+            writer.writeLong(node.getLeastSignificantBits());
+        }
     }
 }

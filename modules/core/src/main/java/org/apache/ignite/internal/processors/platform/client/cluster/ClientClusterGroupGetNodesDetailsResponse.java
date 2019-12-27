@@ -17,35 +17,48 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+
+import java.util.Collection;
 
 /**
- * Change cache WAL state response.
+ * Cluster group get nodes details response.
  */
-public class ClientClusterWalChangeStateResponse extends ClientResponse {
-    /**
-     * Operation result.
-     */
-    private final boolean res;
+public class ClientClusterGroupGetNodesDetailsResponse extends ClientResponse {
+    /** Nodes collection. */
+    private final Collection<ClusterNode> nodes;
 
     /**
-     * Ctor.
+     * Constructor.
      *
-     * @param reqId Request id.
-     * @param res   Operation result.
+     * @param reqId Request identifier.
      */
-    ClientClusterWalChangeStateResponse(long reqId, boolean res) {
+    public ClientClusterGroupGetNodesDetailsResponse(long reqId, Collection<ClusterNode> nodes) {
         super(reqId);
-
-        this.res = res;
+        this.nodes = nodes;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        writer.writeBoolean(res);
+        writer.writeInt(nodes.size());
+
+        for (ClusterNode node: nodes){
+            writer.writeUuid(node.id());
+            PlatformUtils.writeNodeAttributes(writer, node.attributes());
+            writer.writeCollection(node.addresses());
+            writer.writeCollection(node.hostNames());
+            writer.writeLong(node.order());
+            writer.writeBoolean(node.isLocal());
+            writer.writeBoolean(node.isDaemon());
+            writer.writeBoolean(node.isClient());
+            writer.writeObjectDetached(node.consistentId());
+            PlatformUtils.writeNodeVersion(writer, node.version());
+        }
     }
 }
