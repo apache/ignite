@@ -40,7 +40,7 @@ public class VisorEncryptionTask extends VisorOneNodeTask<VisorEncryptionArgs, V
      * Job for encryption features.
      */
     private static class VisorEncryptionJob extends VisorJob<VisorEncryptionArgs, VisorEncryptionTaskResult> {
-        /** */
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
