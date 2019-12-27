@@ -31,8 +31,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 /**
  * Security aware remote filter.
  */
-public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizable implements
-    CacheEntryEventSerializableFilter<K, V> {
+public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizable<CacheEntryEventFilter<K, V>>
+    implements CacheEntryEventSerializableFilter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,7 +58,7 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
     @Override public boolean evaluate(
         CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
         try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-            return ((CacheEntryEventFilter<K, V>)original).evaluate(evt);
+            return original.evaluate(evt);
         }
     }
 

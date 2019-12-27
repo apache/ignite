@@ -29,12 +29,12 @@ import static java.util.Objects.requireNonNull;
 /**
  * Abstract security aware Externalizable.
  */
-public abstract class AbstractSecurityAwareExternalizable implements Externalizable {
+public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable {
     /** Security subject id. */
     protected UUID subjectId;
 
     /** Original component. */
-    protected Object original;
+    protected T original;
 
     /**
      * Default constructor.
@@ -47,7 +47,7 @@ public abstract class AbstractSecurityAwareExternalizable implements Externaliza
      * @param subjectId Security subject id.
      * @param original Original component.
      */
-    protected AbstractSecurityAwareExternalizable(UUID subjectId, Object original) {
+    protected AbstractSecurityAwareExternalizable(UUID subjectId, T original) {
         this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
         this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
     }
@@ -63,6 +63,6 @@ public abstract class AbstractSecurityAwareExternalizable implements Externaliza
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         subjectId = U.readUuid(in);
 
-        original = in.readObject();
+        original = (T)in.readObject();
     }
 }

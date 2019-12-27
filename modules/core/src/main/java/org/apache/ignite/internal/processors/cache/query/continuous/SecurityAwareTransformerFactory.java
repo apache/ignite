@@ -26,12 +26,11 @@ import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  *  Security aware transformer factory.
  */
-public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAwareExternalizable implements
+public class SecurityAwareTransformerFactory<E, R> extends
+    AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements
     Factory<IgniteClosure<E, R>> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -53,49 +52,27 @@ public class SecurityAwareTransformerFactory<E, R> extends AbstractSecurityAware
 
     /** {@inheritDoc} */
     @Override public IgniteClosure<E, R> create() {
-        Factory<IgniteClosure<E, R>> factory = (Factory<IgniteClosure<E, R>>)original;
+        final IgniteClosure<E, R> cl = original.create();
 
-        return new SecurityAwareIgniteClosure<>(subjectId, factory.create());
-    }
+        return new IgniteClosure<E, R>() {
+            /** Ignite. */
+            private IgniteEx ignite;
 
-
-    /** */
-    private static class SecurityAwareIgniteClosure<E, R> implements IgniteClosure<E, R> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Security subject id. */
-        private final UUID subjectId;
-
-        /** Original transformer. */
-        private final IgniteClosure<E, R> original;
-
-        /** Ignite. */
-        private IgniteEx ignite;
-
-        /**
-         * @param subjectId Security subject id.
-         * @param original Original transformer.
-         */
-        public SecurityAwareIgniteClosure(UUID subjectId, IgniteClosure<E, R> original) {
-            this.subjectId = requireNonNull(subjectId, "Parameter 'subjectId' cannot be null.");
-            this.original = requireNonNull(original, "Parameter 'original' cannot be null.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public R apply(E e) {
-            try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-                return original.apply(e);
+            /** {@inheritDoc} */
+            @Override public R apply(E e) {
+                try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
+                    return cl.apply(e);
+                }
             }
-        }
 
-        /**
-         * @param ignite Ignite.
-         */
-        @IgniteInstanceResource
-        public void ignite(Ignite ignite) {
-            if (ignite != null)
-                this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
-        }
+            /**
+             * @param ignite Ignite.
+             */
+            @IgniteInstanceResource
+            public void ignite(Ignite ignite) {
+                if (ignite != null)
+                    this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
+            }
+        };
     }
 }
