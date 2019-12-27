@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -44,6 +46,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -90,6 +93,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 
 /**
  *
@@ -98,6 +103,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+
+    public static Set<String> INTERNAL_DATA_REGION_NAMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, TX_LOG_CACHE_NAME, METASTORE_DATA_REGION_NAME)));
 
     /** System view name for page lists. */
     public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
@@ -735,8 +743,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (observedNames.contains(regName))
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + regName);
 
-        if (SYSTEM_DATA_REGION_NAME.equals(regName))
-            throw new IgniteCheckedException("'" + SYSTEM_DATA_REGION_NAME + "' policy name is reserved for internal use.");
+        if (INTERNAL_DATA_REGION_NAMES.contains(regName))
+            throw new IgniteCheckedException("'" + regName + "' policy name is reserved for internal use.");
 
         observedNames.add(regName);
     }
@@ -1344,7 +1352,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        U.log(log, "Configured data regions started successfully [total=" + dataRegionMap.size() + ']');
+        if (log.isQuiet()) {
+            U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
+
+            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, new DecimalFormat("#.##"), false));
+        } else if (log.isInfoEnabled()) {
+            log.info("Data Regions Started: " + dataRegionMap.size());
+
+            log.info(IgniteKernal.dataStorageReport(this, new DecimalFormat("#.##"), false));
+        }
     }
 
     /** {@inheritDoc} */

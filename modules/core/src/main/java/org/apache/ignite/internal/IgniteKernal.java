@@ -139,6 +139,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -209,7 +210,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -295,6 +295,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
@@ -342,6 +343,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** System line separator. */
     private static final String NL = U.nl();
+
+    /** System megabyte. */
+    private static final int MEGABYTE = 1024 * 1024;
 
     /**
      * Default interval of checking thread pool state for the starvation. Will be used only if the
@@ -2174,12 +2178,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterNode locNode = localNode();
 
         if (log.isQuiet()) {
-            ackDataRegions(s -> {
-                U.quiet(false, s);
-
-                return null;
-            });
-
             U.quiet(false, "");
 
             U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
@@ -2187,12 +2185,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         if (log.isInfoEnabled()) {
-            ackDataRegions(s -> {
-                log.info(s);
-
-                return null;
-            });
-
             String ack = "Ignite ver. " + VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH_STR;
 
             String dash = U.dash(ack.length());
@@ -2226,49 +2218,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
                 "Use control.(sh|bat) script or IgniteCluster interface to activate.");
         }
-    }
-
-    /**
-     * @param clo Message output closure.
-     */
-    public void ackDataRegions(IgniteClosure<String, Void> clo) {
-        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
-
-        if (memCfg == null)
-            return;
-
-        clo.apply("Data Regions Configured:");
-        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
-
-        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
-
-        if (dataRegions != null) {
-            for (DataRegionConfiguration dataRegion : dataRegions) {
-                String msg = dataRegionConfigurationMessage(dataRegion);
-
-                if (msg != null)
-                    clo.apply(msg);
-            }
-        }
-    }
-
-    /**
-     * @param regCfg Data region configuration.
-     * @return Data region message.
-     */
-    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
-        if (regCfg == null)
-            return null;
-
-        SB m = new SB();
-
-        m.a("  ^-- ").a(regCfg.getName()).a(" [");
-        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
-        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistence=" + regCfg.isPersistenceEnabled());
-        m.a(", lazyMemoryAllocation=" + regCfg.isLazyMemoryAllocation()).a(']');
-
-        return m.toString();
     }
 
     /**
@@ -2325,8 +2274,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ClusterMetrics m = cluster().localNode().metrics();
 
-            final int MByte = 1024 * 1024;
-
             double cpuLoadPct = m.getCurrentCpuLoad() * 100;
             double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
             double gcPct = m.getCurrentGcCpuLoad() * 100;
@@ -2335,8 +2282,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             long heapUsed = m.getHeapMemoryUsed();
             long heapMax = m.getHeapMemoryMaximum();
 
-            long heapUsedInMBytes = heapUsed / MByte;
-            long heapCommInMBytes = m.getHeapMemoryCommitted() / MByte;
+            long heapUsedInMBytes = heapUsed / MEGABYTE;
+            long heapCommInMBytes = m.getHeapMemoryCommitted() / MEGABYTE;
 
             double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
@@ -2357,74 +2304,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // No-op.
             }
 
-            int loadedPages = 0;
-
-            // Off-heap params.
-            Collection<DataRegion> regions = ctx.cache().context().database().dataRegions();
-
-            StringBuilder dataRegionsInfo = new StringBuilder();
-            StringBuilder pdsRegionsInfo = new StringBuilder();
-
-            long offHeapUsedSummary = 0;
-            long offHeapMaxSummary = 0;
-            long offHeapCommSummary = 0;
-            long pdsUsedSummary = 0;
-
-            boolean persistenceDisabled = true;
-
-            if (!F.isEmpty(regions)) {
-                for (DataRegion region : regions) {
-                    long pagesCnt = region.pageMemory().loadedPages();
-
-                    long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
-                    long offHeapMax = region.config().getMaxSize();
-                    long offHeapComm = region.memoryMetrics().getOffHeapSize();
-
-                    long offHeapUsedInMBytes = offHeapUsed / MByte;
-                    long offHeapCommInMBytes = offHeapComm / MByte;
-
-                    double freeOffHeapPct = offHeapMax > 0 ?
-                        ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
-
-                    offHeapUsedSummary += offHeapUsed;
-                    offHeapMaxSummary += offHeapMax;
-                    offHeapCommSummary += offHeapComm;
-                    loadedPages += pagesCnt;
-
-                    dataRegionsInfo.append("    ^--   ")
-                        .append(region.config().getName()).append(" region")
-                        .append(" [used=").append(dblFmt.format(offHeapUsedInMBytes))
-                        .append("MB, free=").append(dblFmt.format(freeOffHeapPct))
-                        .append("%, comm=").append(dblFmt.format(offHeapCommInMBytes)).append("MB]")
-                        .append(NL);
-
-                    if (region.config().isPersistenceEnabled()) {
-                        long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
-                        long pdsUsedMBytes = pdsUsed / MByte;
-
-                        pdsUsedSummary += pdsUsed;
-
-                        String pdsUsedSize = dblFmt.format(pdsUsedMBytes) + "MB";
-
-                        pdsRegionsInfo.append("    ^--   ")
-                            .append(region.config().getName()).append(" region")
-                            .append(" [used=").append(pdsUsedSize).append("]")
-                            .append(NL);
-
-                        persistenceDisabled = false;
-                    }
-                }
-            }
-
-            long offHeapUsedInMBytes = offHeapUsedSummary / MByte;
-            long offHeapCommInMBytes = offHeapCommSummary / MByte;
-            long pdsUsedMBytes = pdsUsedSummary / MByte;
-
-            double freeOffHeapPct = offHeapMaxSummary > 0 ?
-                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
-
-            String pdsInfo = persistenceDisabled ? "" :
-                "    ^-- Ignite persistence [used=" + dblFmt.format(pdsUsedMBytes) + "MB]" + NL + pdsRegionsInfo;
+            String dataStorageInfo = dataStorageReport(ctx.cache().context().database(), dblFmt, true);
 
             String id = U.id8(localNode().id());
 
@@ -2435,13 +2315,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                "    ^-- PageMemory [pages=" + loadedPages + "]" + NL +
                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
-                "    ^-- Off-heap [used=" + dblFmt.format(offHeapUsedInMBytes) + "MB, free=" +
-                dblFmt.format(freeOffHeapPct) + "%, comm=" + dblFmt.format(offHeapCommInMBytes) + "MB]" + NL +
-                dataRegionsInfo +
-                pdsInfo +
+                dataStorageInfo +
                 "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
                 "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
                 "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
@@ -2464,6 +2340,100 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (IgniteClientDisconnectedException ignore) {
             // No-op.
         }
+    }
+
+    /** */
+    public static String dataStorageReport(IgniteCacheDatabaseSharedManager database, DecimalFormat dblFmt,
+        boolean includeMemoryStatistics) {
+        // Off-heap params.
+        Collection<DataRegion> regions = database.dataRegions();
+
+        SB dataRegionsInfo = new SB();
+
+        long loadedPages = 0;
+        long offHeapUsedSummary = 0;
+        long offHeapMaxSummary = 0;
+        long offHeapCommSummary = 0;
+        long pdsUsedSummary = 0;
+
+        boolean persistenceEnabled = false;
+
+        if (!F.isEmpty(regions)) {
+            for (DataRegion region : regions) {
+                DataRegionConfiguration regCfg = region.config();
+
+                long pagesCnt = region.pageMemory().loadedPages();
+
+                long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
+                long offHeapInit = regCfg.getInitialSize();
+                long offHeapMax = regCfg.getMaxSize();
+                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+
+                long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
+                long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
+                long offHeapCommInMBytes = offHeapComm / MEGABYTE;
+                long offHeapInitInMBytes = offHeapInit / MEGABYTE;
+
+                double freeOffHeapPct = offHeapMax > 0 ?
+                    ((double)((offHeapMax - offHeapUsed) * 100)) / offHeapMax : -1;
+
+                offHeapUsedSummary += offHeapUsed;
+                offHeapMaxSummary += offHeapMax;
+                offHeapCommSummary += offHeapComm;
+                loadedPages += pagesCnt;
+
+                String type = "user";
+
+                try {
+                    if (region == database.dataRegion(null))
+                        type = "default";
+                    else if (INTERNAL_DATA_REGION_NAMES.contains(regCfg.getName()))
+                        type = "internal";
+                }
+                catch (IgniteCheckedException ice) {
+                    // Should never happen
+                    ice.printStackTrace();
+                }
+
+                dataRegionsInfo.a("    ^--   ")
+                    .a(regCfg.getName()).a(" region [type=").a(type)
+                    .a(", persistence=" + regCfg.isPersistenceEnabled())
+                    .a(", lazyAlloc=" + regCfg.isLazyMemoryAllocation()).a(',').a(NL)
+                    .a("      ...  ")
+                    .a("initCfg=").a(dblFmt.format(offHeapInitInMBytes))
+                    .a("MB, maxCfg=").a(dblFmt.format(offHeapMaxInMBytes))
+                    .a("MB, usedRam=").a(dblFmt.format(offHeapUsedInMBytes))
+                    .a("MB, freeRam=").a(dblFmt.format(freeOffHeapPct))
+                    .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
+
+                if (regCfg.isPersistenceEnabled()) {
+                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsedInMBytes = pdsUsed / MEGABYTE;
+
+                    pdsUsedSummary += pdsUsed;
+
+                    dataRegionsInfo.a(", allocTotal=").a(dblFmt.format(pdsUsedInMBytes)).a("MB");
+
+                    persistenceEnabled = true;
+                }
+
+                dataRegionsInfo.a(']').a(NL);
+            }
+        }
+
+        long offHeapUsedInMBytes = offHeapUsedSummary / MEGABYTE;
+        long offHeapCommInMBytes = offHeapCommSummary / MEGABYTE;
+        long pdsUsedMBytes = pdsUsedSummary / MEGABYTE;
+
+        double freeOffHeapPct = offHeapMaxSummary > 0 ?
+            ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
+
+        return (includeMemoryStatistics ?
+            "    ^-- Off-heap memory [used=" + dblFmt.format(offHeapUsedInMBytes) + "MB, free=" +
+            dblFmt.format(freeOffHeapPct) + "%, allocated=" + dblFmt.format(offHeapCommInMBytes) + "MB]" + NL +
+            "    ^-- Page memory [pages=" + loadedPages + "]" + NL : "") +
+            dataRegionsInfo + (persistenceEnabled ?
+            "    ^-- Ignite persistence [used=" + dblFmt.format(pdsUsedMBytes) + "MB]" + NL : "");
     }
 
     /**
