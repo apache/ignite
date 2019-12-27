@@ -41,9 +41,6 @@ namespace Apache.Ignite.Core.Tests
         /** Apache Ignite artifact group ID. */
         public const string GroupIdIgnite = "org.apache.ignite";
         
-        /** GridGain artifact group ID. */
-        public const string GroupIdGridGain = "org.gridgain";
-        
         /** Maven command to execute the main class. */
         private const string MavenCommandExec = "compile exec:java -D\"exec.mainClass\"=\"Runner\"";
 
