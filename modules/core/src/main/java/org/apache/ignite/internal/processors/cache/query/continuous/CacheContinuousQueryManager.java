@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 /**
  * Continuous queries manager.
  */
-public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
+public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
     private static final byte CREATED_FLAG = 0b0001;
 
@@ -517,9 +517,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      */
     public UUID executeQuery(@Nullable final CacheEntryUpdatedListener locLsnr,
         @Nullable final EventListener locTransLsnr,
-        @Nullable final CacheEntryEventSerializableFilter rmtFilter,
-        @Nullable final Factory<? extends CacheEntryEventFilter> rmtFilterFactory,
-        @Nullable final Factory<? extends IgniteClosure> rmtTransFactory,
+        @Nullable final CacheEntryEventSerializableFilter<K, V> rmtFilter,
+        @Nullable final Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        @Nullable final Factory<IgniteClosure<K, V>> rmtTransFactory,
         int bufSize,
         long timeInterval,
         boolean autoUnsubscribe,
@@ -858,23 +858,25 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param factory Original factory.
      * @return Security aware factory.
      */
-    private <T extends IgniteClosure> Factory<T> securityAwareTransformerFactory(Factory<T> factory) {
-        return securityAwareComponent(factory, (id, f) -> (Factory<T>)new SecurityAwareTransformerFactory(id, f));
+    private Factory<IgniteClosure<K, V>> securityAwareTransformerFactory(Factory<IgniteClosure<K, V>> factory) {
+        return securityAwareComponent(factory, SecurityAwareTransformerFactory::new);
     }
 
     /**
      * @param factory Original factory.
      * @return Security aware factory.
      */
-    private <T extends CacheEntryEventFilter> Factory<T> securityAwareFilterFactory(Factory<T> factory) {
-        return securityAwareComponent(factory, (id, f) -> (Factory<T>)new SecurityAwareFilterFactory(id, f));
+    private Factory<CacheEntryEventFilter<K, V>> securityAwareFilterFactory(
+        Factory<CacheEntryEventFilter<K, V>> factory) {
+        return securityAwareComponent(factory, SecurityAwareFilterFactory::new);
     }
 
     /**
      * @param filter Original filter.
      * @return Security aware filter.
      */
-    private CacheEntryEventSerializableFilter securityAwareFilter(CacheEntryEventSerializableFilter filter) {
+    private CacheEntryEventSerializableFilter<K, V> securityAwareFilter(
+        CacheEntryEventSerializableFilter<K, V> filter) {
         return securityAwareComponent(filter, SecurityAwareFilter::new);
     }
 
@@ -1104,7 +1106,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 new IgniteOutClosure<CacheContinuousQueryHandler>() {
                     @Override public CacheContinuousQueryHandler apply() {
                         CacheContinuousQueryHandler hnd;
-                        Factory<CacheEntryEventFilter> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
+                        Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
 
                         if (rmtFilterFactory != null)
                             hnd = new CacheContinuousQueryHandlerV2(
