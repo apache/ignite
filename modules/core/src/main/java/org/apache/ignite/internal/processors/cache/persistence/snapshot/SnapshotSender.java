@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -28,16 +26,17 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-abstract class SnapshotSender implements Closeable {
+abstract class SnapshotSender {
     /** Busy processing lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** {@code true} if sender is currently working */
-    private volatile boolean stopped;
+    private volatile boolean closed;
 
     /** Ignite logger to use. */
     protected final IgniteLogger log;
@@ -57,7 +56,7 @@ abstract class SnapshotSender implements Closeable {
             return;
 
         try {
-            if (stopped)
+            if (closed)
                 return;
 
             if (mappings == null)
@@ -78,7 +77,7 @@ abstract class SnapshotSender implements Closeable {
             return;
 
         try {
-            if (stopped)
+            if (closed)
                 return;
 
             if (types == null)
@@ -100,7 +99,7 @@ abstract class SnapshotSender implements Closeable {
             return;
 
         try {
-            if (stopped)
+            if (closed)
                 return;
 
             sendCacheConfig0(ccfg, cacheDirName);
@@ -121,7 +120,7 @@ abstract class SnapshotSender implements Closeable {
             return;
 
         try {
-            if (stopped)
+            if (closed)
                 return;
 
             sendPart0(part, cacheDirName, pair, length);
@@ -141,7 +140,7 @@ abstract class SnapshotSender implements Closeable {
             return;
 
         try {
-            if (stopped)
+            if (closed)
                 return;
 
             sendDelta0(delta, cacheDirName, pair);
@@ -151,14 +150,19 @@ abstract class SnapshotSender implements Closeable {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public final void close() throws IOException {
+    /**
+     * Closes this snapshot sender and releases any resources associated with it.
+     * If the sender is already closed then invoking this method has no effect.
+     *
+     * @param th An exception occurred during snapshot operation processing.
+     */
+    public final void close(@Nullable Throwable th) {
         lock.writeLock().lock();
 
         try {
-            stopped = true;
+            close0(th);
 
-            close0();
+            closed = true;
         }
         finally {
             lock.writeLock().unlock();
@@ -203,9 +207,10 @@ abstract class SnapshotSender implements Closeable {
     }
 
     /**
-     * @throws IOException If fails.
+     * Closes this snapshot sender and releases any resources associated with it.
+     * If the sender is already closed then invoking this method has no effect.
      */
-    protected void close0() throws IOException {
+    protected void close0(@Nullable Throwable th) {
         // No-op by default.
     }
 }

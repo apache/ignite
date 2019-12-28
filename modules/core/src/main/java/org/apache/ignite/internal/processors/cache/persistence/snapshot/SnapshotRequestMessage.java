@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -33,24 +32,21 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class RequestSnapshotMessage implements Message {
+public class SnapshotRequestMessage extends AbstractSnapshotMessage {
     /** Snapshot request message type (value is {@code 177}). */
     public static final short TYPE_CODE = 177;
 
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
-    /** Unique snapshot name. */
-    private String snpName;
-
-    /** Map of cache group ids and corresponding set of its partition ids to be snapshotted. */
+    /** Map of cache group ids and corresponding set of its partition ids. */
     @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
     private Map<Integer, GridIntList> parts;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public RequestSnapshotMessage() {
+    public SnapshotRequestMessage() {
         // No-op.
     }
 
@@ -58,24 +54,15 @@ public class RequestSnapshotMessage implements Message {
      * @param snpName Unique snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
      */
-    public RequestSnapshotMessage(
-        String snpName,
-        Map<Integer, GridIntList> parts
-    ) {
+    public SnapshotRequestMessage(String snpName, Map<Integer, GridIntList> parts) {
+        super(snpName);
+
         assert parts != null && !parts.isEmpty();
 
-        this.snpName = snpName;
         this.parts = U.newHashMap(parts.size());
 
         for (Map.Entry<Integer, GridIntList> e : parts.entrySet())
             this.parts.put(e.getKey(), e.getValue().copy());
-    }
-
-    /**
-     * @return Unique snapshot name.
-     */
-    public String snapshotName() {
-        return snpName;
     }
 
     /**
@@ -89,6 +76,9 @@ public class RequestSnapshotMessage implements Message {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
+        if (!super.writeTo(buf, writer))
+            return false;
+
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
@@ -96,19 +86,11 @@ public class RequestSnapshotMessage implements Message {
             writer.onHeaderWritten();
         }
 
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
-                    return false;
+        if (writer.state() == 1) {
+            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+                return false;
 
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString("snpName", snpName))
-                    return false;
-
-                writer.incrementState();
-
+            writer.incrementState();
         }
 
         return true;
@@ -121,31 +103,19 @@ public class RequestSnapshotMessage implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        switch (reader.state()) {
-            case 0:
-                parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+        if (!super.readFrom(buf, reader))
+            return false;
 
-                if (!reader.isLastRead())
-                    return false;
+        if (reader.state() == 1) {
+            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
 
-                reader.incrementState();
+            if (!reader.isLastRead())
+                return false;
 
-            case 1:
-                snpName = reader.readString("snpName");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
+            reader.incrementState();
         }
 
-        return reader.afterMessageRead(RequestSnapshotMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
+        return reader.afterMessageRead(SnapshotRequestMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -154,12 +124,12 @@ public class RequestSnapshotMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(RequestSnapshotMessage.class, this);
+        return S.toString(SnapshotRequestMessage.class, this, super.toString());
     }
 }
