@@ -29,9 +29,16 @@ jobs:
           TIMESTAMP: "${{ steps.current-time.outputs.formattedTime }}"
         run: |
           mvn clean package -pl :ignite-web-agent -am -P web-console -DskipTests=true
-          cd modules/web-console
+          pushd modules/web-console
           docker build . -f docker/compose/backend/Dockerfile -t ${REGISTRY}/web-console-backend:${TIMESTAMP}
           docker build . -f docker/compose/frontend/Dockerfile -t ${REGISTRY}/web-console-frontend:${TIMESTAMP}
+          popd
+          pushd docker/web-agent
+          cp -rfv ../../modules/web-console/web-agent/target/ignite-web-agent-*.zip ./
+          unzip ignite-web-agent-*.zip
+          rm -rf ignite-web-agent-*.zip
+          docker build . -t ${REGISTRY}/web-agent:${TIMESTAMP}
+          popd
 
       - name: Push
         env:
@@ -39,3 +46,4 @@ jobs:
         run: |
           docker push ${REGISTRY}/web-console-backend:${TIMESTAMP}
           docker push ${REGISTRY}/web-console-frontend:${TIMESTAMP}
+          docker push ${REGISTRY}/web-agent:${TIMESTAMP}
