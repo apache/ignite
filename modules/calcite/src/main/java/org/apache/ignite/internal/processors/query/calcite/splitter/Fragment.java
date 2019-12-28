@@ -37,10 +37,13 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class Fragment implements RelSource {
     /** */
+    public static final long UNDEFINED_ID = -1;
+
+    /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
-    private final long exchangeId = ID_GEN.getAndIncrement();
+    private final long id;
 
     /** */
     private final RelNode root;
@@ -52,6 +55,8 @@ public class Fragment implements RelSource {
      * @param root Root node of the fragment.
      */
     public Fragment(RelNode root) {
+        id = ID_GEN.getAndIncrement();
+
         this.root = root;
     }
 
@@ -85,20 +90,6 @@ public class Fragment implements RelSource {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public long exchangeId() {
-        return exchangeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
-        assert remote();
-
-        ((IgniteSender) root).target(new RelTargetImpl(exchangeId, mapping, distribution));
-
-        init(ctx, mq);
-    }
-
     /**
      * @return Root node.
      */
@@ -107,8 +98,22 @@ public class Fragment implements RelSource {
     }
 
     /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
     @Override public NodesMapping mapping() {
         return mapping;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
+        assert remote();
+
+        ((IgniteSender) root).target(new RelTargetImpl(mapping, distribution));
+
+        init(ctx, mq);
     }
 
     /** */

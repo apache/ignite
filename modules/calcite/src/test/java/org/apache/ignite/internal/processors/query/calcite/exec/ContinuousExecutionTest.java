@@ -68,7 +68,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
 
         for (int i = 1; i < nodes.size(); i++) {
-            ExecutionContext ctx = executionContext(nodes.get(i), queryId);
+            ExecutionContext ctx = executionContext(nodes.get(i), queryId, 0);
 
             Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
                 /** */
@@ -107,7 +107,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             outbox.request();
         }
 
-        ExecutionContext ctx = executionContext(nodes.get(0), queryId);
+        ExecutionContext ctx = executionContext(nodes.get(0), queryId, 1);
 
         Inbox<Object[]> inbox = (Inbox<Object[]>) ctx.plannerContext().exchangeProcessor().register(new Inbox<>(ctx, 0));
 

@@ -28,12 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface RelTarget {
     /**
-     * @return Exchange id, has to be unique in scope of query.
-     */
-    long exchangeId();
-
-    /**
-     * Returns target mapping. It's used in calculation where to send a particular row to.
+     * Returns target mapping. It's used in calculation a nodes list, where to send a particular row to.
      * See {@link DistributionFunction#toDestination(PlannerContext, NodesMapping, ImmutableIntList)}
      *
      * @return Target mapping.

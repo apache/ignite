@@ -636,7 +636,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             for (Fragment fragment : fragments) {
                 Map<String, Object> params = ctx.query().params(new HashMap<>());
-                Implementor implementor = new Implementor(new ExecutionContext(queryId, ctx, params));
+                Implementor implementor = new Implementor(new ExecutionContext(queryId, fragment.fragmentId(), ctx, params));
                 Node<Object[]> exec = implementor.go(igniteRel(fragment.root()));
 
                 if (fragment.remote())
@@ -1270,14 +1270,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private PlannerContext context(Context parent, Query query, RelTraitDef<?>[] t, MappingService ms) {
+    private PlannerContext context(Context parent, Query query, RelTraitDef<?>[] traitDefs, MappingService ms) {
         ExecutorService exec = Executors.newSingleThreadExecutor();
 
         return PlannerContext.builder()
             .parentContext(parent)
             .frameworkConfig(Frameworks.newConfigBuilder(proc.config())
                 .defaultSchema(schema)
-                .traitDefs(t)
+                .traitDefs(traitDefs)
                 .build())
             .logger(log)
             .kernalContext(kernalContext)
@@ -1286,7 +1286,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .exchangeProcessor(new BypassExchangeProcessor(log()))
             .topologyVersion(AffinityTopologyVersion.NONE)
             .mappingService(ms)
-            .executor((task,id) -> CompletableFuture.runAsync(task, exec).exceptionally(this::handle))
+            .executionService((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
             .build();
     }
 

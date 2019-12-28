@@ -17,29 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.io.Serializable;
+import java.util.UUID;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
- * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
+ *
  */
-public class DelegatingStripedExecutor implements StripedExecutor {
-    /** */
-    private final IgniteStripedThreadPoolExecutor delegate;
-
-    /** */
-    public DelegatingStripedExecutor(IgniteStripedThreadPoolExecutor delegate) {
-        this.delegate = delegate;
-    }
-
-    @Override public Future<Void> execute(Runnable task, Serializable taskId) {
-        FutureTask<Void> res = new FutureTask<>(task, null);
-
-        delegate.execute(task, U.safeAbs(taskId.hashCode()));
-
-        return res;
-    }
+public interface QueryExecutionService {
+    /**
+     * Executes a query task in a thread, responsible for particular query fragment.
+     *
+     * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
+     * @param queryTask Query task.
+     * @return Task execution future.
+     */
+    Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask);
 }

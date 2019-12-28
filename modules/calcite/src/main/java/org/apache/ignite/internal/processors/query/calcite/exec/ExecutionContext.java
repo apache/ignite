@@ -35,6 +35,9 @@ public class ExecutionContext implements DataContext {
     private final UUID queryId;
 
     /** */
+    private final long fragmentId;
+
+    /** */
     private final PlannerContext ctx;
 
     /** */
@@ -42,11 +45,13 @@ public class ExecutionContext implements DataContext {
 
     /**
      * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
      * @param ctx Query context.
      * @param params Parameters.
      */
-    public ExecutionContext(UUID queryId, PlannerContext ctx, Map<String, Object> params) {
+    public ExecutionContext(UUID queryId, long fragmentId, PlannerContext ctx, Map<String, Object> params) {
         this.queryId = queryId;
+        this.fragmentId = fragmentId;
         this.params = params;
         this.ctx = ctx;
     }
@@ -56,6 +61,13 @@ public class ExecutionContext implements DataContext {
      */
     public UUID queryId() {
         return queryId;
+    }
+
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
+        return fragmentId;
     }
 
     /**
@@ -79,7 +91,7 @@ public class ExecutionContext implements DataContext {
      * @return Task future.
      */
     public Future<Void> execute(Runnable task) {
-        return ctx.execute(queryId, task);
+        return ctx.execute(queryId, fragmentId, task);
     }
 
     /** {@inheritDoc} */

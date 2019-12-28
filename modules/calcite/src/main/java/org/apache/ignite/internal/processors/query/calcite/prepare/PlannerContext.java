@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.io.Serializable;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Future;
@@ -37,7 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.StripedExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -77,7 +76,7 @@ public final class PlannerContext implements Context {
     private final ExchangeProcessor exchangeProcessor;
 
     /** */
-    private final StripedExecutor executor;
+    private final QueryExecutionService executionService;
 
     /** */
     private IgnitePlanner planner;
@@ -93,7 +92,7 @@ public final class PlannerContext implements Context {
      */
     private PlannerContext(UUID localNodeId, Query query, Context parentContext, GridKernalContext kernalContext,
         FrameworkConfig config, AffinityTopologyVersion topologyVersion, CalciteQueryProcessor queryProcessor,
-        MappingService mappingService, ExchangeProcessor exchangeProcessor, StripedExecutor executor, IgniteLogger logger) {
+        MappingService mappingService, ExchangeProcessor exchangeProcessor, QueryExecutionService executionService, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.query = query;
         this.topologyVersion = topologyVersion;
@@ -102,7 +101,7 @@ public final class PlannerContext implements Context {
         this.queryProcessor = queryProcessor;
         this.mappingService = mappingService;
         this.exchangeProcessor = exchangeProcessor;
-        this.executor = executor;
+        this.executionService = executionService;
         this.localNodeId = localNodeId;
 
         // link frameworkConfig#context() to this.
@@ -155,16 +154,6 @@ public final class PlannerContext implements Context {
     }
 
     /**
-     * Returns an affinityFunction for a given cache ID.
-     *
-     * @param cacheId Cache ID.
-     * @return Affinity function.
-     */
-    public AffinityFunction affinityFunction(int cacheId) {
-        return kernalContext.cache().context().cacheContext(cacheId).group().affinityFunction();
-    }
-
-    /**
      * @return Query processor.
      */
     public CalciteQueryProcessor queryProcessor() {
@@ -201,7 +190,24 @@ public final class PlannerContext implements Context {
         return exchangeProcessor;
     }
 
+    /**
+     * @return Query execution service.
+     */
+    public QueryExecutionService executionService() {
+        return executionService;
+    }
+
     // Helper methods
+
+    /**
+     * Returns an affinityFunction for a given cache ID.
+     *
+     * @param cacheId Cache ID.
+     * @return Affinity function.
+     */
+    public AffinityFunction affinityFunction(int cacheId) {
+        return kernalContext.cache().context().cacheContext(cacheId).group().affinityFunction();
+    }
 
     /**
      * @return Schema.
@@ -279,12 +285,12 @@ public final class PlannerContext implements Context {
 
     /**
      * Executes query task.
-     *
      * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
      * @param queryTask Query task.
      */
-    public Future<Void> execute(Serializable queryId, Runnable queryTask) {
-        return executor.execute(queryTask, queryId);
+    public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
+        return executionService.execute(queryId, fragmentId, queryTask);
     }
 
     /** {@inheritDoc} */
@@ -307,7 +313,7 @@ public final class PlannerContext implements Context {
      */
     public static Builder builder(PlannerContext template) {
         return new Builder()
-            .executor(template.executor)
+            .executionService(template.executionService)
             .exchangeProcessor(template.exchangeProcessor)
             .mappingService(template.mappingService)
             .queryProcessor(template.queryProcessor)
@@ -355,7 +361,7 @@ public final class PlannerContext implements Context {
         private ExchangeProcessor exchangeProcessor;
 
         /** */
-        private StripedExecutor executor;
+        private QueryExecutionService executionService;
 
         public Builder localNodeId(UUID localNodeId) {
             this.localNodeId = localNodeId;
@@ -444,11 +450,11 @@ public final class PlannerContext implements Context {
         }
 
         /**
-         * @param executor Executor.
+         * @param executionService Query execution service.
          * @return Builder for chaining.
          */
-        public Builder executor(StripedExecutor executor) {
-            this.executor = executor;
+        public Builder executionService(QueryExecutionService executionService) {
+            this.executionService = executionService;
             return this;
         }
 
@@ -459,7 +465,7 @@ public final class PlannerContext implements Context {
          */
         public PlannerContext build() {
             return new PlannerContext(localNodeId, query, parentContext, kernalContext, frameworkConfig,
-                topologyVersion, queryProcessor, mappingService, exchangeProcessor, executor, logger);
+                topologyVersion, queryProcessor, mappingService, exchangeProcessor, executionService, logger);
         }
     }
 }
