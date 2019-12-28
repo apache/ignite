@@ -64,14 +64,14 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected ExecutionContext executionContext(UUID nodeId, UUID queryId) {
+    protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
         ExecutorService exec = Executors.newSingleThreadExecutor();
 
         executors.add(exec);
 
-        return new ExecutionContext(queryId, PlannerContext.builder()
+        return new ExecutionContext(queryId, fragmentId, PlannerContext.builder()
             .localNodeId(nodeId)
-            .executor((t, id) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
+            .executionService((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
             .exchangeProcessor(exch)
             .logger(log())
             .build(), ImmutableMap.of());

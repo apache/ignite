@@ -25,23 +25,23 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
  */
 public class RelSourceImpl implements RelSource, Serializable {
     /** */
-    private final long exchangeId;
+    private final long fragmentId;
 
     /** */
     private final NodesMapping mapping;
 
     /**
-     * @param exchangeId Exchange ID.
+     * @param fragmentId Fragment ID.
      * @param mapping Source mapping.
      */
-    public RelSourceImpl(long exchangeId, NodesMapping mapping) {
-        this.exchangeId = exchangeId;
+    public RelSourceImpl(long fragmentId, NodesMapping mapping) {
+        this.fragmentId = fragmentId;
         this.mapping = mapping;
     }
 
     /** {@inheritDoc} */
-    @Override public long exchangeId() {
-        return exchangeId;
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
     /** {@inheritDoc} */

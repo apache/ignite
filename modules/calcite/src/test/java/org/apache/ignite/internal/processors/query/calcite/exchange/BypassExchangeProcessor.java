@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /** */
 public class BypassExchangeProcessor implements ExchangeProcessor {
@@ -108,11 +109,11 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
         PlannerContext ctx = PlannerContext.builder()
             .localNodeId(k.nodeId)
             .exchangeProcessor(this)
-            .executor((t, i) -> CompletableFuture.completedFuture(null))
+            .executionService((qid, fid, t) -> CompletableFuture.completedFuture(null))
             .logger(log)
             .build();
 
-        return new Inbox<>(new ExecutionContext(k.queryId, ctx, ImmutableMap.of()), k.exchangeId);
+        return new Inbox<>(new ExecutionContext(k.queryId, Fragment.UNDEFINED_ID, ctx, ImmutableMap.of()), k.exchangeId);
     }
 
     /** */

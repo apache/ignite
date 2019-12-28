@@ -27,9 +27,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface RelSource {
     /**
-     * @return Exchange id, has to be unique in scope of query.
+     * @return ID of a fragment, where data comes from.
      */
-    long exchangeId();
+    long fragmentId();
 
     /**
      * Returns source mapping. The mapping contains nodes where data comes from.

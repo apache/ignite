@@ -35,7 +35,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // ON P.ID = PR.RESP_ID
         // WHERE P.ID >= 2
 
-        ExecutionContext ctx = executionContext(UUID.randomUUID(), UUID.randomUUID());
+        ExecutionContext ctx = executionContext(UUID.randomUUID(), UUID.randomUUID(), 0);
 
         ScanNode persons = new ScanNode(ctx, Arrays.asList(
             new Object[]{0, "Igor", "Seliverstov"},

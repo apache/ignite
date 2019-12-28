@@ -54,7 +54,7 @@ public class ReceiverNode extends RelGraphNode {
      * @return ReceiverNode.
      */
     public static ReceiverNode create(IgniteReceiver rel) {
-        RelSource source = new RelSourceImpl(rel.source().exchangeId(), rel.source().mapping());
+        RelSource source = new RelSourceImpl(rel.source().fragmentId(), rel.source().mapping());
 
         return new ReceiverNode(rel.getTraitSet(), DataType.fromType(rel.getRowType()), source);
     }

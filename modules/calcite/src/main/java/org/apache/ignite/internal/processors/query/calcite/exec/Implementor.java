@@ -66,7 +66,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         IgniteDistribution distribution = target.distribution();
         DestinationFunction function = distribution.function().toDestination(ctx.plannerContext(), target.mapping(), distribution.getKeys());
 
-        return new Outbox<>(ctx, target.exchangeId(), visit(rel.getInput()), function);
+        return new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function);
     }
 
     /** {@inheritDoc} */
@@ -98,7 +98,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         ExchangeProcessor exchange = ctx.exchangeProcessor();
         RelSource source = rel.source();
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) exchange.register(new Inbox<>(ctx, source.exchangeId()));
+        Inbox<Object[]> inbox = (Inbox<Object[]>) exchange.register(new Inbox<>(ctx, source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.

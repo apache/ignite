@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exchange;
 
 import com.google.common.collect.ImmutableMap;
-import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,8 +31,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryExecutionService;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
-import org.apache.ignite.internal.processors.query.calcite.exec.StripedExecutor;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
@@ -63,7 +62,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     private TestExchangeService exch;
 
     /** */
-    private TestExecutor exec;
+    private TestExecutionService exec;
 
     /** */
     @BeforeClass
@@ -75,19 +74,19 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() {
-        exec = new TestExecutor();
+        exec = new TestExecutionService();
         exch = new TestExchangeService();
 
         PlannerContext ctx = PlannerContext.builder()
             .localNodeId(nodeId)
             .exchangeProcessor(exch)
-            .executor(exec)
+            .executionService(exec)
             .build();
 
-        ExecutionContext ectx = new ExecutionContext(UUID.randomUUID(), ctx, ImmutableMap.of());
+        ExecutionContext ectx = new ExecutionContext(UUID.randomUUID(), 0, ctx, ImmutableMap.of());
 
         input = new TestNode(ectx);
-        outbox = new Outbox<>(ectx, 0, input, func);
+        outbox = new Outbox<>(ectx, ectx.fragmentId(), input, func);
     }
 
     /**
@@ -230,13 +229,13 @@ public class OutboxTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestExecutor implements StripedExecutor {
+    private static class TestExecutionService implements QueryExecutionService {
         /** */
         private Queue<Runnable> taskQueue = new ArrayDeque<>();
 
         /** {@inheritDoc} */
-        @Override public Future<Void> execute(Runnable task, Serializable taskId) {
-            FutureTask<Void> res = new FutureTask<>(task, null);
+        @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
+            FutureTask<Void> res = new FutureTask<>(queryTask, null);
 
             taskQueue.offer(res);
 
@@ -245,13 +244,12 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         /** */
         private void execute() {
-            while (true) {
-                Runnable poll = taskQueue.poll();
+            Runnable task = taskQueue.poll();
 
-                if (poll == null)
-                    break;
+            while (task != null) {
+                task.run();
 
-                poll.run();
+                task = taskQueue.poll();
             }
         }
     }
