@@ -1271,13 +1271,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static Runnable wrapExceptionally(Runnable exec, LocalSnapshotContext sctx) {
         return () -> {
             try {
-                assert sctx.state == SnapshotState.STARTED || sctx.state == SnapshotState.STOPPING :
-                    "Snapshot task has not been prepared properly: " + sctx.state;
-
-                if (sctx.state == SnapshotState.STOPPING)
-                    return;
-
-                exec.run();
+                if (sctx.state == SnapshotState.STARTED)
+                    exec.run();
             }
             catch (Throwable t) {
                 sctx.acceptException(t);
