@@ -341,8 +341,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             // Partition can be MOVING\RENTING states.
                             // Index partition will be excluded if not all partition OWNING.
                             // There is no data assigned to partition, thus it haven't been created yet.
-                            // todo fix assert condition
-                            assert allocRange != null && (part != null || part.state() != GridDhtPartitionState.OWNING) :
+                            assert allocRange != null || part == null || part.state() != GridDhtPartitionState.OWNING :
                                 "Partition counters has not been collected " +
                                 "[pair=" + pair + ", snpName=" + sctx0.snpName + ", part=" + part + ']';
 
