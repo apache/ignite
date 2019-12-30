@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.text.DecimalFormatSymbols;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import java.io.Externalizable;
@@ -1498,7 +1499,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (metricsLogFreq > 0) {
             metricsLogTask = ctx.timeout().schedule(new Runnable() {
-                private final DecimalFormat dblFmt = new DecimalFormat("#.##");
+                private final DecimalFormat dblFmt = new DecimalFormat("#.##",
+                    DecimalFormatSymbols.getInstance(Locale.US));
 
                 @Override public void run() {
                     ackNodeMetrics(dblFmt, execSvc, sysExecSvc, customExecSvcs);
@@ -2274,6 +2276,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ClusterMetrics m = cluster().localNode().metrics();
 
+            int localCpus = m.getTotalCpus();
             double cpuLoadPct = m.getCurrentCpuLoad() * 100;
             double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
             double gcPct = m.getCurrentGcCpuLoad() * 100;
@@ -2312,8 +2315,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
                 "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
                 getUpTimeFormatted() + "]" + NL +
-                "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
-                "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
+                "    ^-- Cluster [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                "    ^-- CPU [CPUs=" + localCpus + ", curLoad=" + dblFmt.format(cpuLoadPct) + "%, avgLoad=" +
                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
                 dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
