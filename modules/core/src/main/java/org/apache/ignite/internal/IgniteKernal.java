@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Objects;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import java.io.Externalizable;
@@ -2446,13 +2447,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.cache().context().database().dumpStatistics(log);
 
-            if (log.isInfoEnabled())
-                log.info(">>> Tracked calls:" + NL + CallTracker.toStringAll());
+            String trackedCalls = CallTracker.toStringAll();
+
+            if (!Objects.equals(lastTrackedCalls, trackedCalls)) {
+                lastTrackedCalls = trackedCalls;
+
+                if (log.isInfoEnabled())
+                    log.info(">>> Tracked calls:" + NL + trackedCalls);
+            }
         }
         catch (IgniteClientDisconnectedException ignore) {
             // No-op.
         }
     }
+
+    /** */
+    private volatile String lastTrackedCalls;
 
     /**
      * @return Language runtime.
