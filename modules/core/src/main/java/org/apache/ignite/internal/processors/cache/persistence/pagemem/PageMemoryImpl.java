@@ -95,6 +95,8 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.pagemem.FullPageId.NULL_PAGE;
+import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePool.SEGMENT_INDEX_MASK;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -1265,6 +1267,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 copyInBuffer(tmpAbsPtr, buf);
 
+                PageHeader.fullPageId(tmpAbsPtr, NULL_PAGE);
+
                 GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
                 if (tracker != null)
@@ -1618,6 +1622,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             PageHeader.dirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);
+            // info for checkpoint buffer cleaner.
+            PageHeader.fullPageId(tmpAbsPtr, fullId);
 
             assert PageIO.getCrc(absPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
             assert PageIO.getCrc(tmpAbsPtr + PAGE_OVERHEAD) == 0; //TODO GG-11480
@@ -1847,6 +1853,40 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** @return Data region metrics. */
     public DataRegionMetricsImpl metrics() {
         return memMetrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean shouldThrottle() {
+        return writeThrottle.shouldThrottle();
+    }
+
+    /**
+     * Get arbitrary page from cp buffer.
+     */
+    @Override public FullPageId pullPageFromCpBuffer() {
+        long idx = GridUnsafe.getLong(checkpointPool.lastAllocatedIdxPtr);
+
+        long lastIdx = ThreadLocalRandom.current().nextLong(idx / 2, idx);
+
+        while (--lastIdx > 1) {
+            assert (lastIdx & SEGMENT_INDEX_MASK) == 0L;
+
+            long relative = checkpointPool.relative(lastIdx);
+
+            long freePageAbsPtr = checkpointPool.absolute(relative);
+
+            FullPageId pageToReplace = PageHeader.fullPageId(freePageAbsPtr);
+
+            if (pageToReplace.pageId() == NULL_PAGE.pageId() || pageToReplace.groupId() == NULL_PAGE.groupId())
+                continue;
+
+            if (!isInCheckpoint(pageToReplace))
+                continue;
+
+            return pageToReplace;
+        }
+
+        return NULL_PAGE;
     }
 
     /**

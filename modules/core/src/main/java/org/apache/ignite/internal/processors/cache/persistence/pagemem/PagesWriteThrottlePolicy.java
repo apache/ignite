@@ -52,4 +52,11 @@ public interface PagesWriteThrottlePolicy {
      * Callback to notify throttling policy checkpoint was finished.
      */
     void onFinishCheckpoint();
+
+    /**
+     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
+     */
+    default boolean shouldThrottle() {
+        return false;
+    }
 }

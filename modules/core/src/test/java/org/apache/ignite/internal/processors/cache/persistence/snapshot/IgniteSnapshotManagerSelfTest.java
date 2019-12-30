@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -54,7 +55,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -71,6 +74,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -114,6 +118,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
@@ -161,6 +166,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(memCfg)
             .setCacheConfiguration(defaultCacheCfg);
     }
@@ -266,6 +272,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> snpFut = mgr
             .scheduleSnapshot(SNAPSHOT_NAME,
+                ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
                 new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
@@ -389,6 +396,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File snpDir0 = new File(mgr.localSnapshotWorkDir(), SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
+            ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
             new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snpDir0)) {
@@ -508,6 +516,86 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    public void testRemoteSnapshotRequestedNodeLeft() throws Exception {
+        // todo write me
+    }
+
+    /**
+     * <pre>
+     * 1. Start 2 nodes.
+     * 2. Request snapshot from 2-nd node
+     * 3. Block snapshot-request message.
+     * 4. Start 3-rd node and change BLT.
+     * 5. Stop 3-rd node and change BLT.
+     * 6. 2-nd node now have MOVING partitions to be preloaded.
+     * 7. Release snapshot-request message.
+     * 8. Should get an error of snapshot creation since MOVING partitions cannot be snapshotted.
+     * </pre>
+     *
+     * @throws Exception If fails.
+     */
+    @Test(expected = IgniteCheckedException.class)
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testRemoteOutdatedSnapshot() throws Exception {
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().active(true);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < 2; i++) {
+            grid(i).
+                context()
+                .cache()
+                .context()
+                .database()
+                .forceCheckpoint("the next one")
+                .finishFuture()
+                .get();
+        }
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .blockMessages((node, msg) -> msg instanceof SnapshotRequestMessage);
+
+        UUID rmtNodeId = grid(1).localNode().id();
+
+        IgniteSnapshotManager mgr0 = ig0.context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> snpFut = mgr0.createRemoteSnapshot(rmtNodeId,
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .waitForBlocked();
+
+        startGrid(2);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        awaitPartitionMapExchange();
+
+        stopGrid(2);
+
+        TestRecordingCommunicationSpi.spi(grid(1))
+            .blockMessages((node, msg) ->  msg instanceof GridDhtPartitionDemandMessage);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        TestRecordingCommunicationSpi.spi(ig0)
+            .stopBlock(true, obj -> obj.get2().message() instanceof SnapshotRequestMessage);
+
+        snpFut.get();
+    }
+
+    /**
      * @param src Source node to calculate.
      * @param grps Groups to collect owning parts.
      * @param rmtNodeId Remote node id.
@@ -612,8 +700,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close0() throws IOException{
-            delegate.close();
+        @Override public void close0(Throwable th) {
+            delegate.close(th);
         }
     }
 
