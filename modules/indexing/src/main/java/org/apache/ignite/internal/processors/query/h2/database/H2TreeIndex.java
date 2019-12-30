@@ -659,12 +659,12 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /** {@inheritDoc} */
     @Override public void asyncDestroy(boolean rmvIdx) {
-        List<Long> rootPages = new ArrayList<>(segments.length);
-        List<H2Tree> trees = new ArrayList<>(segments.length);
-
         try {
             if (cctx.affinityNode() && rmvIdx) {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                List<Long> rootPages = new ArrayList<>(segments.length);
+                List<H2Tree> trees = new ArrayList<>(segments.length);
 
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];
