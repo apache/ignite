@@ -127,12 +127,25 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\TestKeyWithAffinity.cs">
       <Link>ThinClient\Cache\TestKeyWithAffinity.cs</Link>
     </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolCompatibilityTest.cs">
+      <Link>ThinClient\ClientProtocolCompatibilityTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientOpExtensionsTest.cs">
+      <Link>ThinClient\ClientOpExtensionsTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolVersionTest.cs">
+      <Link>ThinClient\ClientProtocolVersionTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\EndpointTest.cs" Link="ThinClient\EndpointTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSecureSocketTest.cs" Link="ThinClient\RawSecureSocketTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSocketTest.cs">
+      <Link>ThinClient\RawSocketTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Common\IgniteProductVersionTests.cs" Link="Common\IgniteProductVersionTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
@@ -145,8 +158,17 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteConfigurationTest.cs" Link="Common\IgniteConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\ConsoleLoggerTest.cs">
+      <Link>Log\ConsoleLoggerTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\FixedDateTimeProvider.cs">
+      <Link>Log\FixedDateTimeProvider.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\PathUtils.cs">
       <Link>PathUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\ProjectFilesTest.cs">
+      <Link>Common\ProjectFilesTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\TestBase.cs" Link="Common\TestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\SpringTestBase.cs" Link="Common\SpringTestBase.cs" />
@@ -222,7 +244,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
 

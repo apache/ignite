@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -97,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             var proc = Process.Start(procStart);
             Assert.IsNotNull(proc);
 
-            IgniteProcess.AttachProcessConsoleReader(proc);
+            proc.AttachProcessConsoleReader();
 
             Assert.IsTrue(proc.WaitForExit(30000));
             Assert.AreEqual(0, proc.ExitCode);
