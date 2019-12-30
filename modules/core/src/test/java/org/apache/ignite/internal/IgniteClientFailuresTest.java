@@ -36,18 +36,13 @@ import org.junit.Test;
  */
 public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     /** */
-    private boolean clientMode;
-
-    /** */
     private GridStringLogger inMemoryLog;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        if (!clientMode) {
+        if (getTestIgniteInstanceIndex(igniteInstanceName) == 0) {
             cfg.setClientFailureDetectionTimeout(10_000);
 
             cfg.setSystemWorkerBlockedTimeout(5_000);
@@ -84,9 +79,7 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
 
         IgniteEx srv = startGrid(0);
 
-        clientMode = true;
-
-        IgniteEx client00 = startGrid("client00");
+        IgniteEx client00 = startClientGrid(1);
 
         client00.getOrCreateCache(new CacheConfiguration<>("cache0"));
 
@@ -113,9 +106,7 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     public void testFailedClientLeavesTopologyAfterTimeout() throws Exception {
         IgniteEx srv0 = startGrid(0);
 
-        clientMode = true;
-
-        IgniteEx client00 = startGrid("client00");
+        IgniteEx client00 = startClientGrid(1);
 
         Thread.sleep(5_000);
 
