@@ -96,7 +96,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private static final Object[] EMPTY = {};
 
     /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
-    public static volatile PageHandlerWrapper<Result> pageHndWrapper = (tree, hnd) -> hnd;
+    public static PageHandlerWrapper<Result> testHndWrapper = null;
 
     /** Destroy msg. */
     public static final String CONC_DESTROY_MSG = "Tree is being concurrently destroyed: ";
@@ -820,15 +820,29 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.failureProcessor = failureProcessor;
 
         // Initialize page handlers.
-        askNeighbor = (PageHandler<Get, Result>) pageHndWrapper.wrap(this, new AskNeighbor());
-        search = (PageHandler<Get, Result>) pageHndWrapper.wrap(this, new Search());
-        lockTail = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockTail());
-        lockTailForward = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockTailForward());
-        lockBackAndTail = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockBackAndTail());
-        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new LockBackAndRmvFromLeaf());
-        rmvFromLeaf = (PageHandler<Remove, Result>) pageHndWrapper.wrap(this, new RemoveFromLeaf());
-        insert = (PageHandler<Put, Result>) pageHndWrapper.wrap(this, new Insert());
-        replace = (PageHandler<Put, Result>) pageHndWrapper.wrap(this, new Replace());
+        askNeighbor = (PageHandler<Get, Result>) wrap(this, new AskNeighbor());
+        search = (PageHandler<Get, Result>) wrap(this, new Search());
+        lockTail = (PageHandler<Remove, Result>) wrap(this, new LockTail());
+        lockTailForward = (PageHandler<Remove, Result>) wrap(this, new LockTailForward());
+        lockBackAndTail = (PageHandler<Remove, Result>) wrap(this, new LockBackAndTail());
+        lockBackAndRmvFromLeaf = (PageHandler<Remove, Result>) wrap(this, new LockBackAndRmvFromLeaf());
+        rmvFromLeaf = (PageHandler<Remove, Result>) wrap(this, new RemoveFromLeaf());
+        insert = (PageHandler<Put, Result>) wrap(this, new Insert());
+        replace = (PageHandler<Put, Result>) wrap(this, new Replace());
+    }
+
+    /**
+     * Returns a wrapper for page handler. By default, there is no wrapper.
+     *
+     * @param tree B-plus tree.
+     * @param hnd Page handler.
+     * @return Page handler wrapper.
+     */
+    private PageHandler<?, Result> wrap(BPlusTree<?, ?> tree, PageHandler<?, Result> hnd) {
+        if (testHndWrapper == null)
+            return hnd;
+        else
+            return testHndWrapper.wrap(tree, hnd);
     }
 
     /**
