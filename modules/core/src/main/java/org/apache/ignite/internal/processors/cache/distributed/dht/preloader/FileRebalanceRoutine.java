@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -53,7 +52,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
@@ -238,8 +236,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         snapFut.cancel();
                     }
 
-                    if (log.isDebugEnabled() && !idxRebuildFut.isDone())
-                        log.debug("Index rebuild is still in progress (ignore).");
+                    if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
+                        log.debug("Index rebuild is still in progress, cancelling.");
+
+                        idxRebuildFut.cancel();
+                    }
 
                     for (Integer grpId : remaining.keySet()) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -319,19 +320,20 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         if (histAssignments.isEmpty()) {
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+            log.info("File rebalancing complete [group=" + grp.cacheOrGroupName() + "]");
 
-            log.info("Rebalancing complete [group=" + gctx.cacheOrGroupName() + "]");
+            assert !grp.localWalEnabled() : "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
 
-            assert !gctx.localWalEnabled() : "Unexpected wal mode for file rebalancing";
-
-            cctx.walState().onGroupRebalanceFinished(gctx.groupId(), topVer);
+            cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
         }
         else
             requestHistoricalRebalance(grp, histAssignments);
 
-        if (remaining.isEmpty())
+        if (remaining.isEmpty()) {
+            idxRebuildFut.markInitialized();
+
             onDone(true);
+        }
     }
 
     private void requestHistoricalRebalance(CacheGroupContext grp, Map<UUID, Map<Integer, T2<Long, Long>>> assigns) {
@@ -347,16 +349,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 msg.partitions().addHistorical(e.getKey(), e.getValue().get1(), e.getValue().get2(), nodeAssigns.size());
 
             grpAssigns.put(node, msg);
-        }
-
-        // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
-        try {
-            U.sleep(500);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            log.warning("Thread was interrupred,", e);
-
-            Thread.currentThread().interrupt();
         }
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
@@ -401,6 +393,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                         // todo
                         snapFut.get();
+                    }
+                    catch (IgniteFutureCancelledCheckedException ignore) {
+                        // No-op.
                     }
                     catch (IgniteCheckedException e) {
                         log.error(e.getMessage(), e);
