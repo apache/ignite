@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -123,6 +124,9 @@ public class GridDhtPartitionDemander {
     /** Rebalancing last cancelled time. */
     private final AtomicLong lastCancelledTime = new AtomicLong(-1);
 
+    /** Rebalancing evicted partitions left. */
+    private final AtomicLongMetric evictedPartitionsLeft;
+
     /**
      * @param grp Ccahe group.
      */
@@ -172,6 +176,9 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingLastCancelledTime", () -> lastCancelledTime.get(), "The time the " +
             "rebalancing was completed with an error or was cancelled. If there were several such cases, the metric " +
             "stores the last time. The metric displays the value even if there is no rebalancing process.");
+
+        evictedPartitionsLeft = mreg.longMetric("RebalancingEvictedPartitionsLeft", "The number of evicted" +
+            " partitions before rebalancing start.");
     }
 
     /**
@@ -562,6 +569,8 @@ public class GridDhtPartitionDemander {
 
         final AtomicInteger clearingPartitions = new AtomicInteger(fullPartitions.size());
 
+        evictedPartitionsLeft.add(clearingPartitions.get());
+
         for (int partId : fullPartitions) {
             if (fut.isDone()) {
                 clearAllFuture.onDone();
@@ -576,6 +585,9 @@ public class GridDhtPartitionDemander {
                     if (!fut.isDone()) {
                         // Cancel rebalance if partition clearing was failed.
                         if (f.error() != null) {
+
+                            evictedPartitionsLeft.add(-clearingPartitions.get());
+
                             for (GridCacheContext cctx : grp.caches()) {
                                 if (cctx.statisticsEnabled()) {
                                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
@@ -592,6 +604,8 @@ public class GridDhtPartitionDemander {
                         }
                         else {
                             int remaining = clearingPartitions.decrementAndGet();
+
+                            evictedPartitionsLeft.decrement();
 
                             for (GridCacheContext cctx : grp.caches()) {
                                 if (cctx.statisticsEnabled()) {
@@ -615,6 +629,8 @@ public class GridDhtPartitionDemander {
             }
             else {
                 int remaining = clearingPartitions.decrementAndGet();
+
+                evictedPartitionsLeft.decrement();
 
                 for (GridCacheContext cctx : grp.caches()) {
                     if (cctx.statisticsEnabled()) {
