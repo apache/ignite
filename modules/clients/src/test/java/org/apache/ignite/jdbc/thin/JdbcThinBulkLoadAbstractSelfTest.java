@@ -433,7 +433,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      */
     @Test
     public void testBulkLoadToNonAffinityNode() throws Exception {
-        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         try (Connection con = connect(client, null)) {
             con.setSchema('"' + DEFAULT_CACHE_NAME + '"');

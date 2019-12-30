@@ -295,7 +295,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
         for (int i = 1; i < GRID_COUNT; ++i)
             startGrid(i);
 
-        startGrid(0);
+        startClientGrid(0);
     }
 
     /** {@inheritDoc} */

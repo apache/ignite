@@ -39,16 +39,6 @@ import org.junit.Test;
 /** */
 public class CacheQueryMemoryLeakTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals("client"))
-            igniteCfg.setClientMode(true);
-
-        return igniteCfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -60,8 +50,8 @@ public class CacheQueryMemoryLeakTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testResultIsMultipleOfPage() throws Exception {
-        IgniteEx srv = (IgniteEx)startGrid("server");
-        Ignite client = startGrid("client");
+        IgniteEx srv = startGrid("server");
+        Ignite client = startClientGrid("client");
 
         IgniteCache<Integer, Person> cache = startPeopleCache(client);
 

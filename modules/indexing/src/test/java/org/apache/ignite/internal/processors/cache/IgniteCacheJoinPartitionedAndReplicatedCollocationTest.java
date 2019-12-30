@@ -51,9 +51,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     private static final String ACCOUNT_CACHE = "acc";
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean h2DataInserted;
 
     /** {@inheritDoc} */
@@ -69,15 +66,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     /** {@inheritDoc} */
     @Override protected void checkAllDataEquals() throws Exception {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /**
@@ -138,9 +126,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
     }
 
     /** {@inheritDoc} */

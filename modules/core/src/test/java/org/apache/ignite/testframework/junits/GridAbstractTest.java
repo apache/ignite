@@ -883,9 +883,46 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startGrid(int idx) throws Exception {
-        return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
+        return startGrid(getTestIgniteInstanceName(idx));
     }
-    
+
+    /**
+     * Starts new client grid with given index.
+     *
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid() throws Exception {
+        return startClientGrid(getTestIgniteInstanceName());
+    }
+
+    /**
+     * Starts new client grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(IgniteConfiguration cfg) throws Exception {
+        cfg.setClientMode(true);
+
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
+    }
+
+    /**
+     * Starts new client grid with given name and configuration.
+     *
+     * @param name Instance name.
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String name, IgniteConfiguration cfg) throws Exception {
+        cfg.setIgniteInstanceName(name);
+
+        return startClientGrid(cfg);
+    }
+
     /**
      * Starts new client grid with given index.
      *
@@ -894,8 +931,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        String igniteInstanceName = getTestIgniteInstanceName(idx);
+        return startClientGrid(getTestIgniteInstanceName(idx));
+    }
 
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
 
         cfg.setClientMode(true);

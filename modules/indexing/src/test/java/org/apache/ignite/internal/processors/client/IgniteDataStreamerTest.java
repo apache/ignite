@@ -41,27 +41,12 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
     public static final long WAIT_TIMEOUT = 30_000L;
 
-    private boolean client = false;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (client)
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(2);
-
-        client = true;
-
-        startGrid("client");
+        startClientGrid("client");
     }
 
     @Override protected void afterTest() throws Exception {

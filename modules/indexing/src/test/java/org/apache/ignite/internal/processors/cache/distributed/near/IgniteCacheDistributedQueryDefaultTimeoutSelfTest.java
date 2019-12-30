@@ -80,10 +80,6 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         cfg.setDefaultQueryTimeout(DEFAULT_QUERY_TIMEOUT);
 
         return cfg;
@@ -117,7 +113,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
     /** */
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
         boolean timeout, boolean checkCanceled) throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());

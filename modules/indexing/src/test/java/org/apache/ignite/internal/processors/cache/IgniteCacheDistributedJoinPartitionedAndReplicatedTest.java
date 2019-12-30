@@ -56,18 +56,6 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     /** */
     private static final String ACCOUNT_CACHE = "acc";
 
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /**
      * @param name Cache name.
      * @param cacheMode Cache mode.
@@ -163,9 +151,7 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**

@@ -112,23 +112,15 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         ccfgs.addAll(cacheConfigurations());
 
-        if (gridName.equals(READ_THROUGH_CFG_NODE_NAME)) {
+        if (gridName.equals(READ_THROUGH_CFG_NODE_NAME))
             ccfgs.add(buildCacheConfigurationRestricted("BadCfgTestCacheRT", true, false, true));
 
-            c.setClientMode(true);
-        }
-
-        if (gridName.equals(INTERCEPTOR_CFG_NODE_NAME)) {
+        if (gridName.equals(INTERCEPTOR_CFG_NODE_NAME))
             ccfgs.add(buildCacheConfigurationRestricted("BadCfgTestCacheINT", false, true, true));
-
-            c.setClientMode(true);
-        }
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         if (gridName.equals(NODE_CLIENT)) {
-            c.setClientMode(true);
-
             // Not allowed to have local cache on client without memory config
             c.setDataStorageConfiguration(new DataStorageConfiguration());
         }
@@ -218,7 +210,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         startGrids(NODE_COUNT);
 
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
 
         // Add cache template with read-through cache store.
         grid(NODE_CLIENT).addCacheConfiguration(
@@ -939,7 +931,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         // Node start-up failure (read-through cache store).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return startGrid(READ_THROUGH_CFG_NODE_NAME);
+                return startClientGrid(READ_THROUGH_CFG_NODE_NAME);
             }
         }, IgniteCheckedException.class, READ_THROUGH_ERR_MSG);
 
@@ -958,7 +950,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
         // Node start-up failure (interceptor).
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return startGrid(INTERCEPTOR_CFG_NODE_NAME);
+                return startClientGrid(INTERCEPTOR_CFG_NODE_NAME);
             }
         }, IgniteCheckedException.class, INTERCEPTOR_ERR_MSG);
 
