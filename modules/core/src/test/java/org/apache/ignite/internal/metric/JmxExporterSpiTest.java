@@ -83,7 +83,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
