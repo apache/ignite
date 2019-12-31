@@ -29,22 +29,22 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * JDBC Thin driver test suite to run in affinity awareness mode.
+ * JDBC Thin driver test suite to run in partition awareness mode.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     JdbcThinConnectionSelfTest.class,
     JdbcThinTcpIoTest.class,
     JdbcThinStatementSelfTest.class,
-    JdbcThinAffinityAwarenessSelfTest.class,
-    JdbcThinAffinityAwarenessTransactionsSelfTest.class,
+    JdbcThinPartitionAwarenessSelfTest.class,
+    JdbcThinPartitionAwarenessTransactionsSelfTest.class,
 })
-public class IgniteJdbcThinDriverAffinityAwarenessTestSuite {
+public class IgniteJdbcThinDriverPartitionAwarenessTestSuite {
     /**
-     * Setup affinity awareness mode.
+     * Setup partition awareness mode.
      */
     @BeforeClass
-    public static void setupAffinityAwareness() {
-        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "affinityAwareness", true);
+    public static void setupPartitionAwareness() {
+        GridTestUtils.setFieldValue(JdbcThinAbstractSelfTest.class, "partitionAwareness", true);
     }
 }

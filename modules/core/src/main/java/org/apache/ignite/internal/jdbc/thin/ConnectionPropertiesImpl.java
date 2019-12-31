@@ -189,10 +189,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
-    /** affinity awareness flag. */
-    private BooleanProperty affinityAwareness = new BooleanProperty(
-        "affinityAwareness",
-        "Whether jdbc thin affinity awareness is enabled.",
+    /** Partition awareness flag. */
+    private BooleanProperty partitionAwareness = new BooleanProperty(
+        "partitionAwareness",
+        "Whether jdbc thin partition awareness is enabled.",
         false, false);
 
     /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
@@ -211,7 +211,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd,
         dataPageScanEnabled,
-        affinityAwareness,
+        partitionAwareness,
         updateBatchSize
     };
 
@@ -519,13 +519,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isAffinityAwareness() {
-        return affinityAwareness.value();
+    @Override public boolean isPartitionAwareness() {
+        return partitionAwareness.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setAffinityAwareness(boolean affinityAwareness) {
-        this.affinityAwareness.setValue(affinityAwareness);
+    @Override public void setPartitionAwareness(boolean partitionAwareness) {
+        this.partitionAwareness.setValue(partitionAwareness);
     }
 
     /** {@inheritDoc} */
