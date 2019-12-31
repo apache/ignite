@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     "bar:123",
                     "baz:100..103"
                 },
-                EnableAffinityAwareness = true,
+                EnablePartitionAwareness = true,
                 Logger = new ConsoleLogger
                 {
                     MinLevel = LogLevel.Debug
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var cfg = new IgniteClientConfiguration("127.0.0.1")
                 {
                     ProtocolVersion = new ClientProtocolVersion(1, 0, 0),
-                    EnableAffinityAwareness = true,
+                    EnablePartitionAwareness = true,
                 };
 
                 configAction(cfg);

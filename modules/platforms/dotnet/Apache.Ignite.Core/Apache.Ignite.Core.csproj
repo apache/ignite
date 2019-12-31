@@ -91,7 +91,7 @@
     <Compile Include="Impl\Client\ClientResponseContext.cs" />
     <Compile Include="Impl\Client\ClientUtils.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
-    <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCachePartitionAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheTopologyPartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />

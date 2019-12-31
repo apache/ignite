@@ -283,7 +283,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     private static Collection<JdbcThinTcpIo> ios(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        Collection<JdbcThinTcpIo> ios = affinityAwareness ? ((Map<UUID, JdbcThinTcpIo>)
+        Collection<JdbcThinTcpIo> ios = partitionAwareness ? ((Map<UUID, JdbcThinTcpIo>)
             GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "ios")).values() :
             Collections.singleton(GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "singleIo"));
 

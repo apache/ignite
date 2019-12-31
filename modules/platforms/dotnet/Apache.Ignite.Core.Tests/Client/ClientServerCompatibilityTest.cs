@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var expectedPartitionAwareness = _clientProtocolVersion >= ClientSocket.Ver140;
-                Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnableAffinityAwareness);
+                Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnablePartitionAwareness);
                 
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration(JavaServer.GetClientConfiguration())
             {
                 Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
-                EnableAffinityAwareness = true
+                EnablePartitionAwareness = true
             };
             
             return Ignition.StartClient(cfg);
