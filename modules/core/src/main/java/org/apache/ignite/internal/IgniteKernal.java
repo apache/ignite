@@ -71,6 +71,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -597,14 +598,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isNodeInBaseline() {
-        ClusterNode locNode = localNode();
+        ctx.gateway().readLockAnyway();
 
-        if (locNode.isClient() || locNode.isDaemon())
-            return false;
+        try {
+            if (ctx.gateway().getState() != STARTED)
+                return false;
 
-        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+            ClusterNode locNode = localNode();
 
-        return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+            if (locNode.isClient() || locNode.isDaemon())
+                return false;
+
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+            return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+        }
+        finally {
+            ctx.gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1181,7 +1192,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
-            startManager(new GridEncryptionManager(ctx));
 
             ackSecurity();
 
@@ -1190,6 +1200,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             final GridManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
+
+            // Start the encryption manager after assigning the discovery manager to context, so it will be
+            // able to register custom event listener.
+            startManager(new GridEncryptionManager(ctx));
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
@@ -1371,6 +1385,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
                 p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
                 callbackExecSvc, qryExecSvc, schemaExecSvc, rebalanceExecSvc, rebalanceStripedExecSvc, customExecSvcs);
+
+            registerMetrics();
 
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
@@ -2769,7 +2785,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackSystemProperties() {
         assert log != null;
 
-        if (log.isDebugEnabled() && S.INCLUDE_SENSITIVE)
+        if (log.isDebugEnabled() && S.includeSensitive())
             for (Map.Entry<Object, Object> entry : snapshot().entrySet())
                 log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
@@ -2992,7 +3008,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         // Ack IGNITE_HOME and VM arguments.
-        if (log.isInfoEnabled() && S.INCLUDE_SENSITIVE) {
+        if (log.isInfoEnabled() && S.includeSensitive()) {
             log.info("IGNITE_HOME=" + cfg.getIgniteHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
@@ -3978,6 +3994,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
+        return ctx.encryption();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
@@ -4546,6 +4567,96 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Registers metrics.
+     */
+    private void registerMetrics() {
+        if (!ctx.metric().enabled())
+            return;
+
+        MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
+
+        reg.register("fullVersion", this::getFullVersion, String.class, FULL_VER_DESC);
+        reg.register("copyright", this::getCopyright, String.class, COPYRIGHT_DESC);
+
+        reg.register("startTimestampFormatted", this::getStartTimestampFormatted, String.class,
+            START_TIMESTAMP_FORMATTED_DESC);
+
+        reg.register("isRebalanceEnabled", this::isRebalanceEnabled, IS_REBALANCE_ENABLED_DESC);
+        reg.register("uptimeFormatted", this::getUpTimeFormatted, String.class, UPTIME_FORMATTED_DESC);
+        reg.register("startTimestamp", this::getStartTimestamp, START_TIMESTAMP_DESC);
+        reg.register("uptime", this::getUpTime, UPTIME_DESC);
+        reg.register("osInformation", this::getOsInformation, String.class, OS_INFO_DESC);
+        reg.register("jdkInformation", this::getJdkInformation, String.class, JDK_INFO_DESC);
+        reg.register("osUser", this::getOsUser, String.class, OS_USER_DESC);
+        reg.register("vmName", this::getVmName, String.class, VM_NAME_DESC);
+        reg.register("instanceName", this::getInstanceName, String.class, INSTANCE_NAME_DESC);
+
+        reg.register("currentCoordinatorFormatted", this::getCurrentCoordinatorFormatted, String.class,
+            CUR_COORDINATOR_FORMATTED_DESC);
+
+        reg.register("isNodeInBaseline", this::isNodeInBaseline, IS_NODE_BASELINE_DESC);
+        reg.register("longJVMPausesCount", this::getLongJVMPausesCount, LONG_JVM_PAUSES_CNT_DESC);
+
+        reg.register("longJVMPausesTotalDuration", this::getLongJVMPausesTotalDuration,
+            LONG_JVM_PAUSES_TOTAL_DURATION_DESC);
+
+        reg.register("longJVMPauseLastEvents", this::getLongJVMPauseLastEvents, Map.class,
+            LONG_JVM_PAUSE_LAST_EVENTS_DESC);
+
+        reg.register("active", () -> ctx.state().clusterState().active()/*this::active*/, Boolean.class,
+            ACTIVE_DESC);
+
+        reg.register("clusterState", () -> cluster().state().toString(), String.class, "Checks cluster state.");
+        reg.register("lastClusterStateChangeTime", () -> ctx.state().lastStateChangeTime(), "Unix time of last cluster state change operation.");
+
+        reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class,
+            USER_ATTRS_FORMATTED_DESC);
+
+        reg.register("gridLoggerFormatted", this::getGridLoggerFormatted, String.class,
+            GRID_LOG_FORMATTED_DESC);
+
+        reg.register("executorServiceFormatted", this::getExecutorServiceFormatted, String.class,
+            EXECUTOR_SRVC_FORMATTED_DESC);
+
+        reg.register("igniteHome", this::getIgniteHome, String.class, IGNITE_HOME_DESC);
+
+        reg.register("mBeanServerFormatted", this::getMBeanServerFormatted, String.class,
+            MBEAN_SERVER_FORMATTED_DESC);
+
+        reg.register("localNodeId", this::getLocalNodeId, UUID.class, LOC_NODE_ID_DESC);
+
+        reg.register("isPeerClassLoadingEnabled", this::isPeerClassLoadingEnabled, Boolean.class,
+            IS_PEER_CLS_LOADING_ENABLED_DESC);
+
+        reg.register("lifecycleBeansFormatted", this::getLifecycleBeansFormatted, List.class,
+            LIFECYCLE_BEANS_FORMATTED_DESC);
+
+        reg.register("discoverySpiFormatted", this::getDiscoverySpiFormatted, String.class,
+            DISCOVERY_SPI_FORMATTED_DESC);
+
+        reg.register("communicationSpiFormatted", this::getCommunicationSpiFormatted, String.class,
+            COMMUNICATION_SPI_FORMATTED_DESC);
+
+        reg.register("deploymentSpiFormatted", this::getDeploymentSpiFormatted, String.class,
+            DEPLOYMENT_SPI_FORMATTED_DESC);
+
+        reg.register("checkpointSpiFormatted", this::getCheckpointSpiFormatted, String.class,
+            CHECKPOINT_SPI_FORMATTED_DESC);
+
+        reg.register("collisionSpiFormatted", this::getCollisionSpiFormatted, String.class,
+            COLLISION_SPI_FORMATTED_DESC);
+
+        reg.register("eventStorageSpiFormatted", this::getEventStorageSpiFormatted, String.class,
+            EVT_STORAGE_SPI_FORMATTED_DESC);
+
+        reg.register("failoverSpiFormatted", this::getFailoverSpiFormatted, String.class,
+            FAILOVER_SPI_FORMATTED_DESC);
+
+        reg.register("loadBalancingSpiFormatted", this::getLoadBalancingSpiFormatted, String.class,
+            LOAD_BALANCING_SPI_FORMATTED_DESC);
+    }
+
+    /**
      * Class holds client reconnection event handling state.
      */
     private class ReconnectState {
@@ -4628,16 +4739,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterState newState = ClusterState.valueOf(state);
 
         cluster().state(newState);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String clusterState() {
-        return cluster().state().toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long lastClusterStateChangeTime() {
-        return ctx.state().lastStateChangeTime();
     }
 
     /** {@inheritDoc} */

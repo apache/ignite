@@ -22,42 +22,164 @@ import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * This interface defines JMX view on kernal.
  */
 @MXBeanDescription("MBean that provides access to Kernal information.")
 public interface IgniteMXBean {
+    /** */
+    public String FULL_VER_DESC = "String presentation of the Ignite version.";
+
+    /** */
+    public String COPYRIGHT_DESC = "Copyright statement for Ignite product.";
+
+    /** */
+    public String START_TIMESTAMP_FORMATTED_DESC = "String presentation of the kernal start timestamp.";
+
+    /** */
+    public String IS_REBALANCE_ENABLED_DESC = "Rebalance enabled flag.";
+
+    /** */
+    public String UPTIME_FORMATTED_DESC = "String presentation of up-time for the kernal.";
+
+    /** */
+    public String START_TIMESTAMP_DESC = "Start timestamp of the kernal.";
+
+    /** */
+    public String UPTIME_DESC = "Up-time of the kernal.";
+
+    /** */
+    public String LONG_JVM_PAUSES_CNT_DESC = "Long JVM pauses count.";
+
+    /** */
+    public String LONG_JVM_PAUSES_TOTAL_DURATION_DESC = "Long JVM pauses total duration.";
+
+    /** */
+    public String LONG_JVM_PAUSE_LAST_EVENTS_DESC = "Long JVM pause last events.";
+
+    /** */
+    public String USER_ATTRS_FORMATTED_DESC = "Collection of formatted user-defined attributes added to this node.";
+
+    /** */
+    public String GRID_LOG_FORMATTED_DESC ="Formatted instance of logger that is in grid.";
+
+    /** */
+    public String EXECUTOR_SRVC_FORMATTED_DESC = "Formatted instance of fully configured thread pool" +
+        " that is used in grid.";
+
+    /** */
+    public String IGNITE_HOME_DESC = "Ignite installation home folder.";
+
+    /** */
+    public String MBEAN_SERVER_FORMATTED_DESC = "Formatted instance of MBean server instance.";
+
+    /** */
+    public String LOC_NODE_ID_DESC = "Unique identifier for this node within grid.";
+
+    /** */
+    public String IS_PEER_CLS_LOADING_ENABLED_DESC = "Whether or not peer class loading" +
+        " (a.k.a. P2P class loading) is enabled.";
+
+    /** */
+    public String LIFECYCLE_BEANS_FORMATTED_DESC = "String representation of lifecycle beans.";
+
+    /** */
+    public String ACTIVE_DESC = "Checks Ignite grid is active or is not active.";
+
+    /** */
+    public String DISCOVERY_SPI_FORMATTED_DESC = "Formatted instance of configured discovery SPI implementation.";
+
+    /** */
+    public String COMMUNICATION_SPI_FORMATTED_DESC = "Formatted instance of fully configured SPI communication" +
+        " implementation.";
+
+    /** */
+    public String DEPLOYMENT_SPI_FORMATTED_DESC = "Formatted instance of fully configured deployment SPI" +
+        " implementation.";
+
+    /** */
+    public String CHECKPOINT_SPI_FORMATTED_DESC = "Formatted instance of configured checkpoint SPI implementation.";
+
+    /** */
+    public String COLLISION_SPI_FORMATTED_DESC = "Formatted instance of configured collision SPI implementations.";
+
+    /** */
+    public String EVT_STORAGE_SPI_FORMATTED_DESC = "Formatted instance of fully configured event SPI implementation.";
+
+    /** */
+    public String FAILOVER_SPI_FORMATTED_DESC = "Formatted instance of fully configured failover SPI implementations.";
+
+    /** */
+    public String LOAD_BALANCING_SPI_FORMATTED_DESC = "Formatted instance of fully configured load balancing SPI" +
+        " implementations.";
+
+    /** */
+    public String OS_INFO_DESC = "OS information.";
+
+    /** */
+    public String JDK_INFO_DESC = "JDK information.";
+
+    /** */
+    public String OS_USER_DESC = "OS user name.";
+
+    /** */
+    public String VM_NAME_DESC = "VM name.";
+
+    /** */
+    public String INSTANCE_NAME_DESC = "Optional kernal instance name.";
+
+    /** */
+    public String CUR_COORDINATOR_FORMATTED_DESC = "Formatted properties of current coordinator.";
+
+    /** */
+    public String IS_NODE_BASELINE_DESC = "Baseline node flag.";
+
+    /** */
+    public String READ_ONLY_MODE_DESC = "Cluster read-only mode status.";
+
+    /** */
+    public String READ_ONLY_MODE_DURATION_DESC = "Duration of read-only mode enabled on cluster.";
+
     /**
      * Gets string presentation of the version.
      *
      * @return String presentation of the version.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("String presentation of the Ignite version.")
+    @Deprecated
+    @MXBeanDescription(FULL_VER_DESC)
     public String getFullVersion();
 
     /**
      * Gets copyright statement for Ignite product.
      *
      * @return Copyright statement for Ignite product.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Copyright statement for Ignite product.")
+    @Deprecated
+    @MXBeanDescription(COPYRIGHT_DESC)
     public String getCopyright();
 
     /**
      * Gets string presentation of the kernal start timestamp.
      *
      * @return String presentation of the kernal start timestamp.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("String presentation of the kernal start timestamp.")
+    @Deprecated
+    @MXBeanDescription(START_TIMESTAMP_DESC)
     public String getStartTimestampFormatted();
 
     /**
      * Gets rebalance enabled flag.
      *
      * @return Rebalance enabled flag.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Rebalance enabled flag.")
+    @Deprecated
+    @MXBeanDescription(IS_REBALANCE_ENABLED_DESC)
     public boolean isRebalanceEnabled();
 
     /**
@@ -77,48 +199,60 @@ public interface IgniteMXBean {
      * Gets string presentation of up-time for the kernal.
      *
      * @return String presentation of up-time for the kernal.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("String presentation of up-time for the kernal.")
+    @Deprecated
+    @MXBeanDescription(UPTIME_FORMATTED_DESC)
     public String getUpTimeFormatted();
 
     /**
      * Get start timestamp of the kernal.
      *
      * @return Start timestamp of the kernal.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Start timestamp of the kernal.")
+    @Deprecated
+    @MXBeanDescription(START_TIMESTAMP_DESC)
     public long getStartTimestamp();
 
     /**
      * Gets up-time of the kernal.
      *
      * @return Up-time of the kernal.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Up-time of the kernal.")
+    @Deprecated
+    @MXBeanDescription(UPTIME_DESC)
     public long getUpTime();
 
     /**
      * Gets long JVM pauses count.
      *
      * @return Long JVM pauses count.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Long JVM pauses count.")
+    @Deprecated
+    @MXBeanDescription(LONG_JVM_PAUSES_CNT_DESC)
     public long getLongJVMPausesCount();
 
     /**
      * Gets long JVM pauses total duration.
      *
      * @return Long JVM pauses total duration.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Long JVM pauses total duration.")
+    @Deprecated
+    @MXBeanDescription(LONG_JVM_PAUSES_TOTAL_DURATION_DESC)
     public long getLongJVMPausesTotalDuration();
 
     /**
      * Gets long JVM pause last events.
      *
      * @return Long JVM pause last events.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Long JVM pause last events.")
+    @Deprecated
+    @MXBeanDescription(LONG_JVM_PAUSE_LAST_EVENTS_DESC)
     public Map<Long, Long> getLongJVMPauseLastEvents();
 
     /**
@@ -129,48 +263,60 @@ public interface IgniteMXBean {
      * used for SPI implementation.
      *
      * @return User defined attributes for this node.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Collection of formatted user-defined attributes added to this node.")
+    @Deprecated
+    @MXBeanDescription(USER_ATTRS_FORMATTED_DESC)
     public List<String> getUserAttributesFormatted();
 
     /**
      * Gets a formatted instance of logger that is in grid.
      *
      * @return Logger that is used in grid.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of logger that is in grid.")
+    @Deprecated
+    @MXBeanDescription(GRID_LOG_FORMATTED_DESC)
     public String getGridLoggerFormatted();
 
     /**
      * Gets a formatted instance of fully configured thread pool that is used in grid.
      *
      * @return Thread pool implementation that is used in grid.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
+    @Deprecated
+    @MXBeanDescription(EXECUTOR_SRVC_FORMATTED_DESC)
     public String getExecutorServiceFormatted();
 
     /**
      * Gets Ignite installation home folder.
      *
      * @return Ignite installation home.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Ignite installation home folder.")
+    @Deprecated
+    @MXBeanDescription(IGNITE_HOME_DESC)
     public String getIgniteHome();
 
     /**
      * Gets a formatted instance of MBean server instance.
      *
      * @return MBean server instance.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of MBean server instance.")
+    @Deprecated
+    @MXBeanDescription(MBEAN_SERVER_FORMATTED_DESC)
     public String getMBeanServerFormatted();
 
     /**
      * Unique identifier for this node within grid.
      *
      * @return Unique identifier for this node within grid.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Unique identifier for this node within grid.")
+    @Deprecated
+    @MXBeanDescription(LOC_NODE_ID_DESC)
     public UUID getLocalNodeId();
 
     /**
@@ -184,8 +330,10 @@ public interface IgniteMXBean {
      *
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Whether or not peer class loading (a.k.a. P2P class loading) is enabled.")
+    @Deprecated
+    @MXBeanDescription(IS_PEER_CLS_LOADING_ENABLED_DESC)
     public boolean isPeerClassLoadingEnabled();
 
     /**
@@ -194,8 +342,10 @@ public interface IgniteMXBean {
      *
      * @return {@code toString()} representation of all lifecycle beans configured
      *      with Ignite.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("String representation of lifecycle beans.")
+    @Deprecated
+    @MXBeanDescription(LIFECYCLE_BEANS_FORMATTED_DESC)
     public List<String> getLifecycleBeansFormatted();
 
     /**
@@ -247,10 +397,10 @@ public interface IgniteMXBean {
      * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription(
-        "Checks Ignite grid is active or is not active."
-    )
+    @Deprecated
+    @MXBeanDescription(ACTIVE_DESC)
     public boolean active();
 
     /**
@@ -321,104 +471,130 @@ public interface IgniteMXBean {
      * Gets a formatted instance of configured discovery SPI implementation.
      *
      * @return Grid discovery SPI implementation.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of configured discovery SPI implementation.")
+    @Deprecated
+    @MXBeanDescription(DISCOVERY_SPI_FORMATTED_DESC)
     public String getDiscoverySpiFormatted();
 
     /**
      * Gets a formatted instance of fully configured SPI communication implementation.
      *
      * @return Grid communication SPI implementation.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured SPI communication implementation.")
+    @Deprecated
+    @MXBeanDescription(COMMUNICATION_SPI_FORMATTED_DESC)
     public String getCommunicationSpiFormatted();
 
     /**
      * Gets a formatted instance of fully configured deployment SPI implementation.
      *
      * @return Grid deployment SPI implementation.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured deployment SPI implementation.")
+    @Deprecated
+    @MXBeanDescription(DEPLOYMENT_SPI_FORMATTED_DESC)
     public String getDeploymentSpiFormatted();
 
     /**
      * Gets a formatted instance of configured checkpoint SPI implementation.
      *
      * @return Grid checkpoint SPI implementation.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of configured checkpoint SPI implementation.")
+    @Deprecated
+    @MXBeanDescription(CHECKPOINT_SPI_FORMATTED_DESC)
     public String getCheckpointSpiFormatted();
 
     /**
      * Gets a formatted instance of configured collision SPI implementations.
      *
      * @return Grid collision SPI implementations.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of configured collision SPI implementations.")
+    @Deprecated
+    @MXBeanDescription(COLLISION_SPI_FORMATTED_DESC)
     public String getCollisionSpiFormatted();
 
     /**
      * Gets a formatted instance of fully configured event SPI implementation.
      *
      * @return Grid event SPI implementation.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured event SPI implementation.")
+    @Deprecated
+    @MXBeanDescription(EVT_STORAGE_SPI_FORMATTED_DESC)
     public String getEventStorageSpiFormatted();
 
     /**
      * Gets a formatted instance of fully configured failover SPI implementations.
      *
      * @return Grid failover SPI implementations.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured failover SPI implementations.")
+    @Deprecated
+    @MXBeanDescription(FAILOVER_SPI_FORMATTED_DESC)
     public String getFailoverSpiFormatted();
 
     /**
      * Gets a formatted instance of fully configured load balancing SPI implementations.
      *
      * @return Grid load balancing SPI implementations.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
+    @Deprecated
+    @MXBeanDescription(LOAD_BALANCING_SPI_FORMATTED_DESC)
     public String getLoadBalancingSpiFormatted();
 
     /**
      * Gets OS information.
      *
      * @return OS information.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("OS information.")
+    @Deprecated
+    @MXBeanDescription(OS_INFO_DESC)
     public String getOsInformation();
 
     /**
      * Gets JDK information.
      *
      * @return JDK information.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("JDK information.")
+    @Deprecated
+    @MXBeanDescription(JDK_INFO_DESC)
     public String getJdkInformation();
 
     /**
      * Gets OS user.
      *
      * @return OS user name.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("OS user name.")
+    @Deprecated
+    @MXBeanDescription(OS_USER_DESC)
     public String getOsUser();
 
     /**
      * Gets VM name.
      *
      * @return VM name.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("VM name.")
+    @Deprecated
+    @MXBeanDescription(VM_NAME_DESC)
     public String getVmName();
 
     /**
      * Gets optional kernal instance name. It can be {@code null}.
      *
      * @return Optional kernal instance name.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Optional kernal instance name.")
+    @Deprecated
+    @MXBeanDescription(INSTANCE_NAME_DESC)
     public String getInstanceName();
 
     /**
@@ -435,16 +611,21 @@ public interface IgniteMXBean {
 
     /**
      * Gets a formatted properties of current coordinator.
+     * @return String representation of current coordinator node.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Formatted properties of current coordinator.")
+    @Deprecated
+    @MXBeanDescription(CUR_COORDINATOR_FORMATTED_DESC)
     public String getCurrentCoordinatorFormatted();
 
     /**
      * Gets a flag whether local node is in baseline. Returns false if baseline topology is not established.
      *
      * @return Return a baseline flag.
+     * @deprecated Use {@link GridMetricManager} instead.
      */
-    @MXBeanDescription("Baseline node flag.")
+    @Deprecated
+    @MXBeanDescription(IS_NODE_BASELINE_DESC)
     public boolean isNodeInBaseline();
 
     /**
@@ -508,15 +689,6 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Checks cluster state.
-     *
-     * @return String representation of current cluster state.
-     * See {@link ClusterState}.
-     */
-    @MXBeanDescription("Checks cluster state.")
-    public String clusterState();
-
-    /**
      * Changes current cluster state.
      *
      * @param state String representation of new cluster state.
@@ -526,12 +698,4 @@ public interface IgniteMXBean {
     @MXBeanParametersNames("state")
     @MXBeanParametersDescriptions("New cluster state.")
     public void clusterState(String state);
-
-    /**
-     * Gets last cluster state change operation.
-     *
-     * @return Unix time of last cluster state change operation.
-     */
-    @MXBeanDescription("Unix time of last cluster state change operation.")
-    public long lastClusterStateChangeTime();
 }
