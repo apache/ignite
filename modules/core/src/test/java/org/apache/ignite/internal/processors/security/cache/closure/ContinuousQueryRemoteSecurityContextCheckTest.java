@@ -55,7 +55,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     public void testRemoteFilterFactory() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
-                q.setRemoteFilterFactory(() -> REMOTE_FILTER);
+                q.setRemoteFilterFactory(AbstractContinuousQueryRemoteSecurityContextCheckTest::createRemoteFilter);
             }
         };
 
@@ -70,7 +70,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     public void testRemoteFilter() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
-                q.setRemoteFilter(REMOTE_FILTER);
+                q.setRemoteFilter(createRemoteFilter());
             }
         };
 

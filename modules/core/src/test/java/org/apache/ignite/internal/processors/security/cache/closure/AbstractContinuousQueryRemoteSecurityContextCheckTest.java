@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.Query;
@@ -45,11 +48,20 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     };
 
     /** Remote filter. */
-    protected static final CacheEntryEventSerializableFilter<Integer, Integer> REMOTE_FILTER = e -> {
-        VERIFIER.register();
+    protected static CacheEntryEventSerializableFilter<Integer, Integer> createRemoteFilter() {
+        return new CacheEntryEventSerializableFilter<Integer, Integer>() {
+            /** Should be registred one time only. */
+            private final AtomicBoolean registred = new AtomicBoolean(false);
 
-        return true;
-    };
+            @Override public boolean evaluate(
+                CacheEntryEvent<? extends Integer, ? extends Integer> evt) throws CacheEntryListenerException {
+                if (!registred.getAndSet(true))
+                    VERIFIER.register();
+
+                return true;
+            }
+        };
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -77,7 +89,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         verifier
             .expect(SRV_RUN, 1)
             .expect(CLNT_RUN, 1)
-            .atLeast(SRV_CHECK, 2);
+            .expect(SRV_CHECK, 2);
     }
 
     /**
