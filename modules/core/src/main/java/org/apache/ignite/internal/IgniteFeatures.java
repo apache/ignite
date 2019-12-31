@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
 /**
@@ -158,7 +163,12 @@ public enum IgniteFeatures {
     public static byte[] allFeatures() {
         final BitSet set = new BitSet();
 
-        for (IgniteFeatures value : IgniteFeatures.values()) {
+        List<IgniteFeatures> features = new LinkedList<>(Arrays.asList(IgniteFeatures.values()));
+
+        if (getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
+            features.remove(PME_FREE_SWITCH);
+
+        for (IgniteFeatures value : features ) {
             final int featureId = value.getFeatureId();
 
             assert !set.get(featureId) : "Duplicate feature ID found for [" + value + "] having same ID ["

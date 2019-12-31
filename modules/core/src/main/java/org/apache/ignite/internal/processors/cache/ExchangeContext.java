@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -36,6 +36,9 @@ import static org.apache.ignite.internal.processors.cache.GridCachePartitionExch
  *
  */
 public class ExchangeContext {
+    /** Logger. */
+    private static Logger log = Logger.getLogger(ExchangeContext.class.getName());
+
     /** */
     public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
 
@@ -64,11 +67,15 @@ public class ExchangeContext {
     public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (!getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED) &&
-            !compatibilityNode &&
+        boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
+
+        if (!allNodesSupportsPmeFreeSwitch)
+            log.warning("PME-Free did not happen because the cluster is not ready.");
+
+        if (!compatibilityNode &&
             fut.wasRebalanced() &&
             fut.isBaselineNodeFailed() &&
-            allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH)) {
+            allNodesSupportsPmeFreeSwitch) {
             exchangeFreeSwitch = true;
             merge = false;
         }
