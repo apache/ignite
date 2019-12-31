@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEvent;
+import javax.cache.Cache;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
@@ -46,7 +43,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
                     q.setInitialQuery(new ScanQuery<>(INITIAL_QUERY_FILTER));
-                    q.setRemoteTransformerFactory(new TestTransformerFactory(false));
+                    q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
                 }
             };
 
@@ -62,8 +59,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
-                    q.setRemoteFilterFactory(new TestRemoteFilterFactory());
-                    q.setRemoteTransformerFactory(new TestTransformerFactory(false));
+                    q.setRemoteFilterFactory(() -> REMOTE_FILTER);
+                    q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
                 }
             };
 
@@ -79,7 +76,11 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
-                    q.setRemoteTransformerFactory(new TestTransformerFactory(true));
+                    q.setRemoteTransformerFactory(() -> evt -> {
+                        VERIFIER.register();
+
+                        return evt.getValue();
+                    });
                 }
             };
 
@@ -103,55 +104,5 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
             openQueryCursor(cq);
         };
-    }
-
-    /**
-     * Test transformer factory.
-     */
-    private static class TestTransformerFactory implements Factory {
-        /** True if closure should be registered in verifier. */
-        private final boolean register;
-
-        /**
-         * Constructor.
-         *
-         * @param register Register flag.
-         */
-        public TestTransformerFactory(boolean register) {
-            this.register = register;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteClosure<CacheEntryEvent, Object> create() {
-            return new TestIgniteClosure(register);
-        }
-    }
-
-    /**
-     * Test Ignite closure.
-     */
-    private static class TestIgniteClosure implements IgniteClosure<CacheEntryEvent, Object> {
-        /** True if closure should be registered in verifier. */
-        private final boolean register;
-
-        /** Calling of closure should be registered one time only. */
-        private final AtomicBoolean executed = new AtomicBoolean(false);
-
-        /**
-         * Constructor.
-         *
-         * @param register Register flag.
-         */
-        public TestIgniteClosure(boolean register) {
-            this.register = register;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(CacheEntryEvent evt) {
-            if (register && !executed.getAndSet(true))
-                VERIFIER.register();
-
-            return evt.getValue();
-        }
     }
 }

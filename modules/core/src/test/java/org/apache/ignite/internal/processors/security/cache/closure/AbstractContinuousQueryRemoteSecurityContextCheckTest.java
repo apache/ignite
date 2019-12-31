@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.Ignition.localIgnite;
@@ -48,9 +44,16 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         return true;
     };
 
+    /** Remote filter. */
+    protected static final CacheEntryEventSerializableFilter<Integer, Integer> REMOTE_FILTER = e -> {
+        VERIFIER.register();
+
+        return true;
+    };
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll(SRV);
+        IgniteEx srv = startGridAllowAll(SRV);
 
         startGridAllowAll(SRV_INITIATOR);
 
@@ -62,9 +65,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
         startGridAllowAll(SRV_CHECK);
 
-        G.allGrids().get(0).cluster().active(true);
+        srv.cluster().active(true);
 
-        grid(SRV).cache(CACHE_NAME).put(prmKey(grid(SRV_CHECK)), 1);
+        srv.cache(CACHE_NAME).put(prmKey(grid(SRV_CHECK)), 1);
 
         awaitPartitionMapExchange();
     }
@@ -74,7 +77,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         verifier
             .expect(SRV_RUN, 1)
             .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2);
+            .atLeast(SRV_CHECK, 2);
     }
 
     /**
@@ -83,37 +86,10 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
      * @param q {@link Query}.
      */
     protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
-        try (QueryCursor<Cache.Entry<Integer, Integer>> cur = localIgnite().cache(CACHE_NAME).query(q)) {
-            grid(SRV).cache(CACHE_NAME).put(prmKey(grid(SRV_CHECK)), 100);
+        IgniteCache<Integer, Integer> cache = localIgnite().cache(CACHE_NAME);
 
-            cur.getAll();
-        }
-    }
-
-    /**
-     * Test remote filter factory.
-     */
-    protected static class TestRemoteFilterFactory implements Factory<CacheEntryEventFilter<Integer, Integer>> {
-        /** {@inheritDoc} */
-        @Override public CacheEntryEventFilter<Integer, Integer> create() {
-            return new TestCacheEntryEventFilter();
-        }
-    }
-
-    /**
-     * Test remote filter.
-     */
-    protected static class TestCacheEntryEventFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
-        /** Calling of filter should be registered one time only. */
-        private final AtomicBoolean executed = new AtomicBoolean(false);
-
-        /** {@inheritDoc} */
-        @Override public boolean evaluate(
-            CacheEntryEvent<? extends Integer, ? extends Integer> evt) throws CacheEntryListenerException {
-            if (!executed.getAndSet(true))
-                VERIFIER.register();
-
-            return false;
+        try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
+            cache.put(prmKey(grid(SRV_CHECK)), 100);
         }
     }
 }

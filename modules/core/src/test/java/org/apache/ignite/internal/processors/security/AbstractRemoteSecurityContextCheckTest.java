@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
@@ -147,7 +148,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final Map<String, T2<Integer, Integer>> expInvokes = new HashMap<>();
+        private final Map<String, T3<Integer, Integer, Boolean>> expInvokes = new HashMap<>();
 
         /**
          * List of registered security subjects.
@@ -177,7 +178,20 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param num Expected number of invokes.
          */
         public Verifier expect(String nodeName, int num) {
-            expInvokes.put(nodeName, new T2<>(num, 0));
+            expInvokes.put(nodeName, new T3<>(num, 0, false));
+
+            return this;
+        }
+
+        /**
+         * Adds expected behaivior the method {@link #register} will be invoke at least exp times on the node with
+         * passed name.
+         *
+         * @param nodeName Node name.
+         * @param num Expected number of invokes.
+         */
+        public Verifier atLeast(String nodeName, int num) {
+            expInvokes.put(nodeName, new T3<>(num, 0, true));
 
             return this;
         }
@@ -195,12 +209,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         public synchronized void register(IgniteEx ignite) {
             registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
-            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
-                Integer val = t2.getValue();
+            expInvokes.computeIfPresent(ignite.name(), (n, t) -> {
+                Integer val = t.get2();
 
-                t2.setValue(++val);
+                t.set2(++val);
 
-                return t2;
+                return t;
             });
         }
 
@@ -213,9 +227,14 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                     expSecSubjId, t.get1())
             );
 
-            expInvokes.forEach((key, value) ->
-                assertEquals("Node " + key + ". Execution of register: ",
-                    value.get1(), value.get2()));
+            expInvokes.forEach((k, v) -> {
+                if (v.get3()) {
+                    assertTrue("Node " + k + ". Expected execution of register at least " + v.get1() +
+                        ", got " + v.get2(), v.get2().compareTo(v.get1()) >= 0);
+                }
+                else
+                    assertEquals("Node " + k + ". Execution of register: ", v.get1(), v.get2());
+            });
 
             clear();
         }
