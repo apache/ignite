@@ -4606,7 +4606,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("active", () -> ctx.state().clusterState().active()/*this::active*/, Boolean.class,
             ACTIVE_DESC);
 
-        reg.register("clusterState", () -> cluster().state().toString(), String.class, "Checks cluster state.");
+        reg.register("clusterState", () -> ctx.state().clusterState().state().toString(), String.class, "Checks cluster state.");
         reg.register("lastClusterStateChangeTime", () -> ctx.state().lastStateChangeTime(), "Unix time of last cluster state change operation.");
 
         reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class,
