@@ -47,20 +47,11 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     private static volatile CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(2);
+        startGrid(0);
+        startClientGrid(1);
     }
 
     /**

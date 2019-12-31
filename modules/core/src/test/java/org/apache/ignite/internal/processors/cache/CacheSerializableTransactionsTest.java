@@ -105,9 +105,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /** */
     private static final int CLIENTS = 3;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -115,8 +112,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -127,11 +122,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-
-        client = false;
+        for (int i = 0; i < CLIENTS; i++)
+            startClientGrid(SRVS + i);
     }
 
     /** {@inheritDoc} */

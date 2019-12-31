@@ -99,8 +99,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
 
         if (startClient) {
-            cfg.setClientMode(true);
-
             // It is necessary to ensure that client always connects to grid(0).
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
 
@@ -157,7 +155,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         startClient = true;
 
-        startGrid(4);
+        startClientGrid(4);
 
         assertTrue(GridTestUtils.waitForCondition(() ->
                 new AffinityTopologyVersion(5, 0).equals(grid(0).context().discovery().topologyVersionEx()) &&
@@ -209,7 +207,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         startClient = true;
 
-        startGrid(4);
+        startClientGrid(4);
 
         TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(2).context().discovery().getInjectedDiscoverySpi();
 

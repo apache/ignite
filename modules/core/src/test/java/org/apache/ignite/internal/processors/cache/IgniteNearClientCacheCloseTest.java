@@ -47,18 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -140,9 +128,7 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
         if (Ignition.allGrids().isEmpty()) {
             srv = startGrids(srvs);
 
-            client = true;
-
-            startGrid(srvs);
+            startClientGrid(srvs);
         }
         else
             srv = grid(0);
@@ -189,11 +175,8 @@ public class IgniteNearClientCacheCloseTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
-
-        startGrid(SRVS);
-
-        startGrid(SRVS + 1);
+        startClientGrid(SRVS);
+        startClientGrid(SRVS + 1);
 
         concurrentUpdateAndNearCacheClose(ATOMIC, SRVS + 1);
 

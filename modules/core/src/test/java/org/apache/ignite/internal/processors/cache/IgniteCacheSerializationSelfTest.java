@@ -41,20 +41,11 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
     private static final int CLIENT = NODES - 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (getTestIgniteInstanceName(CLIENT).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(NODES);
+        startGrids(NODES - 1);
+        startClientGrid(CLIENT);
     }
 
     /**

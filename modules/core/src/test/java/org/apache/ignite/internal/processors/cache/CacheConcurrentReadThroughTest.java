@@ -45,26 +45,9 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     private static final int SYS_THREADS = 16;
 
     /** */
-    private static boolean client;
-
-    /** */
     @Before
     public void beforeCacheConcurrentReadThroughTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
-
-        if (!client) {
-            cfg.setPublicThreadPoolSize(SYS_THREADS);
-            cfg.setSystemThreadPoolSize(SYS_THREADS);
-        }
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -81,9 +64,12 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     public void testConcurrentReadThrough() throws Exception {
         startGrid(0);
 
-        client = true;
+        IgniteConfiguration cliCfg = getConfiguration("client");
 
-        Ignite client = startGrid(1);
+        cliCfg.setPublicThreadPoolSize(SYS_THREADS);
+        cliCfg.setSystemThreadPoolSize(SYS_THREADS);
+
+        Ignite client = startClientGrid(cliCfg);
 
         assertTrue(client.configuration().isClientMode());
 

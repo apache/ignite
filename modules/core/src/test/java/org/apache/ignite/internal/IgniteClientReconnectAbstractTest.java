@@ -67,9 +67,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
-    /** */
-    protected boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -88,10 +85,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
-
-        if (clientMode)
-            cfg.setClientMode(true);
-
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
@@ -168,11 +161,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         int clients = clientCount();
 
         if (clients > 0) {
-            clientMode = true;
-
-            startGridsMultiThreaded(srvs, clients);
-
-            clientMode = false;
+            for (int i = 0; i < clients; i++)
+                startClientGrid(srvs + i);
         }
     }
 

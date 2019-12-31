@@ -43,16 +43,11 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
  */
 public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private boolean testSpi;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (testSpi) {
             TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
@@ -97,13 +92,11 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
 
         awaitPartitionMapExchange();
 
-        client = true;
-
         Ignite srv = ignite(0);
 
         srv.createCache(cacheConfiguration(backups));
 
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         IgniteCache<Object, Object> cache1 = client1.createNearCache(DEFAULT_CACHE_NAME,
             new NearCacheConfiguration<>());
@@ -166,20 +159,16 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
 
         awaitPartitionMapExchange();
 
-        client = true;
-
         Ignite srv = ignite(0);
 
         srv.createCache(cacheConfiguration(backups));
 
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         IgniteCache<Object, Object> cache1 = client1.createNearCache(DEFAULT_CACHE_NAME,
             new NearCacheConfiguration<>());
 
-        Ignite client2 = startGrid(SRVS + 1);
-
-        client= false;
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         IgniteCache<Object, Object> cache2 = client2.cache(DEFAULT_CACHE_NAME);
 

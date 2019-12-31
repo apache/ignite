@@ -73,9 +73,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private Integer connectionsPerNode;
 
     /** */
@@ -96,8 +93,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         if (connectionsPerNode != null)
             ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connectionsPerNode);
-
-        cfg.setClientMode(client);
 
         if (strLog != null) {
             cfg.setGridLogger(strLog);
@@ -622,11 +617,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     private void checkBasicDiagnosticInfo(CacheAtomicityMode atomicityMode) throws Exception {
         startGrids(3);
 
-        client = true;
-
-        startGrid(3);
-
-        startGrid(4);
+        startClientGrid(3);
+        startClientGrid(4);
 
         CacheConfiguration ccfg = cacheConfiguration(atomicityMode).setCacheMode(REPLICATED);
 

@@ -141,7 +141,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(true);
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
@@ -156,7 +155,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        IgniteEx igniteClient = startGrid(getClientConfiguration("client"));
+        IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
         Random random = new Random();
 

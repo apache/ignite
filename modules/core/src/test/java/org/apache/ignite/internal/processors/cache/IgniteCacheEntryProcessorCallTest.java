@@ -57,9 +57,6 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     private static final int NODES = 5;
 
     /** */
-    private boolean client;
-
-    /** */
     private static final int OP_UPDATE = 1;
 
     /** */
@@ -69,23 +66,12 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     private static final int OP_GET = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRV_CNT);
 
-        client = true;
-
-        Ignite client = startGrid(SRV_CNT);
+        Ignite client = startClientGrid(SRV_CNT);
 
         assertTrue(client.configuration().isClientMode());
     }

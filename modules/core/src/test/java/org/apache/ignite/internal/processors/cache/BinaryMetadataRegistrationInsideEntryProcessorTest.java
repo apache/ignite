@@ -118,8 +118,8 @@ public class BinaryMetadataRegistrationInsideEntryProcessorTest extends GridComm
             .setPartitionLossPolicy(READ_WRITE_SAFE)
         );
 
-        IgniteEx client1 = startGrid(getConfiguration().setIgniteInstanceName("client1").setClientMode(true));
-        IgniteEx client2 = startGrid(getConfiguration().setIgniteInstanceName("client2").setClientMode(true));
+        IgniteEx client1 = startClientGrid(getConfiguration().setIgniteInstanceName("client1"));
+        IgniteEx client2 = startClientGrid(getConfiguration().setIgniteInstanceName("client2"));
 
         AtomicBoolean stop = new AtomicBoolean();
         AtomicInteger keyCntr = new AtomicInteger();

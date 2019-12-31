@@ -62,9 +62,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
@@ -81,8 +78,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -98,11 +93,8 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-
-        client = false;
+        for (int i = 0; i < CLIENTS; i++)
+            startClientGrid(SRVS + 1);
     }
 
     /** {@inheritDoc} */

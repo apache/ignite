@@ -98,8 +98,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         else
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(forceServerMode);
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -131,7 +129,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
         client = true;
 
-        startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
+        startClientGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
 
         waitForTopology(SRV_CNT + CLIENTS_CNT);
 
@@ -163,7 +161,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
         int clientNodes = 24;
 
         try {
-            startGridsMultiThreaded(SRV_CNT, clientNodes);
+            startClientGridsMultiThreaded(SRV_CNT, clientNodes);
         }
         catch (IgniteCheckedException e) {
             //Ignored: it is expected to get exception here
@@ -266,7 +264,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Ignite ignite = startGrid(idx.getAndIncrement());
+                Ignite ignite = startClientGrid(idx.getAndIncrement());
 
                 latch.countDown();
 
@@ -291,7 +289,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             while (System.currentTimeMillis() < end) {
                 log.info("Iteration: " + cnt++);
 
-                try (Ignite ignite = startGrid(clientIdx)) {
+                try (Ignite ignite = startClientGrid(clientIdx)) {
                     assertTrue(ignite.cluster().localNode().isClient());
 
                     assertEquals(6, ignite.cluster().nodes().size());

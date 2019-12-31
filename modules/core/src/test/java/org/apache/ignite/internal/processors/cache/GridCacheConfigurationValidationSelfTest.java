@@ -123,9 +123,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
         else {
             // Normal configuration.
-            if (client)
-                cfg.setClientMode(true);
-            else
+            if (!client)
                 cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg, localCacheCfg);
         }
 
@@ -207,9 +205,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
                         || name.equals(CACHE_NAME_WITH_SPECIAL_CHARACTERS_REPLICATED)
                         || DEFAULT_CACHE_NAME.equals(name));
 
-            client = true;
-
-            Ignite client = startGrid(2);
+            Ignite client = startClientGrid(2);
 
             names = client.cacheNames();
 

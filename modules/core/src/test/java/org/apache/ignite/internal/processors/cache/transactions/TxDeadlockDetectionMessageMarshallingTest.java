@@ -42,18 +42,6 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     /** Topic. */
     private static final String TOPIC = "mytopic";
 
-    /** Client mode. */
-    private static boolean clientMode;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(clientMode);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -66,9 +54,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
 
-            clientMode = true;
-
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             final GridCacheSharedContext<Object, Object> clientCtx = ((IgniteKernal)client).context().cache().context();
 

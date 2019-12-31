@@ -34,29 +34,15 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
     /** Client count */
     private static final int CLIENT_CNT = 3;
 
-    /** Grid client mode */
-    private boolean clientMode;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // start grids
-        clientMode = false;
         for (int i = 0; i < GRID_CNT; i++)
             startGrid("server-" + i);
 
         // start clients
-        clientMode = true;
         for (int i = 0; i < CLIENT_CNT; i++)
-            startGrid("client-" + i);
+            startClientGrid("client-" + i);
     }
 
     @Test

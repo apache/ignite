@@ -64,11 +64,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setFailoverSpi(failSpi);
 
         // Do not configure cache on client.
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
-            cfg.setClientMode(true);
-
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS)))
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();
             ccfg.setName(CACHE_NAME);
@@ -96,9 +93,9 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinityCallFromClientRestartNode() throws Exception {
-        startGridsMultiThreaded(SRVS + 1);
+        startGridsMultiThreaded(SRVS);
 
-        Ignite client = grid(SRVS);
+        Ignite client = startClientGrid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
 

@@ -151,10 +151,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setCacheConfiguration(ccfg);
 
-        if (client) {
-            cfg.setClientMode(client);
+        if (client)
             ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
-        }
 
         return cfg;
     }
@@ -166,7 +164,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     protected IgniteEx startClient() throws Exception {
-        return startGrid(getConfiguration(CLIENT_INSTANCE_NAME).setClientMode(true));
+        return startClientGrid(getConfiguration(CLIENT_INSTANCE_NAME));
     }
 
     /**
@@ -174,9 +172,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     @Test
     public void testAtomicLongFailsWhenServersLeft() throws Exception {
-        client = true;
-
-        Ignite ignite = startGrid(gridCount());
+        Ignite ignite = startClientGrid(gridCount());
 
         new Timer().schedule(new TimerTask() {
             @Override public void run() {
@@ -748,9 +744,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testReentrantLockFailsWhenServersLeft(final boolean fair) throws Exception {
-        client = true;
-
-        Ignite client = startGrid(gridCount());
+        Ignite client = startClientGrid(gridCount());
 
         Ignite server = grid(0);
 

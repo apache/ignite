@@ -84,9 +84,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         client.set(null);
 
-        if (clientMode != null && clientMode)
-            cfg.setClientMode(true);
-        else {
+        if (clientMode == null || !clientMode) {
             cfg.setCacheConfiguration(cacheConfiguration(TX_CACHE1, TRANSACTIONAL),
                 cacheConfiguration(TX_CACHE2, TRANSACTIONAL),
                 cacheConfiguration(ATOMIC_CACHE, ATOMIC));
@@ -119,13 +117,13 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         client.set(true);
 
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         assertTrue(client1.configuration().isClientMode());
 
         client.set(true);
 
-        Ignite client2 = startGrid(SRVS + 1);
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         assertTrue(client2.configuration().isClientMode());
 

@@ -70,8 +70,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(clientMode);
-
         if (clientMode)
             cfg.setWorkDirectory(TMP_DIR);
 
@@ -125,7 +123,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         clientMode = true;
 
-        Ignite cl1 = startGrid(1);
+        Ignite cl1 = startClientGrid(1);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -172,7 +170,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         clientMode = true;
 
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -206,7 +204,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         clientMode = true;
 
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -243,7 +241,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         clientMode = true;
 
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
@@ -281,7 +279,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         clientMode = true;
 
-        Ignite cl1 = startGrid(4);
+        Ignite cl1 = startClientGrid(4);
 
         try {
             cl1.cache(DEFAULT_CACHE_NAME).get(1);

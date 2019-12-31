@@ -153,7 +153,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
             startGrid(0);
 
             clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
@@ -186,7 +186,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
             startGrid(0);
 
             clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);

@@ -59,8 +59,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             cfg.setCacheConfiguration(ccfg);
         }
-        else
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -86,9 +84,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
         try {
             checkAffinity(topVer++);
 
-            cache = false;
-
-            final Ignite ignite3 = startGrid(3);
+            final Ignite ignite3 = startClientGrid(3);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -104,7 +100,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             checkAffinity(topVer++);
 
-            final Ignite ignite4 = startGrid(4);
+            final Ignite ignite4 = startClientGrid(4);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -120,7 +116,7 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
 
             checkAffinity(topVer++);
 
-            final Ignite ignite5 = startGrid(5); // Node without cache.
+            final Ignite ignite5 = startClientGrid(5); // Node without cache.
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

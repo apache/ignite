@@ -223,8 +223,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         int nodes = srvs;
 
-        client = false;
-
         startGrid(nodes++);
 
         for (int i = 0; i < nodes; i++) {
@@ -234,9 +232,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkCaches(nodes, CACHES);
 
-        client = true;
-
-        startGrid(nodes++);
+        startClientGrid(nodes++);
 
         for (int c = 0; c < CACHES; c++)
             checkCache(ignite(nodes - 1), CACHE_NAME_PREFIX + c, false);
@@ -286,9 +282,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                     Thread.sleep(10);
 
-                    client = true;
-
-                    Ignite cl = startGrid("client0");
+                    Ignite cl = startClientGrid("client0");
 
                     IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
                     IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');

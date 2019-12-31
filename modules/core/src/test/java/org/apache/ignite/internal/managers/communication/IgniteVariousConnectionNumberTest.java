@@ -45,9 +45,6 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     /** */
     private static Random rnd = new Random();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -59,8 +56,6 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connections);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(rnd.nextBoolean());
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -83,9 +78,8 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     public void testVariousConnectionNumber() throws Exception {
         startGridsMultiThreaded(3);
 
-        client = true;
-
-        startGridsMultiThreaded(3, 3);
+        for (int i = 0; i < 3; i++)
+            startClientGrid(3 + i);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -105,11 +99,14 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
 
             Ignite node = ignite(idx);
 
-            client = node.configuration().isClientMode();
+            boolean client = node.configuration().isClientMode();
 
             stopGrid(idx);
 
-            startGrid(idx);
+            if (client)
+                startClientGrid(idx);
+            else
+                startGrid(idx);
         }
     }
 

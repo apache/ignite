@@ -108,11 +108,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith(CLIENT_GRID_NAME)) {
-            // Intentionally skipping data storage in client configuration.
-            cfg.setClientMode(true);
-        }
-        else {
+        if (!igniteInstanceName.startsWith(CLIENT_GRID_NAME)) {
             cfg.setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDefaultDataRegionConfiguration(
@@ -291,8 +287,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         IgniteEx client2 = null;
 
         if (lateActivation) {
-            client1 = (IgniteEx)startGrid("client1");
-            client2 = (IgniteEx)startGrid("client2");
+            client1 = startClientGrid("client1");
+            client2 = startClientGrid("client2");
         }
         else
             ig0.cluster().active(true);
@@ -319,8 +315,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         System.out.println("### Preloading is finished");
 
         if (!lateActivation) {
-            client1 = (IgniteEx)startGrid("client1");
-            client2 = (IgniteEx)startGrid("client2");
+            client1 = startClientGrid("client1");
+            client2 = startClientGrid("client2");
         }
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
@@ -381,8 +377,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         System.out.println("### Preloading is finished");
 
-        IgniteEx client1 = (IgniteEx)startGrid("client1");
-        IgniteEx client2 = (IgniteEx)startGrid("client2");
+        IgniteEx client1 = startClientGrid("client1");
+        IgniteEx client2 = startClientGrid("client2");
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
 
@@ -449,8 +445,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         System.out.println("### Preloading is finished");
 
-        IgniteEx client1 = (IgniteEx)startGrid("client1");
-        IgniteEx client2 = (IgniteEx)startGrid("client2");
+        IgniteEx client1 = startClientGrid("client1");
+        IgniteEx client2 = startClientGrid("client2");
 
         ConcurrentMap<Long, Long> threadProgressTracker = new ConcurrentHashMap<>();
 
@@ -487,7 +483,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         CacheConfiguration<Integer, String> dynamicCacheCfg = cacheConfig(REPLICATED_TX_CACHE_NAME);
         dynamicCacheCfg.setName("dyn");
@@ -560,7 +556,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         CacheConfiguration<Integer, String> dynamicCacheCfg = new CacheConfiguration<Integer, String>()
             .setName("dyn")
@@ -641,7 +637,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
         ig0.cluster().active(true);
 
-        IgniteEx client = (IgniteEx)startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         IgniteCache<Integer, String> clientJoinCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 

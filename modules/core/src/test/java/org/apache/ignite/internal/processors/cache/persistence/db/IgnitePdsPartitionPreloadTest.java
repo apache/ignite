@@ -87,8 +87,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(CLIENT_GRID_NAME.equals(gridName));
-
         if (!cfg.isClientMode()) {
             String val = "node" + getTestIgniteInstanceIndex(gridName);
             cfg.setUserAttributes(Collections.singletonMap(TEST_ATTR, val));
@@ -308,7 +306,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -323,7 +321,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -338,7 +336,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -353,7 +351,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -472,7 +470,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -487,7 +485,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         preloadPartition(() -> {
             try {
-                return startGrid(CLIENT_GRID_NAME);
+                return startClientGrid(CLIENT_GRID_NAME);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

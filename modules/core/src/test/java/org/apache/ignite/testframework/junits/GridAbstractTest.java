@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.management.DynamicMBean;
@@ -815,7 +816,36 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return First started grid.
      * @throws Exception If failed.
      */
+    protected final Ignite startClientGridsMultiThreaded(int init, int cnt) throws Exception {
+        return startMultiThreaded(init, cnt, idx -> {
+            try {
+                startClientGrid(idx);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
+     * @param init Start grid index.
+     * @param cnt Grid count.
+     * @return First started grid.
+     * @throws Exception If failed.
+     */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
+        return startMultiThreaded(init, cnt, idx -> {
+            try {
+                startGrid(idx);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /** */
+    private final Ignite startMultiThreaded(int init, int cnt, Consumer<Integer> starter) throws Exception {
         assert init >= 0;
         assert cnt > 0;
 
@@ -826,7 +856,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridTestUtils.runMultiThreaded(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    startGrid(gridIdx.getAndIncrement());
+                    starter.accept(gridIdx.getAndIncrement());
 
                     return null;
                 }

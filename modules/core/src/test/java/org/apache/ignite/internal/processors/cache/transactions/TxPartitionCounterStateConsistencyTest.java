@@ -111,7 +111,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         startGridsMultiThreaded(SERVER_NODES);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -158,7 +158,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         Ignite prim = startGridsMultiThreaded(SERVER_NODES);
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -613,7 +613,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         crd.cluster().active(true);
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -696,7 +696,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         crd.cluster().active(true);
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -833,7 +833,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         stopGrid(3);
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid(CLIENT_GRID_NAME);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> cache2 = client.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));

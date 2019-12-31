@@ -83,7 +83,6 @@ public class TxCrossCachePartitionConsistencyTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
         cfg.setCacheConfiguration(cacheConfiguration(CACHE1, 2), cacheConfiguration(CACHE2, 1));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
@@ -150,7 +149,7 @@ public class TxCrossCachePartitionConsistencyTest extends GridCommonAbstractTest
 
             awaitPartitionMapExchange();
 
-            Ignite client = startGrid("client");
+            Ignite client = startClientGrid("client");
 
             AtomicBoolean stop = new AtomicBoolean();
 

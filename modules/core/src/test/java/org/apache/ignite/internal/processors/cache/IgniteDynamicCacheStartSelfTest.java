@@ -104,11 +104,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (client) {
-            cfg.setClientMode(true);
-
+        if (client)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
@@ -1298,7 +1295,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
                     iter++;
 
-                    try (Ignite ignite = startGrid(nodeCount())) {
+                    try (Ignite ignite = startClientGrid(nodeCount())) {
                         assertTrue(ignite.configuration().isClientMode());
                     }
                 }

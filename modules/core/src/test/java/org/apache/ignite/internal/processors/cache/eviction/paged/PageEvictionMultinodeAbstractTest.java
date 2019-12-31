@@ -47,7 +47,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(4, false);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /**
@@ -55,16 +55,6 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
      */
     Ignite clientGrid() {
         return grid("client");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration configuration = super.getConfiguration(gridName);
-
-        if (gridName.startsWith("client"))
-            configuration.setClientMode(true);
-
-        return configuration;
     }
 
     /** {@inheritDoc} */

@@ -62,23 +62,13 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, String> cache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (gridName.contains("client"))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         startGrid(1);
         startGrid(2);
 
-        client = startGrid("client");
+        client = startClientGrid("client");
 
         cache = client.getOrCreateCache(cacheConfiguration());
     }

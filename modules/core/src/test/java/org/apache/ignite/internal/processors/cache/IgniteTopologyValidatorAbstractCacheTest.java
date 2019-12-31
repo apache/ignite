@@ -85,8 +85,6 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
             }
         }
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -276,7 +274,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
         client = true;
 
-        startGrid(3);
+        startClientGrid(3);
 
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);

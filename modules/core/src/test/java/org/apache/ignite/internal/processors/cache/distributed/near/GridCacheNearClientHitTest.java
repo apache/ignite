@@ -39,19 +39,6 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "test-near-cache";
 
     /**
-     * @param igniteInstanceName Node name.
-     * @return Configuration.
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration getClientConfiguration(final String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /**
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration() {
@@ -86,7 +73,7 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
         try {
             Ignite crd = startGrid("coordinator", getConfiguration("coordinator"));
 
-            Ignite client = startGrid("client", getClientConfiguration("client"));
+            Ignite client = startClientGrid("client", getConfiguration("client"));
 
             Ignite srvNode = startGrid("server", getConfiguration("server"));
 

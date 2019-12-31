@@ -58,27 +58,13 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     private static final int CLIENT_NODE = 1;
 
     /** */
-    private static boolean client;
-
-    /** */
     private static volatile boolean isLoadFromStore;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
     }
 
     /** {@inheritDoc} */

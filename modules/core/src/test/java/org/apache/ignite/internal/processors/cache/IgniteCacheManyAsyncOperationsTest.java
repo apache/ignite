@@ -58,22 +58,12 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(2)))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testManyAsyncOperations() throws Exception {
-        try (Ignite client = startGrid(gridCount())) {
+        try (Ignite client = startClientGrid(gridCount())) {
             assertTrue(client.configuration().isClientMode());
 
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);

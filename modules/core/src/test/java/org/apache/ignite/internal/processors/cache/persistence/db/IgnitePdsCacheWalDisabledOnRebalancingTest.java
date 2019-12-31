@@ -149,9 +149,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-        else {
+        if (!"client".equals(igniteInstanceName)) {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
                 .setWalMode(WALMode.LOG_ONLY)
@@ -204,7 +202,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         IgniteEx ig1 = startGrid(1);
 
-        startGrid("client");
+        startClientGrid("client");
 
         stopGrid("client");
 
@@ -383,7 +381,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
         startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
 
-        startGrid("client");
+        startClientGrid("client");
 
         fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
 

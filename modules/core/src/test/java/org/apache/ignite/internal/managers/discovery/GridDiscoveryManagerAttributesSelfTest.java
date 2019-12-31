@@ -59,9 +59,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-            cfg.setClientMode(true);
-
         if (binaryMarshallerEnabled)
             cfg.setMarshaller(new BinaryMarshaller());
 
@@ -117,17 +114,19 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     public void testPreferIpV4StackDifferentValues() throws Exception {
         System.setProperty(PREFER_IPV4, "true");
 
-        for (int i = 0; i < 2; i++) {
-            Ignite g = startGrid(i);
+        IgniteEx g = startGrid(0);
 
-            assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
+        assertEquals("true", g.cluster().localNode().attribute(PREFER_IPV4));
+        checkIsClientFlag(g);
 
-            checkIsClientFlag((IgniteEx) g);
-        }
+        g = startClientGrid(1);
+
+        assertEquals("true", g.cluster().localNode().attribute(PREFER_IPV4));
+        checkIsClientFlag(g);
 
         System.setProperty(PREFER_IPV4, "false");
 
-        IgniteEx g = startGrid(2);
+        g = startGrid(2);
 
         checkIsClientFlag(g);
     }

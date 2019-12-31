@@ -64,9 +64,6 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         boolean isClient = "client".equals(igniteInstanceName);
-
-        cfg.setClientMode(isClient);
-
         if (!isClient) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -156,7 +153,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
     private void imitateLongTransaction(boolean shouldRcvThreadDumpReq) throws Exception {
         final int val = 0;
 
-        final IgniteEx client = startGrid("client");
+        final IgniteEx client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 

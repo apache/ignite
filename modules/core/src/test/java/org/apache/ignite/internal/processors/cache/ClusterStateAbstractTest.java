@@ -66,20 +66,12 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     /** */
     private boolean activeOnStart = true;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setActiveOnStart(activeOnStart);
-
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
-
-        if (client)
-            cfg.setClientMode(true);
-
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;
@@ -227,9 +219,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         startGrids(GRID_CNT);
 
-        client = true;
-
-        startGrid(GRID_CNT);
+        startClientGrid(GRID_CNT);
 
         checkInactive(GRID_CNT + 1);
 
