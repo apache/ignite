@@ -111,7 +111,8 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         // Don't check the format strictly, but check that all expected metrics are present.
         assertTrue(msg, fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
         assertTrue(msg, fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Cluster \\[hosts=.*, nodes=.*, CPUs=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Cluster \\[hosts=.*, CPUs=.*, servers=.*, clients=.*, topVer=.*, minorTopVer=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Network \\[addrs=\\[.*], localHost=.*, discoPort=.*, commPort=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*CPU \\[CPUs=.*, curLoad=.*, avgLoad=.*, GC=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Page memory \\[pages=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));

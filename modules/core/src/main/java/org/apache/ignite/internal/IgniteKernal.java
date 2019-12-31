@@ -226,6 +226,7 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -2291,7 +2292,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             double freeHeapPct = heapMax > 0 ? ((double)((heapMax - heapUsed) * 100)) / heapMax : -1;
 
             int hosts = 0;
-            int nodes = 0;
+            int servers = 0;
+            int clients = 0;
             int cpus = 0;
 
             try {
@@ -2300,7 +2302,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Collection<ClusterNode> nodes0 = cluster().nodes();
 
                 hosts = U.neighborhood(nodes0).size();
-                nodes = metrics.getTotalNodes();
+                servers = cluster().forServers().nodes().size();
+                clients = cluster().forClients().nodes().size();
                 cpus = metrics.getTotalCpus();
             }
             catch (IgniteException ignore) {
@@ -2311,11 +2314,28 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             String id = U.id8(localNode().id());
 
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+            ClusterNode locNode = ctx.discovery().localNode();
+
+            String networkDetails = "";
+
+            if (!F.isEmpty(cfg.getLocalHost()))
+                networkDetails += ", localHost=" + cfg.getLocalHost();
+
+            if (locNode instanceof TcpDiscoveryNode)
+                networkDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
+
+            if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
+                networkDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+
             String msg = NL +
                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
                 "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
                 getUpTimeFormatted() + "]" + NL +
-                "    ^-- Cluster [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
+                "    ^-- Cluster [hosts=" + hosts + ", CPUs=" + cpus + ", servers=" + servers + ", clients=" + clients +
+                ", topVer=" + topVer.topologyVersion() + ", minorTopVer=" + topVer.minorTopologyVersion() + "]" + NL +
+                "    ^-- Network [addrs=" + locNode.addresses() + networkDetails + "]" + NL +
                 "    ^-- CPU [CPUs=" + localCpus + ", curLoad=" + dblFmt.format(cpuLoadPct) + "%, avgLoad=" +
                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
                 "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
