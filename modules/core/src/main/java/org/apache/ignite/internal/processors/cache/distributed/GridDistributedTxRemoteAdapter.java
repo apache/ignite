@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.util.CallTracker;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -548,9 +550,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     reservedParts.add(locPart);
                                 }
 
-                                if (locPart.state() == RENTING || locPart.state() == EVICTED) {
+                                GridDhtPartitionState state = locPart.state();
+
+                                if (state == RENTING || state == EVICTED) {
                                     LT.warn(log(), "Skipping update to partition that is concurrently evicting " +
                                         "[grp=" + cacheCtx.group().cacheOrGroupName() + ", part=" + locPart + "]");
+
+                                    if (state == RENTING)
+                                        LT.warn(log(), "part [id=" + locPart.id() + "] rented at\n" + locPart.rentTrack());
 
                                     continue;
                                 }
@@ -847,8 +854,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         throw err;
                     }
                     finally {
-                        for (GridDhtLocalPartition locPart : reservedParts)
+                        for (GridDhtLocalPartition locPart : reservedParts) {
                             locPart.release();
+
+                            CallTracker.Track rentTrack = locPart.rentTrack();
+
+                            if (rentTrack != null)
+                                U.warn(log, "part [id=" + locPart + "] was rented while being reserved at\n" + rentTrack);
+                        }
 
                         cctx.database().checkpointReadUnlock();
 

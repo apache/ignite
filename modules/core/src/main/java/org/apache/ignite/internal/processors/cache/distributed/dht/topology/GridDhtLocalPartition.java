@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.CallTracker;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -641,6 +642,19 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
     }
 
+    /** */
+    private static final CallTracker RENT_TRACKER = CallTracker.named("GDLP-rent");
+
+    /** */
+    private volatile CallTracker.Track rentTrack;
+
+    /**
+     *
+     */
+    public CallTracker.Track rentTrack() {
+        return rentTrack;
+    }
+
     /**
      * Initiates partition eviction process.
      *
@@ -661,6 +675,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (getReservations(state0) == 0 && casState(state0, RENTING)) {
             delayedRentingTopVer = 0;
+
+            rentTrack = RENT_TRACKER.track();
 
             // Evict asynchronously, as the 'rent' method may be called
             // from within write locks on local partition.
