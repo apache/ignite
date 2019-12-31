@@ -855,12 +855,12 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     }
                     finally {
                         for (GridDhtLocalPartition locPart : reservedParts) {
-                            locPart.release();
-
                             CallTracker.Track rentTrack = locPart.rentTrack();
 
+                            locPart.release();
+
                             if (rentTrack != null)
-                                U.warn(log, "part [id=" + locPart + "] was rented while being reserved at\n" + rentTrack);
+                                U.warn(log, "part [id=" + locPart.id() + "] was rented while being reserved at\n" + rentTrack);
                         }
 
                         cctx.database().checkpointReadUnlock();
