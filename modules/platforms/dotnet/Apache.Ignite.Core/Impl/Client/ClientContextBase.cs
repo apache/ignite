@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly ClientProtocolVersion _protocolVersion;
         
         /// <summary>
-        /// Initializes a new instance of <see cref="ClientRequestContext"/> class.
+        /// Initializes a new instance of <see cref="ClientContextBase"/> class.
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marshaller">Marshaller.</param>
