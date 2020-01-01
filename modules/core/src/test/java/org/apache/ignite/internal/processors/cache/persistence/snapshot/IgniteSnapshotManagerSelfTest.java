@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -72,8 +73,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -518,8 +521,67 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test(expected = ClusterTopologyCheckedException.class)
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testRemoteSnapshotRequestedNodeLeft() throws Exception {
-        // todo write me
+        IgniteEx ig0 = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ig1 = startGrid(1);
+
+        ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch hold = new CountDownLatch(1);
+
+        ((GridCacheDatabaseSharedManager)ig1.context()
+            .cache()
+            .context()
+            .database())
+            .waitForCheckpoint("Snapshot before request", f -> {
+                try {
+                    // Listener will be exectuted inside the checkpoint thead.
+                    U.await(hold);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            });
+
+        UUID rmtNodeId = ig1.localNode().id();
+
+        ig0.context()
+            .cache()
+            .context()
+            .snapshotMgr()
+            .createRemoteSnapshot(rmtNodeId,
+            owningParts(ig0,
+                new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+                rmtNodeId));
+
+        IgniteInternalFuture[] futs = new IgniteInternalFuture[1];
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                IgniteInternalFuture<Boolean> snpFut = ig1.context()
+                    .cache()
+                    .context()
+                    .snapshotMgr()
+                    .snapshotRemoteRequest(ig0.localNode().id());
+
+                if (snpFut == null)
+                    return false;
+                else
+                    futs[0] = snpFut;
+
+                return true;
+            }
+        }, 5_000L);
+
+        stopGrid(0);
+
+        hold.countDown();
+
+        futs[0].get();
     }
 
     /**
