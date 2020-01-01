@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstorage.Parti
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
@@ -1664,7 +1663,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             ex.addSuppressed(e);
                     }
                 }
-            });
+            }, false);
 
             if (exception.get() != null)
                 throw new IgniteCheckedException("Failed to destroy store", exception.get());
