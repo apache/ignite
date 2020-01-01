@@ -546,7 +546,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     else if (msg instanceof SnapshotResponseMessage) {
 
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
-                        System.out.println(">>>> Message received " + respMsg0);
+
                         SnapshotRequestFuture fut0 = snpRq.get();
 
                         if (fut0 == null || !fut0.snpName.equals(respMsg0.snapshotName())) {
@@ -949,14 +949,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If initialiation fails.
      */
     public IgniteInternalFuture<Boolean> createRemoteSnapshot(UUID rmtNodeId, Map<Integer, Set<Integer>> parts) throws IgniteCheckedException {
-        String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
-
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
-        assert nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT) : "Snapshot on remote node is not supported: " + rmtNode.id();
+        if (nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
+            throw new IgniteException("Snapshot on remote node is not supported: " + rmtNode.id());
 
-        if (rmtNode == null)
-            throw new IgniteCheckedException("Requested snpashot node doesn't exists [rmtNodeId=" + rmtNodeId + ']');
+        if (rmtNode == null) {
+            throw new ClusterTopologyCheckedException("Snapshot request cannot be performed. Remote node left the grid " +
+                "[rmtNodeId=" + rmtNodeId + ']');
+        }
 
         for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
             int grpId = e.getKey();
@@ -981,6 +982,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     "[rmtNodeId=" + rmtNodeId + ", grpId=" + grpId + ", missed=" + substract + ']');
             }
         }
+
+        String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
 
         SnapshotRequestFuture snpTransFut = new SnapshotRequestFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum());
@@ -2024,8 +2027,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             try {
                 if (th != null && !sndr.opened())
                     errHnd.accept(th.getMessage());
-
-                System.out.println(">>>>>>>>> message sent");
             }
             catch (IgniteCheckedException e) {
                 th.addSuppressed(e);
