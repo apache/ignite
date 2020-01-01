@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
@@ -127,6 +128,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void testHistoricalWithFileRebalancing() throws Exception {
         boolean checkRemoves = false;

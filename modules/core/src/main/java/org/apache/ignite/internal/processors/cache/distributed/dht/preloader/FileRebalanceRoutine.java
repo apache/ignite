@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -100,7 +101,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
 
     /** */
-    private final Map<String, GridFutureAdapter> regions = new HashMap<>();
+    private final Map<String, ClearRegionTask> offheapClearTasks = new ConcurrentHashMap<>();
 
     /** */
     private final Map<String, Set<Long>> regionToParts = new HashMap<>();
@@ -189,8 +190,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 }
             }
 
-            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
-                regions.put(e.getKey(), new GridFutureAdapter());
+//            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
+//                regions.put(e.getKey(), new GridFutureAdapter());
         }
         finally {
             cancelLock.unlock();
@@ -225,7 +226,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     cpLsnr.cancelAll();
 
                     if (err == null) {
-                        for (IgniteInternalFuture fut : regions.values()) {
+                        for (IgniteInternalFuture fut : offheapClearTasks.values()) {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);
                         }
@@ -238,8 +239,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         snapFut.cancel();
                     }
 
-                    if (log.isDebugEnabled() && !idxRebuildFut.isDone())
-                        log.debug("Index rebuild is still in progress (ignore).");
+                    if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
+                        log.debug("Index rebuild is still in progress, cancelling.");
+
+                        idxRebuildFut.cancel();
+                    }
 
                     for (Integer grpId : remaining.keySet()) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -319,19 +323,20 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         if (histAssignments.isEmpty()) {
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+            log.info("File rebalancing complete [group=" + grp.cacheOrGroupName() + "]");
 
-            log.info("Rebalancing complete [group=" + gctx.cacheOrGroupName() + "]");
+            assert !grp.localWalEnabled() : "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
 
-            assert !gctx.localWalEnabled() : "Unexpected wal mode for file rebalancing";
-
-            cctx.walState().onGroupRebalanceFinished(gctx.groupId(), topVer);
+            cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
         }
         else
             requestHistoricalRebalance(grp, histAssignments);
 
-        if (remaining.isEmpty())
+        if (remaining.isEmpty()) {
+            idxRebuildFut.markInitialized();
+
             onDone(true);
+        }
     }
 
     private void requestHistoricalRebalance(CacheGroupContext grp, Map<UUID, Map<Integer, T2<Long, Long>>> assigns) {
@@ -349,14 +354,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             grpAssigns.put(node, msg);
         }
 
-        // todo investigate "end handler" in WAL iterator, seems we failing when collecting most recent updates at the same time.
+        // todo investigate waliterator troubles
         try {
             U.sleep(500);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            log.warning("Thread was interrupred,", e);
-
-            Thread.currentThread().interrupt();
+        } catch (IgniteInterruptedCheckedException e) {
+            log.warning(e.getMessage(), e);
         }
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
@@ -402,6 +404,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         // todo
                         snapFut.get();
                     }
+                    catch (IgniteFutureCancelledCheckedException ignore) {
+                        // No-op.
+                    }
                     catch (IgniteCheckedException e) {
                         log.error(e.getMessage(), e);
 
@@ -413,7 +418,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     *
+     * Clear off-heap memory regions.
      */
     public void clearPartitions() {
         if (isDone())
@@ -423,44 +428,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         try {
             for (Map.Entry<String, Set<Long>> entry : regionToParts.entrySet()) {
-                String region = entry.getKey();
+                String regionName = entry.getKey();
+                DataRegion region = cctx.database().dataRegion(regionName);
 
                 Set<Long> parts = entry.getValue();
 
-                GridFutureAdapter fut = regions.get(region);
+                ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
 
-                PageMemoryEx memEx = (PageMemoryEx)cctx.database().dataRegion(region).pageMemory();
-
-                if (log.isDebugEnabled())
-                    log.debug("Cleaning up region " + region);
-
-                // Eviction of partition  should be prevented while cleanup is in progress.
-                reservePartitions(parts);
-
-                memEx.clearAsync(
-                    (grp, pageId) -> parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
-                    .listen(c1 -> {
-                        cctx.database().checkpointReadLock();
-
-                        try {
-                            if (log.isDebugEnabled())
-                                log.debug("Off heap region cleared [node=" + cctx.localNodeId() + ", region=" + region + "]");
-
-                            invalidatePartitions(parts);
-
-                            fut.onDone();
-                        }
-                        catch (RuntimeException | IgniteCheckedException e) {
-                            fut.onDone(e);
-
-                            onDone(e);
-                        }
-                        finally {
-                            cctx.database().checkpointReadUnlock();
-
-                            releasePartitions(parts);
-                        }
-                    });
+                offheapClearTasks.put(regionName, offheapClearTask);
             }
         }
         catch (RuntimeException | IgniteCheckedException e) {
@@ -469,46 +444,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         finally {
             cancelLock.unlock();
         }
-    }
-
-    private void invalidatePartitions(Set<Long> partSet) throws IgniteCheckedException {
-        for (long partGrp : partSet) {
-            int grpId = (int)(partGrp >> 32);
-            int partId = (int)partGrp;
-
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
-
-            ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
-
-            if (log.isDebugEnabled())
-                log.debug("Parition truncated [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]");
-        }
-    }
-
-    private void reservePartitions(Set<Long> partSet) {
-        for (long entry : partSet)
-            localPartition(entry).reserve();
-    }
-
-    private void releasePartitions(Set<Long> partSet) {
-        for (long entry : partSet)
-            localPartition(entry).release();
-    }
-
-    private GridDhtLocalPartition localPartition(long globalPartId) {
-        int grpId = (int)(globalPartId >> 32);
-        int partId = (int)globalPartId;
-
-        // todo remove
-        assert partId != INDEX_PARTITION;
-
-        GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
-
-        assert part != null : "groupId=" + grpId + ", p=" + partId;
-
-        return part;
     }
 
     /**
@@ -521,18 +456,27 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         try {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            IgniteInternalFuture fut = regions.get(grp.dataRegion().config().getName());
+            String region = grp.dataRegion().config().getName();
 
-            if (fut.isCancelled()) {
+            IgniteInternalFuture clearTask = offheapClearTasks.get(region);
+
+            if (clearTask.isCancelled()) {
                 log.info("The cleaning task has been canceled.");
 
                 return;
             }
 
-            if (!fut.isDone() && log.isDebugEnabled())
+            if (!clearTask.isDone() && log.isDebugEnabled())
                 log.debug("Wait for region cleanup [grp=" + grp + "]");
+            else if (clearTask.error() != null) {
+                log.warning("Off heap region was not cleared properly [region=" + region + "]", clearTask.error());
 
-            fut.get();
+                onDone(clearTask.error());
+
+                return;
+            }
+
+            clearTask.get();
         } catch (IgniteFutureCancelledCheckedException ignore) {
             // No-op.
         }
@@ -627,12 +571,130 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         buf.append("\n\tMemory regions:\n");
 
-        for (Map.Entry<String, GridFutureAdapter> entry : regions.entrySet())
+        for (Map.Entry<String, ? extends GridFutureAdapter> entry : offheapClearTasks.entrySet())
             buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + entry.getValue().isFailed() + "\n");
 
         if (!isDone())
             buf.append("\n\tIndex future fnished=").append(idxRebuildFut.isDone()).append(" failed=").append(idxRebuildFut.isFailed()).append(" futs=").append(idxRebuildFut.futures()).append('\n');
 
         return buf.toString();
+    }
+
+    /** */
+    private static class ClearRegionTask extends GridFutureAdapter {
+        /** */
+        private final Set<Long> parts;
+
+        /** */
+        private final DataRegion region;
+
+        /** */
+        private final GridCacheSharedContext cctx;
+
+        /** */
+        private final IgniteLogger log;
+
+        /**
+         * @param parts Parts.
+         * @param region Region.
+         * @param cctx Cache shared context.
+         * @param log Logger.
+         */
+        public ClearRegionTask(Set<Long> parts, DataRegion region, GridCacheSharedContext cctx, IgniteLogger log) {
+            this.parts = parts;
+            this.region = region;
+            this.log = log;
+            this.cctx = cctx;
+
+            clear();
+        }
+
+        /**
+         * Clears off-heap memory region.
+         */
+        private void clear() {
+            PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
+
+            if (log.isDebugEnabled())
+                log.debug("Cleaning up region " + region.config().getName());
+
+            // Eviction of partition  should be prevented while cleanup is in progress.
+            reservePartitions(parts);
+
+            memEx.clearAsync(
+                (grp, pageId) -> parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
+                .listen(c1 -> {
+                    cctx.database().checkpointReadLock();
+
+                    try {
+                        if (log.isDebugEnabled())
+                            log.debug("Off heap region cleared [region=" + region.config().getName() + "]");
+
+                        invalidatePartitions(parts);
+
+                        onDone();
+                    }
+                    catch (RuntimeException | IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                    finally {
+                        cctx.database().checkpointReadUnlock();
+
+                        releasePartitions(parts);
+                    }
+                });
+        }
+
+        /**
+         * @param partSet Partition set.
+         */
+        private void invalidatePartitions(Set<Long> partSet) throws IgniteCheckedException {
+            for (long partGrp : partSet) {
+                int grpId = (int)(partGrp >> 32);
+                int partId = (int)partGrp;
+
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
+
+                ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
+
+                if (log.isDebugEnabled())
+                    log.debug("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
+            }
+        }
+
+        /**
+         * @param partSet Partition set.
+         */
+        private void reservePartitions(Set<Long> partSet) {
+            for (long entry : partSet)
+                localPartition(entry).reserve();
+        }
+
+        /**
+         * @param partSet Partition set.
+         */
+        private void releasePartitions(Set<Long> partSet) {
+            for (long entry : partSet)
+                localPartition(entry).release();
+        }
+
+        /**
+         * @param globalPartId Global partition id.
+         */
+        private GridDhtLocalPartition localPartition(long globalPartId) {
+            int grpId = (int)(globalPartId >> 32);
+            int partId = (int)globalPartId;
+
+            // todo remove
+            assert partId != INDEX_PARTITION;
+
+            GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
+
+            assert part != null : "groupId=" + grpId + ", p=" + partId;
+
+            return part;
+        }
     }
 }
