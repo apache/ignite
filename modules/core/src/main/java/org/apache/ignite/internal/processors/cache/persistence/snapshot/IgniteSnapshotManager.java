@@ -1045,7 +1045,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Future which will be completed when snapshot is done.
-     * @throws IgniteCheckedException If initialiation fails.
+     * @throws IgniteCheckedException If initialization fails.
      */
     IgniteInternalFuture<Boolean> scheduleSnapshot(
         String snpName,
@@ -1066,11 +1066,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             "encryption cache groups are not allowed");
 
         LocalSnapshotContext sctx = null;
+        File nodeSnpDir = null;
 
         if (!busyLock.enterBusy())
-            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping"));
-
-        File nodeSnpDir = null;
+            throw new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']');
 
         try {
             String dbNodePath = relativeStoragePath();
