@@ -2862,7 +2862,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
-                            throw new IgniteCheckedException("Failed to send message to remote node " +
+                            throw new ClusterTopologyCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
 

@@ -149,7 +149,7 @@ import org.apache.ignite.internal.util.InitializationProtector;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridPlainClosure;
+import org.apache.ignite.internal.util.lang.GridPlainClosure2;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -3469,7 +3469,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 "dynamicStartCache"));
         }
 
-        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
+            (grpKeys, masterKeyDigest) -> {
             assert ccfg == null || !ccfg.isEncryptionEnabled() || !grpKeys.isEmpty();
 
             DynamicCacheChangeRequest req = prepareCacheChangeRequest(
@@ -3483,7 +3484,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 null,
                 false,
                 null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null);
+                ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
+                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3502,7 +3504,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return generateEncryptionKeysAndStartCacheAfter(1, startCacheClsr);
             }
 
-            return startCacheClsr.apply(Collections.EMPTY_SET);
+            return startCacheClsr.apply(Collections.EMPTY_SET, null);
         }
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
@@ -3516,20 +3518,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param after Closure to execute after encryption keys would be generated.
      */
     private IgniteInternalFuture<Boolean> generateEncryptionKeysAndStartCacheAfter(int keyCnt,
-        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> after) {
-        IgniteInternalFuture<Collection<byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> after) {
+        IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> genEncKeyFut = ctx.encryption().generateKeys(keyCnt);
 
         GridFutureAdapter<Boolean> res = new GridFutureAdapter<>();
 
-        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<Collection<byte[]>>>() {
-            @Override public void apply(IgniteInternalFuture<Collection<byte[]>> fut) {
+        genEncKeyFut.listen(new IgniteInClosure<IgniteInternalFuture<T2<Collection<byte[]>, byte[]>>>() {
+            @Override public void apply(IgniteInternalFuture<T2<Collection<byte[]>, byte[]>> fut) {
                 try {
-                    Collection<byte[]> grpKeys = fut.result();
+                    Collection<byte[]> grpKeys = fut.result().get1();
+                    byte[] masterKeyDigest = fut.result().get2();
 
                     if (F.size(grpKeys, F.alwaysTrue()) != keyCnt)
                         res.onDone(false, fut.error());
 
-                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys);
+                    IgniteInternalFuture<Boolean> dynStartCacheFut = after.apply(grpKeys, masterKeyDigest);
 
                     dynStartCacheFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
@@ -3627,7 +3630,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             });
         }
 
-        GridPlainClosure<Collection<byte[]>, IgniteInternalFuture<Boolean>> startCacheClsr = (grpKeys) -> {
+        GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
+            (grpKeys, masterKeyDigest) -> {
             List<DynamicCacheChangeRequest> srvReqs = null;
             Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
@@ -3647,7 +3651,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     restartId,
                     disabledAfterStart,
                     ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null);
+                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
+                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -4964,6 +4969,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
+     * @param masterKeyDigest Master key digest.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -4979,7 +4985,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteUuid restartId,
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
-        @Nullable byte[] encKey
+        @Nullable byte[] encKey,
+        @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -4990,6 +4997,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.failIfExists(failIfExists);
 
         req.disabledAfterStart(disabledAfterStart);
+
+        req.masterKeyDigest(masterKeyDigest);
 
         req.encryptionKey(encKey);
 

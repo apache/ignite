@@ -1811,11 +1811,11 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    //It's not affinity cache. Can't be local.
-                    if (tbl.cacheContext() == null)
-                        return false;
+                    GridCacheContext<?, ?> cctx = tbl.cacheContext();
 
-                    GridCacheContext cctx = tbl.cacheContext();
+                    //It's not affinity cache. Can't be local.
+                    if (cctx == null)
+                        return false;
 
                     if (cctx.mvccEnabled())
                         return false;
@@ -1823,13 +1823,20 @@ public class GridSqlQueryParser {
                     if (cctx.isPartitioned())
                         return false;
 
-                    if (cctx.isReplicated() && !cctx.isReplicatedAffinityNode())
+                    if (isReplicatedLocalExecutionImpossible(cctx))
                         return false;
                 }
             }
         }
 
         return true;
+    }
+
+    /** */
+    private static boolean isReplicatedLocalExecutionImpossible(GridCacheContext<?, ?> cctx) {
+        // Improvement is possible:
+        // MOVING partitions check inspects full partition map, but possibly only local node check is sufficient.
+        return cctx.isReplicated() && (!cctx.affinityNode() || cctx.topology().hasMovingPartitions());
     }
 
     /**
@@ -2460,7 +2467,6 @@ public class GridSqlQueryParser {
     /**
      * Field getter.
      */
-    @SuppressWarnings("unchecked")
     public static class Getter<T, R> {
         /** */
         private final Field fld;

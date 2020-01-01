@@ -197,6 +197,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -1165,6 +1166,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case SessionChannelMessage.TYPE_CODE:
                 msg = new SessionChannelMessage();
+
+                break;
+
+            case SingleNodeMessage.TYPE_CODE:
+                msg = new SingleNodeMessage<>();
 
                 break;
 
