@@ -640,6 +640,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public void ClearStatistics(IEnumerable<string> caches)
+        {
+            _prj.ClearStatistics(caches);
+        }
+
+        /** <inheritdoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");

@@ -151,6 +151,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_DATA_STORAGE_METRICS = 37;
 
+    /** */
+    private static final int OP_CLEAR_STATISTICS = 37;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -352,6 +355,23 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 }
 
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
+
+                return TRUE;
+            }
+
+            case OP_CLEAR_STATISTICS:{
+                assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
+
+                int cnt = reader.readInt();
+
+                Collection<String> cacheNames = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    cacheNames.add(reader.readString());
+                }
+
+
+                ((IgniteCluster)prj).clearStatistics(cacheNames);
 
                 return TRUE;
             }

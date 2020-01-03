@@ -953,7 +953,7 @@ namespace Apache.Ignite.Core.Cache
         ICacheMetrics GetLocalMetrics();
 
         /// <summary>
-        /// Clear cluster statistics for this cache.
+        /// Clears cluster statistics for this cache.
         /// </summary>
         void ClearStatistics();
 

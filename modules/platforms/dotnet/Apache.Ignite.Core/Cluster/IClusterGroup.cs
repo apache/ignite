@@ -251,5 +251,13 @@ namespace Apache.Ignite.Core.Cluster
         /// <returns>Services instance over this cluster group.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IServices GetServices();
+
+        /// <summary>
+        /// Clears statistics for caches cluster wide.
+        /// </summary>
+        /// <param name="caches">Collection of cache names.</param>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        void ClearStatistics(IEnumerable<string> caches);
+
     }
 }

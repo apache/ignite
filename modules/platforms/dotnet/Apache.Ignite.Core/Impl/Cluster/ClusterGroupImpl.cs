@@ -451,6 +451,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _services.Value;
         }
 
+        /** <inheritdoc /> */
+        public void ClearStatistics(IEnumerable<string> caches)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Creates the services.
         /// </summary>
@@ -571,6 +577,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
+            var x = GetEnumerableWriterAction(cacheNames, (writer, s) => writer.WriteString(s));
             DoOutOp(OpResetLostPartitions, w =>
             {
                 var pos = w.Stream.Position;
@@ -586,6 +593,25 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 w.Stream.WriteInt(pos, count);
             });
+        }
+
+        private static Action<BinaryWriter> GetEnumerableWriterAction<T>(IEnumerable<T> enumerable, Action<BinaryWriter, T> itemWriter)
+        {
+            return w =>
+            {
+                var pos = w.Stream.Position;
+
+                var count = 0;
+                w.WriteInt(count); // Reserve space.
+
+                foreach (var item in enumerable)
+                {
+                    itemWriter(w, item);
+                    count++;
+                }
+
+                w.Stream.WriteInt(pos, count);
+            };
         }
 
         /// <summary>
