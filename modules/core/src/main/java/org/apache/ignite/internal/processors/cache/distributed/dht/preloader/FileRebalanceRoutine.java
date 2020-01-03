@@ -101,7 +101,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
 
     /** */
-    private final Map<String, ClearRegionTask> offheapClearTasks = new ConcurrentHashMap<>();
+    private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
     /** */
     private final Map<String, Set<Long>> regionToParts = new HashMap<>();
@@ -189,18 +189,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     }
                 }
             }
-
-//            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet())
-//                regions.put(e.getKey(), new GridFutureAdapter());
         }
         finally {
             cancelLock.unlock();
         }
-    }
-
-    /** */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -323,7 +315,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         if (histAssignments.isEmpty()) {
-            log.info("File rebalancing complete [group=" + grp.cacheOrGroupName() + "]");
+            log.info("File rebalancing complete [grp=" + grp.cacheOrGroupName() + "]");
 
             assert !grp.localWalEnabled() : "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
 
@@ -354,7 +346,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             grpAssigns.put(node, msg);
         }
 
-        // todo investigate waliterator troubles
+        // todo investigate WAL iterator troubles
         try {
             U.sleep(500);
         } catch (IgniteInterruptedCheckedException e) {
@@ -435,7 +427,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
 
-                offheapClearTasks.put(regionName, offheapClearTask);
+                offheapClearTasks.put(regionName, offheapClearTask.doClear());
             }
         }
         catch (RuntimeException | IgniteCheckedException e) {
@@ -539,17 +531,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         File dest = new File(pageStore.getFileAbsolutePath());
 
-        if (log.isDebugEnabled()) {
-            log.debug("Moving downloaded partition file [from=" + src +
-                " , to=" + dest + " , size=" + src.length() + "]");
-        }
-
-        assert !cctx.pageStore().exists(grpId, partId) : "Partition file exists [cache=" +
-            cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + "]";
-
-        Files.move(src.toPath(), dest.toPath());
+        if (log.isDebugEnabled())
+            log.debug("Moving partition file [from=" + src + " , to=" + dest + " , size=" + src.length() + "]");
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+        assert !cctx.pageStore().exists(grpId, partId) :
+            "Partition file exists [cache=" + grp.cacheOrGroupName() + ", p=" + partId + "]";
+
+        Files.move(src.toPath(), dest.toPath());
 
         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
@@ -571,8 +561,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         buf.append("\n\tMemory regions:\n");
 
-        for (Map.Entry<String, ? extends GridFutureAdapter> entry : offheapClearTasks.entrySet())
-            buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + entry.getValue().isFailed() + "\n");
+        for (Map.Entry<String, IgniteInternalFuture> entry : offheapClearTasks.entrySet())
+            buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + ((GridFutureAdapter)entry.getValue()).isFailed() + "\n");
 
         if (!isDone())
             buf.append("\n\tIndex future fnished=").append(idxRebuildFut.isDone()).append(" failed=").append(idxRebuildFut.isFailed()).append(" futs=").append(idxRebuildFut.futures()).append('\n');
@@ -603,16 +593,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         public ClearRegionTask(Set<Long> parts, DataRegion region, GridCacheSharedContext cctx, IgniteLogger log) {
             this.parts = parts;
             this.region = region;
-            this.log = log;
             this.cctx = cctx;
-
-            clear();
+            this.log = log;
         }
 
         /**
          * Clears off-heap memory region.
          */
-        private void clear() {
+        public IgniteInternalFuture doClear() {
             PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
             if (log.isDebugEnabled())
@@ -643,6 +631,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         releasePartitions(parts);
                     }
                 });
+
+            return this;
         }
 
         /**
