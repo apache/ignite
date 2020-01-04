@@ -139,10 +139,10 @@ namespace Apache.Ignite.Core.Client
         /// Examples of supported formats:
         ///  * 192.168.1.25 (default port is used, see <see cref="DefaultPort"/>).
         ///  * 192.168.1.25:780 (custom port)
-        ///  * 192.168.1.25:780-787 (custom port range)
+        ///  * 192.168.1.25:780..787 (custom port range)
         ///  * my-host.com (default port is used, see <see cref="DefaultPort"/>).
         ///  * my-host.com:780 (custom port)
-        ///  * my-host.com:780-787 (custom port range)
+        ///  * my-host.com:780..787 (custom port range)
         /// <para />
         /// When multiple endpoints are specified, failover and load-balancing mechanism is enabled:
         /// * Ignite picks random endpoint and connects to it.

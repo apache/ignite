@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -106,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            DoOutOp(ClientOp.CacheGetOrCreateWithName, w => w.WriteString(name));
+            DoOutOp(ClientOp.CacheGetOrCreateWithName, ctx => ctx.Writer.WriteString(name));
 
             return GetCache<TK, TV>(name);
         }
@@ -117,7 +116,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -127,7 +126,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            DoOutOp(ClientOp.CacheCreateWithName, w => w.WriteString(name));
+            DoOutOp(ClientOp.CacheCreateWithName, ctx => ctx.Writer.WriteString(name));
 
             return GetCache<TK, TV>(name);
         }
@@ -138,7 +137,7 @@ namespace Apache.Ignite.Core.Impl.Client
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             DoOutOp(ClientOp.CacheCreateWithConfiguration,
-                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration, ServerVersion));
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
 
             return GetCache<TK, TV>(configuration.Name);
         }
@@ -146,13 +145,13 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public ICollection<string> GetCacheNames()
         {
-            return DoOutInOp(ClientOp.CacheGetNames, null, s => Marshaller.StartUnmarshal(s).ReadStringCollection());
+            return DoOutInOp(ClientOp.CacheGetNames, null, ctx => ctx.Reader.ReadStringCollection());
         }
 
         /** <inheritDoc /> */
         public IClientCluster GetCluster()
         {
-            return new ClientCluster(this, _marsh);
+            return new ClientCluster(this);
         }
 
         /** <inheritDoc /> */
@@ -160,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-            DoOutOp(ClientOp.CacheDestroy, w => w.WriteInt(BinaryUtils.GetCacheId(name)));
+            DoOutOp(ClientOp.CacheDestroy, ctx => ctx.Stream.WriteInt(BinaryUtils.GetCacheId(name)));
         }
 
         /** <inheritDoc /> */
@@ -243,14 +242,6 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets the protocol version supported by server.
-        /// </summary>
-        public ClientProtocolVersion ServerVersion
-        {
-            get { return _socket.ServerVersion; }
-        }
-
-        /// <summary>
         /// Gets the client not supported exception.
         /// </summary>
         public static NotSupportedException GetClientNotSupportedException(string info = null)
@@ -268,26 +259,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Does the out in op.
         /// </summary>
-        private T DoOutInOp<T>(ClientOp opId, Action<BinaryWriter> writeAction,
-            Func<IBinaryStream, T> readFunc)
+        private T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc)
         {
-            return _socket.DoOutInOp(opId, stream =>
-            {
-                if (writeAction != null)
-                {
-                    var writer = _marsh.StartMarshal(stream);
-
-                    writeAction(writer);
-
-                    _marsh.FinishMarshal(writer);
-                }
-            }, readFunc);
+            return _socket.DoOutInOp(opId, writeAction, readFunc);
         }
 
         /// <summary>
         /// Does the out op.
         /// </summary>
-        private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction = null)
+        private void DoOutOp(ClientOp opId, Action<ClientRequestContext> writeAction = null)
         {
             DoOutInOp<object>(opId, writeAction, null);
         }
