@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         private static IDisposable StartOldServer()
         {
-            return JavaServer.Start("2.4.0");
+            return JavaServer.Start(JavaServer.GroupIdIgnite, "2.4.0");
         }
     }
 }

@@ -85,7 +85,11 @@
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Client\ClientContextBase.cs" />
     <Compile Include="Impl\Client\ClientOpExtensions.cs" />
+    <Compile Include="Impl\Client\ClientRequestContext.cs" />
+    <Compile Include="Impl\Client\ClientResponseContext.cs" />
+    <Compile Include="Impl\Client\ClientUtils.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
     <Compile Include="Impl\Client\Cache\ClientCachePartitionAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
@@ -129,7 +133,6 @@
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\Client\ClientFailoverSocket.cs" />
-    <Compile Include="Impl\Client\IClientSocket.cs" />
     <Compile Include="Impl\Cluster\BaselineNode.cs" />
     <Compile Include="Ssl\SslContextFactory.cs" />
     <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />
