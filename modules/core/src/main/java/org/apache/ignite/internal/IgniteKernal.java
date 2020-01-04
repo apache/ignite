@@ -766,6 +766,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public String clusterState() {
+        return ctx.state().clusterState().state().toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastClusterStateChangeTime() {
+        return ctx.state().lastStateChangeTime();
+    }
+
     /**
      * @param name New attribute name.
      * @param val New attribute value.
@@ -4606,8 +4616,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("active", () -> ctx.state().clusterState().active()/*this::active*/, Boolean.class,
             ACTIVE_DESC);
 
-        reg.register("clusterState", () -> ctx.state().clusterState().state().toString(), String.class, "Checks cluster state.");
-        reg.register("lastClusterStateChangeTime", () -> ctx.state().lastStateChangeTime(), "Unix time of last cluster state change operation.");
+        reg.register("clusterState", this::clusterState, String.class, CLUSTER_STATE_DESC);
+        reg.register("lastClusterStateChangeTime", this::lastClusterStateChangeTime, LAST_CLUSTER_STATE_CHANGE_TIME_DESC);
 
         reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class,
             USER_ATTRS_FORMATTED_DESC);

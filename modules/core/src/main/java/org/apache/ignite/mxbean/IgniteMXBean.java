@@ -137,6 +137,12 @@ public interface IgniteMXBean {
     public String IS_NODE_BASELINE_DESC = "Baseline node flag.";
 
     /** */
+    public static final String LAST_CLUSTER_STATE_CHANGE_TIME_DESC = "Unix time of last cluster state change operation.";
+
+    /** */
+    public static final String CLUSTER_STATE_DESC = "Checks cluster state.";
+
+    /** */
     public String READ_ONLY_MODE_DESC = "Cluster read-only mode status.";
 
     /** */
@@ -689,6 +695,17 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
+     * Checks cluster state.
+     *
+     * @return String representation of current cluster state.
+     * See {@link ClusterState}.
+     * @deprecated Use {@link GridMetricManager} instead.
+     */
+    @Deprecated
+    @MXBeanDescription(CLUSTER_STATE_DESC)
+    public String clusterState();
+
+    /**
      * Changes current cluster state.
      *
      * @param state String representation of new cluster state.
@@ -698,4 +715,14 @@ public interface IgniteMXBean {
     @MXBeanParametersNames("state")
     @MXBeanParametersDescriptions("New cluster state.")
     public void clusterState(String state);
+
+    /**
+     * Gets last cluster state change operation.
+     *
+     * @return Unix time of last cluster state change operation.
+     * @deprecated Use {@link GridMetricManager} instead.
+     */
+    @Deprecated
+    @MXBeanDescription(LAST_CLUSTER_STATE_CHANGE_TIME_DESC)
+    public long lastClusterStateChangeTime();
 }
