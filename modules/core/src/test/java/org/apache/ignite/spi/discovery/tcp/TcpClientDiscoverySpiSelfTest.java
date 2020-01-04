@@ -178,8 +178,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         if (igniteInstanceName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
         else if (igniteInstanceName.startsWith("client")) {
-            cfg.setClientMode(true);
-
             TcpDiscoveryVmIpFinder ipFinder;
 
             if (clientIpFinder != null)
@@ -335,10 +333,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Test
     public void testClientToClientPing() throws Exception {
         startGrid("server-p1");
-        Ignite c1 = startGrid("client-p1");
+        Ignite c1 = startClientGrid("client-p1");
 
         startGrid("server-p2");
-        Ignite c2 = startGrid("client-p2");
+        Ignite c2 = startClientGrid("client-p2");
 
         boolean res = ((IgniteEx)c1).context().discovery().pingNode(c2.cluster().localNode().id());
 

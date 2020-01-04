@@ -76,8 +76,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
             c.setCacheConfiguration(cc);
         }
-        else
-            c.setClientMode(true);
 
         return c;
     }
@@ -88,11 +86,11 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
         client = true;
 
-        Ignite grid = startGrid(GRID_CNT - 2);
+        Ignite grid = startClientGrid(GRID_CNT - 2);
 
         grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid = startGrid(GRID_CNT - 1);
+        grid = startClientGrid(GRID_CNT - 1);
 
         grid.cache(DEFAULT_CACHE_NAME);
     }

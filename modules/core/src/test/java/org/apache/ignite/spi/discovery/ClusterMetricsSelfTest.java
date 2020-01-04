@@ -50,8 +50,6 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
         return cfg;
     }
 
@@ -112,7 +110,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         spi.blockMessages((node, message) -> message instanceof GridDhtPartitionsFullMessage);
 
-        GridTestUtils.runAsync(() -> client ? startGrid("client") : startGrid(1));
+        GridTestUtils.runAsync(() -> client ? startClientGrid("client") : startGrid(1));
 
         assertTrue(waitForCondition(() ->
             ignite.context().cache().context().exchange().lastTopologyFuture().initialVersion().topologyVersion() == 2,
