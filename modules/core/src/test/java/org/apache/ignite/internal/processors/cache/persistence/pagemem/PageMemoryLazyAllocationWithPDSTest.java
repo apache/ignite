@@ -64,21 +64,15 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
 
         IgniteEx srv = startSrv()[0];
 
-        client = true;
-
-        IgniteEx clnt = startGrid(2);
+        IgniteEx clnt = startClientGrid(2);
 
         createCacheAndPut(clnt);
 
         stopAllGrids(false);
 
-        client = false;
-
         srv = startSrv()[0];
 
-        client = true;
-
-        IgniteCache<Integer, String> cache = startGrid(2).cache("my-cache-2");
+        IgniteCache<Integer, String> cache = startClientGrid(2).cache("my-cache-2");
 
         assertEquals("test", cache.get(1));
     }
