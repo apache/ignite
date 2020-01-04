@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var expectedPartitionAwareness = _clientProtocolVersion >= ClientSocket.Ver140;
-                Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnablePartitionAwareness);
+                Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnableAffinityAwareness);
                 
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
