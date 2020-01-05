@@ -30,19 +30,7 @@ import org.junit.Test;
  */
 public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static volatile boolean failed;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /**
      * @throws Exception If failed.
@@ -52,9 +40,10 @@ public class IgniteNoCustomEventsOnNodeStart extends GridCommonAbstractTest {
         failed = false;
 
         for (int i = 0; i < 5; i++) {
-            client = i % 2 == 1;
-
-            startGrid(i);
+            if (i % 2 == 1)
+                startClientGrid(i);
+            else
+                startGrid(i);
         }
 
         assertFalse(failed);
