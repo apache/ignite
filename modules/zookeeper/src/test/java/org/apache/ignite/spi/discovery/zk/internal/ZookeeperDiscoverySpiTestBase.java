@@ -83,6 +83,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -318,8 +319,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
-
-        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -364,11 +363,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         if (testSockNio)
             System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
 
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg = super.optimize(cfg);
+
+        final String igniteInstanceName = cfg.getIgniteInstanceName();
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
@@ -423,19 +424,12 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(getCacheConfiguration());
 
-        Boolean clientMode = helper.clientModeThreadLocal();
-
-        if (clientMode != null)
-            cfg.setClientMode(clientMode);
-        else
-            cfg.setClientMode(helper.clientMode());
-
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
-        if (cfg.isClientMode()) {
+        if (cfg.isClientMode() == TRUE) {
             UUID currNodeId = cfg.getNodeId();
 
             lsnrs.put(new IgnitePredicate<Event>() {

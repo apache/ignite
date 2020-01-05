@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
@@ -46,16 +45,6 @@ public abstract class IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTes
      */
     protected IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTest(IgfsMode mode, boolean skipEmbed) {
         super(mode, skipEmbed, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (getTestIgniteInstanceIndex(gridName) == 0)
-            cfg.setClientMode(true);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */

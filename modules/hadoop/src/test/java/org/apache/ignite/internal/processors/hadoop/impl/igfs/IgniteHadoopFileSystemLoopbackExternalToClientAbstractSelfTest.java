@@ -47,14 +47,4 @@ public abstract class IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelf
 
         return endpointCfg;
     }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (getTestIgniteInstanceIndex(gridName) == 0)
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
 }

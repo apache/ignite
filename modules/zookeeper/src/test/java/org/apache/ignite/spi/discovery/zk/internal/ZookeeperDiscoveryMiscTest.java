@@ -153,9 +153,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     public void testNodeAddresses() throws Exception {
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -179,9 +177,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     public void testSetConsistentId() throws Exception {
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -207,9 +203,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         startGridsMultiThreaded(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         waitForTopology(6);
 
@@ -268,22 +262,16 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        helper.clientMode(true);
-
-        startGrid(1);
+        startClientGrid(1);
 
         for (Ignite node : G.allGrids()) {
             assertEquals(1, node.cluster().forClients().nodes().size());
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        helper.clientMode(false);
-
         startGrid(2);
 
-        helper.clientMode(true);
-
-        startGrid(3);
+        startClientGrid(3);
 
         for (Ignite node : G.allGrids()) {
             assertEquals(2, node.cluster().forClients().nodes().size());
@@ -350,7 +338,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         ccfg = new CacheConfiguration("validate-test-cache");
         ccfg.setAffinity(new ValidationTestAffinity());
 
-        checkStartFail(1, "Failed to add node to topology because it has the same hash code");
+        checkStartFail(1, "Failed to add node to topology because it has the same hash code", false);
     }
 
     /**
@@ -368,13 +356,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         checkTestSecuritySubject(1);
 
         {
-            helper.clientMode(false);
-            checkStartFail(1, expErr);
-
-            helper.clientMode(true);
-            checkStartFail(1, expErr);
-
-            helper.clientMode(false);
+            checkStartFail(1, expErr, false);
+            checkStartFail(1, expErr, true);
         }
 
         startGrid(2);
@@ -393,39 +376,33 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         checkTestSecuritySubject(1);
 
-        checkStartFail(1, expErr);
-
-        helper.clientMode(false);
+        checkStartFail(1, expErr, false);
 
         startGrid(3);
 
-        helper.clientMode(true);
-
-        startGrid(4);
-
-        helper.clientMode(false);
+        startClientGrid(4);
 
         startGrid(0);
 
         checkTestSecuritySubject(4);
 
-        checkStartFail(1, expErr);
-        checkStartFail(5, expErr);
-
-        helper.clientMode(true);
-
-        checkStartFail(1, expErr);
-        checkStartFail(5, expErr);
+        checkStartFail(1, expErr, false);
+        checkStartFail(5, expErr, false);
+        checkStartFail(1, expErr, true);
+        checkStartFail(5, expErr, true);
     }
 
     /**
      * @param nodeIdx Node index.
      * @param expMsg Expected error message.
      */
-    private void checkStartFail(final int nodeIdx, String expMsg) {
+    private void checkStartFail(final int nodeIdx, String expMsg, boolean client) {
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(nodeIdx);
+                if (client)
+                    startClientGrid(nodeIdx);
+                else
+                    startGrid(nodeIdx);
 
                 return null;
             }

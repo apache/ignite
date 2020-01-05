@@ -972,9 +972,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+        IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(true);
+
+        cfg = optimize(cfg);
 
         return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
     }
