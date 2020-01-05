@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +36,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -72,6 +75,15 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     private static final int DFLT_LOADER_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
     /** */
+    private static final String SHARED_GROUP = "shared_group";
+
+    /** */
+    private static final String SHARED1 = "shared1";
+
+    /** */
+    private static final String SHARED2 = "shared2";
+
+    /** */
     private final Function<Integer, TestValue> testValProducer = n -> new TestValue(n, n, n);
 
     /** {@inheritDoc} */
@@ -82,6 +94,25 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        // Add 2 more cache (shared cache group).
+        CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
+
+        int len = ccfgs.length;
+
+        CacheConfiguration[] ccfgs0 = Arrays.copyOf(ccfgs, ccfgs.length + 2);
+
+        ccfgs0[len] = cacheConfiguration(SHARED1).setGroupName(SHARED_GROUP);
+        ccfgs0[len + 1] = cacheConfiguration(SHARED2).setGroupName(SHARED_GROUP);
+
+        cfg.setCacheConfiguration(ccfgs0);
+
+        return cfg;
     }
 
     /**
@@ -112,7 +143,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         U.sleep(1_000);
 
-        startGrid(1);
+        IgniteEx ignite1 = startGrid(1);
 
         ignite0.cluster().setBaselineTopology(2);
 
@@ -121,7 +152,60 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         idxLdr.stop();
         cacheLdr.stop();
 
-        verifyCache(ignite0, idxLdr);
+        verifyCache(ignite1, idxLdr);
+        verifyCache(ignite1, cacheLdr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSimpleRebalancingSharedGroup() throws Exception {
+        boolean checkRemoves = true;
+
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        DataLoader<TestValue> idxLdr = testValuesLoader(checkRemoves, 1).loadData(ignite0);
+
+        DataLoader<Integer> sharedLdr1 = new DataLoader<>(
+            grid(0).cache(SHARED1),
+            INITIAL_ENTRIES_COUNT,
+            n -> n,
+            true,
+            1
+        ).loadData(ignite0);
+
+        DataLoader<Integer> sharedLdr2 = new DataLoader<>(
+            grid(0).cache(SHARED2),
+            INITIAL_ENTRIES_COUNT,
+            n -> n,
+            true,
+            1
+        ).loadData(ignite0);
+
+        idxLdr.start();
+        sharedLdr1.start();
+        sharedLdr2.start();
+
+        forceCheckpoint(ignite0);
+
+        U.sleep(1_000);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite0.cluster().setBaselineTopology(2);
+
+        awaitPartitionMapExchange();
+
+        idxLdr.stop();
+        sharedLdr1.stop();
+        sharedLdr2.stop();
+
+        verifyCache(ignite1, idxLdr);
+        verifyCache(ignite1, sharedLdr1);
+        verifyCache(ignite1, sharedLdr2);
     }
 
     /**

@@ -319,17 +319,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         // todo historical rebalancing will send separate events
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
-        if (histAssignments.isEmpty()) {
-            log.info("File rebalancing complete [grp=" + grp.cacheOrGroupName() + "]");
+        int remain = remaining.size();
 
-            assert !grp.localWalEnabled() : "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
+        log.info("Partition files preload complete [grp=" + grp.cacheOrGroupName() + ", remain=" + remain + "]");
 
+        if (histAssignments.isEmpty())
             cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
-        }
         else
             requestHistoricalRebalance(grp, histAssignments);
 
-        if (remaining.isEmpty()) {
+        if (remain == 0) {
             idxRebuildFut.markInitialized();
 
             onDone(true);
@@ -367,8 +366,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
     public void requestPartitionsSnapshot() {
         // todo should we send start event only when we starting to preload specified group?
-        for (Integer grpId : remaining.keySet())
-            cctx.cache().cacheGroup(grpId).preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+        for (Integer grpId : remaining.keySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            assert !grp.localWalEnabled() :
+                "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
+
+            grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+        }
 
         cctx.kernalContext().getSystemExecutorService().submit(() -> {
             for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {

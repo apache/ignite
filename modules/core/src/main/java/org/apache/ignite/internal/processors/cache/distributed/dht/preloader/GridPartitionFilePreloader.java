@@ -145,8 +145,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
 
-        boolean forced = rebTopVer == NONE ||
-            (rebRoutine.isDone() && (rebRoutine.result() == null || !rebRoutine.result())) || exchFut.localJoinExchange();
+        boolean forced = rebTopVer == NONE || exchFut.localJoinExchange() ||
+            (rebRoutine.isDone() && (rebRoutine.result() == null || !rebRoutine.result()));
 
         Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
 
@@ -195,10 +195,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // todo "global" partition size can change and file rebalance will not be applicable to it.
             //       add test case for specified scenario with global size change "on the fly".
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (part.dataStore().readOnly(toReadOnly)) {
-                    // Should close grid cache data store - no updates expected.
+                if (part.dataStore().readOnly(toReadOnly))
                     ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
-                }
             }
         }
     }
@@ -300,9 +298,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         AffinityTopologyVersion topVer,
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut) {
-        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssignments = remapAssignments(assignments, exchFut);
+        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = sortAssignments(assignments, exchFut);
 
-        if (orderedAssignments.isEmpty()) {
+        if (orderedAssigns.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping file rebalancing due to empty assignments.");
 
@@ -320,7 +318,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             log.info("Starting file rebalancing");
 
         if (log.isTraceEnabled())
-            log.trace(formatMappings(orderedAssignments));
+            log.trace(formatMappings(orderedAssigns));
 
         // Start new rebalance session.
         FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
@@ -331,11 +329,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!rebRoutine.isDone())
                 rebRoutine.cancel();
 
-            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(cpLsnr, orderedAssignments, topVer, cctx,
+            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(cpLsnr, orderedAssigns, topVer, cctx,
                 rebalanceId, log, exchFut.exchangeId());
 
             if (log.isInfoEnabled())
-                log.info("Prepare to start file rebalancing: " + orderedAssignments);
+                log.info("Prepare to start file rebalancing: " + orderedAssigns);
 
             cctx.kernalContext().getSystemExecutorService().submit(rebRoutine::clearPartitions);
 
@@ -369,7 +367,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param assignsMap The map of cache groups assignments to process.
      * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
      */
-    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> remapAssignments(
+    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap, GridDhtPartitionsExchangeFuture exchFut) {
         NavigableMap<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> result = new TreeMap<>();
 

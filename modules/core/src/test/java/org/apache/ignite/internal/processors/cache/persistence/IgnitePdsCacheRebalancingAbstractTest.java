@@ -36,9 +36,11 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -513,6 +515,60 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends IgnitePdsCac
             }
 
             assertEquals(ig.affinity(CACHE).partitions(), cntrs.size());
+        }
+    }
+
+    /**
+     * Test rebalancing of in-memory cache on the node with mixed data region configurations.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancingWithMixedDataRegionConfigurations() throws Exception {
+        int entriesCount = 10_000;
+
+        Ignite ignite0 = startGrids(2);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, TestValue> cachePds = ignite0.cache(INDEXED_CACHE);
+        IgniteCache<Integer, TestValue> cacheInMem = ignite0.cache(INDEXED_CACHE_IN_MEMORY);
+
+        for (int i = 0; i < entriesCount / 2; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        forceCheckpoint();
+
+        stopGrid(1);
+
+        for (int i = entriesCount / 2; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            cachePds.put(i, value);
+            cacheInMem.put(i, value);
+        }
+
+        IgniteEx ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalCache<Integer, TestValue> cachePds1 = ignite1.cachex(INDEXED_CACHE);
+        IgniteInternalCache<Integer, TestValue> cacheInMem1 = ignite1.cachex(INDEXED_CACHE_IN_MEMORY);
+
+        CachePeekMode[] peekAll = new CachePeekMode[] {CachePeekMode.ALL};
+
+        assertEquals(entriesCount, cachePds1.localSize(peekAll));
+        assertEquals(entriesCount, cacheInMem1.localSize(peekAll));
+
+        for (int i = 0; i < entriesCount; i++) {
+            TestValue value = new TestValue(i, i * 2, i * 3);
+
+            assertEquals(value, cachePds1.localPeek(i, peekAll));
+            assertEquals(value, cacheInMem1.localPeek(i, peekAll));
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -52,6 +53,12 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
     /** Cache with enabled indexes. */
     protected static final String INDEXED_CACHE = "indexed";
 
+    /** Cache with enabled indexes. */
+    protected static final String INDEXED_CACHE_IN_MEMORY = "indexed-in-memory";
+
+    /** In memory region. */
+    protected static final String IN_MEMORY_REGION = "in-memory-region";
+
     /** */
     protected boolean explicitTx;
 
@@ -69,6 +76,7 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
         CacheConfiguration ccfg1 = cacheConfiguration(CACHE)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
             .setBackups(backups())
+            .setCacheMode(CacheMode.REPLICATED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setIndexedTypes(Integer.class, Integer.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
@@ -79,6 +87,9 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
             .setBackups(backups())
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        CacheConfiguration ccfg3 = cacheConfiguration(INDEXED_CACHE_IN_MEMORY)
+            .setDataRegionName(IN_MEMORY_REGION);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class, TestValue.class);
 
@@ -94,19 +105,21 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
         qryEntity.setIndexes(Collections.singleton(qryIdx));
 
         ccfg2.setQueryEntities(Collections.singleton(qryEntity));
+        ccfg3.setQueryEntities(Collections.singleton(qryEntity));
 
         List<CacheConfiguration> cacheCfgs = new ArrayList<>();
         cacheCfgs.add(ccfg1);
         cacheCfgs.add(ccfg2);
+        cacheCfgs.add(ccfg3);
 
         if (filteredCacheEnabled && !gridName.endsWith("0")) {
-            CacheConfiguration ccfg3 = cacheConfiguration(FILTERED_CACHE)
+            CacheConfiguration ccfg4 = cacheConfiguration(FILTERED_CACHE)
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
                 .setBackups(backups())
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setNodeFilter(new CoordinatorNodeFilter());
 
-            cacheCfgs.add(ccfg3);
+            cacheCfgs.add(ccfg4);
         }
 
         cfg.setCacheConfiguration(asArray(cacheCfgs));
@@ -120,6 +133,9 @@ public abstract class IgnitePdsCacheRebalancingCommonAbstractTest extends GridCo
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
+                .setMaxSize(512 * 1024 * 1024)
+            ).setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(IN_MEMORY_REGION)
                 .setMaxSize(512 * 1024 * 1024)
             );
 
