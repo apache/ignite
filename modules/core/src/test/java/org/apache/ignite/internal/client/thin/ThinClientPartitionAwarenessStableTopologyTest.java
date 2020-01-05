@@ -24,9 +24,9 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.junit.Test;
 
 /**
- * Test affinity awareness of thin client on stable topology.
+ * Test partition awareness of thin client on stable topology.
  */
-public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbstractAffinityAwarenessTest {
+public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -45,7 +45,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test that affinity awareness is not applicable for replicated cache.
+     * Test that partition awareness is not applicable for replicated cache.
      */
     @Test
     public void testReplicatedCache() {
@@ -53,7 +53,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test that affinity awareness is not applicable for partitioned cache with custom affinity function.
+     * Test that partition awareness is not applicable for partitioned cache with custom affinity function.
      */
     @Test
     public void testPartitionedCustomAffinityCache() {
@@ -61,7 +61,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with primitive key.
+     * Test partition awareness for all applicable operation types for partitioned cache with primitive key.
      */
     @Test
     public void testPartitionedCachePrimitiveKey() {
@@ -69,7 +69,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with complex key.
+     * Test partition awareness for all applicable operation types for partitioned cache with complex key.
      */
     @Test
     public void testPartitionedCacheComplexKey() {
@@ -77,7 +77,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with annotated affinity
+     * Test partition awareness for all applicable operation types for partitioned cache with annotated affinity
      * mapped key.
      */
     @Test
@@ -86,7 +86,7 @@ public class ThinClientAffinityAwarenessStableTopologyTest extends ThinClientAbs
     }
 
     /**
-     * Test affinity awareness for all applicable operation types for partitioned cache with not annotated affinity
+     * Test partition awareness for all applicable operation types for partitioned cache with not annotated affinity
      * mapped key.
      */
     @Test
