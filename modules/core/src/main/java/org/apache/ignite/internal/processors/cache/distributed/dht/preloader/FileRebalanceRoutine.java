@@ -60,6 +60,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
+/**
+ *
+ */
 public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private static final long MAX_MEM_CLEANUP_TIMEOUT = 60_000;
@@ -218,6 +221,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     cpLsnr.cancelAll();
 
                     if (err == null) {
+                        // todo if memory cleanup in progress we should not wait for cleanup-future finish (on cancel)
+                        //      should somehow "re-set" the old-one cleanup future to new created rebalance future.
                         for (IgniteInternalFuture fut : offheapClearTasks.values()) {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);
@@ -441,7 +446,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /**
      * Wait for region cleaning if necessary.
      *
-     * @param grpId Group ID.
+     * @param grpId Cache group ID.
      * @throws IgniteCheckedException If the cleanup failed.
      */
     private void awaitCleanupIfNeeded(int grpId) throws IgniteCheckedException {
@@ -453,7 +458,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             IgniteInternalFuture clearTask = offheapClearTasks.get(region);
 
             if (clearTask.isCancelled()) {
-                log.info("The cleaning task has been canceled.");
+                log.warning("Off-heap cleanup task has been cancelled [region=" + region + "]");
 
                 return;
             }
@@ -474,6 +479,12 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
+    /**
+     * @param nodeId Node ID.
+     * @param file Partition snapshot file.
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
         assert file != null;
 
@@ -491,7 +502,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             if (isDone())
                 return;
 
-            reinitPartition(grpId, partId, file);
+            initialize(grpId, partId, file);
 
             AtomicInteger receivedCntr = received.computeIfAbsent(grpId, cntr -> new AtomicInteger());
 
@@ -526,7 +537,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
-    private void reinitPartition(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
+    /**
+     * Re-initialize partition with new file.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param src Partition snapshot file.
+     * @throws IOException If was not able to move partition file.
+     * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
+     */
+    private void initialize(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
         FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
 
         File dest = new File(pageStore.getFileAbsolutePath());

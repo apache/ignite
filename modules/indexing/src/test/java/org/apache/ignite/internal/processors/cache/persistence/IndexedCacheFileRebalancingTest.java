@@ -72,18 +72,6 @@ public class IndexedCacheFileRebalancingTest extends IgniteCacheFileRebalancingT
 
             assertEquals("node=" + nodeId, expSize, idxCnt);
         }
-//        // Validate indexes consistency.
-//        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(name), 0, 0);
-//
-//        node.cluster().active(false);
-//
-//        for (Ignite g : G.allGrids()) {
-//            ((IgniteEx)g).context().resource().injectGeneric(clo);
-//
-//            VisorValidateIndexesJobResult res = clo.call();
-//
-//            assertFalse(res.hasIssues());
-//        }
     }
 
     /** */

@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -63,7 +62,6 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * DHT cache files preloader, manages partition files preloading routine.
@@ -171,9 +169,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return;
         }
 
-        // Should interrupt current rebalance.
-        // todo if memory cleanup in progress we should not wait for cleanup-future finish (on cancel)
-        //      should somehow "re-set" the old-one cleanup future to new created rebalance future.
+        // Abort the current rebalancing procedure if it is still in progress
         if (!rebRoutine.isDone())
             rebRoutine.cancel();
 
@@ -181,26 +177,24 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         boolean locJoinBaselineChange = isLocalBaselineChange(exchFut);
 
-        // At this point cache updates are queued and we can safely switch partitions to read-only mode.
+        // At this point, cache updates are queued, and we can safely
+        // switch partitions to read-only mode and vice versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (!fileRebalanceSupported(grp))
                 continue;
 
             if (!locJoinBaselineChange && !hasReadOnlyParts(grp)) {
                 if (log.isDebugEnabled())
-                    log.debug("File rebalancing skipped for group " + grp.cacheOrGroupName());
+                    log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
                 continue;
             }
 
-            Set<Integer> rebalancePartitions = detectRebalancedPartitions(grp, exchFut);
+            boolean toReadOnly = fileRebalanceApplicable(grp, exchFut);
 
             // todo "global" partition size can change and file rebalance will not be applicable to it.
             //       add test case for specified scenario with global size change "on the fly".
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                // Partitions that no longer belong to current node should be evicted as usual.
-                boolean toReadOnly = rebalancePartitions != null && rebalancePartitions.contains(part.id());
-
                 if (part.dataStore().readOnly(toReadOnly)) {
                     // Should close grid cache data store - no updates expected.
                     ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
@@ -243,14 +237,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
     }
 
-    private Set<Integer> detectRebalancedPartitions(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
+    private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
 
         assert aff != null;
 
         CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
-
-        Set<Integer> movingParts = new HashSet<>();
 
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
@@ -260,11 +252,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!aff.get(p).contains(cctx.localNode())) {
                 if (grp.topology().localPartition(p) != null) {
                     if (log.isDebugEnabled()) {
-                        log.debug("Detected partition evitction, file rebalancing skipped for this group [grp=" +
+                        log.debug("Detected partition evitction, file rebalancing skipped [grp=" +
                             grp.cacheOrGroupName() + ", p=" + p + "]");
                     }
 
-                    return null;
+                    return false;
                 }
 
                 continue;
@@ -277,29 +269,15 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     fatEnough = true;
             }
 
-            GridDhtLocalPartition part = grp.topology().localPartition(p);
+            if (grp.topology().localPartition(p).state() != MOVING)
+                return false;
 
-            if (part.state() == OWNING)
-                return null;
-
-            // Should have partition file supplier to start file rebalance.
-            long cntr = cntrsMap.updateCounter(p);
-
-            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntr) == null)
-                return null;
-
-            // If partition is currently rented prevent destroy and start clearing process.
-            // todo think about reserve/clear
-            if (part.state() == RENTING)
-                part.moving();
-
-            assert part.state() == MOVING : "Unexpected partition state [cache=" + grp.cacheOrGroupName() +
-                ", p=" + p + ", state=" + part.state() + "]";
-
-            movingParts.add(p);
+            // Should have partition file supplier to start file rebalancing.
+            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntrsMap.updateCounter(p)) == null)
+                return false;
         }
 
-        return fatEnough ? movingParts : null;
+        return fatEnough;
     }
 
     /** @deprecated used only for debugging, should be removed */
@@ -310,7 +288,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /**
      * This method initiates new file rebalance process from given {@code assignments} by creating new file
-     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event (todo).
+     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
      * @param assignments A map of cache assignments grouped by grpId.
