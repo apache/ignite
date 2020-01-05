@@ -116,8 +116,8 @@ public class JdbcThinConnection implements Connection {
     /** Index generator. */
     private static final AtomicLong IDX_GEN = new AtomicLong();
 
-    /** Affinity awareness enabled flag. */
-    private final boolean affinityAwareness;
+    /** Partition awareness enabled flag. */
+    private final boolean partitionAwareness;
 
     /** Statements modification mutex. */
     private final Object stmtsMux = new Object();
@@ -205,7 +205,7 @@ public class JdbcThinConnection implements Connection {
 
         timer = new Timer("query-timeout-timer");
 
-        affinityAwareness = connProps.isAffinityAwareness();
+        partitionAwareness = connProps.isPartitionAwareness();
 
         ensureConnected();
     }
@@ -225,7 +225,7 @@ public class JdbcThinConnection implements Connection {
 
         HostAndPortRange[] srvs = connProps.getAddresses();
 
-        if (affinityAwareness)
+        if (partitionAwareness)
             connectInAffinityAwarenessMode(srvs);
         else
             connectInCommonMode(srvs);
@@ -459,7 +459,7 @@ public class JdbcThinConnection implements Connection {
 
         closed = true;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.close();
 
@@ -794,7 +794,7 @@ public class JdbcThinConnection implements Connection {
 
         netTimeout = ms;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.timeout(ms);
         }
@@ -936,7 +936,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException If Failed to calculate derived partitions.
      */
     @Nullable private List<UUID> calculateNodeIds(JdbcRequest req) throws IOException, SQLException {
-        if (!affinityAwareness || !(req instanceof JdbcQueryExecuteRequest))
+        if (!partitionAwareness || !(req instanceof JdbcQueryExecuteRequest))
             return null;
 
         JdbcQueryExecuteRequest qry = (JdbcQueryExecuteRequest)req;
@@ -972,12 +972,12 @@ public class JdbcThinConnection implements Connection {
         if (parts.size() == 1)
             return Collections.singletonList(cacheDistr[parts.iterator().next()]);
         else {
-            List<UUID> affinityAwarenessNodeIds = new ArrayList<>();
+            List<UUID> partitionAwarenessNodeIds = new ArrayList<>();
 
             for (int part : parts)
-                affinityAwarenessNodeIds.add(cacheDistr[part]);
+                partitionAwarenessNodeIds.add(cacheDistr[part]);
 
-            return affinityAwarenessNodeIds;
+            return partitionAwarenessNodeIds;
         }
     }
 
@@ -1012,14 +1012,14 @@ public class JdbcThinConnection implements Connection {
             return null;
         }
 
-        List<JdbcThinAffinityAwarenessMappingGroup> mappings =
+        List<JdbcThinPartitionAwarenessMappingGroup> mappings =
             ((JdbcCachePartitionsResult)res.response()).getMappings();
 
         // Despite the fact that, at this moment, we request partition destribution only for one cache,
         // we might retrieve multiple caches but exactly with same distribution.
         assert mappings.size() == 1;
 
-        JdbcThinAffinityAwarenessMappingGroup mappingGrp = mappings.get(0);
+        JdbcThinPartitionAwarenessMappingGroup mappingGrp = mappings.get(0);
 
         cacheDistr = mappingGrp.revertMappings(partCnt);
 
@@ -1130,7 +1130,7 @@ public class JdbcThinConnection implements Connection {
         if (!connected)
             return;
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (JdbcThinTcpIo clioIo : ios.values())
                 clioIo.close();
 
@@ -1397,7 +1397,7 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     private JdbcThinTcpIo cliIo(List<UUID> nodeIds) {
-        if (!affinityAwareness)
+        if (!partitionAwareness)
             return singleIo;
 
         if (txIo != null)
@@ -1562,10 +1562,10 @@ public class JdbcThinConnection implements Connection {
                             JdbcThinTcpIo cliIo =
                                 new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), 0);
 
-                            if (!cliIo.isAffinityAwarenessSupported()) {
+                            if (!cliIo.isPartitionAwarenessSupported()) {
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
                                     connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support best affort affinity mode.",
+                                    "Node doesn't support partition awareness mode.",
                                     SqlStateCode.INTERNAL_ERROR);
                             }
 
@@ -1672,7 +1672,7 @@ public class JdbcThinConnection implements Connection {
      * @param res Jdbc Response.
      */
     private void updateAffinityCache(JdbcQueryExecuteRequest qryReq, JdbcResponse res) {
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             AffinityTopologyVersion resAffVer = res.affinityVersion();
 
             if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0))

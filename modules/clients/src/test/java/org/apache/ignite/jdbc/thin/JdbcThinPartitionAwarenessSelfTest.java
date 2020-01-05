@@ -56,12 +56,12 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Jdbc thin affinity awareness test.
+ * Jdbc thin partition awareness test.
  */
 @SuppressWarnings({"ThrowableNotThrown"})
-public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true";
 
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -297,7 +297,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
 
 
     /**
-     * Check that in case of non-rendezvous affinity function, client side affinity awareness is skipped.
+     * Check that in case of non-rendezvous affinity function, client side partition awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -317,7 +317,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that in case of custom filters, client side affinity awareness is skipped.
+     * Check that in case of custom filters, client side partition awareness is skipped.
      *
      * @throws Exception If failed.
      */
@@ -337,7 +337,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that affinity awareness functionality works fine for custom partitions count.
+     * Check that partition awareness functionality works fine for custom partitions count.
      *
      * @throws Exception If failed.
      */
@@ -411,7 +411,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testChangeTopologyDetectionWithinAffinityAwarenessUnrelatedQuery() throws Exception {
+    public void testChangeTopologyDetectionWithinPartitionAwarenessUnrelatedQuery() throws Exception {
         final String sqlQry = "select * from Person where _key = 1";
 
         ResultSet rs = stmt.executeQuery(sqlQry);
@@ -428,53 +428,54 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that client side affinity awareness optimizations are skipped if affinityAwareness is switched off.
+     * Check that client side partition awareness optimizations are skipped if partitionAwareness is switched off.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
-        Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
+    public void testPartitionAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
+        try (Connection conn = DriverManager.getConnection(
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=false");
+             Statement stmt = conn.createStatement()) {
 
-        Statement stmt = conn.createStatement();
+            final String cacheName = "yac";
 
-        final String cacheName = "yac";
+            CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
 
-        CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
+            ignite(0).createCache(cache);
 
-        ignite(0).createCache(cache);
+            stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-        stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
+            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
-
-        assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affinityCache);
+        }
     }
 
     /**
-     * Check that client side affinity awareness optimizations are skipped by default.
+     * Check that client side partition awareness optimizations are skipped by default.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testAffinityAwarenessIsSkippedByDefault() throws Exception {
-        Connection conn = DriverManager.getConnection(
-            "jdbc:ignite:thin://127.0.0.1:10800..10802");
+    public void testPartitionAwarenessIsSkippedByDefault() throws Exception {
+        try (Connection conn = DriverManager.getConnection(
+            "jdbc:ignite:thin://127.0.0.1:10800..10802")) {
 
-        Statement stmt = conn.createStatement();
+            Statement stmt = conn.createStatement();
 
-        final String cacheName = "yacccc";
+            final String cacheName = "yacccc";
 
-        CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
+            CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
 
-        ignite(0).createCache(cache);
+            ignite(0).createCache(cache);
 
-        stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
+            stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affinityCache);
+        }
     }
 
     /**
@@ -556,7 +557,7 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /**
-     * Check that affinity awareness works fine after reconnection.
+     * Check that partition awareness works fine after reconnection.
      *
      * @throws Exception If failed.
      */

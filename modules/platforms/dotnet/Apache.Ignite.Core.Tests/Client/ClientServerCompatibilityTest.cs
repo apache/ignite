@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var cfg = new IgniteClientConfiguration(JavaServer.GetClientConfiguration())
             {
                 Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
-                EnableAffinityAwareness = true
+                EnablePartitionAwareness = true
             };
             
             return Ignition.StartClient(cfg);

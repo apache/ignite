@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Client
             
             using (var client = GetClient(version, true))
             {
-                Assert.IsFalse(client.GetConfiguration().EnableAffinityAwareness);
+                Assert.IsFalse(client.GetConfiguration().EnablePartitionAwareness);
                 
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
@@ -175,12 +175,12 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client with specified protocol version.
         /// </summary>
-        private IgniteClient GetClient(ClientProtocolVersion version, bool enableAffinityAwareness = false)
+        private IgniteClient GetClient(ClientProtocolVersion version, bool enablePartitionAwareness = false)
         {
             var cfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
                 ProtocolVersion = version,
-                EnableAffinityAwareness = enableAffinityAwareness
+                EnablePartitionAwareness = enablePartitionAwareness
             };
 
             return (IgniteClient) Ignition.StartClient(cfg);
