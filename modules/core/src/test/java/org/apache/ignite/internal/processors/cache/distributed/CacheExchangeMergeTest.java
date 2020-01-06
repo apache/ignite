@@ -436,12 +436,14 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    if (withClients)
-                        client.set(ThreadLocalRandom.current().nextBoolean());
-
                     int nodeIdx = idx.getAndIncrement();
 
-                    Ignite node = startGrid(nodeIdx);
+                    Ignite node;
+
+                    if (withClients && ThreadLocalRandom.current().nextBoolean())
+                        node = startClientGrid(nodeIdx);
+                    else
+                        node = startGrid(nodeIdx);
 
                     checkNodeCaches(node, nodeIdx * 1000, 1000);
 
