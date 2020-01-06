@@ -17,42 +17,47 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
-    using System;
-    using System.Net;
-    using System.Threading.Tasks;
-    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Wrapper over framework socket for Ignite thin client operations.
+    /// Request context.
     /// </summary>
-    internal interface IClientSocket : IDisposable
+    internal sealed class ClientRequestContext : ClientContextBase
     {
-        /// <summary>
-        /// Performs a send-receive operation.
-        /// </summary>
-        T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null);
+        /** */
+        private BinaryWriter _writer;
 
         /// <summary>
-        /// Performs a send-receive operation asynchronously.
+        /// Initializes a new instance of <see cref="ClientRequestContext"/> class.
         /// </summary>
-        Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null);
+        /// <param name="stream">Stream.</param>
+        /// <param name="marshaller">Marshaller.</param>
+        /// <param name="protocolVersion">Protocol version to be used for this request.</param>
+        public ClientRequestContext(IBinaryStream stream, Marshaller marshaller, ClientProtocolVersion protocolVersion)
+            : base(stream, marshaller, protocolVersion)
+
+        {
+            // No-op.
+        }
 
         /// <summary>
-        /// Gets the server version.
+        /// Writer.
         /// </summary>
-        ClientProtocolVersion ServerVersion { get; }
+        public BinaryWriter Writer
+        {
+            get { return _writer ?? (_writer = Marshaller.StartMarshal(Stream)); }
+        }
 
         /// <summary>
-        /// Gets the current remote EndPoint.
+        /// Finishes marshal session for this request (if any).
         /// </summary>
-        EndPoint RemoteEndPoint { get; }
-
-        /// <summary>
-        /// Gets the current local EndPoint.
-        /// </summary>
-        EndPoint LocalEndPoint { get; }
+        public void FinishMarshal()
+        {
+            if (_writer != null)
+            {
+                Marshaller.FinishMarshal(_writer);
+            }
+        }
     }
 }

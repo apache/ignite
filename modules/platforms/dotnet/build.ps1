@@ -178,7 +178,7 @@ if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) {
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe")    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "$PSScriptRoot\nuget.exe")    
 	}
 }
 
