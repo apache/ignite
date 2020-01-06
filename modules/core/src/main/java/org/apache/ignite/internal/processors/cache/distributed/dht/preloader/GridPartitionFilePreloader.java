@@ -53,9 +53,8 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -559,47 +558,38 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return true;
     }
 
-    public IgniteInternalFuture<Map<Integer, Long>> switchPartitions(int grpId, Set<Integer> parts, IgniteInternalFuture fut) {
+    public IgniteInternalFuture<Long> switchPartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> cancelPred) {
         final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-        GridFutureAdapter<Map<Integer, Long>> endFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
 
         cpLsnr.schedule(() -> {
-            if (fut.isDone())
+            if (cancelPred.apply())
                 return;
 
-            Map<Integer, Long> resCntrs = new HashMap<>(U.capacity(parts.size()));
+            GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-            Map<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> cntrs = new HashMap<>(U.capacity(parts.size()));
+            assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
 
-            // todo should be under cancel lock?
-            for (Integer partId : parts) {
-                GridDhtLocalPartition part = grp.topology().localPartition(partId);
+            // Save current counter.
+            PartitionUpdateCounter readCntr = part.dataStore().store(true).partUpdateCounter();
 
-                assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
+            // Save current update counter.
+            PartitionUpdateCounter snapshotCntr = part.dataStore().store(false).partUpdateCounter();
 
-                // Save current counter.
-                PartitionUpdateCounter readCntr = part.dataStore().store(true).partUpdateCounter();
+            part.readOnly(false);
 
-                // Save current update counter.
-                PartitionUpdateCounter snapshotCntr = part.dataStore().store(false).partUpdateCounter();
-
-                part.readOnly(false);
-
-                // Clear all on-heap entries.
-                // todo something smarter and check large partition
-                if (grp.sharedGroup()) {
-                    for (GridCacheContext ctx : grp.caches())
-                        part.entriesMap(ctx).map.clear();
-                }
-                else
-                    part.entriesMap(null).map.clear();
-
-                assert readCntr != snapshotCntr && snapshotCntr != null && readCntr != null : "grp=" +
-                    grp.cacheOrGroupName() + ", p=" + partId + ", readCntr=" + readCntr + ", snapCntr=" + snapshotCntr;
-
-                cntrs.put(partId, new T2<>(readCntr, snapshotCntr));
+            // Clear all on-heap entries.
+            // todo something smarter and check large partition
+            if (grp.sharedGroup()) {
+                for (GridCacheContext ctx : grp.caches())
+                    part.entriesMap(ctx).map.clear();
             }
+            else
+                part.entriesMap(null).map.clear();
+
+            assert readCntr != snapshotCntr && snapshotCntr != null && readCntr != null : "grp=" +
+                grp.cacheOrGroupName() + ", p=" + partId + ", readCntr=" + readCntr + ", snapCntr=" + snapshotCntr;
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -609,16 +599,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // These operations can update the old update counter or the new update counter, so the maximum applied
             // counter is used after all updates are completed.
             partReleaseFut.listen(c -> {
-                    for (Map.Entry<Integer, T2<PartitionUpdateCounter, PartitionUpdateCounter>> entry : cntrs.entrySet()) {
-                        PartitionUpdateCounter readCntr = entry.getValue().get1();
-                        PartitionUpdateCounter snapshotCntr = entry.getValue().get2();
+                    long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
 
-                        long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
-
-                        resCntrs.put(entry.getKey(), hwm);
-                    }
-
-                    endFut.onDone(resCntrs);
+                    cctx.kernalContext().getSystemExecutorService().submit(() -> endFut.onDone(hwm));
                 }
             );
         });

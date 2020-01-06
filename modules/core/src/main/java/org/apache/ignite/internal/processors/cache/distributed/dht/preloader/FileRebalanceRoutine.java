@@ -100,8 +100,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private final Map<Integer, Set<Integer>> remaining = new ConcurrentHashMap<>();
 
-    /** */
+    /** todo used for diagnostic purposes only */
     private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
+
+    /** */
+    private final Map<Integer, Map<Integer, Long>> restored = new ConcurrentHashMap<>();
 
     /** */
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
@@ -296,6 +299,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 ", p=" + partId + ", path=" + file + "]");
         }
 
+        received.computeIfAbsent(grpId, cntr -> new AtomicInteger()).incrementAndGet();
+
         if (isDone())
             return;
 
@@ -307,37 +312,40 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             initialize(grpId, partId, file);
 
-            AtomicInteger receivedCntr = received.computeIfAbsent(grpId, cntr -> new AtomicInteger());
+            cctx.filePreloader().switchPartitionMode(grpId, partId, this::isDone).listen(f -> {
+                try {
+                    onPartitionSnapshotRestored(grpId, partId, f.get());
+                } catch (IgniteCheckedException e) {
+                    log.error("Unable to restore partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
+                        ", p=" + partId + "]");
 
-            int receivedCnt = receivedCntr.incrementAndGet();
-
-            Set<Integer> parts = remaining.get(grpId);
-
-            if (receivedCnt != parts.size())
-                return;
-
-            cctx.filePreloader().switchPartitions(grpId, parts, this)
-                .listen(fut -> {
-                    try {
-                        Map<Integer, Long> cntrs = fut.get();
-
-                        assert cntrs != null;
-
-                        cctx.kernalContext().closure().runLocalSafe(() -> onCacheGroupDone(grpId, cntrs));
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Unable to restore partition snapshot [cache=" +
-                            cctx.cache().cacheGroup(grpId) + ", p=" + partId + "]", e);
-
-                        onDone(e);
-                    }
-                });
+                    onDone(e);
+                }
+            });
         }
         catch (IOException | IgniteCheckedException e) {
             log.error("Unable to handle partition snapshot", e);
 
             onDone(e);
         }
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param cntr The highest value of the update counter before this partition began to process updates.
+     */
+    private void onPartitionSnapshotRestored(int grpId, int partId, long cntr) {
+        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v-> new ConcurrentHashMap<>());
+
+        cntrs.put(partId, cntr);
+
+        Set<Integer> parts = remaining.get(grpId);
+
+        assert parts != null;
+
+        if (parts.size() == cntrs.size())
+            onCacheGroupDone(grpId, cntrs);
     }
 
     /** {@inheritDoc} */
