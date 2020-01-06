@@ -203,9 +203,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         try {
             startGridsMultiThreaded(5);
-
-            for (int i = 0; i < 5; i++)
-                startClientGrid(5 + i);
+            startClientGridsMultiThreaded(5, 5);
 
             for (int i = 0; i < 5; i++) {
                 log.info("Iteration: " + i);

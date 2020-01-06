@@ -53,9 +53,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
         if (!singleNode()) {
             startGridsMultiThreaded(4);
-
-            startClientGrid(4);
-            startClientGrid(5);
+            startClientGridsMultiThreaded(4, 2);
         }
         else
             startGrid(0);

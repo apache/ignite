@@ -77,9 +77,7 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     @Test
     public void testVariousConnectionNumber() throws Exception {
         startGridsMultiThreaded(3);
-
-        for (int i = 0; i < 3; i++)
-            startClientGrid(3 + i);
+        startClientGridsMultiThreaded(3, 3);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

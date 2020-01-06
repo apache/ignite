@@ -160,10 +160,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         int clients = clientCount();
 
-        if (clients > 0) {
-            for (int i = 0; i < clients; i++)
-                startClientGrid(srvs + i);
-        }
+        if (clients > 0)
+            startClientGridsMultiThreaded(srvs, clients);
     }
 
     /** {@inheritDoc} */

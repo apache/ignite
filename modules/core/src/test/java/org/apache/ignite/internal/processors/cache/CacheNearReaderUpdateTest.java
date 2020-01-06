@@ -92,9 +92,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-
-        for (int i = 0; i < CLIENTS; i++)
-            startClientGrid(SRVS + 1);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /** {@inheritDoc} */

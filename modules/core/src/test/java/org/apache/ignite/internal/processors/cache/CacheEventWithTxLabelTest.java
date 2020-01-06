@@ -64,6 +64,9 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
     /** Number of server nodes. */
     private static final int SRVS = 3;
 
+    /** Number of client nodes. */
+    private static final int CLIENTS = 1;
+
     /** Cache name. */
     public static final String CACHE_NAME = "cache";
 
@@ -99,8 +102,7 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-
-        startClientGrid(SRVS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         waitForDiscovery(primary(), backup1(), backup2(), client());
 

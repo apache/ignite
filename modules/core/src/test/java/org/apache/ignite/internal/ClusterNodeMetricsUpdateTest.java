@@ -55,8 +55,7 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(NODES / 2);
 
-        for (int i = 0; i < NODES / 2; i++)
-            startClientGrid(NODES / 2 + i);
+        startClientGridsMultiThreaded(NODES / 2, NODES / 2);
 
         Map<UUID, Integer> expJobs = new HashMap<>();
 
