@@ -198,6 +198,148 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
+    /**
+     * Clear off-heap memory regions.
+     */
+    public void clearPartitions() {
+        if (isDone())
+            return;
+
+        cancelLock.lock();
+
+        try {
+            for (Map.Entry<String, Set<Long>> entry : regionToParts.entrySet()) {
+                String regionName = entry.getKey();
+                DataRegion region = cctx.database().dataRegion(regionName);
+
+                Set<Long> parts = entry.getValue();
+
+                ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
+
+                offheapClearTasks.put(regionName, offheapClearTask.doClear());
+            }
+        }
+        catch (RuntimeException | IgniteCheckedException e) {
+            onDone(e);
+        }
+        finally {
+            cancelLock.unlock();
+        }
+    }
+
+    public void requestPartitionsSnapshot() {
+        // todo should we send start event only when we starting to preload specified group?
+        for (Integer grpId : remaining.keySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            assert !grp.localWalEnabled() :
+                "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
+
+            grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+        }
+
+        cctx.kernalContext().getSystemExecutorService().submit(() -> {
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
+                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : map.entrySet()) {
+                    UUID nodeId = nodeAssigns.getKey().id();
+                    Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
+
+                    try {
+                        cancelLock.lock();
+
+                        try {
+                            if (isDone())
+                                return;
+
+                            if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
+                                break;
+
+                            snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
+
+                            if (log.isInfoEnabled())
+                                log.info("Start partitions preloading [from=" + nodeId + "]");
+
+                            if (log.isDebugEnabled())
+                                log.debug("Current state: " + this);
+                        }
+                        finally {
+                            cancelLock.unlock();
+                        }
+
+                        // todo
+                        snapFut.get();
+                    }
+                    catch (IgniteFutureCancelledCheckedException ignore) {
+                        // No-op.
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error(e.getMessage(), e);
+
+                        onDone(e);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param file Partition snapshot file.
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     */
+    public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
+        assert file != null;
+
+        if (log.isTraceEnabled()) {
+            log.trace("Processing partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
+                ", p=" + partId + ", path=" + file + "]");
+        }
+
+        if (isDone())
+            return;
+
+        try {
+            awaitCleanupIfNeeded(grpId);
+
+            if (isDone())
+                return;
+
+            initialize(grpId, partId, file);
+
+            AtomicInteger receivedCntr = received.computeIfAbsent(grpId, cntr -> new AtomicInteger());
+
+            int receivedCnt = receivedCntr.incrementAndGet();
+
+            Set<Integer> parts = remaining.get(grpId);
+
+            if (receivedCnt != parts.size())
+                return;
+
+            cctx.filePreloader().switchPartitions(grpId, parts, this)
+                .listen(fut -> {
+                    try {
+                        Map<Integer, Long> cntrs = fut.get();
+
+                        assert cntrs != null;
+
+                        cctx.kernalContext().closure().runLocalSafe(() -> onCacheGroupDone(grpId, cntrs));
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Unable to restore partition snapshot [cache=" +
+                            cctx.cache().cacheGroup(grpId) + ", p=" + partId + "]", e);
+
+                        onDone(e);
+                    }
+                });
+        }
+        catch (IOException | IgniteCheckedException e) {
+            log.error("Unable to handle partition snapshot", e);
+
+            onDone(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         return onDone(false, null, true);
@@ -364,88 +506,35 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         cctx.kernalContext().getSystemExecutorService().submit(task);
     }
 
-    public void requestPartitionsSnapshot() {
-        // todo should we send start event only when we starting to preload specified group?
-        for (Integer grpId : remaining.keySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            assert !grp.localWalEnabled() :
-                "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
-
-            grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-        }
-
-        cctx.kernalContext().getSystemExecutorService().submit(() -> {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
-                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : map.entrySet()) {
-                    UUID nodeId = nodeAssigns.getKey().id();
-                    Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
-
-                    try {
-                        cancelLock.lock();
-
-                        try {
-                            if (isDone())
-                                return;
-
-                            if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
-                                break;
-
-                            snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
-
-                            if (log.isInfoEnabled())
-                                log.info("Start partitions preloading [from=" + nodeId + "]");
-
-                            if (log.isDebugEnabled())
-                                log.debug("Current state: " + this);
-                        }
-                        finally {
-                            cancelLock.unlock();
-                        }
-
-                        // todo
-                        snapFut.get();
-                    }
-                    catch (IgniteFutureCancelledCheckedException ignore) {
-                        // No-op.
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error(e.getMessage(), e);
-
-                        onDone(e);
-                    }
-                }
-            }
-        });
-    }
-
     /**
-     * Clear off-heap memory regions.
+     * Re-initialize partition with a new file.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param src Partition snapshot file.
+     * @throws IOException If was not able to move partition file.
+     * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
      */
-    public void clearPartitions() {
-        if (isDone())
-            return;
+    private void initialize(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
+        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
 
-        cancelLock.lock();
+        File dest = new File(pageStore.getFileAbsolutePath());
 
-        try {
-            for (Map.Entry<String, Set<Long>> entry : regionToParts.entrySet()) {
-                String regionName = entry.getKey();
-                DataRegion region = cctx.database().dataRegion(regionName);
+        if (log.isDebugEnabled())
+            log.debug("Moving partition file [from=" + src + " , to=" + dest + " , size=" + src.length() + "]");
 
-                Set<Long> parts = entry.getValue();
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
+        assert !cctx.pageStore().exists(grpId, partId) :
+            "Partition file exists [cache=" + grp.cacheOrGroupName() + ", p=" + partId + "]";
 
-                offheapClearTasks.put(regionName, offheapClearTask.doClear());
-            }
-        }
-        catch (RuntimeException | IgniteCheckedException e) {
-            onDone(e);
-        }
-        finally {
-            cancelLock.unlock();
-        }
+        Files.move(src.toPath(), dest.toPath());
+
+        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+        part.dataStore().store(false).reinit();
+
+        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }
 
     /**
@@ -482,95 +571,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         } catch (IgniteFutureCancelledCheckedException ignore) {
             // No-op.
         }
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param file Partition snapshot file.
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     */
-    public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
-        assert file != null;
-
-        if (log.isTraceEnabled()) {
-            log.trace("Processing partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
-                ", p=" + partId + ", path=" + file + "]");
-        }
-
-        if (isDone())
-            return;
-
-        try {
-            awaitCleanupIfNeeded(grpId);
-
-            if (isDone())
-                return;
-
-            initialize(grpId, partId, file);
-
-            AtomicInteger receivedCntr = received.computeIfAbsent(grpId, cntr -> new AtomicInteger());
-
-            int receivedCnt = receivedCntr.incrementAndGet();
-
-            Set<Integer> parts = remaining.get(grpId);
-
-            if (receivedCnt != parts.size())
-                return;
-
-            cctx.filePreloader().switchPartitions(grpId, parts, this)
-                .listen(fut -> {
-                    try {
-                        Map<Integer, Long> cntrs = fut.get();
-
-                        assert cntrs != null;
-
-                        cctx.kernalContext().closure().runLocalSafe(() -> onCacheGroupDone(grpId, cntrs));
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Unable to restore partition snapshot [cache=" +
-                            cctx.cache().cacheGroup(grpId) + ", p=" + partId + "]", e);
-
-                        onDone(e);
-                    }
-                });
-        }
-        catch (IOException | IgniteCheckedException e) {
-            log.error("Unable to handle partition snapshot", e);
-
-            onDone(e);
-        }
-    }
-
-    /**
-     * Re-initialize partition with new file.
-     *
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     * @param src Partition snapshot file.
-     * @throws IOException If was not able to move partition file.
-     * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
-     */
-    private void initialize(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
-        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
-
-        File dest = new File(pageStore.getFileAbsolutePath());
-
-        if (log.isDebugEnabled())
-            log.debug("Moving partition file [from=" + src + " , to=" + dest + " , size=" + src.length() + "]");
-
-        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-        assert !cctx.pageStore().exists(grpId, partId) :
-            "Partition file exists [cache=" + grp.cacheOrGroupName() + ", p=" + partId + "]";
-
-        Files.move(src.toPath(), dest.toPath());
-
-        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-        part.dataStore().store(false).reinit();
-
-        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }
 
     // todo
