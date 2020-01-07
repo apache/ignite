@@ -32,7 +32,7 @@ nuget pack Apache.Ignite.Schema.nuspec -Version 1.6.1
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <license>Apache-2.0</license>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -41,7 +41,6 @@ XSD file describes the structure of IgniteConfigurationSection and enables Intel
 
 More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
         </description>
-        <releaseNotes></releaseNotes>
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite XSD Intellisense</tags>
     </metadata>

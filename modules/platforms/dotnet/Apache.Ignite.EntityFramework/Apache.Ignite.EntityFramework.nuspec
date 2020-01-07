@@ -34,7 +34,7 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <license>Apache-2.0</license>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -46,7 +46,6 @@ More info: https://apacheignite-net.readme.io/
         <summary>
             Apache Ignite EntityFramework Integration
         </summary>
-        <releaseNotes></releaseNotes>
         <copyright>Copyright 2020</copyright>
         <tags>EntityFramework Second-Level Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <dependencies>
