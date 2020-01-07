@@ -57,8 +57,8 @@ Creating NuGet package:
 	    <file src="bin\$configuration$\Apache.Ignite.NLog.dll" target="lib\net40" />
 		<file src="bin\$configuration$\Apache.Ignite.NLog.xml" target="lib\net40" />
 
-	    <file src="bin\$configuration$\Apache.Ignite.NLog.dll" target="lib\netstandard20" />
-		<file src="bin\$configuration$\Apache.Ignite.NLog.xml" target="lib\netstandard20" />
+	    <file src="bin\$configuration$\Apache.Ignite.NLog.dll" target="lib\netstandard2.0" />
+		<file src="bin\$configuration$\Apache.Ignite.NLog.xml" target="lib\netstandard2.0" />
 
         <!-- Icon -->
         <file src="..\logo_ignite_128x128.png" target="images\" />
