@@ -130,7 +130,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         // TODO set this only for historical rebalance tests.
         cfg.setCommunicationSpi(new IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi());
 
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
             setWalHistorySize(1000).
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
