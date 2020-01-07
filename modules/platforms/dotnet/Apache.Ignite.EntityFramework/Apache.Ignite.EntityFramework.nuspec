@@ -36,7 +36,7 @@ Creating NuGet package:
         <owners>Apache Software Foundation</owners>
         <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 Apache Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.
@@ -56,5 +56,8 @@ More info: https://apacheignite-net.readme.io/
     <files>
 	    <file src="bin\$configuration$\Apache.Ignite.EntityFramework.dll" target="lib\net40" />
 		<file src="bin\$configuration$\Apache.Ignite.EntityFramework.xml" target="lib\net40" />
+
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>

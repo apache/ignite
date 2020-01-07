@@ -34,7 +34,7 @@ nuget pack Apache.Ignite.Schema.nuspec -Version 1.6.1
         <owners>Apache Software Foundation</owners>
         <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 XSD file describes the structure of IgniteConfigurationSection and enables Intellisense(TM) when editing IgniteConfigurationSection in app.config and web.config in Visual Studio.
@@ -48,5 +48,8 @@ More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
         <!-- Other files should go to Content folder to be automatically included in project. -->
         <file src="IgniteConfigurationSection.xsd" target="content" />
         <file src="IgniteClientConfigurationSection.xsd" target="content" />
+
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>
