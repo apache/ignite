@@ -27,7 +27,7 @@ Creating NuGet package:
 
 -->
 
-<package >
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Apache.Ignite</id>
         <title>Apache Ignite</title>
@@ -70,6 +70,6 @@ More info: https://apacheignite-net.readme.io/
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
         
         <!-- Icon -->
-        <file src="..\icon.png" target="images\" />
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>
