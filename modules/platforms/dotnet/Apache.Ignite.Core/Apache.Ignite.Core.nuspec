@@ -35,7 +35,7 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <license>Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
