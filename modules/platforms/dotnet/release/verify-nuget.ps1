@@ -63,6 +63,8 @@ New-Item -Path $testDir -ItemType "directory" -Force
 Remove-Item -Force $testDir\*.*
 cd $testDir
 
+# TODO: Clear package cache!!1
+
 
 # Create project, install packages, copy test code, run
 dotnet new console
