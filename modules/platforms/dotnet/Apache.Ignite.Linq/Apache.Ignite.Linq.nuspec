@@ -51,13 +51,15 @@ More info: https://apacheignite-net.readme.io/
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
-            <group>
+            <group targetFramework=".NETFramework4.0">
                 <dependency id="Apache.Ignite" version="[$version$]" />
-                <dependency id="Remotion.Linq" version="[2.0.1]" />
+                <dependency id="Remotion.Linq" version="[2.0.1]" />                
             </group>
-
-            <group targetFramework=".NETFramework4.0" />
-            <group targetFramework=".NETStandard2.0" />
+            
+            <group targetFramework=".NETStandard2.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+                <dependency id="Remotion.Linq" version="[2.1.2]" />                
+            </group>
         </dependencies>    
     </metadata>
     <files>
