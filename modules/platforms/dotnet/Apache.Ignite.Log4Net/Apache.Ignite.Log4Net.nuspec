@@ -42,13 +42,23 @@ Creating NuGet package:
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache log4net logger</tags>
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
-            <dependency id="log4net" version="[2.0.0, 3.0.0)" />
+            <group>
+                <dependency id="Apache.Ignite" version="[$version$]" />                
+            </group>
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="log4net" version="[2.0.0, 3.0.0)" />                
+            </group>
+            <group targetFramework=".NETStandard2.0">
+                <dependency id="log4net" version="[2.0.6, 3.0.0)" />
+            </group>
         </dependencies>    
     </metadata>
     <files>
 	    <file src="bin\$configuration$\Apache.Ignite.Log4Net.dll" target="lib\net40" />
 		<file src="bin\$configuration$\Apache.Ignite.Log4Net.xml" target="lib\net40" />
+
+	    <file src="bin\$configuration$\Apache.Ignite.Log4Net.dll" target="lib\netstandard20" />
+		<file src="bin\$configuration$\Apache.Ignite.Log4Net.xml" target="lib\netstandard20" />
 
         <!-- Icon -->
         <file src="..\logo_ignite_128x128.png" target="images\" />
