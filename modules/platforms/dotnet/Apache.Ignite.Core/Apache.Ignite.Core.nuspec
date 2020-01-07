@@ -47,6 +47,11 @@ More info: https://apacheignite-net.readme.io/
         </description>
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
+
+        <dependencies>
+            <group targetFramework=".NETFramework4.0" />
+            <group targetFramework=".NETStandard2.0" />
+        </dependencies>
     </metadata>
     <files>
         <!-- Binaries -->
