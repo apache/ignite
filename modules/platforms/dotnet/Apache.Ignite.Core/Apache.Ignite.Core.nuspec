@@ -27,7 +27,7 @@ Creating NuGet package:
 
 -->
 
-<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+<package>
     <metadata>
         <id>Apache.Ignite</id>
         <title>Apache Ignite</title>
