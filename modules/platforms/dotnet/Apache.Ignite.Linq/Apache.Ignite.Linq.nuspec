@@ -59,7 +59,7 @@ More info: https://apacheignite-net.readme.io/
             
             <group targetFramework=".NETStandard2.0">
                 <dependency id="Apache.Ignite" version="[$version$]" />
-                <dependency id="Remotion.Linq" version="[2.1.2]" />                
+                <dependency id="Remotion.Linq" version="[2.1.2]" />
             </group>
         </dependencies>    
     </metadata>
