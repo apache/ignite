@@ -43,6 +43,7 @@ More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
         </description>
         <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite XSD Intellisense</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
     </metadata>
     <files>
         <!-- Other files should go to Content folder to be automatically included in project. -->

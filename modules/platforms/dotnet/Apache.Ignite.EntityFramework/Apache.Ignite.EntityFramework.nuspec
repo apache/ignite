@@ -48,6 +48,7 @@ More info: https://apacheignite-net.readme.io/
         </summary>
         <copyright>Copyright 2020</copyright>
         <tags>EntityFramework Second-Level Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>
             <group targetFramework=".NETFramework4.0">
                 <dependency id="Apache.Ignite" version="[$version$]" />
