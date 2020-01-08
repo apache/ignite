@@ -511,7 +511,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             if (exchFut.partitionFileSupplier(grp.groupId(), part.id(), cntrsMap.updateCounter(part.id())) == null) {
                 if (log.isDebugEnabled())
-                    log.debug("File rebalancing not required for group " + grp.cacheOrGroupName() + " - no supplier for part "+part.id());
+                    log.debug("File rebalancing not required for group " + grp.cacheOrGroupName() + " - no supplier for part " + part.id());
 
                 return false;
             }
