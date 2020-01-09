@@ -158,9 +158,9 @@ public enum IgniteFeatures {
      * @return Byte array representing all supported features by current node.
      */
     public static byte[] allFeatures() {
-        final BitSet set = new BitSet();
+        final BitSet set = new BitSet(IgniteFeatures.values().length);
 
-        for (IgniteFeatures value : IgniteFeatures.values() ) {
+        for (IgniteFeatures value : IgniteFeatures.values()) {
             if (value == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
                 continue;
 
