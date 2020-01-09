@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,6 +50,8 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -207,9 +208,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Read-only metastorage. */
     private volatile ReadableDistributedMetaStorage roMetastorage;
 
-    /** Metastorage lock. */
-    private final ReentrantReadWriteLock metaLock = new ReentrantReadWriteLock();
-
     /** Metastorage with the write access. */
     private volatile DistributedMetaStorage metastorage;
 
@@ -283,22 +281,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             new DistributedMetastorageLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                    metaLock.writeLock().lock();
+                    roMetastorage = metastorage;
 
                     try {
-                        roMetastorage = metastorage;
-
                         metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
                             name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) val));
 
-                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistgoramConfigChanged(
+                        metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
                             name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) val));
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
-                    }
-                    finally {
-                        metaLock.writeLock().unlock();
                     }
 
                     metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
@@ -306,7 +299,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                             name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long) newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
-                        (name, oldVal, newVal) -> onHistgoramConfigChanged(
+                        (name, oldVal, newVal) -> onHistogramConfigChanged(
                             name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[]) newVal));
                 }
 
@@ -352,21 +345,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @return Value or {@code null} if not found.
      */
     private <T extends Serializable> T readFromMetastorage(String key) {
-        metaLock.readLock().lock();
+        if (roMetastorage == null)
+            return null;
 
         try {
-            if (roMetastorage == null)
-                return null;
-
-            try {
-                return roMetastorage.read(key);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            return roMetastorage.read(key);
         }
-        finally {
-            metaLock.readLock().unlock();
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -396,21 +382,21 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (mreg != null)
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
-        metaLock.writeLock().lock();
-
         try {
+            GridCompoundFuture opsFut = new GridCompoundFuture<>();
+
             for (Metric m : mreg) {
                 if (m instanceof HitRateMetric)
-                    metastorage.remove(metricName(HITRATE_CFG_PREFIX, m.name()));
+                    opsFut.add(metastorage.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
                 else if (m instanceof HistogramMetric)
-                    metastorage.remove(metricName(HISTOGRAM_CFG_PREFIX, m.name()));
+                    opsFut.add(metastorage.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
             }
+
+            opsFut.markInitialized();
+            opsFut.get();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
-        }
-        finally {
-            metaLock.writeLock().unlock();
         }
     }
 
@@ -478,7 +464,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Metric name.
      * @param bounds New bounds.
      */
-    private void onHistgoramConfigChanged(String name, @Nullable long[] bounds) {
+    private void onHistogramConfigChanged(String name, @Nullable long[] bounds) {
         if (bounds == null)
             return;
 
@@ -498,22 +484,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private <T extends Metric> T find(String name, Class<T> type) {
         A.notNull(name, "name");
 
-        String[] splited = fromFullName(name);
+        T2<String, String> splitted = fromFullName(name);
 
-        MetricRegistry mreg = registries.get(splited[0]);
+        MetricRegistry mreg = registries.get(splitted.get1());
 
         if (mreg == null) {
             if (log.isInfoEnabled())
-                log.info("Metric registry not found[registry=" + splited[0] + ']');
+                log.info("Metric registry not found[registry=" + splitted.get1() + ']');
 
             return null;
         }
 
-        Metric m = mreg.findMetric(splited[1]);
+        Metric m = mreg.findMetric(splitted.get2());
 
         if (m == null) {
             if (log.isInfoEnabled())
-                log.info("Metric not found[registry=" + splited[0] + ", metricName=" + splited[1] + ']');
+                log.info("Metric not found[registry=" + splitted.get1() + ", metricName=" + splitted.get2() + ']');
 
             return null;
         }

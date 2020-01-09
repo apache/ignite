@@ -362,9 +362,9 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testFromFullName() {
-        assertArrayEquals(new String[] {"org.apache", "ignite"}, fromFullName("org.apache.ignite"));
+        assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
 
-        assertArrayEquals(new String[] {"org", "apache"}, fromFullName("org.apache"));
+        assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
     }
 
     /** */

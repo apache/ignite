@@ -79,11 +79,11 @@ public class MetricUtils {
      * @param name Full metric name.
      * @return Array consist of registry name and metric name.
      */
-    public static String[] fromFullName(String name) {
-        return new String[]{
+    public static T2<String, String> fromFullName(String name) {
+        return new T2<> (
             name.substring(0, name.lastIndexOf(SEPARATOR)),
             name.substring(name.lastIndexOf(SEPARATOR) + 1)
-        };
+        );
     }
 
     /**
