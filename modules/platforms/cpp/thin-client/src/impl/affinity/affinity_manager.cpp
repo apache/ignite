@@ -40,7 +40,7 @@ namespace ignite
                     ResetAffinity(ver);
                 }
 
-                void AffinityManager::UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups,
+                void AffinityManager::UpdateAffinity(const std::vector<PartitionAwarenessGroup>& groups,
                     const AffinityTopologyVersion& ver)
                 {
                     if (topologyVersion > ver)
@@ -57,7 +57,7 @@ namespace ignite
 
                         CacheAffinityMap& newAffinity = *newAffinityPtr.Get();
 
-                        std::vector<AffinityAwarenessGroup>::const_iterator group;
+                        std::vector<PartitionAwarenessGroup>::const_iterator group;
                         for (group = groups.begin(); group != groups.end(); ++group)
                         {
                             SP_AffinityAssignment newMapping(new AffinityAssignment(group->GetNodePartitions()));
