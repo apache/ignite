@@ -195,12 +195,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         public synchronized void register(IgniteEx ignite) {
             registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
-            expInvokes.computeIfPresent(ignite.name(), (n, t) -> {
-                Integer val = t.get2();
+            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
+                Integer val = t2.getValue();
 
-                t.set2(++val);
+                t2.set2(++val);
 
-                return t;
+                return t2;
             });
         }
 
@@ -213,8 +213,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                     expSecSubjId, t.get1())
             );
 
-            expInvokes.forEach((k, v) ->
-                assertEquals("Node " + k + ". Execution of register: ", v.get1(), v.get2()));
+            expInvokes.forEach((key, value) ->
+                assertEquals("Node " + key + ". Execution of register: ",
+                    value.get1(), value.get2()));
 
             clear();
         }
