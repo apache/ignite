@@ -1830,6 +1830,51 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Pages list name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Buckets count.
+     */
+    public int bucketsCount() {
+        return buckets;
+    }
+
+    /**
+     * Bucket size.
+     *
+     * @param bucket Bucket.
+     */
+    public long bucketSize(int bucket) {
+        return bucketsSize[bucket].get();
+    }
+
+    /**
+     * Stripes count.
+     *
+     * @param bucket Bucket.
+     */
+    public int stripesCount(int bucket) {
+        Stripe[] stripes = getBucket(bucket);
+
+        return stripes == null ? 0 : stripes.length;
+    }
+
+    /**
+     * Cached pages count.
+     *
+     * @param bucket Bucket.
+     */
+    public int cachedPagesCount(int bucket) {
+        PagesCache pagesCache = getBucketCache(bucket, false);
+
+        return pagesCache == null ? 0 : pagesCache.size();
+    }
+
+    /**
      * Singleton reuse bag.
      */
     private static final class SingletonReuseBag implements ReuseBag {
