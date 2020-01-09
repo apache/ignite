@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -106,6 +103,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
+    /** DataRegionConfiguration names reserved for various internal needs. */
     public static Set<String> INTERNAL_DATA_REGION_NAMES = Collections.unmodifiableSet(
         new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, TX_LOG_CACHE_NAME, METASTORE_DATA_REGION_NAME)));
 
@@ -1354,17 +1352,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        DecimalFormat dblFmt = new DecimalFormat("#.##",
-            DecimalFormatSymbols.getInstance(Locale.US));
-
         if (log.isQuiet()) {
             U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
 
-            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, dblFmt, false));
-        } else if (log.isInfoEnabled()) {
+            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, false));
+        }
+        else if (log.isInfoEnabled()) {
             log.info("Data Regions Started: " + dataRegionMap.size());
 
-            log.info(IgniteKernal.dataStorageReport(this, dblFmt, false));
+            log.info(IgniteKernal.dataStorageReport(this, false));
         }
     }
 

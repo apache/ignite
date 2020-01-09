@@ -1500,8 +1500,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (metricsLogFreq > 0) {
             metricsLogTask = ctx.timeout().schedule(new Runnable() {
-                private final DecimalFormat dblFmt = new DecimalFormat("#.##",
-                    DecimalFormatSymbols.getInstance(Locale.US));
+                private final DecimalFormat dblFmt = doubleFormat();
 
                 @Override public void run() {
                     ackNodeMetrics(dblFmt, execSvc, sysExecSvc, customExecSvcs);
@@ -1541,6 +1540,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
+    }
+
+    /** */
+    private static DecimalFormat doubleFormat() {
+        return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
     }
 
     /**
@@ -2329,34 +2333,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
                 networkDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
-            String msg = NL +
-                "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
-                getUpTimeFormatted() + "]" + NL +
-                "    ^-- Cluster [hosts=" + hosts + ", CPUs=" + cpus + ", servers=" + servers + ", clients=" + clients +
-                ", topVer=" + topVer.topologyVersion() + ", minorTopVer=" + topVer.minorTopologyVersion() + "]" + NL +
-                "    ^-- Network [addrs=" + locNode.addresses() + networkDetails + "]" + NL +
-                "    ^-- CPU [CPUs=" + localCpus + ", curLoad=" + dblFmt.format(cpuLoadPct) + "%, avgLoad=" +
-                dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
-                "    ^-- Heap [used=" + dblFmt.format(heapUsedInMBytes) + "MB, free=" +
-                dblFmt.format(freeHeapPct) + "%, comm=" + dblFmt.format(heapCommInMBytes) + "MB]" + NL +
-                dataStorageInfo +
-                "    ^-- Outbound messages queue [size=" + m.getOutboundMessagesQueueSize() + "]" + NL +
-                "    ^-- " + createExecutorDescription("Public thread pool", execSvc) + NL +
-                "    ^-- " + createExecutorDescription("System thread pool", sysExecSvc);
+            SB msg = new SB();
+
+            msg.nl()
+                .a("Metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
+                .a("    ^-- Node [id=").a(id).a(name() != null ? ", name=" + name() : "").a(", uptime=")
+                .a(getUpTimeFormatted()).a("]").nl()
+                .a("    ^-- Cluster [hosts=").a(hosts).a(", CPUs=").a(cpus).a(", servers=").a(servers)
+                .a(", clients=").a(clients).a(", topVer=").a(topVer.topologyVersion())
+                .a(", minorTopVer=").a(topVer.minorTopologyVersion()).a("]").nl()
+                .a("    ^-- Network [addrs=").a(locNode.addresses()).a(networkDetails).a("]").nl()
+                .a("    ^-- CPU [CPUs=").a(localCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
+                .a("%, avgLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").nl()
+                .a("    ^-- Heap [used=").a(dblFmt.format(heapUsedInMBytes))
+                .a("MB, free=").a(dblFmt.format(freeHeapPct))
+                .a("%, comm=").a(dblFmt.format(heapCommInMBytes)).a("MB]").nl()
+                .a(dataStorageInfo)
+                .a("    ^-- Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]").nl()
+                .a("    ^-- ").a(createExecutorDescription("Public thread pool", execSvc)).nl()
+                .a("    ^-- ").a(createExecutorDescription("System thread pool", sysExecSvc));
 
             if (customExecSvcs != null) {
-                StringBuilder customSvcsMsg = new StringBuilder();
-
-                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
-                    customSvcsMsg.append(NL).append("    ^-- ")
-                        .append(createExecutorDescription(entry.getKey(), entry.getValue()));
-                }
-
-                msg += customSvcsMsg;
+                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())
+                    msg.nl().a("    ^-- ").a(createExecutorDescription(entry.getKey(), entry.getValue()));
             }
 
-            log.info(msg);
+            log.info(msg.toString());
 
             ctx.cache().context().database().dumpStatistics(log);
         }
@@ -2366,10 +2368,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** */
-    public static String dataStorageReport(IgniteCacheDatabaseSharedManager database, DecimalFormat dblFmt,
+    public static String dataStorageReport(IgniteCacheDatabaseSharedManager db, boolean includeMemoryStatistics) {
+        return dataStorageReport(db, doubleFormat(), includeMemoryStatistics);
+    }
+
+    /** */
+    private static String dataStorageReport(IgniteCacheDatabaseSharedManager db, DecimalFormat dblFmt,
         boolean includeMemoryStatistics) {
         // Off-heap params.
-        Collection<DataRegion> regions = database.dataRegions();
+        Collection<DataRegion> regions = db.dataRegions();
 
         SB dataRegionsInfo = new SB();
 
@@ -2408,7 +2415,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 String type = "user";
 
                 try {
-                    if (region == database.dataRegion(null))
+                    if (region == db.dataRegion(null))
                         type = "default";
                     else if (INTERNAL_DATA_REGION_NAMES.contains(regCfg.getName()))
                         type = "internal";
@@ -2420,8 +2427,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 dataRegionsInfo.a("    ^--   ")
                     .a(regCfg.getName()).a(" region [type=").a(type)
-                    .a(", persistence=" + regCfg.isPersistenceEnabled())
-                    .a(", lazyAlloc=" + regCfg.isLazyMemoryAllocation()).a(',').a(NL)
+                    .a(", persistence=").a(regCfg.isPersistenceEnabled())
+                    .a(", lazyAlloc=").a(regCfg.isLazyMemoryAllocation()).a(',').nl()
                     .a("      ...  ")
                     .a("initCfg=").a(dblFmt.format(offHeapInitInMBytes))
                     .a("MB, maxCfg=").a(dblFmt.format(offHeapMaxInMBytes))
@@ -2440,23 +2447,34 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     persistenceEnabled = true;
                 }
 
-                dataRegionsInfo.a(']').a(NL);
+                dataRegionsInfo.a(']').nl();
             }
         }
 
-        long offHeapUsedInMBytes = offHeapUsedSummary / MEGABYTE;
-        long offHeapCommInMBytes = offHeapCommSummary / MEGABYTE;
-        long pdsUsedMBytes = pdsUsedSummary / MEGABYTE;
+        SB info = new SB();
 
-        double freeOffHeapPct = offHeapMaxSummary > 0 ?
-            ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
+        if (includeMemoryStatistics) {
+            long offHeapUsedInMBytes = offHeapUsedSummary / MEGABYTE;
+            long offHeapCommInMBytes = offHeapCommSummary / MEGABYTE;
 
-        return (includeMemoryStatistics ?
-            "    ^-- Off-heap memory [used=" + dblFmt.format(offHeapUsedInMBytes) + "MB, free=" +
-            dblFmt.format(freeOffHeapPct) + "%, allocated=" + dblFmt.format(offHeapCommInMBytes) + "MB]" + NL +
-            "    ^-- Page memory [pages=" + loadedPages + "]" + NL : "") +
-            dataRegionsInfo + (persistenceEnabled ?
-            "    ^-- Ignite persistence [used=" + dblFmt.format(pdsUsedMBytes) + "MB]" + NL : "");
+            double freeOffHeapPct = offHeapMaxSummary > 0 ?
+                ((double)((offHeapMaxSummary - offHeapUsedSummary) * 100)) / offHeapMaxSummary : -1;
+
+            info.a("    ^-- Off-heap memory [used=").a(dblFmt.format(offHeapUsedInMBytes))
+                .a("MB, free=").a(dblFmt.format(freeOffHeapPct))
+                .a("%, allocated=").a(dblFmt.format(offHeapCommInMBytes)).a("MB]").nl()
+                .a("    ^-- Page memory [pages=").a(loadedPages).a("]").nl();
+        }
+
+        info.a(dataRegionsInfo);
+
+        if (persistenceEnabled) {
+            long pdsUsedMBytes = pdsUsedSummary / MEGABYTE;
+
+            info.a("    ^-- Ignite persistence [used=").a(dblFmt.format(pdsUsedMBytes)).a("MB]").nl();
+        }
+
+        return info.toString();
     }
 
     /**
