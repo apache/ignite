@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.security.cache;
 
 import java.util.function.Consumer;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -43,10 +40,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @RunWith(JUnit4.class)
 public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** Test server node name. */
-    public static final String SRV = "srv_test_node";
+    private static final String SRV = "srv_test_node";
 
     /** Test client node name. */
-    public static final String CLNT = "cnt_test_node";
+    private static final String CLNT = "cnt_test_node";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -127,7 +124,7 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
 
         q.setLocalListener(e -> {/* No-op. */});
 
-        q.setRemoteTransformerFactory(new TestTransformerFactory());
+        q.setRemoteTransformerFactory(() -> e -> "value");
 
         try (QueryCursor<Cache.Entry<String, Integer>> cur = node.cache(cacheName).query(q)) {
             // No-op.
@@ -141,15 +138,5 @@ public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPe
         return SecurityPermissionSetBuilder.create()
             .appendCachePermissions(CACHE_NAME, CACHE_READ)
             .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build();
-    }
-
-    /**
-     * Test transformer factory.
-     */
-    private static class TestTransformerFactory implements Factory {
-        /** {@inheritDoc} */
-        @Override public IgniteClosure<CacheEntryEvent, Object> create() {
-            return Cache.Entry::getValue;
-        }
     }
 }
