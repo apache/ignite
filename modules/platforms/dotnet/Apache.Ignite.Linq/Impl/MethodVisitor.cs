@@ -32,6 +32,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary> Property visitors. </summary>
         private static readonly Dictionary<MemberInfo, string> Properties = new Dictionary<MemberInfo, string>
         {
+            // ReSharper disable AssignNullToNotNullAttribute
             {typeof(string).GetProperty("Length"), "length"},
             {typeof(DateTime).GetProperty("Year"), "year"},
             {typeof(DateTime).GetProperty("Month"), "month"},
@@ -41,6 +42,7 @@ namespace Apache.Ignite.Linq.Impl
             {typeof(DateTime).GetProperty("Hour"), "hour"},
             {typeof(DateTime).GetProperty("Minute"), "minute"},
             {typeof(DateTime).GetProperty("Second"), "second"}
+            // ReSharper restore AssignNullToNotNullAttribute
         };
 
         /// <summary> Method visit delegate. </summary>

@@ -55,7 +55,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setNetworkTimeout(30_000);
+        cfg.setNetworkTimeout(60_000);
         cfg.setConnectorConfiguration(null);
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setTimeServerPortRange(200);

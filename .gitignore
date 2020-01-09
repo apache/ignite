@@ -30,6 +30,8 @@ git-patch-prop-local.sh
 *.classname*
 *.exe
 .mvn/
+mvnw
+mvnw.cmd
 
 #Ignore all Intellij IDEA files (except default inspections config)
 .idea/

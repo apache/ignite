@@ -66,10 +66,11 @@ Requirements:
 * NuGet: sudo apt-get install nuget
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
+* PowerShell Core: https://github.com/PowerShell/PowerShell
 * IDE: Not required. Rider is recommended, MonoDevelop also works.
 
 Getting started:
 * Build Java and .NET:
-  ./build-mono.sh
+  pwsh ./build.ps1 -skipDotNetCore
 * Run tests: 
   mono Apache.Ignite.Core.Tests/bin/Debug/Apache.Ignite.Core.Tests.exe -basicTests
