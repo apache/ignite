@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -97,8 +96,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private final Map<Long, UUID> partsToNodes = new HashMap<>();
 
-    /** */
-    private final Map<Integer, Set<Integer>> remaining = new ConcurrentHashMap<>();
+    /** The remaining groups with the number of partitions. */
+    private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
     /** todo used for diagnostic purposes only */
     private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
@@ -178,8 +177,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                         Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
 
-                        Set<Integer> allPartitions = remaining.computeIfAbsent(grpId, v -> new GridConcurrentHashSet<>());
-
                         for (Integer partId : entry.getValue()) {
                             assert grp.topology().localPartition(partId).dataStore().readOnly() :
                                 "cache=" + grp.cacheOrGroupName() + " p=" + partId;
@@ -189,9 +186,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                             regionParts.add(grpAndPart);
 
                             partsToNodes.put(grpAndPart, nodeId);
-
-                            allPartitions.add(partId);
                         }
+
+                        Integer remainParts = remaining.get(grpId);
+
+                        if (remainParts == null)
+                            remainParts = 0;
+
+                        remaining.put(grpId, remainParts + entry.getValue().size());
                     }
                 }
             }
@@ -336,15 +338,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cntr The highest value of the update counter before this partition began to process updates.
      */
     private void onPartitionSnapshotRestored(int grpId, int partId, long cntr) {
-        Set<Integer> parts = remaining.get(grpId);
+        Integer partsCnt = remaining.get(grpId);
 
-        assert parts != null;
+        assert partsCnt != null;
 
         Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v-> new ConcurrentHashMap<>());
 
         cntrs.put(partId, cntr);
 
-        if (parts.size() == cntrs.size())
+        if (partsCnt == cntrs.size())
             onCacheGroupDone(grpId, cntrs);
     }
 
@@ -415,9 +417,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
-        Set<Integer> parts = remaining.remove(grpId);
-
-        if (parts == null)
+        if (remaining.remove(grpId) == null)
             return;
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
