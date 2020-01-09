@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2923,6 +2924,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 DataRegionConfiguration drCfg = findDataRegion(dsCfg, grpCfg.getDataRegionName());
 
+                if (drCfg == null)
+                    return;
+
                 if ((1.0 * partsNum * dsCfg.getPageSize()) / drCfg.getMaxSize() > MEMORY_OVERHEAD_THRESHOLD)
                     log.warning(buildWarningMessage(grpDesc, drCfg, dsCfg.getPageSize(), partsNum));
             }
@@ -2966,16 +2970,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          *
          * @return Found data region.
          */
-        private DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
+        @Nullable private DataRegionConfiguration findDataRegion(DataStorageConfiguration dsCfg, String drName) {
             if (dsCfg.getDataRegionConfigurations() == null || drName == null)
                 return dsCfg.getDefaultDataRegionConfiguration();
 
             if (dsCfg.getDefaultDataRegionConfiguration().getName().equals(drName))
                 return dsCfg.getDefaultDataRegionConfiguration();
 
-            return Arrays.stream(dsCfg.getDataRegionConfigurations())
+            Optional<DataRegionConfiguration> cfgOpt = Arrays.stream(dsCfg.getDataRegionConfigurations())
                 .filter(drCfg -> drCfg.getName().equals(drName))
-                .findFirst().get();
+                .findFirst();
+
+            return cfgOpt.isPresent() ? cfgOpt.get() : null;
         }
     }
 }
