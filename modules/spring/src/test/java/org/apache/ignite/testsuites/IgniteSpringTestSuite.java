@@ -22,6 +22,7 @@ import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
+import org.apache.ignite.cluster.ClusterStateXmlPropertiesTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtMultiBackupTest;
@@ -97,7 +98,9 @@ import org.junit.runners.Suite;
 
     GridCommandLineLoaderTest.class,
 
-    GridCacheDhtMultiBackupTest.class
+    GridCacheDhtMultiBackupTest.class,
+
+    ClusterStateXmlPropertiesTest.class
 })
 public class IgniteSpringTestSuite {
 }
