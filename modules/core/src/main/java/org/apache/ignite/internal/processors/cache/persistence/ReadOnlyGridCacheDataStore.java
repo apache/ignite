@@ -24,6 +24,9 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,19 +67,36 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     /** */
+    private static final boolean FAIL_NODE_ON_PARTITION_INCONSISTENCY = Boolean.getBoolean(
+        IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
+
+    /** */
     private final CacheDataStore delegate;
 
     /** */
     private final NoopRowStore rowStore;
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
+    private final GridCacheSharedContext ctx;
+
+    /** */
     private volatile PartitionUpdateCounter cntr;
 
+    /** */
     private final CacheGroupContext grp;
 
+    /** */
     private final int partId;
 
-    /** todo remove unused args */
+    /**
+     * @param grp Cache group.
+     * @param ctx Context.
+     * @param delegate Delegated cache data store, all read operations are performed in this store.
+     * @param partId Partition ID.
+     */
     public ReadOnlyGridCacheDataStore(
         CacheGroupContext grp,
         GridCacheSharedContext ctx,
@@ -83,9 +104,10 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         int partId
     ) {
         this.delegate = delegate;
-
         this.grp = grp;
         this.partId = partId;
+        this.ctx = ctx;
+        this.log = ctx.logger(getClass());
 
         try {
             rowStore = new NoopRowStore(grp, new NoopFreeList(grp.dataRegion(), ctx.kernalContext()));
@@ -115,8 +137,15 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     }
 
     /** {@inheritDoc} */
-    @Override public long nextUpdateCounter() {
+    @Override public boolean isEmpty() {
+        // Fast-eviction is possible if delegate was not initialized.
+        // todo assert !delegate.intiialized();
 
+        return delegate.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long nextUpdateCounter() {
         return cntr.next();
     }
 
@@ -137,38 +166,32 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public long getAndIncrementUpdateCounter(long delta) {
-        return cntr.reserve(delta);//delegate.getAndIncrementUpdateCounter(delta);
+        return cntr.reserve(delta);
     }
 
     /** {@inheritDoc} */
     @Override public void updateCounter(long val) {
-
         try {
             cntr.update(val);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-//            U.error(log, "Failed to update partition counter. " +
-//                "Most probably a node with most actual data is out of topology or data streamer is used " +
-//                "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
-//                grp.name() + ", partId=" + partId + ']', e);
+            U.error(log, "Failed to update partition counter. " +
+                "Most probably a node with most actual data is out of topology or data streamer is used " +
+                "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
+                grp.name() + ", partId=" + partId + ']', e);
 
-//            if (failNodeOnPartitionInconsistency)
-//                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            if (FAIL_NODE_ON_PARTITION_INCONSISTENCY)
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean updateCounter(long start, long delta) {
-//        assert cntr != null;
-
         return cntr.update(start, delta);
     }
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
-//        assert cntr != null;
-
         return cntr.finalizeUpdateCounters();
     }
 
@@ -179,15 +202,11 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public @Nullable PartitionUpdateCounter partUpdateCounter() {
-//        assert cntr != null;
-
         return cntr;
     }
 
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-//        assert cntr != null;
-
         return cntr.reserve(delta);
     }
 
@@ -199,12 +218,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
     /** {@inheritDoc} */
     @Override public int partId() {
         return delegate.partId();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        // todo required for evictions
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -271,7 +284,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         KeyCacheObject key,
         int partId
     ) throws IgniteCheckedException {
-        // todo think
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -325,7 +338,6 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public void clear(int cacheId) throws IgniteCheckedException {
-        // todo
         // No-op.
     }
 
@@ -347,82 +359,16 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
     /** {@inheritDoc} */
     @Override public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows) {
-        // No-op.
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-        // todo think about evictions
         return null;
     }
 
-    @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key,
-        MvccSnapshot snapshot) throws IgniteCheckedException {
-        return delegate.mvccFind(cctx, key, snapshot);
-    }
-
-    @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx,
-        KeyCacheObject key) throws IgniteCheckedException {
-        return delegate.mvccFindAllVersions(cctx, key);
-    }
-
-    @Override public boolean mvccInitialValue(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val,
-        GridCacheVersion ver, long expireTime, MvccVersion mvccVer,
-        MvccVersion newMvccVer) {
-        return false;
-    }
-
-    @Override public boolean mvccApplyHistoryIfAbsent(GridCacheContext cctx, KeyCacheObject key,
-        List<GridCacheMvccEntryInfo> hist) {
-        return false;
-    }
-
-    @Override public boolean mvccUpdateRowWithPreloadInfo(GridCacheContext cctx, KeyCacheObject key,
-        @Nullable CacheObject val, GridCacheVersion ver, long expireTime, MvccVersion mvccVer,
-        MvccVersion newMvccVer, byte mvccTxState, byte newMvccTxState) {
-        return false;
-    }
-
-    @Override public MvccUpdateResult mvccUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val,
-        GridCacheVersion ver, long expireTime, MvccSnapshot mvccSnapshot, @Nullable CacheEntryPredicate filter,
-        EntryProcessor entryProc, Object[] invokeArgs, boolean primary, boolean needHist, boolean noCreate,
-        boolean needOldVal, boolean retVal, boolean keepBinary) {
-        // todo empty result .. new MvccUpdateDataRow( PREV_NULL);
-        assert false;
-
-        return null;
-    }
-
-    @Override public MvccUpdateResult mvccRemove(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot,
-        @Nullable CacheEntryPredicate filter, boolean primary, boolean needHistory, boolean needOldVal,
-        boolean retVal) throws IgniteCheckedException {
-        return delegate.mvccRemove(cctx, key, mvccSnapshot, filter, primary, needHistory, needOldVal, retVal);
-    }
-
-    @Override public MvccUpdateResult mvccLock(GridCacheContext cctx, KeyCacheObject key,
-        MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
-        return delegate.mvccLock(cctx, key, mvccSnapshot);
-    }
-
-    @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-        delegate.mvccRemoveAll(cctx, key);
-    }
-
-    @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val,
-        GridCacheVersion ver, long expireTime, MvccVersion mvccVer) throws IgniteCheckedException {
-
-    }
-
     /** {@inheritDoc} */
-    @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key,
-        Object x) throws IgniteCheckedException {
-        return delegate.mvccAllVersionsCursor(cctx, key, x);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
+    @Override public GridCursor<? extends CacheDataRow> cursor(Object x) throws IgniteCheckedException {
         return delegate.cursor(x);
     }
 
@@ -443,6 +389,75 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
         return delegate.cursor(cacheId, lower, upper, x, snapshot);
     }
 
+    /** {@inheritDoc} */
+    @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key,
+        MvccSnapshot snapshot) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<IgniteBiTuple<Object, MvccVersion>> mvccFindAllVersions(GridCacheContext cctx,
+        KeyCacheObject key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccInitialValue(GridCacheContext cctx, KeyCacheObject key, @Nullable CacheObject val,
+        GridCacheVersion ver, long expireTime, MvccVersion mvccVer,
+        MvccVersion newMvccVer) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccApplyHistoryIfAbsent(GridCacheContext cctx, KeyCacheObject key,
+        List<GridCacheMvccEntryInfo> hist) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccUpdateRowWithPreloadInfo(GridCacheContext cctx, KeyCacheObject key,
+        @Nullable CacheObject val, GridCacheVersion ver, long expireTime, MvccVersion mvccVer,
+        MvccVersion newMvccVer, byte mvccTxState, byte newMvccTxState) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccUpdateResult mvccUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val,
+        GridCacheVersion ver, long expireTime, MvccSnapshot mvccSnapshot, @Nullable CacheEntryPredicate filter,
+        EntryProcessor entryProc, Object[] invokeArgs, boolean primary, boolean needHist, boolean noCreate,
+        boolean needOldVal, boolean retVal, boolean keepBinary) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccUpdateResult mvccRemove(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot,
+        @Nullable CacheEntryPredicate filter, boolean primary, boolean needHistory, boolean needOldVal,
+        boolean retVal) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccUpdateResult mvccLock(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccSnapshot) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val,
+        GridCacheVersion ver, long expireTime, MvccVersion mvccVer) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key,
+        Object x) {
+        throw new UnsupportedOperationException();
+    }
+
     /** */
     private static class NoopRowStore extends RowStore {
         /**
@@ -455,7 +470,7 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
         /** {@inheritDoc} */
         @Override public void removeRow(long link, IoStatisticsHolder statHolder) {
-            // todo
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -499,30 +514,27 @@ public class ReadOnlyGridCacheDataStore implements CacheDataStore {
 
         /** {@inheritDoc} */
         @Override public boolean updateDataRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) {
-            // No-op.
-
             return true;
         }
 
         /** {@inheritDoc} */
         @Override public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) {
-            // todo
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void dumpStatistics(IgniteLogger log) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public Object updateDataRow(long link, PageHandler pageHnd, Object arg,
-            IoStatisticsHolder statHolder) {
+        @Override public Object updateDataRow(long link, PageHandler pageHnd, Object arg, IoStatisticsHolder statHolder) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void saveMetadata(IoStatisticsHolder statHolder) throws IgniteCheckedException {
-            //super.saveMetadata(statHolder);
+        @Override public void saveMetadata(IoStatisticsHolder statHolder) {
+            // No-op.
         }
     }
 }
