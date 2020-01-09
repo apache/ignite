@@ -195,7 +195,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             //       add test case for specified scenario with global size change "on the fly".
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 if (part.dataStore().readOnly(toReadOnly))
-                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore().store(false)).close();
+                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).close();
             }
         }
     }
@@ -572,10 +572,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
 
             // Save current counter.
-            PartitionUpdateCounter readCntr = part.dataStore().store(true).partUpdateCounter();
+            PartitionUpdateCounter readCntr = ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
 
             // Save current update counter.
-            PartitionUpdateCounter snapshotCntr = part.dataStore().store(false).partUpdateCounter();
+            PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
 
             part.readOnly(false);
 

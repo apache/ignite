@@ -540,7 +540,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-        part.dataStore().store(false).reinit();
+        part.dataStore().reinit();
 
         grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }

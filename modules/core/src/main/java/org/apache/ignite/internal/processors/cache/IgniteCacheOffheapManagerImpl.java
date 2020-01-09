@@ -1248,8 +1248,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException {
-        CacheDataStoreEx dataStore;
+    @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
+        CacheDataStore dataStore;
 
         partStoreLock.lock(p);
 
@@ -1272,7 +1272,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected CacheDataStoreEx createCacheDataStore0(int p) throws IgniteCheckedException {
+    protected IgniteCacheOffheapManager.CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
         CacheDataRowStore rowStore = new CacheDataRowStore(grp, grp.freeList(), p);
@@ -1291,13 +1291,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             lsnr
         );
 
-        return new CacheDataStoreExImpl(grp,
-            new CacheDataStoreImpl(
-                p,
-                rowStore,
-                dataTree),
-            null,
-            log);
+        return new CacheDataStoreImpl(
+            p,
+            rowStore,
+            dataTree);
     }
 
     /** {@inheritDoc} */
@@ -3038,6 +3035,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readOnly(boolean readOnly) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readOnly() {
+            return false;
         }
 
         /**

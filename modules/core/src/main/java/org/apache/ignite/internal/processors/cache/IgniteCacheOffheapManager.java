@@ -142,7 +142,7 @@ public interface IgniteCacheOffheapManager {
      * @return Data store.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheDataStoreEx createCacheDataStore(int p) throws IgniteCheckedException;
+    public CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException;
 
     /**
      * @return Iterable over all existing cache data stores.
@@ -1099,5 +1099,25 @@ public interface IgniteCacheOffheapManager {
          * Partition storage.
          */
         public PartitionMetaStorage<SimpleDataRow> partStorage();
+
+        /**
+         * Get cache data store.
+         *
+         * @param readOnly Read-only mode flag.
+         * @return Cache data store.
+         */
+//        public CacheDataStore store(boolean readOnly);
+
+        /**
+         * Change current cache data store mode.
+         *
+         * @param readOnly Read-only mode flag.
+         */
+        public boolean readOnly(boolean readOnly);
+
+        /**
+         * @return {@code True} if current mode is read-only.
+         */
+        public boolean readOnly();
     }
 }
