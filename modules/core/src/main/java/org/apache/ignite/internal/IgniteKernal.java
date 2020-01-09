@@ -93,6 +93,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -763,6 +764,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             return res;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String clusterState() {
+        return ctx.state().clusterState().state().toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long lastClusterStateChangeTime() {
+        return ctx.state().lastStateChangeTime();
     }
 
     /**
@@ -4605,8 +4616,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("active", () -> ctx.state().clusterState().active()/*this::active*/, Boolean.class,
             ACTIVE_DESC);
 
-        reg.register("readOnlyMode", this::readOnlyMode, Boolean.class, READ_ONLY_MODE_DESC);
-        reg.register("readOnlyModeDuration", this::getReadOnlyModeDuration, READ_ONLY_MODE_DURATION_DESC);
+        reg.register("clusterState", this::clusterState, String.class, CLUSTER_STATE_DESC);
+        reg.register("lastClusterStateChangeTime", this::lastClusterStateChangeTime, LAST_CLUSTER_STATE_CHANGE_TIME_DESC);
 
         reg.register("userAttributesFormatted", this::getUserAttributesFormatted, List.class,
             USER_ATTRS_FORMATTED_DESC);
@@ -4722,21 +4733,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readOnlyMode() {
-        return ctx.state().publicApiReadOnlyMode();
-    }
+    @Override public void clusterState(String state) {
+        ClusterState newState = ClusterState.valueOf(state);
 
-    /** {@inheritDoc} */
-    @Override public void readOnlyMode(boolean readOnly) {
-        ctx.state().changeGlobalState(readOnly);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getReadOnlyModeDuration() {
-        if (ctx.state().publicApiReadOnlyMode())
-            return U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime();
-        else
-            return 0;
+        cluster().state(newState);
     }
 
     /** {@inheritDoc} */
