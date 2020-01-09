@@ -261,7 +261,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, freeListName,
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated(),
-                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName)) {
+                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName),
+                cctx.kernalContext()
+            ) {
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                     return pageMem.allocatePage(grpId, partId, FLAG_DATA);
                 }

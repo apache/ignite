@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -353,7 +354,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             null,
             metaPageId,
             true,
-            null
+            null,
+            new GridTestKernalContext(log)
         );
     }
 

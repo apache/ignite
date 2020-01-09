@@ -1397,6 +1397,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
+            hnd.writeHeader();
+
             return hnd;
         }
         catch (IgniteCheckedException e) {
