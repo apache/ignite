@@ -75,9 +75,11 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListCachingTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
@@ -206,7 +208,13 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
 
+<<<<<<< HEAD
         suite.addTestSuite(CheckpointFreeListTest.class);
+=======
+        GridTestUtils.addTestIfNeeded(suite, FreeListCachingTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgniteWalIteratorSwitchSegmentTest.class, ignoredTests);
+>>>>>>> 4b10c20570b... GG-24933: IGNITE-6930 FreeLists onheap caching to minimize count of WAL records.
 
         suite.addTestSuite(CheckpointFailBeforeWriteMarkTest.class);
 

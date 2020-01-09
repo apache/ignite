@@ -1185,6 +1185,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_ENABLE_MESSAGES_TIME_LOGGING = "IGNITE_ENABLE_MESSAGES_TIME_LOGGING";
 
+    /*
+     * Disable onheap caching of pages lists (free lists and reuse lists).
+     * If persistence is enabled changes to page lists are not stored to page memory immediately, they are cached in
+     * onheap buffer and flushes to page memory on a checkpoint. This property allows to disable such onheap caching.
+     * Default value is <code>false</code>.
+     */
+    public static final String IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING = "IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING";
+
     /**
      * Bounds for histogram metrics in milliseconds.<br/>
      * Default: {10, 20, 40, 80, 160, 320, 500, 1000, 2000, 4000}

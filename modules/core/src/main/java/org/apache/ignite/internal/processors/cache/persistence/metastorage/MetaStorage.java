@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -261,7 +262,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, freeListName,
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated(),
-                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName)) {
+                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName),
+                cctx.kernalContext()
+            ) {
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                     return pageMem.allocatePage(grpId, partId, FLAG_DATA);
                 }
@@ -570,14 +573,14 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         Executor executor = ctx.executor();
 
         if (executor == null) {
-            partStorage.saveMetadata();
+            partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
 
             saveStoreMetadata();
         }
         else {
             executor.execute(() -> {
                 try {
-                    partStorage.saveMetadata();
+                    partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -597,7 +600,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        partStorage.saveMetadata();
+        partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
     }
 
     /** {@inheritDoc} */
