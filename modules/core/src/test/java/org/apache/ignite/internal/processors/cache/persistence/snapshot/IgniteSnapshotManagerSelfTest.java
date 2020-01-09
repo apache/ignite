@@ -34,9 +34,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -655,6 +658,62 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .stopBlock(true, obj -> obj.get2().message() instanceof SnapshotRequestMessage);
 
         snpFut.get();
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testLocalSnapshotOnCacheStopped() throws Exception {
+        IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
+
+        startGrid(1);
+
+        ig.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        GridIntList ints = new GridIntList(IntStream.range(0, CACHE_PARTS_COUNT - 1).toArray());
+        ints.add(PageIdAllocator.INDEX_PARTITION);
+
+        Map<Integer, GridIntList> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
+
+        IgniteSnapshotManager mgr = ig.context()
+            .cache()
+            .context()
+            .snapshotMgr();
+
+        CountDownLatch cpLatch = new CountDownLatch(1);
+
+        File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
+
+        IgniteInternalFuture<?> snpFut = mgr
+            .scheduleSnapshot(SNAPSHOT_NAME,
+                ig.localNode().id(),
+                parts,
+                mgr.snapshotExecutorService(),
+                new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
+                    @Override
+                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                        try {
+                            U.await(cpLatch);
+
+                            delegate.sendPart0(part, cacheDirName, pair, length);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                });
+
+        IgniteCache<?, ?> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cache.destroy();
+
+        cpLatch.countDown();
+
+        snpFut.get(5_000, TimeUnit.MILLISECONDS);
     }
 
     /**

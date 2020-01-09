@@ -209,7 +209,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private volatile BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory;
 
     /** Snapshot thread pool to perform local partition snapshots. */
-    private IgniteThreadPoolExecutor snpRunner;
+    private ExecutorService snpRunner;
 
     /** Checkpoint listener to handle scheduled snapshot requests. */
     private DbCheckpointListener cpLsnr;
@@ -2245,8 +2245,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * @throws IOException If fails.
          */
         private void copy(File from, File to, long length) throws IOException {
-            try (FileIO src = ioFactory.create(from);
+            try (FileIO src = ioFactory.create(from, READ);
                  FileChannel dest = new FileOutputStream(to).getChannel()) {
+                if (src.size() < length)
+                    throw new IgniteException("The source file to copy has to enought length [expected=" + length + ", actual=" + src.size() + ']');
+
                 src.position(0);
 
                 long written = 0;
