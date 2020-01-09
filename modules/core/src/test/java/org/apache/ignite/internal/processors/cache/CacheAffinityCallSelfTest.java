@@ -142,11 +142,11 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinityCallNoServerNode() throws Exception {
-        startGridsMultiThreaded(SRVS + 1);
+        startGridsMultiThreaded(SRVS);
 
         final Integer key = 1;
 
-        final IgniteEx client = grid(SRVS);
+        final IgniteEx client = startClientGrid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
         assertNull(client.context().cache().cache(CACHE_NAME));
@@ -191,11 +191,11 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAffinityFailoverNoCacheOnClient() throws Exception {
-        startGridsMultiThreaded(SRVS + 1);
+        startGridsMultiThreaded(SRVS);
 
         final Integer key = 1;
 
-        final IgniteEx client = grid(SRVS);
+        final IgniteEx client = startClientGrid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
 

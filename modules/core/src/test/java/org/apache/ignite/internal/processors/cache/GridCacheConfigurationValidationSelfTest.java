@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,9 +27,10 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.Collection;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -36,9 +39,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Attribute validation self test.
  */
 public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** */
     private static final String WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME = "preloadModeCheckFails";
 
@@ -79,8 +79,10 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        cfg = super.optimize(cfg);
+
+        String igniteInstanceName = cfg.getIgniteInstanceName();
 
         // Default cache config.
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
@@ -123,7 +125,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
         else {
             // Normal configuration.
-            if (!client)
+            if (cfg.isClientMode() != TRUE)
                 cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg, localCacheCfg);
         }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -32,6 +33,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.lang.Boolean.TRUE;
+
 /**
  * Tests affinity assignment for different affinity types.
  */
@@ -39,14 +42,11 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
     /** */
     public static final int PARTS = 256;
 
-    /** */
-    private boolean cache;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        cfg = super.optimize(cfg);
 
-        if (cache) {
+        if (cfg.isClientMode() != TRUE) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -75,8 +75,6 @@ public class IgniteClientAffinityAssignmentSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void checkAffinityFunction() throws Exception {
-        cache = true;
-
         startGridsMultiThreaded(3, true);
 
         long topVer = 3;

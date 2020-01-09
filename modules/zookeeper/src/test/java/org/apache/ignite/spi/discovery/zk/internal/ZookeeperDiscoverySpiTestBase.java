@@ -117,7 +117,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */
     protected ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
-    /** */
+    /* */
     protected Map<String, Object> userAttrs;
 
     /**
@@ -364,12 +364,39 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        cfg = super.optimize(cfg);
+
+        if (isMultiJvm())
+            return cfg;
+
+        if (cfg.isClientMode() == TRUE) {
+            UUID currNodeId = cfg.getNodeId();
+
+            cfg.getLocalEventListeners().put(new IgnitePredicate<Event>() {
+                /** Last remembered uuid before node reconnected. */
+                private UUID nodeId = currNodeId;
+
+                @Override public boolean apply(Event evt) {
+                    if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                        evts.remove(nodeId);
+
+                        nodeId = evt.node().id();
+                    }
+
+                    return true;
+                }
+            }, new int[] {EVT_CLIENT_NODE_RECONNECTED});
+        }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
         if (testSockNio)
             System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
 
-        cfg = super.optimize(cfg);
-
-        final String igniteInstanceName = cfg.getIgniteInstanceName();
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
@@ -428,25 +455,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             cfg.setUserAttributes(userAttrs);
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
-
-        if (cfg.isClientMode() == TRUE) {
-            UUID currNodeId = cfg.getNodeId();
-
-            lsnrs.put(new IgnitePredicate<Event>() {
-                /** Last remembered uuid before node reconnected. */
-                private UUID nodeId = currNodeId;
-
-                @Override public boolean apply(Event evt) {
-                    if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
-                        evts.remove(nodeId);
-
-                        nodeId = evt.node().id();
-                    }
-
-                    return true;
-                }
-            }, new int[] {EVT_CLIENT_NODE_RECONNECTED});
-        }
 
         lsnrs.put(new IgnitePredicate<Event>() {
             /** */

@@ -569,7 +569,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
                     for (int i = 0; i < numberOfAttempts; ++i) {
                         int uniqueCnt = attemptCnt.getAndIncrement();
 
-                        final Ignite clientNode = startGrid(clientName, getConfiguration(clientName + uniqueCnt));
+                        final Ignite clientNode = startClientGrid(clientName, getConfiguration(clientName + uniqueCnt));
 
                         CacheConfiguration cfg = new CacheConfiguration();
 

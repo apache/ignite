@@ -295,7 +295,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
                     String igniteInstanceName = "client" + idx;
 
-                    return startGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
+                    return startClientGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
                         .setFailureHandler(new TestFailureHandler(true, failureHndLatch)));
                 }
             });

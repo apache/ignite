@@ -120,7 +120,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(6, 0)), // Client event ->FullHistSize = 5.
             5);
 
-        startGrid(4);
+        startClientGrid(4);
 
         stopGrid(4);
 
@@ -136,7 +136,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(8, 0)), // Client event ->FullHistSize = 5.
             5);
 
-        startGrid(4);
+        startClientGrid(4);
 
         stopGrid(4);
 

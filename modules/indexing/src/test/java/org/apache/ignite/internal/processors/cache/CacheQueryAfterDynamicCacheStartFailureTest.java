@@ -26,13 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 
 public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractDynamicCacheStartFailTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(gridCount());
 
