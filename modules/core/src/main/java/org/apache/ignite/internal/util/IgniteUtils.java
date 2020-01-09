@@ -8841,8 +8841,13 @@ public abstract class IgniteUtils {
                 throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
-            if (ldr instanceof CacheClassLoaderMarker)
+            if (ldr instanceof CacheClassLoaderMarker){
                 cls = ldr.loadClass(clsName);
+                
+                // fixed Versions function bug
+                //if do not return , cls will add to ldrmap and User Versions function can not use
+                return cls ;
+            }
             else
                 cls = Class.forName(clsName, true, ldr);
 
