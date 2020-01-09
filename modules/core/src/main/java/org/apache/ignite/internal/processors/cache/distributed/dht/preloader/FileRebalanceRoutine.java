@@ -336,13 +336,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cntr The highest value of the update counter before this partition began to process updates.
      */
     private void onPartitionSnapshotRestored(int grpId, int partId, long cntr) {
-        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v-> new ConcurrentHashMap<>());
-
-        cntrs.put(partId, cntr);
-
         Set<Integer> parts = remaining.get(grpId);
 
         assert parts != null;
+
+        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v-> new ConcurrentHashMap<>());
+
+        cntrs.put(partId, cntr);
 
         if (parts.size() == cntrs.size())
             onCacheGroupDone(grpId, cntrs);
