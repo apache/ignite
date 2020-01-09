@@ -70,8 +70,8 @@ public class ExchangeContext {
         boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
 
         if (!allNodesSupportsPmeFreeSwitch)
-            log.warning("PME-Free did not happen because the cluster is not ready. " +
-                "Not all nodes supports IgniteFeatures." + PME_FREE_SWITCH +".");
+            log.warning("Current topology does not support pme-free switch because " +
+                "not all nodes supports IgniteFeatures." + PME_FREE_SWITCH +".");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&
