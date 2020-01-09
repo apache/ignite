@@ -1938,7 +1938,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
 
                         ((CacheObjectBinaryProcessorImpl)cacheObjProc)
-                            .binaryContext().descriptorForClass(ex.cls(), false, false);
+                            .binaryContext().registerClass(ex.cls(), true, false);
                     }
                     catch (UnregisteredBinaryTypeException ex) {
                         if (ex.future() != null) {

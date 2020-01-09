@@ -275,7 +275,10 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException) {
                 throw new WalSegmentTailReachedException(
                     "WAL segment tail reached. [idx=" + hnd.idx() +
-                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() + "]", e);
+                        ", isWorkDir=" + hnd.workDir() + ", serVer=" + hnd.ser() +
+                        ", actualFilePtr=" + actualFilePtr + ']',
+                    e
+                );
             }
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {

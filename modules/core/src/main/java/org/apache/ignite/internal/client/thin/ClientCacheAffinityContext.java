@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
 /**
- * Client cache affinity awareness context.
+ * Client cache partition awareness context.
  */
 public class ClientCacheAffinityContext {
     /** Binary data processor. */

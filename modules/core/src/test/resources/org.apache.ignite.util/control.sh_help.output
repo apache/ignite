@@ -1,5 +1,5 @@
 Control utility [ver. <!any!>
-2019 Copyright(C) Apache Software Foundation
+2020 Copyright(C) Apache Software Foundation
 User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
