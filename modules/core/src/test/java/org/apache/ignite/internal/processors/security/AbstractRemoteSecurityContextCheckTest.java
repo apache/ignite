@@ -198,7 +198,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
                 Integer val = t2.getValue();
 
-                t2.set2(++val);
+                t2.setValue(++val);
 
                 return t2;
             });
