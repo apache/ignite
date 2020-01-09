@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
@@ -134,6 +135,12 @@ public interface IgniteMXBean {
 
     /** */
     public String IS_NODE_BASELINE_DESC = "Baseline node flag.";
+
+    /** */
+    public static final String LAST_CLUSTER_STATE_CHANGE_TIME_DESC = "Unix time of last cluster state change operation.";
+
+    /** */
+    public static final String CLUSTER_STATE_DESC = "Checks cluster state.";
 
     /** */
     public String READ_ONLY_MODE_DESC = "Cluster read-only mode status.";
@@ -688,34 +695,34 @@ public interface IgniteMXBean {
     public void resetMetrics(String registry);
 
     /**
-     * Gets cluster read-only mode status.
+     * Checks cluster state.
      *
-     * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.
+     * @return String representation of current cluster state.
+     * See {@link ClusterState}.
      * @deprecated Use {@link GridMetricManager} instead.
      */
     @Deprecated
-    @MXBeanDescription(READ_ONLY_MODE_DESC)
-    boolean readOnlyMode();
+    @MXBeanDescription(CLUSTER_STATE_DESC)
+    public String clusterState();
 
     /**
-     * Enable or disable cluster read-only mode. If {@code readOnly} flag is {@code true} read-only mode will be
-     * enabled. If {@code readOnly} flag is {@code false} read-only mode will be disabled.
+     * Changes current cluster state.
      *
-     * @param readOnly enable/disable cluster read-only mode flag.
+     * @param state String representation of new cluster state.
+     * See {@link ClusterState}
      */
-    @MXBeanDescription("Enable or disable cluster read-only mode.")
-    @MXBeanParametersNames("readOnly")
-    @MXBeanParametersDescriptions("True - enable read-only mode, false - disable read-only mode.")
-    void readOnlyMode(boolean readOnly);
+    @MXBeanDescription("Changes current cluster state.")
+    @MXBeanParametersNames("state")
+    @MXBeanParametersDescriptions("New cluster state.")
+    public void clusterState(String state);
 
     /**
-     * Gets duration of read-only mode enabled on cluster.
+     * Gets last cluster state change operation.
      *
-     * @return {@code 0} if cluster read-only mode disabled, and time in milliseconds since enabling cluster read-only
-     * mode.
+     * @return Unix time of last cluster state change operation.
      * @deprecated Use {@link GridMetricManager} instead.
      */
     @Deprecated
-    @MXBeanDescription(READ_ONLY_MODE_DURATION_DESC)
-    long getReadOnlyModeDuration();
+    @MXBeanDescription(LAST_CLUSTER_STATE_CHANGE_TIME_DESC)
+    public long lastClusterStateChangeTime();
 }
