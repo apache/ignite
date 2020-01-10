@@ -128,11 +128,13 @@ class TcpCommunicationMetricsListener {
             RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC
         );
 
-        sentMsgsCntByNodeIdMetricFactory = nodeId -> getOrCreateMetricRegistry(mmgr, nodeId)
-            .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+        sentMsgsCntByNodeIdMetricFactory = nodeId ->
+            mmgr.registry(MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+                .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
-        rcvdMsgsCntByNodeIdMetricFactory = nodeId -> getOrCreateMetricRegistry(mmgr, nodeId)
-            .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
+        rcvdMsgsCntByNodeIdMetricFactory = nodeId ->
+            mmgr.registry(MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+                .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         sentBytesMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
         rcvdBytesMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
@@ -149,13 +151,6 @@ class TcpCommunicationMetricsListener {
 
             mreg.longAdderMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME, RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC);
         });
-    }
-
-    /** */
-    private static synchronized MetricRegistry getOrCreateMetricRegistry(GridMetricManager mmgr, UUID nodeId) {
-        String regName = MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString());
-
-        return mmgr.registry(regName);
     }
 
     /** Metrics registry. */
