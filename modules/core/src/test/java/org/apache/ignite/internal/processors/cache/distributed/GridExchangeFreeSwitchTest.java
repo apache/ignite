@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -59,6 +60,9 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 
 /**
  *
@@ -169,6 +173,78 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_PME_FREE_SWITCH_DISABLED, value = "true")
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabled() throws Exception {
             testBaselineNodeLeftOnFullyRebalancedCluster();
+    }
+
+    /**
+     * Checks Partition Exchange is regular in case of fixed baseline,
+     * when one node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode() throws Exception {
+        persistence = true;
+
+        try {
+            int nodes = 10;
+
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+            Ignite igniteNotSupportPmeFreeSwitch = startGridsMultiThreaded(1);
+
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+
+            Ignite igniteSupportPmeFreeSwitch = startGridsMultiThreaded(1, nodes - 1);
+
+            checkTopology(nodes);
+
+            List<ClusterNode> clusterNodes = new LinkedList<>(igniteSupportPmeFreeSwitch.cluster().nodes());
+
+            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.cluster().localNode());
+
+            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
+            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.cluster().localNode(), PME_FREE_SWITCH));
+
+            igniteNotSupportPmeFreeSwitch.cluster().active(true);
+
+            AtomicInteger cnt = new AtomicInteger(0);
+
+            for (int i = 0; i < nodes; i++) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                            cnt.incrementAndGet();
+
+                            return false;
+                    }
+                });
+            }
+
+            for (Ignite ignite:G.allGrids()) {
+                if (!nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH))
+                   continue;
+
+                cnt.set(0);
+
+                ignite.close();
+
+                nodes--;
+
+                awaitPartitionMapExchange(true, true, null, true);
+
+                assertEquals((nodes - 1), cnt.get());
+
+                IgniteEx alive = (IgniteEx)G.allGrids().get(0);
+
+                assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
+            }
+        }
+        finally {
+            persistence = false;
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
     }
 
     /**
