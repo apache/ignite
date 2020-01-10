@@ -131,7 +131,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
     private final FrameworkConfig config;
 
     /** */
-    private final QueryCache cache;
+    private final QueryCache queryCache;
 
     /** */
     private final QueryTaskExecutor taskExecutor;
@@ -166,7 +166,8 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
             new SchemaHolderImpl(),
             new MessageServiceImpl(),
             new QueryTaskExecutorImpl(),
-            new MappingServiceImpl());
+            new MappingServiceImpl(),
+            new QueryCacheImpl());
     }
 
     /**
@@ -176,17 +177,18 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
      * @param messageService Message service.
      * @param taskExecutor Task executor.
      * @param mappingService Mapping service.
+     * @param queryCache Query cache;
      */
     CalciteQueryProcessor(FrameworkConfig config, SchemaHolder schemaHolder, MessageService messageService,
-        QueryTaskExecutor taskExecutor, MappingService mappingService) {
+        QueryTaskExecutor taskExecutor, MappingService mappingService, QueryCache queryCache) {
         this.config = config;
 
         this.schemaHolder = schemaHolder;
         this.messageService = messageService;
         this.taskExecutor = taskExecutor;
         this.mappingService = mappingService;
+        this.queryCache = queryCache;
 
-        cache = new QueryCacheImpl();
         locals = new ConcurrentHashMap<>();
         remotes = new ConcurrentHashMap<>();
         running = new ConcurrentHashMap<>();
@@ -203,12 +205,12 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
     /** {@inheritDoc} */
     @Override public void start(@NotNull GridKernalContext ctx) {
         kernal = ctx;
-        onStart(ctx, schemaHolder, messageService, mappingService, taskExecutor);
+        onStart(ctx, queryCache, schemaHolder, messageService, mappingService, taskExecutor);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        onStop(schemaHolder, messageService, mappingService, taskExecutor);
+        onStop(queryCache, schemaHolder, messageService, mappingService, taskExecutor);
     }
 
     /** {@inheritDoc} */
@@ -218,7 +220,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
 
         IgniteCalciteContext ctx = createContext(qryCtx, schemaName, query, params);
 
-        QueryPlan plan = cache.queryPlan(ctx, new CacheKey(schemaName, query), this::prepare);
+        QueryPlan plan = queryCache.queryPlan(ctx, new CacheKey(schemaName, query), this::prepare);
 
         plan.init(ctx);
 

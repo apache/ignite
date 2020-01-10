@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** */
-public class AllNodes implements DestinationFunction {
+public final class AllNodes implements DestinationFunction {
     /** */
     private final List<UUID> nodes;
 

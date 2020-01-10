@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.ToIntFunction;
 
 /** */
-public class Partitioned implements DestinationFunction {
+public final class Partitioned implements DestinationFunction {
     /** */
     private final List<UUID> nodes;
 

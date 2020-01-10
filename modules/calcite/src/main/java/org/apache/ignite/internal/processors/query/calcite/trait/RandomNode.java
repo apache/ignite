@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.UUID;
 
 /** */
-public class RandomNode implements DestinationFunction {
+public final class RandomNode implements DestinationFunction {
     /** */
     private final Random random;
 
