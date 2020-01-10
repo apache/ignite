@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -184,90 +184,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 if (part.dataStore().readOnly(toReadOnly))
-                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).close();
+                    ((GridCacheDataStore)part.dataStore()).close();
             }
         }
-    }
-
-    /**
-     * @param grp Cache group.
-     * @return {@code True} if at least one partition of a specified group is in read-only mode.
-     */
-    private boolean hasReadOnlyParts(CacheGroupContext grp) {
-        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.dataStore().readOnly())
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param exchFut Exchange future.
-     * @return {@code True} if the cluster baseline was changed by local node join.
-     */
-    private boolean isLocalBaselineChange(GridDhtPartitionsExchangeFuture exchFut) {
-        if (exchFut.exchangeActions() == null)
-            return false;
-
-        StateChangeRequest req = exchFut.exchangeActions().stateChangeRequest();
-
-        if (req == null)
-            return false;
-
-        BaselineTopologyHistoryItem prevBaseline = req.prevBaselineTopologyHistoryItem();
-
-        if (prevBaseline == null)
-            return false;
-
-        return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
-    }
-
-    /**
-     * @param grp Cache group.
-     * @param exchFut Exchange future.
-     */
-    private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
-        AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
-
-        assert aff != null;
-
-        CachePartitionFullCountersMap cntrs = grp.topology().fullUpdateCounters();
-
-        Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
-
-        boolean hasHugePart = false;
-
-        for (int p = 0; p < grp.affinity().partitions(); p++) {
-            if (!aff.get(p).contains(cctx.localNode())) {
-                if (grp.topology().localPartition(p) != null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Detected partition evitction, file rebalancing skipped [grp=" +
-                            grp.cacheOrGroupName() + ", p=" + p + "]");
-                    }
-
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (!hasHugePart) {
-                Long partSize = globalSizes.get(p);
-
-                if (partSize != null && partSize >= FILE_REBALANCE_THRESHOLD)
-                    hasHugePart = true;
-            }
-
-            if (grp.topology().localPartition(p).state() != MOVING)
-                return false;
-
-            // Should have partition file supplier to start file rebalancing.
-            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
-                return false;
-        }
-
-        return hasHugePart;
     }
 
     /**
@@ -349,45 +268,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         finally {
             stopLock.unlock();
         }
-    }
-
-    /**
-     * @param assignsMap The map of cache groups assignments to process.
-     * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
-     */
-    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap) {
-        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new TreeMap<>();
-
-        for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
-            int grpId = grpEntry.getKey();
-
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            GridDhtPreloaderAssignments assigns = grpEntry.getValue();
-
-            if (!fileRebalanceRequired(grp, assigns))
-                continue;
-
-            int grpOrderNo = grp.config().getRebalanceOrder();
-
-            ordered.putIfAbsent(grpOrderNo, new HashMap<>());
-
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> grpAssigns : assigns.entrySet()) {
-                ClusterNode node = grpAssigns.getKey();
-
-                ordered.get(grpOrderNo).putIfAbsent(node, new HashMap<>());
-
-                ordered.get(grpOrderNo)
-                    .get(node)
-                    .putIfAbsent(grpId,
-                        grpAssigns.getValue()
-                            .partitions()
-                            .fullSet());
-            }
-        }
-
-        return ordered.values();
     }
 
     /**
@@ -481,13 +361,25 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return true;
     }
 
-    public IgniteInternalFuture<Long> switchPartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> cancelPred) {
-        final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
+    /**
+     * Schedule partition mode switch to enable updates.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param cancelPred Cancel predicate.
+     * @return Future that will be done when partition mode changed.
+     */
+    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> cancelPred) {
         GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
 
         cpLsnr.schedule(() -> {
             if (cancelPred.apply())
+                return;
+
+            final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            // Cache was concurrently destroyed.
+            if (grp == null)
                 return;
 
             GridDhtLocalPartition part = grp.topology().localPartition(partId);
@@ -495,7 +387,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
 
             // Save current counter.
-            PartitionUpdateCounter readCntr = ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
+            PartitionUpdateCounter readCntr = ((GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
 
             // Save current update counter.
             PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
@@ -503,16 +395,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             part.readOnly(false);
 
             // Clear all on-heap entries.
-            // todo something smarter and check large partition
             if (grp.sharedGroup()) {
                 for (GridCacheContext ctx : grp.caches())
                     part.entriesMap(ctx).map.clear();
             }
             else
                 part.entriesMap(null).map.clear();
-
-            assert readCntr != snapshotCntr && snapshotCntr != null && readCntr != null : "grp=" +
-                grp.cacheOrGroupName() + ", p=" + partId + ", readCntr=" + readCntr + ", snapCntr=" + snapshotCntr;
 
             AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -536,6 +424,127 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (log.isInfoEnabled())
             log.info(debugInfo());
     }
+
+    /**
+     * @param grp Cache group.
+     * @return {@code True} if at least one partition of a specified group is in read-only mode.
+     */
+    private boolean hasReadOnlyParts(CacheGroupContext grp) {
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+            if (part.dataStore().readOnly())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param exchFut Exchange future.
+     * @return {@code True} if the cluster baseline was changed by local node join.
+     */
+    private boolean isLocalBaselineChange(GridDhtPartitionsExchangeFuture exchFut) {
+        if (exchFut.exchangeActions() == null)
+            return false;
+
+        StateChangeRequest req = exchFut.exchangeActions().stateChangeRequest();
+
+        if (req == null)
+            return false;
+
+        BaselineTopologyHistoryItem prevBaseline = req.prevBaselineTopologyHistoryItem();
+
+        if (prevBaseline == null)
+            return false;
+
+        return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
+    }
+
+    /**
+     * @param grp Cache group.
+     * @param exchFut Exchange future.
+     */
+    private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
+        AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
+
+        assert aff != null;
+
+        CachePartitionFullCountersMap cntrs = grp.topology().fullUpdateCounters();
+
+        Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
+
+        boolean hasHugePart = false;
+
+        for (int p = 0; p < grp.affinity().partitions(); p++) {
+            if (!aff.get(p).contains(cctx.localNode())) {
+                if (grp.topology().localPartition(p) != null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Detected partition evitction, file rebalancing skipped [grp=" +
+                            grp.cacheOrGroupName() + ", p=" + p + "]");
+                    }
+
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (!hasHugePart) {
+                Long partSize = globalSizes.get(p);
+
+                if (partSize != null && partSize >= FILE_REBALANCE_THRESHOLD)
+                    hasHugePart = true;
+            }
+
+            if (grp.topology().localPartition(p).state() != MOVING)
+                return false;
+
+            // Should have partition file supplier to start file rebalancing.
+            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
+                return false;
+        }
+
+        return hasHugePart;
+    }
+
+    /**
+     * @param assignsMap The map of cache groups assignments to process.
+     * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
+     */
+    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap) {
+        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new TreeMap<>();
+
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
+            int grpId = grpEntry.getKey();
+
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            GridDhtPreloaderAssignments assigns = grpEntry.getValue();
+
+            if (!fileRebalanceRequired(grp, assigns))
+                continue;
+
+            int grpOrderNo = grp.config().getRebalanceOrder();
+
+            ordered.putIfAbsent(grpOrderNo, new HashMap<>());
+
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> grpAssigns : assigns.entrySet()) {
+                ClusterNode node = grpAssigns.getKey();
+
+                ordered.get(grpOrderNo).putIfAbsent(node, new HashMap<>());
+
+                ordered.get(grpOrderNo)
+                    .get(node)
+                    .putIfAbsent(grpId,
+                        grpAssigns.getValue()
+                            .partitions()
+                            .fullSet());
+            }
+        }
+
+        return ordered.values();
+    }
+
 
     private String debugInfo() {
         StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() +
@@ -660,7 +669,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void onException(UUID rmtNodeId, Throwable t) {
-            log.error("Unable to receive partition [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
+            log.error("Unable to receive partitions [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
         }
     }
 }

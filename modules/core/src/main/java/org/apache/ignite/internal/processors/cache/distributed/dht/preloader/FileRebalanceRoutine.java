@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -57,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -169,7 +168,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                         String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
 
-                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new HashSet<>());
+                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
 
                         for (Integer partId : entry.getValue()) {
                             assert grp.topology().localPartition(partId).dataStore().readOnly() :
@@ -308,7 +307,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             initialize(grpId, partId, file);
 
-            cctx.filePreloader().switchPartitionMode(grpId, partId, this::isDone).listen(f -> {
+            cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone).listen(f -> {
                 try {
                     onPartitionSnapshotRestored(grpId, partId, f.get());
                 } catch (IgniteCheckedException e) {
@@ -633,9 +632,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             if (log.isDebugEnabled())
                 log.debug("Cleaning up region " + region.config().getName());
 
-            // Eviction of partition  should be prevented while cleanup is in progress.
-            reservePartitions(parts);
-
             memEx.clearAsync(
                 (grp, pageId) -> parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
                 .listen(c1 -> {
@@ -654,8 +650,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();
-
-                        releasePartitions(parts);
                     }
                 });
 
@@ -666,11 +660,22 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
          * @param partSet Partition set.
          */
         private void invalidatePartitions(Set<Long> partSet) throws IgniteCheckedException {
-            for (long partGrp : partSet) {
-                int grpId = (int)(partGrp >> 32);
-                int partId = (int)partGrp;
+            CacheGroupContext grp = null;
+            int prevGrp = 0;
 
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+            for (long uniquePart : partSet) {
+                int grpId = (int)(uniquePart >> 32);
+                int partId = (int)uniquePart;
+
+                if (prevGrp == 0|| prevGrp != grpId) {
+                    grp = cctx.cache().cacheGroup(grpId);
+
+                    prevGrp = grpId;
+                }
+
+                // Skip this group if it was stopped.
+                if (grp == null)
+                    continue;
 
                 int tag = ((PageMemoryEx)grp.dataRegion().pageMemory()).invalidate(grpId, partId);
 
@@ -679,39 +684,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 if (log.isDebugEnabled())
                     log.debug("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
             }
-        }
-
-        /**
-         * @param partSet Partition set.
-         */
-        private void reservePartitions(Set<Long> partSet) {
-            for (long entry : partSet)
-                localPartition(entry).reserve();
-        }
-
-        /**
-         * @param partSet Partition set.
-         */
-        private void releasePartitions(Set<Long> partSet) {
-            for (long entry : partSet)
-                localPartition(entry).release();
-        }
-
-        /**
-         * @param globalPartId Global partition id.
-         */
-        private GridDhtLocalPartition localPartition(long globalPartId) {
-            int grpId = (int)(globalPartId >> 32);
-            int partId = (int)globalPartId;
-
-            // todo remove
-            assert partId != INDEX_PARTITION;
-
-            GridDhtLocalPartition part = cctx.cache().cacheGroup(grpId).topology().localPartition(partId);
-
-            assert part != null : "groupId=" + grpId + ", p=" + partId;
-
-            return part;
         }
     }
 }
