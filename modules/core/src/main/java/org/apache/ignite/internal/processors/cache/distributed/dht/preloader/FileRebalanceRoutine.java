@@ -146,12 +146,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         initialize(assigns);
     }
 
-    /** @deprecated used only for debugging, should be removed */
-    @Deprecated
-    boolean isPreloading(int grpId) {
-        return remaining.containsKey(grpId) && !isDone();
-    }
-
     /**
      * Initialize rebalancing mappings.
      *

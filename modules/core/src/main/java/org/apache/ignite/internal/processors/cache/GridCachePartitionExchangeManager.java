@@ -3358,7 +3358,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assignsCancelled |= assigns.cancelled();
 
                                 if (cctx.filePreloader() != null &&
-                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns, exchFut)) {
+                                    cctx.filePreloader().fileRebalanceRequired(grp, assigns)) {
                                     log.info("File rebalance required for grp=" + grp.cacheOrGroupName());
 
                                     continue;
@@ -3371,9 +3371,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     forcedRebFut);
 
                                 if (cur != null) {
-                                    assert cctx.filePreloader() == null || !cctx.filePreloader().isPreloading(grpId) :
-                                        "File preloading in progress [grp=" + grp.cacheOrGroupName() + "]";
-
                                     rebList.add(grp.cacheOrGroupName());
 
                                     r = cur;
