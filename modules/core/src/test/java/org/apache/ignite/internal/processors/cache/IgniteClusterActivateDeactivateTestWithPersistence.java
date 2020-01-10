@@ -355,9 +355,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                     Thread.sleep(10);
 
-                    client = true;
-
-                    Ignite cl = startGrid("client0");
+                    Ignite cl = startClientGrid("client0");
 
                     IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
                     IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');
