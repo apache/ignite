@@ -217,6 +217,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .pageStore())
             .cacheWorkDir(defaultCacheCfg);
 
+        stopGrid(ig.name());
+
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
