@@ -40,16 +40,22 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     /** Server node to change cache state. */
     private static final String SRV = "srv";
 
+    /** Open continuous query operation. */
+    protected static final String OPERATION_OPEN_CQ = "open_cq";
+
+    /** Init query, filter or transform operation. */
+    protected static final String OPERATION_CQ_COMPONENT = "cq_component";
+
     /** Preidacte for inital query tests. */
     protected static final IgniteBiPredicate<Integer, Integer> INITIAL_QUERY_FILTER = (k, v) -> {
-        VERIFIER.register();
+        VERIFIER.register(OPERATION_CQ_COMPONENT);
 
         return true;
     };
 
     /** Remote filter. */
     protected static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> {
-        VERIFIER.register();
+        VERIFIER.register(OPERATION_CQ_COMPONENT);
 
         return true;
     };
@@ -91,9 +97,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2);
+            .expect(SRV_RUN, OPERATION_OPEN_CQ, 1)
+            .expect(CLNT_RUN, OPERATION_OPEN_CQ, 1)
+            .expect(SRV_CHECK, OPERATION_CQ_COMPONENT, 2);
     }
 
     /**

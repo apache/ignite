@@ -147,7 +147,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final Map<String, T2<Integer, Integer>> expInvokes = new HashMap<>();
+        private final Map<T2<String, String>, T2<Integer, Integer>> expInvokes = new HashMap<>();
 
         /**
          * List of registered security subjects.
@@ -170,14 +170,25 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /**
-         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with
-         * passed name.
+         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with passed name.
          *
          * @param nodeName Node name.
          * @param num Expected number of invokes.
          */
         public Verifier expect(String nodeName, int num) {
-            expInvokes.put(nodeName, new T2<>(num, 0));
+            return expect(nodeName, null, num);
+        }
+
+        /**
+         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with passed name
+         * and the passed operation name.
+         *
+         * @param nodeName Node name.
+         * @param opName Operation name.
+         * @param num Expected number of invokes.
+         */
+        public Verifier expect(String nodeName, String opName, int num) {
+            expInvokes.put(new T2<>(nodeName, opName), new T2<>(num, 0));
 
             return this;
         }
@@ -186,16 +197,39 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Registers a security subject referred for {@code localIgnite} and increments invoke counter.
          */
         public void register() {
-            register((IgniteEx)localIgnite());
+            register((IgniteEx)localIgnite(), null);
+        }
+
+        /**
+         * Registers a security subject referred for {@code localIgnite} with the passed operation name and increments
+         * invoke counter.
+         *
+         * @param opName Operation name.
+         */
+        public void register(String opName) {
+            register((IgniteEx)localIgnite(), opName);
         }
 
         /**
          * Registers a security subject referred for the passed {@code ignite} and increments invoke counter.
+         *
+         * @param ignite Instance of ignite.
          */
-        public synchronized void register(IgniteEx ignite) {
+        public void register(IgniteEx ignite) {
+            register(ignite, null);
+        }
+
+        /**
+         * Registers a security subject referred for the passed {@code ignite} with the passed operation name and
+         * increments invoke counter.
+         *
+         * @param ignite Instance of ignite.
+         * @param opName Operation name.
+         */
+        public synchronized void register(IgniteEx ignite, String opName) {
             registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
 
-            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
+            expInvokes.computeIfPresent(new T2<>(ignite.name(), opName), (name, t2) -> {
                 Integer val = t2.getValue();
 
                 t2.setValue(++val);
@@ -213,9 +247,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                     expSecSubjId, t.get1())
             );
 
-            expInvokes.forEach((key, value) ->
-                assertEquals("Node " + key + ". Execution of register: ",
-                    value.get1(), value.get2()));
+            expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
+                (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
+                ". Execution of register: ", v.get1(), v.get2()));
 
             clear();
         }

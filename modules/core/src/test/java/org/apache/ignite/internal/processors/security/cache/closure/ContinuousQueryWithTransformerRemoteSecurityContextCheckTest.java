@@ -78,7 +78,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
                     q.setRemoteTransformerFactory(() -> e -> {
-                        VERIFIER.register();
+                        VERIFIER.register(OPERATION_CQ_COMPONENT);
 
                         return e.getValue();
                     });
@@ -96,7 +96,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
      */
     private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
         return () -> {
-            VERIFIER.register();
+            VERIFIER.register(OPERATION_OPEN_CQ);
 
             ContinuousQueryWithTransformer<Integer, Integer, Integer> cq = new ContinuousQueryWithTransformer<>();
 

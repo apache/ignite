@@ -85,7 +85,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
      */
     private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c) {
         return () -> {
-            VERIFIER.register();
+            VERIFIER.register(OPERATION_OPEN_CQ);
 
             ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
