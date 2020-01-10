@@ -139,23 +139,23 @@ class TcpCommunicationMetricsListener {
 
         sentMsgsMetric = mreg.longAdderMetric(SENT_MESSAGES_METRIC_NAME, SENT_MESSAGES_METRIC_DESC);
         rcvdMsgsMetric = mreg.longAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
+
+        mmgr.addMetricRegistryCreationListener(mreg -> {
+            // Metrics for the specific nodes.
+            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + MetricUtils.SEPARATOR))
+                return;
+
+            mreg.longAdderMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME, SENT_MESSAGES_BY_NODE_ID_METRIC_DESC);
+
+            mreg.longAdderMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME, RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC);
+        });
     }
 
     /** */
     private static synchronized MetricRegistry getOrCreateMetricRegistry(GridMetricManager mmgr, UUID nodeId) {
         String regName = MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString());
 
-        for (MetricRegistry mreg : mmgr) {
-            if (mreg.name().equals(regName))
-                return mreg;
-        }
-
-        MetricRegistry mreg = mmgr.registry(regName);
-
-        mreg.longAdderMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME, SENT_MESSAGES_BY_NODE_ID_METRIC_DESC);
-        mreg.longAdderMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME, RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC);
-
-        return mreg;
+        return mmgr.registry(regName);
     }
 
     /** Metrics registry. */
@@ -289,19 +289,15 @@ class TcpCommunicationMetricsListener {
 
         for (Metric metric : mreg) {
             if (metric.name().startsWith(prefix)) {
-                try {
-                    short directType = Short.parseShort(metric.name().substring(prefix.length()));
+                short directType = Short.parseShort(metric.name().substring(prefix.length()));
 
-                    Map<Short, String> msgTypMap0 = msgTypMap;
+                Map<Short, String> msgTypMap0 = msgTypMap;
 
-                    if (msgTypMap0 != null) {
-                        String typeName = msgTypMap0.get(directType);
+                if (msgTypMap0 != null) {
+                    String typeName = msgTypMap0.get(directType);
 
-                        if (typeName != null)
-                            res.put(typeName, ((LongMetric)metric).value());
-                    }
-                }
-                catch (NumberFormatException ignore) {
+                    if (typeName != null)
+                        res.put(typeName, ((LongMetric)metric).value());
                 }
             }
         }
@@ -314,17 +310,14 @@ class TcpCommunicationMetricsListener {
         Map<UUID, Long> res = new HashMap<>();
 
         String mregPrefix = COMMUNICATION_METRICS_GROUP_NAME + MetricUtils.SEPARATOR;
+
         for (MetricRegistry mreg : mmgr) {
             if (mreg.name().startsWith(mregPrefix)) {
                 String nodeIdStr = mreg.name().substring(mregPrefix.length());
 
-                try {
-                    UUID nodeId = UUID.fromString(nodeIdStr);
+                UUID nodeId = UUID.fromString(nodeIdStr);
 
-                    res.put(nodeId, mreg.<LongMetric>findMetric(metricName).value());
-                }
-                catch (IllegalArgumentException ignore) {
-                }
+                res.put(nodeId, mreg.<LongMetric>findMetric(metricName).value());
             }
         }
 
