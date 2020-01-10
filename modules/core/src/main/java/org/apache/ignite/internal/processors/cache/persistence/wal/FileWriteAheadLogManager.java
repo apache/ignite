@@ -1206,14 +1206,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileWriteHandle next = initNextWriteHandle(cur);
 
-            if (rec != null) {
-                WALPointer ptr = next.addRecord(rec);
-
-                assert ptr != null;
-            }
-
-            if (next.getSegmentId() - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
-                cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
+            next.writeHeader();
 
             boolean swapped = CURR_HND_UPD.compareAndSet(this, hnd, next);
 

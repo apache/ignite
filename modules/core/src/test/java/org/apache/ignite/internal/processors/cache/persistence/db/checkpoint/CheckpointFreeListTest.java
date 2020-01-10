@@ -59,10 +59,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -148,7 +145,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if fail.
      */
-    @Test
     public void testFreeListRestoredCorrectly() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -221,9 +217,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
      *
      * @throws Exception if fail.
      */
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
     public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
+        withSystemProperty(IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, "true");
+
         IgniteEx ignite0 = startGrid(0);
         ignite0.cluster().active(true);
 
@@ -309,7 +305,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /**
      * Test checks that free-list works and pages cache flushes correctly under the high concurrent load.
      */
-    @Test
     public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {
         IgniteEx ignite = startGrid(0);
 
@@ -350,7 +345,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             }
         }, 20, "cache-put");
 
-        for (int i = 0; i < SF.applyLB(10, 2); i++) {
+        for (int i = 0; i < 10; i++) {
             if (error.get() != null)
                 break;
 

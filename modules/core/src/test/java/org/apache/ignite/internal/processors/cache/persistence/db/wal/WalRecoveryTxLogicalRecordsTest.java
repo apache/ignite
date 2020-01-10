@@ -47,7 +47,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -854,7 +853,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     AbstractFreeList freeList = (AbstractFreeList)part.dataStore().rowStore().freeList();
 
                     // Flush free-list onheap cache to page memory.
-                    freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                    freeList.saveMetadata();
                 }
             }
             finally {
@@ -1185,7 +1184,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                     continue;
 
                 // Flush free-list onheap cache to page memory.
-                freeList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                freeList.saveMetadata();
 
                 AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
                     AbstractFreeList.class, "buckets");

@@ -76,7 +76,6 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
     public void testFreeListCaching() throws Exception {
         IgniteEx ignite = startGrid(0);
 

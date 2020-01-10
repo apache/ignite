@@ -45,5 +45,5 @@ public interface PartitionMetaStorage<T extends Storable> {
     /**
      * Saves storage metadata.
      */
-    public void saveMetadata(IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void saveMetadata() throws IgniteCheckedException;
 }

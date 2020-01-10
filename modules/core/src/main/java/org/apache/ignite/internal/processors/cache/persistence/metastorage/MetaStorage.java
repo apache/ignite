@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -573,14 +572,14 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         Executor executor = ctx.executor();
 
         if (executor == null) {
-            partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+            partStorage.saveMetadata();
 
             saveStoreMetadata();
         }
         else {
             executor.execute(() -> {
                 try {
-                    partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+                    partStorage.saveMetadata();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -600,7 +599,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        partStorage.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
+        partStorage.saveMetadata();
     }
 
     /** {@inheritDoc} */

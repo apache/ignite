@@ -45,7 +45,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -388,7 +386,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         AtomicBoolean fail = new AtomicBoolean(true);
         AtomicReference<FileIO> ref = new AtomicReference<>();
 
-        failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
+        failingFileIOFactory.createClosure(new IgniteBiClosureX<File, OpenOption[], FileIO>() {
             @Override public FileIO apply(File file, OpenOption[] options) {
                 if (file.getName().indexOf("-END.bin") >= 0) {
                     FileIO delegate;
@@ -461,7 +459,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         ignite.context().cache().context().database().checkpointReadLock();
 
         try {
-            ignite.context().cache().context().wal().log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
+            ignite.context().cache().context().wal().log(new CheckpointRecord(null));
         }
         catch (StorageException expected) {
             // No-op.
@@ -523,7 +521,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
         /** Create FileIO closure. */
-        private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
+        private volatile IgniteBiClosureX<File, OpenOption[], FileIO> createClo;
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
@@ -537,7 +535,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         /**
          * @param createClo FileIO create closure.
          */
-        public void createClosure(IgniteBiClosure<File, OpenOption[], FileIO> createClo) {
+        public void createClosure(IgniteBiClosureX<File, OpenOption[], FileIO> createClo) {
             this.createClo = createClo;
         }
 
@@ -547,5 +545,11 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         public FileIOFactory delegateFactory() {
             return delegateFactory;
         }
+    }
+
+    /** */
+    private interface IgniteBiClosureX<E1, E2, R> extends Serializable {
+        /** */
+        R apply(E1 e1, E2 e2) throws IOException;
     }
 }
