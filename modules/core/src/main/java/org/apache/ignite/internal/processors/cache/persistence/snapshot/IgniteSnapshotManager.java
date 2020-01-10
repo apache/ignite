@@ -108,6 +108,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -408,7 +409,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                             CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
                                             if (gctx == null) {
-                                                throw new IgniteException("Cache group configuration has not found " +
+                                                throw new IgniteCheckedException("Cache group configuration has not found " +
                                                     "due to the cache group is stopped: " + grpId);
                                             }
 
@@ -431,7 +432,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         CacheGroupContext gctx = cctx.cache().cacheGroup(pair.getGroupId());
 
                         if (gctx == null) {
-                            sctx0.acceptException(new IgniteException("Cache group context has not found " +
+                            sctx0.acceptException(new IgniteCheckedException("Cache group context has not found " +
                                 "due to the cache group is stopped: " + pair));
                         }
 
@@ -586,7 +587,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             try {
                 for (LocalSnapshotContext sctc : locSnpCtxs.values()) {
                     if (sctc.srcNodeId.equals(evt.eventNode().id())) {
-                        sctc.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot" +
+                        sctc.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                             "creation has left the grid"));
                     }
                 }
@@ -960,7 +961,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteException("Snapshot on remote node is not supported: " + rmtNode.id());
+            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
         if (rmtNode == null) {
             throw new ClusterTopologyCheckedException("Snapshot request cannot be performed. Remote node left the grid " +
@@ -1023,7 +1024,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         break;
                     }
                     else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT)
-                        throw new IgniteException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
+                        throw new IgniteCheckedException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
 
                     U.sleep(200);
                 }
@@ -1060,7 +1061,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             retain.retainAll(snpGrps);
 
             if (!retain.isEmpty()) {
-                sctx.acceptException(new IgniteException("Snapshot has been interrupted due to some of the required " +
+                sctx.acceptException(new IgniteCheckedException("Snapshot has been interrupted due to some of the required " +
                     "cache groups stopped: " + retain));
             }
         }
@@ -1285,13 +1286,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param grpPred Checking predicate.
      * @param errCause Cause of error message if fails.
      */
-    private static void isCacheSnapshotSupported(Set<Integer> grps, Predicate<Integer> grpPred, String errCause) {
+    private static void isCacheSnapshotSupported(Set<Integer> grps, Predicate<Integer> grpPred, String errCause)
+        throws IgniteCheckedException {
         Set<Integer> notAllowdGrps = grps.stream()
             .filter(grpPred)
             .collect(Collectors.toSet());
 
         if (!notAllowdGrps.isEmpty()) {
-            throw new IgniteException("Snapshot is not supported for these groups [cause=" + errCause +
+            throw new IgniteCheckedException("Snapshot is not supported for these groups [cause=" + errCause +
                 ", grps=" + notAllowdGrps + ']');
         }
     }
@@ -1301,7 +1303,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param sctx Future to notify.
      * @return Wrapped task.
      */
-    private static Runnable wrapExceptionally(Runnable exec, LocalSnapshotContext sctx) {
+    private static Runnable wrapExceptionally(IgniteThrowableRunner exec, LocalSnapshotContext sctx) {
         return () -> {
             try {
                 if (sctx.state == SnapshotState.STARTED)
@@ -1867,7 +1869,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + snpWorkDir + ']');
                 }
 
-                snpFut.onDone(true, new IgniteCheckedException(lastTh), cancelled);
+                snpFut.onDone(true, lastTh, cancelled);
             }
         }
 

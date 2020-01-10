@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -245,14 +244,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        Set<Integer> ints = Stream.iterate(0, n -> n + 1)
-            .limit(CACHE_PARTS_COUNT) // With index partition
-            .collect(Collectors.toSet());
+        GridIntList ints = new GridIntList(IntStream.range(0, CACHE_PARTS_COUNT - 1).toArray());
         ints.add(PageIdAllocator.INDEX_PARTITION);
 
         Map<Integer, GridIntList> parts = new HashMap<>();
 
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), GridIntList.valueOf(ints));
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
