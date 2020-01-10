@@ -92,7 +92,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 
 /**
- * TODO backup must fail in case of parallel cache stop operation
+ *
  */
 public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /** */
@@ -663,7 +663,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    @Test
+    @Test(expected = IgniteCheckedException.class)
     public void testLocalSnapshotOnCacheStopped() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 

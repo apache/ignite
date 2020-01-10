@@ -370,10 +370,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             @Override public void onCheckpointBegin(Context ctx) {
                 for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
-                    // Close outpdated snapshots
-                    if (sctx0.state == SnapshotState.STOPPING)
-                        CompletableFuture.runAsync(sctx0::close, sctx0.exec);
-
                     if (!sctx0.state(SnapshotState.STARTED))
                         continue;
 
@@ -409,20 +405,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         .forEach(grpId ->
                             futs.add(CompletableFuture.runAsync(() -> {
                                     wrapExceptionally(() -> {
-                                            CacheConfiguration ccfg = cctx.cache()
-                                                .cacheGroup(grpId)
-                                                .config();
+                                            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
-                                            assert ccfg != null : "Cache configuraction cannot be empty on " +
-                                                "a snapshot creation: " + grpId;
+                                            if (gctx == null) {
+                                                throw new IgniteException("Cache group configuration has not found " +
+                                                    "due to the cache group is stopped: " + grpId);
+                                            }
 
-                                            List<File> ccfgs = storeMgr.configurationFiles(ccfg);
+                                            List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
 
                                             if (ccfgs == null)
                                                 return;
 
                                             for (File ccfg0 : ccfgs)
-                                                sctx0.snpSndr.sendCacheConfig(ccfg0, cacheDirName(ccfg));
+                                                sctx0.snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
                                         },
                                         sctx0);
                                 },
@@ -432,7 +428,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     // Process partitions.
                     for (GroupPartitionId pair : sctx0.parts) {
-                        CacheConfiguration ccfg = cctx.cache().cacheGroup(pair.getGroupId()).config();
+                        CacheGroupContext gctx = cctx.cache().cacheGroup(pair.getGroupId());
+
+                        if (gctx == null) {
+                            sctx0.acceptException(new IgniteException("Cache group context has not found " +
+                                "due to the cache group is stopped: " + pair));
+                        }
+
+                        CacheConfiguration ccfg = gctx.config();
 
                         assert ccfg != null : "Cache configuraction cannot be empty on snapshot creation: " + pair;
 
@@ -481,6 +484,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                             snpCtx.close();
                         });
+                }
+
+                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
+                    // Close outpdated snapshots
+                    if (sctx0.state == SnapshotState.STOPPING)
+                        CompletableFuture.runAsync(sctx0::close, sctx0.exec);
                 }
             }
         });
@@ -1039,6 +1048,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param grps List of cache groups which will be destroyed.
+     */
+    public void onCacheGroupsStopped(List<Integer> grps) {
+        for (LocalSnapshotContext sctx : locSnpCtxs.values()) {
+            List<Integer> snpGrps = sctx.parts.stream()
+                .map(GroupPartitionId::getGroupId)
+                .collect(Collectors.toList());
+
+            List<Integer> retain = new ArrayList<>(grps);
+            retain.retainAll(snpGrps);
+
+            if (!retain.isEmpty()) {
+                sctx.acceptException(new IgniteException("Snapshot has been interrupted due to some of the required " +
+                    "cache groups stopped: " + retain));
+            }
+        }
+    }
+
+    /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
@@ -1086,7 +1114,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             final LocalSnapshotContext sctx0 = sctx;
 
             for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
-                final CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
+                CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
+
+                if (gctx == null)
+                    throw new IgniteCheckedException("Cache group context is empty. Cache group has been stopped: " + e);
 
                 // Create cache snapshot directory if not.
                 File grpDir = U.resolveWorkDirectory(sctx.nodeSnpDir.getAbsolutePath(),
@@ -1128,7 +1159,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     "listener [sctx=" + sctx + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
         }
-        catch (IOException e) {
+        catch (IOException | IgniteCheckedException e) {
             locSnpCtxs.remove(snpName, sctx);
 
             sctx.close(e);
@@ -1200,13 +1231,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         assert snpRunner != null;
 
         return snpRunner;
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
-     */
-    public void stopCacheSnapshot(String snpName) {
-
     }
 
     /**
@@ -1843,7 +1867,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + snpWorkDir + ']');
                 }
 
-                snpFut.onDone(true, lastTh, cancelled);
+                snpFut.onDone(true, new IgniteCheckedException(lastTh), cancelled);
             }
         }
 
