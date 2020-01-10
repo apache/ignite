@@ -20,19 +20,21 @@ package org.apache.ignite.internal.processors.rest.client.message;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
+public class GridClientClusterStateRequest extends GridClientAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Request current state. */
     private boolean reqCurrentState;
 
-    /** Read only. */
-    private boolean readOnly;
+    /** New cluster state. */
+    private ClusterState state;
 
     /** */
     public boolean isReqCurrentState() {
@@ -40,15 +42,15 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     }
 
     /** */
-    public boolean readOnly() {
-        return readOnly;
+    public ClusterState state() {
+        return state;
     }
 
     /**
      * @return Current read-only mode request.
      */
-    public static GridClientReadOnlyModeRequest currentReadOnlyMode() {
-        GridClientReadOnlyModeRequest msg = new GridClientReadOnlyModeRequest();
+    public static GridClientClusterStateRequest currentState() {
+        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
 
         msg.reqCurrentState = true;
 
@@ -56,23 +58,13 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Enable read-only mode request.
+     * @param state New cluster state.
+     * @return Cluster state change request.
      */
-    public static GridClientReadOnlyModeRequest enableReadOnly() {
-        GridClientReadOnlyModeRequest msg = new GridClientReadOnlyModeRequest();
+    public static GridClientClusterStateRequest state(ClusterState state) {
+        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
 
-        msg.readOnly = true;
-
-        return msg;
-    }
-
-    /**
-     * @return Disable read-only mode request.
-     */
-    public static GridClientReadOnlyModeRequest disableReadOnly() {
-        GridClientReadOnlyModeRequest msg = new GridClientReadOnlyModeRequest();
-
-        msg.readOnly = false;
+        msg.state = state;
 
         return msg;
     }
@@ -82,7 +74,7 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
         super.writeExternal(out);
 
         out.writeBoolean(reqCurrentState);
-        out.writeBoolean(readOnly);
+        U.writeEnum(out, state);
     }
 
     /** {@inheritDoc} */
@@ -90,6 +82,6 @@ public class  GridClientReadOnlyModeRequest extends GridClientAbstractMessage {
         super.readExternal(in);
 
         reqCurrentState = in.readBoolean();
-        readOnly = in.readBoolean();
+        state = ClusterState.fromOrdinal(in.readByte());
     }
 }
