@@ -153,7 +153,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRIDS_CNT);
 
-        IgniteEx client = startGrid(CLIENT_GRID_NAME);
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
