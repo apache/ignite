@@ -43,6 +43,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
 
     /** Compute task name. */
     private static String COMPUTE_TASK_NAME = "org.apache.ignite.tests.p2p.compute.ExternalCallable";
+
     /** Compute task name. */
     private static String COMPUTE_STEALING_TASK_NAME = "org.apache.ignite.tests.p2p.JobStealingTask";
 
