@@ -23,13 +23,13 @@ package org.apache.ignite.internal.commandline.encryption;
  * @see EncryptionCommand
  */
 public enum EncryptionSubcommand {
-    /** Get current master key subcommand. */
+    /** Subcommand to get the current master key name. */
     GET_MASTER_KEY("get_master_key"),
 
-    /** Change master key subcommand. */
+    /** Subcommand to change the master key. */
     CHANGE_MASTER_KEY("change_master_key");
 
-    /** Encryption subcommand name. */
+    /** Subcommand name. */
     private final String name;
 
     /** @param name Encryption subcommand name. */

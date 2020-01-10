@@ -1942,7 +1942,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Ignite ignite = startGrids(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ignite, 10);
 
         CommandHandler h = new CommandHandler();
 

@@ -387,7 +387,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1));
+            .setBackups(1)
+            .setEncryptionEnabled(encriptionEnabled));
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
         for (int i = 0; i < countEntries; i++)
