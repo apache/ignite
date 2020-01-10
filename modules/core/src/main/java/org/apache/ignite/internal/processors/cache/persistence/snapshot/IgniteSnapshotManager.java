@@ -906,17 +906,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
                 grpId -> {
-                    Set<Integer> grpParts = new HashSet<>();
+                    GridIntList grps = new GridIntList();
 
                     cctx.cache()
                         .cacheGroup(grpId)
                         .topology()
                         .currentLocalPartitions()
-                        .forEach(p -> grpParts.add(p.id()));
+                        .forEach(p -> grps.add(p.id()));
 
-                    grpParts.add(INDEX_PARTITION);
+                    grps.add(INDEX_PARTITION);
 
-                    return GridIntList.valueOf(grpParts);
+                    return grps;
                 }));
 
         File rootSnpDir0 = localSnapshotDir(snpName);
