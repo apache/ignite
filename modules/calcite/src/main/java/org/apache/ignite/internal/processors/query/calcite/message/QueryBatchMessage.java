@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,6 +39,14 @@ public class QueryBatchMessage implements MarshalableMessage {
     private List<Object[]> rows;
 
     private int size;
+
+    public QueryBatchMessage() {
+
+    }
+
+    public QueryBatchMessage(UUID queryId, long exchangeId, int batchId, List<?> rows) {
+
+    }
 
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
         size = rows.size();

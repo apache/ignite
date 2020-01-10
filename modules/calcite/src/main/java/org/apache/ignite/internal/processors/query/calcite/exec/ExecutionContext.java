@@ -24,7 +24,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 
 /**
@@ -128,8 +128,8 @@ public class ExecutionContext implements DataContext {
     /**
      * @return Exchange processor.
      */
-    public ExchangeProcessor exchange() {
-        return ctx.exchangeProcessor();
+    public ExchangeService exchange() {
+        return ctx.exchangeService();
     }
 
     /** {@inheritDoc} */

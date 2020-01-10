@@ -24,18 +24,21 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener, LifecycleAware {
+public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
     /** */
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
 
     /** */
     private volatile SchemaPlus schema;
+
+    public SchemaHolderImpl(GridKernalContext ctx) {
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
+    }
 
     /**
      * Sets updated schema.
@@ -74,16 +77,6 @@ public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener, Lif
     @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
         schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeDrop(typeDescriptor, cacheInfo);
         rebuild();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onStart(GridKernalContext ctx) {
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onStop() {
-        // No-op
     }
 
     /** */

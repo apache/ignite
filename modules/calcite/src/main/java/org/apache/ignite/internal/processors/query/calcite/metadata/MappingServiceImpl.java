@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,9 +40,13 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.Nodes
 /**
  *
  */
-public class MappingServiceImpl implements MappingService, LifecycleAware {
+public class MappingServiceImpl implements MappingService {
     /** */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
+
+    public MappingServiceImpl(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /** {@inheritDoc} */
     @Override public NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
@@ -156,13 +159,5 @@ public class MappingServiceImpl implements MappingService, LifecycleAware {
                 return false;
         }
         return true;
-    }
-
-    @Override public void onStart(GridKernalContext ctx) {
-        this.ctx = ctx;
-    }
-
-    @Override public void onStop() {
-        ctx = null;
     }
 }

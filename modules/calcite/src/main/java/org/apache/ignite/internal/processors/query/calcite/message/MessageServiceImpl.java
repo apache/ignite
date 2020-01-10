@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -41,13 +43,13 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
     /** */
     private static final GridTopic TOPIC = GridTopic.TOPIC_QUERY;
 
-    private IgniteLogger log;
+    private final IgniteLogger log;
+
+    /** */
+    private final GridKernalContext ctx;
 
     /** */
     private CalciteQueryProcessor proc;
-
-    /** */
-    private GridKernalContext ctx;
 
     /** */
     private GridMessageListener msgLsnr;
@@ -55,12 +57,14 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
     /** */
     private Marshaller marsh;
 
-    @Override public void onStart(GridKernalContext ctx) {
+    public MessageServiceImpl(GridKernalContext ctx) {
         this.ctx = ctx;
 
         log = ctx.log(MessageServiceImpl.class);
+    }
 
-        proc = (CalciteQueryProcessor) ctx.query().getQueryEngine();
+    @Override public void onStart(GridKernalContext ctx) {
+        proc = Objects.requireNonNull(Commons.lookup(ctx, CalciteQueryProcessor.class));
 
         @SuppressWarnings("deprecation")
         Marshaller marsh0 = ctx.config().getMarshaller();
@@ -80,9 +84,7 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
 
         msgLsnr = null;
         marsh = null;
-        log = null;
         proc = null;
-        ctx = null;
     }
 
     @Override public void send(Collection<UUID> nodeIds, Message msg) {

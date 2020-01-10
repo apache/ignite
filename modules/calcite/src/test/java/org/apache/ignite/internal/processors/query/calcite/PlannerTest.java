@@ -39,7 +39,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryCache;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -97,6 +98,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private TestIgniteTable developer;
+
+    private QueryCache cache;
 
     /** */
     @Before
@@ -1242,7 +1245,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .exchangeProcessor(new BypassExchangeProcessor(log()))
+            .exchangeService(new BypassExchangeService(log()))
             .query(new Query(query, params))
             .topologyVersion(AffinityTopologyVersion.NONE)
             .mappingService(ms)

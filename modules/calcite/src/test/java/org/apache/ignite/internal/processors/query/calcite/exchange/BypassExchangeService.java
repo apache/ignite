@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalcite
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /** */
-public class BypassExchangeProcessor implements ExchangeProcessor, InboxRegistry {
+public class BypassExchangeService implements ExchangeService, InboxRegistry {
     /** */
     private final ConcurrentHashMap<Key, Outbox<?>> outboxes = new ConcurrentHashMap<>();
 
@@ -43,7 +43,7 @@ public class BypassExchangeProcessor implements ExchangeProcessor, InboxRegistry
     /**
      * @param log Logger.
      */
-    public BypassExchangeProcessor(IgniteLogger log) {
+    public BypassExchangeService(IgniteLogger log) {
         this.log = log;
     }
 
@@ -112,7 +112,7 @@ public class BypassExchangeProcessor implements ExchangeProcessor, InboxRegistry
     private Inbox<?> newInbox(Key k) {
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
             .localNodeId(k.nodeId)
-            .exchangeProcessor(this)
+            .exchangeService(this)
             .taskExecutor((qid, fid, t) -> CompletableFuture.completedFuture(null))
             .logger(log)
             .build();

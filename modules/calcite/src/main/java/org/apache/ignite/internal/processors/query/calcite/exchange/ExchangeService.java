@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 /**
  *
  */
-public interface ExchangeProcessor {
+public interface ExchangeService {
     /** A number of rows in a single batch. */
     int BATCH_SIZE = 200;
 

@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 
 /**
  * A part of exchange.
@@ -261,7 +261,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** */
-    private ExchangeProcessor exchange() {
+    private ExchangeService exchange() {
         return context().exchange();
     }
 
@@ -308,7 +308,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private final UUID nodeId;
 
         /** */
-        private final ArrayDeque<Batch> batches = new ArrayDeque<>(ExchangeProcessor.BATCH_SIZE);
+        private final ArrayDeque<Batch> batches = new ArrayDeque<>(ExchangeService.BATCH_SIZE);
 
         /** */
         private Batch curr = WAITING;

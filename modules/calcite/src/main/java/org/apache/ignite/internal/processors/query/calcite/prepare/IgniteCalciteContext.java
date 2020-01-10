@@ -39,7 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
@@ -83,7 +83,7 @@ public final class IgniteCalciteContext implements Context {
     private final MappingService mappingService;
 
     /** */
-    private final ExchangeProcessor exchangeProcessor;
+    private final ExchangeService exchangeService;
 
     /** */
     private final InboxRegistry inboxRegistry;
@@ -108,7 +108,7 @@ public final class IgniteCalciteContext implements Context {
      */
     private IgniteCalciteContext(UUID localNodeId, UUID originatingNodeId, Query query, Context parentContext,
         GridKernalContext kernalContext, FrameworkConfig config, AffinityTopologyVersion topologyVersion,
-        CalciteQueryProcessor queryProcessor, MappingService mappingService, ExchangeProcessor exchangeProcessor,
+        CalciteQueryProcessor queryProcessor, MappingService mappingService, ExchangeService exchangeService,
         InboxRegistry inboxRegistry, QueryTaskExecutor taskExecutor, MessageService messageService, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.query = query;
@@ -119,7 +119,7 @@ public final class IgniteCalciteContext implements Context {
         this.kernalContext = kernalContext;
         this.queryProcessor = queryProcessor;
         this.mappingService = mappingService;
-        this.exchangeProcessor = exchangeProcessor;
+        this.exchangeService = exchangeService;
         this.taskExecutor = taskExecutor;
         this.originatingNodeId = originatingNodeId == null ? localNodeId : originatingNodeId;
         this.localNodeId = localNodeId;
@@ -176,7 +176,7 @@ public final class IgniteCalciteContext implements Context {
     /**
      * @return Kernal context.
      */
-    public GridKernalContext kernalContext() {
+    public GridKernalContext kernal() {
         return kernalContext;
     }
 
@@ -207,8 +207,8 @@ public final class IgniteCalciteContext implements Context {
     /**
      * @return Exchange processor.
      */
-    public ExchangeProcessor exchangeProcessor() {
-        return exchangeProcessor;
+    public ExchangeService exchangeService() {
+        return exchangeService;
     }
 
     /**
@@ -358,7 +358,7 @@ public final class IgniteCalciteContext implements Context {
         return new Builder()
             .messageService(template.messageService)
             .taskExecutor(template.taskExecutor)
-            .exchangeProcessor(template.exchangeProcessor)
+            .exchangeService(template.exchangeService)
             .inboxRegistry(template.inboxRegistry)
             .mappingService(template.mappingService)
             .queryProcessor(template.queryProcessor)
@@ -407,7 +407,7 @@ public final class IgniteCalciteContext implements Context {
         private MappingService mappingService;
 
         /** */
-        private ExchangeProcessor exchangeProcessor;
+        private ExchangeService exchangeService;
 
         /** */
         private InboxRegistry inboxRegistry;
@@ -509,11 +509,11 @@ public final class IgniteCalciteContext implements Context {
         }
 
         /**
-         * @param exchangeProcessor Exchange processor.
+         * @param exchangeService Exchange processor.
          * @return Builder for chaining.
          */
-        public Builder exchangeProcessor(ExchangeProcessor exchangeProcessor) {
-            this.exchangeProcessor = exchangeProcessor;
+        public Builder exchangeService(ExchangeService exchangeService) {
+            this.exchangeService = exchangeService;
             return this;
         }
 
@@ -551,7 +551,7 @@ public final class IgniteCalciteContext implements Context {
          */
         public IgniteCalciteContext build() {
             return new IgniteCalciteContext(localNodeId, originatingNodeId, query, parentContext, kernalContext, frameworkConfig,
-                topologyVersion, queryProcessor, mappingService, exchangeProcessor, inboxRegistry, taskExecutor, messageService, logger);
+                topologyVersion, queryProcessor, mappingService, exchangeService, inboxRegistry, taskExecutor, messageService, logger);
         }
     }
 }

@@ -79,7 +79,7 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
             .localNodeId(nodeId)
-            .exchangeProcessor(exch)
+            .exchangeService(exch)
             .taskExecutor(exec)
             .build();
 
@@ -104,7 +104,7 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         input.signal = false;
 
-        int maxRows = ExchangeProcessor.BATCH_SIZE * (ExchangeProcessor.PER_NODE_BATCH_COUNT + 1);
+        int maxRows = ExchangeService.BATCH_SIZE * (ExchangeService.PER_NODE_BATCH_COUNT + 1);
         int rows = 0;
 
         while (input.push(new Object[]{new Object()})) {
@@ -117,7 +117,7 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         assertFalse(exch.ids.isEmpty());
 
-        assertEquals(ExchangeProcessor.PER_NODE_BATCH_COUNT, exch.ids.size());
+        assertEquals(ExchangeService.PER_NODE_BATCH_COUNT, exch.ids.size());
 
         assertFalse(input.push(new Object[]{new Object()}));
 
@@ -149,7 +149,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestExchangeService implements ExchangeProcessor {
+    private static class TestExchangeService implements ExchangeService {
         /** */
         private List<Integer> ids = new ArrayList<>();
 

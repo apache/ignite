@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -185,7 +185,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     }
 
     /** */
-    private ExchangeProcessor exchange() {
+    private ExchangeService exchange() {
         return context().exchange();
     }
 
@@ -216,7 +216,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             this.nodeId = nodeId;
             this.owner = owner;
 
-            curr = new ArrayList<>(ExchangeProcessor.BATCH_SIZE + 1); // extra space for end marker;
+            curr = new ArrayList<>(ExchangeService.BATCH_SIZE + 1); // extra space for end marker;
         }
 
         /**
@@ -227,7 +227,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         public void add(Object row) {
             assert ready();
 
-            if (curr.size() == ExchangeProcessor.BATCH_SIZE) {
+            if (curr.size() == ExchangeService.BATCH_SIZE) {
                 int batchId;
 
                 synchronized (this) {
@@ -236,7 +236,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
                 owner.sendBatch(nodeId, batchId, curr);
 
-                curr = new ArrayList<>(ExchangeProcessor.BATCH_SIZE + 1); // extra space for end marker;
+                curr = new ArrayList<>(ExchangeService.BATCH_SIZE + 1); // extra space for end marker;
             }
 
             curr.add(row);
@@ -283,10 +283,10 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             boolean canSend;
 
             synchronized (this) {
-                canSend = hwm != Integer.MAX_VALUE && hwm - lwm < ExchangeProcessor.PER_NODE_BATCH_COUNT;
+                canSend = hwm != Integer.MAX_VALUE && hwm - lwm < ExchangeService.PER_NODE_BATCH_COUNT;
             }
 
-            return canSend || curr.size() < ExchangeProcessor.BATCH_SIZE;
+            return canSend || curr.size() < ExchangeService.BATCH_SIZE;
         }
 
         /**
@@ -299,7 +299,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
             synchronized (this) {
                 if (lwm < id) {
-                    request = hwm - lwm == ExchangeProcessor.PER_NODE_BATCH_COUNT;
+                    request = hwm - lwm == ExchangeService.PER_NODE_BATCH_COUNT;
 
                     lwm = id;
                 }

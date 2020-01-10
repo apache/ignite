@@ -33,10 +33,14 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
  */
 public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware {
     /** */
-    private IgniteStripedThreadPoolExecutor srvc;
+    private final IgniteLogger log;
 
     /** */
-    private IgniteLogger log;
+    private IgniteStripedThreadPoolExecutor srvc;
+
+    public QueryTaskExecutorImpl(GridKernalContext ctx) {
+        log = ctx.log(MessageServiceImpl.class);
+    }
 
     @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
         FutureTask<Void> res = new FutureTask<>(queryTask, null);
@@ -45,7 +49,6 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware 
     }
 
     @Override public void onStart(GridKernalContext ctx) {
-        log = ctx.log(MessageServiceImpl.class);
         srvc = new IgniteStripedThreadPoolExecutor(
             8,
             ctx.igniteInstanceName(),
@@ -59,6 +62,5 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware 
     @Override public void onStop() {
         U.shutdownNow(getClass(), srvc, log);
         srvc = null;
-        log = null;
     }
 }

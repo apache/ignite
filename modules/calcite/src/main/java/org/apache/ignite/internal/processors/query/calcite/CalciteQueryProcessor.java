@@ -44,10 +44,10 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -55,6 +55,8 @@ import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
+import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
@@ -98,8 +100,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
@@ -107,7 +107,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.i
 /**
  *
  */
-public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
+public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, InboxRegistry {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .parserConfig(SqlParser.configBuilder()
@@ -143,6 +143,9 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
     private final MessageService messageService;
 
     /** */
+    private final ExchangeService exchangeService;
+
+    /** */
     private final MappingService mappingService;
 
     /** */
@@ -154,63 +157,80 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
     /** */
     private final Map<UUID, QueryInfo> running;
 
-    /** */
-    private GridKernalContext kernal;
-
-    /** */
-    private IgniteLogger log;
-
-    /** */
-    public CalciteQueryProcessor() {
+    /**
+     * @param ctx Kernal context.
+     */
+    public CalciteQueryProcessor(GridKernalContext ctx) {
         this(FRAMEWORK_CONFIG,
-            new SchemaHolderImpl(),
-            new MessageServiceImpl(),
-            new QueryTaskExecutorImpl(),
-            new MappingServiceImpl(),
-            new QueryCacheImpl());
+            ctx,
+            new SchemaHolderImpl(ctx),
+            new MessageServiceImpl(ctx),
+            new QueryTaskExecutorImpl(ctx),
+            new MappingServiceImpl(ctx),
+            new QueryCacheImpl(ctx),
+            new ExchangeServiceImpl(ctx));
     }
 
     /**
      * For tests purpose.
      * @param config Framework config.
+     * @param ctx Kernal context.
      * @param schemaHolder Schema holder.
      * @param messageService Message service.
      * @param taskExecutor Task executor.
      * @param mappingService Mapping service.
      * @param queryCache Query cache;
+     * @param exchangeService Exchange service.
      */
-    CalciteQueryProcessor(FrameworkConfig config, SchemaHolder schemaHolder, MessageService messageService,
-        QueryTaskExecutor taskExecutor, MappingService mappingService, QueryCache queryCache) {
-        this.config = config;
+    CalciteQueryProcessor(FrameworkConfig config, GridKernalContext ctx, SchemaHolder schemaHolder, MessageService messageService,
+        QueryTaskExecutor taskExecutor, MappingService mappingService, QueryCache queryCache, ExchangeServiceImpl exchangeService) {
+        super(ctx);
 
+        this.config = config;
         this.schemaHolder = schemaHolder;
         this.messageService = messageService;
         this.taskExecutor = taskExecutor;
         this.mappingService = mappingService;
         this.queryCache = queryCache;
+        this.exchangeService = exchangeService;
 
         locals = new ConcurrentHashMap<>();
         remotes = new ConcurrentHashMap<>();
         running = new ConcurrentHashMap<>();
     }
 
-    /**
-     * @param log Logger.
-     */
-    @LoggerResource
-    public void setLogger(IgniteLogger log) {
-        this.log = log;
+    public QueryCache queryCache() {
+        return queryCache;
+    }
+
+    public QueryTaskExecutor taskExecutor() {
+        return taskExecutor;
+    }
+
+    public SchemaHolder schemaHolder() {
+        return schemaHolder;
+    }
+
+    public MessageService messageService() {
+        return messageService;
+    }
+
+    public MappingService mappingService() {
+        return mappingService;
+    }
+
+    public ExchangeService exchangeService() {
+        return exchangeService;
     }
 
     /** {@inheritDoc} */
-    @Override public void start(@NotNull GridKernalContext ctx) {
-        kernal = ctx;
-        onStart(ctx, queryCache, schemaHolder, messageService, mappingService, taskExecutor);
+    @Override public void start() {
+        onStart(ctx, queryCache, schemaHolder, messageService, mappingService, taskExecutor, exchangeService);
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        onStop(queryCache, schemaHolder, messageService, mappingService, taskExecutor);
+    @Override public void stop(boolean cancel) {
+        onStop(queryCache, schemaHolder, messageService, mappingService, taskExecutor, exchangeService);
     }
 
     /** {@inheritDoc} */
@@ -218,11 +238,11 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
         String query, Object... params) throws IgniteSQLException {
         UUID queryId = UUID.randomUUID();
 
-        IgniteCalciteContext ctx = createContext(qryCtx, schemaName, query, params);
+        IgniteCalciteContext cctx = createContext(qryCtx, schemaName, query, params);
 
-        QueryPlan plan = queryCache.queryPlan(ctx, new CacheKey(schemaName, query), this::prepare);
+        QueryPlan plan = queryCache.queryPlan(cctx, new CacheKey(schemaName, query), this::prepare);
 
-        plan.init(ctx);
+        plan.init(cctx);
 
         // Local execution
         Fragment local = F.first(plan.fragments());
@@ -236,14 +256,14 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
 
             List<UUID> nodes = mapping.nodes();
 
-            assert nodes != null &&  nodes.size() == 1 && F.first(nodes).equals(ctx.localNodeId());
+            assert nodes != null &&  nodes.size() == 1 && F.first(nodes).equals(cctx.localNodeId());
         }
 
         ExecutionContext exeCtx = new ExecutionContext(
-            ctx,
+            cctx,
             queryId,
             local.fragmentId(),
-            local.mapping().partitions(ctx.localNodeId()),
+            local.mapping().partitions(cctx.localNodeId()),
             Commons.parametersMap(params));
 
         Node<Object[]> node = new Implementor(exeCtx)
@@ -274,7 +294,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
                         id,
                         schemaName,
                         graph,
-                        ctx.topologyVersion(),
+                        cctx.topologyVersion(),
                         mapping.partitions(nodeId),
                         params);
 
@@ -286,7 +306,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
 
             // start remote execution
             for (Pair<UUID, QueryStartRequest> pair : requests)
-                ctx.messageService().send(pair.left, pair.right);
+                cctx.messageService().send(pair.left, pair.right);
         }
 
         // start local execution
@@ -448,9 +468,9 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
             schemaName = QueryUtils.DFLT_SCHEMA;
 
         return IgniteCalciteContext.builder()
-            .localNodeId(kernal.localNodeId())
+            .localNodeId(ctx.localNodeId())
             .originatingNodeId(originatingNodeId)
-            .kernalContext(kernal)
+            .kernalContext(ctx)
             .parentContext(config.getContext())
             .frameworkConfig(Frameworks.newConfigBuilder(config)
                 .defaultSchema(schemaHolder.schema().getSubSchema(schemaName))
@@ -460,6 +480,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
             .topologyVersion(topVer)
             .messageService(messageService)
             .mappingService(mappingService)
+            .exchangeService(exchangeService)
             .taskExecutor(taskExecutor)
             .inboxRegistry(this)
             .logger(log)
@@ -469,12 +490,12 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
     /**
      * Creates a context for local planning.
      *
-     * @param ctx External context.
+     * @param qryCtx External context.
      * @param query Query string.
      * @param params Query parameters.
      * @return Query execution context.
      */
-    private IgniteCalciteContext createContext(@Nullable QueryContext ctx, @Nullable String schemaName, String query, Object[] params) {
+    private IgniteCalciteContext createContext(@Nullable QueryContext qryCtx, @Nullable String schemaName, String query, Object[] params) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE
             , DistributionTraitDef.INSTANCE
@@ -485,9 +506,9 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
             schemaName = QueryUtils.DFLT_SCHEMA;
 
         return IgniteCalciteContext.builder()
-            .localNodeId(kernal.localNodeId())
-            .kernalContext(kernal)
-            .parentContext(Contexts.chain(Commons.convert(ctx), config.getContext()))
+            .localNodeId(ctx.localNodeId())
+            .kernalContext(ctx)
+            .parentContext(Contexts.chain(Commons.convert(qryCtx), config.getContext()))
             .frameworkConfig(Frameworks.newConfigBuilder(config)
                 .defaultSchema(schemaHolder.schema().getSubSchema(schemaName))
                 .traitDefs(traitDefs)
@@ -497,6 +518,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
             .topologyVersion(readyAffinityVersion())
             .messageService(messageService)
             .mappingService(mappingService)
+            .exchangeService(exchangeService)
             .taskExecutor(taskExecutor)
             .inboxRegistry(this)
             .logger(log)
@@ -505,7 +527,7 @@ public class CalciteQueryProcessor implements QueryEngine, InboxRegistry {
 
     /** */
     private AffinityTopologyVersion readyAffinityVersion() {
-        return kernal.cache().context().exchange().readyAffinityVersion();
+        return ctx.cache().context().exchange().readyAffinityVersion();
     }
 
     /** */

@@ -23,22 +23,22 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 
 /**
  *
  */
-public class QueryCacheImpl implements QueryCache, LifecycleAware, SchemaChangeListener {
+public class QueryCacheImpl implements QueryCache, SchemaChangeListener {
     /** */
     private static final int CACHE_SIZE = 1024;
 
     /** */
     private volatile Map<CacheKey, QueryPlan> cache;
 
-    public QueryCacheImpl() {
+    public QueryCacheImpl(GridKernalContext ctx) {
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
     }
 
     @Override public QueryPlan queryPlan(IgniteCalciteContext ctx, CacheKey key, Function<IgniteCalciteContext, QueryPlan> factory) {
@@ -64,11 +64,6 @@ public class QueryCacheImpl implements QueryCache, LifecycleAware, SchemaChangeL
     }
 
     /** {@inheritDoc} */
-    @Override public void onStart(GridKernalContext ctx) {
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
-    }
-
-    /** {@inheritDoc} */
     @Override public void onSchemaDrop(String schemaName) {
         clear();
     }
@@ -76,11 +71,6 @@ public class QueryCacheImpl implements QueryCache, LifecycleAware, SchemaChangeL
     /** {@inheritDoc} */
     @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
         clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onStop() {
-        // No-op
     }
 
     /** {@inheritDoc} */

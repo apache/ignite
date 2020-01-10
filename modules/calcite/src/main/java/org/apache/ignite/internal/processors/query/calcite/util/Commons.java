@@ -30,6 +30,8 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
@@ -180,5 +182,9 @@ public final class Commons {
             }
         }
         return dst;
+    }
+
+    public static <T extends GridComponent> T lookup(GridKernalContext ctx, Class<T> clazz) {
+        return ctx.components().stream().filter(clazz::isInstance).findFirst().map(clazz::cast).orElse(null);
     }
 }
