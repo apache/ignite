@@ -74,7 +74,7 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
             try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
                 strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpoints())));
 
-                strm.addData(prmKey(grid(SRV_CHECK)), 100);
+                strm.addData(primaryKey(grid(SRV_CHECK)), 100);
             }
         };
 
