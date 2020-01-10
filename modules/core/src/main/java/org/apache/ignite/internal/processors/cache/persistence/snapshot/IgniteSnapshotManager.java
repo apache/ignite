@@ -52,7 +52,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1085,13 +1084,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         if (locSnpCtxs.containsKey(snpName))
             throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
 
-        isCacheSnapshotSupported(parts.keySet(),
-            (grpId) -> !CU.isPersistentCache(cctx.cache().cacheGroup(grpId).config(),
-            cctx.kernalContext().config().getDataStorageConfiguration()),
-            "in-memory cache groups are not allowed");
-        isCacheSnapshotSupported(parts.keySet(),
-            (grpId) -> cctx.cache().cacheGroup(grpId).config().isEncryptionEnabled(),
-            "encryption cache groups are not allowed");
+        for (Integer grpId : parts.keySet()) {
+            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+            if (gctx == null)
+                throw new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId);
+
+            if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
+                throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId);
+
+            if (gctx.config().isEncryptionEnabled())
+                throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
+        }
 
         LocalSnapshotContext sctx = null;
         File nodeSnpDir = null;
@@ -1279,23 +1283,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     private static String cacheSnapshotPath(String snpName, String dbNodePath, String cacheDirName) {
         return Paths.get(snpName, dbNodePath, cacheDirName).toString();
-    }
-
-    /**
-     * @param grps Set of cache groups to check.
-     * @param grpPred Checking predicate.
-     * @param errCause Cause of error message if fails.
-     */
-    private static void isCacheSnapshotSupported(Set<Integer> grps, Predicate<Integer> grpPred, String errCause)
-        throws IgniteCheckedException {
-        Set<Integer> notAllowdGrps = grps.stream()
-            .filter(grpPred)
-            .collect(Collectors.toSet());
-
-        if (!notAllowdGrps.isEmpty()) {
-            throw new IgniteCheckedException("Snapshot is not supported for these groups [cause=" + errCause +
-                ", grps=" + notAllowdGrps + ']');
-        }
     }
 
     /**
