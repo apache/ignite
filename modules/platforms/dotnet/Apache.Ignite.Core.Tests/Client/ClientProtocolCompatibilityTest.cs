@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Client
             
             using (var client = GetClient(version))
             {
-                Assert.AreEqual(ClientSocket.CurrentProtocolVersion, client.ServerVersion);
+                Assert.AreEqual(ClientSocket.CurrentProtocolVersion, client.Socket.CurrentProtocolVersion);
 
                 var logs = GetLogs(client);
                 
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             using (var client = GetClient(version))
             {
-                Assert.AreEqual(version, client.ServerVersion);
+                Assert.AreEqual(version, client.Socket.CurrentProtocolVersion);
 
                 var lastLog = GetLogs(client).Last();
                 var expectedLog = string.Format(
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(typeof(ClientSocket).Name, lastLog.Category);
             }
         }
-        
+
         /// <summary>
         /// Asserts correct exception for cluster operations.
         /// </summary>
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Asserts proper exception for non-supported operation.
         /// </summary>
-        private static void AssertNotSupportedOperation(Action action, string version,
+        public static void AssertNotSupportedOperation(Action action, string version,
             string expectedOperationName)
         {
             var ex = Assert.Throws<IgniteClientException>(() => action());

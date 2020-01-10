@@ -18,7 +18,14 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Threading;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
@@ -28,20 +35,23 @@ namespace Apache.Ignite.Core.Tests.Client
     /// Differs from <see cref="ClientProtocolCompatibilityTest"/>:
     /// here we actually download and run old Ignite versions instead of changing the protocol version in handshake.
     /// </summary>
-    [TestFixture("2.4.0", "1.0.0")]
-    [TestFixture("2.5.0", "1.1.0")]
-    [TestFixture("2.6.0", "1.1.0")]
-    [TestFixture("2.7.0", "1.2.0")]
-    [TestFixture("2.7.5", "1.2.0")]
-    [TestFixture("2.7.6", "1.2.0")]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.4.0", 0)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.5.0", 1)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.6.0", 1)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.7.0", 2)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.7.5", 2)]
+    [TestFixture(JavaServer.GroupIdIgnite, "2.7.6", 2)]
     [Category(TestUtils.CategoryIntensive)]
     public class ClientServerCompatibilityTest
     {
         /** */
-        private readonly string _igniteVersion;
+        private readonly string _groupId;
         
         /** */
-        private readonly string _clientProtocolVersion;
+        private readonly string _serverVersion;
+        
+        /** */
+        private readonly ClientProtocolVersion _clientProtocolVersion;
 
         /** Server node holder. */
         private IDisposable _server;
@@ -49,10 +59,11 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of <see cref="ClientServerCompatibilityTest"/>.
         /// </summary>
-        public ClientServerCompatibilityTest(string igniteVersion, string clientProtocolVersion)
+        public ClientServerCompatibilityTest(string groupId, string serverVersion, int clientProtocolVersion)
         {
-            _igniteVersion = igniteVersion;
-            _clientProtocolVersion = clientProtocolVersion;
+            _groupId = groupId;
+            _serverVersion = serverVersion;
+            _clientProtocolVersion = new ClientProtocolVersion(1, (short) clientProtocolVersion, 0);
         }
 
         /// <summary>
@@ -61,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _server = JavaServer.Start(_igniteVersion);
+            _server = JavaServer.Start(_groupId, _serverVersion);
         }
 
         /// <summary>
@@ -96,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 ClientProtocolCompatibilityTest.TestClusterOperationsThrowCorrectExceptionOnVersionsOlderThan150(
-                    client, _clientProtocolVersion);
+                    client, _clientProtocolVersion.ToString());
             }
         }
         
@@ -108,10 +119,68 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (var client = StartClient())
             {
-                Assert.IsFalse(client.GetConfiguration().EnablePartitionAwareness);
+                var expectedPartitionAwareness = _clientProtocolVersion >= ClientSocket.Ver140;
+                Assert.AreEqual(expectedPartitionAwareness, client.GetConfiguration().EnablePartitionAwareness);
+                
                 var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
                 cache.Put(1, 2);
                 Assert.AreEqual(2, cache.Get(1));
+            }
+        }
+        
+        /// <summary>
+        /// Tests that WithExpiryPolicy throws proper exception on older server versions.
+        /// </summary>
+        [Test]
+        public void TestWithExpiryPolicyThrowCorrectExceptionOnVersionsOlderThan150()
+        {
+            if (_clientProtocolVersion >= ClientSocket.Ver150)
+            {
+                return;
+            }
+            
+            using (var client = StartClient())
+            {
+                var cache = client.GetOrCreateCache<int, int>(TestContext.CurrentContext.Test.Name);
+                var cacheWithExpiry = cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(1), null, null));
+
+                ClientProtocolCompatibilityTest.AssertNotSupportedOperation(
+                    () => cacheWithExpiry.Put(1, 2), _clientProtocolVersion.ToString(), "WithExpiryPolicy");
+            }
+        }
+
+        /// <summary>
+        /// Tests that server-side configured expiry policy works on all client versions.
+        /// </summary>
+        [Test]
+        public void TestServerSideExpiryPolicyWorksOnAllVersions()
+        {
+            using (var client = StartClient())
+            {
+                var cache = client.GetCache<int, int>("twoSecondCache");
+                
+                cache.Put(1, 2);
+                Assert.True(cache.ContainsKey(1));
+                
+                Thread.Sleep(TimeSpan.FromSeconds(2.1));
+                Assert.False(cache.ContainsKey(1));
+            }
+        }
+
+        /// <summary>
+        /// Tests that CreateCache with all config properties customized works on all versions. 
+        /// </summary>
+        [Test]
+        public void TestCreateCacheWithFullConfigWorksOnAllVersions()
+        {
+            using (var client = StartClient())
+            {
+                var cache = client.CreateCache<int, Person>(GetFullCacheConfiguration());
+                
+                cache.Put(1, new Person(2));
+                
+                Assert.AreEqual(2, cache.Get(1).Id);
+                Assert.AreEqual("Person 2", cache[1].Name);
             }
         }
 
@@ -127,6 +196,73 @@ namespace Apache.Ignite.Core.Tests.Client
             };
             
             return Ignition.StartClient(cfg);
+        }
+
+        /// <summary>
+        /// Gets the cache config.
+        /// </summary>
+        private static CacheClientConfiguration GetFullCacheConfiguration()
+        {
+            return new CacheClientConfiguration
+            {
+                Name = Guid.NewGuid().ToString(),
+                Backups = 3,
+                AtomicityMode = CacheAtomicityMode.Transactional,
+                CacheMode = CacheMode.Partitioned,
+                EagerTtl = false,
+                EnableStatistics = true,
+                GroupName = Guid.NewGuid().ToString(),
+                KeyConfiguration = new[]
+                {
+                    new CacheKeyConfiguration
+                    {
+                        TypeName = typeof(Person).FullName,
+                        AffinityKeyFieldName = "Name"
+                    }
+                },
+                LockTimeout =TimeSpan.FromSeconds(5),
+                QueryEntities = new[]
+                {
+                    new QueryEntity(typeof(int), typeof(Person))
+                    {
+                        Aliases = new[]
+                        {
+                            new QueryAlias("Person.Name", "PName") 
+                        }
+                    }
+                },
+                QueryParallelism = 7,
+                RebalanceDelay = TimeSpan.FromSeconds(1.5),
+                RebalanceMode = CacheRebalanceMode.Sync,
+                RebalanceOrder = 25,
+                RebalanceThrottle = TimeSpan.FromSeconds(2.3),
+                RebalanceTimeout = TimeSpan.FromSeconds(42),
+                SqlSchema = Guid.NewGuid().ToString(),
+                CopyOnRead = false,
+                DataRegionName = DataStorageConfiguration.DefaultDataRegionName,
+                ExpiryPolicyFactory = new TestExpiryPolicyFactory(),
+                OnheapCacheEnabled = true,
+                PartitionLossPolicy = PartitionLossPolicy.ReadWriteAll,
+                ReadFromBackup = false,
+                RebalanceBatchSize = 100000,
+                SqlEscapeAll = true,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
+                MaxConcurrentAsyncOperations = 123,
+                MaxQueryIteratorsCount = 17,
+                QueryDetailMetricsSize = 50,
+                RebalanceBatchesPrefetchCount = 4,
+                SqlIndexMaxInlineSize = 200000
+            };
+        }
+        
+        /** */
+        private class TestExpiryPolicyFactory : IFactory<IExpiryPolicy>
+        {
+            /** */
+            public IExpiryPolicy CreateInstance()
+            {
+                return new ExpiryPolicy(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3));
+            }
         }
     }
 }
