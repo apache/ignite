@@ -41,6 +41,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
                 q.setInitialQuery(new ScanQuery<>(INITIAL_QUERY_FILTER));
+                q.setLocalListener(e -> {/* No-op. */});
             }
         };
 
@@ -55,7 +56,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     public void testRemoteFilterFactory() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
-                q.setRemoteFilterFactory(AbstractContinuousQueryRemoteSecurityContextCheckTest::createRemoteFilter);
+                q.setRemoteFilterFactory(() -> RMT_FILTER);
             }
         };
 
@@ -70,7 +71,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
     public void testRemoteFilter() {
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
-                q.setRemoteFilter(createRemoteFilter());
+                q.setRemoteFilter(RMT_FILTER);
             }
         };
 
@@ -87,8 +88,6 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
             VERIFIER.register();
 
             ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
-
-            cq.setLocalListener(e -> {/* No-op. */});
 
             c.accept(cq);
 

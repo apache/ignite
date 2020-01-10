@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
@@ -47,6 +44,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
                     q.setInitialQuery(new ScanQuery<>(INITIAL_QUERY_FILTER));
                     q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
+                    q.setLocalListener(e -> {/* No-op. */});
                 }
             };
 
@@ -62,7 +60,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
-                    q.setRemoteFilterFactory(AbstractContinuousQueryRemoteSecurityContextCheckTest::createRemoteFilter);
+                    q.setRemoteFilterFactory(() -> RMT_FILTER);
                     q.setRemoteTransformerFactory(() -> Cache.Entry::getValue);
                 }
             };
@@ -79,7 +77,12 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
-                    q.setRemoteTransformerFactory(TestTransformer::new);
+                    q.setRemoteTransformerFactory(() -> e -> {
+                        VERIFIER.register();
+
+                        return e.getValue();
+                    });
+                    q.setLocalListener(e -> {/* No-op. */});
                 }
             };
 
@@ -97,26 +100,9 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
             ContinuousQueryWithTransformer<Integer, Integer, Integer> cq = new ContinuousQueryWithTransformer<>();
 
-            cq.setLocalListener(e -> {/* No-op. */});
-
             c.accept(cq);
 
             openQueryCursor(cq);
         };
-    }
-
-    /** Test Transformer. */
-    static class TestTransformer implements
-        IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer> {
-        /** Should be registred one time only. */
-        private AtomicBoolean registred = new AtomicBoolean(false);
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-            if (!registred.getAndSet(true))
-                VERIFIER.register();
-
-            return evt.getValue();
-        }
     }
 }

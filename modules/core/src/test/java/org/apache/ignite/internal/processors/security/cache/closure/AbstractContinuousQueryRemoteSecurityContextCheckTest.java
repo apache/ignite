@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -48,18 +48,21 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     };
 
     /** Remote filter. */
-    protected static CacheEntryEventSerializableFilter<Integer, Integer> createRemoteFilter() {
-        return new CacheEntryEventSerializableFilter<Integer, Integer>() {
-            /** Should be registred one time only. */
-            private final AtomicBoolean registred = new AtomicBoolean(false);
+    protected static final CacheEntryEventSerializableFilter<Integer, Integer> RMT_FILTER = e -> {
+        VERIFIER.register();
 
-            @Override public boolean evaluate(
-                CacheEntryEvent<? extends Integer, ? extends Integer> evt) throws CacheEntryListenerException {
-                if (!registred.getAndSet(true))
-                    VERIFIER.register();
+        return true;
+    };
 
-                return true;
-            }
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration[] getCacheConfigurations() {
+        return new CacheConfiguration[] {
+            new CacheConfiguration<>()
+                .setName(CACHE_NAME + '_' + SRV_RUN)
+                .setCacheMode(CacheMode.PARTITIONED),
+            new CacheConfiguration<>()
+                .setName(CACHE_NAME + '_' + CLNT_RUN)
+                .setCacheMode(CacheMode.PARTITIONED)
         };
     }
 
@@ -79,7 +82,8 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
         srv.cluster().active(true);
 
-        srv.cache(CACHE_NAME).put(prmKey(grid(SRV_CHECK)), 1);
+        for(String cacheName : srv.cacheNames())
+            srv.cache(cacheName).put(prmKey(grid(SRV_CHECK), cacheName), 1);
 
         awaitPartitionMapExchange();
     }
@@ -98,10 +102,14 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
      * @param q {@link Query}.
      */
     protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
-        IgniteCache<Integer, Integer> cache = localIgnite().cache(CACHE_NAME);
+        Ignite ignite = localIgnite();
+
+        String cacheName = CACHE_NAME + '_' + ignite.name();
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
-            cache.put(prmKey(grid(SRV_CHECK)), 100);
+            cache.put(prmKey(grid(SRV_CHECK), cacheName), 100);
         }
     }
 }

@@ -48,16 +48,27 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
     }
 
     /**
+     * Getting the key that is contained on primary partition on passed node for cache.
+     *
+     * @param ignite Node.
+     * @param cacheName Cache name.
+     * @return Key.
+     */
+    protected Integer prmKey(IgniteEx ignite, String cacheName) {
+        return findKeys(ignite.localNode(), ignite.cache(cacheName), 1, 0, 0)
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(ignite.name() + " isn't primary node for any key."));
+    }
+
+    /**
      * Getting the key that is contained on primary partition on passed node for {@link #CACHE_NAME} cache.
      *
      * @param ignite Node.
      * @return Key.
      */
     protected Integer prmKey(IgniteEx ignite) {
-        return findKeys(ignite.localNode(), ignite.cache(CACHE_NAME), 1, 0, 0)
-            .stream()
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException(ignite.name() + " isn't primary node for any key."));
+        return prmKey(ignite, CACHE_NAME);
     }
 
     /**
