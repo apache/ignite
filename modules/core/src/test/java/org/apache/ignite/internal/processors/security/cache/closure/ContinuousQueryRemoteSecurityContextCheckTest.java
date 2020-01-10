@@ -91,7 +91,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
 
             c.accept(cq);
 
-            openQueryCursor(cq);
+            executeQuery(cq);
         };
     }
 }

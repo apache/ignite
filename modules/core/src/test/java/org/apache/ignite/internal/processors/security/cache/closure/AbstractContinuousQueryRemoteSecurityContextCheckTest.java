@@ -89,7 +89,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         srv.cluster().active(true);
 
         for(String cacheName : srv.cacheNames())
-            srv.cache(cacheName).put(prmKey(grid(SRV_CHECK), cacheName), 1);
+            srv.cache(cacheName).put(primaryKey(grid(SRV_CHECK), cacheName), 1);
 
         awaitPartitionMapExchange();
     }
@@ -107,7 +107,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
      *
      * @param q {@link Query}.
      */
-    protected void openQueryCursor(Query<Cache.Entry<Integer, Integer>> q) {
+    protected void executeQuery(Query<Cache.Entry<Integer, Integer>> q) {
         Ignite ignite = localIgnite();
 
         String cacheName = CACHE_NAME + '_' + ignite.name();
@@ -115,7 +115,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
-            cache.put(prmKey(grid(SRV_CHECK), cacheName), 100);
+            cache.put(primaryKey(grid(SRV_CHECK), cacheName), 100);
         }
     }
 }

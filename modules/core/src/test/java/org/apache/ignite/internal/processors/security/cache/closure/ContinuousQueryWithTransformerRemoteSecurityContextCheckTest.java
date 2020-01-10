@@ -102,7 +102,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
             c.accept(cq);
 
-            openQueryCursor(cq);
+            executeQuery(cq);
         };
     }
 }

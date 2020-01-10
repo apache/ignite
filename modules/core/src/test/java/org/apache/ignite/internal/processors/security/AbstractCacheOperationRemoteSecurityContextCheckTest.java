@@ -54,7 +54,7 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param cacheName Cache name.
      * @return Key.
      */
-    protected Integer prmKey(IgniteEx ignite, String cacheName) {
+    protected Integer primaryKey(IgniteEx ignite, String cacheName) {
         return findKeys(ignite.localNode(), ignite.cache(cacheName), 1, 0, 0)
             .stream()
             .findFirst()
@@ -67,8 +67,8 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param ignite Node.
      * @return Key.
      */
-    protected Integer prmKey(IgniteEx ignite) {
-        return prmKey(ignite, CACHE_NAME);
+    protected Integer primaryKey(IgniteEx ignite) {
+        return primaryKey(ignite, CACHE_NAME);
     }
 
     /**
@@ -77,7 +77,7 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @param nodeName Node name.
      * @return Key.
      */
-    protected Integer prmKey(String nodeName) {
-        return prmKey((IgniteEx)G.ignite(nodeName));
+    protected Integer primaryKey(String nodeName) {
+        return primaryKey((IgniteEx)G.ignite(nodeName));
     }
 }
