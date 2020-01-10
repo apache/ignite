@@ -127,6 +127,10 @@ public class GridDhtPartitionDemander {
     /** Rebalancing evicted partitions left. */
     private final AtomicLongMetric evictedPartitionsLeft;
 
+    /** Rebalancing expected keys. */
+    private final AtomicLongMetric expectedKeys;
+
+
     /**
      * @param grp Ccahe group.
      */
@@ -179,6 +183,12 @@ public class GridDhtPartitionDemander {
 
         evictedPartitionsLeft = mreg.longMetric("RebalancingEvictedPartitionsLeft", "The number of evicted" +
             " partitions before rebalancing start.");
+
+        expectedKeys = mreg.longMetric("RebalancingExpectedKeys",
+            "The number of expected keys to rebalance for the whole cache group.");
+
+        mreg.register("RebalancingExpectedBytes", () -> expectedKeys.value() * averagePartitionSize.get(),
+            "The number of expected bytes to rebalance  of this cache group.");
     }
 
     /**
@@ -337,26 +347,28 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
+            expectedKeys.reset();
+
+            for (GridDhtPartitionDemandMessage msg : assignments.values()) {
+                for (Integer partId : msg.partitions().fullSet())
+                    expectedKeys.add(grp.topology().globalPartSizes().get(partId));
+
+                CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
+
+                for (int i = 0; i < histMap.size(); i++) {
+                    long from = histMap.initialUpdateCounterAt(i);
+                    long to = histMap.updateCounterAt(i);
+
+                    expectedKeys.add(to - from);
+                }
+            }
+
             for (final GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.clearRebalanceCounters();
-
-                    for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                        for (Integer partId : msg.partitions().fullSet())
-                            metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
-
-                        CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
-
-                        for (int i = 0; i < histMap.size(); i++) {
-                            long from = histMap.initialUpdateCounterAt(i);
-                            long to = histMap.updateCounterAt(i);
-
-                            metrics.onRebalancingKeysCountEstimateReceived(to - from);
-                        }
-                    }
-
+                    metrics.onRebalancingKeysCountEstimateReceived(expectedKeys.value());
                     metrics.startRebalance(0);
                 }
             }
