@@ -98,8 +98,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** The remaining groups with the number of partitions. */
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
-    /** todo used for diagnostic purposes only */
-    private final Map<Integer, AtomicInteger> received = new ConcurrentHashMap<>();
+    /** */
+    private final AtomicInteger receivedCnt = new AtomicInteger();
 
     /** */
     private final Map<Integer, Map<Integer, Long>> restored = new ConcurrentHashMap<>();
@@ -294,8 +294,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 ", p=" + partId + ", path=" + file + "]");
         }
 
-        received.computeIfAbsent(grpId, cntr -> new AtomicInteger()).incrementAndGet();
-
         if (isDone())
             return;
 
@@ -317,6 +315,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     onDone(e);
                 }
             });
+
+            int received = receivedCnt.incrementAndGet();
+
+            if (received == partsToNodes.size()) {
+                if (log.isDebugEnabled())
+                    log.debug("All partition files received - triggering checkpoint to finish file rebalancing.");
+
+                cctx.database().wakeupForCheckpoint("Checkpoint required to finish rebalancing.");
+            }
         }
         catch (IOException | IgniteCheckedException e) {
             log.error("Unable to handle partition snapshot", e);
@@ -579,7 +586,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     @Override public String toString() {
         StringBuilder buf = new StringBuilder();
 
-        buf.append("\n\tReceived: " + received);
+        buf.append("\n\treceived " + receivedCnt.get() + " out of " + partsToNodes.size());
         buf.append("\n\tRemainng: " + remaining);
 
         if (!snapFut.isDone())
