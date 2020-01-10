@@ -81,8 +81,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
         this.log = log;
 
-        if (!throttleOnlyPagesInCheckpoint)
-            assert cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
+        assert throttleOnlyPagesInCheckpoint || cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
     }
 
     /** {@inheritDoc} */
@@ -182,10 +181,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         notInCheckpointBackoffCntr.set(0);
     }
 
-    /**
-     * @return {@code True} if throttling should be enabled, and {@code False} otherwise.
-     */
-    private boolean shouldThrottle() {
+    /** {@inheritDoc} */
+    @Override public boolean shouldThrottle() {
         int checkpointBufLimit = (int)(pageMemory.checkpointBufferPagesSize() * CP_BUF_FILL_THRESHOLD);
 
         return pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
@@ -76,7 +77,10 @@ public enum IgniteFeatures {
     LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
 
     /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
-    PME_FREE_SWITCH(19);
+    PME_FREE_SWITCH(19),
+
+    /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
+    MASTER_KEY_CHANGE(20);
 
     /**
      * Unique feature identifier.
