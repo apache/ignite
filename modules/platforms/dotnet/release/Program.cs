@@ -26,6 +26,8 @@ using Apache.Ignite.Core.Configuration;
 using Apache.Ignite.Core.Discovery.Tcp;
 using Apache.Ignite.Core.Discovery.Tcp.Static;
 using Apache.Ignite.Linq;
+using Apache.Ignite.Log4Net;
+using Apache.Ignite.NLog;
 
 namespace test_proj
 {
@@ -39,6 +41,8 @@ namespace test_proj
 
         private static async Task MainAsync()
         {
+            InitLoggers();
+
             var cfg = new IgniteConfiguration
             {
                 DiscoverySpi = new TcpDiscoverySpi
@@ -53,7 +57,8 @@ namespace test_proj
                 {
                     Port = 10842 
                 },
-                Localhost = "127.0.0.1"
+                Localhost = "127.0.0.1",
+                Logger = new IgniteNLogLogger()
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -73,7 +78,11 @@ namespace test_proj
                     .Single();
                 Debug.Assert(1 == resPerson.Age);
 
-                var clientCfg = new IgniteClientConfiguration("127.0.0.1:10842");
+                var clientCfg = new IgniteClientConfiguration("127.0.0.1:10842")
+                {
+                    Logger = new IgniteLog4NetLogger()
+                };
+                
                 using (var igniteThin = Ignition.StartClient(clientCfg))
                 {
                     var cacheThin = igniteThin.GetCache<int, Person>(cacheCfg.Name);
@@ -87,6 +96,17 @@ namespace test_proj
                     Debug.Assert(personNames.SequenceEqual(new[] {"Person-1"}));
                 }
             }
+        }
+
+        private static void InitLoggers()
+        {
+            var config = new NLog.Config.LoggingConfiguration();
+
+            var target = new NLog.Targets.ColoredConsoleTarget();
+            config.AddTarget("logfile", target);
+
+            config.LoggingRules.Add(new NLog.Config.LoggingRule("*", NLog.LogLevel.Info, target));
+            NLog.LogManager.Configuration = config;
         }
     }
 

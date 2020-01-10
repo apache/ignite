@@ -80,9 +80,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
     /** Use mapped byte buffer. */
     private final boolean mmap;
 
-    /** Last WAL pointer. */
-    private final Supplier<WALPointer> lastWALPtr;
-
     /** */
     private final RecordSerializer serializer;
 
@@ -102,7 +99,6 @@ public class FileHandleManagerImpl implements FileHandleManager {
      * @param cctx Context.
      * @param metrics Data storage metrics.
      * @param mmap Mmap.
-     * @param lastWALPtr Last WAL pointer.
      * @param serializer Serializer.
      * @param currentHandleSupplier Current handle supplier.
      * @param mode WAL mode.
@@ -114,19 +110,18 @@ public class FileHandleManagerImpl implements FileHandleManager {
         GridCacheSharedContext cctx,
         DataStorageMetricsImpl metrics,
         boolean mmap,
-        Supplier<WALPointer> lastWALPtr,
         RecordSerializer serializer,
         Supplier<FileWriteHandle> currentHandleSupplier,
         WALMode mode,
         int walBufferSize,
         long maxWalSegmentSize,
-        long fsyncDelay) {
+        long fsyncDelay
+    ) {
         this.cctx = cctx;
         log = cctx.logger(FileHandleManagerImpl.class);
         this.mode = mode;
         this.metrics = metrics;
         this.mmap = mmap;
-        this.lastWALPtr = lastWALPtr;
         this.serializer = serializer;
         this.currentHandleSupplier = currentHandleSupplier;
         this.walBufferSize = walBufferSize;
@@ -242,29 +237,39 @@ public class FileHandleManagerImpl implements FileHandleManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
+    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
-            return;
+            return null;
 
         FileWriteHandleImpl cur = currentHandle();
 
         // WAL manager was not started (client node).
         if (cur == null)
-            return;
+            return null;
 
-        FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
+        FileWALPointer filePtr;
+
+        if (ptr == null) {
+            long pos = cur.buf.tail();
+
+            filePtr = new FileWALPointer(cur.getSegmentId(), (int)pos, 0);
+        }
+        else
+            filePtr = (FileWALPointer)ptr;
 
         if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
 
         if (!explicitFsync && mode != WALMode.FSYNC)
-            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
+            return filePtr; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
-            return;
+        if (!cur.needFsync(filePtr))
+            return filePtr;
 
         cur.fsync(filePtr);
+
+        return filePtr;
     }
 
     /**

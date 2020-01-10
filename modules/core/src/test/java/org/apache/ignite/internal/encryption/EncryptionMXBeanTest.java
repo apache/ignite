@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -107,9 +108,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
         assertEquals(DEFAULT_MASTER_KEY_NAME, grid0.encryption().getMasterKeyName());
 
-        grid0.cluster().active(true);
-
-        grid0.cluster().readOnly(true);
+        grid0.cluster().state(ACTIVE_READ_ONLY);
 
         mBean.changeMasterKey(MASTER_KEY_NAME_2);
 
