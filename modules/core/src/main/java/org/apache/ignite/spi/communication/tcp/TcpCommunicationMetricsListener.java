@@ -28,11 +28,12 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_DESC;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_DESC;
@@ -103,16 +104,6 @@ class TcpCommunicationMetricsListener {
     /** Message type map. */
     private volatile Map<Short, String> msgTypMap;
 
-    /** Generate metric name by message direct type id. */
-    public static String sentMessagesByTypeMetricName(Short directType) {
-        return MetricUtils.metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
-    }
-
-    /** Generate metric name by message direct type id. */
-    public static String receivedMessagesByTypeMetricName(Short directType) {
-        return MetricUtils.metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
-    }
-
     /** */
     public TcpCommunicationMetricsListener(GridMetricManager mmgr) {
         this.mmgr = mmgr;
@@ -129,11 +120,11 @@ class TcpCommunicationMetricsListener {
         );
 
         sentMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
                 .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         rcvdMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
                 .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         sentBytesMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
@@ -144,7 +135,7 @@ class TcpCommunicationMetricsListener {
 
         mmgr.addMetricRegistryCreationListener(mreg -> {
             // Metrics for the specific nodes.
-            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + MetricUtils.SEPARATOR))
+            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
                 return;
 
             mreg.longAdderMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME, SENT_MESSAGES_BY_NODE_ID_METRIC_DESC);
@@ -246,7 +237,7 @@ class TcpCommunicationMetricsListener {
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> receivedMessagesByType() {
-        return collectMessagesCountByType(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME + MetricUtils.SEPARATOR);
+        return collectMessagesCountByType(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME + SEPARATOR);
     }
 
     /**
@@ -264,7 +255,7 @@ class TcpCommunicationMetricsListener {
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> sentMessagesByType() {
-        return collectMessagesCountByType(SENT_MESSAGES_BY_TYPE_METRIC_NAME + MetricUtils.SEPARATOR);
+        return collectMessagesCountByType(SENT_MESSAGES_BY_TYPE_METRIC_NAME + SEPARATOR);
     }
 
     /**
@@ -280,7 +271,7 @@ class TcpCommunicationMetricsListener {
     protected Map<String, Long> collectMessagesCountByType(String prefix) {
         Map<String, Long> res = new HashMap<>();
 
-        prefix = MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, prefix);
+        prefix = metricName(COMMUNICATION_METRICS_GROUP_NAME, prefix);
 
         for (Metric metric : mreg) {
             if (metric.name().startsWith(prefix)) {
@@ -304,7 +295,7 @@ class TcpCommunicationMetricsListener {
     protected Map<UUID, Long> collectMessagesCountByNodeId(String metricName) {
         Map<UUID, Long> res = new HashMap<>();
 
-        String mregPrefix = COMMUNICATION_METRICS_GROUP_NAME + MetricUtils.SEPARATOR;
+        String mregPrefix = COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR;
 
         for (MetricRegistry mreg : mmgr) {
             if (mreg.name().startsWith(mregPrefix)) {
@@ -337,7 +328,7 @@ class TcpCommunicationMetricsListener {
         }
 
         for (MetricRegistry mreg : mmgr) {
-            if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + MetricUtils.SEPARATOR)) {
+            if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
                 mreg.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
 
                 mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
@@ -354,7 +345,7 @@ class TcpCommunicationMetricsListener {
             threadMetrics.sentMsgsMetricsByNodeId = new HashMap<>();
         }
 
-        mmgr.remove(MetricUtils.metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()));
+        mmgr.remove(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()));
     }
 
     /**
@@ -387,6 +378,16 @@ class TcpCommunicationMetricsListener {
                 }
             }
         }
+    }
+
+    /** Generate metric name by message direct type id. */
+    public static String sentMessagesByTypeMetricName(Short directType) {
+        return metricName(SENT_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
+    }
+
+    /** Generate metric name by message direct type id. */
+    public static String receivedMessagesByTypeMetricName(Short directType) {
+        return metricName(RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME, directType.toString());
     }
 
     /**
