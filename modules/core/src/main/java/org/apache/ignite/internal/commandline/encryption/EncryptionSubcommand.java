@@ -19,6 +19,8 @@ package org.apache.ignite.internal.commandline.encryption;
 
 /**
  * Set of encryption subcommands.
+ *
+ * @see EncryptionCommand
  */
 public enum EncryptionSubcommand {
     /** Get current master key subcommand. */

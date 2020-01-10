@@ -277,14 +277,16 @@ public class CommandHandlerParsingTest {
         }
     }
 
-    /** */
+    /**
+     * @param cmd Command.
+     * @return {@code True} if the command requires its own specific arguments.
+     */
     private boolean skipCommand(CommandList cmd) {
         return cmd == CommandList.CACHE ||
             cmd == CommandList.WAL ||
             cmd == CommandList.SET_STATE ||
             cmd == CommandList.ENCRYPTION;
     }
-
 
     /**
      * Tests parsing and validation for user and password arguments.

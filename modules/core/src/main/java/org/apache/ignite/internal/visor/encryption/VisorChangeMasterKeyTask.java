@@ -17,60 +17,49 @@
 
 package org.apache.ignite.internal.visor.encryption;
 
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.commandline.encryption.EncryptionCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Task for encryption features.
+ * The task for changing the master key.
+ *
+ * @see EncryptionCommand
+ * @see IgniteEncryption#changeMasterKey(String)
  */
 @GridInternal
-public class VisorEncryptionTask extends VisorOneNodeTask<VisorEncryptionArgs, VisorEncryptionTaskResult> {
+public class VisorChangeMasterKeyTask extends VisorOneNodeTask<String, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorEncryptionArgs, VisorEncryptionTaskResult> job(VisorEncryptionArgs arg) {
-        return new VisorEncryptionJob(arg, debug);
+    @Override protected VisorJob<String, String> job(String arg) {
+        return new VisorChangeMasterKeyJob(arg, debug);
     }
 
-    /**
-     * Job for encryption features.
-     */
-    private static class VisorEncryptionJob extends VisorJob<VisorEncryptionArgs, VisorEncryptionTaskResult> {
+    /** The job for changing the master key. */
+    private static class VisorChangeMasterKeyJob extends VisorJob<String, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job with specified argument.
          *
-         * @param arg   Job argument.
+         * @param masterKeyName Master key name.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorEncryptionJob(@Nullable VisorEncryptionArgs arg, boolean debug) {
-            super(arg, debug);
+        protected VisorChangeMasterKeyJob(String masterKeyName, boolean debug) {
+            super(masterKeyName, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorEncryptionTaskResult run(@Nullable VisorEncryptionArgs arg) throws IgniteException {
-            assert arg != null;
+        @Override protected String run(String masterKeyName) throws IgniteException {
+            ignite.encryption().changeMasterKey(masterKeyName).get();
 
-            switch (arg.getCmd()) {
-                case GET_MASTER_KEY:
-                    String masterKeyName = ignite.encryption().getMasterKeyName();
-
-                    return new VisorEncryptionTaskResult(masterKeyName);
-
-                case CHANGE_MASTER_KEY:
-                    ignite.encryption().changeMasterKey(arg.getMasterKeyName()).get();
-
-                    return new VisorEncryptionTaskResult("Master key changed.");
-
-                default:
-                    throw new IllegalArgumentException("Unknown encryption subcommand: " + arg.getCmd());
-            }
+            return "The master key changed.";
         }
     }
 }

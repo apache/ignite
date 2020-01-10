@@ -23,34 +23,40 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.visor.encryption.VisorEncryptionArgs;
-import org.apache.ignite.internal.visor.encryption.VisorEncryptionTask;
-import org.apache.ignite.internal.visor.encryption.VisorEncryptionTaskResult;
+import org.apache.ignite.internal.visor.encryption.VisorChangeMasterKeyTask;
+import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.CHANGE_MASTER_KEY;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.GET_MASTER_KEY;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.of;
 
 /**
  * Commands assosiated with encryption features.
+ *
+ * @see EncryptionSubcommand
  */
-public class EncryptionCommand implements Command<VisorEncryptionArgs> {
-    /** Arguments. */
-    private VisorEncryptionArgs encryptionArgs;
+public class EncryptionCommand implements Command<Object> {
+    /** Subcommand. */
+    EncryptionSubcommand cmd;
+
+    /** The task name. */
+    String taskName;
+
+    /** The task arguments. */
+    Object taskArgs;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorEncryptionTaskResult res = executeTask(
+            return executeTaskByNameOnNode(
                 client,
-                VisorEncryptionTask.class,
-                encryptionArgs,
+                taskName,
+                taskArgs,
+                null,
                 clientCfg
             );
-
-            return res.result();
         }
         catch (Throwable e) {
             logger.severe("Failed to perform operation.");
@@ -62,8 +68,10 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        if (encryptionArgs != null && CHANGE_MASTER_KEY == encryptionArgs.getCmd())
-            return "Warning: the command will change the master key.";
+        if (CHANGE_MASTER_KEY == cmd) {
+            return "Warning: the command will change the master key. Cache start and node join during the key change " +
+                "process is prohibited and will be rejected.";
+        }
 
         return null;
     }
@@ -77,31 +85,37 @@ public class EncryptionCommand implements Command<VisorEncryptionArgs> {
 
         switch (cmd) {
             case GET_MASTER_KEY:
-                encryptionArgs = new VisorEncryptionArgs(GET_MASTER_KEY);
+                taskName = VisorGetMasterKeyNameTask.class.getName();
+
+                taskArgs = null;
 
                 break;
 
             case CHANGE_MASTER_KEY:
                 String masterKeyName = argIter.nextArg("Expected master key name.");
 
-                encryptionArgs = new VisorEncryptionArgs(CHANGE_MASTER_KEY, masterKeyName);
+                taskName = VisorChangeMasterKeyTask.class.getName();
+
+                taskArgs = masterKeyName;
 
                 break;
 
             default:
                 throw new IllegalArgumentException("Unknown encryption subcommand: " + cmd);
         }
+
+        this.cmd = cmd;
     }
 
     /** {@inheritDoc} */
-    @Override public VisorEncryptionArgs arg() {
-        return encryptionArgs;
+    @Override public Object arg() {
+        return taskArgs;
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print current master key name:", ENCRYPTION, GET_MASTER_KEY.toString());
-        Command.usage(logger, "Change master key name:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
+        Command.usage(logger, "Print the current master key name:", ENCRYPTION, GET_MASTER_KEY.toString());
+        Command.usage(logger, "Change the master key:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
     }
 
     /** {@inheritDoc} */
