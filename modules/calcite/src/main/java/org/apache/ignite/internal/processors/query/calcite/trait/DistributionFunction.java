@@ -29,7 +29,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -56,7 +56,7 @@ public abstract class DistributionFunction implements Serializable {
      * @param keys Distribution keys.
      * @return Destination function.
      */
-    public abstract DestinationFunction toDestination(PlannerContext ctx, NodesMapping mapping, ImmutableIntList keys);
+    public abstract DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping mapping, ImmutableIntList keys);
 
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
@@ -105,7 +105,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             throw new AssertionError();
         }
 
@@ -126,7 +126,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
             List<UUID> nodes = m.nodes();
@@ -151,7 +151,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
             List<UUID> nodes = m.nodes();
@@ -177,7 +177,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             assert m != null && m.nodes() != null && m.nodes().size() == 1;
 
             List<UUID> nodes = Collections.singletonList(Objects.requireNonNull(F.first(m.nodes())));
@@ -201,7 +201,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments());
 
             List<List<UUID>> assignments = m.assignments();
@@ -262,7 +262,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public DestinationFunction toDestination(IgniteCalciteContext ctx, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && k.size() == 1;
 
             List<List<UUID>> assignments = m.assignments();

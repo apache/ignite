@@ -19,18 +19,24 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 
 /**
  * Fragment of distributed query
@@ -66,17 +72,10 @@ public class Fragment implements RelSource {
      * @param ctx Planner context.
      * @param mq Metadata query used for data location calculation.
      */
-    public void init(PlannerContext ctx, RelMetadataQuery mq) {
+    public void init(IgniteCalciteContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
-        if (!info.mapped())
-            mapping = remote() ? ctx.mapForRandom() : ctx.mapForLocal();
-        else {
-            mapping = info.mapping().deduplicate();
-
-            if (!remote() && !mapping.nodes().contains(ctx.localNodeId()))
-                throw new OptimisticPlanningException("Failed to calculate physical distribution", new Edge(null, root, -1));
-        }
+        mapping = fragmentMapping(ctx, info, mq);
 
         ImmutableList<Pair<IgniteReceiver, RelSource>> sources = info.sources();
 
@@ -85,7 +84,7 @@ public class Fragment implements RelSource {
                 IgniteReceiver receiver = input.left;
                 RelSource source = input.right;
 
-                source.init(mapping, receiver.distribution(), ctx, mq);
+                source.init(fragmentMapping(ctx, info, mq), receiver.distribution(), ctx, mq);
             }
         }
     }
@@ -108,8 +107,8 @@ public class Fragment implements RelSource {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
-        assert remote();
+    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+        assert !local();
 
         ((IgniteSender) root).target(new RelTargetImpl(mapping, distribution));
 
@@ -117,7 +116,32 @@ public class Fragment implements RelSource {
     }
 
     /** */
-    public boolean remote() {
-        return root instanceof IgniteSender;
+    public boolean local() {
+        return !(root instanceof IgniteSender);
+    }
+
+    /** */
+    private NodesMapping fragmentMapping(IgniteCalciteContext ctx, FragmentInfo info, RelMetadataQuery mq) {
+        NodesMapping mapping;
+
+        try {
+            if (info.mapped())
+                mapping = local() ? ctx.mapForLocal().mergeWith(info.mapping()) : info.mapping();
+            else if (local())
+                mapping = ctx.mapForLocal();
+            else {
+                RelDistribution.Type type = IgniteMdDistribution._distribution(root, mq).getType();
+
+                boolean single = type == SINGLETON || type == BROADCAST_DISTRIBUTED;
+
+                // TODO selection strategy.
+                mapping = ctx.mapForIntermediate(single ? 1 : 0, null);
+            }
+        }
+        catch (LocationMappingException e) {
+            throw new OptimisticPlanningException("Failed to calculate physical distribution", new Edge(null, root, -1));
+        }
+
+        return mapping.deduplicate();
     }
 }

@@ -17,26 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.plan.Context;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryExecutionService;
+import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -45,8 +51,12 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
  * Planner context, encapsulates services, kernal context, query string and its flags and parameters and helper methods
  * to work with them.
  */
-public final class PlannerContext implements Context {
+public final class IgniteCalciteContext implements Context {
+    /** */
     private final UUID localNodeId;
+
+    /** */
+    private final UUID originatingNodeId;
 
     /** */
     private final FrameworkConfig frameworkConfig;
@@ -76,7 +86,13 @@ public final class PlannerContext implements Context {
     private final ExchangeProcessor exchangeProcessor;
 
     /** */
-    private final QueryExecutionService executionService;
+    private final InboxRegistry inboxRegistry;
+
+    /** */
+    private final QueryTaskExecutor taskExecutor;
+
+    /** */
+    private final MessageService messageService;
 
     /** */
     private IgnitePlanner planner;
@@ -90,18 +106,22 @@ public final class PlannerContext implements Context {
     /**
      * Private constructor, used by a builder.
      */
-    private PlannerContext(UUID localNodeId, Query query, Context parentContext, GridKernalContext kernalContext,
-        FrameworkConfig config, AffinityTopologyVersion topologyVersion, CalciteQueryProcessor queryProcessor,
-        MappingService mappingService, ExchangeProcessor exchangeProcessor, QueryExecutionService executionService, IgniteLogger logger) {
+    private IgniteCalciteContext(UUID localNodeId, UUID originatingNodeId, Query query, Context parentContext,
+        GridKernalContext kernalContext, FrameworkConfig config, AffinityTopologyVersion topologyVersion,
+        CalciteQueryProcessor queryProcessor, MappingService mappingService, ExchangeProcessor exchangeProcessor,
+        InboxRegistry inboxRegistry, QueryTaskExecutor taskExecutor, MessageService messageService, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.query = query;
         this.topologyVersion = topologyVersion;
+        this.inboxRegistry = inboxRegistry;
+        this.messageService = messageService;
         this.logger = logger;
         this.kernalContext = kernalContext;
         this.queryProcessor = queryProcessor;
         this.mappingService = mappingService;
         this.exchangeProcessor = exchangeProcessor;
-        this.executionService = executionService;
+        this.taskExecutor = taskExecutor;
+        this.originatingNodeId = originatingNodeId == null ? localNodeId : originatingNodeId;
         this.localNodeId = localNodeId;
 
         // link frameworkConfig#context() to this.
@@ -116,6 +136,13 @@ public final class PlannerContext implements Context {
      */
     public UUID localNodeId() {
         return localNodeId;
+    }
+
+    /**
+     * @return Originating node ID (the node, who started the execution).
+     */
+    public UUID originatingNodeId() {
+        return originatingNodeId;
     }
 
     /**
@@ -161,18 +188,12 @@ public final class PlannerContext implements Context {
     }
 
     /**
-     * Package private method to set a planner after it creates using provided PlannerContext.
-     *
-     * @param planner Planner.
-     */
-    void planner(IgnitePlanner planner) {
-        this.planner = planner;
-    }
-
-    /**
      * @return Planner.
      */
     public IgnitePlanner planner() {
+        if (planner == null)
+            planner = new IgnitePlanner(this);
+
         return planner;
     }
 
@@ -191,10 +212,24 @@ public final class PlannerContext implements Context {
     }
 
     /**
-     * @return Query execution service.
+     * @return Inbox registry.
      */
-    public QueryExecutionService executionService() {
-        return executionService;
+    public InboxRegistry inboxRegistry() {
+        return inboxRegistry;
+    }
+
+    /**
+     * @return Query task executor.
+     */
+    public QueryTaskExecutor taskExecutor() {
+        return taskExecutor;
+    }
+
+    /**
+     * @return Message service.
+     */
+    public MessageService messageService() {
+        return messageService;
     }
 
     // Helper methods
@@ -254,17 +289,21 @@ public final class PlannerContext implements Context {
      * @return Local node mapping that consists of local node only, uses for root query fragment.
      */
     public NodesMapping mapForLocal() {
-        return mappingService.local();
+        return new NodesMapping(Collections.singletonList(localNodeId), null, (byte) (NodesMapping.CLIENT | NodesMapping.DEDUPLICATED));
     }
 
     /**
      * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
-     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy.
+     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using nodes filter).
      *
      * @return Nodes mapping for intermediate fragments.
+     * @param desiredCnt desired nodes count, {@code 0} means all possible nodes.
+     * @param nodeFilter Node filter.
      */
-    public NodesMapping mapForRandom() {
-        return mappingService.random(topologyVersion);
+    public NodesMapping mapForIntermediate(int desiredCnt, Predicate<ClusterNode> nodeFilter) {
+        assert desiredCnt >= 0;
+
+        return mappingService.intermediateMapping(topologyVersion, desiredCnt, nodeFilter);
     }
 
     /**
@@ -272,7 +311,7 @@ public final class PlannerContext implements Context {
      * @return Nodes mapping for particular table, depends on underlying cache distribution.
      */
     public NodesMapping mapForCache(int cacheId) {
-        return mappingService.distributed(cacheId, topologyVersion);
+        return mappingService.cacheMapping(cacheId, topologyVersion);
     }
 
     /**
@@ -290,7 +329,11 @@ public final class PlannerContext implements Context {
      * @param queryTask Query task.
      */
     public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
-        return executionService.execute(queryId, fragmentId, queryTask);
+        return taskExecutor.execute(queryId, fragmentId, queryTask);
+    }
+
+    public RelOptCluster createCluster() {
+        return planner().createCluster();
     }
 
     /** {@inheritDoc} */
@@ -311,10 +354,12 @@ public final class PlannerContext implements Context {
     /**
      * @return Context builder.
      */
-    public static Builder builder(PlannerContext template) {
+    public static Builder builder(IgniteCalciteContext template) {
         return new Builder()
-            .executionService(template.executionService)
+            .messageService(template.messageService)
+            .taskExecutor(template.taskExecutor)
             .exchangeProcessor(template.exchangeProcessor)
+            .inboxRegistry(template.inboxRegistry)
             .mappingService(template.mappingService)
             .queryProcessor(template.queryProcessor)
             .kernalContext(template.kernalContext)
@@ -323,6 +368,7 @@ public final class PlannerContext implements Context {
             .query(template.query)
             .parentContext(template.parentContext)
             .frameworkConfig(template.frameworkConfig)
+            .originatingNodeId(template.originatingNodeId)
             .localNodeId(template.localNodeId);
     }
 
@@ -332,6 +378,9 @@ public final class PlannerContext implements Context {
     public static class Builder {
         /** */
         private UUID localNodeId;
+
+        /** */
+        private UUID originatingNodeId;
 
         /** */
         private FrameworkConfig frameworkConfig;
@@ -361,10 +410,29 @@ public final class PlannerContext implements Context {
         private ExchangeProcessor exchangeProcessor;
 
         /** */
-        private QueryExecutionService executionService;
+        private InboxRegistry inboxRegistry;
 
+        /** */
+        private QueryTaskExecutor taskExecutor;
+
+        /** */
+        private MessageService messageService;
+
+        /**
+         * @param localNodeId Local node ID.
+         * @return Builder for chaining.
+         */
         public Builder localNodeId(UUID localNodeId) {
             this.localNodeId = localNodeId;
+            return this;
+        }
+
+        /**
+         * @param originatingNodeId Originating node ID (the node, who started the execution).
+         * @return Builder for chaining.
+         */
+        public Builder originatingNodeId(UUID originatingNodeId) {
+            this.originatingNodeId = originatingNodeId;
             return this;
         }
 
@@ -450,11 +518,29 @@ public final class PlannerContext implements Context {
         }
 
         /**
-         * @param executionService Query execution service.
+         * @param inboxRegistry Inbox registry.
          * @return Builder for chaining.
          */
-        public Builder executionService(QueryExecutionService executionService) {
-            this.executionService = executionService;
+        public Builder inboxRegistry(InboxRegistry inboxRegistry) {
+            this.inboxRegistry = inboxRegistry;
+            return this;
+        }
+
+        /**
+         * @param taskExecutor Query task executor.
+         * @return Builder for chaining.
+         */
+        public Builder taskExecutor(QueryTaskExecutor taskExecutor) {
+            this.taskExecutor = taskExecutor;
+            return this;
+        }
+
+        /**
+         * @param messageService Message service.
+         * @return Builder for chaining.
+         */
+        public Builder messageService(MessageService messageService) {
+            this.messageService = messageService;
             return this;
         }
 
@@ -463,9 +549,9 @@ public final class PlannerContext implements Context {
          *
          * @return Planner context.
          */
-        public PlannerContext build() {
-            return new PlannerContext(localNodeId, query, parentContext, kernalContext, frameworkConfig,
-                topologyVersion, queryProcessor, mappingService, exchangeProcessor, executionService, logger);
+        public IgniteCalciteContext build() {
+            return new IgniteCalciteContext(localNodeId, originatingNodeId, query, parentContext, kernalContext, frameworkConfig,
+                topologyVersion, queryProcessor, mappingService, exchangeProcessor, inboxRegistry, taskExecutor, messageService, logger);
         }
     }
 }

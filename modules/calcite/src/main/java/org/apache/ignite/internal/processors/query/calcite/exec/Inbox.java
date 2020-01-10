@@ -97,8 +97,14 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** {@inheritDoc} */
+    @Override public void cancel() {
+        context().setCancelled();
+        close();
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
-        exchange().unregister(this);
+        context().parent().inboxRegistry().unregister(this);
     }
 
     /**
@@ -121,16 +127,17 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void pushInternal() {
-        if (end)
-            return;
+        if (context().cancelled())
+            close();
+        else if (!end) {
+            Sink<T> target = target();
 
-        Sink<T> target = target();
-
-        if (target != null && prepareBuffers()) {
-            if (comparator != null)
-                pushOrdered(target);
-            else
-                pushUnordered(target);
+            if (target != null && prepareBuffers()) {
+                if (comparator != null)
+                    pushOrdered(target);
+                else
+                    pushUnordered(target);
+            }
         }
     }
 
@@ -255,7 +262,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private ExchangeProcessor exchange() {
-        return context().exchangeProcessor();
+        return context().exchange();
     }
 
     /** */

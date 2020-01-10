@@ -21,15 +21,16 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class CalciteSchemaHolder implements SchemaChangeListener {
+public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener, LifecycleAware {
     /** */
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
 
@@ -47,7 +48,7 @@ public class CalciteSchemaHolder implements SchemaChangeListener {
     /**
      * @return Actual schema.
      */
-    public SchemaPlus schema() {
+    @Override public SchemaPlus schema() {
         return schema;
     }
 
@@ -75,10 +76,20 @@ public class CalciteSchemaHolder implements SchemaChangeListener {
         rebuild();
     }
 
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStop() {
+        // No-op
+    }
+
     /** */
     private void rebuild() {
         SchemaPlus schema = Frameworks.createRootSchema(false);
         schemas.forEach(schema::add);
-        schema(schema.getSubSchema(QueryUtils.DFLT_SCHEMA));
+        schema(schema);
     }
 }

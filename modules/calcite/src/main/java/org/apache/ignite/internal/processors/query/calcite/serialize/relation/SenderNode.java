@@ -57,6 +57,6 @@ public class SenderNode extends RelGraphNode {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
 
-        return new IgniteSender(cluster, traits.toTraitSet(cluster), input, target);
+        return new IgniteSender(cluster, traitSet(cluster), input, target);
     }
 }

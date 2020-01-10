@@ -32,7 +32,7 @@ public class NoOpQueryEngine implements QueryEngine {
     @Override public void stop() {}
 
     /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
+    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String query, Object... params) throws IgniteSQLException {
         return Collections.emptyList();
     }
 }

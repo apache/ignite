@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -48,7 +51,7 @@ public class QueryPlan {
      *
      * @param ctx Planner context.
      */
-    public void init(PlannerContext ctx) {
+    public void init(IgniteCalciteContext ctx) {
         int i = 0;
 
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
@@ -99,5 +102,26 @@ public class QueryPlan {
      */
     public List<Fragment> fragments() {
         return fragments;
+    }
+
+    /**
+     * Clones this plan with a new cluster.
+     */
+    public QueryPlan clone(RelOptCluster cluster) {
+        RelOptPlanner cur = cluster.getPlanner();
+        RelOptPlanner other = F.first(fragments).root().getCluster().getPlanner();
+
+        if (cur == other)
+            return this;
+
+        Cloner cloner = new Cloner(cluster);
+
+        List<Fragment> fragments0 = new ArrayList<>(fragments.size());
+
+        for (Fragment fragment : fragments) {
+            fragments0.add(new Fragment(cloner.go(Commons.igniteRel(fragment.root()))));
+        }
+
+        return new QueryPlan(fragments0);
     }
 }

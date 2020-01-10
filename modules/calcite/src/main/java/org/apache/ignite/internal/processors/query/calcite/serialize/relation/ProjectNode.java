@@ -67,6 +67,6 @@ public class ProjectNode extends RelGraphNode {
         RelOptCluster cluster = input.getCluster();
         List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);
 
-        return new IgniteProject(cluster, traits.toTraitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
+        return new IgniteProject(cluster, traitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
     }
 }

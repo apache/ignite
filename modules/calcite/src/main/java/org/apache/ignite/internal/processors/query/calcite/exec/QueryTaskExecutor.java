@@ -15,12 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.Future;
 
 /**
- * Graph node.
+ *
  */
-public interface GraphNode extends Serializable {
+public interface QueryTaskExecutor {
+    /**
+     * Executes a query task in a thread, responsible for particular query fragment.
+     *
+     * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
+     * @param queryTask Query task.
+     * @return Task execution future.
+     */
+    Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask);
 }

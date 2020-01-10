@@ -76,7 +76,7 @@ public class JoinNode extends RelGraphNode {
         RelNode right = children.get(1);
 
         return new IgniteJoin(ctx.getCluster(),
-            traits.toTraitSet(ctx.getCluster()),
+            traitSet(ctx.getCluster()),
             left,
             right,
             ctx.getExpressionTranslator().translate(condition),

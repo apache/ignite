@@ -40,16 +40,33 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     private final DestinationFunction function;
 
     /** */
-    private boolean registered;
+    private final CloseListener<Outbox<T>> lsnr;
+
+    /** */
+    private boolean cancelled;
 
     /**
-     * @param ctx Execution context.
-     * @param function Destination function.
+     * @param ctx        Execution context.
+     * @param exchangeId Exchange ID.
+     * @param input      Input node.
+     * @param function   Destination function.
      */
     public Outbox(ExecutionContext ctx, long exchangeId, Node<T> input, DestinationFunction function) {
+        this(ctx, exchangeId, input, function, null);
+    }
+
+    /**
+     * @param ctx        Execution context.
+     * @param exchangeId Exchange ID.
+     * @param input      Input node.
+     * @param function   Destination function.
+     * @param lsnr       Close listener.
+     */
+    public Outbox(ExecutionContext ctx, long exchangeId, Node<T> input, DestinationFunction function, CloseListener<Outbox<T>> lsnr) {
         super(ctx, input);
         this.exchangeId = exchangeId;
         this.function = function;
+        this.lsnr = lsnr;
 
         link();
     }
@@ -77,15 +94,33 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         context().execute(this::requestInternal);
     }
 
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        context().setCancelled();
+        context().execute(this::cancelInternal);
+    }
+
     /** */
     private void requestInternal() {
-        if (!registered) {
-            exchange().register(this);
+        if (context().cancelled())
+            cancelInternal();
+        else
+            input().request();
+    }
 
-            registered = true;
+    /** */
+    private void cancelInternal() {
+        if (cancelled)
+            return;
+
+        try {
+            perNodeBuffers.values().forEach(Buffer::cancel);
+            input().cancel();
         }
-
-        super.request();
+        finally {
+            cancelled = true;
+            close();
+        }
     }
 
     /** {@inheritDoc} */
@@ -135,17 +170,23 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        exchange().unregister(this);
+        if (lsnr != null)
+            lsnr.onClose(this);
     }
 
     /** */
-    private void send(UUID nodeId, int batchId, List<?> rows) {
+    private void sendBatch(UUID nodeId, int batchId, List<?> rows) {
         exchange().sendBatch(this, nodeId, queryId(), exchangeId, batchId, rows);
     }
 
     /** */
+    private void sendCancel(UUID nodeId, int batchId) {
+        exchange().sendCancel(this, nodeId, queryId(), exchangeId, batchId);
+    }
+
+    /** */
     private ExchangeProcessor exchange() {
-        return context().exchangeProcessor();
+        return context().exchange();
     }
 
     /** */
@@ -193,7 +234,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
                     batchId = ++hwm;
                 }
 
-                owner.send(nodeId, batchId, curr);
+                owner.sendBatch(nodeId, batchId, curr);
 
                 curr = new ArrayList<>(ExchangeProcessor.BATCH_SIZE + 1); // extra space for end marker;
             }
@@ -212,9 +253,23 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
                 hwm = Integer.MAX_VALUE;
             }
 
-            curr.add(EndMarker.INSTANCE);
-            owner.send(nodeId, batchId, curr);
+            List<Object> tmp = curr;
             curr = null;
+
+            tmp.add(EndMarker.INSTANCE);
+            owner.sendBatch(nodeId, batchId, tmp);
+        }
+
+        public void cancel() {
+            int batchId;
+
+            synchronized (this) {
+                batchId = hwm + 1;
+                hwm = Integer.MAX_VALUE;
+            }
+
+            curr = null;
+            owner.sendCancel(nodeId, batchId);
         }
 
         /**
@@ -228,7 +283,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             boolean canSend;
 
             synchronized (this) {
-                canSend = hwm - lwm < ExchangeProcessor.PER_NODE_BATCH_COUNT;
+                canSend = hwm != Integer.MAX_VALUE && hwm - lwm < ExchangeProcessor.PER_NODE_BATCH_COUNT;
             }
 
             return canSend || curr.size() < ExchangeProcessor.BATCH_SIZE;

@@ -44,10 +44,9 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** {@inheritDoc} */
     @Override public void request() {
-        if (row == EndMarker.INSTANCE)
-            return;
-
-        if (row != null && !target().push((Object[]) row))
+        if (context().cancelled()
+            || row == EndMarker.INSTANCE
+            || row != null && !target().push((Object[]) row))
             return;
 
         row = null;
@@ -56,10 +55,19 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
             it = source.iterator();
 
         while (it.hasNext()) {
+            if (context().cancelled()) {
+                it = null;
+                row = null;
+
+                return;
+            }
+
             row = it.next();
 
             if (!target().push((Object[]) row))
                 return;
+
+            row = null;
         }
 
         row = EndMarker.INSTANCE;

@@ -23,7 +23,6 @@ import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.ScannableTable;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
@@ -51,6 +50,12 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     /** */
     private final ScalarFactory factory;
 
+    /** */
+    private CloseListener<Outbox<Object[]>> outboxLsnr;
+
+    /** */
+    private CloseListener<ConsumerNode> consumerLsnr;
+
     /**
      * @param ctx Root context.
      */
@@ -60,13 +65,23 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         factory = new ScalarFactory(new RexBuilder(ctx.getTypeFactory()));
     }
 
+    public Implementor outboxCloseListener(CloseListener<Outbox<Object[]>> outboxLsnr) {
+        this.outboxLsnr = outboxLsnr;
+        return this;
+    }
+
+    public Implementor consumerCloseListener(CloseListener<ConsumerNode> consumerLsnr) {
+        this.consumerLsnr = consumerLsnr;
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
         IgniteDistribution distribution = target.distribution();
-        DestinationFunction function = distribution.function().toDestination(ctx.plannerContext(), target.mapping(), distribution.getKeys());
+        DestinationFunction function = distribution.function().toDestination(ctx.parent(), target.mapping(), distribution.getKeys());
 
-        return new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function);
+        return new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function, outboxLsnr);
     }
 
     /** {@inheritDoc} */
@@ -95,10 +110,9 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
-        ExchangeProcessor exchange = ctx.exchangeProcessor();
         RelSource source = rel.source();
-
-        Inbox<Object[]> inbox = (Inbox<Object[]>) exchange.register(new Inbox<>(ctx, source.fragmentId()));
+        InboxRegistry registry = ctx.parent().inboxRegistry();
+        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
@@ -127,7 +141,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         Node<Object[]> res = visit(rel);
 
         if (!(rel instanceof IgniteSender))
-            res = new ConsumerNode(ctx, res);
+            res = new ConsumerNode(ctx, res, consumerLsnr);
 
         return res;
     }

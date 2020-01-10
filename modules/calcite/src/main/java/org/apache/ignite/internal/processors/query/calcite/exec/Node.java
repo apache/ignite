@@ -70,4 +70,19 @@ public interface Node<T> {
     default void request(){
         inputs().forEach(Node::request);
     }
+
+    /**
+     * Cancels execution.
+     */
+    default void cancel() {
+        context().setCancelled();
+        inputs().forEach(Node::cancel);
+    }
+
+    /**
+     * Resets execution sub-tree to initial state.
+     */
+    default void reset() {
+        inputs().forEach(Node::reset);
+    }
 }

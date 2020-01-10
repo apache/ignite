@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.cluster;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,41 +30,41 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 
 /**
  *
  */
-public class MappingServiceImpl implements MappingService {
+public class MappingServiceImpl implements MappingService, LifecycleAware {
     /** */
-    private final GridKernalContext ctx;
-
-    /**
-     * @param ctx Grid kernal context.
-     */
-    public MappingServiceImpl(GridKernalContext ctx) {
-        this.ctx = ctx;
-    }
+    private GridKernalContext ctx;
 
     /** {@inheritDoc} */
-    @Override public NodesMapping local() {
-        return new NodesMapping(Collections.singletonList(ctx.discovery().localNode().id()), null, DEDUPLICATED);
-    }
+    @Override public NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
+        assert desiredCnt >= 0;
 
-    /** {@inheritDoc} */
-    @Override public NodesMapping random(AffinityTopologyVersion topVer) {
         List<ClusterNode> nodes = ctx.discovery().discoCache(topVer).serverNodes();
+
+        if (nodeFilter != null)
+            nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());
+
+        if (desiredCnt != 0 && desiredCnt < nodes.size()) {
+            Collections.shuffle(nodes);
+
+            nodes = nodes.subList(0, desiredCnt);
+        }
 
         return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, DEDUPLICATED);
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer) {
+    @Override public NodesMapping cacheMapping(int cacheId, @NotNull AffinityTopologyVersion topVer) {
         GridCacheContext<?,?> cctx = ctx.cache().context().cacheContext(cacheId);
 
         return cctx.isReplicated() ? replicatedLocation(cctx, topVer) : partitionedLocation(cctx, topVer);
@@ -154,5 +156,13 @@ public class MappingServiceImpl implements MappingService {
                 return false;
         }
         return true;
+    }
+
+    @Override public void onStart(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    @Override public void onStop() {
+        ctx = null;
     }
 }

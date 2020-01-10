@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 /**
- *
+ * TODO remove buffers.
  */
 public class JoinNode extends AbstractNode<Object[]> {
     /** */
@@ -71,12 +71,11 @@ public class JoinNode extends AbstractNode<Object[]> {
 
     /** {@inheritDoc} */
     @Override public void request() {
-        if (end)
+        if (context().cancelled() || end)
             return;
 
         if (left.end && right.end)
             tryFlush();
-
         if (!left.end)
             input(0).request();
         if (!right.end)
@@ -88,6 +87,9 @@ public class JoinNode extends AbstractNode<Object[]> {
         if (left.end && right.end) {
             for (int i = leftIdx; i < left.size(); i++) {
                 for (int j = rightIdx; j < right.size(); j++) {
+                    if (context().cancelled())
+                        return;
+
                     Object[] row = expression.apply(left.get(i), right.get(j));
 
                     if (row != null && !target().push(row)) {

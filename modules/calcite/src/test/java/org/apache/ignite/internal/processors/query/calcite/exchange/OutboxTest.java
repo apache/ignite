@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryExecutionService;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,7 +62,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     private TestExchangeService exch;
 
     /** */
-    private TestExecutionService exec;
+    private TestTaskExecutor exec;
 
     /** */
     @BeforeClass
@@ -74,16 +74,16 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() {
-        exec = new TestExecutionService();
+        exec = new TestTaskExecutor();
         exch = new TestExchangeService();
 
-        PlannerContext ctx = PlannerContext.builder()
+        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
             .localNodeId(nodeId)
             .exchangeProcessor(exch)
-            .executionService(exec)
+            .taskExecutor(exec)
             .build();
 
-        ExecutionContext ectx = new ExecutionContext(UUID.randomUUID(), 0, ctx, ImmutableMap.of());
+        ExecutionContext ectx = new ExecutionContext(ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
 
         input = new TestNode(ectx);
         outbox = new Outbox<>(ectx, ectx.fragmentId(), input, func);
@@ -99,8 +99,6 @@ public class OutboxTest extends GridCommonAbstractTest {
         assertFalse(exec.taskQueue.isEmpty());
 
         exec.execute();
-
-        assertTrue(exch.registered);
 
         assertTrue(input.signal);
 
@@ -147,42 +145,16 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         input.end();
 
-        assertTrue(exch.unregistered);
-
         assertEquals(EndMarker.INSTANCE, F.last(exch.lastBatch));
     }
 
     /** */
     private static class TestExchangeService implements ExchangeProcessor {
         /** */
-        private boolean registered;
-
-        /** */
-        private boolean unregistered;
-
-        /** */
         private List<Integer> ids = new ArrayList<>();
 
         /** */
         private List<?> lastBatch;
-
-        /** {@inheritDoc} */
-        @Override public void register(Outbox<?> outbox) {
-            registered = true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Inbox<?> register(Inbox<?> inbox) {
-            throw new AssertionError();
-        }
-
-        @Override public void unregister(Outbox<?> outbox) {
-            unregistered = true;
-        }
-
-        @Override public void unregister(Inbox<?> inbox) {
-            throw new AssertionError();
-        }
 
         /** {@inheritDoc} */
         @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
@@ -193,6 +165,11 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendCancel(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
     }
@@ -229,7 +206,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestExecutionService implements QueryExecutionService {
+    private static class TestTaskExecutor implements QueryTaskExecutor {
         /** */
         private Queue<Runnable> taskQueue = new ArrayDeque<>();
 

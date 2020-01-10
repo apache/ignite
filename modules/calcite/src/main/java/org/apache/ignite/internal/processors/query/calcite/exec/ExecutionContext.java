@@ -25,7 +25,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -38,20 +38,28 @@ public class ExecutionContext implements DataContext {
     private final long fragmentId;
 
     /** */
-    private final PlannerContext ctx;
+    private final IgniteCalciteContext ctx;
+
+    /** */
+    private final int[] parts;
 
     /** */
     private final Map<String, Object> params;
 
+    /** */
+    private volatile boolean cancelled;
+
     /**
+     * @param ctx Parent context.
      * @param queryId Query ID.
      * @param fragmentId Fragment ID.
-     * @param ctx Query context.
+     * @param parts Partitions.
      * @param params Parameters.
      */
-    public ExecutionContext(UUID queryId, long fragmentId, PlannerContext ctx, Map<String, Object> params) {
+    public ExecutionContext(IgniteCalciteContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
+        this.parts = parts;
         this.params = params;
         this.ctx = ctx;
     }
@@ -71,17 +79,25 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
-     * @return Planner context.
+     * @return Interested partitions.
      */
-    public PlannerContext plannerContext() {
-        return ctx;
+    public int[] partitions() {
+        return parts;
     }
 
     /**
-     * @return Exchange processor.
+     * @return Parent context.
      */
-    public ExchangeProcessor exchangeProcessor() {
-        return ctx.exchangeProcessor();
+    public IgniteCalciteContext parent() {
+        return ctx;
+    }
+
+    public boolean cancelled() {
+        return cancelled;
+    }
+
+    public void setCancelled() {
+        cancelled = true;
     }
 
     /**
@@ -107,6 +123,13 @@ public class ExecutionContext implements DataContext {
     /** {@inheritDoc} */
     @Override public QueryProvider getQueryProvider() {
         return ctx.queryProvider();
+    }
+
+    /**
+     * @return Exchange processor.
+     */
+    public ExchangeProcessor exchange() {
+        return ctx.exchangeProcessor();
     }
 
     /** {@inheritDoc} */

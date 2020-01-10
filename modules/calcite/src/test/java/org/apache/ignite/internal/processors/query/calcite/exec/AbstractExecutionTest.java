@@ -26,8 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeProcessor;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -37,10 +36,10 @@ import org.junit.Before;
  */
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** */
-    private ExchangeProcessor exch;
+    protected BypassExchangeProcessor exch;
 
     /** */
-    private List<ExecutorService> executors;
+    protected List<ExecutorService> executors;
 
     /** */
     protected volatile Throwable lastException;
@@ -69,12 +68,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
         executors.add(exec);
 
-        return new ExecutionContext(queryId, fragmentId, PlannerContext.builder()
+        return new ExecutionContext(IgniteCalciteContext.builder()
             .localNodeId(nodeId)
-            .executionService((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
+            .taskExecutor((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
             .exchangeProcessor(exch)
+            .inboxRegistry(exch)
             .logger(log())
-            .build(), ImmutableMap.of());
+            .build(), queryId, fragmentId, null, ImmutableMap.of());
     }
 
     /** */

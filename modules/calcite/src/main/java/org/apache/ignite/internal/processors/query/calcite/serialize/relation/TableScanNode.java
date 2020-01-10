@@ -51,7 +51,7 @@ public class TableScanNode extends RelGraphNode {
     /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
         return new IgniteTableScan(ctx.getCluster(),
-            traits.toTraitSet(ctx.getCluster()),
+            traitSet(ctx.getCluster()),
             ctx.getSchema().getTableForMember(tableName));
     }
 }

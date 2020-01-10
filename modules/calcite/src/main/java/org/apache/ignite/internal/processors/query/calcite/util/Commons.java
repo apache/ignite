@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,21 +27,29 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility methods.
  */
 public final class Commons {
+    /** */
+    public static final RelOptCluster EMPTY_CLUSTER =
+        RelOptCluster.create(NoOpPlanner.INSTANCE, new RexBuilder(new IgniteTypeFactory()));
+
     /** */
     private Commons(){}
 
@@ -126,15 +135,15 @@ public final class Commons {
     /**
      * Extracts planner context.
      */
-    public static PlannerContext plannerContext(RelNode rel) {
-        return plannerContext(rel.getCluster().getPlanner().getContext());
+    public static IgniteCalciteContext context(RelNode rel) {
+        return context(rel.getCluster().getPlanner().getContext());
     }
 
     /**
      * Extracts planner context.
      */
-    public static PlannerContext plannerContext(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlannerContext.class));
+    public static IgniteCalciteContext context(Context ctx) {
+        return Objects.requireNonNull(ctx.unwrap(IgniteCalciteContext.class));
     }
 
     /**
@@ -145,5 +154,31 @@ public final class Commons {
             throw new AssertionError("Unexpected node: " + rel);
 
         return (IgniteRel) rel;
+    }
+
+    /**
+     * @param params Parameters.
+     * @return Parameters map.
+     */
+    public static Map<String, Object> parametersMap(@Nullable Object[] params) {
+        HashMap<String, Object> res = new HashMap<>();
+
+        return params != null ? populateParameters(res, params) : res;
+    }
+
+    /**
+     * Populates a provided map with given parameters.
+     *
+     * @param dst Map to populate.
+     * @param params Parameters.
+     * @return Parameters map.
+     */
+    public static Map<String, Object> populateParameters(@NotNull Map<String, Object> dst, @Nullable Object[] params) {
+        if (!F.isEmpty(params)) {
+            for (int i = 0; i < params.length; i++) {
+                dst.put("?" + i, params[i]);
+            }
+        }
+        return dst;
     }
 }

@@ -36,7 +36,7 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
@@ -129,7 +129,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
      * @param ctx Planner context.
      * @return Fragment meta information.
      */
-    public FragmentInfo fragmentInfo(PlannerContext ctx) {
+    public FragmentInfo fragmentInfo(IgniteCalciteContext ctx) {
         return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName)));
     }
 

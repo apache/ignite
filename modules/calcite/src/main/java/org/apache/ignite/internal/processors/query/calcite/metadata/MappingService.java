@@ -17,30 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.function.Predicate;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Service is responsible for nodes mapping calculation.
  */
 public interface MappingService {
     /**
-     * @return Local node mapping that consists of local node only, uses for root query fragment.
-     */
-    NodesMapping local();
-
-    /**
      * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
-     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy.
+     * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using node filter).
      *
      * @param topVer Topology version.
+     * @param desiredCnt desired nodes count, {@code 0} means all possible nodes.
+     * @param nodeFilter Node filter.
      * @return Nodes mapping for intermediate fragments.
      */
-    NodesMapping random(AffinityTopologyVersion topVer);
+    NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter);
 
     /**
      * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @return Nodes mapping for particular table, depends on underlying cache distribution.
      */
-    NodesMapping distributed(int cacheId, AffinityTopologyVersion topVer);
+    NodesMapping cacheMapping(int cacheId, @NotNull AffinityTopologyVersion topVer);
 }

@@ -53,6 +53,9 @@ public class NodesMapping implements Serializable {
     public static final byte DEDUPLICATED           = 1 << 4;
 
     /** */
+    public static final byte CLIENT                 = 1 << 5;
+
+    /** */
     private final List<UUID> nodes;
 
     /** */
@@ -102,7 +105,7 @@ public class NodesMapping implements Serializable {
     public NodesMapping mergeWith(NodesMapping other) throws LocationMappingException {
         byte flags = (byte) (this.flags | other.flags);
 
-        if ((flags & PARTIALLY_REPLICATED) == 0)
+        if ((flags & (PARTIALLY_REPLICATED | CLIENT)) == 0)
             return new NodesMapping(U.firstNotNull(nodes, other.nodes), mergeAssignments(other, null), flags);
 
         List<UUID> nodes;
@@ -216,7 +219,9 @@ public class NodesMapping implements Serializable {
 
     /** */
     private List<List<UUID>> mergeAssignments(NodesMapping other, List<UUID> nodes) throws LocationMappingException {
-        byte flags = (byte) (this.flags | other.flags); List<List<UUID>> left = assignments, right = other.assignments;
+        byte flags = (byte) (this.flags | other.flags);
+        List<List<UUID>> left = assignments;
+        List<List<UUID>> right = other.assignments;
 
         if (left == null && right == null)
             return null; // nothing to intersect;
@@ -224,7 +229,7 @@ public class NodesMapping implements Serializable {
         if (left == null || right == null || (flags & HAS_MOVING_PARTITIONS) == 0) {
             List<List<UUID>> assignments = U.firstNotNull(left, right);
 
-            if (nodes == null || (flags & PARTIALLY_REPLICATED) == 0)
+            if (nodes == null)
                 return assignments;
 
             List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
@@ -238,7 +243,7 @@ public class NodesMapping implements Serializable {
                         partNodes0.add(partNode);
                 }
 
-                if (partNodes0.isEmpty())
+                if (partNodes0.isEmpty()) // TODO check with partition filters
                     throw new LocationMappingException("Failed to map fragment to location.");
 
                 assignments0.add(partNodes0);
@@ -251,7 +256,8 @@ public class NodesMapping implements Serializable {
         HashSet<UUID> nodesSet = nodes != null ? new HashSet<>(nodes) : null;
 
         for (int i = 0; i < left.size(); i++) {
-            List<UUID> leftNodes = left.get(i), partNodes = new ArrayList<>(leftNodes.size());
+            List<UUID> leftNodes = left.get(i);
+            List<UUID> partNodes = new ArrayList<>(leftNodes.size());
             HashSet<UUID> rightNodesSet = new HashSet<>(right.get(i));
 
             for (UUID partNode : leftNodes) {

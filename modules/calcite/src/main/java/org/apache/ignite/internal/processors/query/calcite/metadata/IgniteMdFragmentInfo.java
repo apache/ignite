@@ -136,7 +136,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
      */
     public FragmentInfo getFragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
-        return rel.getTable().unwrap(IgniteTable.class).fragmentInfo(Commons.plannerContext(rel));
+        return rel.getTable().unwrap(IgniteTable.class).fragmentInfo(Commons.context(rel));
     }
 
     /**

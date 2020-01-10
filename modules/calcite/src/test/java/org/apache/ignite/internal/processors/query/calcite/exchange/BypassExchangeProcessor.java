@@ -24,12 +24,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /** */
-public class BypassExchangeProcessor implements ExchangeProcessor {
+public class BypassExchangeProcessor implements ExchangeProcessor, InboxRegistry {
     /** */
     private final ConcurrentHashMap<Key, Outbox<?>> outboxes = new ConcurrentHashMap<>();
 
@@ -47,17 +48,8 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void register(Outbox<?> outbox) {
-        UUID nodeId = outbox.context().plannerContext().localNodeId();
-        UUID queryId = outbox.queryId();
-        long exchangeId = outbox.exchangeId();
-
-        outboxes.put(new Key(nodeId, queryId, exchangeId), outbox);
-    }
-
-    /** {@inheritDoc} */
     @Override public Inbox<?> register(Inbox<?> inbox) {
-        UUID nodeId = inbox.context().plannerContext().localNodeId();
+        UUID nodeId = inbox.context().parent().localNodeId();
         UUID queryId = inbox.queryId();
         long exchangeId = inbox.exchangeId();
 
@@ -67,8 +59,24 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(Outbox<?> outbox) {
-        UUID nodeId = outbox.context().plannerContext().localNodeId();
+    @Override public void unregister(Inbox<?> inbox) {
+        UUID nodeId = inbox.context().parent().localNodeId();
+        UUID queryId = inbox.queryId();
+        long exchangeId = inbox.exchangeId();
+
+        inboxes.remove(new Key(nodeId, queryId, exchangeId));
+    }
+
+    public void register(Outbox<?> outbox) {
+        UUID nodeId = outbox.context().parent().localNodeId();
+        UUID queryId = outbox.queryId();
+        long exchangeId = outbox.exchangeId();
+
+        outboxes.put(new Key(nodeId, queryId, exchangeId), outbox);
+    }
+
+    public void unregister(Outbox<?> outbox) {
+        UUID nodeId = outbox.context().parent().localNodeId();
         UUID queryId = outbox.queryId();
         long exchangeId = outbox.exchangeId();
 
@@ -76,19 +84,10 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregister(Inbox<?> inbox) {
-        UUID nodeId = inbox.context().plannerContext().localNodeId();
-        UUID queryId = inbox.queryId();
-        long exchangeId = inbox.exchangeId();
-
-        inboxes.remove(new Key(nodeId, queryId, exchangeId));
-    }
-
-    /** {@inheritDoc} */
     @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
         Inbox<?> inbox = inboxes.computeIfAbsent(new Key(nodeId, queryId, exchangeId), this::newInbox);
 
-        UUID senderNode = sender.context().plannerContext().localNodeId();
+        UUID senderNode = sender.context().parent().localNodeId();
 
         inbox.push(senderNode, batchId, rows);
     }
@@ -98,22 +97,27 @@ public class BypassExchangeProcessor implements ExchangeProcessor {
         Outbox<?> outbox = outboxes.get(new Key(nodeId, queryId, exchangeId));
 
         if (outbox != null) {
-            UUID senderNode = sender.context().plannerContext().localNodeId();
+            UUID senderNode = sender.context().parent().localNodeId();
 
             outbox.onAcknowledge(senderNode, batchId);
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void sendCancel(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+        inboxes.remove(new Key(nodeId, queryId, exchangeId));
+    }
+
     /** */
     private Inbox<?> newInbox(Key k) {
-        PlannerContext ctx = PlannerContext.builder()
+        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
             .localNodeId(k.nodeId)
             .exchangeProcessor(this)
-            .executionService((qid, fid, t) -> CompletableFuture.completedFuture(null))
+            .taskExecutor((qid, fid, t) -> CompletableFuture.completedFuture(null))
             .logger(log)
             .build();
 
-        return new Inbox<>(new ExecutionContext(k.queryId, Fragment.UNDEFINED_ID, ctx, ImmutableMap.of()), k.exchangeId);
+        return new Inbox<>(new ExecutionContext(ctx, k.queryId, Fragment.UNDEFINED_ID, null, ImmutableMap.of()), k.exchangeId);
     }
 
     /** */

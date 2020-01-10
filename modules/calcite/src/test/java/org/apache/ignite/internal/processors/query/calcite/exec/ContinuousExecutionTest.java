@@ -102,14 +102,15 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             ProjectNode project = new ProjectNode(ctx, scan, r -> new Object[]{r[0], r[1], r[5]});
             FilterNode filter = new FilterNode(ctx, project, r -> (Integer) r[0] >= 2);
 
-            Outbox<Object[]> outbox = new Outbox<>(ctx, 0, filter, new AllNodes(nodes.subList(0, 1)));
+            Outbox<Object[]> outbox = new Outbox<>(ctx, 0, filter, new AllNodes(nodes.subList(0, 1)), exch::unregister);
+            exch.register(outbox);
 
             outbox.request();
         }
 
         ExecutionContext ctx = executionContext(nodes.get(0), queryId, 1);
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) ctx.plannerContext().exchangeProcessor().register(new Inbox<>(ctx, 0));
+        Inbox<Object[]> inbox = (Inbox<Object[]>) ctx.parent().inboxRegistry().register(new Inbox<Object[]>(ctx, 0));
 
         inbox.init(ctx, nodes.subList(1, nodes.size()), null);
 

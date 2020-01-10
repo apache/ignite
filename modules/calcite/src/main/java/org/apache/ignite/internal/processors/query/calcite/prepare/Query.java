@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents a query and its parameters.
@@ -51,23 +48,8 @@ public class Query {
     /**
      * @return Query parameters.
      */
-    public Object[] params() {
+    public Object[] parameters() {
         return params;
-    }
-
-    /**
-     * Populates a given parameters map with named parameters (using theirs ordinal)
-     * @param stashed Stashed parameters map.
-     * @return Populated parameters map.
-     */
-    public Map<String, Object> params(Map<String, Object> stashed) {
-        Map<String, Object> res = new HashMap<>(stashed);
-        if (!F.isEmpty(params)) {
-            for (int i = 0; i < params.length; i++) {
-                res.put("?" + i, params[i]);
-            }
-        }
-        return res;
     }
 
     /** {@inheritDoc} */

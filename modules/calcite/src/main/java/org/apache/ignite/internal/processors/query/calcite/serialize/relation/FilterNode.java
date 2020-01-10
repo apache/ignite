@@ -60,6 +60,6 @@ public class FilterNode extends RelGraphNode {
         RelOptCluster cluster = input.getCluster();
         RexNode condition = this.condition.implement(ctx.getExpressionTranslator());
 
-        return new IgniteFilter(cluster, traits.toTraitSet(cluster), input, condition);
+        return new IgniteFilter(cluster, traitSet(cluster), input, condition);
     }
 }

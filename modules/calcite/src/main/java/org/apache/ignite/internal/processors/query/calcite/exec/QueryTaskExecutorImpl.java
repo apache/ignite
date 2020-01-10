@@ -17,32 +17,48 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
+import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
  * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
  */
-public class QueryExecutionServiceImpl implements QueryExecutionService {
+public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware {
     /** */
-    private final IgniteStripedThreadPoolExecutor executorService;
+    private IgniteStripedThreadPoolExecutor srvc;
 
     /** */
-    public QueryExecutionServiceImpl(IgniteStripedThreadPoolExecutor executorService) {
-        this.executorService = executorService;
-    }
+    private IgniteLogger log;
 
     @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
         FutureTask<Void> res = new FutureTask<>(queryTask, null);
-
-        int hash = queryId.hashCode();
-        hash = 31 * hash + (int) (fragmentId ^ (fragmentId >>> 32));
-
-        executorService.execute(queryTask, U.safeAbs(hash));
-
+        srvc.execute(queryTask, U.safeAbs(Objects.hash(queryId, fragmentId)));
         return res;
+    }
+
+    @Override public void onStart(GridKernalContext ctx) {
+        log = ctx.log(MessageServiceImpl.class);
+        srvc = new IgniteStripedThreadPoolExecutor(
+            8,
+            ctx.igniteInstanceName(),
+            "calciteQry",
+            ctx.uncaughtExceptionHandler(),
+            true,
+            10_000
+        );
+    }
+
+    @Override public void onStop() {
+        U.shutdownNow(getClass(), srvc, log);
+        srvc = null;
+        log = null;
     }
 }

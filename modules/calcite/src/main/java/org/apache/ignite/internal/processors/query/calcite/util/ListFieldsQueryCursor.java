@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,22 +37,19 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
     private final RelDataType rowType;
 
     /** */
-    private final Enumerable<T> enumerable;
+    private final Iterator<T> it;
 
     /** */
     private final Function<T, List<?>> converter;
 
-    /** */
-    private Iterator<T> it;
-
     /**
      * @param rowType Row data type description.
-     * @param enumerable Rows source.
+     * @param it Iterator.
      * @param converter Row converter.
      */
-    public ListFieldsQueryCursor(RelDataType rowType, Enumerable<T> enumerable, Function<T, List<?>> converter) {
+    public ListFieldsQueryCursor(RelDataType rowType, Iterator<T> it, Function<T, List<?>> converter) {
         this.rowType = rowType;
-        this.enumerable = enumerable;
+        this.it = it;
         this.converter = converter;
     }
 
@@ -68,26 +65,24 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
-        return StreamSupport.stream(enumerable.spliterator(), false)
-            .map(converter)
-            .collect(Collectors.toList());
+        try {
+            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, 0), false)
+                .map(converter)
+                .collect(Collectors.toList());
+        }
+        finally {
+            close();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        closeIterator();
+        if (it instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable)it);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<List<?>> iterator() {
-        closeIterator();
-
-        return F.iterator(it = enumerable.iterator(), converter::apply, true);
-    }
-
-    /** */
-    private void closeIterator() {
-        if (it instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable)it);
+        return F.iterator(it, converter::apply, true);
     }
 }

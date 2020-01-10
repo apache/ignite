@@ -31,7 +31,7 @@ public enum PlannerPhase {
     /** */
     SUBQUERY_REWRITE("Sub-queries rewrites") {
         /** {@inheritDoc} */
-        @Override public RuleSet getRules(PlannerContext ctx) {
+        @Override public RuleSet getRules(IgniteCalciteContext ctx) {
             return RuleSets.ofList(
                 SubQueryRemoveRule.FILTER,
                 SubQueryRemoveRule.PROJECT,
@@ -42,7 +42,7 @@ public enum PlannerPhase {
     /** */
     OPTIMIZATION("Main optimization phase") {
         /** {@inheritDoc} */
-        @Override public RuleSet getRules(PlannerContext ctx) {
+        @Override public RuleSet getRules(IgniteCalciteContext ctx) {
             return RuleSets.ofList(
                 JoinConverter.INSTANCE,
                 ProjectConverter.INSTANCE,
@@ -65,5 +65,5 @@ public enum PlannerPhase {
      * @param ctx Planner context.
      * @return Rule set.
      */
-    public abstract RuleSet getRules(PlannerContext ctx);
+    public abstract RuleSet getRules(IgniteCalciteContext ctx);
 }

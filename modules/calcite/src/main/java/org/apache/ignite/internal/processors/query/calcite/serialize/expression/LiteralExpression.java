@@ -23,19 +23,18 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataTy
 /**
  * Describes {@link org.apache.calcite.rex.RexLiteral}.
  */
-@SuppressWarnings("rawtypes")
 public class LiteralExpression implements Expression {
     /** */
     private final DataType type;
 
     /** */
-    private final Comparable value;
+    private final Comparable<?> value;
 
     /**
      * @param type Data type.
      * @param value Value.
      */
-    public LiteralExpression(RelDataType type, Comparable value) {
+    public LiteralExpression(RelDataType type, Comparable<?> value) {
         this.type = DataType.fromType(type);
         this.value = value;
     }
@@ -50,7 +49,7 @@ public class LiteralExpression implements Expression {
     /**
      * @return Value.
      */
-    public Comparable value() {
+    public Comparable<?> value() {
         return value;
     }
 
