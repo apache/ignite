@@ -40,8 +40,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  *
  */
 public class MessageServiceImpl implements MessageService, LifecycleAware {
-    /** */
-    private static final GridTopic TOPIC = GridTopic.TOPIC_QUERY;
 
     private final IgniteLogger log;
 
@@ -64,7 +62,7 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
     }
 
     @Override public void onStart(GridKernalContext ctx) {
-        proc = Objects.requireNonNull(Commons.lookup(ctx, CalciteQueryProcessor.class));
+        proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
         @SuppressWarnings("deprecation")
         Marshaller marsh0 = ctx.config().getMarshaller();
@@ -76,11 +74,11 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
 
         msgLsnr = (node, msg, plc) -> onMessage(node, msg);
 
-        ctx.io().addMessageListener(TOPIC, msgLsnr);
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
     }
 
     @Override public void onStop() {
-        ctx.io().removeMessageListener(TOPIC, msgLsnr);
+        ctx.io().removeMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
 
         msgLsnr = null;
         marsh = null;
@@ -104,7 +102,7 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
         }
 
         try {
-            ctx.io().sendToGridTopic(nodeId, TOPIC, msg, GridIoPolicy.QUERY_POOL);
+            ctx.io().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.QUERY_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())

@@ -50,14 +50,14 @@ public class QueryStartRequest implements MarshalableMessage {
     private RelGraph plan;
 
     /** */
-    private byte[] serPlan;
+    private byte[] planBytes;
 
     /** */
     @GridDirectTransient
     private Object[] params;
 
     /** */
-    private byte[] serParams;
+    private byte[] paramsBytes;
 
     public QueryStartRequest(UUID queryId, long fragmentId, String schema, RelGraph plan, AffinityTopologyVersion version, int[] partitions, Object[] params) {
         this.schema = schema;
@@ -102,19 +102,19 @@ public class QueryStartRequest implements MarshalableMessage {
     }
 
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        if (serPlan == null && plan != null)
-            serPlan = marshaller.marshal(plan);
+        if (planBytes == null && plan != null)
+            planBytes = marshaller.marshal(plan);
 
-        if (serParams == null && params != null)
-            serParams = marshaller.marshal(params);
+        if (paramsBytes == null && params != null)
+            paramsBytes = marshaller.marshal(params);
     }
 
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        if (plan == null && serPlan != null)
-            plan = marshaller.unmarshal(serPlan, loader);
+        if (plan == null && planBytes != null)
+            plan = marshaller.unmarshal(planBytes, loader);
 
-        if (params == null && serParams != null)
-            params = marshaller.unmarshal(serParams, loader);
+        if (params == null && paramsBytes != null)
+            params = marshaller.unmarshal(paramsBytes, loader);
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -135,30 +135,36 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIntArray("partitions", partitions))
+                if (!writer.writeByteArray("paramsBytes", paramsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeIntArray("partitions", partitions))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("serParams", serParams))
+                if (!writer.writeByteArray("planBytes", planBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("serPlan", serPlan))
+                if (!writer.writeUuid("queryId", queryId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
+                if (!writer.writeString("schema", schema))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
                 if (!writer.writeAffinityTopologyVersion("version", version))
                     return false;
 
@@ -185,7 +191,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                partitions = reader.readIntArray("partitions");
+                paramsBytes = reader.readByteArray("paramsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -193,7 +199,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                queryId = reader.readUuid("queryId");
+                partitions = reader.readIntArray("partitions");
 
                 if (!reader.isLastRead())
                     return false;
@@ -201,7 +207,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 3:
-                serParams = reader.readByteArray("serParams");
+                planBytes = reader.readByteArray("planBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -209,7 +215,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 4:
-                serPlan = reader.readByteArray("serPlan");
+                queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -217,6 +223,14 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 5:
+                schema = reader.readString("schema");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
                 version = reader.readAffinityTopologyVersion("version");
 
                 if (!reader.isLastRead())
@@ -234,7 +248,7 @@ public class QueryStartRequest implements MarshalableMessage {
     }
 
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     @Override public void onAckReceived() {

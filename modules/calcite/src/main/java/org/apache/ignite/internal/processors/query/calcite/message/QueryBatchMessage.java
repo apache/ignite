@@ -17,143 +17,92 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-@IgniteCodeGeneratingFail
 public class QueryBatchMessage implements MarshalableMessage {
-    private RelDataType dataType;
+    private UUID queryId;
 
-    byte[] types;
+    private long exchangeId;
 
-    private List<Object[]> rows;
+    private int batchId;
 
-    private int size;
+    @GridDirectTransient
+    private List<Object> rows;
+
+    @GridDirectCollection(Message.class)
+    private List<Message> mRows;
 
     public QueryBatchMessage() {
 
     }
 
     public QueryBatchMessage(UUID queryId, long exchangeId, int batchId, List<?> rows) {
+        this.queryId = queryId;
+        this.exchangeId = exchangeId;
+        this.batchId = batchId;
+        this.rows = Commons.cast(rows);
+    }
 
+    public UUID queryId() {
+        return queryId;
+    }
+
+    public long exchangeId() {
+        return exchangeId;
+    }
+
+    public int batchId() {
+        return batchId;
+    }
+
+    public List<Object> rows() {
+        return rows;
     }
 
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        size = rows.size();
+        if (mRows != null || rows == null)
+            return;
 
-        types = new byte[dataType.getFieldCount()];
+        mRows = new ArrayList<>(rows.size());
 
-        List<RelDataTypeField> fieldList = dataType.getFieldList();
+        for (Object row : rows) {
+            Message mRow = CalciteMessageFactory.asMessage(row);
 
-        for (int i = 0; i < fieldList.size(); i++) {
-            RelDataType type = fieldList.get(i).getType();
-            switch (type.getSqlTypeName()) {
-                case BOOLEAN:
-                    break;
-                case TINYINT:
-                    break;
-                case SMALLINT:
-                    break;
-                case INTEGER:
-                    break;
-                case BIGINT:
-                    break;
-                case DECIMAL:
-                    break;
-                case FLOAT:
-                    break;
-                case REAL:
-                    break;
-                case DOUBLE:
-                    break;
-                case DATE:
-                    break;
-                case TIME:
-                    break;
-                case TIME_WITH_LOCAL_TIME_ZONE:
-                    break;
-                case TIMESTAMP:
-                    break;
-                case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                    break;
-                case INTERVAL_YEAR:
-                    break;
-                case INTERVAL_YEAR_MONTH:
-                    break;
-                case INTERVAL_MONTH:
-                    break;
-                case INTERVAL_DAY:
-                    break;
-                case INTERVAL_DAY_HOUR:
-                    break;
-                case INTERVAL_DAY_MINUTE:
-                    break;
-                case INTERVAL_DAY_SECOND:
-                    break;
-                case INTERVAL_HOUR:
-                    break;
-                case INTERVAL_HOUR_MINUTE:
-                    break;
-                case INTERVAL_HOUR_SECOND:
-                    break;
-                case INTERVAL_MINUTE:
-                    break;
-                case INTERVAL_MINUTE_SECOND:
-                    break;
-                case INTERVAL_SECOND:
-                    break;
-                case CHAR:
-                    break;
-                case VARCHAR:
-                    break;
-                case BINARY:
-                    break;
-                case VARBINARY:
-                    break;
-                case NULL:
-                    break;
-                case ANY:
-                    break;
-                case SYMBOL:
-                    break;
-                case MULTISET:
-                    break;
-                case ARRAY:
-                    break;
-                case MAP:
-                    break;
-                case DISTINCT:
-                    break;
-                case STRUCTURED:
-                    break;
-                case ROW:
-                    break;
-                case OTHER:
-                    break;
-                case CURSOR:
-                    break;
-                case COLUMN_LIST:
-                    break;
-                case DYNAMIC_STAR:
-                    break;
-                case GEOMETRY:
-                    break;
-            }
+            if (mRow instanceof MarshalableMessage)
+                ((MarshalableMessage) mRow).prepareMarshal(marshaller);
+
+            mRows.add(mRow);
         }
     }
 
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+        if (rows != null || mRows == null)
+            return;
 
+        rows = new ArrayList<>(mRows.size());
+
+        for (Message mRow : mRows) {
+            if (mRow instanceof MarshalableMessage)
+                ((MarshalableMessage) mRow).prepareUnmarshal(marshaller, loader);
+
+            Object row = CalciteMessageFactory.asRow(mRow);
+
+            rows.add(row);
+        }
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
@@ -166,95 +115,86 @@ public class QueryBatchMessage implements MarshalableMessage {
             writer.onHeaderWritten();
         }
 
-        int state = writer.state();
-
-        switch (state) {
+        switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("size", size))
+                if (!writer.writeInt("batchId", batchId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("types", types))
+                if (!writer.writeLong("exchangeId", exchangeId))
                     return false;
 
                 writer.incrementState();
 
-            default:
-                int columns = types.length;
+            case 2:
+                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                    return false;
 
-                while ((writer.state() - 2) < size * columns) {
-                    int i = writer.state() / columns;
-                    int j = writer.state() % columns;
-                    byte t = types[j];
+                writer.incrementState();
 
-                    Object[] row = rows.get(i);
+            case 3:
+                if (!writer.writeUuid("queryId", queryId))
+                    return false;
 
-                    switch (t) {
-                        case 0: // boolean
-                            if (!writer.writeBoolean("x" + (writer.state() - 2), (Boolean) row[j]))
-                                return false;
+                writer.incrementState();
 
-                            break;
-
-                        case 1:
-                            if (!writer.writeChar("x" + (writer.state() - 2), (Character) row[j]))
-                                return false;
-
-                            break;
-
-                        case 2:
-                            if (!writer.writeInt("x" + (writer.state() - 2), (Integer) row[j]))
-                                return false;
-
-                            break;
-
-                        case 3:
-                            if (!writer.writeLong("x" + (writer.state() - 2), (Long) row[j]))
-                                return false;
-
-                            break;
-
-                        case 4:
-                            if (!writer.writeFloat("x" + (writer.state() - 2), (Float) row[j]))
-                                return false;
-
-                            break;
-
-                        case 5:
-                            if (!writer.writeDouble("x" + (writer.state() - 2), (Double) row[j]))
-                                return false;
-
-                            break;
-
-                        case 6:
-                            if (!writer.writeString("x" + (writer.state() - 2), (String) row[j]))
-                                return false;
-
-                            break;
-
-                        default:
-                            throw new AssertionError("Unexpected type: " + t);
-                    }
-
-                    writer.incrementState();
-                }
         }
 
         return true;
     }
 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                batchId = reader.readInt("batchId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                exchangeId = reader.readLong("exchangeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                queryId = reader.readUuid("queryId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(QueryBatchMessage.class);
     }
 
     @Override public short directType() {
-        return 0;
+        return CalciteMessageFactory.QUERY_BATCH_MESSAGE;
     }
 
     @Override public byte fieldsCount() {
-        return -1;
+        return 4;
     }
 
     @Override public void onAckReceived() {

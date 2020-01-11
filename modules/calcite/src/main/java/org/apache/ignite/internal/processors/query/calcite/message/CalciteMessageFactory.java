@@ -29,21 +29,44 @@ public class CalciteMessageFactory implements MessageFactory {
     static final short QUERY_START_REQUEST = 300;
 
     /** */
-    static final short QUERY_CANCEL_REQUEST = 301;
+    static final short QUERY_START_RESPONSE = 301;
+
+    /** */
+    static final short QUERY_CANCEL_REQUEST = 302;
+
+    /** */
+    static final short QUERY_BATCH_MESSAGE = 303;
+
+    /** */
+    static final short QUERY_ACKNOWLEDGE_MESSAGE = 304;
+
+    /** */
+    static final short QUERY_INBOX_CANCEL_MESSAGE = 305;
 
     @Override public @Nullable Message create(short type) {
         switch (type) {
             case QUERY_START_REQUEST:
                 return new QueryStartRequest();
+            case QUERY_START_RESPONSE:
+                return new QueryStartResponse();
             case QUERY_CANCEL_REQUEST:
                 return new QueryCancelRequest();
+            case QUERY_BATCH_MESSAGE:
+                return new QueryBatchMessage();
+            case QUERY_ACKNOWLEDGE_MESSAGE:
+                return new QueryAcknowledgeMessage();
+            case QUERY_INBOX_CANCEL_MESSAGE:
+                return new QueryInboxCancelMessage();
         }
 
         return null;
     }
 
+    public static Message asMessage(Object row) {
+        return null;
+    }
 
-    // TODO all possible types
-
-
+    public static Object asRow(Message mRow) {
+        return null;
+    }
 }

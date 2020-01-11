@@ -44,8 +44,6 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
-import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,6 +71,9 @@ public class MessageCodeGenerator {
 
     /** */
     public static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
+
+    /** */
+    public static final String CALCITE_SRC_DIR = U.getIgniteHome() + "/modules/calcite/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = Message.class;
@@ -163,17 +164,17 @@ public class MessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public static void main(String[] args) throws Exception {
-        String srcDir = DFLT_SRC_DIR;
+        String srcDir = CALCITE_SRC_DIR;
 
         if (args != null && args.length > 0)
             srcDir = args[0];
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-        gen.generateAndWrite(ProbedTx.class);
-        gen.generateAndWrite(DeadlockProbe.class);
+//        gen.generateAndWrite(ProbedTx.class);
+//        gen.generateAndWrite(DeadlockProbe.class);
 
-//        gen.generateAll(true);
+        gen.generateAll(true);
 
 //        gen.generateAndWrite(GridCacheMessage.class);
 

@@ -184,7 +184,13 @@ public final class Commons {
         return dst;
     }
 
-    public static <T extends GridComponent> T lookup(GridKernalContext ctx, Class<T> clazz) {
-        return ctx.components().stream().filter(clazz::isInstance).findFirst().map(clazz::cast).orElse(null);
+    public static <T extends GridComponent> T lookupComponent(GridKernalContext ctx, Class<T> componentType) {
+        for (GridComponent cmp : ctx) {
+            if (componentType.isInstance(cmp)) {
+                return componentType.cast(cmp);
+            }
+        }
+
+        return null;
     }
 }

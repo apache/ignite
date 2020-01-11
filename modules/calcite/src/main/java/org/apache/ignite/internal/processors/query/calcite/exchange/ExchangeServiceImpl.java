@@ -65,7 +65,7 @@ public class ExchangeServiceImpl implements ExchangeService, LifecycleAware {
 
     @Override public void onStart(GridKernalContext ctx) {
         messageService =
-            Objects.requireNonNull(Commons.lookup(ctx, CalciteQueryProcessor.class)).messageService();
+            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class)).messageService();
     }
 
     @Override public void onStop() {
