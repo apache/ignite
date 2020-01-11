@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -61,14 +60,14 @@ public class ExchangeContext {
      * @param crd Coordinator flag.
      * @param fut Exchange future.
      */
-    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut, IgniteLogger log) {
+    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
         boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
 
         if (!allNodesSupportsPmeFreeSwitch)
-            log.warning("Current topology does not support PME-free switch because " +
-                "not all nodes support IgniteFeatures." + PME_FREE_SWITCH + ".");
+            fut.logger().warning("Current topology does not support PME-free switch because " +
+                "not all nodes support IgniteFeatures.PME_FREE_SWITCH.");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&
