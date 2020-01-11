@@ -22,8 +22,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -172,7 +174,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PME_FREE_SWITCH_DISABLED, value = "true")
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabled() throws Exception {
-            testBaselineNodeLeftOnFullyRebalancedCluster();
+        testBaselineNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
@@ -186,24 +188,32 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         try {
             int nodes = 10;
 
-            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+            Ignite igniteNotSupportPmeFreeSwitch = null;
 
-            Ignite igniteNotSupportPmeFreeSwitch = startGridsMultiThreaded(1);
+            int r = new Random().nextInt(nodes);
 
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-
-            Ignite igniteSupportPmeFreeSwitch = startGridsMultiThreaded(1, nodes - 1);
+            for (int i = 0; i < nodes; i++) {
+                if (i == r) {
+                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+                    igniteNotSupportPmeFreeSwitch = startGrid(r);
+                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+                }
+                else
+                    startGrid(i);
+            }
 
             checkTopology(nodes);
 
-            List<ClusterNode> clusterNodes = new LinkedList<>(igniteSupportPmeFreeSwitch.cluster().nodes());
+            igniteNotSupportPmeFreeSwitch.cluster().active(true);
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.cluster().nodes());
 
             clusterNodes.remove(igniteNotSupportPmeFreeSwitch.cluster().localNode());
 
             assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
             assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.cluster().localNode(), PME_FREE_SWITCH));
-
-            igniteNotSupportPmeFreeSwitch.cluster().active(true);
 
             AtomicInteger cnt = new AtomicInteger(0);
 
@@ -217,14 +227,14 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                             ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                             cnt.incrementAndGet();
 
-                            return false;
+                        return false;
                     }
                 });
             }
 
-            for (Ignite ignite:G.allGrids()) {
+            for (Ignite ignite : G.allGrids()) {
                 if (!nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH))
-                   continue;
+                    continue;
 
                 cnt.set(0);
 
@@ -235,6 +245,189 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 awaitPartitionMapExchange(true, true, null, true);
 
                 assertEquals((nodes - 1), cnt.get());
+
+                IgniteEx alive = (IgniteEx)G.allGrids().get(0);
+
+                assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
+            }
+        }
+        finally {
+            persistence = false;
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
+     * Checks Partition Exchange is regular in case of fixed baseline,
+     * when node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
+     * and Partition Exchange is absent when this node is stoped.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode2() throws Exception {
+        persistence = true;
+
+        try {
+            int nodes = 4;
+
+            AtomicBoolean pmeExpected = new AtomicBoolean(true);
+
+            Ignite igniteNotSupportPmeFreeSwitch = null;
+
+            int idPmeDisabled = nodes - 1;
+
+            for (int i = 0; i < nodes; i++) {
+                if (i == idPmeDisabled) {
+                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+                    igniteNotSupportPmeFreeSwitch = startGrid(idPmeDisabled);
+                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+                }
+                else
+                    startGrid(i);
+            }
+
+            checkTopology(nodes);
+
+            igniteNotSupportPmeFreeSwitch.cluster().active(true);
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.cluster().nodes());
+
+            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.cluster().localNode());
+
+            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
+            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.cluster().localNode(), PME_FREE_SWITCH));
+
+            AtomicInteger cnt = new AtomicInteger(0);
+
+            for (int i = 0; i < nodes; i++) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                            cnt.incrementAndGet();
+
+                        if (pmeExpected.get())
+                            return false;
+
+                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
+                    }
+                });
+            }
+
+            cnt.set(0);
+
+            IgniteEx ignite = ignite(2);
+
+            assertTrue(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
+
+            ignite.close();
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            assertEquals(nodes - 2, cnt.get());
+
+            assertTrue(ignite(0).context().cache().context().exchange().lastFinishedFuture().rebalanced());
+
+            cnt.set(0);
+
+            pmeExpected.set(false);
+
+            igniteNotSupportPmeFreeSwitch.close();
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            assertEquals(0, cnt.get());
+
+            assertTrue(ignite(0).context().cache().context().exchange().lastFinishedFuture().rebalanced());
+        }
+        finally {
+            persistence = false;
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
+     * Checks Partition Exchange is regular in case of fixed baseline,
+     * when node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
+     * and Partition Exchange is absent when this node is stoped.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode3() throws Exception {
+        persistence = true;
+
+        try {
+            int nodes = 10;
+
+            AtomicBoolean pmeExpected = new AtomicBoolean(true);
+
+            AtomicReference<IgniteEx> igniteNotSupportPmeFreeSwitch = new AtomicReference<>();
+
+            Random r = new Random();
+
+            final int idPmeDisabled = r.nextInt(nodes);
+
+            for (int i = 0; i < nodes; i++) {
+                if (i == idPmeDisabled) {
+                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+                    igniteNotSupportPmeFreeSwitch.set(startGrid(idPmeDisabled));
+                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+                }
+                else
+                    startGrid(i);
+            }
+
+            checkTopology(nodes);
+
+            igniteNotSupportPmeFreeSwitch.get().cluster().active(true);
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.get().cluster().nodes());
+
+            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.get().cluster().localNode());
+
+            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
+            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.get().cluster().localNode(), PME_FREE_SWITCH));
+
+            AtomicInteger cnt = new AtomicInteger(0);
+
+            for (int i = 0; i < nodes; i++) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                            cnt.incrementAndGet();
+
+                        if (pmeExpected.get())
+                            return false;
+
+                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
+                    }
+                });
+            }
+
+            while (nodes > 1) {
+                Ignite ignite = G.allGrids().get(r.nextInt(nodes--));
+
+                if (!nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH))
+                    pmeExpected.set(false);
+
+                cnt.set(0);
+
+                ignite.close();
+
+                awaitPartitionMapExchange(true, true, null, true);
+
+                assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
 
                 IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
