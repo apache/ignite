@@ -180,15 +180,6 @@ public enum GridRestCommand {
     CLUSTER_NAME("clustername"),
 
     /** */
-    CLUSTER_CURRENT_READ_ONLY_MODE("currentreadonlymode"),
-
-    /** */
-    CLUSTER_READ_ONLY_ENABLE("readonlyenable"),
-
-    /** */
-    CLUSTER_READ_ONLY_DISABLE("readonlydisable"),
-
-    /** */
     BASELINE_CURRENT_STATE("baseline"),
 
     /** */
