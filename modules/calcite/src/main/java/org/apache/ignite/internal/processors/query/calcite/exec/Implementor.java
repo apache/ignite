@@ -50,12 +50,6 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     /** */
     private final ScalarFactory factory;
 
-    /** */
-    private CloseListener<Outbox<Object[]>> outboxLsnr;
-
-    /** */
-    private CloseListener<ConsumerNode> consumerLsnr;
-
     /**
      * @param ctx Root context.
      */
@@ -65,23 +59,18 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         factory = new ScalarFactory(new RexBuilder(ctx.getTypeFactory()));
     }
 
-    public Implementor outboxCloseListener(CloseListener<Outbox<Object[]>> outboxLsnr) {
-        this.outboxLsnr = outboxLsnr;
-        return this;
-    }
-
-    public Implementor consumerCloseListener(CloseListener<ConsumerNode> consumerLsnr) {
-        this.consumerLsnr = consumerLsnr;
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
         IgniteDistribution distribution = target.distribution();
         DestinationFunction function = distribution.function().toDestination(ctx.parent(), target.mapping(), distribution.getKeys());
+        MailboxRegistry registry = ctx.parent().mailboxRegistry();
 
-        return new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function, outboxLsnr);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function);
+
+        registry.register(outbox);
+
+        return outbox;
     }
 
     /** {@inheritDoc} */
@@ -111,7 +100,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         RelSource source = rel.source();
-        InboxRegistry registry = ctx.parent().inboxRegistry();
+        MailboxRegistry registry = ctx.parent().mailboxRegistry();
         Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
@@ -138,11 +127,6 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> go(IgniteRel rel) {
-        Node<Object[]> res = visit(rel);
-
-        if (!(rel instanceof IgniteSender))
-            res = new ConsumerNode(ctx, res, consumerLsnr);
-
-        return res;
+        return visit(rel);
     }
 }

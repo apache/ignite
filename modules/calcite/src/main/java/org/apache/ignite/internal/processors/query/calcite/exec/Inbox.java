@@ -104,7 +104,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** {@inheritDoc} */
     @Override public void close() {
-        context().parent().inboxRegistry().unregister(this);
+        context().parent().mailboxRegistry().unregister(this);
     }
 
     /**
@@ -132,7 +132,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         else if (!end) {
             Sink<T> target = target();
 
-            if (target != null && prepareBuffers()) {
+            if (prepareBuffers()) {
                 if (comparator != null)
                     pushOrdered(target);
                 else
@@ -143,7 +143,8 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private boolean prepareBuffers() {
-        assert sources != null;
+        if (sources == null)
+            return false; // synchronized by context() call
 
         if (buffers == null) {
             // awaits till all sources sent a first bunch of batches

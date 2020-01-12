@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryCache;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -98,8 +96,6 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private TestIgniteTable developer;
-
-    private QueryCache cache;
 
     /** */
     @Before
@@ -624,14 +620,19 @@ public class PlannerTest extends GridCommonAbstractTest {
             UUID queryId = UUID.randomUUID();
 
             for (Fragment fragment : fragments) {
-                Map<String, Object> params = Commons.parametersMap(ctx.query().parameters());
-                Implementor implementor = new Implementor(new ExecutionContext(ctx, queryId, fragment.fragmentId(), null, params));
+                ExecutionContext exeCtx = new ExecutionContext(
+                    ctx,
+                    queryId,
+                    fragment.fragmentId(),
+                    null,
+                    Commons.parametersMap(ctx.query().parameters()));
+                Implementor implementor = new Implementor(exeCtx);
                 Node<Object[]> exec = implementor.go(igniteRel(fragment.root()));
 
                 if (!fragment.local())
                     exec.request();
                 else
-                    consumer = (ConsumerNode) exec;
+                    consumer = new ConsumerNode(exeCtx, exec);
             }
 
             assertNotNull(consumer);

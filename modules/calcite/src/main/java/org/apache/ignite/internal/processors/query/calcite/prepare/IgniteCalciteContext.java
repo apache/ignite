@@ -40,7 +40,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -86,7 +86,7 @@ public final class IgniteCalciteContext implements Context {
     private final ExchangeService exchangeService;
 
     /** */
-    private final InboxRegistry inboxRegistry;
+    private final MailboxRegistry mailboxRegistry;
 
     /** */
     private final QueryTaskExecutor taskExecutor;
@@ -109,11 +109,11 @@ public final class IgniteCalciteContext implements Context {
     private IgniteCalciteContext(UUID localNodeId, UUID originatingNodeId, Query query, Context parentContext,
         GridKernalContext kernalContext, FrameworkConfig config, AffinityTopologyVersion topologyVersion,
         CalciteQueryProcessor queryProcessor, MappingService mappingService, ExchangeService exchangeService,
-        InboxRegistry inboxRegistry, QueryTaskExecutor taskExecutor, MessageService messageService, IgniteLogger logger) {
+        MailboxRegistry mailboxRegistry, QueryTaskExecutor taskExecutor, MessageService messageService, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.query = query;
         this.topologyVersion = topologyVersion;
-        this.inboxRegistry = inboxRegistry;
+        this.mailboxRegistry = mailboxRegistry;
         this.messageService = messageService;
         this.logger = logger;
         this.kernalContext = kernalContext;
@@ -212,10 +212,10 @@ public final class IgniteCalciteContext implements Context {
     }
 
     /**
-     * @return Inbox registry.
+     * @return Mailbox registry.
      */
-    public InboxRegistry inboxRegistry() {
-        return inboxRegistry;
+    public MailboxRegistry mailboxRegistry() {
+        return mailboxRegistry;
     }
 
     /**
@@ -359,7 +359,7 @@ public final class IgniteCalciteContext implements Context {
             .messageService(template.messageService)
             .taskExecutor(template.taskExecutor)
             .exchangeService(template.exchangeService)
-            .inboxRegistry(template.inboxRegistry)
+            .mailboxRegistry(template.mailboxRegistry)
             .mappingService(template.mappingService)
             .queryProcessor(template.queryProcessor)
             .kernalContext(template.kernalContext)
@@ -410,7 +410,7 @@ public final class IgniteCalciteContext implements Context {
         private ExchangeService exchangeService;
 
         /** */
-        private InboxRegistry inboxRegistry;
+        private MailboxRegistry mailboxRegistry;
 
         /** */
         private QueryTaskExecutor taskExecutor;
@@ -518,11 +518,11 @@ public final class IgniteCalciteContext implements Context {
         }
 
         /**
-         * @param inboxRegistry Inbox registry.
+         * @param mailboxRegistry Mailbox registry.
          * @return Builder for chaining.
          */
-        public Builder inboxRegistry(InboxRegistry inboxRegistry) {
-            this.inboxRegistry = inboxRegistry;
+        public Builder mailboxRegistry(MailboxRegistry mailboxRegistry) {
+            this.mailboxRegistry = mailboxRegistry;
             return this;
         }
 
@@ -551,7 +551,7 @@ public final class IgniteCalciteContext implements Context {
          */
         public IgniteCalciteContext build() {
             return new IgniteCalciteContext(localNodeId, originatingNodeId, query, parentContext, kernalContext, frameworkConfig,
-                topologyVersion, queryProcessor, mappingService, exchangeService, inboxRegistry, taskExecutor, messageService, logger);
+                topologyVersion, queryProcessor, mappingService, exchangeService, mailboxRegistry, taskExecutor, messageService, logger);
         }
     }
 }

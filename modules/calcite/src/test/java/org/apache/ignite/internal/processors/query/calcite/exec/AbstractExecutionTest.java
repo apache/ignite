@@ -72,7 +72,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             .localNodeId(nodeId)
             .taskExecutor((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
             .exchangeService(exch)
-            .inboxRegistry(exch)
+            .mailboxRegistry(exch)
             .logger(log())
             .build(), queryId, fragmentId, null, ImmutableMap.of());
     }

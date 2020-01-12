@@ -24,13 +24,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /** */
-public class BypassExchangeService implements ExchangeService, InboxRegistry {
+public class BypassExchangeService implements ExchangeService, MailboxRegistry {
     /** */
     private final ConcurrentHashMap<Key, Outbox<?>> outboxes = new ConcurrentHashMap<>();
 
@@ -67,7 +67,7 @@ public class BypassExchangeService implements ExchangeService, InboxRegistry {
         inboxes.remove(new Key(nodeId, queryId, exchangeId));
     }
 
-    public void register(Outbox<?> outbox) {
+    @Override public void register(Outbox<?> outbox) {
         UUID nodeId = outbox.context().parent().localNodeId();
         UUID queryId = outbox.queryId();
         long exchangeId = outbox.exchangeId();
@@ -75,7 +75,7 @@ public class BypassExchangeService implements ExchangeService, InboxRegistry {
         outboxes.put(new Key(nodeId, queryId, exchangeId), outbox);
     }
 
-    public void unregister(Outbox<?> outbox) {
+    @Override public void unregister(Outbox<?> outbox) {
         UUID nodeId = outbox.context().parent().localNodeId();
         UUID queryId = outbox.queryId();
         long exchangeId = outbox.exchangeId();

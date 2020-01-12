@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.InboxRegistry;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
+import org.apache.ignite.internal.processors.query.calcite.serialize.relation.SenderNode;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
@@ -107,7 +108,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.i
 /**
  *
  */
-public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, InboxRegistry {
+public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine, MailboxRegistry {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
             .parserConfig(SqlParser.configBuilder()
@@ -256,7 +257,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
             List<UUID> nodes = mapping.nodes();
 
-            assert nodes != null &&  nodes.size() == 1 && F.first(nodes).equals(cctx.localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(cctx.localNodeId());
         }
 
         ExecutionContext exeCtx = new ExecutionContext(
@@ -266,13 +267,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             local.mapping().partitions(cctx.localNodeId()),
             Commons.parametersMap(params));
 
-        Node<Object[]> node = new Implementor(exeCtx)
-            .consumerCloseListener(this::onClose)
-            .go(igniteRel(local.root()));
+        Node<Object[]> node = new Implementor(exeCtx).go(igniteRel(local.root()));
 
-        assert node instanceof ConsumerNode;
+        assert !(node instanceof SenderNode);
 
-        QueryInfo info = new QueryInfo(exeCtx, local.root().getRowType(), node);
+        QueryInfo info = new QueryInfo(exeCtx, local.root().getRowType(), new ConsumerNode(exeCtx, node, this::onClose));
 
         if (plan.fragments().size() == 1)
             running.put(queryId, info);
@@ -314,10 +313,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         info.awaitAllReplies();
 
-        return Collections.singletonList(new ListFieldsQueryCursor<>(
-            info.type(),
-            info.<Object[]>iterator(),
-            Arrays::asList));
+        return Collections.singletonList(
+            new ListFieldsQueryCursor<>(
+                info.type(),
+                info.<Object[]>iterator(),
+                Arrays::asList));
     }
 
     /** {@inheritDoc} */
@@ -330,6 +330,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public void unregister(Inbox<?> inbox) {
         remotes.remove(new FragmentKey(inbox.queryId(), inbox.exchangeId()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(Outbox<?> outbox) {
+        Outbox<?> res = locals.put(new FragmentKey(outbox.queryId(), outbox.exchangeId()), outbox);
+
+        assert res == null : res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregister(Outbox<?> outbox) {
+        locals.remove(new FragmentKey(outbox.queryId(), outbox.exchangeId()));
     }
 
     public void executeFragment(UUID nodeId, UUID queryId, long fragmentId, String schemaName, AffinityTopologyVersion topVer,
@@ -351,17 +363,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 parts,
                 Commons.parametersMap(params));
 
-            Node<Object[]> node = new Implementor(execCtx)
-                .outboxCloseListener(this::onClose)
-                .go(igniteRel(root));
+            Node<Object[]> node = new Implementor(execCtx).go(igniteRel(root));
 
             // TODO check topology
 
             assert node instanceof Outbox : node;
-
-            Outbox<?> res = locals.put(new FragmentKey(((Outbox<?>) node).queryId(), ((Outbox<?>) node).exchangeId()), (Outbox<?>) node);
-
-            assert res == null : res;
 
             node.request();
         }
@@ -384,10 +390,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         if (info != null)
             info.cancel();
-    }
-
-    private void onClose(Outbox<?> outbox) {
-        locals.remove(new FragmentKey(outbox.queryId(), outbox.exchangeId()));
     }
 
     private void onClose(ConsumerNode consumer) {
@@ -482,7 +484,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .mappingService(mappingService)
             .exchangeService(exchangeService)
             .taskExecutor(taskExecutor)
-            .inboxRegistry(this)
+            .mailboxRegistry(this)
             .logger(log)
             .build();
     }
@@ -520,7 +522,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .mappingService(mappingService)
             .exchangeService(exchangeService)
             .taskExecutor(taskExecutor)
-            .inboxRegistry(this)
+            .mailboxRegistry(this)
             .logger(log)
             .build();
     }
@@ -598,7 +600,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         private final RelDataType type;
 
         /** */
-        private final Node<?> localNode;
+        private final ConsumerNode localNode;
 
         /** remote nodes */
         private final Set<UUID> remotes;
@@ -613,7 +615,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         private Throwable error;
 
         /** */
-        private QueryInfo(ExecutionContext ctx, RelDataType type, Node<?> localNode) {
+        private QueryInfo(ExecutionContext ctx, RelDataType type, ConsumerNode localNode) {
             this.ctx = ctx;
             this.type = type;
             this.localNode = localNode;
@@ -630,7 +632,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         /** */
-        private Node<?> localNode() {
+        private ConsumerNode localNode() {
             return localNode;
         }
 

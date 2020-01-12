@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.AbstractNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
@@ -78,6 +79,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         exch = new TestExchangeService();
 
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+            .mailboxRegistry(new TestRegistry())
             .localNodeId(nodeId)
             .exchangeService(exch)
             .taskExecutor(exec)
@@ -228,6 +230,24 @@ public class OutboxTest extends GridCommonAbstractTest {
 
                 task = taskQueue.poll();
             }
+        }
+    }
+
+    private static class TestRegistry implements MailboxRegistry {
+        @Override public Inbox<?> register(Inbox<?> inbox) {
+            throw new AssertionError();
+        }
+
+        @Override public void unregister(Inbox<?> inbox) {
+            throw new AssertionError();
+        }
+
+        @Override public void register(Outbox<?> outbox) {
+            // No-op.
+        }
+
+        @Override public void unregister(Outbox<?> outbox) {
+            // No-op.
         }
     }
 }

@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 /**
  *
  */
-public interface InboxRegistry {
+public interface MailboxRegistry {
     Inbox<?> register(Inbox<?> inbox);
     void unregister(Inbox<?> inbox);
+
+    void register(Outbox<?> outbox);
+    void unregister(Outbox<?> outbox);
 }

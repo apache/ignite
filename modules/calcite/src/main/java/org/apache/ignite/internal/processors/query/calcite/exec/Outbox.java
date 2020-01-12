@@ -40,9 +40,6 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     private final DestinationFunction function;
 
     /** */
-    private final CloseListener<Outbox<T>> lsnr;
-
-    /** */
     private boolean cancelled;
 
     /**
@@ -52,21 +49,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
      * @param function   Destination function.
      */
     public Outbox(ExecutionContext ctx, long exchangeId, Node<T> input, DestinationFunction function) {
-        this(ctx, exchangeId, input, function, null);
-    }
-
-    /**
-     * @param ctx        Execution context.
-     * @param exchangeId Exchange ID.
-     * @param input      Input node.
-     * @param function   Destination function.
-     * @param lsnr       Close listener.
-     */
-    public Outbox(ExecutionContext ctx, long exchangeId, Node<T> input, DestinationFunction function, CloseListener<Outbox<T>> lsnr) {
         super(ctx, input);
         this.exchangeId = exchangeId;
         this.function = function;
-        this.lsnr = lsnr;
 
         link();
     }
@@ -170,8 +155,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (lsnr != null)
-            lsnr.onClose(this);
+        context().parent().mailboxRegistry().unregister(this);
     }
 
     /** */

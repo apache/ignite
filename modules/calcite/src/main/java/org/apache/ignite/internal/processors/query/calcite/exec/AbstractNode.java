@@ -31,7 +31,7 @@ public abstract class AbstractNode<T> implements Node<T> {
     private final ImmutableList<Node<T>> inputs;
 
     /** */
-    private volatile Sink<T> target;
+    private final SinkImpl<T> target;
 
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
@@ -60,11 +60,13 @@ public abstract class AbstractNode<T> implements Node<T> {
     protected AbstractNode(ExecutionContext ctx, @NotNull List<Node<T>> inputs) {
         this.ctx = ctx;
         this.inputs = ImmutableList.copyOf(inputs);
+
+        target = new SinkImpl<>();
     }
 
     /** {@inheritDoc} */
     @Override public void target(Sink<T> sink) {
-        target = sink;
+        target.delegate(sink);
     }
 
     /** {@inheritDoc} */
@@ -93,5 +95,60 @@ public abstract class AbstractNode<T> implements Node<T> {
     protected void link() {
         for (int i = 0; i < inputs.size(); i++)
             inputs.get(i).target(sink(i));
+    }
+
+    /**
+     * Fixes a race when a first message from remote node received at the time an execution tree is being built.
+     */
+    private static class SinkImpl<T> implements Sink<T> {
+        /** */
+        private boolean isEnd;
+
+        /** */
+        private Sink<T> delegate;
+
+        /** {@inheritDoc} */
+        @Override public boolean push(T row) {
+            Sink<T> target;
+            boolean isEnd;
+
+            synchronized (this) {
+                target = delegate;
+                isEnd = this.isEnd;
+            }
+
+            return !isEnd && target != null && target.push(row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void end() {
+            Sink<T> target;
+
+            synchronized (this) {
+                if(isEnd)
+                    return;
+
+                isEnd = true;
+                target = delegate;
+            }
+
+            if (target != null)
+                target.end();
+        }
+
+        /** {@inheritDoc} */
+        private void delegate(Sink<T> delegate){
+            boolean isEnd;
+
+            synchronized (this) {
+                assert this.delegate == null;
+
+                this.delegate = delegate;
+                isEnd = this.isEnd;
+            }
+
+            if (isEnd)
+                delegate.end();
+        }
     }
 }
