@@ -379,8 +379,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public void remove(String regName) {
         MetricRegistry mreg = registries.remove(regName);
 
-        if (mreg != null)
-            notifyListeners(mreg, metricRegRemoveLsnrs, log);
+        if (mreg == null)
+            return;
+
+        notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
         try {
             GridCompoundFuture opsFut = new GridCompoundFuture<>();
