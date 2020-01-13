@@ -174,11 +174,11 @@ cd $PSScriptRoot
 $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-	$ng = ".\nuget.exe"
+	$ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }    
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe")    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$PSScriptRoot/nuget.exe")    
 	}
 }
 

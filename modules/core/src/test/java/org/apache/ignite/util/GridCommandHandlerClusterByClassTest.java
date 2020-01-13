@@ -392,6 +392,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
+    public void testOldReadOnlyApiNotAvailable() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-on");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-off");
+    }
+
+    /** */
+    @Test
     public void testPrintTimestampAtEndsOfExecution() {
         injectTestSystemOut();
 

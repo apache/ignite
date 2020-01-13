@@ -482,8 +482,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             int reservations = getReservations(state);
 
-            if (reservations == 0)
-                return;
+            assert reservations > 0;
 
             assert getPartState(state) != EVICTED : this;
 
@@ -860,6 +859,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void destroy() {
         assert state() == EVICTED : this;
+        assert reservations() == 0;
         assert evictGuard.get() == -1;
 
         grp.onPartitionEvicted(id);
