@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
-import jdk.internal.jline.internal.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Set of encryption subcommands.
