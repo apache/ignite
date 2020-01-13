@@ -144,6 +144,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapter
     implements Comparable<GridDhtPartitionsExchangeFuture>, CachePartitionExchangeWorkerTask, IgniteDiagnosticAware {
+
+    public static CountDownLatch latch = null;
+
     /** */
     public static final String EXCHANGE_LOG = "org.apache.ignite.internal.exchange.time";
 
@@ -709,6 +712,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void init(boolean newCrd) throws IgniteInterruptedCheckedException {
+
+        if (latch != null) {
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
         if (isDone())
             return;
 

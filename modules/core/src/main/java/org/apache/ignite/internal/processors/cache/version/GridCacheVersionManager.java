@@ -202,11 +202,16 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Gets next version based on given topology version. Given value should be
+     * real topology version calculated as number of grid topology changes and
+     * obtained from discovery manager.
+     *
+     * @param topVer Topology version for which new version should be obtained.
      * @param dataCenterId Data center id.
      * @return Next version based on current topology with given data center id.
      */
-    public GridCacheVersion next(byte dataCenterId) {
-        return next(cctx.kernalContext().discovery().topologyVersion(), true, false, dataCenterId);
+    public GridCacheVersion next(AffinityTopologyVersion topVer, byte dataCenterId) {
+        return next(topVer.topologyVersion(), true, false, dataCenterId);
     }
 
     /**
@@ -219,15 +224,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheVersion next(AffinityTopologyVersion topVer) {
         return next(topVer.topologyVersion(), true, false, dataCenterId);
-    }
-
-    /**
-     * Gets next version for cache store load and reload operations.
-     *
-     * @return Next version for cache store operations.
-     */
-    public GridCacheVersion nextForLoad() {
-        return next(cctx.kernalContext().discovery().topologyVersion(), true, true, dataCenterId);
     }
 
     /**
@@ -271,8 +267,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @return New lock order.
      */
     private GridCacheVersion next(long topVer, boolean addTime, boolean forLoad, byte dataCenterId) {
-        if (topVer == -1)
-            topVer = cctx.kernalContext().discovery().topologyVersion();
+        // TODO: 13.01.20 tmp
+        assert topVer != -1;
 
         if (addTime) {
             if (gridStartTime == 0)

@@ -191,7 +191,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
                     if (pendingEntries.remove(e)) {
                         if (obsoleteVer == null)
-                            obsoleteVer = cctx.versions().next();
+                            obsoleteVer = cctx.versions().next(cctx.topology().readyTopologyVersion());
 
                         GridNearCacheEntry nearEntry = nearCache.peekExx(e.key);
 

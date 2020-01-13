@@ -229,7 +229,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
-        lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
+        lockVer = tx != null ? tx.xidVersion() : cctx.versions().next(cctx.topology().readyTopologyVersion());
 
         futId = IgniteUuid.randomUuid();
 

@@ -268,7 +268,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             warnFirstEvict();
 
         if (obsoleteVer == null)
-            obsoleteVer = cctx.versions().next();
+            obsoleteVer = cctx.versions().next(cctx.topology().readyTopologyVersion());
 
         // Do not touch entry if not evicted:
         // 1. If it is call from policy, policy tracks it on its own.
