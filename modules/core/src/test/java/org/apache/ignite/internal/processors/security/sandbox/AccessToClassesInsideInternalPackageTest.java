@@ -71,10 +71,10 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
             "}";
 
     /** Node that has access to internal Ignite package. */
-    private static final String CLNT_ALLOWED = "clnt_allowed";
+    private static final String ALLOWED = "allowed";
 
     /** Node that does not have access to internal Ignite package. */
-    private static final String CLNT_FORBIDDEN = "clnt_forbidden";
+    private static final String FORBIDDEN = "forbidden";
 
     /** */
     private Path srcTmpDir;
@@ -86,9 +86,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     public void testCreateInstance() {
         IgniteCallable<Object> c = callable(srcTmpDir, CREATE_INSTANCE_CLS_NAME, CREATE_INSTANCE_SRC);
 
-        assertNotNull(compute(grid(CLNT_ALLOWED)).call(c));
+        assertNotNull(compute(grid(ALLOWED)).call(c));
 
-        assertThrowsWithCause(() -> compute(grid(CLNT_FORBIDDEN)).call(c), AccessControlException.class);
+        assertThrowsWithCause(() -> compute(grid(FORBIDDEN)).call(c), AccessControlException.class);
     }
 
     /**
@@ -99,9 +99,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         IgniteCallable<Object> c = callable(srcTmpDir, CALL_INTERNAL_CLASS_METHOD_CLS_NAME,
             CALL_INTERNAL_CLASS_METHOD_SRC);
 
-        assertNotNull(compute(grid(CLNT_ALLOWED)).call(c));
+        assertNotNull(compute(grid(ALLOWED)).call(c));
 
-        assertThrowsWithCause(() -> compute(grid(CLNT_FORBIDDEN)).call(c), AccessControlException.class);
+        assertThrowsWithCause(() -> compute(grid(FORBIDDEN)).call(c), AccessControlException.class);
     }
 
     /** {@inheritDoc} */
@@ -113,9 +113,9 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         perms.add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal"));
         perms.add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*"));
 
-        startGrid(CLNT_ALLOWED, ALLOW_ALL, perms, false);
+        startGrid(ALLOWED, ALLOW_ALL, perms, false);
 
-        startGrid(CLNT_FORBIDDEN, ALLOW_ALL, false);
+        startGrid(FORBIDDEN, ALLOW_ALL, false);
 
         srv.cluster().active(true);
     }
@@ -149,21 +149,10 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     public static void afterClass() {
         String packAccess = Security.getProperty("package.access");
 
-        if (packAccess.contains(IGNITE_INTERNAL_PACKAGE)) {
-            String[] strs = packAccess.split(",");
-
-            StringBuilder sb = new StringBuilder();
-
-            for (String s : strs) {
-                if (!s.equals(IGNITE_INTERNAL_PACKAGE)) {
-                    if (!sb.toString().isEmpty())
-                        sb.append(',');
-                    sb.append(s);
-                }
-            }
-
-            Security.setProperty("package.access", sb.toString());
-        }
+        if (packAccess.equals(IGNITE_INTERNAL_PACKAGE))
+            Security.setProperty("package.access", null);
+        else if (packAccess.contains(',' + IGNITE_INTERNAL_PACKAGE))
+            Security.setProperty("package.access", packAccess.replace(',' + IGNITE_INTERNAL_PACKAGE, ""));
     }
 
     /**

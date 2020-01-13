@@ -199,7 +199,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private void updatePackageAccessProperty() {
         String packAccess = Security.getProperty("package.access");
 
-        if (packAccess != null && !packAccess.isEmpty()) {
+        if (!F.isEmpty(packAccess)) {
             if (!packAccess.contains(IGNITE_INTERNAL_PACKAGE))
                 Security.setProperty("package.access", packAccess + ',' + IGNITE_INTERNAL_PACKAGE);
         }
