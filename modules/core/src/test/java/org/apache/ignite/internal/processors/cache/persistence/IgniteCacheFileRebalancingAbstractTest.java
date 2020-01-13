@@ -59,11 +59,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 /**
  * File rebalancing tests.
  *
- * todo mixed rebalancing (file + historical)
+ * todo [+] mixed rebalancing (file + historical) - not supported
  * todo mixed cache configuration (atomic+tx)
- * todo mixed data region configuration (pds+in-mem)
+ * todo [+] mixed data region configuration (pds+in-mem)
  * todo partition size change (start file rebalancing partition, cancel and then partition met)
- * todo [+/-] crd joins blt
+ * todo [+] crd joins blt
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")

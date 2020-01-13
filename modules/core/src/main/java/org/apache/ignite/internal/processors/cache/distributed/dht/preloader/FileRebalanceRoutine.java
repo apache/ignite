@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -53,7 +51,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,9 +108,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
-    /** Initialization latch. */
-    private final CountDownLatch initLatch = new CountDownLatch(1);
-
     /** */
     public FileRebalanceRoutine() {
         this(null, null, null, null, 0, null);
@@ -148,80 +142,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Initialize rebalancing mappings.
-     */
-    public void initialize() {
-        final Map<String, Set<Long>> regionToParts = new HashMap<>();
-
-        lock.lock();
-
-        try {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
-                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
-                    UUID nodeId = mapEntry.getKey().id();
-
-                    for (Map.Entry<Integer, Set<Integer>> entry : mapEntry.getValue().entrySet()) {
-                        int grpId = entry.getKey();
-
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                        String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
-
-                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
-
-                        for (Integer partId : entry.getValue()) {
-                            assert grp.topology().localPartition(partId).dataStore().readOnly() :
-                                "cache=" + grp.cacheOrGroupName() + " p=" + partId;
-
-                            long grpAndPart = ((long)grpId << 32) + partId;
-
-                            regionParts.add(grpAndPart);
-
-                            partsToNodes.put(grpAndPart, nodeId);
-                        }
-
-                        Integer remainParts = remaining.get(grpId);
-
-                        if (remainParts == null)
-                            remainParts = 0;
-
-                        remaining.put(grpId, remainParts + entry.getValue().size());
-                    }
-                }
-            }
-
-            if (isDone())
-                return;
-
-            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
-                String regionName = e.getKey();
-                Set<Long> parts = e.getValue();
-
-                DataRegion region = cctx.database().dataRegion(regionName);
-
-                ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
-
-                offheapClearTasks.put(regionName, offheapClearTask.doClear());
-            }
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
-        }
-        finally {
-            lock.unlock();
-
-            initLatch.countDown();
-        }
-    }
-
-    /**
      * Request snapshot.
      */
     public void requestPartitionsSnapshot() {
-        U.awaitQuiet(initLatch);
-
-        if (isDone())
-            return;
+        initialize();
 
         // todo should send start event only when we starting to preload specified group?
         for (Integer grpId : remaining.keySet()) {
@@ -277,6 +201,69 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
+     * Prepare to start rebalance routine.
+     */
+    private void initialize() {
+        final Map<String, Set<Long>> regionToParts = new HashMap<>();
+
+        lock.lock();
+
+        try {
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
+                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
+                    UUID nodeId = mapEntry.getKey().id();
+
+                    for (Map.Entry<Integer, Set<Integer>> entry : mapEntry.getValue().entrySet()) {
+                        int grpId = entry.getKey();
+
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                        String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
+
+                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
+
+                        for (Integer partId : entry.getValue()) {
+                            assert grp.topology().localPartition(partId).dataStore().readOnly() :
+                                "cache=" + grp.cacheOrGroupName() + " p=" + partId;
+
+                            long grpAndPart = ((long)grpId << 32) + partId;
+
+                            regionParts.add(grpAndPart);
+
+                            partsToNodes.put(grpAndPart, nodeId);
+                        }
+
+                        Integer remainParts = remaining.get(grpId);
+
+                        if (remainParts == null)
+                            remainParts = 0;
+
+                        remaining.put(grpId, remainParts + entry.getValue().size());
+                    }
+                }
+            }
+
+            // Start clearing off-heap regions.
+            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
+                String regionName = e.getKey();
+                Set<Long> parts = e.getValue();
+
+                DataRegion region = cctx.database().dataRegion(regionName);
+
+                ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
+
+                offheapClearTasks.put(regionName, offheapClearTask.doClear());
+            }
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param file Partition snapshot file.
      * @param grpId Cache group ID.
@@ -297,7 +284,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             if (isDone())
                 return;
 
-            initialize(grpId, partId, file);
+            initializePartition(grpId, partId, file);
 
             cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone).listen(f -> {
                 try {
@@ -515,7 +502,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @throws IOException If was not able to move partition file.
      * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
      */
-    private void initialize(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
+    private void initializePartition(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
         FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
 
         File dest = new File(pageStore.getFileAbsolutePath());
@@ -530,9 +517,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         Files.move(src.toPath(), dest.toPath());
 
-        GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-        part.dataStore().reinit();
+        grp.topology().localPartition(partId).dataStore().reinit();
 
         grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }

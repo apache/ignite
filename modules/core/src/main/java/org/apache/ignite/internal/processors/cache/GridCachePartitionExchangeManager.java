@@ -3357,7 +3357,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Runnable r = null;
-                        Runnable loadPartsRun = null;
+                        Runnable loadFilesStarter = null;
 
                         List<String> rebList = new LinkedList<>();
 
@@ -3371,7 +3371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridPartitionFilePreloader preloader = cctx.filePreloader();
 
                         if (preloader != null && !forcePreload)
-                            loadPartsRun = preloader.addNodeAssignments(assignsMap, resVer, cnt, exchFut);
+                            loadFilesStarter = preloader.addNodeAssignments(assignsMap, resVer, cnt, exchFut);
 
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
@@ -3412,7 +3412,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                         }
-                        else if (r != null || loadPartsRun != null) {
+                        else if (r != null || loadFilesStarter != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList +
@@ -3422,13 +3422,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             rebTopVer = resVer;
 
+                            if (loadFilesStarter != null)
+                                loadFilesStarter.run();
+
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
-                            if (loadPartsRun != null)
-                                loadPartsRun.run();
-
-                            if (r!= null)
+                            if (r != null)
                                 r.run();
                         }
                         else

@@ -240,8 +240,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (log.isTraceEnabled())
                 log.trace(formatAssignments(orderedAssigns));
 
-            cctx.kernalContext().getSystemExecutorService().submit(rebRoutine::initialize);
-
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
                     if (fut0.error() != null) {
