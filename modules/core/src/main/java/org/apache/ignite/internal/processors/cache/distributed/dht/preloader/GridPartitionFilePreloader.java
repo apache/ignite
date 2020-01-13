@@ -171,7 +171,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         // At this point, cache updates are queued, and we can safely
         // switch partitions to read-only mode and vice versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (!fileRebalanceSupported(grp))
+            if (!supports(grp))
                 continue;
 
             if (!locJoinBaselineChange && !hasReadOnlyParts(grp)) {
@@ -275,10 +275,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param nodes List of Nodes.
      * @return {@code True} if file rebalancing is applicable for specified cache group and all nodes supports it.
      */
-    public boolean fileRebalanceSupported(CacheGroupContext grp, Collection<ClusterNode> nodes) {
+    public boolean supports(CacheGroupContext grp, Collection<ClusterNode> nodes) {
         assert nodes != null && !nodes.isEmpty();
 
-        return fileRebalanceSupported(grp) &&
+        return supports(grp) &&
             IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
     }
 
@@ -288,7 +288,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param grp Cache group.
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
-    public boolean fileRebalanceSupported(CacheGroupContext grp) {
+    public boolean supports(CacheGroupContext grp) {
         if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled() || grp.isLocal())
             return false;
 
@@ -333,7 +333,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param assignments Preloading assignments.
      * @return {@code True} if cache must be rebalanced by sending files.
      */
-    public boolean fileRebalanceRequired(CacheGroupContext grp, GridDhtPreloaderAssignments assignments) {
+    public boolean required(CacheGroupContext grp, GridDhtPreloaderAssignments assignments) {
         if (assignments == null || assignments.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("File rebalancing skipped, empty assignments [grp=" + grp.cacheOrGroupName() + "]");
@@ -341,7 +341,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return false;
         }
 
-        if (!fileRebalanceSupported(grp, assignments.keySet())) {
+        if (!supports(grp, assignments.keySet())) {
             if (log.isDebugEnabled())
                 log.debug("File rebalancing skipped, not supported [grp=" + grp.cacheOrGroupName() + "]");
 
@@ -513,7 +513,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             GridDhtPreloaderAssignments assigns = grpEntry.getValue();
 
-            if (!fileRebalanceRequired(grp, assigns))
+            if (!required(grp, assigns))
                 continue;
 
             int grpOrderNo = grp.config().getRebalanceOrder();

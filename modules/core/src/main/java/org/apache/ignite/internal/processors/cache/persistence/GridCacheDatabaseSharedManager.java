@@ -1813,7 +1813,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (grp.isLocal())
                 continue;
 
-            boolean fileRebalanceSupported = cctx.filePreloader() != null && cctx.filePreloader().fileRebalanceSupported(grp);
+            boolean fileRebalanceSupported = cctx.filePreloader() != null && cctx.filePreloader().supports(grp);
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 // todo at least one partition should be greater then threshold

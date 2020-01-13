@@ -3276,7 +3276,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
-            cctx.filePreloader().fileRebalanceSupported(grp, cctx.discovery().aliveServerNodes());
+            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
