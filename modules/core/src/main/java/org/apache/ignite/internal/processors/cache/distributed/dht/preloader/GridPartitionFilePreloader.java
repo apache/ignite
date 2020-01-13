@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -62,7 +63,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
- * DHT cache files preloader, manages partition files preloading routine.
+ * DHT cache partition files preloader, manages partition files preloading routine.
  */
 public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
@@ -73,13 +74,13 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     private static final long FILE_REBALANCE_THRESHOLD = IgniteSystemProperties.getLong(
         IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
 
-    /** */
-    private final Lock stopLock = new ReentrantLock();
+    /** Lock. */
+    private final Lock lock = new ReentrantLock();
 
     /** Checkpoint listener. */
     private final CheckpointListener cpLsnr = new CheckpointListener();
 
-    /** */
+    /** File rebalance routine. */
     private volatile FileRebalanceRoutine fileRebalanceRoutine = new FileRebalanceRoutine();
 
     /**
@@ -98,7 +99,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        stopLock.lock();
+        lock.lock();
 
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
@@ -106,7 +107,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             fileRebalanceRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
-            stopLock.unlock();
+            lock.unlock();
         }
     }
 
@@ -221,28 +222,25 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return null;
         }
 
-        if (log.isInfoEnabled())
-            log.info("Starting file rebalancing");
-
-        if (log.isTraceEnabled())
-            log.trace(formatMappings(orderedAssigns));
-
-        // Start new rebalance session.
         FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
 
-        stopLock.lock();
+        lock.lock();
 
         try {
             if (!rebRoutine.isDone())
                 rebRoutine.cancel();
 
-            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(cpLsnr, orderedAssigns, topVer, cctx,
-                rebalanceId, log, exchFut.exchangeId());
+            // Start new rebalance session.
+            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
+                exchFut.exchangeId(), rebalanceId, cpLsnr::cancelAll);
 
             if (log.isInfoEnabled())
-                log.info("Prepare to start file rebalancing: " + orderedAssigns);
+                log.info("Prepare to start file rebalancing.");
 
-            cctx.kernalContext().getSystemExecutorService().submit(rebRoutine::clearPartitions);
+            if (log.isTraceEnabled())
+                log.trace(formatAssignments(orderedAssigns));
+
+            cctx.kernalContext().getSystemExecutorService().submit(rebRoutine::initialize);
 
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
@@ -266,7 +264,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             return rebRoutine::requestPartitionsSnapshot;
         }
         finally {
-            stopLock.unlock();
+            lock.unlock();
         }
     }
 
@@ -307,7 +305,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (grp.hasAtomicCaches())
             return false;
 
-        // todo redundant check ?
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
         if (globalSizes.isEmpty())
@@ -418,11 +415,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         });
 
         return endFut;
-    }
-
-    public void printDiagnostic() {
-        if (log.isInfoEnabled())
-            log.info(debugInfo());
     }
 
     /**
@@ -545,19 +537,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return ordered.values();
     }
 
-
-    private String debugInfo() {
-        StringBuilder buf = new StringBuilder("\n\nDiagnostic for file rebalancing [node=" + cctx.localNodeId() +
-            ", finished=" + fileRebalanceRoutine.isDone() + ", failed=" + fileRebalanceRoutine.isFailed() +
-            ", cancelled=" + fileRebalanceRoutine.isCancelled() + "]");
-
-        if (!fileRebalanceRoutine.isDone() || fileRebalanceRoutine.isCancelled() || fileRebalanceRoutine.isFailed())
-            buf.append(fileRebalanceRoutine.toString());
-
-        return buf.toString();
-    }
-
-    private String formatMappings(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
+    private String formatAssignments(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
         StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
 
         for (Map<ClusterNode, Map<Integer, Set<Integer>>> entry : list) {
@@ -605,7 +585,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         /** */
         public void cancelAll() {
-            ArrayList<CheckpointTask> tasks = new ArrayList<>(queue);
+            List<CheckpointTask> tasks = new ArrayList<>(queue);
 
             queue.clear();
 

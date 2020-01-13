@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,110 +53,110 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
- *
+ * File rebalance routine.
  */
 public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** */
     private static final long MAX_MEM_CLEANUP_TIMEOUT = 60_000;
 
-    /** */
-    private final GridPartitionFilePreloader.CheckpointListener cpLsnr;
+    /** Cancel callback invoked when routine is aborted. */
+    private final IgniteRunnable abortCb;
 
-    /** */
+    /** Rebalance topology version. */
     private final AffinityTopologyVersion topVer;
 
-    /** */
+    /** Unique (per demander) rebalance id. */
     private final long rebalanceId;
 
-    /** */
-    private final ReentrantLock cancelLock = new ReentrantLock();
+    /** Lock. */
+    private final ReentrantLock lock = new ReentrantLock();
 
-    /** */
+    /** Cache context. */
     private final GridCacheSharedContext cctx;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
     /** Index rebuild future. */
     private final GridCompoundFuture idxRebuildFut = new GridCompoundFuture<>();
 
-    /** */
+    /** Exchange ID. */
     private final GridDhtPartitionExchangeId exchId;
 
-    /** */
+    /** Assignments ordered by cache rebalance pririty and node. */
     private final Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
-    /** */
+    /** Unique partition identifier with node identifier. */
     private final Map<Long, UUID> partsToNodes = new HashMap<>();
 
     /** The remaining groups with the number of partitions. */
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
-    /** */
+    /** Count of partition snapshots received. */
     private final AtomicInteger receivedCnt = new AtomicInteger();
 
-    /** */
+    /** Cache group with restored partition snapshots and HWM value of update counter. */
     private final Map<Integer, Map<Integer, Long>> restored = new ConcurrentHashMap<>();
 
-    /** */
+    /** Off-heap region clear tasks. */
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
-    /** */
-    private final Map<String, Set<Long>> regionToParts = new HashMap<>();
-
-    /** */
+    /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
+
+    /** Initialization latch. */
+    private final CountDownLatch initLatch = new CountDownLatch(1);
 
     /** */
     public FileRebalanceRoutine() {
-        this(null, null, null, null, 0, null, null);
+        this(null, null, null, null, 0, null);
 
         onDone(true);
     }
 
     /**
-     * @param lsnr Checkpoint listener.
+     * @param assigns Assigns.
+     * @param startVer Topology version on which the rebalance started.
+     * @param cctx Cache shared context.
      * @param exchId Exchange ID.
+     * @param rebalanceId Rebalance ID.
+     * @param abortCb Abort callback to handle the abortion process from the outside.
      */
     public FileRebalanceRoutine(
-        GridPartitionFilePreloader.CheckpointListener lsnr,
-        Collection<Map<ClusterNode, Map</** group */Integer, Set</** part */Integer>>>> assigns,
+        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
+        GridDhtPartitionExchangeId exchId,
         long rebalanceId,
-        IgniteLogger log,
-        GridDhtPartitionExchangeId exchId) {
-        cpLsnr = lsnr;
-        topVer = startVer;
-
-        this.log = log;
+        IgniteRunnable abortCb
+    ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
+        this.abortCb = abortCb;
 
         orderedAssgnments = assigns;
-
-        initialize(assigns);
+        topVer = startVer;
+        log = cctx == null ? null : cctx.logger(this.getClass());
     }
 
     /**
      * Initialize rebalancing mappings.
-     *
-     * @param assignments Assignments.
      */
-    private void initialize(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assignments) {
-        if (assignments == null)
-            return;
+    public void initialize() {
+        final Map<String, Set<Long>> regionToParts = new HashMap<>();
 
-        cancelLock.lock();
+        lock.lock();
 
         try {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : assignments) {
+            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
                 for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : map.entrySet()) {
                     UUID nodeId = mapEntry.getKey().id();
 
@@ -188,22 +189,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     }
                 }
             }
-        }
-        finally {
-            cancelLock.unlock();
-        }
-    }
 
-    /**
-     * Clear off-heap memory regions.
-     */
-    public void clearPartitions() {
-        if (isDone())
-            return;
+            if (isDone())
+                return;
 
-        cancelLock.lock();
-
-        try {
             for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
                 String regionName = e.getKey();
                 Set<Long> parts = e.getValue();
@@ -215,11 +204,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 offheapClearTasks.put(regionName, offheapClearTask.doClear());
             }
         }
-        catch (RuntimeException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             onDone(e);
         }
         finally {
-            cancelLock.unlock();
+            lock.unlock();
+
+            initLatch.countDown();
         }
     }
 
@@ -227,7 +218,12 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * Request snapshot.
      */
     public void requestPartitionsSnapshot() {
-        // todo should we send start event only when we starting to preload specified group?
+        U.awaitQuiet(initLatch);
+
+        if (isDone())
+            return;
+
+        // todo should send start event only when we starting to preload specified group?
         for (Integer grpId : remaining.keySet()) {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -244,7 +240,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
 
                     try {
-                        cancelLock.lock();
+                        lock.lock();
 
                         try {
                             if (isDone())
@@ -262,7 +258,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                                 log.debug("Current state: " + this);
                         }
                         finally {
-                            cancelLock.unlock();
+                            lock.unlock();
                         }
 
                         snapFut.get();
@@ -287,8 +283,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
-        assert file != null;
-
         if (log.isTraceEnabled()) {
             log.trace("Processing partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
                 ", p=" + partId + ", path=" + file + "]");
@@ -348,70 +342,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         if (partsCnt == cntrs.size())
             onCacheGroupDone(grpId, cntrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cancel() {
-        return onDone(false, null, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-        boolean nodeIsStopping = X.hasCause(err, NodeStoppingException.class);
-
-        if (cancel || err != null) {
-            cancelLock.lock();
-
-            try {
-                synchronized (this) {
-                    if (isDone())
-                        return true;
-
-                    if (log.isInfoEnabled())
-                        log.info("Cancelling file rebalancing.");
-
-                    cpLsnr.cancelAll();
-
-                    if (err == null) {
-                        for (IgniteInternalFuture fut : offheapClearTasks.values()) {
-                            if (!fut.isDone())
-                                fut.get(MAX_MEM_CLEANUP_TIMEOUT);
-                        }
-                    }
-
-                    if (snapFut != null && !snapFut.isDone()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
-
-                        snapFut.cancel();
-                    }
-
-                    if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
-                        log.debug("Index rebuild is still in progress, cancelling.");
-
-                        idxRebuildFut.cancel();
-                    }
-
-                    for (Integer grpId : remaining.keySet()) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                        if (grp != null)
-                            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
-                    }
-                }
-            }
-            catch (IgniteCheckedException e) {
-                if (err != null)
-                    e.addSuppressed(err);
-
-                log.error("Failed to cancel file rebalancing.", e);
-            }
-            finally {
-                cancelLock.unlock();
-            }
-        }
-
-        return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
     }
 
     /**
@@ -484,6 +414,70 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             onDone(true);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cancel() {
+        return onDone(false, null, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+        boolean nodeIsStopping = X.hasCause(err, NodeStoppingException.class);
+
+        if (cancel || err != null) {
+            lock.lock();
+
+            try {
+                synchronized (this) {
+                    if (isDone())
+                        return true;
+
+                    if (log.isInfoEnabled())
+                        log.info("Cancelling file rebalancing.");
+
+                    abortCb.run();
+
+                    if (err == null) {
+                        for (IgniteInternalFuture fut : offheapClearTasks.values()) {
+                            if (!fut.isDone())
+                                fut.get(MAX_MEM_CLEANUP_TIMEOUT);
+                        }
+                    }
+
+                    if (snapFut != null && !snapFut.isDone()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
+
+                        snapFut.cancel();
+                    }
+
+                    if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
+                        log.debug("Index rebuild is still in progress, cancelling.");
+
+                        idxRebuildFut.cancel();
+                    }
+
+                    for (Integer grpId : remaining.keySet()) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                        if (grp != null)
+                            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                if (err != null)
+                    e.addSuppressed(err);
+
+                log.error("Failed to cancel file rebalancing.", e);
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
     }
 
     /**

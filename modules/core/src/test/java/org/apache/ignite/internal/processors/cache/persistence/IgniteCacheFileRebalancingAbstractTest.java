@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +73,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     private static final int INITIAL_ENTRIES_COUNT = 100_000;
 
     /** */
+    private static final long AWAIT_TIME_SECONDS = 15_000;
+
+    /** */
     private static final int DFLT_LOADER_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
 
     /** */
@@ -88,7 +92,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
-        return 180_000;
+        return 5_000;
     }
 
     /** {@inheritDoc} */
@@ -215,10 +219,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     @Ignore
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void testHistoricalWithFileRebalancing() throws Exception {
-        boolean checkRemoves = false;
+        assert backups() >= 2;
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
+        IgniteEx ignite2 = startGrid(2);
 
         ignite0.cluster().active(true);
 
@@ -226,37 +231,47 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         baseline.add(ignite0.localNode());
         baseline.add(ignite1.localNode());
+        baseline.add(ignite2.localNode());
 
-        //DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
         for (int i = 0; i < 20_000; i++)
             ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
 
-        ignite1.close();
+        forceCheckpoint(ignite0);
+
+        String inst2Name = ignite2.name();
+
+        stopGrid(1);
+        stopGrid(2);
 
         for (int i = 20_000; i < 25_000; i++)
             ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
 
-//        U.sleep(1_000);
-//        ldr.stop();
+        cleanPersistenceDir(inst2Name);
 
-        forceCheckpoint(ignite0);
+        CountDownLatch startLatch = new CountDownLatch(1);
 
-        IgniteEx ignite2 = startGrid(2);
+        IgniteInternalFuture fut1 = GridTestUtils.runAsync( () -> {
+            startLatch.await(AWAIT_TIME_SECONDS, TimeUnit.SECONDS);
 
-        baseline.add(ignite2.localNode());
+            startGrid(1);
 
-//        startGrid(1);
+            return null;
+        });
 
-        // we need to start node1 and include node2 into baseline at the same exchange.
-        GridTestUtils.runAsync(() -> startGrid(1));
+        IgniteInternalFuture fut2 = GridTestUtils.runAsync( () -> {
+            startLatch.await(AWAIT_TIME_SECONDS, TimeUnit.SECONDS);
 
-        ignite0.cluster().setBaselineTopology(baseline);
+            startGrid(2);
+
+            return null;
+        });
+
+        startLatch.countDown();
+
+        fut1.get();
+        fut2.get();
 
         awaitPartitionMapExchange();
-
-//        ignite0.cluster().setBaselineTopology(baseline);
-//
-//        awaitPartitionMapExchange();
     }
 
     /**

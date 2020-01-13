@@ -754,13 +754,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     if (printPartState)
                                         printPartitionState(c);
 
-                                    for (Ignite gX : G.allGrids()) {
-                                        GridPartitionFilePreloader filePreloader = ((IgniteEx)gX).context().cache().context().filePreloader();
-
-                                        if (filePreloader != null)
-                                            filePreloader.printDiagnostic();
-                                    }
-
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
                                         "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
