@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
+import jdk.internal.jline.internal.Nullable;
+
 /**
  * Set of encryption subcommands.
  *
@@ -38,10 +40,10 @@ public enum EncryptionSubcommand {
     }
 
     /**
-     * @param text Command text.
-     * @return Command for the text.
+     * @param text Command text (case insensitive).
+     * @return Command for the text. {@code Null} if there is no such command.
      */
-    public static EncryptionSubcommand of(String text) {
+     @Nullable public static EncryptionSubcommand of(String text) {
         for (EncryptionSubcommand cmd : EncryptionSubcommand.values()) {
             if (cmd.name.equalsIgnoreCase(text))
                 return cmd;
