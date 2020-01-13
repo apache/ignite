@@ -29,6 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.junit.After;
 
 import static org.apache.ignite.Ignition.localIgnite;
 
@@ -88,10 +89,15 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
         srv.cluster().active(true);
 
-        for(String cacheName : srv.cacheNames())
-            srv.cache(cacheName).put(primaryKey(grid(SRV_CHECK), cacheName), 1);
-
         awaitPartitionMapExchange();
+    }
+
+    /** */
+    @After
+    public void tearDown() {
+        Ignite ignite = grid(SRV_CHECK);
+
+        ignite.cacheNames().forEach(s -> ignite.cache(s).removeAll());
     }
 
     /** {@inheritDoc} */
@@ -103,11 +109,21 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
+     * Puts inintial value to caches.
+     */
+    protected void putInitialValue() {
+        IgniteEx ignite = grid(SRV_CHECK);
+
+        ignite.cacheNames().forEach(s -> ignite.cache(s).put(primaryKey(ignite, s), 1));
+    }
+
+    /**
      * Opens query cursor.
      *
      * @param q {@link Query}.
+     * @param putVal True if needing put data to a cache.
      */
-    protected void executeQuery(Query<Cache.Entry<Integer, Integer>> q) {
+    protected void executeQuery(Query<Cache.Entry<Integer, Integer>> q, boolean putVal) {
         Ignite ignite = localIgnite();
 
         String cacheName = CACHE_NAME + '_' + ignite.name();
@@ -115,7 +131,10 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
-            cache.put(primaryKey(grid(SRV_CHECK), cacheName), 100);
+            if (putVal)
+                cache.put(primaryKey(grid(SRV_CHECK), cacheName), 100);
+
+            cur.getAll();
         }
     }
 }

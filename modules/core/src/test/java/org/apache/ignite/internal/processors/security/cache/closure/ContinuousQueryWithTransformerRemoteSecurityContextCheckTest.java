@@ -39,6 +39,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
      */
     @Test
     public void testInitialQuery() {
+        putInitialValue();
+
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
@@ -48,8 +50,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 }
             };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
+        runAndCheck(grid(SRV_INITIATOR), operation(consumer, false));
+        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, false));
     }
 
     /**
@@ -92,9 +94,11 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
     /**
      * @param c Consumer that setups a {@link ContinuousQueryWithTransformer}.
+     * @param putVal True if needing put data to a cache.
      * @return Test operation.
      */
-    private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
+    private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c,
+        boolean putVal) {
         return () -> {
             VERIFIER.register(OPERATION_OPEN_CQ);
 
@@ -102,7 +106,15 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
             c.accept(cq);
 
-            executeQuery(cq);
+            executeQuery(cq, putVal);
         };
+    }
+
+    /**
+     * @param c Consumer that setups a {@link ContinuousQueryWithTransformer}.
+     * @return Test operation.
+     */
+    private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
+        return operation(c, true);
     }
 }
