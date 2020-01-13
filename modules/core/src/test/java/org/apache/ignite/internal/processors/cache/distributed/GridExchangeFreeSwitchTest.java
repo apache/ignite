@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -59,7 +58,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
@@ -142,12 +140,16 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    @Override protected boolean checkTopology() {
+        return false;
+    }
+
     /**
      * @param nodes Nodes.
      * @param cnt Count.
      * @param pmeExpected Pme expected.
      */
-    private void setSpiBlockMessages(int nodes, AtomicLong cnt, AtomicBoolean pmeExpected) {
+    private void setSpiBlockMessages(int nodes, AtomicLong cnt, @Nullable AtomicBoolean pmeExpected) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -195,98 +197,78 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * Checks Partition Exchange is regular in case of fixed baseline,
-     * when node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
-     * and Partition Exchange is absent when this node is stoped.
+     * when some nodes starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
+     * and Partition Exchange is absent when this nodes is stoped.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode() throws Exception {
-        persistence = true;
+        new Thread(() -> {
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
 
-        try {
-            int nodes = 10;
-
-            AtomicBoolean pmeExpected = new AtomicBoolean(true);
-
-            AtomicReference<IgniteEx> igniteNotSupportPmeFreeSwitch = new AtomicReference<>();
-
-            Random r = new Random();
-
-            final int idxPmeDisabled = r.nextInt(nodes);
-
-            for (int i = 0; i < nodes; i++) {
-                if (i == idxPmeDisabled) {
-                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-                    igniteNotSupportPmeFreeSwitch.set(startGrid(idxPmeDisabled));
-                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-                }
-                else
-                    startGrid(i);
+            try {
+                startGrid(10);
             }
-
-            checkTopology(nodes);
-            igniteNotSupportPmeFreeSwitch.get().cluster().active(true);
-            awaitPartitionMapExchange();
-
-            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.get().cluster().nodes());
-
-            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.get().cluster().localNode());
-
-            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
-            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.get().cluster().localNode(), PME_FREE_SWITCH));
-
-            AtomicLong cnt = new AtomicLong(0);
-
-            setSpiBlockMessages(nodes, cnt, pmeExpected);
-
-            while (nodes > 1) {
-                Ignite ignite = G.allGrids().get(r.nextInt(nodes--));
-
-                if (!nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH))
-                    pmeExpected.set(false);
-
-                cnt.set(0);
-
-                ignite.close();
-
-                awaitPartitionMapExchange(true, true, null, true);
-
-                assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
-
-                IgniteEx alive = (IgniteEx)G.allGrids().get(0);
-
-                assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
+            catch (Exception e) {
+                e.printStackTrace();
             }
-        }
-        finally {
-            persistence = false;
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
+            finally {
+                System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+            }
+        }).start();
+
+        testBaselineNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
     private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        boolean pmeFreeSwitchDisabled = getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED);
-
         int nodes = 10;
 
         Ignite ignite = startGridsMultiThreaded(nodes, true);
 
-        ignite.cluster().active(true);
+        if (persistence) {
+            int size = ignite.cluster().nodes().size();
+            ignite.cluster().baselineAutoAdjustEnabled(false);
+            ignite.cluster().setBaselineTopology(size);
+        }
 
         AtomicLong cnt = new AtomicLong();
 
-        AtomicBoolean pmeExpected = new AtomicBoolean(!persistence || pmeFreeSwitchDisabled);
+        List<ClusterNode> clusterNodes = new LinkedList<>(ignite.cluster().nodes());
+
+        AtomicInteger cntNotSupported = new AtomicInteger();
+
+        AtomicBoolean pmeExpected = new AtomicBoolean(!persistence || !allNodesSupports(clusterNodes, PME_FREE_SWITCH));
+
+        if (pmeExpected.get()) {
+            for (ClusterNode cn : clusterNodes) {
+                if (nodeSupports(cn, PME_FREE_SWITCH))
+                    continue;
+
+                cntNotSupported.incrementAndGet();
+            }
+        }
+
+        nodes = G.allGrids().size();
 
         setSpiBlockMessages(nodes, cnt, pmeExpected);
 
         Random r = new Random();
 
         while (nodes > 1) {
-            G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
+            Ignite i = G.allGrids().get(r.nextInt(nodes--));
+
+            if (pmeExpected.get() &&
+                !nodeSupports(i.cluster().localNode(), PME_FREE_SWITCH) &&
+                (cntNotSupported.decrementAndGet() == 0))
+                pmeExpected.set(false);
+
+            i.close();
 
             awaitPartitionMapExchange(true, true, null, true);
+
+            assertEquals(G.allGrids().size(), nodes);
 
             assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
 
