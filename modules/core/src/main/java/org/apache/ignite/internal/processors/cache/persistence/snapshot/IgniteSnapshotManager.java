@@ -43,6 +43,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
@@ -954,17 +955,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param rmtNodeId The remote node to connect to.
      * @return Snapshot name.
-     * @throws IgniteCheckedException If initialiation fails.
      */
-    public IgniteInternalFuture<Boolean> createRemoteSnapshot(UUID rmtNodeId, Map<Integer, Set<Integer>> parts) throws IgniteCheckedException {
+    public IgniteInternalFuture<Boolean> createRemoteSnapshot(UUID rmtNodeId, Map<Integer, Set<Integer>> parts) {
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
-            throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id()));
 
         if (rmtNode == null) {
-            throw new ClusterTopologyCheckedException("Snapshot request cannot be performed. Remote node left the grid " +
-                "[rmtNodeId=" + rmtNodeId + ']');
+            return new GridFinishedFuture<>(new ClusterTopologyCheckedException("Snapshot request cannot be performed. " +
+                "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']'));
         }
 
         for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
@@ -986,8 +986,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 substract.removeAll(owningParts);
 
-                throw new IgniteCheckedException("Only owning partitions allowed to be requested from the remote node " +
-                    "[rmtNodeId=" + rmtNodeId + ", grpId=" + grpId + ", missed=" + substract + ']');
+                return new GridFinishedFuture<>(new IgniteCheckedException("Only owning partitions allowed to be " +
+                    "requested from the remote node [rmtNodeId=" + rmtNodeId + ", grpId=" + grpId +
+                    ", missed=" + substract + ']'));
             }
         }
 
@@ -1008,30 +1009,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             SnapshotRequestFuture fut = snpReq.get();
 
-            if (fut != null && !fut.isCancelled())
-                throw new IgniteCheckedException("Previous snapshot request has not been finished yet: " + fut);
+            try {
+                if (fut != null)
+                    fut.get(DFLT_CREATE_SNAPSHOT_TIMEOUT, TimeUnit.MILLISECONDS);
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isInfoEnabled())
+                    log.info("The previous snapshot request finished with an excpetion:" + e.getMessage());
+            }
 
             try {
-                long startTime = U.currentTimeMillis();
-
-                // todo loop can be replaced with wait on future
-                while (true) {
-                    if (snpReq.compareAndSet(null, snpTransFut)) {
-                        cctx.gridIO().sendOrderedMessage(rmtNode, DFLT_INITIAL_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL,
-                            Long.MAX_VALUE, true);
-
-                        break;
-                    }
-                    else if (U.currentTimeMillis() - startTime > DFLT_CREATE_SNAPSHOT_TIMEOUT)
-                        throw new IgniteCheckedException("Error waiting for a previous requested snapshot completed: " + snpTransFut);
-
-                    U.sleep(200);
+                if (snpReq.compareAndSet(null, snpTransFut)) {
+                    cctx.gridIO().sendOrderedMessage(rmtNode, DFLT_INITIAL_SNAPSHOT_TOPIC, msg0, SYSTEM_POOL,
+                        Long.MAX_VALUE, true);
                 }
+                else
+                    return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot request has been concurrently interrupted."));
+
             }
             catch (IgniteCheckedException e) {
                 snpReq.compareAndSet(snpTransFut, null);
 
-                throw e;
+                return new GridFinishedFuture<>(e);
             }
         }
         finally {
