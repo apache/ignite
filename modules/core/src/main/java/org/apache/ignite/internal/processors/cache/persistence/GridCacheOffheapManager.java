@@ -27,9 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -119,6 +121,17 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
     /**
+     * Threshold to calculate limit for pages list on-heap caches.
+     * <p>
+     * Note: When a checkpoint is triggered, we need some amount of page memory to store pages list on-heap cache.
+     * If a checkpoint is triggered by "too many dirty pages" reason and pages list cache is rather big, we can get
+     * {@code IgniteOutOfMemoryException}. To prevent this, we can limit the total amount of cached page list buckets,
+     * assuming that checkpoint will be triggered if no more then 3/4 of pages will be marked as dirty (there will be
+     * at least 1/4 of clean pages) and each cached page list bucket can be stored to up to 2 pages.
+     */
+    private static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 1.0 / 4.0 / 2.0;
+
+    /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
      * if there is nothing to clean yet.
      */
@@ -130,6 +143,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** */
     private ReuseListImpl reuseList;
+
+    /** Page list cache limits per data region. */
+    private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
 
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
@@ -1685,6 +1701,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
+                    AtomicLong pageListCacheLimit = pageListCacheLimits.computeIfAbsent(
+                        grp.dataRegion().config().getName(), name -> {
+                            long totalDataRegionPages = grp.dataRegion().config().getMaxSize() /
+                                grp.dataRegion().pageMemory().systemPageSize();
+
+                            return new AtomicLong((long)(totalDataRegionPages * PAGE_LIST_CACHE_LIMIT_THRESHOLD));
+                        });
+
                     freeList = new CacheFreeList(
                         grp.groupId(),
                         freeListName,
@@ -1694,7 +1718,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName),
-                        ctx.kernalContext()
+                        ctx.kernalContext(),
+                        pageListCacheLimit
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {

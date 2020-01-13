@@ -38,7 +38,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     private volatile Stripe[] bucket;
 
     /** Onheap pages cache. */
-    private final PagesCache bucketCache = new PagesCache();
+    private final PagesCache bucketCache = new PagesCache(null);
 
     /**
      * @param cacheId   Cache ID.

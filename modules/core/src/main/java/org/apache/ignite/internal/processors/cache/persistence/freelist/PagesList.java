@@ -1951,14 +1951,19 @@ public abstract class PagesList extends DataStructure {
         /** Count of flush calls with empty cache. */
         private int emptyFlushCnt;
 
+        /** Global (per data region) limit of caches for page lists. */
+        private final AtomicLong pagesCacheLimit;
+
         /**
          * Default constructor.
          */
-        public PagesCache() {
+        public PagesCache(AtomicLong pagesCacheLimit) {
             assert U.isPow2(STRIPES_COUNT) : STRIPES_COUNT;
 
             for (int i = 0; i < STRIPES_COUNT; i++)
                 stripeLocks[i] = new Object();
+
+            this.pagesCacheLimit = pagesCacheLimit;
         }
 
         /**
@@ -1975,8 +1980,10 @@ public abstract class PagesList extends DataStructure {
 
                 boolean rmvd = stripe != null && stripe.removeValue(0, pageId) >= 0;
 
-                if (rmvd)
-                    sizeUpdater.decrementAndGet(this);
+                if (rmvd) {
+                    if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                        pagesCacheLimit.incrementAndGet();
+                }
 
                 return rmvd;
             }
@@ -1998,7 +2005,8 @@ public abstract class PagesList extends DataStructure {
                     GridLongList stripe = stripes[stripeIdx];
 
                     if (stripe != null && !stripe.isEmpty()) {
-                        sizeUpdater.decrementAndGet(this);
+                        if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                            pagesCacheLimit.incrementAndGet();
 
                         return stripe.remove();
                     }
@@ -2051,7 +2059,8 @@ public abstract class PagesList extends DataStructure {
                         if (res == null)
                             res = new GridLongList(size);
 
-                        sizeUpdater.addAndGet(this, -stripe.size());
+                        if (sizeUpdater.addAndGet(this, -stripe.size()) == 0 && pagesCacheLimit != null)
+                            pagesCacheLimit.incrementAndGet();
 
                         res.addAll(stripe);
 
@@ -2072,6 +2081,9 @@ public abstract class PagesList extends DataStructure {
         public boolean add(long pageId) {
             assert pageId != 0L;
 
+            if (size == 0 && pagesCacheLimit != null && pagesCacheLimit.get() <= 0)
+                return false; // Pages cache limit exceeded.
+
             // Ok with race here.
             if (size >= MAX_SIZE)
                 return false;
@@ -2089,7 +2101,8 @@ public abstract class PagesList extends DataStructure {
                 else {
                     stripe.add(pageId);
 
-                    sizeUpdater.incrementAndGet(this);
+                    if (sizeUpdater.getAndIncrement(this) == 0 && pagesCacheLimit != null)
+                        pagesCacheLimit.decrementAndGet();
 
                     return true;
                 }

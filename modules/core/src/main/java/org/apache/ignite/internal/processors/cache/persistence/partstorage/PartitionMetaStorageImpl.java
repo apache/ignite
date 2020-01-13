@@ -60,7 +60,7 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
         PageLockListener lsnr,
         GridKernalContext ctx
     ) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx);
+        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, null);
     }
 
     /**

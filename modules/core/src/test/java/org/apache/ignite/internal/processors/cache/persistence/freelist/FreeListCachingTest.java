@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -67,7 +68,7 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(300L * 1024 * 1024)
+                .setMaxSize(50L * 1024 * 1024)
             ));
 
         return cfg;
@@ -214,5 +215,23 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
             assertTrue("Some buckets should be cached [partId=" + cacheData.partId() + ']', totalCacheSize > 0);
         });
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testPageListCacheLimit() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            // Fill cache to trigger "too many dirty pages" checkpoint.
+            for (int i = 0; i < 100_000; i++)
+                streamer.addData(i, new byte[i % 2048]);
+        }
     }
 }
