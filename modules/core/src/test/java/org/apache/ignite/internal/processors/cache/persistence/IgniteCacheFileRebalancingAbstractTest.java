@@ -88,7 +88,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
-        return 3_000;
+        return 180_000;
     }
 
     /** {@inheritDoc} */

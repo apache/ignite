@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -53,7 +52,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
@@ -206,11 +204,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         cancelLock.lock();
 
         try {
-            for (Map.Entry<String, Set<Long>> entry : regionToParts.entrySet()) {
-                String regionName = entry.getKey();
-                DataRegion region = cctx.database().dataRegion(regionName);
+            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
+                String regionName = e.getKey();
+                Set<Long> parts = e.getValue();
 
-                Set<Long> parts = entry.getValue();
+                DataRegion region = cctx.database().dataRegion(regionName);
 
                 ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
 
@@ -225,6 +223,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
+    /**
+     * Request snapshot.
+     */
     public void requestPartitionsSnapshot() {
         // todo should we send start event only when we starting to preload specified group?
         for (Integer grpId : remaining.keySet()) {
@@ -264,7 +265,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                             cancelLock.unlock();
                         }
 
-                        // todo
                         snapFut.get();
                     }
                     catch (IgniteFutureCancelledCheckedException ignore) {
@@ -373,8 +373,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     cpLsnr.cancelAll();
 
                     if (err == null) {
-                        // todo if memory cleanup in progress we should not wait for cleanup-future finish (on cancel)
-                        //      should somehow "re-set" the old-one cleanup future to new created rebalance future.
                         for (IgniteInternalFuture fut : offheapClearTasks.values()) {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);
@@ -416,6 +414,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
     }
 
+    /**
+     * @param grpId Group ID.
+     * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
+     */
     private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
         if (remaining.remove(grpId) == null)
             return;
@@ -465,8 +467,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         if (log.isInfoEnabled())
             log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
 
-        // Cache group file rebalancing is finished.
-        // todo historical rebalancing will send separate events
+        // Cache group file rebalancing is finished, historical rebalancing will send separate events
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         int remain = remaining.size();
@@ -485,6 +486,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
+    /**
+     * @param grp Cache group.
+     * @param assigns Assignments.
+     */
     private void requestHistoricalRebalance(CacheGroupContext grp, Map<UUID, Map<Integer, T2<Long, Long>>> assigns) {
         GridDhtPreloaderAssignments grpAssigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
@@ -498,13 +503,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 msg.partitions().addHistorical(e.getKey(), e.getValue().get1(), e.getValue().get2(), nodeAssigns.size());
 
             grpAssigns.put(node, msg);
-        }
-
-        // todo investigate WAL iterator troubles
-        try {
-            U.sleep(500);
-        } catch (IgniteInterruptedCheckedException e) {
-            log.warning(e.getMessage(), e);
         }
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());

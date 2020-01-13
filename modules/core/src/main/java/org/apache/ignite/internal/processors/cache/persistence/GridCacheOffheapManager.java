@@ -1013,7 +1013,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
             // todo For file rebalancing we starting searching from reserved pointer.
-            //      For regular historical rebalancing it may be more eefective to search pointer in checkpoint hostory
+            //      For historical rebalancing it may be more effective to search pointer in checkpoint hostory
             FileWALPointer startPtr = database.reservedWALPointer(grp.groupId(), p, initCntr);
 
             if (startPtr == null)
@@ -1022,6 +1022,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (minPtr == null || startPtr.compareTo(minPtr) < 0)
                 minPtr = startPtr;
         }
+
+        grp.shared().wal().flush(null, true);
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 
