@@ -84,7 +84,8 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             foreach (var type in types)
             {
-                var sourceFile = sourceFiles.Single(x => x.EndsWith(string.Format("\\{0}.cs", type.Name)));
+                var sourceFile = sourceFiles.Single(
+                    x => x.EndsWith(string.Format("{0}{1}.cs", Path.DirectorySeparatorChar, type.Name)));
 
                 var sourceCode = File.ReadAllText(sourceFile);
 

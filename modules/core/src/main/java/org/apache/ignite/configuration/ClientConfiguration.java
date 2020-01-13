@@ -97,13 +97,13 @@ public final class ClientConfiguration implements Serializable {
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
 
     /**
-     * Whether affinity awareness should be enabled.
+     * Whether partition awareness should be enabled.
      *
      * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
      * By default {@code false} only one connection is established at a given moment to a random server node.
      */
-    private boolean affinityAwarenessEnabled;
+    private boolean partitionAwarenessEnabled;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -440,19 +440,19 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether affinity awareness should be enabled.
+     * @return Whether partition awareness should be enabled.
      */
-    public boolean isAffinityAwarenessEnabled() {
-        return affinityAwarenessEnabled;
+    public boolean isPartitionAwarenessEnabled() {
+        return partitionAwarenessEnabled;
     }
 
     /**
-     * Enable or disable affinity awareness.
+     * Enable or disable partition awareness.
      *
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setAffinityAwarenessEnabled(boolean affinityAwarenessEnabled) {
-        this.affinityAwarenessEnabled = affinityAwarenessEnabled;
+    public ClientConfiguration setPartitionAwarenessEnabled(boolean partitionAwarenessEnabled) {
+        this.partitionAwarenessEnabled = partitionAwarenessEnabled;
 
         return this;
     }

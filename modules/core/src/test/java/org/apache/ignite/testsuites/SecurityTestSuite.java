@@ -55,6 +55,7 @@ import org.junit.runners.Suite;
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
+    ThinClientPermissionCheckSecurityTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -64,8 +65,6 @@ import org.junit.runners.Suite;
     EntryProcessorRemoteSecurityContextCheckTest.class,
     DataStreamerRemoteSecurityContextCheckTest.class,
     CacheLoadRemoteSecurityContextCheckTest.class,
-    ThinClientPermissionCheckTest.class,
-    ThinClientPermissionCheckSecurityTest.class,
 
     InvalidServerTest.class,
     SslCertificatesCheckTest.class,
