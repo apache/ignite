@@ -107,8 +107,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
@@ -1948,7 +1948,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
         Object res = h.getLastOperationResult();
 
@@ -1958,7 +1958,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
         res = h.getLastOperationResult();
 
@@ -1984,7 +1984,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
 
         Object res = h.getLastOperationResult();
 

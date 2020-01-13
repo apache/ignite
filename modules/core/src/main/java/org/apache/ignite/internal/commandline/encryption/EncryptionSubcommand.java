@@ -24,7 +24,7 @@ package org.apache.ignite.internal.commandline.encryption;
  */
 public enum EncryptionSubcommand {
     /** Subcommand to get the current master key name. */
-    GET_MASTER_KEY("get_master_key"),
+    GET_MASTER_KEY_NAME("get_master_key_name"),
 
     /** Subcommand to change the master key. */
     CHANGE_MASTER_KEY("change_master_key");

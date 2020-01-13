@@ -29,7 +29,7 @@ import org.apache.ignite.internal.visor.encryption.VisorGetMasterKeyNameTask;
 import static org.apache.ignite.internal.commandline.CommandList.ENCRYPTION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.CHANGE_MASTER_KEY;
-import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.GET_MASTER_KEY;
+import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.GET_MASTER_KEY_NAME;
 import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcommand.of;
 
 /**
@@ -84,7 +84,7 @@ public class EncryptionCommand implements Command<Object> {
             throw new IllegalArgumentException("Expected correct encryption action.");
 
         switch (cmd) {
-            case GET_MASTER_KEY:
+            case GET_MASTER_KEY_NAME:
                 taskName = VisorGetMasterKeyNameTask.class.getName();
 
                 taskArgs = null;
@@ -114,7 +114,7 @@ public class EncryptionCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Print the current master key name:", ENCRYPTION, GET_MASTER_KEY.toString());
+        Command.usage(logger, "Print the current master key name:", ENCRYPTION, GET_MASTER_KEY_NAME.toString());
         Command.usage(logger, "Change the master key:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
     }
 

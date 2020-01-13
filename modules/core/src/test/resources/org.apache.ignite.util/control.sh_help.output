@@ -63,7 +63,7 @@ This utility can do the following commands:
     control.(sh|bat) --diagnostic
 
   Print the current master key name:
-    control.(sh|bat) --encryption get_master_key
+    control.(sh|bat) --encryption get_master_key_name
 
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
