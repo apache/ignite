@@ -67,7 +67,7 @@ public class ExchangeContext {
 
         if (!allNodesSupportsPmeFreeSwitch)
             fut.logger().warning("Current topology does not support PME-free switch because " +
-                "not all nodes support IgniteFeatures.PME_FREE_SWITCH.");
+                "not all nodes support PME_FREE_SWITCH.");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&

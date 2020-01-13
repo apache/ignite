@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -144,6 +143,32 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param nodes Nodes.
+     * @param cnt Count.
+     * @param pmeExpected Pme expected.
+     */
+    private void setSpiBlockMessages(int nodes, AtomicLong cnt, AtomicBoolean pmeExpected) {
+        for (int i = 0; i < nodes; i++) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        cnt.incrementAndGet();
+
+                    if (pmeExpected != null && pmeExpected.get())
+                        return false;
+
+                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
+                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
+                }
+            });
+        }
+    }
+
+    /**
      * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster). It's not possible to
      * perform switch since primaries may change.
      */
@@ -169,194 +194,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when IGNITE_PME_FREE_SWITCH_DISABLED is true.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_PME_FREE_SWITCH_DISABLED, value = "true")
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabled() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedCluster();
-    }
-
-    /**
-     * Checks Partition Exchange is regular in case of fixed baseline,
-     * when one node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode() throws Exception {
-        persistence = true;
-
-        try {
-            int nodes = 10;
-
-            Ignite igniteNotSupportPmeFreeSwitch = null;
-
-            int r = new Random().nextInt(nodes);
-
-            for (int i = 0; i < nodes; i++) {
-                if (i == r) {
-                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-                    igniteNotSupportPmeFreeSwitch = startGrid(r);
-                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-                }
-                else
-                    startGrid(i);
-            }
-
-            checkTopology(nodes);
-
-            igniteNotSupportPmeFreeSwitch.cluster().active(true);
-
-            awaitPartitionMapExchange(true, true, null, true);
-
-            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.cluster().nodes());
-
-            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.cluster().localNode());
-
-            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
-            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.cluster().localNode(), PME_FREE_SWITCH));
-
-            AtomicInteger cnt = new AtomicInteger(0);
-
-            for (int i = 0; i < nodes; i++) {
-                TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                            cnt.incrementAndGet();
-
-                        return false;
-                    }
-                });
-            }
-
-            for (Ignite ignite : G.allGrids()) {
-                if (!nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH))
-                    continue;
-
-                cnt.set(0);
-
-                ignite.close();
-
-                nodes--;
-
-                awaitPartitionMapExchange(true, true, null, true);
-
-                assertEquals((nodes - 1), cnt.get());
-
-                IgniteEx alive = (IgniteEx)G.allGrids().get(0);
-
-                assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
-            }
-        }
-        finally {
-            persistence = false;
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
-    }
-
-    /**
-     * Checks Partition Exchange is absent in case of fixed baseline,
-     * when node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true, stoped.
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode2() throws Exception {
-        persistence = true;
-
-        try {
-            int nodes = 4;
-
-            AtomicBoolean pmeExpected = new AtomicBoolean(true);
-
-            Ignite igniteNotSupportPmeFreeSwitch = null;
-
-            int idPmeDisabled = nodes - 1;
-
-            for (int i = 0; i < nodes; i++) {
-                if (i == idPmeDisabled) {
-                    System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-                    igniteNotSupportPmeFreeSwitch = startGrid(idPmeDisabled);
-                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-                }
-                else
-                    startGrid(i);
-            }
-
-            checkTopology(nodes);
-
-            igniteNotSupportPmeFreeSwitch.cluster().active(true);
-
-            awaitPartitionMapExchange(true, true, null, true);
-
-            List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.cluster().nodes());
-
-            clusterNodes.remove(igniteNotSupportPmeFreeSwitch.cluster().localNode());
-
-            assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
-            assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.cluster().localNode(), PME_FREE_SWITCH));
-
-            AtomicInteger cnt = new AtomicInteger(0);
-
-            for (int i = 0; i < nodes; i++) {
-                TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                            cnt.incrementAndGet();
-
-                        if (pmeExpected.get())
-                            return false;
-
-                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                    }
-                });
-            }
-
-            cnt.set(0);
-
-            IgniteEx ignite = ignite(2);
-
-            assertTrue(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
-
-            ignite.close();
-
-            awaitPartitionMapExchange(true, true, null, true);
-
-            assertEquals(nodes - 2, cnt.get());
-
-            assertTrue(ignite(0).context().cache().context().exchange().lastFinishedFuture().rebalanced());
-
-            cnt.set(0);
-
-            pmeExpected.set(false);
-
-            igniteNotSupportPmeFreeSwitch.close();
-
-            awaitPartitionMapExchange(true, true, null, true);
-
-            assertEquals(0, cnt.get());
-
-            assertTrue(ignite(0).context().cache().context().exchange().lastFinishedFuture().rebalanced());
-        }
-        finally {
-            persistence = false;
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
-    }
-
-    /**
      * Checks Partition Exchange is regular in case of fixed baseline,
      * when node starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
      * and Partition Exchange is absent when this node is stoped.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode3() throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode() throws Exception {
         persistence = true;
 
         try {
@@ -381,10 +224,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
 
             checkTopology(nodes);
-
             igniteNotSupportPmeFreeSwitch.get().cluster().active(true);
-
-            awaitPartitionMapExchange(true, true, null, true);
+            awaitPartitionMapExchange();
 
             List<ClusterNode> clusterNodes = new LinkedList<>(igniteNotSupportPmeFreeSwitch.get().cluster().nodes());
 
@@ -393,26 +234,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             assertTrue(allNodesSupports(clusterNodes, PME_FREE_SWITCH));
             assertFalse(nodeSupports(igniteNotSupportPmeFreeSwitch.get().cluster().localNode(), PME_FREE_SWITCH));
 
-            AtomicInteger cnt = new AtomicInteger(0);
+            AtomicLong cnt = new AtomicLong(0);
 
-            for (int i = 0; i < nodes; i++) {
-                TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                            cnt.incrementAndGet();
-
-                        if (pmeExpected.get())
-                            return false;
-
-                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                    }
-                });
-            }
+            setSpiBlockMessages(nodes, cnt, pmeExpected);
 
             while (nodes > 1) {
                 Ignite ignite = G.allGrids().get(r.nextInt(nodes--));
@@ -453,26 +277,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        boolean pmeExpected = !persistence || pmeFreeSwitchDisabled;
+        AtomicBoolean pmeExpected = new AtomicBoolean(!persistence || pmeFreeSwitchDisabled);
 
-        for (int i = 0; i < nodes; i++) {
-            TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cnt.incrementAndGet();
-
-                    if (pmeExpected)
-                        return false;
-
-                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                }
-            });
-        }
+        setSpiBlockMessages(nodes, cnt, pmeExpected);
 
         Random r = new Random();
 
@@ -481,7 +288,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(!pmeExpected ? 0 : (nodes - 1), cnt.get());
+            assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
@@ -546,21 +353,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             AtomicLong cnt = new AtomicLong();
 
-            for (int i = 0; i < nodes; i++) {
-                TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                            cnt.incrementAndGet();
-
-                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                    }
-                });
-            }
+            setSpiBlockMessages(nodes, cnt, null);
 
             Random r = new Random();
 

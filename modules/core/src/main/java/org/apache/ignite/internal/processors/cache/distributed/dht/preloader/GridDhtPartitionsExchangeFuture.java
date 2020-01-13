@@ -735,6 +735,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return Logger instance.
+     */
+    @Override public IgniteLogger logger() {
+        return log;
+    }
+
+    /**
      * Starts activity.
      *
      * @param newCrd {@code True} if node become coordinator on this exchange.
