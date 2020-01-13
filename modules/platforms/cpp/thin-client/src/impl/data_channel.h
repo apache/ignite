@@ -60,7 +60,7 @@ namespace ignite
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
                 
-                /** Version 1.4.0. Added: Affinity Awareness support, IEP-23. */
+                /** Version 1.4.0. Added: Partition awareness support, IEP-23. */
                 static const ProtocolVersion VERSION_1_4_0;
 
                 /** Current version. */

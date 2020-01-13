@@ -155,7 +155,7 @@ namespace ignite
                     nodeParts[i].Read(reader);
             }
 
-            CachePartitionsResponse::CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups) :
+            CachePartitionsResponse::CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups) :
                 groups(groups)
             {
                 // No-op.

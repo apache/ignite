@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Communication channel with failover and affinity awareness.
+ * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable {
     /** Channel factory. */
@@ -57,10 +57,10 @@ final class ReliableChannel implements AutoCloseable {
     /** Index of the current channel. */
     private int curChIdx;
 
-    /** Affinity awareness enabled. */
-    private final boolean affinityAwarenessEnabled;
+    /** Partition awareness enabled. */
+    private final boolean partitionAwarenessEnabled;
 
-    /** Cache affinity awareness context. */
+    /** Cache partition awareness context. */
     private final ClientCacheAffinityContext affinityCtx;
 
     /** Node channels. */
@@ -109,7 +109,7 @@ final class ReliableChannel implements AutoCloseable {
 
         curChIdx = new Random().nextInt(channels.length); // We already verified there is at least one address.
 
-        affinityAwarenessEnabled = clientCfg.isAffinityAwarenessEnabled() && channels.length > 1;
+        partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled() && channels.length > 1;
 
         affinityCtx = new ClientCacheAffinityContext(binary);
 
@@ -119,7 +119,7 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 channels[curChIdx].getOrCreateChannel();
 
-                if (affinityAwarenessEnabled)
+                if (partitionAwarenessEnabled)
                     initAllChannelsAsync();
 
                 return;
@@ -197,7 +197,7 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
-        if (affinityAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
             UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
 
             if (affinityNodeId != null) {
@@ -384,7 +384,7 @@ final class ReliableChannel implements AutoCloseable {
      * @param ch Channel.
      */
     private void onTopologyChanged(ClientChannel ch) {
-        if (affinityAwarenessEnabled && affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(),
+        if (partitionAwarenessEnabled && affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(),
             ch.serverNodeId()))
             initAllChannelsAsync();
     }

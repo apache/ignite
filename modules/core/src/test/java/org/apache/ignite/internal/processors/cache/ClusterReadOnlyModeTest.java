@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -162,7 +162,7 @@ public class ClusterReadOnlyModeTest extends ClusterReadOnlyModeAbstractTest {
                 Exception e = eMap.get(cacheName);
 
                 assertNotNull(cacheName, e);
-                assertTrue(cacheName + " " + e, X.hasCause(e, ClusterReadOnlyModeCheckedException.class));
+                assertTrue(cacheName + " " + e, X.hasCause(e, IgniteClusterReadOnlyException.class));
             }
         }
         finally {
