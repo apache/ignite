@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -114,6 +115,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,7 +138,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
-public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
+public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteSnapshot {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -895,6 +897,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     public File snapshotWorkDir(String snpName) {
         return new File(snapshotWorkDir(), snpName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> createSnapshot(String name) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> restoreSnapshot(String name) {
+        return null;
     }
 
     /**
