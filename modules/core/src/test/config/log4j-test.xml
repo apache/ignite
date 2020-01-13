@@ -106,6 +106,7 @@
         </category>
     -->
 
+<!--
     <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
         <level value="DEBUG"/>
     </category>
@@ -133,6 +134,7 @@
     <category name="org.apache.ignite.internal.processors.cache.preload">
         <level value="DEBUG"/>
     </category>
+-->
 
     <!--
         Uncomment to enable transactions debugging.

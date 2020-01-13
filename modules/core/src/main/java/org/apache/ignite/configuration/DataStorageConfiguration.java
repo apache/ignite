@@ -99,7 +99,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final String DFLT_DATA_REG_DEFAULT_NAME = "default";
 
     /** */
-    public static final int DFLT_CHECKPOINT_FREQ = 180_000;
+    public static final int DFLT_CHECKPOINT_FREQ = 180000;
 
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
