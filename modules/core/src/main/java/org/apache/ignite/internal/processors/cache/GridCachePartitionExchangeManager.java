@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -3135,6 +3136,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
+                    Map<Integer, GridDhtPreloaderAssignments> fileAssignsMap = null;
+
+                    GridPartitionFilePreloader filePreloader = cctx.filePreloader();
+
                     boolean forcePreload = false;
 
                     GridDhtPartitionExchangeId exchId;
@@ -3309,6 +3314,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
                             assignsMap = new HashMap<>();
+                            fileAssignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
 
@@ -3323,7 +3329,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                assignsMap.put(grp.groupId(), assigns);
+                                if (!forcePreload && filePreloader != null && filePreloader.required(grp))
+                                    fileAssignsMap.put(grp.groupId(), assigns);
+                                else
+                                    assignsMap.put(grp.groupId(), assigns);
 
                                 if (resVer == null && !grp.isLocal())
                                     resVer = grp.topology().readyTopologyVersion();
@@ -3339,6 +3348,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
+                        Runnable loadFilesStarter = null;
+
+                        if (filePreloader != null && !forcePreload)
+                            loadFilesStarter = filePreloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
+
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
@@ -3357,7 +3371,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Runnable r = null;
-                        Runnable loadFilesStarter = null;
 
                         List<String> rebList = new LinkedList<>();
 
@@ -3368,11 +3381,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        GridPartitionFilePreloader preloader = cctx.filePreloader();
-
-                        if (preloader != null && !forcePreload)
-                            loadFilesStarter = preloader.addNodeAssignments(assignsMap, resVer, cnt, exchFut);
-
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -3381,14 +3389,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
-
-                                if (cctx.filePreloader() != null &&
-                                    cctx.filePreloader().required(grp, assigns)) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("File rebalance required [grp=" + grp.cacheOrGroupName() + "]");
-
-                                    continue;
-                                }
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,

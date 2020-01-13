@@ -174,7 +174,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!supports(grp))
                 continue;
 
-            if (!locJoinBaselineChange && !hasReadOnlyParts(grp)) {
+            if (!locJoinBaselineChange && !required(grp)) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
@@ -195,16 +195,17 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param assignments A map of cache assignments grouped by grpId.
+     * @param topVer Current topology version.
      * @param rebalanceId Current rebalance id.
      * @param exchFut Exchange future.
+     * @param assignments A map of cache assignments grouped by grpId.
      * @return Runnable to execute the chain.
      */
     public Runnable addNodeAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignments,
         AffinityTopologyVersion topVer,
         long rebalanceId,
-        GridDhtPartitionsExchangeFuture exchFut
+        GridDhtPartitionsExchangeFuture exchFut,
+        Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = sortAssignments(assignments);
 
@@ -325,35 +326,20 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Check whether file rebalancing is required for the cache group.
-     *
-     * @param grp The corresponding to assignments cache group context.
-     * @param assignments Preloading assignments.
-     * @return {@code True} if cache must be rebalanced by sending files.
+     * @param grp Cache group.
+     * @return {@code True} if file rebalancing required for the specified group.
      */
-    public boolean required(CacheGroupContext grp, GridDhtPreloaderAssignments assignments) {
-        if (assignments == null || assignments.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("File rebalancing skipped, empty assignments [grp=" + grp.cacheOrGroupName() + "]");
-
+    public boolean required(CacheGroupContext grp) {
+        if (grp == null)
             return false;
+
+        // File rebalancing should started if at least one partition is at read-only mode.
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+            if (part.dataStore().readOnly())
+                return true;
         }
 
-        if (!supports(grp, assignments.keySet())) {
-            if (log.isDebugEnabled())
-                log.debug("File rebalancing skipped, not supported [grp=" + grp.cacheOrGroupName() + "]");
-
-            return false;
-        }
-
-        if (!hasReadOnlyParts(grp))
-            return false;
-
-        // For now mixed rebalancing modes are not supported.
-        for (GridDhtPartitionDemandMessage msg : assignments.values())
-            assert !msg.partitions().hasHistorical();
-
-        return true;
+        return false;
     }
 
     /**
@@ -413,19 +399,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         });
 
         return endFut;
-    }
-
-    /**
-     * @param grp Cache group.
-     * @return {@code True} if at least one partition of a specified group is in read-only mode.
-     */
-    private boolean hasReadOnlyParts(CacheGroupContext grp) {
-        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.dataStore().readOnly())
-                return true;
-        }
-
-        return false;
     }
 
     /**
@@ -498,7 +471,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /**
      * @param assignsMap The map of cache groups assignments to process.
-     * @return The map of cache assignments <tt>[group_order, [node, [group_id, partitions]]]</tt>
+     * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
     private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap) {
@@ -511,8 +484,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             GridDhtPreloaderAssignments assigns = grpEntry.getValue();
 
-            if (!required(grp, assigns))
-                continue;
+            assert required(grp);
 
             int grpOrderNo = grp.config().getRebalanceOrder();
 
