@@ -211,12 +211,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             Random r = new Random();
 
-            final int idPmeDisabled = r.nextInt(nodes);
+            final int idxPmeDisabled = r.nextInt(nodes);
 
             for (int i = 0; i < nodes; i++) {
-                if (i == idPmeDisabled) {
+                if (i == idxPmeDisabled) {
                     System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-                    igniteNotSupportPmeFreeSwitch.set(startGrid(idPmeDisabled));
+                    igniteNotSupportPmeFreeSwitch.set(startGrid(idxPmeDisabled));
                     System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
                 }
                 else
