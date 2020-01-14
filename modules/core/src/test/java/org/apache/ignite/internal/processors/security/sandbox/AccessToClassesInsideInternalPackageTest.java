@@ -21,10 +21,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessControlException;
 import java.security.Permissions;
-import java.security.Security;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
@@ -33,7 +33,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -147,12 +146,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
      */
     @AfterClass
     public static void afterClass() {
-        String packAccess = Security.getProperty("package.access");
-
-        if (packAccess.equals(IGNITE_INTERNAL_PACKAGE))
-            Security.setProperty("package.access", null);
-        else if (packAccess.contains(',' + IGNITE_INTERNAL_PACKAGE))
-            Security.setProperty("package.access", packAccess.replace(',' + IGNITE_INTERNAL_PACKAGE, ""));
+        SecurityUtils.removeIgnitePackageFromPackageAccessProperty();
     }
 
     /**

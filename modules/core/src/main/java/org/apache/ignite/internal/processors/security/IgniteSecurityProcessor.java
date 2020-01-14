@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -57,6 +58,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
+
+    /** Number of started nodes with the sandbox enabled. */
+    private static final AtomicInteger SANDBOXED_NODES_COUNTER = new AtomicInteger();
 
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
@@ -197,19 +201,37 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * Updates the package access property to specify the internal Ignite package.
      */
     private void updatePackageAccessProperty() {
-        String packAccess = Security.getProperty("package.access");
+        synchronized (SANDBOXED_NODES_COUNTER) {
+            if (SANDBOXED_NODES_COUNTER.incrementAndGet() == 1) {
+                String packAccess = Security.getProperty("package.access");
 
-        if (!F.isEmpty(packAccess)) {
-            if (!packAccess.contains(IGNITE_INTERNAL_PACKAGE))
-                Security.setProperty("package.access", packAccess + ',' + IGNITE_INTERNAL_PACKAGE);
+                if (!F.isEmpty(packAccess)) {
+                    if (!packAccess.contains(IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", packAccess + ',' + IGNITE_INTERNAL_PACKAGE);
+                }
+                else
+                    Security.setProperty("package.access", IGNITE_INTERNAL_PACKAGE);
+            }
         }
-        else
-            Security.setProperty("package.access", IGNITE_INTERNAL_PACKAGE);
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        clearPackageAccessProperty();
+
         secPrc.stop(cancel);
+    }
+
+    /**
+     *
+     */
+    private synchronized void clearPackageAccessProperty() {
+        if (hasSecurityManager() && secPrc.sandboxEnabled()) {
+            synchronized (SANDBOXED_NODES_COUNTER) {
+                if (SANDBOXED_NODES_COUNTER.decrementAndGet() == 0)
+                    SecurityUtils.removeIgnitePackageFromPackageAccessProperty();
+            }
+        }
     }
 
     /** {@inheritDoc} */
