@@ -201,7 +201,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * and Partition Exchange is absent when this nodes is stoped.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode() throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes() throws Exception {
         new Thread(() -> {
             System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
 
