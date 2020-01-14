@@ -22,7 +22,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,7 +59,11 @@ public abstract class SslAbstractNodeAttributesFactory implements Factory<Map<St
                 Certificate[] certs = clientKeyStore.getCertificateChain(alias);
                 JdkMarshaller marshaller = MarshallerUtils.jdkMarshaller(null);
 
-                return Collections.singletonMap(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller, certs));
+                HashMap<String, Object> map = new HashMap<>();
+
+                map.put(ATTR_SECURITY_CERTIFICATES, U.marshal(marshaller, certs));
+
+                return map;
             }
         }
         catch (Exception e) {

@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  */
 public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
     /** Security certificates attribute name. Attribute is not available via public API. */
-    public static final String ATTR_SECURITY_CERTIFICATES = /*ATTR_PREFIX +*/ "s.security.certs";
+    public static final String ATTR_SECURITY_CERTIFICATES = "attr.security.certs";
 
     /** Check ssl certificates. */
     protected final boolean checkSslCerts;

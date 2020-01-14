@@ -140,12 +140,17 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      * @return Grid client configuration.
      */
     protected GridClientConfiguration getGridClientConfiguration() {
+        Map<String, Object> userAttrs = new SslClientNodeAttributesFactory().create();
+
+        if (fail)
+            userAttrs.clear();
+
         return new GridClientConfiguration()
             .setSslContextFactory(getClientSslContextFactory()::create)
             .setRouters(Collections.singletonList("127.0.0.1:11211"))
             .setSecurityCredentialsProvider(
                 new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
-            .setUserAttributes(fail ? null : new SslClientNodeAttributesFactory().create());
+            .setUserAttributes(userAttrs);
     }
 
     /**
