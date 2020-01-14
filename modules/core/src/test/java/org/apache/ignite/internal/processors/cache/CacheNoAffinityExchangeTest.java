@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -58,13 +59,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static java.lang.Boolean.TRUE;
+
 /**
  *
  */
 public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
-    /** */
-    private volatile boolean startClient;
-
     /** */
     private volatile boolean startClientCaches;
 
@@ -98,7 +98,14 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
 
-        if (startClient) {
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        cfg = super.optimize(cfg);
+
+        if (cfg.isClientMode() == TRUE) {
             // It is necessary to ensure that client always connects to grid(0).
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
 
@@ -120,8 +127,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        startClient = false;
 
         startClientCaches = false;
 
@@ -152,8 +157,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         discoSpi.latch = latch;
-
-        startClient = true;
 
         startClientGrid(4);
 
@@ -204,8 +207,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() ->
             new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
             5_000));
-
-        startClient = true;
 
         startClientGrid(4);
 
@@ -264,11 +265,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setCacheMode(CacheMode.REPLICATED));
 
-            startClient = true;
-
-            Ignite client = startGrid("client");
-
-            startClient = false;
+            Ignite client = startClientGrid("client");
 
             stopGrid(1);
             stopGrid(2);
@@ -334,9 +331,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        startClient = true;
-
-        IgniteEx stableClient = startGrid(2);
+        IgniteEx stableClient = startClientGrid(2);
 
         IgniteCache<Integer, Integer> stableClientTxCacheProxy = stableClient.createCache(
             new CacheConfiguration<Integer, Integer>()
@@ -351,7 +346,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             @Override public void run() {
                 for (int i = 0; i < 10; i++) {
                     try {
-                        startGrid(3);
+                        startClientGrid(3);
 
                         stopGrid(3);
                     }
@@ -405,11 +400,9 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         discoSpi.latch = latch;
 
-        startClient = true;
-
         startClientCaches = true;
 
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
                 AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
