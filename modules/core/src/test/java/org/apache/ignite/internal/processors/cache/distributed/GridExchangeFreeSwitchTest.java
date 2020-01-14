@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -243,14 +244,14 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicLong cnt = new AtomicLong();
 
-        List<ClusterNode> clusterNodes = new LinkedList<>(ignite.cluster().nodes());
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
         AtomicInteger cntNotSupported = new AtomicInteger();
 
-        boolean pmeExpected = !persistence || !allNodesSupports(clusterNodes, PME_FREE_SWITCH);
+        boolean pmeExpected = !persistence || !allNodesSupports(nodes, PME_FREE_SWITCH);
 
         if (persistence && pmeExpected) {
-            for (ClusterNode cn : clusterNodes) {
+            for (ClusterNode cn : nodes) {
                 if (nodeSupports(cn, PME_FREE_SWITCH))
                     continue;
 
