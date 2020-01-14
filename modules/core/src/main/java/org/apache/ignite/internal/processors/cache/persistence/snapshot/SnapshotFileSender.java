@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-abstract class SnapshotSender {
+abstract class SnapshotFileSender {
     /** Busy processing lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -44,8 +44,8 @@ abstract class SnapshotSender {
     /**
      * @param log Ignite logger to use.
      */
-    protected SnapshotSender(IgniteLogger log) {
-        this.log = log.getLogger(SnapshotSender.class);
+    protected SnapshotFileSender(IgniteLogger log) {
+        this.log = log.getLogger(SnapshotFileSender.class);
     }
 
     /**

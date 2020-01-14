@@ -89,6 +89,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeStoragePath;
 
 /**
  *
@@ -222,7 +223,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        String nodePath = mgr.relativeStoragePath();
+        String nodePath = relativeStoragePath(ig.context().cache().context());
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
             Paths.get(mgr.localSnapshotDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
@@ -280,7 +281,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
+                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snapshotDir0)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -404,7 +405,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snpDir0)) {
+            new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snpDir0)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -692,7 +693,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotSender(log, mgr.localSnapshotSender(snapshotDir0)) {
+                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snapshotDir0)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -781,14 +782,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DeleagateSnapshotSender extends SnapshotSender {
+    private static class DeleagateSnapshotFileSender extends SnapshotFileSender {
         /** Delegate call to. */
-        protected final SnapshotSender delegate;
+        protected final SnapshotFileSender delegate;
 
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagateSnapshotSender(IgniteLogger log, SnapshotSender delegate) {
+        public DeleagateSnapshotFileSender(IgniteLogger log, SnapshotFileSender delegate) {
             super(log);
 
             this.delegate = delegate;
