@@ -92,11 +92,11 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
     /**
      * @param c Consumer that setups a {@link ContinuousQueryWithTransformer}.
-     * @param putVal True if needing put data to a cache.
+     * @param init True if needing put data to a cache before openning a cursor.
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c,
-        boolean putVal) {
+        boolean init) {
         return () -> {
             VERIFIER.register(OPERATION_OPEN_CQ);
 
@@ -104,7 +104,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
 
             c.accept(cq);
 
-            executeQuery(cq, putVal);
+            executeQuery(cq, init);
         };
     }
 

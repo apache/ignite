@@ -81,10 +81,10 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
 
     /**
      * @param c Consumer that setups a {@link ContinuousQuery}.
-     * @param putVal True if needing put data to a cache.
+     * @param init True if needing put data to a cache before openning a cursor.
      * @return Test operation.
      */
-    private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c, boolean putVal) {
+    private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c, boolean init) {
         return () -> {
             VERIFIER.register(OPERATION_OPEN_CQ);
 
@@ -92,7 +92,7 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
 
             c.accept(cq);
 
-            executeQuery(cq, putVal);
+            executeQuery(cq, init);
         };
     }
 
