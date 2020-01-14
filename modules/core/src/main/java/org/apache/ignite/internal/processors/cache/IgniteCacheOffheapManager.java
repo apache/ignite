@@ -1101,14 +1101,6 @@ public interface IgniteCacheOffheapManager {
         public PartitionMetaStorage<SimpleDataRow> partStorage();
 
         /**
-         * Get cache data store.
-         *
-         * @param readOnly Read-only mode flag.
-         * @return Cache data store.
-         */
-//        public CacheDataStore store(boolean readOnly);
-
-        /**
          * Change current cache data store mode.
          *
          * @param readOnly Read-only mode flag.

@@ -246,11 +246,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (grp.persistenceEnabled() && exchFut != null && countersMap.updateCounter(p) != part.initialUpdateCounter()) {
+                if (grp.persistenceEnabled() && exchFut != null &&
+                    countersMap.updateCounter(p) != part.initialUpdateCounter()) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
-
-                    if (nodeId != null && log.isDebugEnabled())
-                        log.debug("Historical supplier [node=" + nodeId + " p=" + p + " grp=" + grp.cacheOrGroupName() + " from=" + part.initialUpdateCounter() + ", to=" + part.updateCounter() + "]");
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
@@ -276,7 +274,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 else {
                     // If for some reason (for example if supplier fails and new supplier is elected) partition is
                     // assigned for full rebalance force clearing if not yet set.
-                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p) && !part.dataStore().readOnly())
+                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p) &&
+                        !part.dataStore().readOnly())
                         part.clearAsync();
 
                     List<ClusterNode> picked = remoteOwners(p, topVer);
@@ -303,8 +302,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             UUID nodeId = exchFut.partitionFileSupplier(grp.groupId(), p, countersMap.updateCounter(p));
 
                             if (nodeId != null) {
-                                if (log.isDebugEnabled())
-                                    log.debug("File supplier [node=" + nodeId + ", p=" + p + ", grp=" + grp.cacheOrGroupName());
+                                if (log.isDebugEnabled()) {
+                                    log.debug("File supplier [node=" + nodeId + ", grp=" +
+                                        grp.cacheOrGroupName() + ", p=" + p + "]");
+                                }
 
                                 n = ctx.discovery().node(nodeId);
 
@@ -338,35 +339,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
         }
 
-        debugInfo(assignments);
-
         return assignments;
-    }
-
-    /**
-     * @param assignments Assignments.
-     */
-    private void debugInfo(GridDhtPreloaderAssignments assignments) {
-        if (!log.isDebugEnabled())
-            return;
-
-        StringBuilder buf = new StringBuilder("\n****************************************\n\tAssignments on " + ctx.localNodeId() + " grp="+grp.cacheOrGroupName() + "\n");
-
-        for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> entry : assignments.entrySet()) {
-            buf.append("\t\tNode ").append(entry.getKey().id()).append("\n");
-
-            buf.append("\t\t\tfull parts: \n");
-
-            for (Integer p : entry.getValue().partitions().fullSet())
-                buf.append("\t\t\t\t").append(p).append("\n");
-
-            buf.append("\t\t\tHist parts: \n");
-
-            for (Integer p : entry.getValue().partitions().historicalSet())
-                buf.append("\t\t\t\t").append(p).append("\n");
-        }
-
-        log.debug(buf.toString());
     }
 
     /** {@inheritDoc} */

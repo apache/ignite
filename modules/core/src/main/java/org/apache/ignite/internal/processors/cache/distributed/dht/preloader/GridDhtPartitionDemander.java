@@ -1458,12 +1458,8 @@ public class GridDhtPartitionDemander {
          */
         private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
-                if (updateState && grp.localWalEnabled()) {
-                    boolean owned = grp.topology().own(grp.topology().localPartition(p));
-
-                    if (log.isDebugEnabled())
-                        log.debug(grp.cacheOrGroupName() + " own p=" + p + ", owned=" + owned);
-                }
+                if (updateState && grp.localWalEnabled())
+                    grp.topology().own(grp.topology().localPartition(p));
 
                 if (isDone())
                     return;

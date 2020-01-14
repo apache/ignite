@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -157,7 +159,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** */
     @GridToStringExclude
-    private volatile IgniteCacheOffheapManager.CacheDataStore store;
+    private volatile CacheDataStore store;
 
     /** Set if failed to move partition to RENTING state due to reservations, to be checked when
      * reservation is released. */
@@ -295,7 +297,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return Data store.
      */
-    public IgniteCacheOffheapManager.CacheDataStore dataStore() {
+    public CacheDataStore dataStore() {
         return store;
     }
 
@@ -394,7 +396,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize) {
-                U.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
                     "[grpId=" + this.grp.groupId() +
                     ", partId=" + id() +
                     ", grpParts=" + this.grp.affinity().partitions() +
@@ -633,7 +635,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             GridDhtPartitionState partState = getPartState(state);
 
-            assert partState == OWNING || partState == RENTING : "Only partitions in state OWNING or RENTING can be moved to MOVING state: " + partState;
+            assert partState == OWNING || partState == RENTING :
+                "Only partitions in state OWNING or RENTING can be moved to MOVING state [state=" + partState + "]";
 
             if (casState(state, MOVING))
                 break;
@@ -765,6 +768,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * This enforces clearing happens before sending demand requests.
      */
     public void clearAsync() {
+        assert !dataStore().readOnly() : "grp=" + grp.cacheOrGroupName() + ", p=" + id;
+
         GridDhtPartitionState state0 = state();
 
         if (state0 != MOVING && state0 != RENTING)

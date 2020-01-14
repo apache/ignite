@@ -135,8 +135,6 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     @Override public Iterator<long[]> iterator();
 
     /**
-     * todo naming
-     *
      * @return Highest applied counter.
      */
     public long highestAppliedCounter();

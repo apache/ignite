@@ -2347,15 +2347,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.debug("local reserved: " + localReserved);
 
                 for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                    boolean success = cctx.database().reserveHistoryForPreloading(
+                    boolean reserved = cctx.database().reserveHistoryForPreloading(
                         e.getKey().get1(), e.getKey().get2(), e.getValue());
 
                     // We can't fail here since history is reserved for exchange.
-                    assert success;
+                    assert reserved : "History was not reserved";
 
-                    if (!success) {
-                        // TODO: how to handle?
-                        err = new IgniteCheckedException("Could not reserve history");
+                    if (!reserved) {
+                        // In case of disabled assertions.
+                        err = new IgniteCheckedException("Could not reserve history for preloading");
                     }
                 }
             }
@@ -3285,10 +3285,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CounterWithNodes maxCntrObj = maxCntrs.get(p);
 
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
-
-            // todo think carefully
-//            if (minCntr == maxCntr) // && allOwners(top))
-//                continue;
 
             // todo historical rebalancing and file rebalancing could not start on same group at the same time.
             if (localReserved != null) {

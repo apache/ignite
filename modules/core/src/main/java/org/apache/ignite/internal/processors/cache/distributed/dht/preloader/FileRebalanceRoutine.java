@@ -91,7 +91,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** Unique partition identifier with node identifier. */
-    private final Map<Long, UUID> partsToNodes = new HashMap<>();
+    private final Map<Long, UUID> partsToNodes = new ConcurrentHashMap<>();
 
     /** The remaining groups with the number of partitions. */
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
@@ -138,7 +138,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         orderedAssgnments = assigns;
         topVer = startVer;
-        log = cctx == null ? null : cctx.logger(this.getClass());
+        log = cctx == null ? null : cctx.logger(getClass());
     }
 
     /**
@@ -297,13 +297,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 }
             });
 
-            int received = receivedCnt.incrementAndGet();
-
-            if (received == partsToNodes.size()) {
-                if (log.isDebugEnabled())
-                    log.debug("All partition files received - triggering checkpoint to finish file rebalancing.");
-
-                cctx.database().wakeupForCheckpoint("Checkpoint required to finish rebalancing.");
+            if (receivedCnt.incrementAndGet() == partsToNodes.size()) {
+                // All partition files are received and it is necessary to force checkpoint
+                // to complete file rebalancing process.
+                cctx.database().wakeupForCheckpoint("Partition files preload complete.");
             }
         }
         catch (IOException | IgniteCheckedException e) {
@@ -327,7 +324,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         cntrs.put(partId, cntr);
 
-        if (partsCnt == cntrs.size())
+        if (partsCnt == cntrs.size() && remaining.remove(grpId) != null)
             onCacheGroupDone(grpId, cntrs);
     }
 
@@ -336,9 +333,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
      */
     private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
-        if (remaining.remove(grpId) == null)
-            return;
-
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
         assert !grp.localWalEnabled() : "grp=" + grp.cacheOrGroupName();
@@ -371,7 +365,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         if (qryProc.moduleEnabled()) {
             if (log.isInfoEnabled())
-                log.info("Starting index rebuild for cache group: " + grp.cacheOrGroupName());
+                log.info("Starting index rebuild [grp=" + grp.cacheOrGroupName() + "]");
 
             for (GridCacheContext ctx : grp.caches()) {
                 IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
@@ -421,7 +415,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         return true;
 
                     if (log.isInfoEnabled())
-                        log.info("Cancelling file rebalancing.");
+                        log.info("Cancelling file rebalancing [topVer=" + topVer + "]");
+
+                    if (snapFut != null && !snapFut.isDone()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
+
+                        snapFut.cancel();
+                    }
 
                     abortCb.run();
 
@@ -430,13 +431,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                             if (!fut.isDone())
                                 fut.get(MAX_MEM_CLEANUP_TIMEOUT);
                         }
-                    }
-
-                    if (snapFut != null && !snapFut.isDone()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
-
-                        snapFut.cancel();
                     }
 
                     if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
@@ -665,8 +659,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
-                if (log.isDebugEnabled())
-                    log.debug("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
+                if (log.isInfoEnabled())
+                    log.info("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
             }
         }
     }

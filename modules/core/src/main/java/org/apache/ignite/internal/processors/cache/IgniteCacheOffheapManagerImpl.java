@@ -1272,7 +1272,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected IgniteCacheOffheapManager.CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
+    protected CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
         CacheDataRowStore rowStore = new CacheDataRowStore(grp, grp.freeList(), p);
@@ -1291,10 +1291,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             lsnr
         );
 
-        return new CacheDataStoreImpl(
-            p,
-            rowStore,
-            dataTree);
+        return new CacheDataStoreImpl(p, rowStore, dataTree);
     }
 
     /** {@inheritDoc} */
@@ -1318,7 +1315,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             boolean removed = partDataStores.remove(p, store);
 
-            assert removed : "cache=" + grp.cacheOrGroupName() + " p=" + p;
+            assert removed : "grp=" + grp.cacheOrGroupName() + " p=" + p;
 
             destroyCacheDataStore0(store);
         }
@@ -1505,7 +1502,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void reinit() {
-            throw new IllegalStateException("Re-initialization of non-persisted partition is redundant.");
+            throw new UnsupportedOperationException("Re-initialization of non-persisted partition is not supported.");
         }
 
         /** {@inheritDoc} */
