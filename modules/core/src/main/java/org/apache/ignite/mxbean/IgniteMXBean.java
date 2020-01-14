@@ -497,16 +497,6 @@ public interface IgniteMXBean {
     void clearNodeLocalMap();
 
     /**
-     * Resets metrics for of a given registry.
-     *
-     * @param registry Metrics registry name.
-     */
-    @MXBeanDescription("Resets metrics of a given registry.")
-    @MXBeanParametersNames("registry")
-    @MXBeanParametersDescriptions("Metrics registry.")
-    public void resetMetrics(String registry);
-
-    /**
      * Gets cluster read-only mode status.
      *
      * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.

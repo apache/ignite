@@ -464,7 +464,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
+    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -478,7 +478,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 
