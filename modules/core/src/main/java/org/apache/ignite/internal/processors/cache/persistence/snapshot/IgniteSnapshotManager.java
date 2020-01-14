@@ -183,7 +183,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static final String SNP_NAME_PARAM = "snpName";
 
     /** Map of registered cache snapshot processes and their corresponding contexts. */
-    private final ConcurrentMap<String, LocalSnapshotContext> locSnpCtxs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, SnapshotTask> locSnpCtxs = new ConcurrentHashMap<>();
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -295,206 +295,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         storeFactory = storeMgr::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-        dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
-            @Override public void beforeCheckpointBegin(Context ctx) {
-                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
-                    // Gather partitions metainfo for thouse which will be copied.
-                    if (!sctx0.state(SnapshotState.MARK))
-                        continue;
-
-                    ctx.collectPartStat(sctx0.parts);
-
-                    ctx.cpFinishFut().listen(f -> {
-                        if (f.error() == null)
-                            sctx0.cpEndFut.complete(true);
-                        else
-                            sctx0.cpEndFut.completeExceptionally(f.error());
-                    });
-                }
-            }
-
-            @Override public void onMarkCheckpointBegin(Context ctx) {
-                // Write lock is helded. Partition counters has been collected under write lock
-                // in another checkpoint listeners.
-            }
-
-            @Override public void onMarkCheckpointEnd(Context ctx) {
-                // Under the write lock here. It's safe to add new stores.
-                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
-                    if (!sctx0.state(SnapshotState.START))
-                        continue;
-
-                    try {
-                        PartitionAllocationMap allocationMap = ctx.partitionStatMap();
-
-                        allocationMap.prepareForSnapshot();
-
-                        for (GroupPartitionId pair : sctx0.parts) {
-                            PagesAllocationRange allocRange = allocationMap.get(pair);
-
-                            GridDhtLocalPartition part = pair.getPartitionId() == INDEX_PARTITION ? null :
-                                cctx.cache()
-                                    .cacheGroup(pair.getGroupId())
-                                    .topology()
-                                    .localPartition(pair.getPartitionId());
-
-                            // Partition can be reserved.
-                            // Partition can be MOVING\RENTING states.
-                            // Index partition will be excluded if not all partition OWNING.
-                            // There is no data assigned to partition, thus it haven't been created yet.
-                            assert allocRange != null || part == null || part.state() != GridDhtPartitionState.OWNING :
-                                "Partition counters has not been collected " +
-                                "[pair=" + pair + ", snpName=" + sctx0.snpName + ", part=" + part + ']';
-
-                            if (allocRange == null) {
-                                List<GroupPartitionId> missed = sctx0.parts.stream()
-                                    .filter(allocationMap::containsKey)
-                                    .collect(Collectors.toList());
-
-                                sctx0.acceptException(new IgniteCheckedException("Snapshot operation cancelled due to " +
-                                    "not all of requested partitions has OWNING state [missed=" + missed + ']'));
-
-                                break;
-                            }
-
-                            PageStore store = storeMgr.getStore(pair.getGroupId(), pair.getPartitionId());
-
-                            sctx0.partFileLengths.put(pair, store.size());
-                            sctx0.partDeltaWriters.get(pair).init(allocRange.getCurrAllocatedPageCnt());
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        sctx0.acceptException(e);
-                    }
-                }
-            }
-
-            @Override public void onCheckpointBegin(Context ctx) {
-                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
-                    if (!sctx0.state(SnapshotState.STARTED))
-                        continue;
-
-                    // Submit all tasks for partitions and deltas processing.
-                    List<CompletableFuture<Void>> futs = new ArrayList<>();
-                    FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
-
-                    if (log.isInfoEnabled())
-                        log.info("Submit partition processings tasks with partition allocated lengths: " + sctx0.partFileLengths);
-
-                    // Process binary meta.
-                    futs.add(CompletableFuture.runAsync(
-                        wrapExceptionally(() ->
-                                sctx0.snpSndr.sendBinaryMeta(cctx.kernalContext()
-                                    .cacheObjects()
-                                    .metadataTypes()),
-                            sctx0),
-                        sctx0.exec));
-
-                    // Process marshaller meta.
-                    futs.add(CompletableFuture.runAsync(
-                        wrapExceptionally(() ->
-                                sctx0.snpSndr.sendMarshallerMeta(cctx.kernalContext()
-                                    .marshallerContext()
-                                    .getCachedMappings()),
-                            sctx0),
-                        sctx0.exec));
-
-                    // Process cache group configuration files.
-                    sctx0.parts.stream()
-                        .map(GroupPartitionId::getGroupId)
-                        .collect(Collectors.toSet())
-                        .forEach(grpId ->
-                            futs.add(CompletableFuture.runAsync(() -> {
-                                    wrapExceptionally(() -> {
-                                            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-                                            if (gctx == null) {
-                                                throw new IgniteCheckedException("Cache group configuration has not found " +
-                                                    "due to the cache group is stopped: " + grpId);
-                                            }
-
-                                            List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
-
-                                            if (ccfgs == null)
-                                                return;
-
-                                            for (File ccfg0 : ccfgs)
-                                                sctx0.snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
-                                        },
-                                        sctx0);
-                                },
-                                sctx0.exec)
-                            )
-                        );
-
-                    // Process partitions.
-                    for (GroupPartitionId pair : sctx0.parts) {
-                        CacheGroupContext gctx = cctx.cache().cacheGroup(pair.getGroupId());
-
-                        if (gctx == null) {
-                            sctx0.acceptException(new IgniteCheckedException("Cache group context has not found " +
-                                "due to the cache group is stopped: " + pair));
-                        }
-
-                        CacheConfiguration ccfg = gctx.config();
-
-                        assert ccfg != null : "Cache configuraction cannot be empty on snapshot creation: " + pair;
-
-                        String cacheDirName = cacheDirName(ccfg);
-                        Long partLen = sctx0.partFileLengths.get(pair);
-
-                        CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                            wrapExceptionally(() -> {
-                                    sctx0.snpSndr.sendPart(
-                                        getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
-                                        cacheDirName,
-                                        pair,
-                                        partLen);
-
-                                    // Stop partition writer.
-                                    sctx0.partDeltaWriters.get(pair).markPartitionProcessed();
-                                },
-                                sctx0),
-                            sctx0.exec)
-                            // Wait for the completion of both futures - checkpoint end, copy partition.
-                            .runAfterBothAsync(sctx0.cpEndFut,
-                                wrapExceptionally(() -> {
-                                        File delta = getPartionDeltaFile(cacheWorkDir(sctx0.nodeSnpDir, cacheDirName),
-                                            pair.getPartitionId());
-
-                                        sctx0.snpSndr.sendDelta(delta, cacheDirName, pair);
-
-                                        boolean deleted = delta.delete();
-
-                                        assert deleted;
-                                    },
-                                    sctx0),
-                                sctx0.exec);
-
-                        futs.add(fut0);
-                    }
-
-                    int futsSize = futs.size();
-
-                    CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-                        .whenComplete((res, t) -> {
-                            assert t == null : "Excepction must never be thrown since a wrapper is used " +
-                                "for each snapshot task: " + t;
-
-                            LocalSnapshotContext snpCtx = locSnpCtxs.remove(sctx0.snpName);
-
-                            snpCtx.close();
-                        });
-                }
-
-                for (LocalSnapshotContext sctx0 : locSnpCtxs.values()) {
-                    // Close outpdated snapshots
-                    if (sctx0.state == SnapshotState.STOPPING)
-                        CompletableFuture.runAsync(sctx0::close, sctx0.exec);
-                }
-            }
-        });
-
         // Receive remote snapshots requests.
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -585,10 +385,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                for (LocalSnapshotContext sctc : locSnpCtxs.values()) {
-                    if (sctc.srcNodeId.equals(evt.eventNode().id())) {
-                        sctc.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
+                for (SnapshotTask sctx : locSnpCtxs.values()) {
+                    if (sctx.srcNodeId.equals(evt.eventNode().id())) {
+                        sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                             "creation has left the grid"));
+
+                        CompletableFuture.runAsync(sctx::close, sctx.exec);
                     }
                 }
 
@@ -824,7 +626,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         try {
             dbMgr.removeCheckpointListener(cpLsnr);
 
-            for (LocalSnapshotContext sctx : locSnpCtxs.values()) {
+            for (SnapshotTask sctx : locSnpCtxs.values()) {
                 // Try stop all snapshot processing if not yet.
                 sctx.close(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
@@ -851,8 +653,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Relative configured path of presistence data storage directory for the local node.
      */
-    public String relativeStoragePath() throws IgniteCheckedException {
-        PdsFolderSettings pCfg = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+    public static String relativeStoragePath(GridCacheSharedContext cctx0) throws IgniteCheckedException {
+        PdsFolderSettings pCfg = cctx0.kernalContext().pdsFolderResolver().resolveFolders();
 
         return Paths.get(DB_DEFAULT_FOLDER, pCfg.folderName()).toString();
     }
@@ -928,7 +730,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpRunner,
                 localSnapshotSender(rootSnpDir0));
 
-            LocalSnapshotContext sctx = locSnpCtxs.get(snpName);
+            SnapshotTask sctx = locSnpCtxs.get(snpName);
 
             assert sctx != null : "Just started snapshot cannot has an empty context: " + snpName;
 
@@ -939,8 +741,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
             // right afther current will be completed.
-            if (sctx.state.ordinal() == SnapshotState.INIT.ordinal())
-                dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
+            dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
 
             U.await(sctx.startedLatch);
 
@@ -1050,7 +851,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param grps List of cache groups which will be destroyed.
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
-        for (LocalSnapshotContext sctx : locSnpCtxs.values()) {
+        for (SnapshotTask sctx : locSnpCtxs.values()) {
             List<Integer> snpGrps = sctx.parts.stream()
                 .map(GroupPartitionId::getGroupId)
                 .collect(Collectors.toList());
@@ -1071,113 +872,62 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Future which will be completed when snapshot is done.
-     * @throws IgniteCheckedException If initialization fails.
      */
     IgniteInternalFuture<Boolean> scheduleSnapshot(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
         Executor exec,
-        SnapshotSender snpSndr
-    ) throws IgniteCheckedException {
+        SnapshotFileSender snpSndr
+    ) {
         if (locSnpCtxs.containsKey(snpName))
-            throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
         for (Integer grpId : parts.keySet()) {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
             if (gctx == null)
-                throw new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId);
+                return new GridFinishedFuture<>(new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId));
 
             if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
-                throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId);
+                return new GridFinishedFuture<>(new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId));
 
             if (gctx.config().isEncryptionEnabled())
-                throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
+                return new GridFinishedFuture<>(new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId));
         }
 
-        LocalSnapshotContext sctx = null;
-        File nodeSnpDir = null;
-
         if (!busyLock.enterBusy())
-            throw new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']');
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
         try {
-            String dbNodePath = relativeStoragePath();
-            nodeSnpDir = U.resolveWorkDirectory(new File(tmpWorkDir, snpName).getAbsolutePath(), dbNodePath, false);
-
-            sctx = new LocalSnapshotContext(log,
-                snpName,
+            SnapshotTask sctx = new SnapshotTask(cctx,
                 srcNodeId,
+                snpName,
                 snapshotWorkDir(snpName),
-                nodeSnpDir,
-                parts,
                 exec,
+                ioFactory,
                 snpSndr);
 
-            final LocalSnapshotContext sctx0 = sctx;
+            IgniteInternalFuture<Boolean> snpFut = sctx.submit(parts);
 
-            for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
-                CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
-
-                if (gctx == null)
-                    throw new IgniteCheckedException("Cache group context is empty. Cache group has been stopped: " + e);
-
-                // Create cache snapshot directory if not.
-                File grpDir = U.resolveWorkDirectory(sctx.nodeSnpDir.getAbsolutePath(),
-                    cacheDirName(gctx.config()), false);
-
-                U.ensureDirectory(grpDir,
-                    "snapshot directory for cache group: " + gctx.groupId(),
-                    null);
-
-                CompletableFuture<Boolean> cpEndFut0 = sctx.cpEndFut;
-
-                GridIntIterator iter = e.getValue().iterator();
-
-                while (iter.hasNext()) {
-                    int partId = iter.next();
-
-                    GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
-                    PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(),
-                        pair.getPartitionId());
-
-                    sctx.partDeltaWriters.put(pair,
-                        new PageStoreSerialWriter(log,
-                            store,
-                            () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                            () -> sctx0.state == SnapshotState.STOPPED || sctx0.state == SnapshotState.STOPPING,
-                            sctx0::acceptException,
-                            getPartionDeltaFile(grpDir, partId),
-                            ioFactory,
-                            pageSize));
-                }
-            }
-
-            LocalSnapshotContext ctx0 = locSnpCtxs.putIfAbsent(snpName, sctx);
+            SnapshotTask ctx0 = locSnpCtxs.putIfAbsent(snpName, sctx);
 
             assert ctx0 == null : ctx0;
 
-            if (log.isInfoEnabled()) {
-                log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
-                    "listener [sctx=" + sctx + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
-            }
-        }
-        catch (IOException | IgniteCheckedException e) {
-            locSnpCtxs.remove(snpName, sctx);
+            // Schedule snapshot on checkpoint.
+            dbMgr.addCheckpointListener(sctx);
 
-            sctx.close(e);
+            snpFut.listen(f -> {
+                locSnpCtxs.remove(snpName);
 
-            if (nodeSnpDir != null)
-                nodeSnpDir.delete();
+                dbMgr.removeCheckpointListener(sctx);
+            });
 
-            throw new IgniteCheckedException(e);
+            return snpFut;
         }
         finally {
             busyLock.leaveBusy();
         }
-
-        return sctx.snpFut;
     }
 
     /**
@@ -1185,14 +935,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param rootSnpDir Absolute snapshot directory.
      * @return Snapshot receiver instance.
      */
-    SnapshotSender localSnapshotSender(File rootSnpDir) throws IgniteCheckedException {
+    SnapshotFileSender localSnapshotSender(File rootSnpDir) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
-        String dbNodePath = relativeStoragePath();
+        String dbNodePath = relativeStoragePath(cctx);
 
         U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
 
-        return new LocalSnapshotSender(log,
+        return new LocalSnapshotFileSender(log,
             new File(rootSnpDir, dbNodePath),
             ioFactory,
             storeFactory,
@@ -1210,15 +960,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param rmtNodeId Remote node id to send snapshot to.
      * @return Snapshot sender instance.
      */
-    SnapshotSender remoteSnapshotSender(
+    SnapshotFileSender remoteSnapshotSender(
         String snpName,
         UUID rmtNodeId
     ) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
-        String dbNodePath = relativeStoragePath();
+        String dbNodePath = relativeStoragePath(cctx);
 
-        return new RemoteSnapshotSender(log,
+        return new RemoteSnapshotFileSender(log,
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
                 DFLT_INITIAL_SNAPSHOT_TOPIC,
@@ -1289,7 +1039,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param sctx Future to notify.
      * @return Wrapped task.
      */
-    private static Runnable wrapExceptionally(IgniteThrowableRunner exec, LocalSnapshotContext sctx) {
+    private static Runnable wrapExceptionally(IgniteThrowableRunner exec, SnapshotTask sctx) {
         return () -> {
             try {
                 if (sctx.state == SnapshotState.STARTED)
@@ -1690,9 +1440,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class LocalSnapshotContext implements Closeable {
+    private static class SnapshotTask implements DbCheckpointListener, Closeable {
+        /** Shared context. */
+        private final GridCacheSharedContext<?, ?> cctx;
+
         /** Ignite logger */
         private final IgniteLogger log;
+
+        /** Factory to working with delta as file storage. */
+        private final FileIOFactory ioFactory;
 
         /** Node id which cause snapshot operation. */
         private final UUID srcNodeId;
@@ -1702,9 +1458,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** Snapshot workgin directory on file system. */
         private final File snpWorkDir;
-
-        /** Absolute snapshot storage path. */
-        private final File nodeSnpDir;
 
         /** Service to perform partitions copy. */
         private final Executor exec;
@@ -1733,7 +1486,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** Snapshot data sender. */
         @GridToStringExclude
-        private final SnapshotSender snpSndr;
+        private final SnapshotFileSender snpSndr;
 
         /** Collection of partition to be snapshotted. */
         private final List<GroupPartitionId> parts = new ArrayList<>();
@@ -1741,53 +1494,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Checkpoint end future. */
         private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
+        /** Latch to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
+        private final CountDownLatch startedLatch = new CountDownLatch(1);
+
+        /** Absolute snapshot storage path. */
+        private File nodeSnpDir;
+
         /** An exception which has been ocurred during snapshot processing. */
         private volatile Throwable lastTh;
 
         /** {@code true} if operation has been cancelled. */
         private volatile boolean cancelled;
 
-        /** Latch to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
-        private final CountDownLatch startedLatch = new CountDownLatch(1);
-
         /** Phase of the current snapshot process run. */
         private volatile SnapshotState state = SnapshotState.INIT;
 
         /**
          * @param snpName Unique identifier of snapshot process.
-         * @param nodeSnpDir snapshot storage directory.
          * @param exec Service to perform partitions copy.
          */
-        public LocalSnapshotContext(
-            IgniteLogger log,
-            String snpName,
+        public SnapshotTask(
+            GridCacheSharedContext<?, ?> cctx,
             UUID srcNodeId,
+            String snpName,
             File snpWorkDir,
-            File nodeSnpDir,
-            Map<Integer, GridIntList> parts,
             Executor exec,
-            SnapshotSender snpSndr
+            FileIOFactory ioFactory,
+            SnapshotFileSender snpSndr
         ) {
             A.notNull(snpName, "snapshot name cannot be empty or null");
-            A.notNull(nodeSnpDir, "You must secify correct snapshot directory");
-            A.ensure(nodeSnpDir.isDirectory(), "Specified path is not a directory");
             A.notNull(exec, "Executor service must be not null");
             A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
 
-            this.log = log.getLogger(LocalSnapshotContext.class);
+            this.cctx = cctx;
+            this.log = cctx.logger(SnapshotTask.class);
             this.snpName = snpName;
             this.srcNodeId = srcNodeId;
             this.snpWorkDir = snpWorkDir;
-            this.nodeSnpDir = nodeSnpDir;
             this.exec = exec;
+            this.ioFactory = ioFactory;
             this.snpSndr = snpSndr;
-
-            for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
-                GridIntIterator iter = e.getValue().iterator();
-
-                while (iter.hasNext())
-                    this.parts.add(new GroupPartitionId(e.getKey(), iter.next()));
-            }
         }
 
         /**
@@ -1844,7 +1590,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 snpSndr.close(lastTh);
 
-                U.delete(nodeSnpDir);
+                if (nodeSnpDir != null)
+                    U.delete(nodeSnpDir);
 
                 // Delete snapshot directory if no other files exists.
                 try {
@@ -1857,6 +1604,274 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 snpFut.onDone(true, lastTh, cancelled);
             }
+        }
+
+        /**
+         * @param parts Partitions to include to snapshot operation.
+         * @return Future which will be completed when snapshot finishes.
+         */
+        public IgniteInternalFuture<Boolean> submit(Map<Integer, GridIntList> parts) {
+            try {
+                nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), relativeStoragePath(cctx), false);
+
+                for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
+                    CacheGroupContext gctx = cctx.cache().cacheGroup(e.getKey());
+
+                    if (gctx == null)
+                        throw new IgniteCheckedException("Cache group context is empty. Cache group has been stopped: " + e);
+
+                    // Create cache snapshot directory if not.
+                    File grpDir = U.resolveWorkDirectory(nodeSnpDir.getAbsolutePath(),
+                        cacheDirName(gctx.config()), false);
+
+                    U.ensureDirectory(grpDir,
+                        "snapshot directory for cache group: " + gctx.groupId(),
+                        null);
+
+                    CompletableFuture<Boolean> cpEndFut0 = cpEndFut;
+
+                    GridIntIterator iter = e.getValue().iterator();
+
+                    while (iter.hasNext()) {
+                        int partId = iter.next();
+
+                        // Attach processing partitions to current operation.
+                        this.parts.add(new GroupPartitionId(e.getKey(), partId));
+
+                        GroupPartitionId pair = new GroupPartitionId(e.getKey(), partId);
+                        PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(),
+                            pair.getPartitionId());
+
+                        partDeltaWriters.put(pair,
+                            new PageStoreSerialWriter(log,
+                                store,
+                                () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
+                                () -> state == SnapshotState.STOPPED || state == SnapshotState.STOPPING,
+                                this::acceptException,
+                                getPartionDeltaFile(grpDir, partId),
+                                ioFactory,
+                                cctx.kernalContext()
+                                    .config()
+                                    .getDataStorageConfiguration()
+                                    .getPageSize()));
+                    }
+                }
+
+                if (log.isInfoEnabled()) {
+                    log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
+                        "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+                }
+            }
+            catch (IOException | IgniteCheckedException e) {
+                close(e);
+
+                return new GridFinishedFuture<>(e);
+            }
+
+            return snpFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            // Gather partitions metainfo for thouse which will be copied.
+            if (!state(SnapshotState.MARK))
+                return;
+
+            ctx.collectPartStat(parts);
+
+            ctx.cpFinishFut().listen(f -> {
+                if (f.error() == null)
+                    cpEndFut.complete(true);
+                else
+                    cpEndFut.completeExceptionally(f.error());
+
+                // Close snapshot operation if an error with operation occurred on checkpoint begin phase
+                if (state == SnapshotState.STOPPING)
+                    CompletableFuture.runAsync(this::close, exec);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            // Write lock is helded. Partition counters has been collected under write lock
+            // in another checkpoint listeners.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointEnd(Context ctx) {
+            // Under the write lock here. It's safe to add new stores.
+            if (!state(SnapshotState.START))
+                return;
+
+            try {
+                PartitionAllocationMap allocationMap = ctx.partitionStatMap();
+
+                allocationMap.prepareForSnapshot();
+
+                for (GroupPartitionId pair : parts) {
+                    PagesAllocationRange allocRange = allocationMap.get(pair);
+
+                    GridDhtLocalPartition part = pair.getPartitionId() == INDEX_PARTITION ? null :
+                        cctx.cache()
+                            .cacheGroup(pair.getGroupId())
+                            .topology()
+                            .localPartition(pair.getPartitionId());
+
+                    // Partition can be reserved.
+                    // Partition can be MOVING\RENTING states.
+                    // Index partition will be excluded if not all partition OWNING.
+                    // There is no data assigned to partition, thus it haven't been created yet.
+                    assert allocRange != null || part == null || part.state() != GridDhtPartitionState.OWNING :
+                        "Partition counters has not been collected " +
+                            "[pair=" + pair + ", snpName=" + snpName + ", part=" + part + ']';
+
+                    if (allocRange == null) {
+                        List<GroupPartitionId> missed = parts.stream()
+                            .filter(allocationMap::containsKey)
+                            .collect(Collectors.toList());
+
+                        acceptException(new IgniteCheckedException("Snapshot operation cancelled due to " +
+                            "not all of requested partitions has OWNING state [missed=" + missed + ']'));
+
+                        break;
+                    }
+
+                    PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(), pair.getPartitionId());
+
+                    partFileLengths.put(pair, store.size());
+                    partDeltaWriters.get(pair).init(allocRange.getCurrAllocatedPageCnt());
+                }
+            }
+            catch (IgniteCheckedException e) {
+                acceptException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            if (!state(SnapshotState.STARTED))
+                return;
+
+            // Submit all tasks for partitions and deltas processing.
+            List<CompletableFuture<Void>> futs = new ArrayList<>();
+            FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+
+            if (log.isInfoEnabled())
+                log.info("Submit partition processings tasks with partition allocated lengths: " + partFileLengths);
+
+            // Process binary meta.
+            futs.add(CompletableFuture.runAsync(
+                wrapExceptionally(() ->
+                    snpSndr.sendBinaryMeta(cctx.kernalContext()
+                        .cacheObjects()
+                        .metadataTypes())),
+                exec));
+
+            // Process marshaller meta.
+            futs.add(CompletableFuture.runAsync(
+                wrapExceptionally(() ->
+                    snpSndr.sendMarshallerMeta(cctx.kernalContext()
+                        .marshallerContext()
+                        .getCachedMappings())),
+                exec));
+
+            // Process cache group configuration files.
+            parts.stream()
+                .map(GroupPartitionId::getGroupId)
+                .collect(Collectors.toSet())
+                .forEach(grpId ->
+                    futs.add(CompletableFuture.runAsync(() -> {
+                            wrapExceptionally(() -> {
+                                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+                                if (gctx == null) {
+                                    throw new IgniteCheckedException("Cache group configuration has not found " +
+                                        "due to the cache group is stopped: " + grpId);
+                                }
+
+                                List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
+
+                                if (ccfgs == null)
+                                    return;
+
+                                for (File ccfg0 : ccfgs)
+                                    snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
+                            });
+                        },
+                        exec)
+                    )
+                );
+
+            // Process partitions.
+            for (GroupPartitionId pair : parts) {
+                CacheGroupContext gctx = cctx.cache().cacheGroup(pair.getGroupId());
+
+                if (gctx == null) {
+                    acceptException(new IgniteCheckedException("Cache group context has not found " +
+                        "due to the cache group is stopped: " + pair));
+                }
+
+                CacheConfiguration ccfg = gctx.config();
+
+                assert ccfg != null : "Cache configuraction cannot be empty on snapshot creation: " + pair;
+
+                String cacheDirName = cacheDirName(ccfg);
+                Long partLen = partFileLengths.get(pair);
+
+                CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
+                    wrapExceptionally(() -> {
+                        snpSndr.sendPart(
+                            getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                            cacheDirName,
+                            pair,
+                            partLen);
+
+                        // Stop partition writer.
+                        partDeltaWriters.get(pair).markPartitionProcessed();
+                    }),
+                    exec)
+                    // Wait for the completion of both futures - checkpoint end, copy partition.
+                    .runAfterBothAsync(cpEndFut,
+                        wrapExceptionally(() -> {
+                            File delta = getPartionDeltaFile(cacheWorkDir(nodeSnpDir, cacheDirName),
+                                pair.getPartitionId());
+
+                            snpSndr.sendDelta(delta, cacheDirName, pair);
+
+                            boolean deleted = delta.delete();
+
+                            assert deleted;
+                        }),
+                        exec);
+
+                futs.add(fut0);
+            }
+
+            int futsSize = futs.size();
+
+            CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
+                .whenComplete((res, t) -> {
+                    assert t == null : "Excepction must never be thrown since a wrapper is used " +
+                        "for each snapshot task: " + t;
+
+                    close();
+                });
+        }
+
+        /**
+         * @param exec Runnable task to execute.
+         * @return Wrapped task.
+         */
+        private Runnable wrapExceptionally(IgniteThrowableRunner exec) {
+            return () -> {
+                try {
+                    if (state == SnapshotState.STARTED)
+                        exec.run();
+                }
+                catch (Throwable t) {
+                    acceptException(t);
+                }
+            };
         }
 
         /** {@inheritDoc} */
@@ -1872,7 +1887,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            LocalSnapshotContext ctx = (LocalSnapshotContext)o;
+            SnapshotTask ctx = (SnapshotTask)o;
 
             return snpName.equals(ctx.snpName);
         }
@@ -1884,7 +1899,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(LocalSnapshotContext.class, this);
+            return S.toString(SnapshotTask.class, this);
         }
     }
 
@@ -1940,7 +1955,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class RemoteSnapshotSender extends SnapshotSender {
+    private static class RemoteSnapshotFileSender extends SnapshotFileSender {
         /** The sender which sends files to remote node. */
         private final GridIoManager.TransmissionSender sndr;
 
@@ -1959,7 +1974,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * @param errHnd Snapshot error handler if transmission sender not started yet.
          * @param snpName Snapshot name.
          */
-        public RemoteSnapshotSender(
+        public RemoteSnapshotFileSender(
             IgniteLogger log,
             GridIoManager.TransmissionSender sndr,
             IgniteThrowableConsumer<String> errHnd,
@@ -2066,7 +2081,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class LocalSnapshotSender extends SnapshotSender {
+    private static class LocalSnapshotFileSender extends SnapshotFileSender {
         /**
          * Local node snapshot directory calculated on snapshot directory.
          */
@@ -2094,7 +2109,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * @param storeFactory Factory to create page store for restore.
          * @param pageSize Size of page.
          */
-        public LocalSnapshotSender(
+        public LocalSnapshotFileSender(
             IgniteLogger log,
             File snpDir,
             FileIOFactory ioFactory,
