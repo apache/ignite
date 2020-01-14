@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * FreeList implementation for cache.
  */
@@ -50,7 +52,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         long metaPageId,
         boolean initNew,
         PageLockListener lockLsnr,
-        GridKernalContext ctx
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -62,7 +65,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             metaPageId,
             initNew,
             lockLsnr,
-            ctx
+            ctx,
+            pageListCacheLimit
         );
     }
 

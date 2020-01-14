@@ -1009,7 +1009,10 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * @return Total pages can be placed in all segments.
      */
-    public long totalPages() {
+    @Override public long totalPages() {
+        if (segments == null)
+            return 0;
+
         long res = 0;
 
         for (Segment segment : segments)

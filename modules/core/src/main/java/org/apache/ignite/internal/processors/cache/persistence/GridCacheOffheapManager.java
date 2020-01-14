@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -115,6 +117,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** */
     private ReuseListImpl reuseList;
 
+    /** Page list cache limit for data region of this cache group. */
+    private AtomicLong pageListCacheLimit;
+
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
 
@@ -136,6 +141,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
+        pageListCacheLimit = ((GridCacheDatabaseSharedManager)ctx.database()).pageListCacheLimitHolder(grp.dataRegion());
+
         reuseList = new ReuseListImpl(
             grp.groupId(),
             grp.cacheOrGroupName(),
@@ -144,7 +151,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
             diagnosticMgr.pageLockTracker().createPageLockTracker(reuseListName),
-            ctx.kernalContext()
+            ctx.kernalContext(),
+            pageListCacheLimit
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -1704,7 +1712,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName),
-                        ctx.kernalContext()
+                        ctx.kernalContext(),
+                        pageListCacheLimit
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
@@ -1728,7 +1737,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         partMetastoreReuseListRoot.pageId().pageId(),
                         partMetastoreReuseListRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(partMetastoreName),
-                        ctx.kernalContext()
+                        ctx.kernalContext(),
+                        pageListCacheLimit
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
