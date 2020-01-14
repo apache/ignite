@@ -880,11 +880,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc == null || loc.state() == EVICTED) {
+            boolean recreate = false;
+
             // Make sure that after eviction partition is destroyed.
-            if (loc != null)
+            if (loc != null) {
                 loc.awaitDestroy();
 
+                recreate = true;
+            }
+
             locParts.set(p, loc = partFactory.create(ctx, grp, p));
+
+            if (recreate)
+                loc.resetUpdateCounter();
 
             long updCntr = cntrMap.updateCounter(p);
 
@@ -912,10 +920,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             GridDhtLocalPartition part = locParts.get(p);
 
-            if (part != null && part.state() != EVICTED)
-                return part;
+            boolean recreate = false;
+
+            if (part != null) {
+                if (part.state() != EVICTED)
+                    return part;
+                else
+                    recreate = true;
+            }
 
             part = new GridDhtLocalPartition(ctx, grp, p, true);
+
+            if (recreate)
+                part.resetUpdateCounter();
 
             locParts.set(p, part);
 
@@ -964,9 +981,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 boolean belongs = partitionLocalNode(p, topVer);
 
+                boolean recreate = false;
+
                 if (loc != null && state == EVICTED) {
                     // Make sure that after eviction partition is destroyed.
                     loc.awaitDestroy();
+
+                    recreate = true;
 
                     locParts.set(p, loc = null);
 
@@ -993,6 +1014,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             ", this.topVer=" + this.readyTopVer + ']');
 
                     locParts.set(p, loc = partFactory.create(ctx, grp, p));
+
+                    if (recreate)
+                        loc.resetUpdateCounter();
 
                     this.updateSeq.incrementAndGet();
 
@@ -1949,8 +1973,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void onExchangeDone(@Nullable GridDhtPartitionsExchangeFuture fut,
-                                         AffinityAssignment assignment,
-                                         boolean updateRebalanceVer) {
+        AffinityAssignment assignment,
+        boolean updateRebalanceVer) {
         lock.writeLock().lock();
 
         try {
@@ -2200,7 +2224,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
 
                                 // Reset counters to zero for triggering full rebalance.
-                                locPart.resetCounters();
+                                locPart.resetUpdateCounter();
                             }
                         }
                     }
@@ -2817,8 +2841,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                long updCntr = part.updateCounter();
                 long initCntr = part.initialUpdateCounter();
+                long updCntr = part.updateCounter();
 
                 if (skipZeros && initCntr == 0L && updCntr == 0L)
                     continue;
