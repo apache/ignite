@@ -3436,7 +3436,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param grpCtx Group context.
          * @param partId Partition ID to destroy.
          */
-        private IgniteInternalFuture<Boolean> addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+        private void addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
             PartitionDestroyRequest req = new PartitionDestroyRequest(grpId, partId);
 
             PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpId, partId), req);
@@ -3445,8 +3445,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 + "[grpId=" + grpId
                 + ", grpName=" + grpCtx.cacheOrGroupName()
                 + ", partId=" + partId + ']';
-
-            return old != null ? old.reqFut : req.reqFut;
         }
 
         /**
@@ -3487,9 +3485,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Destroy future. Not null if partition destroy has begun. */
         private GridFutureAdapter<Void> destroyFut;
 
-        /** Destroy future. Not null if partition destroy has begun. */
-        private GridFutureAdapter<Boolean> reqFut = new GridFutureAdapter<>();
-
         /**
          * @param grpId Group ID.
          * @param partId Partition ID.
@@ -3512,8 +3507,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             cancelled = true;
-
-            reqFut.onDone(false);
 
             return true;
         }
@@ -3545,11 +3538,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             assert destroyFut != null;
 
             destroyFut.onDone(err);
-
-            if (err == null)
-                reqFut.onDone(true);
-            else
-                reqFut.onDone(err);
         }
 
         /**
@@ -4000,7 +3988,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             List<PartitionDestroyRequest> reqs = null;
 
             for (final PartitionDestroyRequest req : destroyQueue.pendingReqs.values()) {
-                if (!req.beginDestroy() || req.reqFut.isCancelled())
+                if (!req.beginDestroy())
                     continue;
 
                 final int grpId = req.grpId;
