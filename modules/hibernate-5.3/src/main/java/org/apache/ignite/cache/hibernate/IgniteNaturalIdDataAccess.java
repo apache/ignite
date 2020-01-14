@@ -28,7 +28,9 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
-/** */
+/**
+ * Implementation of contract for managing transactional and concurrent access to cached naturalId data.
+ */
 public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess implements NaturalIdDataAccess {
     /** */
     private final AccessType accessType;

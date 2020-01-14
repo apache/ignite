@@ -25,7 +25,9 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 
-/** */
+/**
+ * Contract for managing transactional and concurrent collection access to cached collection data.
+ */
 public class IgniteCollectionDataAccess extends IgniteCachedDomainDataAccess implements CollectionDataAccess {
     /** */
     private final AccessType accessType;
