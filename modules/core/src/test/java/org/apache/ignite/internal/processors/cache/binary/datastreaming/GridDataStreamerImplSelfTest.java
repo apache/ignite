@@ -39,8 +39,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
  */
-@RunWith(JUnit4.class)
 public class GridDataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;

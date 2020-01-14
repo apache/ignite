@@ -83,6 +83,7 @@ public class VisorNodeDataCollectorTaskArg extends VisorDataTransferObject {
         this.collectCacheMetrics = collectCacheMetrics;
         this.cacheGrps = cacheGrps;
     }
+
     /**
      * Create task arguments with given parameters.
      *

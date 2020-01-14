@@ -27,24 +27,21 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheClearDuringRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        if(MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
     }
 
     /** {@inheritDoc} */

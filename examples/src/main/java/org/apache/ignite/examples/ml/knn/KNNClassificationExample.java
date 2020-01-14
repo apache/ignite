@@ -17,19 +17,18 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.io.FileNotFoundException;
-import javax.cache.Cache;
-import org.apache.commons.math3.util.Precision;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.ml.knn.NNClassificationModel;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -42,63 +41,53 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * After that it trains the model based on the specified data using
  * <a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm">kNN</a> algorithm.</p>
  * <p>
- * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster
- * does this point belong to, and compares prediction to expected outcome (ground truth).</p>
+ * Finally, this example loops over the test set of data points, applies the trained model to predict what cluster does
+ * this point belong to, and compares prediction to expected outcome (ground truth).</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class KNNClassificationExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            KNNClassificationTrainer trainer = new KNNClassificationTrainer();
+                KNNClassificationTrainer trainer = new KNNClassificationTrainer()
+                    .withK(3)
+                    .withDistanceMeasure(new EuclideanDistance())
+                    .withWeighted(true)
+                    .withDataTtl(60);
 
-            NNClassificationModel knnMdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            ).withK(3)
-                .withDistanceMeasure(new EuclideanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                KNNClassificationModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    MetricName.ACCURACY
+                );
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = knnMdl.predict(inputs);
-
-                    totalAmount++;
-                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
-                        amountOfErrors++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
-
-                System.out.println(">>> kNN multi-class classification algorithm over cached dataset usage example completed.");
+                System.out.println("\n>>> Accuracy " + accuracy);
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

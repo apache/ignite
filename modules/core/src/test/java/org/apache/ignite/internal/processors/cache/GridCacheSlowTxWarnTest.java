@@ -25,8 +25,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,7 +35,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_SLOW_TX_WARN_TIMEOUT}
  * system property.
  */
-@RunWith(JUnit4.class)
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

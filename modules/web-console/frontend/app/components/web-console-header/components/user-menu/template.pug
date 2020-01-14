@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div(
+div.user-menu__trigger(
     ng-class='{active: $ctrl.$state.includes("base.settings")}'
     ng-click='$event.stopPropagation()'
     bs-dropdown='$ctrl.items'
@@ -22,5 +22,5 @@ div(
     data-trigger='hover focus'
     data-container='self'
 )
-    span {{$ctrl.user.firstName}} {{$ctrl.user.lastName}}
+    span.user-menu__username {{$ctrl.user.firstName}} {{$ctrl.user.lastName}}
     span.caret

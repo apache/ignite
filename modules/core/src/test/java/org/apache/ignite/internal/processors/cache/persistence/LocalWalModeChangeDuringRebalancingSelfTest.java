@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,11 +34,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -58,15 +62,13 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean disableWalDuringRebalancing = true;
@@ -98,15 +100,16 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                         .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
-                // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
+                    // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
+                .setWalMode(WALMode.LOG_ONLY)
                 .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
         );
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                // Test checks internal state before and after rebalance, so it is configured to be triggered manually
+                    // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
                 .setBackups(dfltCacheBackupCnt),
 
@@ -172,6 +175,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         super.beforeTestsStarted();
 
         cleanPersistenceDir();
@@ -215,6 +220,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
 
         System.clearProperty(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED);
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -229,9 +236,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWalDisabledDuringRebalancing() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         doTestSimple();
     }
 
@@ -240,9 +244,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         disableWalDuringRebalancing = false;
 
         doTestSimple();
@@ -342,7 +343,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         awaitExchange((IgniteEx)ignite);
 
-        doLoad(cache, 4, 10_000);
+        // Ensure each partition has received an update.
+        for (int k = 0; k < RendezvousAffinityFunction.DFLT_PARTITION_COUNT; k++)
+            cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(2);
 
@@ -382,9 +385,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
@@ -450,7 +450,11 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
             CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
 
-            assertFalse(grpCtx.walEnabled());
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return !grpCtx.walEnabled();
+                }
+            }, 5_000));
         }
 
         // Invoke rebalance manually.
@@ -479,9 +483,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringRebalance() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         doTestParallelExchange(supplyMessageLatch);
     }
 
@@ -490,9 +491,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringCheckpoint() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         doTestParallelExchange(fileIOLatch);
     }
 
@@ -549,9 +547,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -586,7 +581,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cache = newIgnite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
+            assertFalse("k=" + k +", v="  + cache.get(k), cache.containsKey(k));
+
+        Set<Integer> keys = new TreeSet<>();
+
+        for (int k = 0; k < keysCnt; k++)
+            keys.add(k);
+
+        assertFalse(cache.containsKeys(keys));
     }
 
     /**
@@ -819,5 +821,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         @Override public void close() throws IOException {
             delegate.close();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
     }
 }

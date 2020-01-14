@@ -121,6 +121,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -149,6 +150,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         recovery,
+                        readRepair,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -254,7 +256,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         "(added to cancelled locks set): " + req);
                             }
 
-                            entry.touch(topVer);
+                            entry.touch();
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Received unlock request for entry that could not be found: " + req);
@@ -362,7 +364,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             );
 
                             if (!req.inTx())
-                                entry.touch(req.topologyVersion());
+                                entry.touch();
                         }
                         else {
                             if (evicted == null)
@@ -595,7 +597,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         if (topVer.equals(AffinityTopologyVersion.NONE))
                             topVer = ctx.affinity().affinityTopologyVersion();
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         break;
                     }

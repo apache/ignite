@@ -47,14 +47,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
@@ -122,9 +119,6 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Future ID. */
     protected final int nearMiniId;
 
-    /** Partitions. */
-    protected final int[] parts;
-
     /** Transaction. */
     protected final GridDhtTxLocalAdapter tx;
 
@@ -145,6 +139,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
     /** Filter. */
     private final CacheEntryPredicate filter;
+
+    /** Keep binary flag. */
+    protected boolean keepBinary;
 
     /** Timeout object. */
     @GridToStringExclude
@@ -197,11 +194,11 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param threadId Thread ID.
      * @param nearFutId Near future id.
      * @param nearMiniId Near mini future id.
-     * @param parts Partitions.
      * @param tx Transaction.
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
      * @param filter Filter.
+     * @param keepBinary Keep binary flag.
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -209,16 +206,15 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         long threadId,
         IgniteUuid nearFutId,
         int nearMiniId,
-        @Nullable int[] parts,
         GridDhtTxLocalAdapter tx,
         long timeout,
         GridCacheContext<?, ?> cctx,
-        @Nullable CacheEntryPredicate filter) {
+        @Nullable CacheEntryPredicate filter,
+        boolean keepBinary) {
         assert tx != null;
         assert timeout >= 0;
         assert nearNodeId != null;
         assert nearLockVer != null;
-        assert threadId == tx.threadId();
 
         this.threadId = threadId;
         this.cctx = cctx;
@@ -229,8 +225,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.mvccSnapshot = mvccSnapshot;
         this.timeout = timeout;
         this.tx = tx;
-        this.parts = parts;
         this.filter = filter;
+        this.keepBinary = keepBinary;
 
         lockVer = tx.xidVersion();
 
@@ -295,9 +291,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
-                    || fut instanceof GridDhtTxAbstractEnlistFuture
-                    || fut instanceof CompoundLockFuture
-                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+                    || fut instanceof GridDhtTxAbstractEnlistFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
@@ -331,7 +325,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             cctx.time().addTimeoutObject(timeoutObj);
 
         try {
-            checkPartitions(parts);
+            checkCoordinatorVersion();
 
             UpdateSourceIterator<?> it = createIterator();
 
@@ -347,6 +341,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 tx.addActiveCache(cctx, false);
             else // Nothing to do for single update.
                 assert tx.txState().cacheIds().contains(cctx.cacheId()) && tx.txState().cacheIds().size() == 1;
+
+            tx.markQueryEnlisted();
 
             this.it = it;
         }
@@ -431,9 +427,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     assert entryProc != null || !op.isInvoke();
 
-                    tx.markQueryEnlisted(mvccSnapshot);
-
-                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+                    boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
 
                     GridCacheUpdateTxResult res;
 
@@ -473,7 +467,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.noCreate(),
                                         needOldVal,
                                         filter,
-                                        needResult());
+                                        needResult(),
+                                        keepBinary);
 
                                     break;
 
@@ -515,6 +510,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             updateFut.listen(new CI1<IgniteInternalFuture<GridCacheUpdateTxResult>>() {
                                 @Override public void apply(IgniteInternalFuture<GridCacheUpdateTxResult> fut) {
                                     try {
+                                        tx.incrementLockCounter();
+
                                         processEntry(entry0, op, fut.get(), val0, backups0);
 
                                         continueLoop(true);
@@ -529,6 +526,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                             return;
                         }
                     }
+
+                    tx.incrementLockCounter();
 
                     processEntry(entry, op, res, val0, backups);
                 }
@@ -637,7 +636,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         assert updRes != null && updRes.updateFuture() == null;
 
-        onEntryProcessed(entry.key(), updRes);
+        if (op != EnlistOperation.LOCK)
+            onEntryProcessed(entry.key(), updRes);
 
         if (!updRes.success()
             || updRes.filtered()
@@ -697,7 +697,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 batches.put(node.id(), batch = new Batch(node));
 
             if (moving && hist0 == null) {
-                assert !F.isEmpty(hist);
+                assert !F.isEmpty(hist) || val == null;
 
                 hist0 = fetchHistoryInfo(key, hist);
             }
@@ -721,8 +721,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @return History entries.
      * @throws IgniteCheckedException, if failed.
      */
-    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
-        throws IgniteCheckedException {
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
 
         for (int i = 0; i < hist.size(); i++) {
@@ -732,29 +731,32 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 row0.hash(),
                 row0.link(),
                 key.partition(),
-                CacheDataRowAdapter.RowData.NO_KEY,
+                CacheDataRowAdapter.RowData.NO_KEY_WITH_HINTS,
                 row0.mvccCoordinatorVersion(),
                 row0.mvccCounter(),
-                row0.mvccOperationCounter());
+                row0.mvccOperationCounter(),
+                false
+            );
 
             GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
 
+            entry.cacheId(cctx.cacheId());
             entry.version(row.version());
-            entry.mvccVersion(row);
-            entry.newMvccVersion(row);
             entry.value(row.value());
             entry.expireTime(row.expireTime());
 
-            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
-                entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
-            }
+            // Row should be retrieved with actual hints.
+            entry.mvccVersion(row);
+            entry.newMvccVersion(row);
 
-            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
-                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                    row.newMvccOperationCounter()));
-            }
+            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0)
+                entry.mvccTxState(row.mvccTxState());
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
+                && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0)
+                entry.newMvccTxState(row.newMvccTxState());
+
+            assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
 
             res.add(entry);
         }
@@ -920,38 +922,18 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     }
 
     /**
-     * Checks whether all the necessary partitions are in {@link GridDhtPartitionState#OWNING} state.
+     * Checks whether new coordinator was initialized after the snapshot is acquired.
      *
-     * @param parts Partitions.
+     * Need to fit invariant that all updates are finished before a new coordinator is initialized.
+     *
      * @throws ClusterTopologyCheckedException If failed.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void checkPartitions(@Nullable int[] parts) throws ClusterTopologyCheckedException {
-        if (cctx.isLocal() || !cctx.rebalanceEnabled())
-            return;
+    private void checkCoordinatorVersion() throws ClusterTopologyCheckedException {
+        MvccCoordinator crd = cctx.shared().coordinators().currentCoordinator();
 
-        if (parts == null)
-            parts = U.toIntArray(
-                cctx.affinity()
-                    .primaryPartitions(cctx.localNodeId(), tx.topologyVersionSnapshot()));
-
-        GridDhtPartitionTopology top = cctx.topology();
-
-        try {
-            top.readLock();
-
-            for (int i = 0; i < parts.length; i++) {
-                GridDhtLocalPartition p = top.localPartition(parts[i]);
-
-                if (p == null || p.state() != GridDhtPartitionState.OWNING) {
-                    throw new ClusterTopologyCheckedException("Cannot run update query. " +
-                        "Node must own all the necessary partitions.");
-                }
-            }
-        }
-        finally {
-            top.readUnlock();
-        }
+        if (!crd.initialized() || crd.version() != mvccSnapshot.coordinatorVersion())
+            throw new ClusterTopologyCheckedException("Cannot perform update, coordinator was changed: " +
+                "[currentCoordinator=" + crd + ", mvccSnapshot=" + mvccSnapshot + "].");
     }
 
     /**
@@ -1146,16 +1128,17 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (keys == null)
                 keys = new ArrayList<>();
 
-            keys.add(key);
+            if (vals == null && val != null) {
+                vals = new ArrayList<>(U.ceilPow2(keys.size() + 1));
 
-            if (val != null) {
-                if (vals == null)
-                    vals = new ArrayList<>();
-
-                vals.add(val);
+                while (vals.size() != keys.size())
+                    vals.add(null); // Init vals with missed 'nulls'.
             }
 
-            assert (vals == null) || keys.size() == vals.size();
+            keys.add(key);
+
+            if (vals != null)
+                vals.add(val);
         }
 
         /**

@@ -31,6 +31,8 @@ import org.apache.ignite.ml.inference.builder.AsyncModelBuilder;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilder;
 import org.apache.ignite.ml.inference.reader.FileSystemModelReader;
 import org.apache.ignite.ml.inference.reader.ModelReader;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.xgboost.parser.XGModelParser;
 
 /**
@@ -38,19 +40,29 @@ import org.apache.ignite.ml.xgboost.parser.XGModelParser;
  * Ignite.
  */
 public class XGBoostModelParserExample {
-    /** Test model resource name. */
+    /**
+     * Test model resource name.
+     */
     private static final String TEST_MODEL_RES = "examples/src/main/resources/models/xgboost/agaricus-model.txt";
 
-    /** Test data. */
+    /**
+     * Test data.
+     */
     private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/agaricus-test-data.txt";
 
-    /** Test expected results. */
+    /**
+     * Test expected results.
+     */
     private static final String TEST_ER_RES = "examples/src/main/resources/datasets/agaricus-test-expected-results.txt";
 
-    /** Parser. */
+    /**
+     * Parser.
+     */
     private static final XGModelParser parser = new XGModelParser();
 
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String... args) throws ExecutionException, InterruptedException, FileNotFoundException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             File mdlRsrc = IgniteUtils.resolveIgnitePath(TEST_MODEL_RES);
@@ -69,7 +81,7 @@ public class XGBoostModelParserExample {
             if (testExpRes == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
-            try (Model<HashMap<String, Double>, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 
@@ -86,13 +98,16 @@ public class XGBoostModelParserExample {
                             testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));
                     }
 
-                    double prediction = mdl.predict(testObj).get();
+                    double prediction = mdl.predict(VectorUtils.of(testObj)).get();
 
                     double expPrediction = Double.parseDouble(testExpResultsStr);
 
                     System.out.println("Expected: " + expPrediction + ", prediction: " + prediction);
                 }
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

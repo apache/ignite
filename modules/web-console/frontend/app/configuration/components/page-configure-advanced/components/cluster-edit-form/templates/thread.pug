@@ -1,0 +1,207 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'pools'
+-var model = '$ctrl.clonedCluster'
+-var executors = model + '.executorConfiguration'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Thread pools size
+    panel-description Settings for node thread pools.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Public:',
+                    model: model + '.publicThreadPoolSize',
+                    name: '"publicThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'System:',
+                    model: `${model}.systemThreadPoolSize`,
+                    name: '"systemThreadPoolSize"',
+                    placeholder: '{{ ::$ctrl.Clusters.systemThreadPoolSize.default }}',
+                    min: '{{ ::$ctrl.Clusters.systemThreadPoolSize.min }}',
+                    tip: 'Thread pool that is in charge of processing internal system messages'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Service:',
+                    model: model + '.serviceThreadPoolSize',
+                    name: '"serviceThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors) * 2',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing proxy invocation'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Management:',
+                    model: model + '.managementThreadPoolSize',
+                    name: '"managementThreadPoolSize"',
+                    placeholder: '4',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'IGFS:',
+                    model: model + '.igfsThreadPoolSize',
+                    name: '"igfsThreadPoolSize"',
+                    placeholder: 'availableProcessors',
+                    min: '1',
+                    tip: 'Thread pool that is in charge of processing outgoing IGFS messages'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Rebalance:',
+                    model: `${model}.rebalanceThreadPoolSize`,
+                    name: '"rebalanceThreadPoolSize"',
+                    placeholder: '{{ ::$ctrl.Clusters.rebalanceThreadPoolSize.default }}',
+                    min: '{{ ::$ctrl.Clusters.rebalanceThreadPoolSize.min }}',
+                    max: `{{ $ctrl.Clusters.rebalanceThreadPoolSize.max(${model}) }}`,
+                    tip: 'Max count of threads can be used at rebalancing'
+                })
+                    +form-field__error({ error: 'max', message: 'Rebalance thread pool size should not exceed or be equal to System thread pool size' })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Utility cache:',
+                    model: model + '.utilityCacheThreadPoolSize',
+                    name: '"utilityCacheThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Default thread pool size that will be used to process utility cache messages'
+                })
+            .pc-form-grid-col-30
+                form-field-size(
+                    label='Utility cache keep alive time:'
+                    ng-model=`${model}.utilityCacheKeepAliveTime`
+                    name='utilityCacheKeepAliveTime'
+                    size-type='seconds'
+                    size-scale-label='s'
+                    tip='Keep alive time of thread pool size that will be used to process utility cache messages'
+                    min='0'
+                    placeholder='{{ 60000 / _s1.value }}'
+                    on-scale-change='_s1 = $event'
+                )
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label:'Async callback:',
+                    model: model + '.asyncCallbackPoolSize',
+                    name: '"asyncCallbackPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing asynchronous callbacks'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Striped:',
+                    model: model + '.stripedPoolSize',
+                    name: '"stripedPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Striped pool size that should be used for cache requests processing'
+                })
+
+            //- Since ignite 2.0
+            .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
+                +form-field__number({
+                    label: 'Data streamer:',
+                    model: model + '.dataStreamerThreadPoolSize',
+                    name: '"dataStreamerThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing data stream messages'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Query:',
+                    model: model + '.queryThreadPoolSize',
+                    name: '"queryThreadPoolSize"',
+                    placeholder: 'max(8, availableProcessors)',
+                    min: '1',
+                    tip: 'Size of thread pool that is in charge of processing query messages'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                .ignite-form-field
+                    +form-field__label({ label: 'Executor configurations:', name: '"executorConfigurations"' })
+                        +form-field__tooltip({ title: `Custom thread pool configurations for compute tasks` })
+
+                    list-editable(
+                        ng-model=executors
+                        ng-model-options='{allowInvalid: true}'
+                        name='executorConfigurations'
+                        ui-validate=`{
+                            allNamesExist: '$ctrl.Clusters.executorConfigurations.allNamesExist($value)',
+                            allNamesUnique: '$ctrl.Clusters.executorConfigurations.allNamesUnique($value)'
+                        }`
+                    )
+                        list-editable-item-view
+                            | {{ $item.name }} /
+                            | {{ $item.size || 'max(8, availableProcessors)'}}
+
+                        list-editable-item-edit
+                            .pc-form-grid-row
+                                .pc-form-grid-col-30
+                                    +form-field__text({
+                                        label: 'Name:',
+                                        model: '$item.name',
+                                        name: '"ExecutorName"',
+                                        required: true,
+                                        placeholder: 'Input executor name',
+                                        tip: 'Thread pool name'
+                                    })(
+                                        ui-validate=`{
+                                            uniqueName: '$ctrl.Clusters.executorConfiguration.name.customValidators.uniqueName($item, ${executors})'
+                                        }`
+                                        ui-validate-watch=`"${executors}"`
+                                        ui-validate-watch-object-equality='true'
+                                        ng-model-options='{allowInvalid: true}'
+                                        ignite-form-field-input-autofocus='true'
+                                    )
+                                        +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
+                                .pc-form-grid-col-30
+                                    +form-field__number({
+                                        label: 'Pool size:',
+                                        model: '$item.size',
+                                        name: '"ExecutorPoolSize"',
+                                        placeholder: 'max(8, availableProcessors)',
+                                        min: '1',
+                                        tip: 'Thread pool size'
+                                    })
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$edit($ctrl.Clusters.addExecutorConfiguration(${model}))`
+                                label-single='executor configuration'
+                                label-multiple='executor configurations'
+                            )
+
+                    .form-field__errors(
+                        ng-messages=`pools.executorConfigurations.$error`
+                        ng-show=`pools.executorConfigurations.$invalid`
+                    )
+                        +form-field__error({ error: 'allNamesExist', message: 'All executor configurations should have a name' })
+                        +form-field__error({ error: 'allNamesUnique', message: 'All executor configurations should have a unique name' })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterPools')

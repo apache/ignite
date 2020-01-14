@@ -34,13 +34,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests off-heap map.
  */
-@RunWith(JUnit4.class)
 public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractTest {
     /** Random. */
     private static final Random RAND = new Random();
@@ -175,7 +172,6 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
         for (int i = 0; i < 10; i++)
             kv.put(string(), string());
-
 
         for (Map.Entry<String, String> e : kv.entrySet()) {
             String key = e.getKey();

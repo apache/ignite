@@ -37,13 +37,10 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Out of memory error failure handler test.
  */
-@RunWith(JUnit4.class)
 public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -54,6 +51,8 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
             .setCacheMode(CacheMode.PARTITIONED)
             .setBackups(0)
         );
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

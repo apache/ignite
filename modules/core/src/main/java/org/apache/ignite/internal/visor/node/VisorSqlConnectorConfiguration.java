@@ -131,6 +131,7 @@ public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
     public boolean isTcpNoDelay() {
         return tcpNoDelay;
     }
+
     /**
      * @return Thread pool that is in charge of processing SQL requests.
      */

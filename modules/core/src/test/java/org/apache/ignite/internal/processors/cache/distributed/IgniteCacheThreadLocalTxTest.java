@@ -32,15 +32,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
@@ -162,7 +159,6 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
 
         if (write)
             cache.put(ThreadLocalRandom.current().nextInt(100_000), 1);
-
 
         try {
             txs.txStart(concurrency, isolation);

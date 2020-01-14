@@ -36,13 +36,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test to lazy query partitions has not been released too early.
  */
-@RunWith(JUnit4.class)
 public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractTest {
     /** Cache name */
     private static final String PERSON_CACHE = "person";
@@ -89,7 +86,6 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         int partsFilled = fillAllPartitions(cache, aff);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person")
-            .setLazy(true)
             .setPageSize(1);
 
         FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
@@ -137,7 +133,6 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         int partsFilled = fillAllPartitions(cache, aff);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person")
-            .setLazy(true)
             .setPageSize(1);
 
         FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);

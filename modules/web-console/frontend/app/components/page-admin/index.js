@@ -22,7 +22,7 @@ import templateUrl from './template.tpl.pug';
 import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 
 /**
- * @param {uirouter.UIRouter} $uiRouter
+ * @param {import('@uirouter/angularjs').UIRouter} $uiRouter
  * @param {ActivitiesData} ActivitiesData
  */
 function registerActivitiesHook($uiRouter, ActivitiesData) {

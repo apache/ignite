@@ -36,7 +36,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -53,16 +55,14 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Test for {@link MqttStreamer}.
  */
-@RunWith(JUnit4.class)
 public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /** The test data. */
     private static final Map<Integer, String> TEST_DATA = new HashMap<>();
@@ -102,6 +102,11 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /** Constructor. */
     public IgniteMqttStreamerTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /**
@@ -195,10 +200,9 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2255")
     @Test
     public void testConnectionStatusWithBrokerDisconnection() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2255");
-
         // Configure streamer.
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setTopic(SINGLE_TOPIC_NAME);

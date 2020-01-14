@@ -292,7 +292,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V get0(
+    @Override protected V get(
         final K key,
         String taskName,
         boolean deserializeBinary,
@@ -310,8 +310,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public final Map<K, V> getAll0(Collection<? extends K> keys, boolean deserializeBinary, boolean needVer)
-        throws IgniteCheckedException {
+    @Override public final Map<K, V> getAll(
+        Collection<? extends K> keys,
+        boolean deserializeBinary,
+        boolean needVer,
+        boolean recovery,
+        boolean readRepair) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -334,6 +338,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -457,7 +462,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     taskName,
                                     expiry,
                                     !deserializeBinary,
-                                    null,
                                     null);
 
                                 if (res != null) {
@@ -485,8 +489,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                     null,
                                     taskName,
                                     expiry,
-                                    !deserializeBinary,
-                                    null);
+                                    !deserializeBinary);
 
                                 if (v != null) {
                                     ctx.addResult(vals,
@@ -512,7 +515,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(ctx.affinity().affinityTopologyVersion());
+                            entry.touch();
                     }
 
                     if (!success && storeEnabled)
@@ -537,6 +540,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
+            false,
             /*force primary*/false,
             expiry,
             skipVals,
@@ -977,7 +981,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(ctx.affinity().affinityTopologyVersion());
+                            entry.touch();
                     }
                 }
             }
@@ -1093,8 +1097,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             entryProcessor,
                             taskName,
                             null,
-                            keepBinary,
-                            null);
+                            keepBinary);
 
                         Object oldVal = null;
 
@@ -1236,8 +1239,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary,
-                                null);
+                                keepBinary);
 
                             Object interceptorVal = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(
                                 ctx, entry.key(), old, keepBinary), val);
@@ -1272,8 +1274,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                                 null,
                                 taskName,
                                 null,
-                                keepBinary,
-                                null);
+                                keepBinary);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                                 .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, keepBinary));
@@ -1508,7 +1509,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridCacheEntryEx entry : locked)
-            entry.touch(topVer);
+            entry.touch();
 
         throw new NullPointerException("Null key.");
     }
@@ -1525,7 +1526,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridCacheEntryEx entry : locked)
-            entry.touch(topVer);
+            entry.touch();
     }
 
     /**

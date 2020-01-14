@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +35,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -46,7 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /** Key count. */
     private static final int KEY_CNT = 1000;
@@ -154,6 +154,8 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone0() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
+
         preloadMode = NONE;
         backups = 0;
 
@@ -165,8 +167,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone1() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
         backups = 1;
@@ -179,8 +180,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutGetNone2() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10261");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
         backups = 2;
@@ -251,9 +251,15 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                             done.set(true);
 
                             for (int j = 0; j < KEY_CNT; j++) {
+                                // Check SingleGetFuture.
                                 Integer val = internalCache(cache).get(j);
 
                                 assert val != null;
+
+                                // Check GetFuture.
+                                Map<Integer, Integer> vals = internalCache(cache).getAll(Arrays.asList(j, j + 1));
+
+                                assert val.equals(vals.get(j));
 
                                 if (j % FREQUENCY == 0)
                                     info("Read entry: " + j + " -> " + val);

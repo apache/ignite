@@ -23,8 +23,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -33,7 +31,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheServerNodeConcurrentStart extends GridCommonAbstractTest {
     /** */
     private static final int ITERATIONS = 2;

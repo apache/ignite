@@ -17,32 +17,48 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionAndPageCompressionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionAndTdeTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionTest;
 import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
+import org.apache.ignite.internal.processors.compress.DiskPageCompressionConfigValidationTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationAsyncTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
+import org.apache.ignite.internal.processors.compress.WalPageCompressionIntegrationTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
-/**
- */
+/** */
+@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with page compression).");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTest(new JUnit4TestAdapter(CompressionConfigurationTest.class));
-        suite.addTest(new JUnit4TestAdapter(CompressionProcessorTest.class));
-        suite.addTest(new JUnit4TestAdapter(FileSystemUtilsTest.class));
-        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationTest.class));
-        suite.addTest(new JUnit4TestAdapter(DiskPageCompressionIntegrationAsyncTest.class));
+        suite.add(CompressionConfigurationTest.class);
+        suite.add(CompressionProcessorTest.class);
+        suite.add(FileSystemUtilsTest.class);
+        suite.add(DiskPageCompressionIntegrationTest.class);
+        suite.add(DiskPageCompressionConfigValidationTest.class);
+        suite.add(DiskPageCompressionIntegrationAsyncTest.class);
+
+        // WAL page records compression.
+        suite.add(WalPageCompressionIntegrationTest.class);
+        suite.add(WalRecoveryWithPageCompressionTest.class);
+        suite.add(WalRecoveryWithPageCompressionAndTdeTest.class);
+        suite.add(IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest.class);
+        suite.add(WalCompactionAndPageCompressionTest.class);
 
         enableCompressionByDefault();
         IgnitePdsTestSuite.addRealPageStoreTests(suite, null);

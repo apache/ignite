@@ -16,31 +16,22 @@
  */
 package org.apache.ignite.testsuites;
 
-import java.util.HashSet;
-import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Mvcc version of {@link IgnitePdsTestSuite3}.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses(IgnitePdsTestSuite3.class)
 public class IgnitePdsMvccTestSuite3 {
     /**
-     * @return Suite.
+     * Enforce MVCC
      */
-    public static TestSuite suite() {
+    @BeforeClass
+    public static void enforceMvcc() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("Ignite Persistent Store Mvcc Test Suite 3");
-
-        HashSet<Class> ignoredTests = new HashSet<>();
-
-        // No ignored tests yet.
-
-        suite.addTest(IgnitePdsTestSuite3.suite(ignoredTests));
-
-        return suite;
     }
 }

@@ -23,7 +23,9 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -31,28 +33,24 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
  * Tests transaction rollback on incorrect tx params.
  */
-@RunWith(JUnit4.class)
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10415");
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testTimeoutSetLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
@@ -87,8 +85,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
@@ -98,8 +99,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
     }
 
@@ -138,8 +142,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
     }
 
@@ -188,8 +195,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
@@ -199,8 +209,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
     }
 
@@ -251,8 +264,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
@@ -262,8 +278,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
     }
 
@@ -315,8 +334,11 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
             fail("Should fail prior this line.");
         }
-        catch (CacheException ignored) {
-            // No-op.
+        catch (CacheException ex) {
+            if (MvccFeatureChecker.forcedMvcc())
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionAlreadyCompletedException);
+            else
+                assertTrue(ex.toString(), ex.getCause() instanceof TransactionRollbackException);
         }
 
         assertFalse(rollbackFailed.get());

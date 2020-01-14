@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -34,7 +43,7 @@
 # in other scripts to parse common command lines parameters.
 #
 
-CONFIG=${DEFAULT_CONFIG}
+CONFIG=${DEFAULT_CONFIG:-}
 INTERACTIVE="0"
 NOJMX="0"
 QUIET="-DIGNITE_QUIET=true"
@@ -51,3 +60,13 @@ do
     esac
     shift
 done
+
+#
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac

@@ -17,27 +17,23 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.InterceptorCacheConfigVariationsFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache API.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class InterceptorCacheConfigVariationsFullApiTestSuite {
-    /**
-     * @return Cache API test suite.
-     */
-    public static TestSuite suite() {
-        return new ConfigVariationsTestSuiteBuilder(
-            "Cache New Full API Test Suite with Interceptor",
-            InterceptorCacheConfigVariationsFullApiTest.class)
+    /** */
+    public static List<Class<?>> suite() {
+        return new ConfigVariationsTestSuiteBuilder(InterceptorCacheConfigVariationsFullApiTest.class)
             .withBasicCacheParams()
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
-            .build();
+            .classes();
     }
 }

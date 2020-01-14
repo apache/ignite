@@ -27,13 +27,10 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Integration test for Grid REST functionality; Jetty is under the hood.
  */
-@RunWith(JUnit4.class)
 public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /** Jetty port. */
     private static final int JETTY_PORT = 8080;
@@ -50,11 +47,6 @@ public class RestSetupSimpleTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(true);
     }
 
     /**

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Broadcast task name. */
         public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
 
-        /** Broadcast task name. */
+        /** Decimal task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
         /** Echo type: null. */
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(val, binRes.GetField<long>("Field"));
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
                 var dotNetBin = _grid1.GetBinary().ToBinary<BinaryObject>(res);
 
                 Assert.AreEqual(dotNetBin.Header.HashCode, ((BinaryObject)binRes).Header.HashCode);

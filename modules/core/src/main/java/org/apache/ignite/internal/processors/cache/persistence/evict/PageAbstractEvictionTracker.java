@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -52,6 +53,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
+    /** Data region configuration. */
+    private final DataRegionConfiguration regCfg;
+
     /**
      * @param pageMem Page memory.
      * @param plcCfg Data region configuration.
@@ -66,10 +70,21 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         this.sharedCtx = sharedCtx;
 
+        regCfg = plcCfg;
+
         trackingSize = pageMem.totalPages();
 
         baseCompactTs = (U.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
         // We subtract day to avoid fail in case of daylight shift or timezone change.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean evictionRequired() {
+        AbstractFreeList freeList = (AbstractFreeList)sharedCtx.database().freeList(regCfg.getName());
+
+        double pagesThreshold = regCfg.getEvictionThreshold() * regCfg.getMaxSize() / pageMem.systemPageSize();
+
+        return pageMem.loadedPages() > pagesThreshold && freeList.emptyDataPages() < regCfg.getEmptyPagesPoolSize();
     }
 
     /**
@@ -102,7 +117,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
                     @Override public CacheDataRowAdapter apply(long link) throws IgniteCheckedException {
                         CacheDataRowAdapter row = new CacheDataRowAdapter(link);
 
-                        row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY);
+                        row.initFromLink(null, sharedCtx, pageMem, CacheDataRowAdapter.RowData.KEY_ONLY, false);
 
                         assert row.cacheId() != 0 : "Cache ID should be stored in rows of evictable cache";
 

@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -34,6 +33,9 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,16 +84,15 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    @Override public <K, V> LinearRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+                                                      Preprocessor<K, V> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                 DatasetBuilder<K, V> datasetBuilder,
+                                                                 Preprocessor<K, V> extractor) {
 
         assert updatesStgy != null;
 
@@ -125,12 +126,14 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
             seed
         );
 
-        IgniteBiFunction<K, V, double[]> lbE = (IgniteBiFunction<K, V, double[]>)(k, v) -> new double[] {lbExtractor.apply(k, v)};
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 
         MultilayerPerceptron mlp = Optional.ofNullable(mdl)
             .map(this::restoreMLPState)
-            .map(m -> trainer.update(m, datasetBuilder, featureExtractor, lbE))
-            .orElseGet(() -> trainer.fit(datasetBuilder, featureExtractor, lbE));
+            .map(m -> trainer.update(m, datasetBuilder, patchedPreprocessor))
+            .orElseGet(() -> trainer.fit(datasetBuilder, patchedPreprocessor));
 
         double[] p = mlp.parameters().getStorage().data();
 
@@ -142,7 +145,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
 
     /**
      * @param mdl Model.
-     * @return state of MLP from last learning.
+     * @return State of MLP from last learning.
      */
     @NotNull private MultilayerPerceptron restoreMLPState(LinearRegressionModel mdl) {
         Vector weights = mdl.getWeights();
@@ -160,7 +163,7 @@ public class LinearRegressionSGDTrainer<P extends Serializable> extends SingleLa
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean isUpdateable(LinearRegressionModel mdl) {
         return true;
     }
 

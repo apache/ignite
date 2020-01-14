@@ -24,25 +24,21 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
  * Tests for node attributes consistency checks.
  */
-@RunWith(JUnit4.class)
 public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
@@ -55,6 +51,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
     /** */
     private static boolean binaryMarshallerEnabled;
+
+    /** Security enabled. */
+    private static boolean secEnabled;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,6 +68,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
+
+        if(secEnabled)
+            cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
     }
@@ -259,8 +261,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     @Test
     public void testSecurityCompatibilityEnabled() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
-        TestReconnectProcessor.enabled = true;
+        secEnabled = true;
 
         try {
             doTestSecurityCompatibilityEnabled(true, null, true);
@@ -275,8 +276,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             doTestSecurityCompatibilityEnabled(true, true, false);
         }
         finally {
-            TestReconnectPluginProvider.enabled = false;
-            TestReconnectProcessor.enabled = false;
+            secEnabled = false;
         }
     }
 

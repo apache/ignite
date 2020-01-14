@@ -42,6 +42,9 @@ export default class IgniteUiGrid {
     /** @type */
     categories;
 
+    /** @type {boolean} */
+    singleSelect;
+
     /** @type */
     onSelectionChange;
 
@@ -58,6 +61,9 @@ export default class IgniteUiGrid {
 
     /**
      * @param {ng.IScope} $scope
+     * @param $element
+     * @param $timeout
+     * @param gridUtil
      */
     constructor($scope, $element, $timeout, gridUtil) {
         this.$scope = $scope;
@@ -85,6 +91,8 @@ export default class IgniteUiGrid {
             columnDefs: this.columnDefs,
             categories: this.categories,
             rowHeight: this.rowHeight,
+            multiSelect: !this.singleSelect,
+            enableSelectAll: !this.singleSelect,
             headerRowHeight: this.headerRowHeight,
             columnVirtualizationThreshold: 30,
             enableColumnMenus: false,
@@ -134,6 +142,9 @@ export default class IgniteUiGrid {
 
                 this.resizeObserver = new ResizeObserver(() => api.core.handleWindowResize());
                 this.resizeObserver.observe(this.$element[0]);
+
+                if (this.onApiRegistered)
+                    this.onApiRegistered({$event: api});
             }
         };
 

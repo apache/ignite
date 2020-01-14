@@ -254,7 +254,6 @@ public class BaselineTopology implements Serializable {
         return compactIdMapping.get(constId);
     }
 
-
     /**
      * @return Activation hash.
      */
@@ -395,6 +394,13 @@ public class BaselineTopology implements Serializable {
             return false;
 
         return blt1.equals(blt2);
+    }
+
+    /**
+     * @return {@code true} If it is new baseline topology.
+     */
+    public boolean isNewTopology(){
+        return lastBranchingPointType == BranchingPointType.NEW_BASELINE_TOPOLOGY && id == 0;
     }
 
     /**

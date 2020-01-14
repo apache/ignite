@@ -22,8 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -31,7 +29,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for cache checkpoint SPI with second cache configured.
  */
-@RunWith(JUnit4.class)
 public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTest {
     /** Checkpoints cache name. */
     private static final String CP_CACHE = "checkpoints";

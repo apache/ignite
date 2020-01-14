@@ -31,8 +31,10 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -184,7 +186,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     @Override public boolean disableWal(String cacheName) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
-    
+
     /** {@inheritDoc} */
     @Override public boolean isWalEnabled(String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
@@ -362,6 +364,41 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public void setBaselineTopology(long topVer) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterState state() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

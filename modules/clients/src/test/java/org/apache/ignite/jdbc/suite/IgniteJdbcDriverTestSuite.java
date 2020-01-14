@@ -21,6 +21,7 @@ import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
 import org.apache.ignite.internal.jdbc2.JdbcBulkLoadSelfTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
 import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
+import org.apache.ignite.internal.jdbc2.JdbcSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
 import org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest;
@@ -33,6 +34,7 @@ import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
 import org.apache.ignite.jdbc.JdbcStatementSelfTest;
+import org.apache.ignite.jdbc.JdbcThinMetadataSqlMatchTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
 import org.apache.ignite.jdbc.thin.JdbcThinBatchSelfTest;
@@ -50,7 +52,10 @@ import org.apache.ignite.jdbc.thin.JdbcThinConnectionMultipleAddressesTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionMvccEnabledSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSSLTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinDataPageScanPropertySelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataSourceSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinDefaultTimeoutTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedNearSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedSelfTest;
@@ -68,18 +73,23 @@ import org.apache.ignite.jdbc.thin.JdbcThinMergeStatementSkipReducerOnUpdateSelf
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataPrimaryKeysSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMetadataSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinMissingLongArrayResultsTest;
+import org.apache.ignite.jdbc.thin.JdbcThinMultiStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinNoDefaultSchemaTest;
+import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementLeakTest;
 import org.apache.ignite.jdbc.thin.JdbcThinPreparedStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinResultSetSelfTest;
-import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
+import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementCancelSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStatementTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingNotOrderedSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingOrderedSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinStreamingResetStreamTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsLeaksMvccTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
@@ -119,8 +129,7 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class,
-    org.apache.ignite.internal.jdbc2.JdbcNoDefaultCacheTest.class,
-    org.apache.ignite.internal.jdbc2.JdbcDefaultNoOpCacheTest.class,
+    org.apache.ignite.internal.jdbc2.JdbcConnectionWithoutCacheNameTest.class,
     org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcUpdateStatementSelfTest.class,
@@ -132,11 +141,14 @@ import org.junit.runners.Suite;
     org.apache.ignite.internal.jdbc2.JdbcStreamingToPublicCacheTest.class,
     org.apache.ignite.internal.jdbc2.JdbcNoCacheStreamingSelfTest.class,
     JdbcBulkLoadSelfTest.class,
+    JdbcSchemaCaseSelfTest.class,
 
     JdbcBlobTest.class,
     org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest.class,
     JdbcThinStreamingNotOrderedSelfTest.class,
     JdbcThinStreamingOrderedSelfTest.class,
+    JdbcThinDataPageScanPropertySelfTest.class,
+    JdbcThinStreamingResetStreamTest.class,
 
     // DDL tests.
     org.apache.ignite.internal.jdbc2.JdbcDynamicIndexAtomicPartitionedNearSelfTest.class,
@@ -159,12 +171,16 @@ import org.junit.runners.Suite;
     JdbcThinStatementSelfTest.class,
     JdbcThinComplexQuerySelfTest.class,
     JdbcThinNoDefaultSchemaTest.class,
-    JdbcThinSchemaCaseTest.class,
+    JdbcThinSchemaCaseSelfTest.class,
     JdbcThinEmptyCacheSelfTest.class,
     JdbcThinMetadataSelfTest.class,
     JdbcThinMetadataPrimaryKeysSelfTest.class,
+    JdbcThinMetadataSqlMatchTest.class,
     JdbcThinErrorsSelfTest.class,
     JdbcThinStatementCancelSelfTest.class,
+    JdbcThinStatementTimeoutSelfTest.class,
+    JdbcThinConnectionTimeoutSelfTest.class,
+    JdbcThinDefaultTimeoutTest.class,
 
     JdbcThinInsertStatementSelfTest.class,
     JdbcThinUpdateStatementSelfTest.class,
@@ -181,6 +197,7 @@ import org.junit.runners.Suite;
     JdbcThinDynamicIndexTransactionalPartitionedNearSelfTest.class,
     JdbcThinDynamicIndexTransactionalPartitionedSelfTest.class,
     JdbcThinDynamicIndexTransactionalReplicatedSelfTest.class,
+    JdbcThinMultiStatementSelfTest.class,
 
     // New thin JDBC driver, DML tests
     JdbcThinBulkLoadAtomicPartitionedNearSelfTest.class,
@@ -213,7 +230,10 @@ import org.junit.runners.Suite;
 
     // Various commands.
     JdbcThinWalModeChangeSelfTest.class,
-    JdbcThinAuthenticateConnectionSelfTest.class
+    JdbcThinAuthenticateConnectionSelfTest.class,
+
+    JdbcThinPreparedStatementLeakTest.class,
+    JdbcThinTransactionsLeaksMvccTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.UUID;
@@ -26,9 +27,6 @@ import java.util.UUID;
  */
 public class QueryContextKey {
     /** */
-    private final UUID locNodeId;
-
-    /** */
     private final UUID nodeId;
 
     /** */
@@ -37,33 +35,19 @@ public class QueryContextKey {
     /** */
     private final int segmentId;
 
-    /** */
-    private final GridH2QueryType type;
-
     /**
-     * @param locNodeId Local node ID.
+     * Constructor.
+     *
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
      * @param segmentId Index segment ID.
-     * @param type Query type.
      */
-    QueryContextKey(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
-        assert locNodeId != null;
+    public QueryContextKey(UUID nodeId, long qryId, int segmentId) {
         assert nodeId != null;
-        assert type != null;
 
-        this.locNodeId = locNodeId;
         this.nodeId = nodeId;
         this.qryId = qryId;
         this.segmentId = segmentId;
-        this.type = type;
-    }
-
-    /**
-     * @return Local node ID.
-     */
-    public UUID localNodeId() {
-        return locNodeId;
     }
 
     /**
@@ -87,13 +71,6 @@ public class QueryContextKey {
         return segmentId;
     }
 
-    /**
-     * @return Type.
-     */
-    public GridH2QueryType type() {
-        return type;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -102,19 +79,16 @@ public class QueryContextKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        QueryContextKey key = (QueryContextKey)o;
+        QueryContextKey other = (QueryContextKey)o;
 
-        return qryId == key.qryId && nodeId.equals(key.nodeId) && type == key.type &&
-           locNodeId.equals(key.locNodeId) ;
+        return qryId == other.qryId && segmentId == other.segmentId && F.eq(nodeId, other.nodeId) ;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = locNodeId.hashCode();
+        int res = nodeId.hashCode();
 
-        res = 31 * res + nodeId.hashCode();
         res = 31 * res + (int)(qryId ^ (qryId >>> 32));
-        res = 31 * res + type.hashCode();
         res = 31 * res + segmentId;
 
         return res;

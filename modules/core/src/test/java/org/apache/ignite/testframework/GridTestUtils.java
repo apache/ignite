@@ -17,10 +17,12 @@
 
 package org.apache.ignite.testframework;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -32,8 +34,10 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -46,7 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -68,15 +71,15 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -89,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -105,6 +109,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -114,7 +119,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for tests.
@@ -299,6 +306,86 @@ public final class GridTestUtils {
 //    }
 
     /**
+     * Checks that string {@param str} doesn't contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertFalse(str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertTrue(str != null && str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String does not contain substring: '%s':", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} contains element {@param elem}. Logs collection, element
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param elem Element.
+     */
+    public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
+        try {
+            assertTrue(col.contains(elem));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection does not contain: '%s':", elem));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} doesn't contains element {@param str}. Logs collection, element
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param elem Element.
+     */
+    public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
+        try {
+            assertFalse(col.contains(elem));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
+
+    /**
      * Checks whether callable throws expected exception or not.
      *
      * @param log Logger (optional).
@@ -369,7 +456,8 @@ public final class GridTestUtils {
 
             while (t != null) {
                 if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
-                    log.info("Caught expected exception: " + t.getMessage());
+                    if (log != null && log.isInfoEnabled())
+                        log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
                 }
@@ -1027,6 +1115,31 @@ public final class GridTestUtils {
     }
 
     /**
+     * Wait for all passed futures to complete even if they fail.
+     *
+     * @param futs Futures.
+     * @throws AssertionError Suppresses underlying exceptions if some futures failed.
+     */
+    public static void waitForAllFutures(IgniteInternalFuture<?>... futs) {
+        AssertionError err = null;
+
+        for (IgniteInternalFuture<?> fut : futs) {
+            try {
+                fut.get();
+            }
+            catch (Throwable t) {
+                if (err == null)
+                    err = new AssertionError("One or several futures threw the exception.");
+
+                err.addSuppressed(t);
+            }
+        }
+
+        if (err != null)
+            throw err;
+    }
+
+    /**
      * Interrupts and waits for termination of all the threads started
      * so far by current test.
      *
@@ -1431,6 +1544,28 @@ public final class GridTestUtils {
     }
 
     /**
+     * Change static final fields.
+     * @param field Need to be changed.
+     * @param newVal New value.
+     * @throws Exception If failed.
+     */
+    public static void setFieldValue(Field field, Object newVal) throws Exception {
+        field.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+        AccessController.doPrivileged(new PrivilegedAction() {
+            @Override
+            public Object run() {
+                modifiersField.setAccessible(true);
+                return null;
+            }
+        });
+
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, newVal);
+    }
+
+    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -1563,7 +1698,6 @@ public final class GridTestUtils {
             cls = cls.getSuperclass();
         } while (cls != Object.class);
 
-
         throw new RuntimeException("Failed to find method" +
             " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']');
     }
@@ -1640,6 +1774,26 @@ public final class GridTestUtils {
         }
 
         return bytes;
+    }
+
+    /**
+     * Reads resource into byte array.
+     *
+     * @param classLoader Classloader.
+     * @param resourceName Resource name.
+     * @return Content of resorce in byte array.
+     * @throws IOException If failed.
+     */
+    public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
+        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
+            assertNotNull("Resource is missing: " + resourceName , is);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                U.copy(is, baos);
+
+                return baos.toByteArray();
+            }
+        }
     }
 
     /**
@@ -1734,7 +1888,6 @@ public final class GridTestUtils {
 
         return factory;
     }
-
 
     /**
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
@@ -1954,18 +2107,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     * Adds test class to the list only if it's not in {@code ignoredTests} set.
      *
-     * @param suite TestSuite where to place the test.
+     * @param suite List where to place the test class.
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<?> test,
+    public static void addTestIfNeeded(@NotNull final List<Class<?>> suite, @NotNull final Class<?> test,
         @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTest(new JUnit4TestAdapter(test));
+        suite.add(test);
     }
 
     /**
@@ -2004,6 +2157,26 @@ public final class GridTestUtils {
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
     }
 
+    /**
+     * Checks that {@code state} is active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertActive(ClusterState state) {
+        assertTrue(state + " isn't active state", ClusterState.active(state));
+    }
+
+    /**
+     * Checks that {@code state} isn't active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertInactive(ClusterState state) {
+        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+    }
+
     /** Test parameters scale factor util. */
     private static class ScaleFactorUtil {
         /** Test speed scale factor property name. */
@@ -2030,7 +2203,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) Math.round(TEST_SCALE_FACTOR_VALUE * val);
+            return (int)Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
@@ -2046,43 +2219,6 @@ public final class GridTestUtils {
         /** Apply scale factor with upper bound */
         public static int applyUB(int val, int upperBound) {
             return Math.min(apply(val), upperBound);
-        }
-    }
-
-    /** Adds system property on initialization and removes it when closed. */
-    public static final class SystemProperty implements AutoCloseable {
-        /** Name of property. */
-        private final String name;
-
-        /** Original value of property. */
-        private final String originalValue;
-
-        /**
-         * Constructor.
-         *
-         * @param name Name.
-         * @param val Value.
-         */
-        public SystemProperty(String name, String val) {
-            this.name = name;
-
-            Properties props = System.getProperties();
-
-            originalValue = (String)props.put(name, val);
-
-            System.setProperties(props);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            Properties props = System.getProperties();
-
-            if (originalValue != null)
-                props.put(name, originalValue);
-            else
-                props.remove(name);
-
-            System.setProperties(props);
         }
     }
 
@@ -2112,5 +2248,121 @@ public final class GridTestUtils {
             connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
+    }
+
+    /**
+     * Removes idle_verify log files created in tests.
+     */
+    public static void cleanIdleVerifyLogFiles() {
+        File dir = new File(".");
+
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+            f.delete();
+    }
+
+    public static class SqlTestFunctions {
+        /** Sleep milliseconds. */
+        public static volatile long sleepMs;
+
+        /** Fail flag. */
+        public static volatile boolean fail;
+
+        /**
+         * Do sleep {@code sleepMs} milliseconds
+         *
+         * @return amount of milliseconds to sleep
+         */
+        @QuerySqlFunction
+        @SuppressWarnings("BusyWait")
+        public static long sleep() {
+            long end = System.currentTimeMillis() + sleepMs;
+
+            long remainTime =sleepMs;
+
+            do {
+                try {
+                    Thread.sleep(remainTime);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op
+                }
+            }
+            while ((remainTime = end - System.currentTimeMillis()) > 0);
+
+            return sleepMs;
+        }
+
+        /**
+         * Function do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return in case of {@code fail} is false return 0, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static int can_fail() {
+            if (fail)
+                throw new IllegalArgumentException();
+            else
+                return 0;
+        }
+
+        /**
+         * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static long sleep_and_can_fail() {
+            long sleep = sleep();
+
+            can_fail();
+
+            return sleep;
+        }
+    }
+
+    /**
+     * Runnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface RunnableX extends Runnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * IgniteRunnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface IgniteRunnableX extends IgniteRunnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 }

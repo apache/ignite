@@ -33,8 +33,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -43,7 +41,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests cache access from within jobs.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstractTest {
     /** Job counter. */
     private static final AtomicInteger cntr = new AtomicInteger(0);

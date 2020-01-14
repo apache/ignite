@@ -25,8 +25,9 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Builder for bootstrapped dataset. Bootstrapped dataset consist of several subsamples created in according to random
@@ -41,11 +42,8 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     /** Serial version uid. */
     private static final long serialVersionUID = 8146220902914010559L;
 
-    /** Feature extractor. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private final IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Mapper of upstream entries into {@link LabeledVector}. */
+    private final Preprocessor<K, V> preprocessor;
 
     /** Samples count. */
     private final int samplesCnt;
@@ -56,16 +54,12 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
     /**
      * Creates an instance of BootstrappedDatasetBuilder.
      *
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Mapper of upstream entries into {@link LabeledVector}.
      * @param samplesCnt Samples count.
      * @param subsampleSize Subsample size.
      */
-    public BootstrappedDatasetBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, int samplesCnt, double subsampleSize) {
-
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+    public BootstrappedDatasetBuilder(Preprocessor<K, V> preprocessor, int samplesCnt, double subsampleSize) {
+        this.preprocessor = preprocessor;
         this.samplesCnt = samplesCnt;
         this.subsampleSize = subsampleSize;
     }
@@ -89,8 +83,9 @@ public class BootstrappedDatasetBuilder<K,V> implements PartitionDataBuilder<K,V
 
         while(upstreamData.hasNext()) {
             UpstreamEntry<K, V> nextRow = upstreamData.next();
-            Vector features = featureExtractor.apply(nextRow.getKey(), nextRow.getValue());
-            Double lb = lbExtractor.apply(nextRow.getKey(), nextRow.getValue());
+            LabeledVector<Double> vecAndLb = preprocessor.apply(nextRow.getKey(), nextRow.getValue());
+            Vector features = vecAndLb.features();
+            Double lb = vecAndLb.label();
             int[] repetitionCounters = new int[samplesCnt];
             Arrays.setAll(repetitionCounters, i -> poissonDistribution.sample());
             dataset[cntr++] = new BootstrappedVector(features, lb, repetitionCounters);

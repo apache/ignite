@@ -30,13 +30,10 @@ import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link CacheBasedDatasetBuilder}.
  */
-@RunWith(JUnit4.class)
 public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 10;
@@ -50,13 +47,9 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTest() {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
         ignite.configuration().setPeerClassLoadingEnabled(true);
@@ -74,7 +67,8 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
         CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
             TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
-            (env, upstream, upstreamSize, ctx) -> null
+            (env, upstream, upstreamSize, ctx) -> null,
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         Affinity<Integer> upstreamAffinity = ignite.affinity(upstreamCache.getName());
@@ -127,7 +121,8 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
                 assertEquals(Integer.valueOf(2), entry.getValue());
                 assertFalse(upstream.hasNext());
                 return null;
-            }
+            },
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         dataset.compute(data -> {});

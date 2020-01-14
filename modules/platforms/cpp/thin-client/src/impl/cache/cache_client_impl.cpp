@@ -49,17 +49,33 @@ namespace ignite
                 template<typename ReqT, typename RspT>
                 void CacheClientImpl::SyncCacheKeyMessage(const WritableKey& key, const ReqT& req, RspT& rsp)
                 {
-                    SP_CacheAffinityInfo affinityInfo = router.Get()->GetAffinityMapping(id);
+                    DataRouter& router0 = *router.Get();
 
-                    if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
+                    if (router0.IsPartitionAwarenessEnabled())
                     {
-                        router.Get()->SyncMessage(req, rsp);
+                        affinity::SP_AffinityAssignment affinityInfo = router0.GetAffinityAssignment(id);
+
+                        if (!affinityInfo.IsValid())
+                        {
+                            router0.RefreshAffinityMapping(id);
+
+                            affinityInfo = router0.GetAffinityAssignment(id);
+                        }
+
+                        if (!affinityInfo.IsValid() || affinityInfo.Get()->GetPartitionsNum() == 0)
+                        {
+                            router0.SyncMessage(req, rsp);
+                        }
+                        else
+                        {
+                            const Guid& guid = affinityInfo.Get()->GetNodeGuid(key);
+
+                            router0.SyncMessage(req, rsp, guid);
+                        }
                     }
                     else
                     {
-                        const EndPoints& endPoints = affinityInfo.Get()->GetMapping(key);
-                        
-                        router.Get()->SyncMessage(req, rsp, endPoints);
+                        router0.SyncMessage(req, rsp);
                     }
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
@@ -77,7 +93,7 @@ namespace ignite
 
                 void CacheClientImpl::Put(const WritableKey& key, const Writable& value)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
+                    Cache2ValueRequest<RequestType::CACHE_PUT> req(id, binary, key, value);
                     Response rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -109,7 +125,7 @@ namespace ignite
 
                 bool CacheClientImpl::Replace(const WritableKey& key, const Writable& value)
                 {
-                    CacheKeyValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
+                    Cache2ValueRequest<RequestType::CACHE_REPLACE> req(id, binary, key, value);
                     BoolResponse rsp;
 
                     SyncCacheKeyMessage(key, req, rsp);
@@ -152,7 +168,17 @@ namespace ignite
                     CacheValueRequest<RequestType::CACHE_REMOVE_KEY> req(id, binary, key);
                     BoolResponse rsp;
 
-                    SyncMessage(req, rsp);
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
+                bool CacheClientImpl::Remove(const WritableKey& key, const Writable& val)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_REMOVE_IF_EQUALS> req(id, binary, key, val);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
 
                     return rsp.GetValue();
                 }
@@ -178,7 +204,7 @@ namespace ignite
                     CacheValueRequest<RequestType::CACHE_CLEAR_KEY> req(id, binary, key);
                     Response rsp;
 
-                    SyncMessage(req, rsp);
+                    SyncCacheKeyMessage(key, req, rsp);
                 }
 
                 void CacheClientImpl::Clear()
@@ -205,9 +231,56 @@ namespace ignite
                     SyncCacheKeyMessage(key, req, rsp);
                 }
 
-                void CacheClientImpl::RefreshAffinityMapping()
+                bool CacheClientImpl::Replace(const WritableKey& key, const Writable& oldVal, const Writable& newVal)
                 {
-                    router.Get()->RefreshAffinityMapping(id, binary);
+                    Cache3ValueRequest<RequestType::CACHE_REPLACE_IF_EQUALS> req(id, binary, key, oldVal, newVal);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
+                void CacheClientImpl::GetAndPut(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT> req(id, binary, key, valIn);
+                    CacheValueResponse rsp(valOut);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+                }
+
+                void CacheClientImpl::GetAndRemove(const WritableKey& key, Readable& valOut)
+                {
+                    CacheValueRequest<RequestType::CACHE_GET_AND_REMOVE> req(id, binary, key);
+                    CacheValueResponse rsp(valOut);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+                }
+
+                void CacheClientImpl::GetAndReplace(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_REPLACE> req(id, binary, key, valIn);
+                    CacheValueResponse rsp(valOut);
+
+                    SyncCacheKeyMessage(key, req, rsp);
+                }
+
+                bool CacheClientImpl::PutIfAbsent(const WritableKey& key, const Writable& val)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_PUT_IF_ABSENT> req(id, binary, key, val);
+                    BoolResponse rsp;
+
+                    SyncCacheKeyMessage(key, req, rsp);
+
+                    return rsp.GetValue();
+                }
+
+                void CacheClientImpl::GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut)
+                {
+                    Cache2ValueRequest<RequestType::CACHE_GET_AND_PUT_IF_ABSENT> req(id, binary, key, valIn);
+                    CacheValueResponse rsp(valOut);
+
+                    SyncCacheKeyMessage(key, req, rsp);
                 }
             }
         }

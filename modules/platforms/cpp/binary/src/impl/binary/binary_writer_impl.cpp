@@ -521,6 +521,27 @@ namespace ignite
                 elemCnt++;
             }
 
+            void BinaryWriterImpl::WriteBinaryEnum(BinaryEnumEntry entry)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_ENUM);
+
+                BinaryUtils::WriteBinaryEnumEntry(stream, entry);
+            }
+
+            void BinaryWriterImpl::WriteBinaryEnum(const char* fieldName, BinaryEnumEntry entry)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ENUM);
+                stream->WriteInt8(IGNITE_TYPE_ENUM);
+
+                BinaryUtils::WriteBinaryEnumEntry(stream, entry);
+            }
+
             void BinaryWriterImpl::WriteNull()
             {
                 CheckRawMode(true);

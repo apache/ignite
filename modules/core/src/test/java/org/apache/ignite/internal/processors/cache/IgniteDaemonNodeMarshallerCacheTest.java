@@ -26,8 +26,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -36,7 +34,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest {
     /** */
     private boolean daemon;

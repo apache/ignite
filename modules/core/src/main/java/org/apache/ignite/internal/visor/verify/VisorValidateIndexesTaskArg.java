@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
-
 /**
  *
  */
@@ -62,7 +61,6 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
         this.checkThrough = checkThrough;
         this.nodes = nodes;
     }
-
 
     /**
      * @return Caches.

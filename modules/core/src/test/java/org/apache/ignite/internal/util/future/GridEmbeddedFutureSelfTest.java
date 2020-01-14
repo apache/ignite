@@ -27,8 +27,6 @@ import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCURRENT_ASYNC_OPS;
@@ -36,7 +34,6 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_MAX_CONCUR
 /**
  * Tests grid embedded future use cases.
  */
-@RunWith(JUnit4.class)
 public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * Test kernal context.

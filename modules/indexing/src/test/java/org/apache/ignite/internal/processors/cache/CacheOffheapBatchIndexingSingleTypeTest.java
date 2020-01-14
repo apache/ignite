@@ -28,14 +28,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests various cache operations with indexing enabled.
  * Cache contains single type.
  */
-@RunWith(JUnit4.class)
 public class CacheOffheapBatchIndexingSingleTypeTest extends CacheOffheapBatchIndexingBaseTest {
     /**
      * Tests removal using EntryProcessor.

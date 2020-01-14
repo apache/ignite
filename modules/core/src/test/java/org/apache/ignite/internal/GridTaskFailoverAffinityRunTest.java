@@ -30,10 +30,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +41,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     /** */
     private boolean clientMode;
@@ -112,7 +110,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
-        final long stopTime = System.currentTimeMillis() + 60_000;
+        final long stopTime = System.currentTimeMillis() + SF.applyLB(30_000, 10_000);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

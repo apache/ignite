@@ -35,13 +35,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelfTest {
     /** */
     private static final int SPI_COUNT = 6;
@@ -222,7 +219,6 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
     private TestTcpDiscoverySpi firstSpi() {
         return (TestTcpDiscoverySpi)spis.get(0);
     }
-
 
     /**
      * Returns the second spi with failure detection timeout enabled.

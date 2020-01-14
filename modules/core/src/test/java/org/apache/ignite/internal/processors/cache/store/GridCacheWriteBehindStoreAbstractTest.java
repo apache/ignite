@@ -38,9 +38,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -49,7 +48,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Basic store test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAbstractTest {
     /** Flush frequency. */
     private static final int WRITE_FROM_BEHIND_FLUSH_FREQUENCY = 1000;
@@ -57,18 +55,17 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     /** Cache store. */
     private static final GridCacheTestStore store = new GridCacheTestStore();
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.setUp();
-    }
-
     /**
      *
      */
     protected GridCacheWriteBehindStoreAbstractTest() {
         super(true /*start grid. */);
+    }
+
+    /** */
+    @Before
+    public void beforeGridCacheWriteBehindStoreAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +88,9 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

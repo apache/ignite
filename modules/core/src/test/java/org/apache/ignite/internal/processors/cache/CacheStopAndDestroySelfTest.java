@@ -49,8 +49,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Checks stop and destroy methods behavior.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /** Key-value used at test. */
     private static String KEY_VAL = "1";
@@ -287,7 +284,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearDoubleDestroy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -330,7 +327,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalDoubleDestroy() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -580,7 +577,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearClose() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -656,7 +653,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNearCloseWithTry() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
         startGridsMultiThreaded(gridCount());
 
@@ -697,7 +694,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalClose() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         memCfg = new DataStorageConfiguration();
 
@@ -751,7 +748,7 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalCloseWithTry() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         memCfg = new DataStorageConfiguration();
 

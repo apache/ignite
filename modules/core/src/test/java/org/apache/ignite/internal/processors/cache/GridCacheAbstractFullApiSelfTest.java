@@ -17,8 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.expiry.TouchedExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,16 +47,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.expiry.TouchedExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
-import javax.cache.processor.MutableEntry;
-import junit.framework.AssertionFailedError;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,7 +68,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -104,6 +102,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -116,6 +117,7 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -176,19 +178,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         };
 
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9543");
-
-        super.setUp();
-    }
-
     /** Dflt grid. */
-    protected transient Ignite dfltIgnite;
+    protected static transient Ignite dfltIgnite;
 
     /** */
-    private Map<String, CacheConfiguration[]> cacheCfgMap;
+    private static Map<String, CacheConfiguration[]> cacheCfgMap;
+
+    /** */
+    @Before
+    public void beforeGridCacheAbstractFullApiSelfTest()  {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -207,26 +207,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9543", MvccFeatureChecker.forcedMvcc());
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        int[] evtTypes = cfg.getIncludeEventTypes();
-
-        if (evtTypes == null || evtTypes.length == 0)
-            cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_READ);
-        else {
-            for (int evtType : evtTypes) {
-                if (evtType == EventType.EVT_CACHE_OBJECT_READ)
-                    return cfg;
-            }
-
-            int[] updatedEvtTypes = Arrays.copyOf(evtTypes, evtTypes.length + 1);
-
-            updatedEvtTypes[updatedEvtTypes.length - 1] = EventType.EVT_CACHE_OBJECT_READ;
-        }
+        cfg.setIncludeEventTypes(
+            EVT_CACHE_OBJECT_READ,
+            EVT_CACHE_OBJECT_LOCKED,
+            EVT_CACHE_OBJECT_UNLOCKED);
 
         return cfg;
     }
@@ -284,10 +276,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception if something goes bad.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4380")
     @Test
     public void testInvokeAllMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4380");
-
         final IgniteCache<String, Integer> cache = jcache();
         final int threadCnt = 4;
         final int cnt = 5000;
@@ -2480,7 +2471,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache();
 
-
         try {
             IgniteFuture<Integer> fut1 = cache.getAndPutIfAbsentAsync("key", 1);
 
@@ -4174,7 +4164,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     @Test
     public void testEvictExpired() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Integer> cache = jcache(0);
 
         final String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -4319,7 +4309,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        int ttl = 1000;
+        int ttl = 4000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
@@ -4555,7 +4545,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    @Test
+    @Test(timeout = 10050000)
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -4585,7 +4575,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
-                assertEquals((Integer)1, peek(jcache(i), key1));
+                assertEquals("node name = " + grid(i).name(), (Integer)1, peek(jcache(i), key1));
 
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
                 assertEquals((Integer)2, peek(jcache(i), key2));
@@ -5163,8 +5153,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 checkIteratorsCleared();
             }
             catch (Throwable t) {
-                // If AssertionFailedError is in the chain, assume we need to wait and retry.
-                if (!X.hasCause(t, AssertionFailedError.class))
+                // If AssertionError is in the chain, assume we need to wait and retry.
+                if (!X.hasCause(t, AssertionError.class))
                     throw t;
 
                 if (i == 9) {
@@ -6204,7 +6194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteEvents evts = ignite.events(ignite.cluster());
 
-        UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
+        UUID opId = evts.remoteListen(lsnr, null, EVT_CACHE_OBJECT_READ);
 
         try {
             checkResourceInjectionOnInvoke(cache, required, async, oldAsync);
@@ -6526,7 +6516,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     size++;
 
-                    e.touch(null);
+                    e.touch();
                 }
             }
 

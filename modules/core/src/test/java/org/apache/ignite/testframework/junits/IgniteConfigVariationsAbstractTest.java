@@ -36,9 +36,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.configvariations.ConfigVariations;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runners.model.Statement;
+import org.junit.Before;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -51,44 +54,40 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected static final int CLIENT_NODE_IDX = 1;
 
     /** */
-    protected int testedNodeIdx;
+    protected static int testedNodeIdx;
 
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** Dummy initial stub to just let people launch test classes not from suite. */
-    protected VariationsTestsConfig testsCfg = new VariationsTestsConfig(null, "Dummy config", false, null, 1, false);
+    /**
+     * Dummy initial stub to just let people launch test classes not from suite.
+     * Real configurations are assigned dynamically through reflection in
+     * {@link ConfigVariationsTestSuiteBuilder#makeTestClass(String, VariationsTestsConfig)} method.
+     */
+    protected VariationsTestsConfig testsCfg = dummyCfg();
 
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
-    private static VariationsTestsConfig testsCfgInjected;
-
-    /**
-     * @param testsCfgInjected Tests configuration.
-     */
-    public static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
-        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName(int idx) {
+        return getTestIgniteInstanceName() + idx;
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * IMPL NOTE when this override was introduced, alternative was to replace multiple usages of instance member
-     * {@code testsCfg} splattered all over the project with those of static one {@code testsCfgInjected} - kind
-     * of cumbersome, risky and potentially redundant change given the chance of later migration to JUnit 5 and
-     * further rework to use dynamic test parameters that would likely cause removal of the static member.</p>
-     */
-    @Override protected void runTestCase(Statement testRoutine) throws Throwable {
-        testsCfg = testsCfgInjected;
-
-        super.runTestCase(testRoutine);
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return "testGrid";
     }
 
     /** {@inheritDoc} */
     @Override protected boolean isSafeTopology() {
         return false;
+    }
+
+    /** Check that test name is not null. */
+    @Before
+    public void checkTestName() {
+        assert getName() != null : "getName returned null";
     }
 
     /** {@inheritDoc} */
@@ -131,21 +130,33 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg.isStopNodes()) {
-            info("Stopping all grids...");
+        try {
+            if (testsCfg.isStopNodes()) {
+                info("Stopping all grids...");
 
-            stopAllGrids();
+                stopAllGrids();
 
-            FileUtils.deleteDirectory(workDir);
+                FileUtils.deleteDirectory(workDir);
 
-            info("Ignite's 'work' directory has been cleaned.");
+                info("Ignite's 'work' directory has been cleaned.");
 
-            memoryUsage();
+                memoryUsage();
 
-            System.gc();
+                System.gc();
 
-            memoryUsage();
+                memoryUsage();
+            }
         }
+        finally {
+            unconditionalCleanupAfterTests();
+        }
+    }
+
+    /** */
+    protected void unconditionalCleanupAfterTests() {
+        testedNodeIdx = 0;
+
+        testsCfg = dummyCfg();
     }
 
     /**
@@ -191,7 +202,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return resCfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected final int gridCount() {
         return testsCfg.gridCount();
     }
@@ -360,6 +371,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
+    }
+
+    /** */
+    private VariationsTestsConfig dummyCfg() {
+        return new VariationsTestsConfig(
+            new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(), new int[] {0}),
+            "Dummy config", false, null, 1, false);
     }
 
     /**

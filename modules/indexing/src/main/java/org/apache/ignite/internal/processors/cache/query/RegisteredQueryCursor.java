@@ -18,10 +18,13 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
  * Query cursor for registered as running queries.
@@ -37,6 +40,9 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** */
     private Long qryId;
+
+    /** Flag to indicate error. */
+    private boolean failed;
 
     /**
      * @param iterExec Query executor.
@@ -55,11 +61,32 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         this.qryId = qryId;
     }
 
+    @Override protected Iterator<T> iter() {
+        try {
+            return super.iter();
+        }
+        catch (Exception e) {
+            failed = true;
+
+            if (X.cause(e, QueryCancelledException.class) != null)
+                unregisterQuery();
+
+            throw e;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
-        if (unregistered.compareAndSet(false, true))
-            runningQryMgr.unregister(qryId);
+        unregisterQuery();
 
         super.close();
+    }
+
+    /**
+     * Unregister query.
+     */
+    private void unregisterQuery(){
+        if (unregistered.compareAndSet(false, true))
+            runningQryMgr.unregister(qryId, failed);
     }
 }

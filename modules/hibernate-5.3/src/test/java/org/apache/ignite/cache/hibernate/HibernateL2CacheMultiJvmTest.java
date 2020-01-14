@@ -37,8 +37,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,7 +49,6 @@ import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

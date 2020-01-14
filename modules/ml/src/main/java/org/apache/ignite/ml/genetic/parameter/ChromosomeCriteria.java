@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic.parameter;
 
 import java.util.ArrayList;
-
 import java.util.List;
 
 /**
@@ -26,7 +25,7 @@ import java.util.List;
  */
 public class ChromosomeCriteria {
     /** List of criteria for a Chromosome */
-    private List<String> criteria = new ArrayList<String>();
+    private List<String> criteria = new ArrayList<>();
 
     /**
      * Retrieve criteria

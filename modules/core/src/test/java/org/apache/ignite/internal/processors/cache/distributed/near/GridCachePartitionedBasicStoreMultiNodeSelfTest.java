@@ -33,9 +33,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,7 +45,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Number of grids to start. */
     private static final int GRID_CNT = 3;
@@ -54,13 +52,17 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /** Cache store. */
     private static List<GridCacheTestStore> stores;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    /** */
+    @Before
+    public void beforeGridCachePartitionedBasicStoreMultiNodeSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         if (nearCacheConfiguration() != null)
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         for (GridCacheTestStore store : stores)
             store.resetTimestamp();
     }
@@ -91,6 +93,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        if (nearCacheConfiguration() != null)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();

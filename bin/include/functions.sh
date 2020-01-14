@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -29,7 +38,7 @@
 
 # Extract java version to `version` variable.
 javaVersion() {
-    version=$("$1" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+    version=$("$1" -version 2>&1 | awk -F[\"\-] '/version/ {print $2}')
 }
 
 # Extract only major version of java to `version` variable.
@@ -40,12 +49,7 @@ javaMajorVersion() {
     if [ ${version} -eq 1 ]; then
         # Version seems starts from 1, we need second number.
         javaVersion "$1"
-        backIFS=$IFS
-
-        IFS=. ver=(${version##*-})
-        version=${ver[1]}
-
-        IFS=$backIFS
+        version=$(awk -F[\"\.] '{print $2}' <<< ${version})
     fi
 }
 
@@ -55,7 +59,7 @@ javaMajorVersion() {
 #
 checkJava() {
     # Check JAVA_HOME.
-    if [ "$JAVA_HOME" = "" ]; then
+    if [ "${JAVA_HOME:-}" = "" ]; then
         JAVA=`type -p java`
         RETCODE=$?
 
@@ -96,7 +100,7 @@ setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
-    if [ "${IGNITE_HOME}" = "" ]; then
+    if [ "${IGNITE_HOME:-}" = "" ]; then
         export IGNITE_HOME=${IGNITE_HOME_TMP}
     fi
 

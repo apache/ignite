@@ -22,13 +22,10 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelfTest {
     /**
      *

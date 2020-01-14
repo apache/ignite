@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -194,7 +193,7 @@ class ServiceDeploymentTask {
                         Map<IgniteUuid, ServiceInfo> services = srvcProc.deployedServices();
 
                         if (!services.isEmpty()) {
-                            Map<Integer, Map<Integer, List<UUID>>> change = msg0.assignmentChange();
+                            Map<Integer, IgniteUuid> change = msg0.cacheDeploymentIds();
 
                             if (change != null) {
                                 Set<String> names = new HashSet<>();
@@ -283,7 +282,6 @@ class ServiceDeploymentTask {
     /**
      * @param depActions Services deployment actions.
      */
-    @SuppressWarnings("ErrorNotRethrown")
     private void processDeploymentActions(@NotNull ServiceDeploymentActions depActions) {
         srvcProc.updateDeployedServices(depActions);
 
@@ -852,8 +850,10 @@ class ServiceDeploymentTask {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ServiceDeploymentTask.class, this,
-            "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
-            "crdId", crdId);
+        synchronized (initCrdMux) {
+            return S.toString(ServiceDeploymentTask.class, this,
+                    "locNodeId", (ctx != null ? ctx.localNodeId() : "unknown"),
+                    "crdId", crdId);
+        }
     }
 }

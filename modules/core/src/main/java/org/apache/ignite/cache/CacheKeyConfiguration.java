@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.Objects;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -108,6 +109,31 @@ public class CacheKeyConfiguration implements Serializable {
         this.affKeyFieldName = affKeyFieldName;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        CacheKeyConfiguration that = (CacheKeyConfiguration)o;
+
+        if (!Objects.equals(typeName, that.typeName))
+            return false;
+
+        return Objects.equals(affKeyFieldName, that.affKeyFieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = typeName != null ? typeName.hashCode() : 0;
+
+        result = 31 * result + (affKeyFieldName != null ? affKeyFieldName.hashCode() : 0);
+
+        return result;
     }
 
     /** {@inheritDoc} */

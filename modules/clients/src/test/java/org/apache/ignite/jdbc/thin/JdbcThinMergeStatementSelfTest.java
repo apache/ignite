@@ -22,13 +22,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * MERGE statement test.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinMergeStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "merge into Person(_key, id, firstName, lastName, age) values " +

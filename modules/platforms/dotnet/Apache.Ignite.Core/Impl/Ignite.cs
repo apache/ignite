@@ -92,7 +92,12 @@ namespace Apache.Ignite.Core.Impl
             DisableWal = 27,
             EnableWal = 28,
             IsWalEnabled = 29,
-            SetTxTimeoutOnPartitionMapExchange = 30
+            SetTxTimeoutOnPartitionMapExchange = 30,
+            GetNodeVersion = 31,
+            IsBaselineAutoAdjustmentEnabled = 32,
+            SetBaselineAutoAdjustmentEnabled = 33,
+            GetBaselineAutoAdjustTimeout = 34,
+            SetBaselineAutoAdjustTimeout = 35
         }
 
         /** */
@@ -230,10 +235,16 @@ namespace Apache.Ignite.Core.Impl
             return _prj.ForNodes(GetLocalNode());
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
+        }
+
+        /** <inheritdoc /> */
+        public IgniteProductVersion GetVersion()
+        {
+            return Target.OutStream((int) Op.GetNodeVersion, r => new IgniteProductVersion(r));
         }
 
         /** <inheritdoc /> */
@@ -422,7 +433,6 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(name, "name");
 
-
             return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
 
@@ -518,7 +528,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public static ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false, false);
+            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
         }
 
         /** <inheritdoc /> */
@@ -589,7 +599,7 @@ namespace Apache.Ignite.Core.Impl
             return this;
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public IBinary GetBinary()
         {
             return _binary;
@@ -611,19 +621,19 @@ namespace Apache.Ignite.Core.Impl
             return new TransactionsImpl(this, DoOutOpObject((int) Op.GetTransactions), GetLocalNode().Id);
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public IMessaging GetMessaging()
         {
             return _prj.GetMessaging();
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public IEvents GetEvents()
         {
             return _prj.GetEvents();
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public IServices GetServices()
         {
             return _prj.ForServers().GetServices();
@@ -770,13 +780,13 @@ namespace Apache.Ignite.Core.Impl
         }
 #pragma warning restore 618
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public void SetActive(bool isActive)
         {
             _prj.SetActive(isActive);
         }
 
-        /** <inheritdoc /> */
+        /** <inheritdoc cref="IIgnite" /> */
         public bool IsActive()
         {
             return _prj.IsActive();
@@ -840,10 +850,35 @@ namespace Apache.Ignite.Core.Impl
             return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
         }
 
+        /** <inheritdoc /> */
         public void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout)
         {
             DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange, 
                 (BinaryWriter w) => w.WriteLong((long) timeout.TotalMilliseconds));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsBaselineAutoAdjustEnabled()
+        {
+            return DoOutOp((int) Op.IsBaselineAutoAdjustmentEnabled, s => s.ReadBool()) == True;
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineAutoAdjustEnabledFlag(bool isBaselineAutoAdjustEnabled)
+        {
+            DoOutOp((int) Op.SetBaselineAutoAdjustmentEnabled, w => w.WriteBoolean(isBaselineAutoAdjustEnabled));
+        }
+
+        /** <inheritdoc /> */
+        public long GetBaselineAutoAdjustTimeout()
+        {
+            return DoOutOp((int) Op.GetBaselineAutoAdjustTimeout, s => s.ReadLong());
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineAutoAdjustTimeout(long baselineAutoAdjustTimeout)
+        {
+            DoOutInOp((int) Op.SetBaselineAutoAdjustTimeout, baselineAutoAdjustTimeout);
         }
 
         /** <inheritdoc /> */
@@ -947,7 +982,7 @@ namespace Apache.Ignite.Core.Impl
 
             _nodes[node.Id] = node;
         }
-        
+
         /// <summary>
         /// Returns instance of Ignite Transactions to mark a transaction with a special label.
         /// </summary>
@@ -963,7 +998,7 @@ namespace Apache.Ignite.Core.Impl
                 w.WriteString(label);
             });
             
-            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id);
+            return new TransactionsImpl(this, platformTargetInternal, GetLocalNode().Id, label);
         }
 
         /// <summary>

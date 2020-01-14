@@ -29,13 +29,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests IP finder cleaner.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryIpFinderCleanerTest extends GridCommonAbstractTest {
     /** */
     private static final long IP_FINDER_CLEAN_FREQ = 1000;

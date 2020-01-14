@@ -1,7 +1,7 @@
-parser: "typescript-eslint-parser"
+parser: '@typescript-eslint/parser'
 
 plugins:
-    - typescript
+    - '@typescript-eslint'
 
 env:
     es6: true

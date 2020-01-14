@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -41,7 +39,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Check starting cache in transaction.
  */
-@RunWith(JUnit4.class)
 public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction.";
@@ -254,7 +251,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         if (atomicityMode() != TRANSACTIONAL)
             return;
 
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         final Ignite ignite = grid(0);
 

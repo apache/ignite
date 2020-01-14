@@ -28,8 +28,9 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/connectable_node_partitions.h"
 #include "impl/protocol_version.h"
+#include "impl/affinity/affinity_topology_version.h"
+#include "impl/affinity/partition_awareness_group.h"
 
 namespace ignite
 {
@@ -142,6 +143,9 @@ namespace ignite
                     /** Cache nodes and partitions request. */
                     CACHE_NODE_PARTITIONS = 1100,
 
+                    /** Cache partitions request. */
+                    CACHE_PARTITIONS = 1101,
+
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
 
@@ -186,6 +190,38 @@ namespace ignite
                 {
                     // No-op.
                 }
+            };
+
+            /**
+             * Cache partitions request.
+             */
+            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                CachePartitionsRequest(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+            private:
+                /** Cache IDs. */
+                const std::vector<int32_t>& cacheIds;
             };
 
             /**
@@ -423,10 +459,10 @@ namespace ignite
             };
 
             /**
-             * Cache key value request.
+             * Cache 2 value request.
              */
             template<int32_t OpCode>
-            class CacheKeyValueRequest : public CacheValueRequest<OpCode>
+            class Cache2ValueRequest : public CacheRequest<OpCode>
             {
             public:
                 /**
@@ -434,12 +470,13 @@ namespace ignite
                  *
                  * @param cacheId Cache ID.
                  * @param binary Binary cache flag.
-                 * @param key Key.
-                 * @param value Value.
+                 * @param val1 Value 1.
+                 * @param val2 Value 2.
                  */
-                CacheKeyValueRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
-                    CacheValueRequest<OpCode>(cacheId, binary, key),
-                    value(value)
+                Cache2ValueRequest(int32_t cacheId, bool binary, const Writable& val1, const Writable& val2) :
+                    CacheRequest<OpCode>(cacheId, binary),
+                    val1(val1),
+                    val2(val2)
                 {
                     // No-op.
                 }
@@ -447,7 +484,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~CacheKeyValueRequest()
+                virtual ~Cache2ValueRequest()
                 {
                     // No-op.
                 }
@@ -459,14 +496,77 @@ namespace ignite
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
                 {
-                    CacheValueRequest<OpCode>::Write(writer, ver);
+                    CacheRequest<OpCode>::Write(writer, ver);
 
-                    value.Write(writer);
+                    val1.Write(writer);
+                    val2.Write(writer);
                 }
 
             private:
-                /** Value. */
-                const Writable& value;
+                /** Value 1. */
+                const Writable& val1;
+
+                /** Value 2. */
+                const Writable& val2;
+            };
+
+            /**
+             * Cache 3 value request.
+             */
+            template<int32_t OpCode>
+            class Cache3ValueRequest : public CacheRequest<OpCode>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Binary cache flag.
+                 * @param val1 Value 1.
+                 * @param val2 Value 2.
+                 * @param val3 Value 3.
+                 */
+                Cache3ValueRequest(int32_t cacheId, bool binary, const Writable& val1, const Writable& val2,
+                    const Writable& val3) :
+                    CacheRequest<OpCode>(cacheId, binary),
+                    val1(val1),
+                    val2(val2),
+                    val3(val3)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Cache3ValueRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    CacheRequest<OpCode>::Write(writer, ver);
+
+                    val1.Write(writer);
+                    val2.Write(writer);
+                    val3.Write(writer);
+                }
+
+            private:
+                /** Value 1. */
+                const Writable& val1;
+
+                /** Value 2. */
+                const Writable& val2;
+
+                /** Value 3. */
+                const Writable& val3;
             };
 
             /**
@@ -584,6 +684,33 @@ namespace ignite
                     return error;
                 }
 
+                /**
+                 * Get affinity topology version.
+                 *
+                 * @return Affinity topology version, or null if it has not changed.
+                 */
+                const AffinityTopologyVersion* GetAffinityTopologyVersion() const
+                {
+                    if (!IsAffinityTopologyChanged())
+                        return 0;
+
+                    return &topologyVersion;
+                }
+
+                /**
+                 * Check if affinity topology failed.
+                 *
+                 * @return @c true affinity topology failed.
+                 */
+                bool IsAffinityTopologyChanged() const;
+
+                /**
+                 * Check if operation failed.
+                 *
+                 * @return @c true if operation failed.
+                 */
+                bool IsFailure() const;
+
             protected:
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
@@ -594,6 +721,12 @@ namespace ignite
                 }
 
             private:
+                /** Flags. */
+                int16_t flags;
+
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
                 /** Request processing status. */
                 int32_t status;
 
@@ -612,7 +745,7 @@ namespace ignite
                  *
                  * @param nodeParts Node partitions.
                  */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
+                ClientCacheNodePartitionsResponse(std::vector<NodePartitions>& nodeParts);
 
                 /**
                  * Destructor.
@@ -628,7 +761,60 @@ namespace ignite
 
             private:
                 /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
+                std::vector<NodePartitions>& nodeParts;
+            };
+
+            /**
+             * Cache node list request.
+             */
+            class CachePartitionsResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param groups Partition awareness Groups.
+                 */
+                CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsResponse();
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+                /**
+                 * Get version.
+                 *
+                 * @return Topology version.
+                 */
+                const AffinityTopologyVersion& GetVersion() const
+                {
+                    return topologyVersion;
+                }
+
+                /**
+                 * Get partition awareness groups.
+                 *
+                 * @return Partition awareness groups.
+                 */
+                const std::vector<PartitionAwarenessGroup>& GetGroups() const
+                {
+                    return groups;
+                }
+
+            private:
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
+                /** Partition awareness groups. */
+                std::vector<PartitionAwarenessGroup>& groups;
             };
 
             /**

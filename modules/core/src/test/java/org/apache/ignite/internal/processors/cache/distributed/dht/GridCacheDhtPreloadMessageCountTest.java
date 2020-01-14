@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -39,7 +37,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest {
     /** Key count. */
     private static final int KEY_CNT = 1000;
@@ -60,6 +57,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 

@@ -38,15 +38,12 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /**
  * This class provides non write coalescing tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
-@RunWith(JUnit4.class)
 public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -156,7 +153,6 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
             Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
-
 
             if (oldVal != null) {
                 Integer oldInt = (Integer) oldVal;

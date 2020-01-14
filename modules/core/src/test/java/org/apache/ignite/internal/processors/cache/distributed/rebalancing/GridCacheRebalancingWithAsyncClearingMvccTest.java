@@ -17,22 +17,18 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.junit.Before;
 
 /**
  *
  */
 public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheRebalancingWithAsyncClearingTest {
     /** {@inheritDoc} */
-    @Before
-    @Override public void setUp() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
-        super.setUp();
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 2; // Parent test generates a lot of data and is inherently slow in mvcc mode.
     }
 }

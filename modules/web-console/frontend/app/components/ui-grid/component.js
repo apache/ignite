@@ -36,12 +36,14 @@ export default {
         items: '<',
         columnDefs: '<',
         categories: '<?',
+        singleSelect: '<?',
         oneWaySelection: '<?',
         rowIdentityKey: '@?',
         selectedRows: '<?',
         selectedRowsId: '<?',
 
         // Output events.
-        onSelectionChange: '&?'
+        onSelectionChange: '&?',
+        onApiRegistered: '&?'
     }
 };

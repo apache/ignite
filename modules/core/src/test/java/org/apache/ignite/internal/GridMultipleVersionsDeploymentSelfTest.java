@@ -38,15 +38,15 @@ import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -55,7 +55,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTest {
     /** Excluded classes. */
     private static final String[] EXCLUDE_CLASSES = new String[] {
@@ -83,6 +82,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
 
         cfg.setPeerClassLoadingLocalClassPathExclude(
             "org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest*");
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -256,7 +257,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

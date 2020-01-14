@@ -35,14 +35,11 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that joining node is able to take items from queue.
  * See GG-2311 for more information.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;

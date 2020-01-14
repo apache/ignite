@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 
 /**
  * Reuse list.
@@ -35,6 +37,9 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     /** */
     private volatile Stripe[] bucket;
 
+    /** Onheap pages cache. */
+    private final PagesCache bucketCache = new PagesCache();
+
     /**
      * @param cacheId   Cache ID.
      * @param name Name (for debug purpose).
@@ -44,13 +49,26 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseListImpl(int cacheId,
+    public ReuseListImpl(
+        int cacheId,
         String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId);
+        boolean initNew,
+        PageLockListener lockLsnr,
+        GridKernalContext ctx
+    ) throws IgniteCheckedException {
+        super(
+            cacheId,
+            name,
+            pageMem,
+            1,
+            wal,
+            metaPageId,
+            lockLsnr,
+            ctx
+        );
 
         reuseList = this;
 
@@ -85,8 +103,18 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     }
 
     /** {@inheritDoc} */
+    @Override protected int getBucketIndex(int freeSpace) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
         return bucketUpdater.compareAndSet(this, exp, upd);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PagesCache getBucketCache(int bucket, boolean create) {
+        return bucketCache;
     }
 
     /** {@inheritDoc} */

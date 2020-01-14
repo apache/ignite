@@ -48,8 +48,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         private ICacheStoreSession _ses;
 #pragma warning restore 649
 
+        // ReSharper disable once InconsistentNaming
         public static int intProperty;
 
+        // ReSharper disable once InconsistentNaming
         public static string stringProperty;
 
         public static void Reset()
@@ -189,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         [Serializable]
-        public class CustomStoreException : Exception, ISerializable
+        public class CustomStoreException : Exception
         {
             public string Details { get; private set; }
 

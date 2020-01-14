@@ -25,13 +25,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests the case when preformed index rebuild for created by client in-memory cache.
  */
-@RunWith(JUnit4.class)
 public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSISTED_CACHE = "persisted";

@@ -17,27 +17,33 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import junit.framework.TestSuite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.HeapArrayLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Mvcc variant of {@link IgnitePdsTestSuite4}.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsMvccTestSuite4 {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
-
-        TestSuite suite = new TestSuite("Ignite persistent Store Mvcc Test Suite 4");
 
         Set<Class> ignoredTests = new HashSet<>();
 
@@ -48,9 +54,18 @@ public class IgnitePdsMvccTestSuite4 {
         ignoredTests.add(FileDownloaderTest.class);
         ignoredTests.add(IgnitePdsTaskCancelingTest.class);
 
-        suite.addTest(IgnitePdsTestSuite4.suite(ignoredTests));
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11937
+        ignoredTests.add(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
 
-        return suite;
+        // Skip page lock tracker tests for MVCC suite.
+        ignoredTests.add(PageLockTrackerManagerTest.class);
+        ignoredTests.add(SharedPageLockTrackerTest.class);
+        ignoredTests.add(ToFileDumpProcessorTest.class);
+        ignoredTests.add(HeapArrayLockLogTest.class);
+        ignoredTests.add(HeapArrayLockStackTest.class);
+        ignoredTests.add(OffHeapLockLogTest.class);
+        ignoredTests.add(OffHeapLockStackTest.class);
+
+        return IgnitePdsTestSuite4.suite(ignoredTests);
     }
-
 }

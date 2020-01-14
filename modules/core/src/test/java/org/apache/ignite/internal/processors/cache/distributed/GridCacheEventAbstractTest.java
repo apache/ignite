@@ -27,8 +27,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -42,9 +45,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -56,7 +58,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests events.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTest {
     /** */
     private static final boolean TEST_INFO = true;
@@ -72,6 +73,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /** Event listener. */
     protected static volatile EventListener evtLsnr;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
 
     /**
      * @return {@code True} if partitioned.
@@ -92,10 +98,21 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             grid(i).events().localListen(evtLsnr, EVTS_CACHE);
     }
 
+    /** */
+    @Before
+    public void beforeGridCacheEventAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        return super.cacheConfiguration(igniteInstanceName);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
-
         super.beforeTest();
 
         if (TEST_INFO)
@@ -885,7 +902,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                     ", cnt=" + cnt + ", expCnt=" + expCnt + ']');
 
             this.cnt = cnt;
-
 
             // For partitioned caches we allow extra event for reads.
             if (expCnt < cnt && (!partitioned || evtType != EVT_CACHE_OBJECT_READ || expCnt + 1 < cnt))

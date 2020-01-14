@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -29,6 +28,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
@@ -40,8 +40,6 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractSelfTe
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECONN_CNT = 3;
@@ -218,7 +215,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
      * @return Grid.
      * @throws Exception If failed.
      */
-    @Override protected Ignite startGrid() throws Exception {
+    @Override protected IgniteEx startGrid() throws Exception {
         System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         try {

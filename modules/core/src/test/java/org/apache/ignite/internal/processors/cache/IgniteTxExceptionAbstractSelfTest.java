@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -47,9 +48,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -57,7 +57,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int PRIMARY = 0;
@@ -101,8 +100,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10377");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10871", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTestsStarted();
 
@@ -203,9 +201,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @Test
     public void testRemovePrimary() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         checkRemove(false, keyForNode(grid(0).localNode(), PRIMARY));
 
         checkRemove(true, keyForNode(grid(0).localNode(), PRIMARY));
@@ -387,7 +382,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             fail("Transaction should fail.");
         }
-        catch (TransactionHeuristicException e) {
+        catch (Exception e) {
+            assertTrue("Unexptected exception " + X.getFullStackTrace(e), e instanceof TransactionHeuristicException);
+
             log.info("Expected exception: " + e);
         }
 
@@ -486,7 +483,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Going to put: " + key);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 grid(0).cache(DEFAULT_CACHE_NAME).put(key, 2);
 
@@ -503,9 +500,6 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
 
@@ -577,7 +571,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Going to putAll: " + m);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 grid(0).cache(DEFAULT_CACHE_NAME).putAll(m);
 

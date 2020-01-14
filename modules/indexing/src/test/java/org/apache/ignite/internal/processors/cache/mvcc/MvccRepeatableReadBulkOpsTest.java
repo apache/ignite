@@ -45,8 +45,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.GET;
@@ -58,7 +56,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstract
 /**
  * Test basic mvcc bulk cache operations.
  */
-@RunWith(JUnit4.class)
 public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -405,11 +402,10 @@ public class MvccRepeatableReadBulkOpsTest extends CacheMvccAbstractTest {
 
         TestCache<Integer, MvccTestAccount> cache = new TestCache<>(node.cache(DEFAULT_CACHE_NAME));
 
+        final Set<Integer> keysForUpdate = new HashSet<>(3);
+        final Set<Integer> keysForRemove = new HashSet<>(3);
 
-            final Set<Integer> keysForUpdate = new HashSet<>(3);
-            final Set<Integer> keysForRemove = new HashSet<>(3);
-
-            final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
+        final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
 
         try {
             int updCnt = 1;

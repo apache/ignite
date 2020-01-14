@@ -1,0 +1,95 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'misc'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Miscellaneous
+    panel-description Various miscellaneous cache settings.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__java-class({
+                    label: 'Interceptor:',
+                    model: `${model}.interceptor`,
+                    name: '"interceptor"',
+                    tip: 'Cache interceptor can be used for getting callbacks before and after cache get, put, and remove operations'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                +form-field__checkbox({
+                    label: 'Store by value',
+                    model: `${model}.storeByValue`,
+                    name: '"storeByValue"',
+                    tip: 'Use store-by-value or store-by-reference semantics'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Eager TTL',
+                    model: `${model}.eagerTtl`,
+                    name: '"eagerTtl"',
+                    tip: 'Eagerly remove expired cache entries'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__checkbox({
+                    label: 'Enable encryption',
+                    model: `${model}.encryptionEnabled`,
+                    name: '"encryptionEnabled"',
+                    tip: 'Enable encription of data on the disk'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__checkbox({
+                    label: 'Disable events',
+                    model: `${model}.eventsDisabled`,
+                    name: '"eventsDisabled"',
+                    tip: 'Disable events on this cache'
+                })
+            .pc-form-grid-col-60
+                mixin store-session-listener-factories()
+                    .ignite-form-field
+                        -let items = `${model}.cacheStoreSessionListenerFactories`;
+
+                        list-editable(
+                        ng-model=items
+                        list-editable-cols=`::[{
+                            name: 'Store session listener factories:',
+                            tip: 'Cache store session listener factories'
+                        }]`)
+                            list-editable-item-view {{ $item }}
+
+                            list-editable-item-edit
+                                +list-java-class-field('Listener', '$item', '"Listener"', items)
+                                    +form-field__error({
+                                        error: 'igniteUnique',
+                                        message: 'Listener with such class name already exists!'
+                                    })
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push(""))`
+                                    label-single='listener'
+                                    label-multiple='listeners'
+                                )
+
+                - var form = '$parent.form'
+                +store-session-listener-factories
+                - var form = 'misc'
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheMisc')

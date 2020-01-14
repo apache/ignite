@@ -32,15 +32,12 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 
 /**
  * Tests the processing of deployment request with an attempt to load a class with an unknown class name.
  */
-@RunWith(JUnit4.class)
 public class DeploymentRequestOfUnknownClassProcessingTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_TOPIC_NAME = "TEST_TOPIC_NAME";

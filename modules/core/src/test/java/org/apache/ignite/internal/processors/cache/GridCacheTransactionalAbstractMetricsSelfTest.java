@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -27,8 +29,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -40,7 +40,6 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Transactional cache metrics test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
     private static final int TX_CNT = 3;
@@ -262,6 +261,42 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     @Test
     public void testOptimisticSuspendedSerializableTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /** */
+    @Test
+    public void testCommitTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetric m = metric("CommitTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        try (Transaction tx = grid(0).transactions().txStart()) {
+            cache.put(1, 1);
+
+            tx.commit();
+        }
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testRollbackTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetric m = metric("RollbackTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        try (Transaction tx = grid(0).transactions().txStart()) {
+            cache.put(1, 1);
+
+            tx.rollback();
+        }
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
     /**

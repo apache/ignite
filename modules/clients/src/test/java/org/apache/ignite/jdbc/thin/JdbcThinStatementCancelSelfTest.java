@@ -42,8 +42,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * Statement cancel test.
  */
 @SuppressWarnings({"ThrowableNotThrown", "AssertWithSideEffects"})
-@RunWith(JUnit4.class)
 public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -442,9 +439,9 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
             IgniteInternalFuture cancelRes = cancel(stmt);
 
             GridTestUtils.assertThrows(log, () -> {
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30) OR _key < " + MAX_ROWS);
                 stmt.addBatch("update Long set _val = _val + 1 where awaitLatchCancelled() = 0");
-                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30)");
+                stmt.addBatch("update Long set _val = _val + 1 where _key < sleep_func (30) OR _key < " + MAX_ROWS);
                 stmt.addBatch("update Long set _val = _val + 1 where shouldNotBeCalledInCaseOfCancellation()");
 
                 stmt.executeBatch();

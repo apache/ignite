@@ -17,33 +17,13 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
 public class IgniteCamelStreamerTestSuite {
-    /**
-     * @return {@link IgniteCamelStreamerTest} test suite.
-     */
-    public static TestSuite suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests List of ignored tests.
-     * @return Test suite.
-     */
-    public static TestSuite suite(Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCamelStreamer Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteCamelStreamerTest.class));
-
-        return suite;
-    }
 }

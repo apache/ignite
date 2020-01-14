@@ -39,15 +39,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
  * Tests that client is able to connect to a grid with only default cache enabled.
  */
-@RunWith(JUnit4.class)
 public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Path to jetty config configured with SSL. */
     private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";

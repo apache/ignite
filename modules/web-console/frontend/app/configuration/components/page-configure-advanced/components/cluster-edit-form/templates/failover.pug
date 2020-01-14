@@ -1,0 +1,189 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var model = '$ctrl.clonedCluster'
+-var form = 'failoverSpi'
+-var failoverSpi = model + '.failoverSpi'
+-var failureHandler = model + '.failureHandler'
+-var failoverCustom = '$item.kind === "Custom"'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Failover configuration
+    panel-description
+        | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            //- Since ignite 2.0
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.0.0")')
+                +form-field__number({
+                    label: 'Failure detection timeout:',
+                    model: model + '.failureDetectionTimeout',
+                    name: '"failureDetectionTimeout"',
+                    placeholder: '10000',
+                    min: '1',
+                    tip: 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__number({
+                    label: 'Client failure detection timeout:',
+                    model: model + '.clientFailureDetectionTimeout',
+                    name: '"clientFailureDetectionTimeout"',
+                    placeholder: '30000',
+                    min: '1',
+                    tip: 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'System workers blocked timeout:',
+                    model: model + '.systemWorkerBlockedTimeout',
+                    name: '"SystemWorkerBlockedTimeout"',
+                    placeholder: 'Failure detection timeout',
+                    min: '1',
+                    tip: 'Maximum inactivity period for system worker'
+                })
+
+            .pc-form-grid-col-60
+                mixin clusters-failover-spi
+                    .ignite-form-field
+                        +form-field__label({ label: 'Failover SPI configurations:', name: '"failoverSpi"' })
+                            +form-field__tooltip({ title: `Failover SPI configurations` })
+                        -let items = failoverSpi
+
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='failoverSpi')
+                            list-editable-item-edit.pc-form-grid-row
+                                .pc-form-grid-col-60
+                                    +form-field__dropdown({
+                                        required: true,
+                                        label: 'Failover SPI:',
+                                        model: '$item.kind',
+                                        name: '"failoverKind"',
+                                        placeholder: 'Choose Failover SPI',
+                                        options: '::$ctrl.Clusters.failoverSpis',
+                                        tip: `
+                                        Provides ability to supply custom logic for handling failed execution of a grid job
+                                        <ul>
+                                            <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>
+                                            <li>Never - Jobs are ordered as they arrived</li>
+                                            <li>Always - Jobs are first ordered by their priority</li>
+                                            <li>Custom - Jobs are activated immediately on arrival to mapped node</li>
+                                            <li>Default - Default FailoverSpi implementation</li>
+                                        </ul>`
+                                    })
+
+                                .pc-form-grid-col-60(ng-show='$item.kind === "JobStealing"')
+                                    +form-field__number({
+                                        label: 'Maximum failover attempts:',
+                                        model: '$item.JobStealing.maximumFailoverAttempts',
+                                        name: '"jsMaximumFailoverAttempts"',
+                                        placeholder: '5',
+                                        min: '0',
+                                        tip: 'Maximum number of attempts to execute a failed job on another node'
+                                    })
+                                .pc-form-grid-col-60(ng-show='$item.kind === "Always"')
+                                    +form-field__number({
+                                        label: 'Maximum failover attempts:',
+                                        model: '$item.Always.maximumFailoverAttempts',
+                                        name: '"alwaysMaximumFailoverAttempts"',
+                                        placeholder: '5',
+                                        min: '0',
+                                        tip: 'Maximum number of attempts to execute a failed job on another node'
+                                    })
+                                .pc-form-grid-col-60(ng-show=failoverCustom)
+                                    +form-field__java-class({
+                                        label: 'SPI implementation',
+                                        model: '$item.Custom.class',
+                                        name: '"failoverSpiClass"',
+                                        required: failoverCustom,
+                                        tip: 'Custom FailoverSpi implementation class name.',
+                                        validationActive: failoverCustom
+                                    })
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`(${items} = ${items} || []).push({})`
+                                    label-single='failover SPI'
+                                    label-multiple='failover SPIs'
+                                )
+
+                +clusters-failover-spi
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__dropdown({
+                    label: 'Failure handler:',
+                    model: `${failureHandler}.kind`,
+                    name: '"FailureHandlerKind"',
+                    placeholder: 'Default',
+                    options: '$ctrl.failureHandlerVariant',
+                    tip: 'Handle failures<br/>\
+                        <ul>\
+                            <li>Restart process - Process will be terminated using Ignition.restart call</li>\
+                            <li>Try stop with timeout - Handler will try to stop node if tryStop value is true or terminate forcibly</li>\
+                            <li>Stop on critical error - Handler will stop node in case of critical error</li>\
+                            <li>Disabled - Ignores any failure</li>\n\
+                            <li>Custom - Custom implementation of failure handler</li>\
+                            <li>Default - Default implementation of failure handler</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.5.0") && ${failureHandler}.kind === "Custom"`)
+                +form-field__java-class({
+                    label: 'Class name:',
+                    model: `${failureHandler}.Custom.className`,
+                    name: '"CustomFailureHandler"',
+                    required: true,
+                    tip: 'Class name of custom failure handler implementation',
+                    validationActive: true
+                })
+            .pc-form-group.pc-form-grid-row(ng-if=`$ctrl.available("2.5.0") && ${failureHandler}.kind === 'StopNodeOnHalt'`)
+                .pc-form-grid-col-60
+                    +form-field__number({
+                        label: 'Stop node timeout:',
+                        model: `${failureHandler}.StopNodeOnHalt.timeout`,
+                        name: '"StopNodeOnHaltTimeout"',
+                        placeholder: '0',
+                        min: '0',
+                        tip: 'Timeout for forcibly terminating by using Runtime.getRuntime().halt()'
+                    })
+                .pc-form-grid-col-60
+                    +form-field__checkbox({
+                        label: 'Try to stop node',
+                        model: `${failureHandler}.StopNodeOnHalt.tryStop`,
+                        name: '"StopNodeOnHaltTryStop"',
+                        tip: 'Try to stop node'
+                    })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.5.0") && ['RestartProcess', 'StopNodeOnHalt', 'StopNode'].indexOf(${failureHandler}.kind) >= 0`)
+                +form-field__dropdown({
+                    label: 'Ignored failure types:',
+                    model: `${failureHandler}.ignoredFailureTypes`,
+                    name: '"FailureHandlerIgnoredFailureTypes"',
+                    multiple: true,
+                    placeholder: 'Choose ignored failure types',
+                    placeholderEmpty: '',
+                    options: '$ctrl.ignoredFailureTypes',
+                    tip: 'Ignored failure types:<br/>\
+                        <ul>\
+                            <li>SEGMENTATION - Node segmentation</li>\
+                            <li>SYSTEM_WORKER_TERMINATION - System worker termination</li>\
+                            <li>SYSTEM_WORKER_BLOCKED - System worker has not updated its heartbeat for a long time</li>\
+                            <li>CRITICAL_ERROR - Critical error - error which leads to the system\'s inoperability</li>\n\
+                            <li>SYSTEM_CRITICAL_OPERATION_TIMEOUT - System-critical operation has been timed out</li>\
+                        </ul>'
+                })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterFailover')

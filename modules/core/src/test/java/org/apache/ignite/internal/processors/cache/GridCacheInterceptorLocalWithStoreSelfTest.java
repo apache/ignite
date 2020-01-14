@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public class GridCacheInterceptorLocalWithStoreSelfTest extends GridCacheInterceptorLocalSelfTest {
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    /** */
+    @Before
+    public void beforeGridCacheInterceptorLocalWithStoreSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
 
-        super.setUp();
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        return super.cacheConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */

@@ -46,15 +46,12 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private boolean cpyOnRead;

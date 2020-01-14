@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlKeepStaticConfigurationTest;
+import org.apache.ignite.internal.processors.cache.index.StaticCacheDdlTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFilterListenerTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
@@ -60,7 +62,9 @@ import org.junit.runners.Suite;
     IgniteCacheContinuousQueryClientTest.class,
     CacheContinuousQueryAsyncFilterListenerTest.class,
     CacheContinuousWithTransformerRandomOperationsTest.class,
-    CacheContinuousQueryRandomOperationsTest.class
+    CacheContinuousQueryRandomOperationsTest.class,
+    StaticCacheDdlTest.class,
+    StaticCacheDdlKeepStaticConfigurationTest.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

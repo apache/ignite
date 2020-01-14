@@ -32,13 +32,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for consistent hash management class.
  */
-@RunWith(JUnit4.class)
 public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /** Replicas count. */
     private static final int REPLICAS = 512;
@@ -107,8 +104,8 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
 
         try {
             // Add several objects with the same hash without neither natural ordering nor comparator.
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
             fail("Expects failed due to internal TreeSet requires comparator or natural ordering.");
         }
@@ -125,8 +122,8 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
         }, null);
 
         // Add several objects with the same hash into consistent hash with explicit comparator.
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
         info("Expected pass due to internal TreeSet has explicit comparator.");
     }

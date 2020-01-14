@@ -35,6 +35,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Responsible for performing truncate selection.
@@ -42,7 +43,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite resource. */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Fittest keys. */
     private List<Long> fittestKeys;
@@ -90,13 +91,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return List of lists containing keys.
      */
     private List<List<Long>> getEnhancedPopulation() {
-        List<List<Long>> list = new ArrayList<List<Long>>();
+        List<List<Long>> list = new ArrayList<>();
 
         for (Long key : fittestKeys) {
             Chromosome cp = getChromosome(key);
             for (int i = 0; i < numOfCopies; i++) {
                 long[] thegenes = cp.getGenes();
-                List<Long> geneList = new ArrayList<Long>();
+                List<Long> geneList = new ArrayList<>();
                 for (int k = 0; k < cp.getGenes().length; k++)
                     geneList.add(thegenes[k]);
 
@@ -107,12 +108,8 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
         return list;
     }
 
-    /**
-     * @param nodes List of ClusterNode.
-     * @param chromosomeKeys Primary keys for respective chromosomes.
-     * @return Map of nodes to jobs.
-     */
-    public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    /** {@inheritDoc} */
+    @NotNull @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
 
@@ -121,30 +118,21 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
 
         int k = 0;
         for (Long key : chromosomeKeys) {
-            TruncateSelectionJob ajob = new TruncateSelectionJob(key, (List)enhancedPopulation.get(k));
+            TruncateSelectionJob ajob = new TruncateSelectionJob(key, enhancedPopulation.get(k));
             ClusterNode primary = affinity.mapKeyToNode(key);
             map.put(ajob, primary);
-            k = k + 1;
+            k += 1;
         }
         return map;
     }
 
-    /**
-     * We return TRUE if success, else Exception is thrown.
-     *
-     * @param list List of ComputeJobResult.
-     * @return Boolean value.
-     */
-    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
-    /**
-     * @param res ComputeJobResult.
-     * @param rcvd List of ComputeJobResult.
-     * @return ComputeJobResultPolicy.
-     */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 
         if (err != null)

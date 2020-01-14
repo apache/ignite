@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
 import org.apache.ignite.IgniteCacheAffinitySelfTest;
 import org.apache.ignite.IgniteSystemProperties;
@@ -28,12 +28,20 @@ import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClientSlowDiscoveryTransactionRemapTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateClientPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateClientReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateNoRebalancePartitionedTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateNoRebalanceReplicatedTest;
 import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateThinClientPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateThinClientReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
@@ -43,18 +51,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Ignite
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheMvccTestSuite5 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         System.setProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, "true");
 
         HashSet<Class> ignoredTests = new HashSet<>(128);
@@ -76,7 +84,13 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(IgniteCacheWriteBehindNoUpdateSelfTest.class);
         ignoredTests.add(IgniteCacheSyncRebalanceModeSelfTest.class);
         ignoredTests.add(ClusterStatePartitionedSelfTest.class);
+        ignoredTests.add(ClusterStateClientPartitionedSelfTest.class);
+        ignoredTests.add(ClusterStateThinClientPartitionedSelfTest.class);
+        ignoredTests.add(ClusterStateNoRebalancePartitionedTest.class);
         ignoredTests.add(ClusterStateReplicatedSelfTest.class);
+        ignoredTests.add(ClusterStateClientReplicatedSelfTest.class);
+        ignoredTests.add(ClusterStateThinClientReplicatedSelfTest.class);
+        ignoredTests.add(ClusterStateNoRebalanceReplicatedTest.class);
         ignoredTests.add(CacheManualRebalancingTest.class);
         ignoredTests.add(GridCacheAffinityBackupsSelfTest.class);
         ignoredTests.add(IgniteCacheAffinitySelfTest.class);
@@ -87,11 +101,9 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
         ignoredTests.add(GridCachePartitionExchangeManagerHistSizeTest.class);
         ignoredTests.add(ConcurrentCacheStartTest.class);
+        ignoredTests.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
+        ignoredTests.add(ClientSlowDiscoveryTransactionRemapTest.class);
 
-        TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 5");
-
-        suite.addTest(IgniteCacheTestSuite5.suite(ignoredTests));
-
-        return suite;
+        return IgniteCacheTestSuite5.suite(ignoredTests);
     }
 }

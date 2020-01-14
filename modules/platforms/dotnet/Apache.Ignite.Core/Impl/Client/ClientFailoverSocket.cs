@@ -26,13 +26,18 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
-    internal class ClientFailoverSocket : IClientSocket
+    internal class ClientFailoverSocket : IDisposable
     {
         /** Underlying socket. */
         private ClientSocket _socket;
@@ -43,8 +48,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Config. */
         private readonly IgniteClientConfiguration _config;
 
+        /** Marshaller. */
+        private readonly Marshaller _marsh;
+
         /** Endpoints with corresponding hosts. */
-        private readonly List<KeyValuePair<IPEndPoint, string>> _endPoints;
+        private readonly List<SocketEndpoint> _endPoints;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -52,15 +60,33 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Disposed flag. */
         private bool _disposed;
 
+        /** Current affinity topology version. */
+        private AffinityTopologyVersion? _affinityTopologyVersion;
+
+        /** Map from node ID to connected socket. */
+        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
+
+        /** Map from cache ID to partition mapping. */
+        private volatile ClientCacheTopologyPartitionMap _distributionMap;
+
+        /** Distribution map locker. */
+        private readonly object _distributionMapSyncRoot = new object();
+
+        /** Logger. */
+        private readonly ILogger _logger;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
         /// <param name="config">The configuration.</param>
-        public ClientFailoverSocket(IgniteClientConfiguration config)
+        /// <param name="marsh"></param>
+        public ClientFailoverSocket(IgniteClientConfiguration config, Marshaller marsh)
         {
             Debug.Assert(config != null);
+            Debug.Assert(marsh != null);
 
             _config = config;
+            _marsh = marsh;
 
 #pragma warning disable 618 // Type or member is obsolete
             if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
@@ -77,49 +103,92 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
 
+            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
+            
             Connect();
-        }
+       }
 
-        /** <inheritdoc /> */
-        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
+        /// <summary>
+        /// Performs a send-receive operation.
+        /// </summary>
+        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        /// <summary>
+        /// Performs a send-receive operation with partition awareness.
+        /// </summary>
+        public T DoOutInOpAffinity<T, TKey>(
+            ClientOp opId,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
+            int cacheId,
+            TKey key,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+            return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /// <summary>
+        /// Performs an async send-receive operation with partition awareness.
+        /// </summary>
+        public Task<T> DoOutInOpAffinityAsync<T, TKey>(
+            ClientOp opId,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
+            int cacheId,
+            TKey key,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+            return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /// <summary>
+        /// Performs an async send-receive operation.
+        /// </summary>
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public ClientProtocolVersion ServerVersion
+        /// <summary>
+        /// Gets the current protocol version.
+        /// Only used for tests.
+        /// </summary>
+        public ClientProtocolVersion CurrentProtocolVersion
         {
             get { return GetSocket().ServerVersion; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the remote endpoint.
+        /// </summary>
         public EndPoint RemoteEndPoint
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _socket != null ? _socket.RemoteEndPoint : null;
-                }
+                var socket = _socket;
+                return socket != null ? socket.RemoteEndPoint : null;
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the local endpoint.
+        /// </summary>
         public EndPoint LocalEndPoint
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _socket != null ? _socket.LocalEndPoint : null;
-                }
+                var socket = _socket;
+                return socket != null ? socket.LocalEndPoint : null;
             }
         }
 
@@ -130,17 +199,61 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             lock (_syncRoot)
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException("ClientFailoverSocket");
-                }
+                ThrowIfDisposed();
 
-                if (_socket == null)
+                if (_socket == null || (_socket.IsDisposed && !_config.ReconnectDisabled))
                 {
                     Connect();
                 }
 
                 return _socket;
+            }
+        }
+
+        private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
+        {
+            if (!_config.EnablePartitionAwareness)
+            {
+                return null;
+            }
+
+            UpdateDistributionMap(cacheId);
+
+            var distributionMap = _distributionMap;
+            var socketMap = _nodeSocketMap;
+            ClientCachePartitionMap cachePartMap;
+
+            if (socketMap == null || !distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+            {
+                return null;
+            }
+
+            if (cachePartMap == null)
+            {
+                return null;
+            }
+
+            var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
+            var nodeId = cachePartMap.PartitionNodeIds[partition];
+
+            ClientSocket socket;
+            if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
+            {
+                return socket;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Throws if disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException"></exception>
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException("ClientFailoverSocket");
             }
         }
 
@@ -158,6 +271,16 @@ namespace Apache.Ignite.Core.Impl.Client
                     _socket.Dispose();
                     _socket = null;
                 }
+
+                if (_nodeSocketMap != null)
+                {
+                    foreach (var socket in _nodeSocketMap.Values)
+                    {
+                        socket.Dispose();
+                    }
+
+                    _nodeSocketMap = null;
+                }
             }
         }
 
@@ -168,16 +291,27 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             List<Exception> errors = null;
             var startIdx = (int) Interlocked.Increment(ref _endPointIndex);
+            _socket = null;
 
             for (var i = 0; i < _endPoints.Count; i++)
             {
                 var idx = (startIdx + i) % _endPoints.Count;
                 var endPoint = _endPoints[idx];
 
+                if (endPoint.Socket != null && !endPoint.Socket.IsDisposed)
+                {
+                    _socket = endPoint.Socket;
+                    break;
+                }
+
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.Key, endPoint.Value, OnSocketError);
-                    return;
+                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
+                        _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+                    endPoint.Socket = _socket;
+
+                    break;
                 }
                 catch (SocketException e)
                 {
@@ -190,31 +324,43 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            throw new AggregateException("Failed to establish Ignite thin client connection, " +
-                                         "examine inner exceptions for details.", errors);
+            if (_socket == null && errors != null)
+            {
+                throw new AggregateException("Failed to establish Ignite thin client connection, " +
+                                             "examine inner exceptions for details.", errors);
+            }
+
+            if (_socket != null &&
+                _config.EnablePartitionAwareness &&
+                _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
+            {
+                _config.EnablePartitionAwareness = false;
+
+                _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
+                             "is lower than required {1}",
+                    _socket.ServerVersion,
+                    ClientOp.CachePartitions.GetMinVersion()
+                );
+            }
         }
 
         /// <summary>
-        /// Called when socket error occurs.
+        /// Updates current Affinity Topology Version.
         /// </summary>
-        private void OnSocketError()
+        private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
-            if (_config.ReconnectDisabled)
-            {
-                return;
-            }
+            _affinityTopologyVersion = affinityTopologyVersion;
 
-            // Reconnect on next operation.
-            lock (_syncRoot)
+            if (_config.EnablePartitionAwareness)
             {
-                _socket = null;
+                InitSocketMap();
             }
         }
 
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<KeyValuePair<IPEndPoint, string>> GetIpEndPoints(IgniteClientConfiguration cfg)
+        private static IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
             foreach (var e in Endpoint.GetEndpoints(cfg))
             {
@@ -228,7 +374,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     for (var i = 0; i <= e.PortRange; i++)
                     {
-                        yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(ip, e.Port + i), host);
+                        yield return new SocketEndpoint(new IPEndPoint(ip, e.Port + i), host);
                     }
                 }
                 else
@@ -237,11 +383,171 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         foreach (var x in Dns.GetHostEntry(host).AddressList)
                         {
-                            yield return new KeyValuePair<IPEndPoint, string>(new IPEndPoint(x, e.Port + i), host);
+                            yield return new SocketEndpoint(new IPEndPoint(x, e.Port + i), host);
                         }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether distribution map is up to date.
+        /// </summary>
+        /// <returns></returns>
+        private bool IsDistributionMapUpToDate(ClientCacheTopologyPartitionMap map = null)
+        {
+            map = map ?? _distributionMap;
+
+            if (map == null || _affinityTopologyVersion == null)
+            {
+                return false;
+            }
+
+            return map.AffinityTopologyVersion >= _affinityTopologyVersion.Value;
+        }
+
+        /// <summary>
+        /// Updates the partition mapping.
+        /// </summary>
+        private void UpdateDistributionMap(int cacheId)
+        {
+            if (IsDistributionMapUpToDate())
+                return; // Up to date.
+
+            lock (_distributionMapSyncRoot)
+            {
+                if (IsDistributionMapUpToDate())
+                    return; // Up to date.
+
+                DoOutInOp(
+                    ClientOp.CachePartitions,
+                    s => WriteDistributionMapRequest(cacheId, s.Stream),
+                    s => ReadDistributionMapResponse(s.Stream));
+            }
+        }
+
+        private object ReadDistributionMapResponse(IBinaryStream s)
+        {
+            var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
+            var size = s.ReadInt();
+            var mapping = new Dictionary<int, ClientCachePartitionMap>();
+
+            for (int i = 0; i < size; i++)
+            {
+                var grp = new ClientCachePartitionAwarenessGroup(s);
+
+                if (grp.PartitionMap == null)
+                {
+                    // Partition awareness is not applicable for these caches.
+                    foreach (var cache in grp.Caches)
+                    {
+                        mapping[cache.Key] = null;
+                    }
+
+                    continue;
+                }
+
+                // Count partitions to avoid reallocating array.
+                int maxPartNum = 0;
+                foreach (var partMap in grp.PartitionMap)
+                {
+                    foreach (var part in partMap.Value)
+                    {
+                        if (part > maxPartNum)
+                        {
+                            maxPartNum = part;
+                        }
+                    }
+                }
+
+                // Populate partition array.
+                var partNodeIds = new Guid[maxPartNum + 1];
+                foreach (var partMap in grp.PartitionMap)
+                {
+                    foreach (var part in partMap.Value)
+                    {
+                        partNodeIds[part] = partMap.Key;
+                    }
+                }
+
+                foreach (var cache in grp.Caches)
+                {
+                    mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
+                }
+            }
+
+            _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
+
+            return null;
+        }
+
+        private void WriteDistributionMapRequest(int cacheId, IBinaryStream s)
+        {
+            if (_distributionMap != null)
+            {
+                // Map exists: request update for all caches.
+                var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
+                var count = _distributionMap.CachePartitionMap.Count;
+                if (!mapContainsCacheId)
+                {
+                    count++;
+                }
+
+                s.WriteInt(count);
+
+                foreach (var cachePartitionMap in _distributionMap.CachePartitionMap)
+                {
+                    s.WriteInt(cachePartitionMap.Key);
+                }
+
+                if (!mapContainsCacheId)
+                {
+                    s.WriteInt(cacheId);
+                }
+            }
+            else
+            {
+                // Map does not exist yet: request update for specified cache only.
+                s.WriteInt(1);
+                s.WriteInt(cacheId);
+            }
+        }
+
+        private int GetPartition<TKey>(TKey key, int partitionCount, IDictionary<int, int> keyConfiguration)
+        {
+            var keyHash = BinaryHashCodeUtils.GetHashCode(key, _marsh, keyConfiguration);
+            return ClientRendezvousAffinityFunction.GetPartitionForKey(keyHash, partitionCount);
+        }
+
+        private void InitSocketMap()
+        {
+            var map = new Dictionary<Guid, ClientSocket>();
+
+            foreach (var endPoint in _endPoints)
+            {
+                if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
+                {
+                    try
+                    {
+                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
+                            _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+                        endPoint.Socket = socket;
+                    }
+                    catch (SocketException)
+                    {
+                        continue;
+                    }
+                }
+
+                var nodeId = endPoint.Socket.ServerNodeId;
+                if (nodeId != null)
+                {
+                    map[nodeId.Value] = endPoint.Socket;
+                }
+            }
+
+            _nodeSocketMap = map;
         }
     }
 }

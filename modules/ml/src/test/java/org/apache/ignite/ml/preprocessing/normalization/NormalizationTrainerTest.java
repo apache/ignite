@@ -22,13 +22,16 @@ import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.junit.Test;
 
+import static org.apache.ignite.ml.TestUtils.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link BinarizationTrainer}.
@@ -37,27 +40,29 @@ public class NormalizationTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {
-        Map<Integer, double[]> data = new HashMap<>();
-        data.put(1, new double[] {2, 4, 1});
-        data.put(2, new double[] {1, 8, 22});
-        data.put(3, new double[] {4, 10, 100});
-        data.put(4, new double[] {0, 22, 300});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, VectorUtils.of(2, 4, 1));
+        data.put(2, VectorUtils.of(1, 8, 22));
+        data.put(3, VectorUtils.of(4, 10, 100));
+        data.put(4, VectorUtils.of(0, 22, 300));
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<Integer, double[]>()
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
+
+        NormalizationTrainer<Integer, Vector> normalizationTrainer = new NormalizationTrainer<Integer, Vector>()
             .withP(3);
 
         assertEquals(3., normalizationTrainer.p(), 0);
 
-        NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
+        NormalizationPreprocessor<Integer, Vector> preprocessor = normalizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> VectorUtils.of(v)
+            vectorizer
         );
 
         assertEquals(normalizationTrainer.p(), preprocessor.p(), 0);
 
-        assertArrayEquals(new double[] {0.125, 0.99, 0.125}, preprocessor.apply(5, new double[]{1., 8., 1.}).asArray(), 1e-2);
+        assertArrayEquals(new double[] {0.125, 0.99, 0.125}, preprocessor.apply(5, VectorUtils.of(1., 8., 1.)).features().asArray(), 1e-2);
     }
 }

@@ -139,7 +139,8 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        // No-op
+        if (plugin != null)
+            plugin.stop();
     }
 
     /** {@inheritDoc} */
@@ -149,8 +150,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-        if (plugin != null)
-            plugin.stop();
+        // No-op
     }
 
     /** {@inheritDoc} */

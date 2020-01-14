@@ -46,8 +46,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -55,7 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int SRV_CNT = 4;

@@ -40,15 +40,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String PARTITIONED = "partitioned";

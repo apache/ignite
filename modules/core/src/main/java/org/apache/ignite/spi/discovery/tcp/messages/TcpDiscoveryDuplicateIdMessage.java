@@ -32,6 +32,9 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
     /** Node with duplicate ID. */
     private final TcpDiscoveryNode node;
 
+    /** ID of the node with duplicate ID. */
+    private final UUID nodeId;
+
     /**
      * Constructor.
      *
@@ -44,6 +47,22 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
         assert node != null;
 
         this.node = node;
+        this.nodeId = null;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param creatorNodeId Creator node ID.
+     * @param nodeId ID of node with same ID.
+     */
+    public TcpDiscoveryDuplicateIdMessage(UUID creatorNodeId, UUID nodeId) {
+        super(creatorNodeId);
+
+        assert nodeId != null;
+
+        this.node = null;
+        this.nodeId = nodeId;
     }
 
     /**
@@ -51,6 +70,13 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
      */
     public TcpDiscoveryNode node() {
         return node;
+    }
+
+    /**
+     * @return Node with duplicate ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /** {@inheritDoc} */

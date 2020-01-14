@@ -40,6 +40,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -54,9 +55,8 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -73,7 +73,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
  * Tests for replicated cache preloader.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private CacheRebalanceMode preloadMode = ASYNC;
@@ -143,6 +142,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             cfg.setIncludeEventTypes(evts);
         }
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -565,7 +566,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEventP2pDisabled() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         testExternalClassesAtEvent0(true);
     }
@@ -575,7 +576,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testExternalClassesAtEvent() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
         testExternalClassesAtEvent0(false);
     }
@@ -761,8 +762,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleNodes() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = ASYNC;
         batchSize = 256;

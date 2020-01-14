@@ -28,8 +28,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -46,18 +50,19 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
@@ -65,7 +70,6 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -86,6 +90,20 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static final String DATA_NODE = "dataNodeUserAttr";
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -103,6 +121,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         client = false;
 
         disableAutoActivation = false;
+
+        System.clearProperty(IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /** {@inheritDoc} */
@@ -489,7 +509,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt2 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.cluster().setBaselineTopology(baselineNodes(blt2));
+        ignite.cluster().setBaselineTopology(baselineNodes(
+            blt2.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
@@ -510,7 +531,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Set<ClusterNode> blt3 = new HashSet<>(ignite.cluster().nodes());
 
-        ignite.cluster().setBaselineTopology(baselineNodes(blt3));
+        ignite.cluster().setBaselineTopology(baselineNodes(
+            blt3.stream().filter(n -> !n.isClient()).collect(Collectors.toSet())));
 
         awaitPartitionMapExchange();
 
@@ -801,7 +823,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        startGrids(5);
+        startGrid(1); //TODO https://issues.apache.org/jira/browse/IGNITE-8717 (replace with startGrids(5); //after)
+        startGrid(0);
+        startGrid(2);
+        startGrid(3);
+        startGrid(4);
 
         GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
 
@@ -815,7 +841,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+    public void testNonPersistentCachesDontIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
@@ -830,7 +856,85 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
-        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
+        assertEquals(0, ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, false);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, true);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, true);
+    }
+
+    /**
+     * @param primary Whether non-baseline node is primary.
+     * @param near Whether non-baseline nod is near node.
+     * @throws Exception If failed.
+     */
+    public void checkMapTxNodes(boolean primary, boolean near) throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
+
+        int bltNodesCnt = 3;
+
+        Ignite ig = startGrids(bltNodesCnt);
+
+        ig.cluster().active(true);
+
+        ig.createCache(new CacheConfiguration<>()
+            .setName(CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(2));
+
+        ig.createCache(
+            new CacheConfiguration<>()
+                .setName(CACHE_NAME + 1)
+                .setDataRegionName("memory")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                .setBackups(2)
+        );
+
+        Ignite nonBltIgnite = startGrid(bltNodesCnt);
+
+        awaitPartitionMapExchange();
+
+        ClusterNode nonBltNode = nonBltIgnite.cluster().localNode();
+
+        Ignite nearIgnite = near ? nonBltIgnite : ig;
+
+        IgniteCache<Integer, Integer> persistentCache = nearIgnite.cache(CACHE_NAME);
+
+        IgniteCache<Integer, Integer> inMemoryCache = nearIgnite.cache(CACHE_NAME + 1);
+
+        assertEquals(0, nearIgnite.affinity(persistentCache.getName()).allPartitions(nonBltNode).length);
+
+        assertEquals(0, nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length);
     }
 
     /**
@@ -909,6 +1013,58 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < 1000; k++)
             assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+    }
+
+    /**
+     * Verify that in case of setting baseline topology with offline node among others
+     * {@link IgniteException} is thrown.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    public void testSettingBaselineTopologyWithOfflineNode() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
+            (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
+
+        Collection<ClusterNode> nodes = new ArrayList<>(ignite.cluster().nodes());
+        nodes.add(new DetachedClusterNode("non-existing-node-id", null));
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ignite.cluster().setBaselineTopology(nodes);
+
+            return null;
+        }, IgniteException.class, "Check arguments. Node with consistent ID [non-existing-node-id] " +
+            "not found in server nodes.");
+    }
+
+    /**
+     * Verify that in case of setting baseline topology with offline node among others {@link IgniteException} is
+     * thrown.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+    public void testSettingBaselineTopologyWithOfflineNodeFromOldTopology() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        stopGrid(1);
+
+        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion() - 1);
+
+            return null;
+        }, IgniteException.class, "Check arguments. Node with consistent ID " +
+            "[distributed.CacheBaselineTopologyTest1] not found in server nodes.");
     }
 
     /** */

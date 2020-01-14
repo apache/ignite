@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.inference;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.ml.inference.builder.IgniteDistributedModelBuilderTest;
 import org.apache.ignite.ml.inference.builder.SingleModelBuilderTest;
 import org.apache.ignite.ml.inference.builder.ThreadedModelBuilderTest;
@@ -36,19 +34,8 @@ import org.junit.runners.Suite;
     ThreadedModelBuilderTest.class,
     DirectorySerializerTest.class,
     DefaultModelStorageTest.class,
-    IgniteDistributedModelBuilderTest.class
+    IgniteDistributedModelBuilderTest.class,
+    IgniteModelStorageUtilTest.class
 })
 public class InferenceTestSuite {
-    /** */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite(InferenceTestSuite.class.getSimpleName());
-
-        suite.addTest(new JUnit4TestAdapter(SingleModelBuilderTest.class));
-        suite.addTest(new JUnit4TestAdapter(ThreadedModelBuilderTest.class));
-        suite.addTest(new JUnit4TestAdapter(DirectorySerializerTest.class));
-        suite.addTest(new JUnit4TestAdapter(DefaultModelStorageTest.class));
-        suite.addTest(new JUnit4TestAdapter(IgniteDistributedModelBuilderTest.class));
-
-        return suite;
-    }
 }

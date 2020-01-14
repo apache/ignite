@@ -20,6 +20,8 @@ package org.apache.ignite.testframework.junits;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -41,17 +43,19 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
+import javax.management.DynamicMBean;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,7 +65,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
@@ -76,6 +79,7 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -85,6 +89,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -105,6 +110,8 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -122,22 +129,34 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.junit.runners.model.TestClass;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
@@ -145,20 +164,17 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
  * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
-    "TransientFieldInNonSerializableClass",
+    "ExtendsUtilityClass",
     "ProhibitedExceptionDeclared",
-    "JUnitTestCaseWithNonTrivialConstructors"
+    "TransientFieldInNonSerializableClass"
 })
-public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
+public abstract class GridAbstractTest extends JUnitAssertAware {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
      **************************************************************/
     /** Null name for execution map. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
-
-    /** */
-    private static final boolean BINARY_MARSHALLER = false;
 
     /** Ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
@@ -172,70 +188,80 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
+    private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
-    private final Lock runSerializer = new ReentrantLock();
+    /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
+    @ClassRule public static final TestRule firstLastTestRule = RuleChain
+        .outerRule(new SystemPropertiesRule())
+        .around(new BeforeFirstAndAfterLastTestRule());
 
     /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
+    private transient TestRule runRule = (base, desc) -> new Statement() {
         @Override public void evaluate() throws Throwable {
-            runSerializer.lock();
-            try {
-                assert getName() != null : "getName returned null";
+            assert getName() != null : "getName returned null";
 
-                runTestCase(base);
-            } finally {
-                runSerializer.unlock();
-            }
+            runTest(base);
         }
     };
 
-    /** */
-    private transient boolean startGrid;
+    /** Allows easy repeating for test. */
+    @Rule public transient RepeatRule repeatRule = new RepeatRule();
+
+    /**
+     * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
+     * from {@code runTest(Statement)}.
+     */
+    private transient TestName nameRule = new TestName();
+
+    /**
+     * Gets the name of the currently executed test case.
+     *
+     * @return Name of the currently executed test case.
+     */
+    public String getName() {
+        return nameRule.getMethodName();
+    }
+
+    /**
+     * Provides the order of JUnit TestRules. Because of JUnit framework specifics {@link #nameRule} must be invoked
+     * first.
+     */
+    @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
+        .outerRule(new SystemPropertiesRule())
+        .around(nameRule)
+        .around(runRule);
 
     /** */
-    protected transient IgniteLogger log;
+    private static transient boolean startGrid;
 
     /** */
-    private transient ClassLoader clsLdr;
+    protected static transient IgniteLogger log;
 
     /** */
-    private transient boolean stopGridErr;
+    private static transient ClassLoader clsLdr;
+
+    /** */
+    private static transient boolean stopGridErr;
 
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
 
-    /** Force failure flag. */
-    private boolean forceFailure;
-
-    /** Force failure message. */
-    private String forceFailureMsg;
-
-    /** Whether test count is known is advance. */
-    private boolean forceTestCnt;
-
-    /** Number of tests. */
-    private int testCnt;
-
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
-    /**
-     *
-     */
+    /** */
     static {
-        System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
-        System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
+        System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
 
-        if (BINARY_MARSHALLER)
-            GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+        S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
         if (GridTestClockTimer.startTestTimer()) {
             Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
@@ -255,7 +281,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected GridAbstractTest() throws IgniteCheckedException {
         this(false);
 
-        log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
+        log = getIgniteTestResources().getLogger().getLogger(getClass());
     }
 
     /**
@@ -271,7 +297,54 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         log = new GridTestLog4jLogger();
 
-        this.startGrid = startGrid;
+        GridAbstractTest.startGrid = startGrid;
+    }
+
+    /**
+     * Called before execution of every test method in class.
+     * <p>
+     * Do not annotate with {@link Before} in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTest()} will be called anyway.
+     */
+    protected void beforeTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
+     * execution.
+     * <p>
+     * Do not annotate with {@link After} in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     */
+    protected void afterTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called before execution of all test methods in class.
+     * <p>
+     * Do not annotate with {@link BeforeClass} in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
+     */
+    protected void beforeTestsStarted() throws Exception {
+        // Checking that no test wrapper is set before test execution.
+        assert BPlusTree.testHndWrapper == null;
+    }
+
+    /**
+     * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without
+     * execution of any test methods.
+     * <p>
+     * Do not annotate with {@link AfterClass} in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     */
+    protected void afterTestsStopped() throws Exception {
+        // No-op.
     }
 
     /**
@@ -309,14 +382,15 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources() throws IgniteCheckedException {
-        return getTestCounters().getTestResources();
+        return getIgniteTestResources();
     }
 
     /**
+     * @param cfg Ignite configuration.
      * @return Test resources.
      */
     protected IgniteTestResources getTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return getTestCounters(cfg).getTestResources();
+        return getIgniteTestResources(cfg);
     }
 
     /**
@@ -535,7 +609,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         cfg.setClientMode(false);
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                //No-op
+                // No-op.
+            }
+        });
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi() {
+            @Override protected void register(SystemView<?> sysView) {
+                // No-op.
             }
         });
 
@@ -559,101 +638,70 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with Before in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @Before} annotation.
-     */
-    @Deprecated
-    @Override protected void setUp() throws Exception {
-        stopGridErr = false;
+    /** */
+    private void beforeFirstTest() throws Exception {
+        sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
-        clsLdr = Thread.currentThread().getContextClassLoader();
+        info(">>> Starting test class: " + testClassDescription() + " <<<");
 
-        // Change it to the class one.
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+        if (isSafeTopology())
+            assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
 
-        // Clear log throttle.
-        LT.clear();
+        if (startGrid) {
+            IgniteConfiguration cfg = optimize(getConfiguration());
 
-        TestCounters cntrs = getTestCounters();
-
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
-
-        if (cntrs.isReset()) {
-            info("Resetting test counters.");
-
-            int started = cntrs.getStarted() % cntrs.getNumberOfTests();
-            int stopped = cntrs.getStopped() % cntrs.getNumberOfTests();
-
-            cntrs.reset();
-
-            cntrs.setStarted(started);
-            cntrs.setStopped(stopped);
+            G.start(cfg);
         }
-
-        if (isFirstTest()) {
-            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
-
-            info(">>> Starting test class: " + testClassDescription() + " <<<");
-
-            if (isSafeTopology())
-                assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution:" + G.allGrids();
-
-            if (startGrid) {
-                IgniteConfiguration cfg = optimize(getConfiguration());
-
-                G.start(cfg);
-            }
-
-            try {
-                List<Integer> jvmIds = IgniteNodeRunner.killAll();
-
-                if (!jvmIds.isEmpty())
-                    log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
-
-                resolveWorkDirectory();
-
-                beforeTestsStarted();
-            }
-            catch (Exception | Error t) {
-                t.printStackTrace();
-
-                getTestCounters().setStopped(getTestCounters().getNumberOfTests() - 1);
-
-                try {
-                    tearDown();
-                }
-                catch (Exception e) {
-                    log.error("Failed to tear down test after exception was thrown in beforeTestsStarted (will " +
-                        "ignore)", e);
-                }
-
-                throw t;
-            }
-        }
-
-        info(">>> Starting test: " + testDescription() + " <<<");
 
         try {
-            beforeTest();
+            List<Integer> jvmIds = IgniteNodeRunner.killAll();
+
+            if (!jvmIds.isEmpty())
+                log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+
+            resolveWorkDirectory();
+
+            beforeTestsStarted();
         }
         catch (Exception | Error t) {
+            t.printStackTrace();
+
             try {
-                tearDown();
+                cleanUpTestEnviroment();
             }
             catch (Exception e) {
-                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
+                log.error("Failed to tear down test after exception was thrown in beforeTestsStarted (will " +
+                    "ignore)", e);
             }
 
             throw t;
         }
+    }
 
-        ts = System.currentTimeMillis();
+    /**
+     * Runs after each test. Is responsible for clean up test enviroment in accordance with {@link #afterTest()}
+     * method overriding.
+     *
+     * @throws Exception If failed.
+     */
+    private void cleanUpTestEnviroment() throws Exception {
+        long dur = System.currentTimeMillis() - ts;
+
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+
+        try {
+            afterTest();
+        }
+        finally {
+            if (!keepSerializedObjects())
+                serializedObj.clear();
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+
+            cleanReferences();
+        }
     }
 
     /**
@@ -677,7 +725,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @NotNull protected Method currentTestMethod() {
         if (currTestMtd == null) {
             try {
-                currTestMtd = getClass().getMethod(getName());
+                String testName = getName();
+
+                int bracketIdx = testName.indexOf('[');
+
+                String mtdName = bracketIdx >= 0 ? testName.substring(0, bracketIdx) : testName;
+
+                currTestMtd = getClass().getMethod(mtdName);
             }
             catch (NoSuchMethodException e) {
                 throw new NoSuchMethodError("Current test method is not found: " + getName());
@@ -702,7 +756,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid() throws Exception {
+    protected IgniteEx startGrid() throws Exception {
         return startGrid(getTestIgniteInstanceName());
     }
 
@@ -711,10 +765,10 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final Ignite startGrids(int cnt) throws Exception {
+    protected final IgniteEx startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
-        Ignite ignite = null;
+        IgniteEx ignite = null;
 
         for (int i = 0; i < cnt; i++)
             if (ignite == null)
@@ -833,6 +887,23 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     protected IgniteEx startGrid(int idx) throws Exception {
         return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
     }
+    
+    /**
+     * Starts new client grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx) throws Exception {
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
+
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+        cfg.setClientMode(true);
+
+        return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+    }
 
     /**
      * Starts new grid with given configuration.
@@ -936,7 +1007,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
                     }
                 }
 
-                Ignite node = IgnitionEx.start(cfg, ctx);
+                Ignite node = IgnitionEx.start(optimize(cfg), ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
 
@@ -953,7 +1024,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             }
         }
         else
-            return startRemoteGrid(igniteInstanceName, null, ctx);
+            return startRemoteGrid(igniteInstanceName, cfg, ctx);
     }
 
     /**
@@ -967,7 +1038,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      */
     protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        return startRemoteGrid(igniteInstanceName, cfg, ctx, grid(0), true);
+        return startRemoteGrid(igniteInstanceName, cfg, ctx,true);
     }
 
     /**
@@ -1038,19 +1109,23 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @param igniteInstanceName Ignite instance name.
      * @param cfg Ignite configuration.
      * @param ctx Spring context.
-     * @param locNode Local node.
      * @param resetDiscovery Reset DiscoverySpi.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx,
-        IgniteEx locNode, boolean resetDiscovery)
-        throws Exception {
+    protected Ignite startRemoteGrid(
+        String igniteInstanceName,
+        IgniteConfiguration cfg,
+        GridSpringResourceContext ctx,
+        boolean resetDiscovery
+    ) throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
 
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
+
+        IgniteEx locNode = grid(0);
 
         if (locNode != null) {
             DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
@@ -1058,21 +1133,31 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
                 try {
                     // Clone added to support ZookeeperDiscoverySpi.
-                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
-
-                    m.setAccessible(true);
-
-                    cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi(cloneDiscoverySpi(cfg.getDiscoverySpi()));
 
                     resetDiscovery = false;
                 }
-                catch (NoSuchMethodException e) {
+                catch (NoSuchMethodException ignore) {
                     // Ignore.
                 }
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery, additionalRemoteJvmArgs());
+        return new IgniteProcessProxy(cfg, log, (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * Clone added to support ZookeeperDiscoverySpi.
+     *
+     * @param discoverySpi Discovery spi.
+     * @return Clone of discovery spi.
+     */
+    protected DiscoverySpi cloneDiscoverySpi(DiscoverySpi discoverySpi) throws Exception {
+        Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+
+        m.setAccessible(true);
+
+        return (DiscoverySpi) m.invoke(discoverySpi);
     }
 
     /**
@@ -1134,7 +1219,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
             assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
-            UUID id = ignite instanceof IgniteProcessProxy ? ignite.localNode().id() : ignite.context().localNodeId();
+            UUID id = ignite instanceof IgniteProcessProxy ? ((IgniteProcessProxy)ignite).getId() : ignite.context().localNodeId();
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
@@ -1283,7 +1368,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      * @param idx Index.
      * @return Ignite instance.
      */
-    protected Ignite ignite(int idx) {
+    protected IgniteEx ignite(int idx) {
         return grid(idx);
     }
 
@@ -1692,8 +1777,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
         cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
 
         return cfg;
@@ -1742,82 +1825,46 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Do not annotate with After in overriding methods.</p>
-     * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
-     * method with {@code @After} annotation.
-     */
-    @Deprecated
-    @Override protected void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
+    /** */
+    private void afterLastTest() throws Exception {
+        info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        Exception err = null;
 
-        TestCounters cntrs = getTestCounters();
+        // Stop all threads started by runMultithreaded() methods.
+        GridTestUtils.stopThreads(log);
 
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
+        // Safety.
+        getTestResources().stopThreads();
 
         try {
-            afterTest();
+            afterTestsStopped();
         }
-        finally {
-            serializedObj.clear();
+        catch (Exception e) {
+            err = e;
+        }
 
-            Exception err = null;
+        if (isSafeTopology()) {
+            stopAllGrids(true);
 
-            if (isLastTest()) {
-                info(">>> Stopping test class: " + testClassDescription() + " <<<");
-
-                TestCounters counters = getTestCounters();
-
-                // Stop all threads started by runMultithreaded() methods.
-                GridTestUtils.stopThreads(log);
-
-                // Safety.
-                getTestResources().stopThreads();
-
-                // Set reset flags, so counters will be reset on the next setUp.
-                counters.setReset(true);
-
-                try {
-                    afterTestsStopped();
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-
-                if (isSafeTopology()) {
-                    stopAllGrids(false);
-
-                    if (stopGridErr) {
-                        err = new RuntimeException("Not all Ignite instances has been stopped. " +
-                            "Please, see log for details.", err);
-                    }
-                }
-
-                // Remove counters.
-                tests.remove(getClass());
-
-                // Remove resources cached in static, if any.
-                GridClassLoaderCache.clear();
-                U.clearClassCache();
-                MarshallerExclusions.clearCache();
-                BinaryEnumCache.clear();
+            if (stopGridErr) {
+                err = new RuntimeException("Not all Ignite instances has been stopped. " +
+                    "Please, see log for details.", err);
             }
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-
-            if (err != null)
-                throw err;
         }
+
+        // Remove resources.
+        tests.remove(getClass());
+
+        // Remove resources cached in static, if any.
+        GridClassLoaderCache.clear();
+        U.clearClassCache();
+        MarshallerExclusions.clearCache();
+        BinaryEnumCache.clear();
+        serializedObj.clear();
+
+        if (err!= null)
+            throw err;
     }
 
     /**
@@ -1844,24 +1891,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
             cls = cls.getSuperclass();
         }
-    }
-
-    /**
-     * @return First test flag.
-     */
-    protected boolean isFirstTest() throws IgniteCheckedException {
-        TestCounters cntrs = getTestCounters();
-
-        return cntrs.getStarted() == 1 && cntrs.getStopped() == 0;
-    }
-
-    /**
-     * @return Last test flag.
-     */
-    protected boolean isLastTest() throws IgniteCheckedException {
-        TestCounters cntrs = getTestCounters();
-
-        return cntrs.getStopped() == cntrs.getNumberOfTests();
     }
 
     /**
@@ -2055,83 +2084,138 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     * @return Test counters.
+     * @return Test resources.
      */
-    protected synchronized TestCounters getTestCounters() throws IgniteCheckedException {
-        TestCounters tc = tests.get(getClass());
+    private synchronized IgniteTestResources getIgniteTestResources() throws IgniteCheckedException {
+        IgniteTestResources rsrcs = tests.get(getClass());
 
-        if (tc == null)
-            tests.put(getClass(), tc = new TestCounters());
+        if (rsrcs == null)
+            tests.put(getClass(), rsrcs = new IgniteTestResources());
 
-        return tc;
+        return rsrcs;
     }
 
     /**
-     * @param cfg Ignite configuration
-     * @return Test counters
-     * @throws IgniteCheckedException In case of error
+     * @param cfg Ignite configuration.
+     * @return Test resources.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected synchronized TestCounters getTestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return new TestCounters(cfg);
+    private synchronized IgniteTestResources getIgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new IgniteTestResources(cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override void runTest(Statement testRoutine) throws Throwable {
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
+    /** Runs test with the provided scenario. */
+    private void runTest(Statement testRoutine) throws Throwable {
+        prepareTestEnviroment();
 
-        Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
-            @Override public void run() {
-                try {
-                    if (forceFailure)
-                        fail("Forced failure: " + forceFailureMsg);
+        try {
+            final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-                    testRoutine.evaluate();
+            Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
+                @Override public void run() {
+                    try {
+                        testRoutine.evaluate();
+                    }
+                    catch (Throwable e) {
+                        IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+
+                        ex.set(hnd != null ? hnd.apply(e) : e);
+                    }
                 }
-                catch (Throwable e) {
-                    IgniteClosure<Throwable, Throwable> hnd = errorHandler();
+            });
 
-                    ex.set(hnd != null ? hnd.apply(e) : e);
-                }
+            runner.start();
+
+            runner.join(isDebug() ? 0 : getTestTimeout());
+
+            if (runner.isAlive()) {
+                U.error(log,
+                    "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
+                        "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+
+                List<Ignite> nodes = IgnitionEx.allGridsx();
+
+                for (Ignite node : nodes)
+                    ((IgniteKernal)node).dumpDebugInfo();
+
+                // We dump threads to stdout, because we can loose logs in case
+                // the build is cancelled on TeamCity.
+                U.dumpThreads(null);
+
+                U.dumpThreads(log);
+
+                U.interrupt(runner);
+
+                U.join(runner, log);
+
+                throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
+                    getTestTimeout() + ']');
             }
-        });
 
-        runner.start();
+            Throwable t = ex.get();
 
-        runner.join(isDebug() ? 0 : getTestTimeout());
+            if (t != null) {
+                U.error(log, "Test failed.", t);
 
-        if (runner.isAlive()) {
-            U.error(log,
-                "Test has been timed out and will be interrupted (threads dump will be taken before interruption) [" +
-                    "test=" + getName() + ", timeout=" + getTestTimeout() + ']');
+                throw t;
+            }
 
-            List<Ignite> nodes = IgnitionEx.allGridsx();
-
-            for (Ignite node : nodes)
-                ((IgniteKernal)node).dumpDebugInfo();
-
-            // We dump threads to stdout, because we can loose logs in case
-            // the build is cancelled on TeamCity.
-            U.dumpThreads(null);
-
-            U.dumpThreads(log);
-
-            U.interrupt(runner);
-
-            U.join(runner, log);
-
-            throw new TimeoutException("Test has been timed out [test=" + getName() + ", timeout=" +
-                getTestTimeout() + ']');
+            assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
         }
+        finally {
+            try {
+                cleanUpTestEnviroment();
+            }
+            catch (Exception e) {
+                log.error("Failed to execute tear down after test (will ignore)", e);
+            }
+        }
+    }
 
-        Throwable t = ex.get();
+    /**
+     * Runs before each test. Is responsible for prepare test enviroment in accordance with {@link #beforeTest()}
+     * method overriding.
+     *
+     * @throws Exception If failed.
+     */
+    private void prepareTestEnviroment() throws Exception {
+        stopGridErr = false;
 
-        if (t != null) {
-            U.error(log, "Test failed.", t);
+        clsLdr = Thread.currentThread().getContextClassLoader();
+
+        // Change it to the class one.
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+
+        // Clear log throttle.
+        LT.clear();
+
+        info(">>> Starting test: " + testDescription() + " <<<");
+
+        try {
+            beforeTest();
+        }
+        catch (Exception | Error t) {
+            try {
+                cleanUpTestEnviroment();
+            }
+            catch (Exception e) {
+                log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
+            }
 
             throw t;
         }
 
-        assert !stopGridErr : "Error occurred on grid stop (see log for more details).";
+        ts = System.currentTimeMillis();
+    }
+
+    /**
+     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * are not cleared after each test execution.
+     *
+     * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
+     */
+    protected boolean keepSerializedObjects() {
+        return false;
     }
 
     /**
@@ -2139,26 +2223,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
      */
     protected IgniteClosure<Throwable, Throwable> errorHandler() {
         return null;
-    }
-
-    /**
-     * Force test failure.
-     *
-     * @param msg Message.
-     */
-    public void forceFailure(@Nullable String msg) {
-        forceFailure = true;
-
-        forceFailureMsg = msg;
-    }
-
-    /**
-     * Set test count.
-     */
-    public void forceTestCount(int cnt) {
-        testCnt = cnt;
-
-        forceTestCnt = true;
     }
 
     /**
@@ -2332,6 +2396,14 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
+     * Clear S#classCache. Use if necessary to test sensitive data
+     * in the test. https://ggsystems.atlassian.net/browse/GG-25182
+     */
+    protected void clearGridToStringClassCache() {
+        ((Map)getFieldValueHierarchy(S.class, "classCache")).clear();
+    }
+
+    /**
      * @param millis Time to sleep.
      */
     public static void doSleep(long millis) {
@@ -2400,7 +2472,9 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         protected Object readResolve() throws ObjectStreamException {
             Object res = serializedObj.get(uuid);
 
-            assert res != null;
+            assert res != null
+                : "Failed to find serializable proxy with uuid=" + uuid
+                    + ". Try to set test property keepSerializedObjects to 'true' if object was removed after test";
 
             return res;
         }
@@ -2464,144 +2538,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             job.setIgnite(ignite);
 
             return job.call(idx);
-        }
-    }
-
-    /**
-     * Test counters.
-     *
-     * TODO IGNITE-10179 Try to make this class go away since its primary (possibly even only) purpose appears to
-     * support methods isFirstTest() and isLastTest() which in turn look like JUnit 3-specific workaround for
-     * functionality that is natively available in JUnit 4 via BeforeClass and AfterClass annotations. Along the way,
-     * find out if this will allow to get rid of runSerializer lock which is introduced with sole purpose to
-     * maintain integrity of TestCounters.
-     */
-    protected class TestCounters {
-        /** */
-        private int numOfTests = -1;
-
-        /** */
-        private int started;
-
-        /** */
-        private int stopped;
-
-        /** */
-        private boolean reset;
-
-        /** */
-        private IgniteTestResources rsrcs;
-
-        /**
-         * @throws IgniteCheckedException In case of error.
-         */
-        public TestCounters() throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources();
-        }
-
-        /**
-         * @param cfg Ignite configuration
-         * @throws IgniteCheckedException In case of error
-         */
-        public TestCounters(IgniteConfiguration cfg) throws IgniteCheckedException {
-            rsrcs = new IgniteTestResources(cfg);
-        }
-
-        /**
-         * @return Reset flag.
-         */
-        public boolean isReset() {
-            return reset;
-        }
-
-        /**
-         * @return Test resources.
-         */
-        public IgniteTestResources getTestResources() {
-            return rsrcs;
-        }
-
-        /**
-         * @param reset Reset flag.
-         */
-        public void setReset(boolean reset) {
-            this.reset = reset;
-        }
-
-        /** */
-        public void reset() {
-            numOfTests = -1;
-            started = 0;
-            stopped = 0;
-            reset = false;
-        }
-
-        /**
-         * @return Started flag.
-         */
-        public int getStarted() {
-            return started;
-        }
-
-        /**
-         * @param started Started flag.
-         */
-        public void setStarted(int started) {
-            this.started = started;
-        }
-
-        /**
-         * @return Stopped flag.
-         */
-        public int getStopped() {
-            return stopped;
-        }
-
-        /**
-         * @param stopped Stopped flag.
-         */
-        public void setStopped(int stopped) {
-            this.stopped = stopped;
-        }
-
-        /** */
-        public void incrementStarted() {
-            if (isDebug())
-                info("Incrementing started tests counter.");
-
-            started++;
-        }
-
-        /** */
-        public void incrementStopped() {
-            if (isDebug())
-                info("Incrementing stopped tests counter.");
-
-            stopped++;
-        }
-
-        /**
-         * @return Number of tests
-         */
-        public int getNumberOfTests() {
-            if (numOfTests == -1) {
-                GridAbstractTest this0 = GridAbstractTest.this;
-
-                int cnt;
-
-                if (this0.forceTestCnt)
-                    cnt = this0.testCnt;
-                else
-                    cnt = (int)new TestClass(this0.getClass())
-                        .getAnnotatedMethods(Test.class)
-                        .stream()
-                        .filter(method -> method.getAnnotation(Ignore.class) == null)
-                        .count();
-
-                numOfTests = cnt;
-            }
-
-            return numOfTests;
         }
     }
 
@@ -2685,5 +2621,87 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
          * @param cache Cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
+    }
+
+    /**
+     *  Calls {@link #beforeFirstTest()} and {@link #afterLastTest()} methods
+     *  in order to support {@link #beforeTestsStarted()} and {@link #afterTestsStopped()}.
+     *  <p>
+     *  Processes {@link WithSystemProperty} annotations as well.
+     */
+    private static class BeforeFirstAndAfterLastTestRule implements TestRule {
+        /** {@inheritDoc} */
+        @Override public Statement apply(Statement base, Description desc) {
+            return new Statement() {
+                @Override public void evaluate() throws Throwable {
+                    Constructor<?> testConstructor = desc.getTestClass().getDeclaredConstructor();
+
+                    testConstructor.setAccessible(true);
+
+                    GridAbstractTest fixtureInstance = (GridAbstractTest)testConstructor.newInstance();
+
+                    fixtureInstance.evaluateInsideFixture(base);
+                }
+            };
+        }
+    }
+
+    /**
+     * Executes a statement inside a fixture calling GridAbstractTest specific methods which
+     * should be executed before and after a test class execution.
+     *
+     * @param stmt Statement to execute.
+     * @throws Throwable In case of failure.
+     */
+    @SuppressWarnings("ThrowFromFinallyBlock")
+    private void evaluateInsideFixture(Statement stmt) throws Throwable {
+        Throwable suppressed = null;
+
+        try {
+            beforeFirstTest();
+
+            stmt.evaluate();
+        }
+        catch (Throwable t) {
+            suppressed = t;
+
+            throw t;
+        }
+        finally {
+            try {
+                afterLastTest();
+            }
+            catch (Throwable t) {
+                if (suppressed != null)
+                    t.addSuppressed(suppressed);
+
+                throw t;
+            }
+        }
+    }
+
+
+    /**
+     * Returns metric set.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param metrics Metrics.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public DynamicMBean metricRegistry(
+        String igniteInstanceName,
+        String grp,
+        String metrics
+    ) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, metrics);
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            throw new IgniteException("MBean not registered.");
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
     }
 }

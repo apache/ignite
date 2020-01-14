@@ -17,28 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryAlbIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinderSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * ELB IP finder test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({TcpDiscoveryElbIpFinderSelfTest.class})
 public class IgniteElbTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new IgniteTestSuite("ELB Integration Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryElbIpFinderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryAlbIpFinderSelfTest.class));
-
-        return suite;
-    }
 }

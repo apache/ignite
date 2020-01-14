@@ -31,18 +31,15 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IndexStorageSelfTest extends GridCommonAbstractTest {
     /** Make sure page is small enough to trigger multiple pages in a linked list. */
     private static final int PAGE_SIZE = 1024;
@@ -112,6 +109,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                         null,
                         mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX),
                         true,
+                        null,
                         null
                     );
 
@@ -180,7 +178,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new LongAdderMetric("NO_OP", null),
             true);
     }
 }

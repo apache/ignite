@@ -34,8 +34,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -57,7 +55,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Prepared statement test.
  */
-@RunWith(JUnit4.class)
 public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/";

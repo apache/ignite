@@ -17,45 +17,35 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.websession.IgniteWebSessionSelfTestSuite;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Special test suite with ignored tests.
  */
-public class IgniteIgnoredTestSuite extends TestSuite {
-    /**
-     * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        IgniteTestSuite.ignoreDefault(true);
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteS3TestSuite.class,
 
-        IgniteTestSuite suite = new IgniteTestSuite(null, "Ignite Ignored Test Suite");
+    /* --- CLIENTS --- */
+    org.apache.ignite.internal.client.suite.IgniteClientTestSuite.class,
 
-        /* --- AWS --- */
-        suite.addTest(IgniteS3TestSuite.suite());
+    /* --- CLOUDS --- */
+    IgniteCloudTestSuite.class,
 
-        /* --- CLIENTS --- */
-        suite.addTest(org.apache.ignite.internal.client.suite.IgniteClientTestSuite.suite());
+    /* --- JTA --- */
+    IgniteJtaTestSuite.class,
 
-        /* --- CLOUDS --- */
-        suite.addTest(IgniteCloudTestSuite.suite());
+    /* --- QUERIES --- */
+    //IgniteCacheQuerySelfTestSuite.class,
+    //IgniteCacheQuerySelfTestSuite2.class,
 
-        /* --- JTA --- */
-        suite.addTest(IgniteJtaTestSuite.suite());
+    /* --- SPRING --- */
+    IgniteSpringTestSuite.class,
 
-        /* --- QUERIES --- */
-        suite.addTest(IgniteCacheQuerySelfTestSuite.suite());
-        suite.addTest(IgniteCacheQuerySelfTestSuite2.suite());
-
-        /* --- SPRING --- */
-        suite.addTest(IgniteSpringTestSuite.suite());
-
-        /* --- WEB SESSIONS --- */
-        suite.addTest(IgniteWebSessionSelfTestSuite.suite());
-
-        return suite;
-    }
+    /* --- WEB SESSIONS --- */
+    IgniteWebSessionSelfTestSuite.class,
+})
+public class IgniteIgnoredTestSuite {
 }

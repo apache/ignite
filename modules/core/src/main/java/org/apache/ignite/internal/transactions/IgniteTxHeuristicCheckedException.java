@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Exception thrown whenever grid transaction enters an unknown state.
  * This exception is usually thrown whenever commit partially succeeds.
@@ -26,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
  * integrity, by invalidating all values participating in this transaction
  * on remote nodes.
  */
-public class IgniteTxHeuristicCheckedException extends IgniteCheckedException {
+public class IgniteTxHeuristicCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

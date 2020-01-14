@@ -22,13 +22,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SpringCache}
  */
-@RunWith(JUnit4.class)
 public class SpringCacheTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;

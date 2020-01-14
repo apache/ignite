@@ -32,13 +32,15 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(REPLICATED);

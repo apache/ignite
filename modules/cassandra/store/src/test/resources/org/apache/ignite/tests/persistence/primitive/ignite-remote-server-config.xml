@@ -59,7 +59,7 @@
 
     <!-- Ignite configuration -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-	
+
         <property name="cacheConfiguration">
             <list>
                 <!-- Partitioned cache example configuration (Atomic mode). -->
@@ -67,7 +67,7 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="backups" value="1"/>
                 </bean>
-			
+
                 <!-- Configuring persistence for "cache1" cache -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>

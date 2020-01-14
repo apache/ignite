@@ -55,9 +55,7 @@ public class ClientListenerBufferedParser implements GridNioParser {
             assert old == null;
         }
 
-        boolean checkHandshake = ses.meta(ClientListenerNioListener.CONN_CTX_HANDSHAKE_PASSED) == null;
-
-        return nioBuf.read(buf, checkHandshake);
+        return nioBuf.read(buf);
     }
 
     /** {@inheritDoc} */

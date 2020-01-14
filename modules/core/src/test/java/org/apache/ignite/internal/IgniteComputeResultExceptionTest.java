@@ -30,16 +30,14 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Testing that if {@link ComputeTask#result(ComputeJobResult, List)} throws an {@link IgniteException}
  * then that exception is thrown as the execution result.
  */
-@RunWith(JUnit4.class)
 public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     /** */
     @Test
@@ -178,7 +176,7 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 

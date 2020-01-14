@@ -57,7 +57,8 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
 
                     return user.save();
                 })
-                .then((user) => mailsService.emailUserResetLink(host, user));
+                .then((user) => mailsService.sendResetLink(host, user)
+                    .then(() => user));
         }
 
         /**
@@ -74,6 +75,9 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
                     if (!user)
                         throw new errors.MissingResourceException('Failed to find account with this token! Please check link from email.');
 
+                    if (settings.activation.enabled && !user.activated)
+                        throw new errors.MissingConfirmRegistrationException(user.email);
+
                     return new Promise((resolve, reject) => {
                         user.setPassword(newPassword, (err, _user) => {
                             if (err)
@@ -85,7 +89,8 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
                         });
                     });
                 })
-                .then((user) => mailsService.emailPasswordChanged(host, user));
+                .then((user) => mailsService.sendPasswordChanged(host, user)
+                    .then(() => user));
         }
 
         /**
@@ -100,6 +105,9 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
                     if (!user)
                         throw new errors.IllegalAccessError('Invalid token for password reset!');
 
+                    if (settings.activation.enabled && !user.activated)
+                        throw new errors.MissingConfirmRegistrationException(user.email);
+
                     return {token, email: user.email};
                 });
         }
@@ -113,7 +121,7 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
          */
         static validateActivationToken(user, activationToken) {
             if (user.activated) {
-                if (user.activationToken !== activationToken)
+                if (!_.isEmpty(activationToken) && user.activationToken !== activationToken)
                     return new errors.AuthFailedException('Invalid email or password!');
             }
             else {
@@ -162,7 +170,7 @@ module.exports.factory = (mongo, settings, errors, utilsService, mailsService) =
 
                     return user.save();
                 })
-                .then((user) =>  mailsService.emailUserActivation(host, user));
+                .then((user) => mailsService.sendActivationLink(host, user));
         }
     }
 

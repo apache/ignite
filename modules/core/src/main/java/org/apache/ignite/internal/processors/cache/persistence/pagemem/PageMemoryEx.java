@@ -21,17 +21,26 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Page memory with some persistence related additions.
  */
 public interface PageMemoryEx extends PageMemory {
+    /**
+     * @param absPtr Absolute pointer to read lock.
+     * @param pageId Page ID.
+     * @param force Force flag.
+     * @param touch Update page timestamp.
+     * @return Pointer to the page read buffer.
+     */
+    long readLock(long absPtr, long pageId, boolean force, boolean touch);
+
     /**
      *
      * @param grpId Group ID.
@@ -90,7 +99,7 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications
-     * in regard with checkpointing.
+     * in regard with checkpointing. May return false-negative result during or after partition eviction.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a
      *      checkpoint to begin.
@@ -105,8 +114,9 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @return Collection of dirty page IDs.
      * @throws IgniteException If checkpoint has been already started and was not finished.
+     * @param allowToReplace The sign which allows to replace pages from a checkpoint by page replacer.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException;
+    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint(IgniteInternalFuture allowToReplace) throws IgniteException;
 
     /**
      * Finishes checkpoint operation.
@@ -114,16 +124,22 @@ public interface PageMemoryEx extends PageMemory {
     public void finishCheckpoint();
 
     /**
-     * Gets page byte buffer for the checkpoint procedure.
+     * Prepare page for write during checkpoint.
+     *{@link PageStoreWriter} will be called when the page will be ready to write.
      *
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
-     *      the {@link #beginCheckpoint()} method call.
-     * @param outBuf Temporary buffer to write changes into.
+     *      the {@link #beginCheckpoint(IgniteInternalFuture)} method call.
+     * @param buf Temporary buffer to write changes into.
+     * @param pageWriter Checkpoint page write context.
      * @param tracker Checkpoint metrics tracker.
-     * @return {@code Partition generation} if data was read, {@code null} otherwise (data already saved to storage).
-     * @throws IgniteException If failed to obtain page data.
+     * @throws IgniteCheckedException If failed to obtain page data.
      */
-    @Nullable public Integer getForCheckpoint(FullPageId pageId, ByteBuffer outBuf, CheckpointMetricsTracker tracker);
+     public void checkpointWritePage(
+         FullPageId pageId,
+         ByteBuffer buf,
+         PageStoreWriter pageWriter,
+         CheckpointMetricsTracker tracker
+     ) throws IgniteCheckedException;
 
     /**
      * Marks partition as invalid / outdated.
@@ -149,4 +165,14 @@ public interface PageMemoryEx extends PageMemory {
      * @return Future that will be completed when all pages are cleared.
      */
     public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
+
+    /**
+     * Pull page from checkpoint buffer.
+     */
+    public FullPageId pullPageFromCpBuffer();
+
+    /**
+     * Calculates throttling condition.
+     */
+    public boolean shouldThrottle();
 }

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
@@ -38,49 +36,40 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.AsymmetricKeyEncr
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.AwsKmsEncryptionServiceTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.MockEncryptionServiceTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.SymmetricKeyEncryptionServiceTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * S3 integration tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Checkpoint SPI.
+    S3CheckpointSpiConfigSelfTest.class,
+    S3CheckpointSpiSelfTest.class,
+    S3CheckpointSpiStartStopSelfTest.class,
+    S3CheckpointManagerSelfTest.class,
+    S3SessionCheckpointSelfTest.class,
+    S3CheckpointSpiStartStopBucketEndpointSelfTest.class,
+    S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class,
+
+    // S3 Encryption tests.
+    MockEncryptionServiceTest.class,
+    AwsKmsEncryptionServiceTest.class,
+    SymmetricKeyEncryptionServiceTest.class,
+    AsymmetricKeyEncryptionServiceTest.class,
+
+    // S3 IP finder.
+    DummyS3ClientTest.class,
+    DummyObjectListingTest.class,
+    TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class,
+    TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class,
+    TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class,
+    TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class,
+    TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class,
+    TcpDiscoveryS3IpFinderClientSideEncryptionSelfTest.class,
+})
 public class IgniteS3TestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new IgniteTestSuite("S3 Integration Test Suite");
-
-        // Checkpoint SPI.
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiConfigSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointManagerSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3SessionCheckpointSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopBucketEndpointSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class));
-
-        // S3 Encryption tests.
-        suite.addTest(new JUnit4TestAdapter(MockEncryptionServiceTest.class));
-        suite.addTest(new JUnit4TestAdapter(AwsKmsEncryptionServiceTest.class));
-        suite.addTest(new JUnit4TestAdapter(SymmetricKeyEncryptionServiceTest.class));
-        suite.addTest(new JUnit4TestAdapter(AsymmetricKeyEncryptionServiceTest.class));
-
-        // S3 IP finder.
-        suite.addTest(new JUnit4TestAdapter(DummyS3ClientTest.class));
-        suite.addTest(new JUnit4TestAdapter(DummyObjectListingTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryS3IpFinderClientSideEncryptionSelfTest.class));
-
-        return suite;
-    }
-
     /**
      * @return Access key.
      */

@@ -134,23 +134,28 @@ public class ServiceDeploymentManager {
      * @param stopErr Cause error of deployment manager stop.
      */
     void stopProcessing(IgniteCheckedException stopErr) {
-        busyLock.block(); // Will not release it.
+        busyLock.block();
 
-        ctx.event().removeDiscoveryEventListener(discoLsnr);
+        try {
+            ctx.event().removeDiscoveryEventListener(discoLsnr);
 
-        ctx.io().removeMessageListener(commLsnr);
+            ctx.io().removeMessageListener(commLsnr);
 
-        U.cancel(depWorker);
+            U.cancel(depWorker);
 
-        U.join(depWorker, log);
+            U.join(depWorker, log);
 
-        depWorker.tasksQueue.clear();
+            depWorker.tasksQueue.clear();
 
-        pendingEvts.clear();
+            pendingEvts.clear();
 
-        tasks.values().forEach(t -> t.completeError(stopErr));
+            tasks.values().forEach(t -> t.completeError(stopErr));
 
-        tasks.clear();
+            tasks.clear();
+        }
+        finally {
+            busyLock.unblock();
+        }
     }
 
     /**
@@ -301,14 +306,14 @@ public class ServiceDeploymentManager {
             if (!enterBusy())
                 return;
 
-            final UUID snd = evt.eventNode().id();
-            final int evtType = evt.type();
-
-            assert snd != null : "Event's node id shouldn't be null.";
-            assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED
-                || evtType == EVT_DISCOVERY_CUSTOM_EVT : "Unexpected event was received, evt=" + evt;
-
             try {
+                final UUID snd = evt.eventNode().id();
+                final int evtType = evt.type();
+
+                assert snd != null : "Event's node id shouldn't be null.";
+                assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_FAILED
+                    || evtType == EVT_DISCOVERY_CUSTOM_EVT : "Unexpected event was received, evt=" + evt;
+
                 if (evtType == EVT_DISCOVERY_CUSTOM_EVT) {
                     DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
 
@@ -495,7 +500,8 @@ public class ServiceDeploymentManager {
 
                             if (nextDumpTime <= U.currentTimeMillis()) {
                                 log.warning("Failed to wait service deployment process or timeout had been" +
-                                    " reached, timeout=" + dumpTimeout + ", task=" + task);
+                                    " reached, timeout=" + dumpTimeout +
+                                    (log.isDebugEnabled() ? ", task=" + task : ", taskDepId=" + task.deploymentId()));
 
                                 long nextTimeout = dumpTimeout * (2 + dumpCnt++);
 

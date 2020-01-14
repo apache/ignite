@@ -31,7 +31,9 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -40,8 +42,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
 import static org.apache.ignite.events.EventType.EVTS_JOB_EXECUTION;
@@ -59,7 +59,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
  * serialized form.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /** First grid. */
     private static Ignite ignite1;
@@ -70,6 +69,11 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     /** */
     public GridEventStorageSelfTest() {
         super(/*start grid*/false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /** {@inheritDoc} */

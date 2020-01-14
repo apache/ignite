@@ -37,15 +37,12 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * Test for reproducing problems during simultaneously Ignite instances stopping and cache requests executing.
  */
-@RunWith(JUnit4.class)
 public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 8;

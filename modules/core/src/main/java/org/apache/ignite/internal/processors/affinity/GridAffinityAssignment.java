@@ -31,7 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cached affinity calculations.
+ *
+ * Deprecated GridAffinityAssignment doesn't support versioning.
+ * Use GridAffinityAssignmentV2 instead.
  */
+@Deprecated
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridAffinityAssignment implements AffinityAssignment, Serializable {
     /** */
@@ -235,6 +239,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         return set == null ? Collections.<Integer>emptySet() : set;
     }
 
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.emptySet();
+    }
+
     /**
      * Initializes primary and backup maps.
      */
@@ -278,7 +287,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         if (o == this)
             return true;
 
-        if (o == null || !(o instanceof AffinityAssignment))
+        if (!(o instanceof AffinityAssignment))
             return false;
 
         return topVer.equals(((AffinityAssignment)o).topologyVersion());

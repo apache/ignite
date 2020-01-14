@@ -40,12 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,7 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests cache in-place modification logic with iterative value increment.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTest {
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 2;
@@ -138,9 +134,6 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      */
     @Test
     public void testEntryProcessorNodeLeave() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10254");
-
         startGrid(GRID_CNT);
 
         // TODO: IGNITE-1525 (test fails with one-phase commit).
@@ -212,9 +205,6 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkEntryProcessorNodeJoin(boolean invokeAll) throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10391");
-
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;

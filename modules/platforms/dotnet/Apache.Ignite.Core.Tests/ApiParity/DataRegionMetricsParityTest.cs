@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IDataRegionMetrics"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class DataRegionMetricsParityTest
     {
         /** Known name mappings. */
@@ -34,15 +35,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties = {
-            "PagesRead",
-            "PagesWritten",
-            "PagesReplaced",
-            "OffHeapSize",
-            "OffheapUsedSize",
-            "UsedCheckpointBufferPages",
-            "UsedCheckpointBufferSize"
-        };
+        private static readonly string[] MissingProperties = {};
 
         /// <summary>
         /// Tests the API parity.

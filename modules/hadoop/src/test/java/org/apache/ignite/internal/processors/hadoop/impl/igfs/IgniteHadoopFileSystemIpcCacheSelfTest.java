@@ -36,8 +36,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,7 +47,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * IPC cache test.
  */
-@RunWith(JUnit4.class)
 public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest {
     /** Path to test hadoop configuration. */
     private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";

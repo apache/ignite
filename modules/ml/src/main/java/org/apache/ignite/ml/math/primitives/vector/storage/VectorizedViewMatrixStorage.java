@@ -20,7 +20,8 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.ml.math.exceptions.IndexException;
+import java.io.Serializable;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
@@ -33,11 +34,13 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
 
     /** */
     private int row;
+
     /** */
     private int col;
 
     /** */
     private int rowStride;
+
     /** */
     private int colStride;
 
@@ -138,23 +141,13 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return parent.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return parent.isDense();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return parent.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return parent.isDistributed();
+    @Override public boolean isNumeric() {
+        return parent.isNumeric();
     }
 
     /** {@inheritDoc} */
@@ -191,5 +184,19 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
         colStride = in.readInt();
 
         size = getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        Double v = parent.get(row + i * rowStride, col + i * colStride);
+        return (T) v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setRaw(int i, Serializable v) {
+        if(!(v instanceof Number))
+            throw new IllegalStateException("Matrices don't support non-Number values");
+
+        parent.set(row + i * rowStride, col + i * colStride, ((Number) v).doubleValue());
     }
 }

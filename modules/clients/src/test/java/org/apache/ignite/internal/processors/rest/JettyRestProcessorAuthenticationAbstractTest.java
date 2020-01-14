@@ -27,15 +27,12 @@ import org.apache.ignite.internal.processors.authentication.IgniteAuthentication
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.WALMode.NONE;
 
 /**
  * Test REST with enabled authentication.
  */
-@RunWith(JUnit4.class)
 public abstract class JettyRestProcessorAuthenticationAbstractTest extends JettyRestProcessorUnsignedSelfTest {
     /** */
     protected static final String DFLT_USER = "ignite";

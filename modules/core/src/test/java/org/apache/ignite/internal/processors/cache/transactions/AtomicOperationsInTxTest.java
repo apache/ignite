@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -42,7 +40,6 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 /**
  * Checks how operations under atomic cache works inside a transaction.
  */
-@RunWith(JUnit4.class)
 public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -63,13 +60,6 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**

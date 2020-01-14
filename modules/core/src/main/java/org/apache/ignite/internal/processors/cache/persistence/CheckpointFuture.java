@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  * Checkpoint futures.
  */
-public interface CheckpointFuture  {
+public interface CheckpointFuture {
     /**
      * @return Begin future.
      */

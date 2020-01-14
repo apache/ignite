@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -239,6 +240,18 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean matchType(CacheObject val) {
+        if (val instanceof BinaryObject)
+            return ((BinaryObject)val).type().typeId() == typeId;
+
+        // Value type name can be manually set in QueryEntity to any random value,
+        // also for some reason our conversion from setIndexedTypes sets a full class name
+        // instead of a simple name there, thus we can have a typeId mismatch.
+        // Also, if the type is not in binary format, we always must have it's class available.
+        return val.value(coCtx, false).getClass() == valCls;
     }
 
     /**

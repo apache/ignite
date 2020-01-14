@@ -81,6 +81,7 @@ public class StackedVectorDatasetTrainer<O, AM extends IgniteModel<Vector, O>, L
     }
 
     /** {@inheritDoc} */
+    // TODO: IGNITE-10843 Add possibility to keep features with specific indices.
     @Override public StackedVectorDatasetTrainer<O, AM, L> withOriginalFeaturesKept(
         IgniteFunction<Vector, Vector> submodelInput2AggregatingInputConverter) {
         return (StackedVectorDatasetTrainer<O, AM, L>)super.withOriginalFeaturesKept(

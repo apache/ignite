@@ -113,29 +113,6 @@ module.exports.factory = function() {
         }
 
         /**
-         * @param {String} token
-         * @param {Array.<Socket>} browserSockets
-         */
-        runDemoCluster(token, browserSockets) {
-            this.emitEvent('demo:broadcast:start')
-                .then(() => {
-                    this.demo.tokens.push(token);
-                    this.demo.browserSockets.push(...browserSockets);
-
-                    this.socket.on('demo:topology', (res) => {
-                        try {
-                            const top = this.restResultParse(res);
-
-                            _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology', top));
-                        }
-                        catch (err) {
-                            _.forEach(this.demo.browserSockets, (sock) => sock.emit('topology:err', err));
-                        }
-                    });
-                });
-        }
-
-        /**
          * @param {Socket} browserSocket
          */
         attachToDemoCluster(browserSocket) {

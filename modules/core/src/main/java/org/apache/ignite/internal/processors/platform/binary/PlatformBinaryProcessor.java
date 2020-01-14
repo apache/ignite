@@ -76,7 +76,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 String typeName = reader.readString();
 
                 return platformContext().kernalContext().marshallerContext()
-                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName)
+                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName, false)
                     ? TRUE : FALSE;
             }
         }

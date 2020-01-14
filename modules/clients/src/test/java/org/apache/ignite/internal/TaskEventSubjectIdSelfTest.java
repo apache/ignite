@@ -35,6 +35,7 @@ import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -45,8 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
@@ -59,7 +58,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 /**
  * Tests for security subject ID in task events.
  */
-@RunWith(JUnit4.class)
 public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<TaskEvent> evts = new ArrayList<>();
@@ -78,6 +76,8 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

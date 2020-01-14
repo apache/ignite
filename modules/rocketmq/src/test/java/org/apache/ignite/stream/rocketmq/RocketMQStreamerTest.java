@@ -39,8 +39,6 @@ import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.NAME_SERVER_PORT;
@@ -49,7 +47,6 @@ import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.TEST_IP;
 /**
  * Test for {@link RocketMQStreamer}.
  */
-@RunWith(JUnit4.class)
 public class RocketMQStreamerTest extends GridCommonAbstractTest {
     /** Test topic. */
     private static final String TOPIC_NAME = "testTopic";

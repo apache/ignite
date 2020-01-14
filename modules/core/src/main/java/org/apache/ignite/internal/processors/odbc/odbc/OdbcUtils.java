@@ -24,7 +24,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -67,15 +69,20 @@ public class OdbcUtils {
         if (F.isEmpty(ptrn))
             return ptrn;
 
-        String ptrn0 = ' ' + removeQuotationMarksIfNeeded(ptrn.toUpperCase());
+        String ptrn0 = removeQuotationMarksIfNeeded(ptrn.toUpperCase());
 
-        ptrn0 = ptrn0.replaceAll("([^\\\\])%", "$1.*");
+        return SqlListenerUtils.translateSqlWildcardsToRegex(ptrn0);
+    }
 
-        ptrn0 = ptrn0.replaceAll("([^\\\\])_", "$1.");
+    /**
+     * Prepare client's schema for processing.
+     * @param schema Schema.
+     * @return Prepared schema.
+     */
+    public static String prepareSchema(String schema) {
+        String schema0 = removeQuotationMarksIfNeeded(schema);
 
-        ptrn0 = ptrn0.replaceAll("\\\\(.)", "$1");
-
-        return ptrn0.substring(1);
+        return F.isEmpty(schema0) ? QueryUtils.DFLT_SCHEMA : schema0;
     }
 
     /**

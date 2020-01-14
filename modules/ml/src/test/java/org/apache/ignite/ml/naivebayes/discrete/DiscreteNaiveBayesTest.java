@@ -17,9 +17,10 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -38,6 +39,7 @@ public class DiscreteNaiveBayesTest {
     public void testLearnsAndPredictCorrently() {
         double english = 1.;
         double scottish = 2.;
+
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {0, 0, 1, 1, 1, english});
         data.put(1, new double[] {1, 0, 1, 1, 0, english});
@@ -53,15 +55,16 @@ public class DiscreteNaiveBayesTest {
         data.put(11, new double[] {1, 0, 1, 1, 0, scottish});
         data.put(12, new double[] {1, 0, 1, 0, 0, scottish});
         double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(thresholds);
 
-        DiscreteNaiveBayesModel model = trainer.fit(
+        DiscreteNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
+
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
-        Assert.assertEquals(scottish, model.predict(observation), PRECISION);
+        Assert.assertEquals(scottish, mdl.predict(observation), PRECISION);
     }
 }

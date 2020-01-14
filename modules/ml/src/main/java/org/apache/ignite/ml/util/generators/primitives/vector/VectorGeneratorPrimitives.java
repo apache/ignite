@@ -29,7 +29,7 @@ import org.apache.ignite.ml.util.generators.primitives.scalar.UniformRandomProdu
  */
 public class VectorGeneratorPrimitives {
     /**
-     * Returns vector generator of vectors from multidimension gauss distribution.
+     * Returns vector generator of vectors from multidimensional gauss distribution.
      *
      * @param means Mean values per dimension.
      * @param variances Variance values per dimension.
@@ -47,7 +47,7 @@ public class VectorGeneratorPrimitives {
     }
 
     /**
-     * Returns vector generator of vectors from multidimension gauss distribution.
+     * Returns vector generator of vectors from multidimensional gauss distribution.
      *
      * @param means Mean values per dimension.
      * @param variances Variance values per dimension.
@@ -87,7 +87,7 @@ public class VectorGeneratorPrimitives {
     }
 
     /**
-     * Returns vector generator of vectors from multidimension uniform distribution around zero.
+     * Returns vector generator of vectors from multidimensional uniform distribution around zero.
      *
      * @param bounds Parallelogram bounds.
      * @return Generator.
@@ -97,7 +97,7 @@ public class VectorGeneratorPrimitives {
     }
 
     /**
-     * Returns vector generator of vectors from multidimension uniform distribution around zero.
+     * Returns vector generator of vectors from multidimensional uniform distribution around zero.
      *
      * @param bounds Parallelogram bounds.
      * @param seed Seed.

@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-
 /**
  * Task executor.
  */

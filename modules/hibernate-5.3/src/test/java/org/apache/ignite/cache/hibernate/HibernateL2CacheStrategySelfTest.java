@@ -41,8 +41,6 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,7 +54,6 @@ import static org.junit.Assert.assertThat;
  * Tests Hibernate L2 cache configuration.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String ENTITY1_NAME = Entity1.class.getName();

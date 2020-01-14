@@ -40,14 +40,14 @@ public class FitnessJob extends ComputeJobAdapter {
 
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Ignite logger */
     @LoggerResource
-    private IgniteLogger log = null;
+    private IgniteLogger log;
 
     /** IFitnessFunction */
-    private IFitnessFunction fitnessFuncton;
+    private IFitnessFunction fitnessFunction;
 
     /**
      * @param key Chromosome primary Key
@@ -55,17 +55,11 @@ public class FitnessJob extends ComputeJobAdapter {
      */
     public FitnessJob(Long key, IFitnessFunction fitnessFunction) {
         this.key = key;
-        this.fitnessFuncton = fitnessFunction;
+        this.fitnessFunction = fitnessFunction;
     }
 
-    /**
-     * Perform fitness operation utilizing IFitnessFunction
-     *
-     * Update chromosome's fitness value
-     *
-     * @return Fitness score
-     */
-    public Double execute() throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Double execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 
@@ -75,7 +69,7 @@ public class FitnessJob extends ComputeJobAdapter {
 
         long[] geneKeys = chromosome.getGenes();
 
-        List<Gene> genes = new ArrayList<Gene>();
+        List<Gene> genes = new ArrayList<>();
 
         for (int i = 0; i < geneKeys.length; i++) {
             long aKey = geneKeys[i];
@@ -83,7 +77,7 @@ public class FitnessJob extends ComputeJobAdapter {
             genes.add(aGene);
         }
 
-        Double val = fitnessFuncton.evaluate(genes);
+        Double val = fitnessFunction.evaluate(genes);
 
         chromosome.setFitnessScore(val);
 

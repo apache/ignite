@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.Collections;
@@ -46,15 +47,12 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
  * Tests that faulty client will be failed if connection can't be established.
  */
-@RunWith(JUnit4.class)
 public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest {
     /** Predicate. */
     private static final IgnitePredicate<ClusterNode> PRED = new IgnitePredicate<ClusterNode>() {
@@ -63,20 +61,41 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         }
     };
 
+    /** Server port for {@link FakeServer}. */
+    private static int serverPort = 47200;
+
     /** Client mode. */
     private static boolean clientMode;
 
     /** Block. */
     private static volatile boolean block;
 
+    /** */
+    private int failureDetectionTimeout = 3000;
+
+    /** */
+    private int connectTimeout = -1;
+
+    /** */
+    private int maxConnectTimeout = -1;
+
+    /** */
+    private int reconnectCnt = -1;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setFailureDetectionTimeout(1000);
+        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
         cfg.setClientMode(clientMode);
 
         TestCommunicationSpi spi = new TestCommunicationSpi();
+
+        if (connectTimeout != -1) {
+            spi.setConnectTimeout(connectTimeout);
+            spi.setMaxConnectTimeout(maxConnectTimeout);
+            spi.setReconnectCount(reconnectCnt);
+        }
 
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
@@ -92,11 +111,33 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        serverPort = takeFreePort();
+
         System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
     }
 
+    /**
+     * @throws IOException If failed.
+     */
+    private static int takeFreePort() throws IOException {
+        int freePort = serverPort;
+
+        while(true) {
+            try {
+                U.closeQuiet(startServerSocket(freePort));
+
+                return freePort;
+            }
+            catch (BindException ignore) { //If address already in use (Bind failed) t trying to choose another one.
+                freePort++;
+            }
+        }
+    }
+
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -114,12 +155,37 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
+    /** */
+    private long computeExpectedDelay() {
+        if (connectTimeout == -1)
+            return failureDetectionTimeout;
+
+        long expDelay = 0;
+
+        for (int i = 1; i < reconnectCnt && expDelay < maxConnectTimeout; i++)
+            expDelay += Math.min(connectTimeout * 2, maxConnectTimeout);
+
+        return expDelay;
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testNoServerOnHost() throws Exception {
-        testFailClient(null);
+        testFailClient(null, computeExpectedDelay());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoServerOnHostCustomFailureDetection() throws Exception {
+        connectTimeout = 3000;
+        maxConnectTimeout = 6000;
+        reconnectCnt = 3;
+
+        testFailClient(null, computeExpectedDelay());
     }
 
     /**
@@ -127,14 +193,27 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
      */
     @Test
     public void testNotAcceptedConnection() throws Exception {
-        testFailClient(new FakeServer());
+        testFailClient(new FakeServer(), computeExpectedDelay());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNotAcceptedConnectionCustomFailureDetection() throws Exception {
+        connectTimeout = 3000;
+        maxConnectTimeout = 6000;
+        reconnectCnt = 3;
+
+        testFailClient(new FakeServer(), computeExpectedDelay());
     }
 
     /**
      * @param srv Server.
+     * @param expDelay Expected delay until client is gone while trying to establish connection.
      * @throws Exception If failed.
      */
-    private void testFailClient(FakeServer srv) throws Exception {
+    private void testFailClient(FakeServer srv, long expDelay) throws Exception {
         IgniteInternalFuture<Long> fut = null;
 
         try {
@@ -182,6 +261,8 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
             block = true;
 
+            long t1 = U.currentTimeMillis();
+
             try {
                 grid(0).compute(grid(0).cluster().forClients()).withNoFailover().broadcast(new IgniteRunnable() {
                     @Override public void run() {
@@ -193,7 +274,11 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                 // No-op.
             }
 
-            assertTrue(latch.await(3, TimeUnit.SECONDS));
+            final long time = U.currentTimeMillis() - t1;
+
+            assertTrue("Must try longer than expected delay", time >= expDelay);
+
+            assertTrue(latch.await(expDelay + 1000, TimeUnit.MILLISECONDS));
 
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -223,6 +308,13 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws IOException If failed.
+     */
+    private static ServerSocket startServerSocket(int port) throws IOException {
+        return new ServerSocket(port, 50, InetAddress.getByName("127.0.0.1"));
+    }
+
+    /**
      * Server that emulates connection troubles.
      */
     private static class FakeServer implements Runnable {
@@ -236,7 +328,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
          * Default constructor.
          */
         FakeServer() throws IOException {
-            srv = new ServerSocket(47200, 50, InetAddress.getByName("127.0.0.1"));
+            srv = startServerSocket(serverPort);
         }
 
         /**
@@ -275,7 +367,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
 
                 attrs.put(createAttributeName(ATTR_ADDRS), Collections.singleton("127.0.0.1"));
-                attrs.put(createAttributeName(ATTR_PORT), 47200);
+                attrs.put(createAttributeName(ATTR_PORT), serverPort);
                 attrs.put(createAttributeName(ATTR_EXT_ADDRS), Collections.emptyList());
                 attrs.put(createAttributeName(ATTR_HOST_NAMES), Collections.emptyList());
 

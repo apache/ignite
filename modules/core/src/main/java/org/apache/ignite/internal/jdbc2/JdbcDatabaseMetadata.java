@@ -26,20 +26,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
+import java.util.SortedSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetadataInfo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -47,32 +46,35 @@ import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_VIEW;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.columnRow;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.indexRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.primaryKeyRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 
 /**
  * JDBC database metadata implementation.
  */
 public class JdbcDatabaseMetadata implements DatabaseMetaData {
-    /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "IGNITE";
-
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite JDBC Driver";
 
     /** Connection. */
     private final JdbcConnection conn;
 
-    /** Metadata. */
-    private Map<String, Map<String, Map<String, ColumnInfo>>> meta;
-
-    /** Index info. */
-    private Collection<List<Object>> indexes;
+    private final JdbcMetadataInfo meta;
 
     /**
      * @param conn Connection.
      */
     JdbcDatabaseMetadata(JdbcConnection conn) {
         this.conn = conn;
+
+        meta = new JdbcMetadataInfo(conn.ignite().context());
     }
 
     /** {@inheritDoc} */
@@ -681,9 +683,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
+            asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                 "REMARKS", "PROCEDURE_TYPE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             Collections.<List<?>>emptyList(), true
         );
@@ -695,12 +697,12 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
+            asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                 "COLUMN_NAME", "COLUMN_TYPE", "DATA_TYPE", "TYPE_NAME", "PRECISION",
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "COLUMN_DEF",
                 "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
@@ -713,53 +715,43 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTables(String catalog, String schemaPtrn, String tblNamePtrn,
         String[] tblTypes) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows = Collections.emptyList();
 
-        if (isValidCatalog(catalog) && (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (String tbl : schema.getValue().keySet()) {
-                        if (matches(tbl, tblNamePtrn))
-                            rows.add(tableRow(schema.getKey(), tbl));
-                    }
+        boolean areTypesValid = false;
+
+        if(tblTypes == null)
+            areTypesValid = true;
+        else {
+            for (String type : tblTypes) {
+                if (TYPE_TABLE.equals(type) || TYPE_VIEW.equals(type)) {
+                    areTypesValid = true;
+
+                    break;
                 }
             }
+        }
+
+        if (isValidCatalog(catalog) && areTypesValid) {
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(schemaPtrn, tblNamePtrn, tblTypes);
+
+            rows = new ArrayList<>(tabMetas.size());
+
+            for (JdbcTableMeta m : tabMetas)
+                rows.add(tableRow(m));
         }
 
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
+            asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
                 "TYPE_SCHEM", "TYPE_NAME", "SELF_REFERENCING_COL_NAME", "REF_GENERATION"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName()),
             rows, true
         );
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param tbl Table name.
-     * @return Table metadata row.
-     */
-    private List<Object> tableRow(String schema, String tbl) {
-        List<Object> row = new ArrayList<>(10);
-
-        row.add(CATALOG_NAME);
-        row.add(schema);
-        row.add(tbl.toUpperCase());
-        row.add("TABLE");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -772,9 +764,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Collections.singletonList("TABLE_CAT"),
-            Collections.singletonList(String.class.getName()),
-            Collections.singletonList(Collections.singletonList(CATALOG_NAME)),
+            singletonList("TABLE_CAT"),
+            singletonList(String.class.getName()),
+            singletonList(singletonList(CATALOG_NAME)),
             true
         );
     }
@@ -784,41 +776,36 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Collections.singletonList("TABLE_TYPE"),
-            Collections.singletonList(String.class.getName()),
-            Collections.<List<?>>singletonList(Collections.singletonList("TABLE")),
+            singletonList("TABLE_TYPE"),
+            singletonList(String.class.getName()),
+            asList(singletonList(TYPE_TABLE), singletonList(TYPE_VIEW) ),
             true);
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet getColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows = Collections.emptyList();
 
+        // FIXME: IGNITE-10745
         int cnt = 0;
 
         if (isValidCatalog(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
-                        if (matches(tbl.getKey(), tblNamePtrn)) {
-                            for (Map.Entry<String, ColumnInfo> col : tbl.getValue().entrySet()) {
-                                rows.add(columnRow(schema.getKey(), tbl.getKey(), col.getKey(),
-                                    JdbcUtils.type(col.getValue().typeName()), JdbcUtils.typeName(col.getValue().typeName()),
-                                    !col.getValue().isNotNull(), ++cnt));
-                            }
-                        }
-                    }
-                }
-            }
+            Collection<JdbcColumnMeta> colMetas =
+                meta.getColumnsMeta(null /* latest */, schemaPtrn, tblNamePtrn, colNamePtrn);
+
+            rows = new ArrayList<>(colMetas.size());
+
+            for (JdbcColumnMeta col : colMetas)
+                rows.add(columnRow(col, ++cnt));
         }
 
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList(
+            asList(
                 "TABLE_CAT",        // 1
                 "TABLE_SCHEM",      // 2
                 "TABLE_NAME",       // 3
@@ -843,7 +830,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 "SOURCE_DATA_TYPE", // 22
                 "IS_AUTOINCREMENT", // 23
                 "IS_GENERATEDCOLUMN"), // 23
-            Arrays.asList(
+            asList(
                 String.class.getName(),     // 1
                 String.class.getName(),     // 2
                 String.class.getName(),     // 3
@@ -870,48 +857,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
                 String.class.getName()),    // 24
             rows, true
         );
-    }
-
-    /**
-     * @param schema Schema name.
-     * @param tbl Table name.
-     * @param col Column name.
-     * @param type Type.
-     * @param typeName Type name.
-     * @param nullable Nullable flag.
-     * @param pos Ordinal position.
-     * @return Column metadata row.
-     */
-    private List<Object> columnRow(String schema, String tbl, String col, int type, String typeName,
-        boolean nullable, int pos) {
-        List<Object> row = new ArrayList<>(24);
-
-        row.add(CATALOG_NAME);          // 1. TABLE_CAT
-        row.add(schema);                // 2. TABLE_SCHEM
-        row.add(tbl);                   // 3. TABLE_NAME
-        row.add(col);                   // 4. COLUMN_NAME
-        row.add(type);                  // 5. DATA_TYPE
-        row.add(typeName);              // 6. TYPE_NAME
-        row.add(null);                  // 7. COLUMN_SIZE
-        row.add(null);                  // 8. BUFFER_LENGTH
-        row.add(null);                  // 9. DECIMAL_DIGITS
-        row.add(10);                    // 10. NUM_PREC_RADIX
-        row.add(nullable ? columnNullable : columnNoNulls); // 11. NULLABLE
-        row.add(null);                  // 12. REMARKS
-        row.add(null);                  // 13. COLUMN_DEF
-        row.add(type);                  // 14. SQL_DATA_TYPE
-        row.add(null);                  // 15. SQL_DATETIME_SUB
-        row.add(Integer.MAX_VALUE);     // 16. CHAR_OCTET_LENGTH
-        row.add(pos);                   // 17. ORDINAL_POSITION
-        row.add(nullable ? "YES" : "NO"); // 18. IS_NULLABLE
-        row.add(null);                  // 19. SCOPE_CATALOG
-        row.add(null);                  // 20. SCOPE_SCHEMA
-        row.add(null);                  // 21. SCOPE_TABLE
-        row.add(null);                  // 22. SOURCE_DATA_TYPE
-        row.add("NO");                  // 23. IS_AUTOINCREMENT
-        row.add("NO");                  // 24. IS_GENERATEDCOLUMN
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -968,26 +913,27 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPrimaryKeys(String catalog, String schemaPtrn, String tblNamePtrn)
         throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new LinkedList<>();
+        List<List<?>> rows;
 
         if (isValidCatalog(catalog)) {
-            for (Map.Entry<String, Map<String, Map<String, ColumnInfo>>> schema : meta.entrySet()) {
-                if (matches(schema.getKey(), schemaPtrn)) {
-                    for (Map.Entry<String, Map<String, ColumnInfo>> tbl : schema.getValue().entrySet()) {
-                        if (matches(tbl.getKey(), tblNamePtrn))
-                            rows.add(Arrays.<Object>asList(CATALOG_NAME, schema.getKey(), tbl.getKey(), "_KEY", 1, "_KEY"));
-                    }
-                }
-            }
+            Collection<JdbcPrimaryKeyMeta> tabsKeyInfo = meta.getPrimaryKeys(schemaPtrn, tblNamePtrn);
+
+            rows = new ArrayList<>();
+
+            for (JdbcPrimaryKeyMeta keyInfo : tabsKeyInfo)
+                rows.addAll(primaryKeyRows(keyInfo));
+
         }
+        else
+            rows = Collections.emptyList();
 
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             rows, true
         );
@@ -1045,44 +991,27 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new ArrayList<>(indexes.size());
+        List<List<?>> rows = Collections.emptyList();
 
         if (isValidCatalog(catalog)) {
-            for (List<Object> idx : indexes) {
-                String idxSchema = (String)idx.get(0);
-                String idxTbl = (String)idx.get(1);
+            // Currently we are treating schema and tbl as sql patterns.
+            SortedSet<JdbcIndexMeta> idxMetas = meta.getIndexesMeta(schema, tbl);
 
-                if ((schema == null || schema.equals(idxSchema)) && (tbl == null || tbl.equals(idxTbl))) {
-                    List<Object> row = new ArrayList<>(13);
+            rows = new ArrayList<>(idxMetas.size());
 
-                    row.add(CATALOG_NAME);
-                    row.add(idxSchema);
-                    row.add(idxTbl);
-                    row.add(idx.get(2));
-                    row.add(null);
-                    row.add(idx.get(3));
-                    row.add((int)tableIndexOther);
-                    row.add(idx.get(4));
-                    row.add(idx.get(5));
-                    row.add((Boolean)idx.get(6) ? "D" : "A");
-                    row.add(0);
-                    row.add(0);
-                    row.add(null);
-
-                    rows.add(row);
-                }
-            }
+            for (JdbcIndexMeta idxMeta : idxMetas)
+                rows.addAll(indexRows(idxMeta));
         }
 
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
+            asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
                 "INDEX_NAME", "TYPE", "ORDINAL_POSITION", "COLUMN_NAME", "ASC_OR_DESC", "CARDINALITY",
                 "PAGES", "FILTER_CONDITION"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 Boolean.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), String.class.getName()),
@@ -1269,12 +1198,16 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
-        updateMetaData();
+        conn.ensureNotClosed();
 
-        List<List<?>> rows = new ArrayList<>(meta.size());
+        List<List<?>> rows = Collections.emptyList();
 
         if (isValidCatalog(catalog)) {
-            for (String schema : meta.keySet()) {
+            Set<String> schemas = meta.getSchemasMeta(schemaPtrn);
+
+            rows = new ArrayList<>(schemas.size());
+
+            for (String schema : schemas) {
                 if (matches(schema, schemaPtrn))
                     rows.add(Arrays.<Object>asList(schema, CATALOG_NAME));
             }
@@ -1283,8 +1216,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
-            Arrays.asList(String.class.getName(), String.class.getName()),
+            asList("TABLE_SCHEM", "TABLE_CATALOG"),
+            asList(String.class.getName(), String.class.getName()),
             rows, true
         );
     }
@@ -1322,9 +1255,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
+            asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
                 "REMARKS", "FUNCTION_TYPE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             Collections.<List<?>>emptyList(), true
         );
@@ -1336,11 +1269,11 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(true, null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
+            asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
                 "COLUMN_NAME", "COLUMN_TYPE", "DATA_TYPE", "TYPE_NAME", "PRECISION",
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), Integer.class.getName(), Integer.class.getName(),
@@ -1376,72 +1309,6 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Updates meta data.
-     *
-     * @throws SQLException In case of error.
-     */
-    private void updateMetaData() throws SQLException {
-        if (conn.isClosed())
-            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
-
-        try {
-            Ignite ignite = conn.ignite();
-
-            UUID nodeId = conn.nodeId();
-
-            Collection<GridCacheSqlMetadata> metas;
-
-            UpdateMetadataTask task = new UpdateMetadataTask(conn.cacheName(), nodeId == null ? ignite : null);
-
-            metas = nodeId == null ? task.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(task);
-
-            meta = U.newHashMap(metas.size());
-
-            indexes = new ArrayList<>();
-
-            for (GridCacheSqlMetadata m : metas) {
-                String name = m.cacheName();
-
-                if (name == null)
-                    name = "PUBLIC";
-
-                Collection<String> types = m.types();
-
-                Map<String, Map<String, ColumnInfo>> typesMap = U.newHashMap(types.size());
-
-                for (String type : types) {
-                    Collection<String> notNullFields = m.notNullFields(type);
-
-                    Map<String, ColumnInfo> fields = new LinkedHashMap<>();
-
-                    for (Map.Entry<String, String> fld : m.fields(type).entrySet()) {
-                        ColumnInfo colInfo = new ColumnInfo(fld.getValue(),
-                            notNullFields == null ? false : notNullFields.contains(fld.getKey()));
-
-                        fields.put(fld.getKey(), colInfo);
-                    }
-
-                    typesMap.put(type.toUpperCase(), fields);
-
-                    for (GridCacheSqlIndexMetadata idx : m.indexes(type)) {
-                        int cnt = 0;
-
-                        for (String field : idx.fields()) {
-                            indexes.add(F.<Object>asList(name, type.toUpperCase(), !idx.unique(),
-                                idx.name(), ++cnt, field, idx.descending(field)));
-                        }
-                    }
-                }
-
-                meta.put(name, typesMap);
-            }
-        }
-        catch (Exception e) {
-            throw convertToSqlException(e, "Failed to get meta data from Ignite.");
-        }
-    }
-
-    /**
      * Checks whether string matches SQL pattern.
      *
      * @param str String.
@@ -1454,10 +1321,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
+     * Checks if specified catalog matches the only possible catalog value. See {@link JdbcUtils#CATALOG_NAME}.
      *
      * @param catalog Catalog name or {@code null}.
-     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
+     * @return {@code true} If catalog equal ignoring case to {@link JdbcUtils#CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
     private static boolean isValidCatalog(String catalog) {
@@ -1465,7 +1332,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
+     * This class is held only for compatibility purposes and shouldn't be used;
      *
+     * @deprecated Use {@link JdbcMetadataInfo} instead.
      */
     private static class UpdateMetadataTask implements IgniteCallable<Collection<GridCacheSqlMetadata>> {
         /** Serial version uid. */
@@ -1497,7 +1366,11 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
+     * This class is held only for compatibility purposes and shouldn't be used;
+     *
      * Column info.
+     *
+     * @deprecated Use {@link JdbcMetadataInfo} instead.
      */
     private static class ColumnInfo {
         /** Class name. */

@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcIndexMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
@@ -50,15 +51,20 @@ import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.RowIdLifetime.ROWID_UNSUPPORTED;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_VIEW;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.columnRow;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.indexRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.primaryKeyRows;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.tableRow;
 
 /**
  * JDBC database metadata implementation.
  */
-@SuppressWarnings("RedundantCast")
 public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
-    /** The only possible name for catalog. */
-    public static final String CATALOG_NAME = "IGNITE";
-
     /** Driver name. */
     public static final String DRIVER_NAME = "Apache Ignite Thin JDBC Driver";
 
@@ -671,7 +677,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedures(String catalog, String schemaPtrn,
         String procedureNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "PROCEDURE_CAT", String.class),
             new JdbcColumnMeta(null, null, "PROCEDURE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "PROCEDURE_NAME", String.class),
@@ -684,7 +690,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedureColumns(String catalog, String schemaPtrn, String procedureNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "PROCEDURE_CAT", String.class),
             new JdbcColumnMeta(null, null, "PROCEDURE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "PROCEDURE_NAME", String.class),
@@ -713,7 +719,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         throws SQLException {
         conn.ensureNotClosed();
 
-        final List<JdbcColumnMeta> meta = Arrays.asList(
+        final List<JdbcColumnMeta> meta = asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -731,7 +737,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             tblTypeMatch = true;
         else {
             for (String type : tblTypes) {
-                if ("TABLE".equals(type)) {
+                if (TYPE_TABLE.equals(type) || TYPE_VIEW.equals(type)) {
                     tblTypeMatch = true;
 
                     break;
@@ -742,7 +748,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn));
+        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn, tblTypes))
+            .response();
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -750,27 +757,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             rows.add(tableRow(tblMeta));
 
         return new JdbcThinResultSet(rows, meta);
-    }
-
-    /**
-     * @param tblMeta Table metadata.
-     * @return Table metadata row.
-     */
-    private List<Object> tableRow(JdbcTableMeta tblMeta) {
-        List<Object> row = new ArrayList<>(10);
-
-        row.add(CATALOG_NAME);
-        row.add(tblMeta.schemaName());
-        row.add(tblMeta.tableName());
-        row.add("TABLE");
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-        row.add(null);
-
-        return row;
     }
 
     /** {@inheritDoc} */
@@ -781,15 +767,16 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getCatalogs() throws SQLException {
-        return new JdbcThinResultSet(Collections.singletonList(Collections.singletonList(CATALOG_NAME)),
-            Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_CAT", String.class)));
+        return new JdbcThinResultSet(singletonList(singletonList(CATALOG_NAME)),
+            asList(new JdbcColumnMeta(null, null, "TABLE_CAT", String.class)));
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     @Override public ResultSet getTableTypes() throws SQLException {
-        return new JdbcThinResultSet(Collections.singletonList(Collections.<Object>singletonList("TABLE")),
-            Arrays.asList(new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class)));
+        return new JdbcThinResultSet(
+            asList(singletonList(TYPE_TABLE), singletonList(TYPE_VIEW) ),
+            asList(new JdbcColumnMeta(null, null, "TABLE_TYPE", String.class)));
     }
 
     /** {@inheritDoc} */
@@ -797,7 +784,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         throws SQLException {
         conn.ensureNotClosed();
 
-        final List<JdbcColumnMeta> meta = Arrays.asList(
+        final List<JdbcColumnMeta> meta = asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),      // 1
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),    // 2
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),     // 3
@@ -805,7 +792,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "DATA_TYPE", Short.class),       // 5
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),      // 6
             new JdbcColumnMeta(null, null, "COLUMN_SIZE", Integer.class),   // 7
-            new JdbcColumnMeta(null, null, "BUFFER_LENGTH ", Integer.class), // 8
+            new JdbcColumnMeta(null, null, "BUFFER_LENGTH", Integer.class), // 8
             new JdbcColumnMeta(null, null, "DECIMAL_DIGITS", Integer.class), // 9
             new JdbcColumnMeta(null, null, "NUM_PREC_RADIX", Short.class),  // 10
             new JdbcColumnMeta(null, null, "NULLABLE", Short.class),        // 11
@@ -821,13 +808,13 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             new JdbcColumnMeta(null, null, "SCOPE_TABLE", String.class),    // 21
             new JdbcColumnMeta(null, null, "SOURCE_DATA_TYPE", Short.class), // 22
             new JdbcColumnMeta(null, null, "IS_AUTOINCREMENT", String.class), // 23
-            new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN ", String.class) // 24
+            new JdbcColumnMeta(null, null, "IS_GENERATEDCOLUMN", String.class) // 24
         );
 
         if (!isValidCatalog(catalog))
-            return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
+            return new JdbcThinResultSet(Collections.emptyList(), meta);
 
-        JdbcMetaColumnsResult res = conn.sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tblNamePtrn, colNamePtrn));
+        JdbcMetaColumnsResult res = conn.sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tblNamePtrn, colNamePtrn)).response();
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -837,46 +824,10 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         return new JdbcThinResultSet(rows, meta);
     }
 
-    /**
-     * @param colMeta Column metadata.
-     * @param pos Ordinal position.
-     * @return Column metadata row.
-     */
-    private List<Object> columnRow(JdbcColumnMeta colMeta, int pos) {
-        List<Object> row = new ArrayList<>(24);
-
-        row.add(CATALOG_NAME);                  // 1. TABLE_CAT
-        row.add(colMeta.schemaName());          // 2. TABLE_SCHEM
-        row.add(colMeta.tableName());           // 3. TABLE_NAME
-        row.add(colMeta.columnName());          // 4. COLUMN_NAME
-        row.add(colMeta.dataType());            // 5. DATA_TYPE
-        row.add(colMeta.dataTypeName());        // 6. TYPE_NAME
-        row.add(colMeta.precision() == -1 ? null : colMeta.precision()); // 7. COLUMN_SIZE
-        row.add((Integer)null);                 // 8. BUFFER_LENGTH
-        row.add(colMeta.scale() == -1 ? null : colMeta.scale());           // 9. DECIMAL_DIGITS
-        row.add(10);                            // 10. NUM_PREC_RADIX
-        row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
-        row.add((String)null);                  // 12. REMARKS
-        row.add(colMeta.defaultValue());        // 13. COLUMN_DEF
-        row.add(colMeta.dataType());            // 14. SQL_DATA_TYPE
-        row.add((Integer)null);                 // 15. SQL_DATETIME_SUB
-        row.add(Integer.MAX_VALUE);             // 16. CHAR_OCTET_LENGTH
-        row.add(pos);                           // 17. ORDINAL_POSITION
-        row.add(colMeta.isNullable() ? "YES" : "NO"); // 18. IS_NULLABLE
-        row.add((String)null);                  // 19. SCOPE_CATALOG
-        row.add((String)null);                  // 20. SCOPE_SCHEMA
-        row.add((String)null);                  // 21. SCOPE_TABLE
-        row.add((Short)null);                   // 22. SOURCE_DATA_TYPE
-        row.add("NO");                          // 23. IS_AUTOINCREMENT
-        row.add("NO");                          // 23. IS_GENERATEDCOLUMN
-
-        return row;
-    }
-
     /** {@inheritDoc} */
     @Override public ResultSet getColumnPrivileges(String catalog, String schema, String tbl,
         String colNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -891,7 +842,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTablePrivileges(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -905,7 +856,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getBestRowIdentifier(String catalog, String schema, String tbl, int scope,
         boolean nullable) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "SCOPE", Short.class),
             new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
             new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
@@ -919,7 +870,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getVersionColumns(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "SCOPE", Short.class),
             new JdbcColumnMeta(null, null, "COLUMN_NAME", String.class),
             new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
@@ -935,7 +886,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getPrimaryKeys(String catalog, String schema, String tbl) throws SQLException {
         conn.ensureNotClosed();
 
-        final List<JdbcColumnMeta> meta = Arrays.asList(
+        final List<JdbcColumnMeta> meta = asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -946,7 +897,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaPrimaryKeysResult res = conn.sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl));
+        JdbcMetaPrimaryKeysResult res = conn.sendRequest(new JdbcMetaPrimaryKeysRequest(schema, tbl)).
+            response();
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -956,32 +908,9 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         return new JdbcThinResultSet(rows, meta);
     }
 
-    /**
-     * @param pkMeta Primary key metadata.
-     * @return Result set rows for primary key.
-     */
-    private List<List<Object>> primaryKeyRows(JdbcPrimaryKeyMeta pkMeta) {
-        List<List<Object>> rows = new ArrayList<>(pkMeta.fields().size());
-
-        for (int i = 0; i < pkMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(6);
-
-            row.add(CATALOG_NAME); // table catalog
-            row.add(pkMeta.schemaName());
-            row.add(pkMeta.tableName());
-            row.add(pkMeta.fields().get(i));
-            row.add((Integer)i + 1); // sequence number
-            row.add(pkMeta.name());
-
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
@@ -1001,7 +930,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getExportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
@@ -1022,7 +951,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTbl,
         String foreignCatalog, String foreignSchema, String foreignTbl) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "PKTABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "PKTABLE_NAME", String.class),
@@ -1128,7 +1057,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             (short)typeNullable, false, (short)typeSearchable, false, false, false, "ARRAY", 0, 0,
             Types.ARRAY, 0, null));
 
-        return new JdbcThinResultSet(types, Arrays.asList(
+        return new JdbcThinResultSet(types, asList(
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
             new JdbcColumnMeta(null, null, "DATA_TYPE", Integer.class),
             new JdbcColumnMeta(null, null, "PRECISION", Integer.class),
@@ -1155,7 +1084,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         boolean approximate) throws SQLException {
         conn.ensureNotClosed();
 
-        final List<JdbcColumnMeta> meta = Arrays.asList(
+        final List<JdbcColumnMeta> meta = asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -1173,7 +1102,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaIndexesResult res = conn.sendRequest(new JdbcMetaIndexesRequest(schema, tbl));
+        JdbcMetaIndexesResult res = conn.sendRequest(new JdbcMetaIndexesRequest(schema, tbl)).response();
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -1181,36 +1110,6 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
             rows.addAll(indexRows(idxMeta));
 
         return new JdbcThinResultSet(rows, meta);
-    }
-
-    /**
-     * @param idxMeta Index metadata.
-     * @return List of result rows correspond to index.
-     */
-    private List<List<Object>> indexRows(JdbcIndexMeta idxMeta) {
-        List<List<Object>> rows = new ArrayList<>(idxMeta.fields().size());
-
-        for (int i = 0; i < idxMeta.fields().size(); ++i) {
-            List<Object> row = new ArrayList<>(13);
-
-            row.add(CATALOG_NAME); // table catalog
-            row.add(idxMeta.schemaName());
-            row.add(idxMeta.tableName());
-            row.add(true); // non unique
-            row.add(null); // index qualifier (index catalog)
-            row.add(idxMeta.indexName());
-            row.add((short)tableIndexOther); // type
-            row.add((Integer)i); // field ordinal position in index
-            row.add(idxMeta.fields().get(i));
-            row.add(idxMeta.fieldsAsc().get(i) ? "A" : "D");
-            row.add((Integer)0); // cardinality
-            row.add((Integer)0); // pages
-            row.add((String)null); // filer condition
-
-            rows.add(row);
-        }
-
-        return rows;
     }
 
     /** {@inheritDoc} */
@@ -1276,7 +1175,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getUDTs(String catalog, String schemaPtrn, String typeNamePtrn,
         int[] types) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
@@ -1315,7 +1214,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTypes(String catalog, String schemaPtrn,
         String typeNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
@@ -1328,7 +1227,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTables(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -1339,7 +1238,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getAttributes(String catalog, String schemaPtrn, String typeNamePtrn,
         String attributeNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TYPE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TYPE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TYPE_NAME", String.class),
@@ -1418,7 +1317,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getSchemas(String catalog, String schemaPtrn) throws SQLException {
         conn.ensureNotClosed();
 
-        final List<JdbcColumnMeta> meta = Arrays.asList(
+        final List<JdbcColumnMeta> meta = asList(
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_CATALOG", String.class)
         );
@@ -1426,7 +1325,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog))
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaSchemasResult res = conn.sendRequest(new JdbcMetaSchemasRequest(schemaPtrn));
+        JdbcMetaSchemasResult res = conn.sendRequest(new JdbcMetaSchemasRequest(schemaPtrn)).response();
 
         List<List<Object>> rows = new LinkedList<>();
 
@@ -1454,7 +1353,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "NAME", String.class),
             new JdbcColumnMeta(null, null, "MAX_LEN", Integer.class),
             new JdbcColumnMeta(null, null, "DEFAULT_VALUE", String.class),
@@ -1466,7 +1365,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getFunctions(String catalog, String schemaPtrn,
         String functionNamePtrn) throws SQLException {
         // TODO: IGNITE-6028
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "FUNCTION_CAT", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_NAME", String.class),
@@ -1480,7 +1379,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     @Override public ResultSet getFunctionColumns(String catalog, String schemaPtrn, String functionNamePtrn,
         String colNamePtrn) throws SQLException {
         // TODO: IGNITE-6028
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "FUNCTION_CAT", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "FUNCTION_NAME", String.class),
@@ -1517,7 +1416,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPseudoColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), Arrays.asList(
+        return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), asList(
             new JdbcColumnMeta(null, null, "TABLE_CAT", String.class),
             new JdbcColumnMeta(null, null, "TABLE_SCHEM", String.class),
             new JdbcColumnMeta(null, null, "TABLE_NAME", String.class),
@@ -1534,10 +1433,10 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
     }
 
     /**
-     * Checks if specified catalog matches the only possible catalog value. See {@link #CATALOG_NAME}.
+     * Checks if specified catalog matches the only possible catalog value. See {@link JdbcUtils#CATALOG_NAME}.
      *
      * @param catalog Catalog name or {@code null}.
-     * @return {@code true} If catalog equal ignoring case to {@link #CATALOG_NAME} or null (which means any catalog).
+     * @return {@code true} If catalog equal ignoring case to {@link JdbcUtils#CATALOG_NAME} or null (which means any catalog).
      *  Otherwise returns {@code false}.
      */
     private static boolean isValidCatalog(String catalog) {

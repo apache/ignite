@@ -39,8 +39,6 @@ import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 /**
  * Special cases for GG-2329.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /** Communication spi for grid start. */
     private CommunicationSpi commSpi;

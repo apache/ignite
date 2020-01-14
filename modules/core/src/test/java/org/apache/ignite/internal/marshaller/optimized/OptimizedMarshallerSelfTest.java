@@ -23,21 +23,17 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Optimized marshaller self test.
  */
 @GridCommonTest(group = "Marshaller")
-@RunWith(JUnit4.class)
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
@@ -141,7 +137,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             this.val = val;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             try {
                 byte[] arr = marshal(str);
@@ -156,7 +152,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             }
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void readObject(ObjectInputStream in) throws IOException {
             try {
                 byte[] arr = new byte[in.readInt()];

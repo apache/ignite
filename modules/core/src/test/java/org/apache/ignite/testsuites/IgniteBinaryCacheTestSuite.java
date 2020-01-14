@@ -17,9 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccSelfTest;
@@ -37,18 +38,18 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Cache suite with binary marshaller.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteBinaryCacheTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(new HashSet<>());
     }
 
@@ -56,9 +57,7 @@ public class IgniteBinaryCacheTestSuite {
      * @param ignoredTests Tests to ignore.
      * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Binary Cache Test Suite");
-
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         // Tests below have a special version for Binary Marshaller
         ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
@@ -67,7 +66,7 @@ public class IgniteBinaryCacheTestSuite {
         // Tests that are not ready to be used with BinaryMarshaller
         ignoredTests.add(GridCacheMvccSelfTest.class);
 
-        suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite.suite(ignoredTests));
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesPartitionedOnlyByteArrayValuesSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheBinariesNearPartitionedByteArrayValuesSelfTest.class, ignoredTests);

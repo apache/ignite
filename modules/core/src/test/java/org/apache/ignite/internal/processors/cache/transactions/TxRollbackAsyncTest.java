@@ -85,9 +85,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.yield;
@@ -105,13 +104,12 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 /**
  * Tests an ability to async rollback near transactions.
  */
-@RunWith(JUnit4.class)
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final int DURATION = SF.applyLB(60_000, 5_000);
 
     /** */
-    private static final String CACHE_NAME = "test";
+    protected static final String CACHE_NAME = "test";
 
     /** */
     private static final int GRID_CNT = 3;
@@ -210,8 +208,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackSimple() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         startClient();
 
@@ -483,8 +480,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyReadOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Optimistic transactions are not supported by MVCC.
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
 
         testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
     }
@@ -494,8 +490,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnlistManyWriteOptimistic() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            return; // Optimistic transactions are not supported by MVCC.
+        Assume.assumeFalse(MvccFeatureChecker.forcedMvcc()); // Optimistic transactions are not supported by MVCC.
 
         testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
     }
@@ -542,9 +537,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
@@ -573,7 +565,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             fail();
         }
         catch (CacheException e) {
-            assertTrue(X.getFullStackTrace(e),X.hasCause(e, TransactionRollbackException.class));
+            assertTrue(X.getFullStackTrace(e), X.hasCause(e, TransactionRollbackException.class));
         }
 
         rollbackFut.get();
@@ -1010,7 +1002,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         // Rollback tx using kill task.
         VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
+            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
 
         Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
             execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));

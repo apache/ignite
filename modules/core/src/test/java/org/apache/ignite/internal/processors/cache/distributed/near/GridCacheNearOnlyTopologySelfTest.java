@@ -32,8 +32,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,7 +43,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Near-only cache node startup test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     /** Near only flag. */
     private boolean cilent;
@@ -55,7 +52,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -178,8 +175,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
             }
+
+            awaitPartitionMapExchange();
 
             for (int i = 0; i < 10; i++)
                 grid(1).cache(DEFAULT_CACHE_NAME).put(i, i);

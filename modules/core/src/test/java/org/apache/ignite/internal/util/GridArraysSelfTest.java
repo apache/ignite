@@ -20,8 +20,6 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridArrays.clearTail;
 import static org.apache.ignite.internal.util.GridArrays.remove;
@@ -29,7 +27,6 @@ import static org.apache.ignite.internal.util.GridArrays.set;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class GridArraysSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String[] EMPTY = {};

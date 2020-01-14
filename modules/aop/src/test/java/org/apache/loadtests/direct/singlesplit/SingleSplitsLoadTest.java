@@ -32,14 +32,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Single split load test.
  */
 @GridCommonTest(group = "Load Test")
-@RunWith(JUnit4.class)
 public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     /** */
     public SingleSplitsLoadTest() {

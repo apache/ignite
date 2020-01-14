@@ -56,8 +56,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -67,7 +65,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * interface.
  */
 @GridCommonTest(group = "Task Session")
-@RunWith(JUnit4.class)
 public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /** Total grid count within the cloud. */
     private static final int GRID_CNT = 2;

@@ -20,7 +20,7 @@ package org.apache.ignite.tests.p2p.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.tests.p2p.NoValueClassOnServerAbstractClient;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  *

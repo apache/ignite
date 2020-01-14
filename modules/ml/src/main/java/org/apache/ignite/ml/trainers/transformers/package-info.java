@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Various upstream transformers.
  */
+
 package org.apache.ignite.ml.trainers.transformers;

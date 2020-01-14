@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -52,11 +53,6 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 1; i <= NODE_COUNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -94,7 +90,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     Arrays.asList(firstCacheName, secondCacheName),
                     part -> part,
-                    0
+                    0,
+                    DeployingContext.unitialized()
                 );
             }
             catch (IllegalStateException expectedException) {
@@ -139,7 +136,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 cnt.incrementAndGet();
 
                 return part;
-            }, 0);
+            }, 0, DeployingContext.unitialized());
 
             assertEquals(1, cnt.get());
         }
@@ -195,9 +192,11 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
                     },
-                    TestUtils.testEnvBuilder().buildForWorker(part)
+                    TestUtils.testEnvBuilder().buildForWorker(part),
+                    false
                 ),
-                0
+                0,
+                DeployingContext.unitialized()
             );
 
             assertEquals(1, data.size());
@@ -234,8 +233,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         ComputeUtils.<Integer, Integer, Integer>initContext(
             ignite,
             upstreamCacheName,
-            (k, v) -> true,
             UpstreamTransformerBuilder.identity(),
+            (k, v) -> true,
             datasetCacheName,
             (env, upstream, upstreamSize) -> {
 
@@ -245,7 +244,10 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 return e.getKey() + e.getValue();
             },
             TestUtils.testEnvBuilder(),
-            0
+            0,
+            0,
+            false,
+            DeployingContext.unitialized()
         );
 
         assertEquals(1, datasetCache.size());

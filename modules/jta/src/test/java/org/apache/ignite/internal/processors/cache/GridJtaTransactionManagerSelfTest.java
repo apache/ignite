@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
+import java.util.Collection;
 import javax.cache.configuration.Factory;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -28,20 +30,37 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Parameterized;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /**
  * JTA Tx Manager test.
  */
-@RunWith(JUnit4.class)
+@RunWith(Parameterized.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /** Java Open Transaction Manager facade. */
     private static Jotm jotm;
+
+    /**
+     * @return Test parameters.
+     */
+    @Parameterized.Parameters(name = "txConcurrency={0}")
+    public static Collection parameters() {
+        return Arrays.asList(
+            new TransactionConcurrency[] {OPTIMISTIC},
+            new TransactionConcurrency[] {PESSIMISTIC}
+        );
+    }
+
+    /** Tx concurrency. */
+    @Parameterized.Parameter
+    public TransactionConcurrency txConcurrency;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,7 +98,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
             TransactionManager jtaTm = jotm.getTransactionManager();
@@ -154,7 +173,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
+            cfg.setDefaultTxConcurrency(txConcurrency);
             cfg.setDefaultTxIsolation(isolation);
 
             TransactionManager jtaTm = jotm.getTransactionManager();

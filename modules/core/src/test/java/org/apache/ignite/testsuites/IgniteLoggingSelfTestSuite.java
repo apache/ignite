@@ -17,25 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.logger.java.JavaLoggerTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Logging self-test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({JavaLoggerTest.class})
 public class IgniteLoggingSelfTestSuite {
-    /**
-    * @return P2P tests suite.
-    */
-   public static TestSuite suite() {
-       TestSuite suite = new TestSuite("Ignite Logging Test Suite");
-
-       suite.addTest(new JUnit4TestAdapter(JavaLoggerTest.class));
-
-       return suite;
-   }
 }

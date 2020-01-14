@@ -20,6 +20,7 @@ package org.apache.ignite.ml.math;
 import org.apache.ignite.ml.math.distances.DistanceTest;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.apache.ignite.ml.math.primitives.matrix.DenseMatrixConstructorTest;
+import org.apache.ignite.ml.math.primitives.matrix.LUDecompositionTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixAttributeTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixStorageImplementationTest;
@@ -36,6 +37,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorFoldMapTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorNormTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorViewTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorageTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.SparseVectorStorageTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -59,6 +62,8 @@ import org.junit.runners.Suite;
     VectorFoldMapTest.class,
     // Vector storage tests
     VectorArrayStorageTest.class,
+    DenseVectorStorageTest.class,
+    SparseVectorStorageTest.class,
     // Matrix storage tests.
     MatrixStorageImplementationTest.class,
     MatrixArrayStorageTest.class,
@@ -69,7 +74,8 @@ import org.junit.runners.Suite;
     // Matrix tests.
     MatrixAttributeTest.class,
     DistanceTest.class,
-    LSQROnHeapTest.class
+    LSQROnHeapTest.class,
+    LUDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

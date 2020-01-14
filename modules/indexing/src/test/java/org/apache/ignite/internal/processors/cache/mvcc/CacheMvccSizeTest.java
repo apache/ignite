@@ -32,18 +32,15 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -121,10 +118,8 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                     personTbl.query(q("insert into person values(1, 'a')"));
                 }
                 catch (Exception e) {
-                    if (e.getCause() instanceof IgniteSQLException) {
-                        assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY,
-                            ((IgniteSQLException)e.getCause()).statusCode());
-                    }
+                    if (e.getCause() instanceof TransactionDuplicateKeyException)
+                        assertTrue(e.getMessage().startsWith("Duplicate key during INSERT ["));
                     else {
                         e.printStackTrace();
 

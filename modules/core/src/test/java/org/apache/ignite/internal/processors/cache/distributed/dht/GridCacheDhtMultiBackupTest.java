@@ -27,13 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
     /**
      *
@@ -48,7 +45,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
     @Test
     public void testPut() throws Exception {
         try {
-            Ignite g = G.start("examples/config/example-cache.xml");
+            Ignite g = G.start("modules/core/src/test/config/example-cache.xml");
 
             if (g.cluster().nodes().size() < 5)
                 U.warn(log, "Topology is too small for this test. " +

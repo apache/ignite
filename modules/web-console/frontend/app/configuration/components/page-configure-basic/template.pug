@@ -1,0 +1,198 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/cloud
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/google
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/jdbc
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/multicast
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/s3
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/shared
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/vm
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/zookeeper
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/kubernetes
+
+- const model = '$ctrl.clonedCluster'
+- const modelDiscoveryKind = `${model}.discovery.kind`
+- let form = '$ctrl.form'
+
+form(novalidate name=form)
+    h2.pcb-section-header.pcb-inner-padding Step 1. Cluster Configuration
+
+    .pcb-section-notification.pcb-inner-padding(ng-if='!$ctrl.shortClusters')
+        | You have no clusters.
+        | Let’s configure your first and associate it with caches.
+    .pcb-section-notification.pcb-inner-padding(ng-if='$ctrl.shortClusters')
+        | Configure cluster properties and associate your cluster with caches.
+
+    .pc-form-grid-row.pcb-form-grid-row
+        .pc-form-grid-col-60
+            +form-field__text({
+                label: 'Name:',
+                model: `${model}.name`,
+                name: '"clusterName"',
+                placeholder: 'Input name',
+                required: true,
+                tip: 'Instance name allows to indicate to what grid this particular grid instance belongs to'
+            })(
+                ignite-unique='$ctrl.shortClusters'
+                ignite-unique-property='name'
+                ignite-unique-skip=`["_id", ${model}]`
+            )
+                +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
+
+        .pc-form-grid__break
+        .pc-form-grid-col-60
+            +form-field__dropdown({
+                label: 'Discovery:',
+                model: modelDiscoveryKind,
+                name: '"discovery"',
+                placeholder: 'Choose discovery',
+                options: '$ctrl.Clusters.discoveries',
+                tip: 'Discovery allows to discover remote nodes in grid\
+                <ul>\
+                    <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                    <li>Multicast - Multicast based IP finder</li>\
+                    <li>AWS S3 - AWS S3 based IP finder that automatically discover cluster nodes on Amazon EC2 cloud</li>\
+                    <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder for cloud platforms with unstable IP addresses</li>\
+                    <li>Google cloud storage - Google Cloud Storage based IP finder that automatically discover cluster nodes on Google Compute Engine cluster</li>\
+                    <li>JDBC - JDBC based IP finder that use database to store node IP address</li>\
+                    <li>Shared filesystem - Shared filesystem based IP finder that use file to store node IP address</li>\
+                    <li>Apache ZooKeeper - Apache ZooKeeper based IP finder when you use ZooKeeper to coordinate your distributed environment</li>\
+                    <li>Kubernetes - IP finder for automatic lookup of Ignite nodes running in Kubernetes environment</li>\
+                </ul>'
+            })
+        .pc-form-grid__break
+        .pc-form-group
+            +discovery-vm(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Vm'`)
+            +discovery-cloud(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Cloud'`)
+            +discovery-google(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'GoogleStorage'`)
+            +discovery-jdbc(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Jdbc'`)
+            +discovery-multicast(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Multicast'`)
+            +discovery-s3(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'S3'`)
+            +discovery-shared(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'SharedFs'`)
+            +discovery-zookeeper(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'ZooKeeper'`)
+            +discovery-kubernetes(model)(class='pcb-form-grid-row' ng-if=`${modelDiscoveryKind} === 'Kubernetes'`)
+
+    h2.pcb-section-header.pcb-inner-padding(style='margin-top:30px') Step 2. Caches Configuration
+
+    .pcb-form-grid-row.pc-form-grid-row
+        .pc-form-grid-col-60(
+            ng-if=`
+                $ctrl.defaultMemoryPolicy &&
+                $ctrl.IgniteVersion.available(['2.0.0', '2.3.0']) &&
+                $ctrl.memorySizeInputVisible$|async:this
+            `
+        )
+            form-field-size(
+                ng-model='$ctrl.defaultMemoryPolicy.maxSize'
+                ng-model-options='{allowInvalid: true}'
+                id='memory'
+                name='memory'
+                label='Total Off-heap Size:'
+                size-type='bytes'
+                size-scale-label='mb'
+                placeholder='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.default }}'
+                min='{{ ::$ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) }}'
+                tip='“default” cluster memory policy off-heap max memory size. Leave empty to use 80% of physical memory available on current machine. Should be at least 10Mb.'
+                on-scale-change='scale = $event'
+            )
+                +form-field__error({ error: 'min', message: 'Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.memoryPolicy.maxSize.min($ctrl.defaultMemoryPolicy) / scale.value}} {{scale.label}}).' })
+
+        .pc-form-grid-col-60(ng-if=`$ctrl.IgniteVersion.available('2.3.0')`)
+            form-field-size(
+                ng-model=`${model}.dataStorageConfiguration.defaultDataRegionConfiguration.maxSize`
+                ng-model-options='{allowInvalid: true}'
+                id='memory'
+                name='memory'
+                label='Total Off-heap Size:'
+                size-type='bytes'
+                size-scale-label='mb'
+                placeholder='{{ ::$ctrl.Clusters.dataRegion.maxSize.default }}'
+                min=`{{ ::$ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) }}`
+                tip='Default data region off-heap max memory size. Leave empty to use 20% of physical memory available on current machine. Should be at least 10Mb.'
+                on-scale-change='scale = $event'
+            )
+                +form-field__error({ error: 'min', message: `Maximum size should be equal to or more than initial size ({{ $ctrl.Clusters.dataRegion.maxSize.min(${model}.dataStorageConfiguration.defaultDataRegionConfiguration) / scale.value}} {{scale.label}}).` })
+        .pc-form-grid-col-120
+            .ignite-form-field
+                list-editable.pcb-caches-list(
+                    ng-model='$ctrl.shortCaches'
+                    list-editable-one-way
+                    on-item-change='$ctrl.changeCache($event)'
+                    on-item-remove='$ctrl.removeCache($event)'
+                    list-editable-cols='::$ctrl.cachesColDefs'
+                    list-editable-cols-row-class='pc-form-grid-row pcb-row-no-margin'
+                )
+                    list-editable-item-view
+                        div {{ $item.name }}
+                        div {{ $item.cacheMode }}
+                        div {{ $item.atomicityMode }}
+                        div {{ $ctrl.Caches.getCacheBackupsCount($item) }}
+                    list-editable-item-edit
+                        div
+                            +form-field__text({
+                                label: 'Name',
+                                model: '$item.name',
+                                name: '"name"',
+                                required: true
+                            })(
+                                ignite-unique='$ctrl.shortCaches'
+                                ignite-unique-property='name'
+                                ignite-form-field-input-autofocus='true'
+                            )
+                                +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unqiue' })
+                        div
+                            +form-field__cache-modes({
+                                label: 'Mode:',
+                                model: '$item.cacheMode',
+                                name: '"cacheMode"',
+                                placeholder: 'PARTITIONED'
+                            })
+                        div
+                            +form-field__dropdown({
+                                label: 'Atomicity:',
+                                model: '$item.atomicityMode',
+                                name: '"atomicityMode"',
+                                placeholder: 'ATOMIC',
+                                options: '::$ctrl.Caches.atomicityModes'
+                            })
+                        div(ng-show='$ctrl.Caches.shouldShowCacheBackupsCount($item)')
+                            +form-field__number({
+                                label: 'Backups:',
+                                model: '$item.backups',
+                                name: '"backups"',
+                                placeholder: '0',
+                                min: 0
+                            })
+                    list-editable-no-items
+                        list-editable-add-item-button(
+                            add-item='$ctrl.addCache()'
+                            label-single='cache'
+                            label-multiple='caches'
+                        )
+
+    .pc-form-actions-panel
+        button-preview-project(ng-hide='$ctrl.isNew$|async:this' cluster=model)
+
+        .pc-form-actions-panel__right-after
+        button.btn-ignite.btn-ignite--link-success(
+            type='button'
+            ng-click='$ctrl.confirmAndReset()'
+        )
+            | Cancel
+        pc-split-button(actions=`::$ctrl.formActionsMenu`)

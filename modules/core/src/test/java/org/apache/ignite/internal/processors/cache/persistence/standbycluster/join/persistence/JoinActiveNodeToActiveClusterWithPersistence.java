@@ -21,13 +21,10 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.jo
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class JoinActiveNodeToActiveClusterWithPersistence extends JoinActiveNodeToActiveCluster {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration cfg(String name) throws Exception {

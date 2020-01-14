@@ -17,13 +17,6 @@
 
 package org.apache.ignite.ml.util.generators.primitives.vector;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -33,8 +26,16 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 /**
- * Basic interface for pseudorandom vectors generators.
+ * Basic interface for pseudo-random vectors generators.
  */
 public interface VectorGenerator extends Supplier<Vector> {
     /**
@@ -209,14 +210,14 @@ public interface VectorGenerator extends Supplier<Vector> {
     }
 
     /**
-     * Conterts vectors generator to unlabeled data stream generator.
+     * Convert vectors generator to unlabeled data stream generator.
      *
-     * @return data stream generator.
+     * @return Data stream generator.
      */
     public default DataStreamGenerator asDataStream() {
         final VectorGenerator gen = this;
         return new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(gen).map(v -> new LabeledVector<>(v, 0.0));
             }
         };

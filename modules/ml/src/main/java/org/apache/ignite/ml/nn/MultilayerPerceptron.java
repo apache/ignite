@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -43,22 +41,21 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
-    Serializable {
+public final class MultilayerPerceptron implements SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
-    protected MLPArchitecture architecture;
+    private MLPArchitecture architecture;
 
     /**
      * List containing layers parameters.
      */
-    protected List<MLPLayer> layers;
+    private List<MLPLayer> layers;
 
     /**
      * MLP which is 'below' this MLP (i.e. below output goes to this MLP as input).
      */
-    protected MultilayerPerceptron below;
+    private MultilayerPerceptron below;
 
     /**
      * Construct MLP from given architecture and parameters initializer.
@@ -112,7 +109,7 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
      * @param above MLP to be above.
      * @param below MLP to be below.
      */
-    protected MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
+    private MultilayerPerceptron(MultilayerPerceptron above, MultilayerPerceptron below) {
         this.layers = above.layers;
         this.architecture = above.architecture;
         this.below = below;
@@ -338,7 +335,7 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /** Count of layers in below MLP. */
-    protected int belowLayersCount() {
+    private int belowLayersCount() {
         return below != null ? below.layersCount() : 0;
     }
 
@@ -354,8 +351,10 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /** {@inheritDoc} */
-    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        Matrix inputsBatch, Matrix truthBatch) {
+    @Override public Vector differentiateByParameters(
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        Matrix inputsBatch, Matrix truthBatch
+    ) {
         // Backpropagation algorithm is used here.
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
@@ -395,7 +394,7 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /** {@inheritDoc} */
-    public Vector parameters() {
+    @Override public Vector parameters() {
         return paramsAsVector(layers);
     }
 
@@ -405,7 +404,7 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
      * @param layersParams List of layers parameters.
      * @return This MLP parameters as vector.
      */
-    protected Vector paramsAsVector(List<MLPLayer> layersParams) {
+    private Vector paramsAsVector(List<MLPLayer> layersParams) {
         int off = 0;
         Vector res = new DenseVector(architecture().parametersCount());
 
@@ -420,7 +419,7 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /** {@inheritDoc} */
-    public MultilayerPerceptron setParameters(Vector vector) {
+    @Override public MultilayerPerceptron setParameters(Vector vector) {
         int off = 0;
 
         for (int l = 1; l < layersCount(); l++) {
@@ -547,10 +546,10 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /**
-     * Differentiate nonlinearity.
+     * Differentiate non-linearity.
      *
      * @param linearOut Linear output of current layer.
-     * @param nonlinearity Nonlinearity of current layer.
+     * @param nonlinearity Non-linearity of current layer.
      * @return Gradients matrix.
      */
     private Matrix differentiateNonlinearity(Matrix linearOut,

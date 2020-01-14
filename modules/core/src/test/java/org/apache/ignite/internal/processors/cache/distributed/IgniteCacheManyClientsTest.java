@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,8 +39,6 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,7 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;
@@ -192,7 +188,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-                catch (AssertionFailedError e) {
+                catch (AssertionError e) {
                     log.info("Check failed, will retry: " + e);
                 }
 

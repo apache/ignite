@@ -74,9 +74,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -87,7 +86,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test for binary objects stored in cache.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRY_CNT = 100;
@@ -240,7 +238,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
         assertTrue("Unexpected toString: " + str,
-            S.INCLUDE_SENSITIVE ?
+            S.includeSensitive() ?
             str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
             str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
         );
@@ -311,6 +309,26 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             assertEquals(i, (int)po.field("val"));
 
             assertTrue(kpc.replace(i, po, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReplaceWhenEmptyValue() throws Exception {
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder("TestObjCls");
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            assertNull(kpc.get(i));
+
+            assertFalse(kpc.replace(i, testObj, testObj));
         }
     }
 
@@ -566,10 +584,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-3244")
     @Test
     public void testCustomArrays() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
-
         IgniteCache<Integer, TestObject[]> cache = jcache(0);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
@@ -577,7 +594,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             cache.put(0, arr);
         }
-
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             TestObject[] obj = cache.get(i);

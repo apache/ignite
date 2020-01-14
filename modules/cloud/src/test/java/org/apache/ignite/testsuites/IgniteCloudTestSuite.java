@@ -19,30 +19,16 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Ignite Cloud integration test.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({TcpDiscoveryCloudIpFinderSelfTest.class})
 public class IgniteCloudTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new IgniteTestSuite("Cloud Integration Test Suite");
-
-        // Cloud Nodes IP finder.
-        suite.addTest(new JUnit4TestAdapter(TcpDiscoveryCloudIpFinderSelfTest.class));
-
-        return suite;
-    }
-
     /**
      * <a href="http://jclouds.apache.org/guides/google/">Service Account email<a/> for GCE.
      * <a href="http://jclouds.apache.org/guides/aws/">Access Key ID</a> for Amazon.

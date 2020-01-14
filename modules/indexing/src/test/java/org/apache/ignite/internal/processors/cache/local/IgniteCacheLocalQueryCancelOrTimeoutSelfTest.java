@@ -28,17 +28,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests local query cancellations and timeouts.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbstractTest {
     /** Cache size. */
     private static final int CACHE_SIZE = 10_000;
@@ -150,7 +148,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             fail("Expecting timeout");
         }
         catch (Exception e) {
-            assertTrue("Must throw correct exception", e.getCause() instanceof QueryCancelledException);
+            assertNotNull("Must throw correct exception", X.cause(e, QueryCancelledException.class));
         }
 
         // Test must exit gracefully.

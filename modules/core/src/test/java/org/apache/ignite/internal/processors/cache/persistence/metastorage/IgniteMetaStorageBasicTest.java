@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,16 +39,15 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Single place to add for basic MetaStorage tests.
  */
-@RunWith(JUnit4.class)
 public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -111,7 +112,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
                 metaStorage.remove(key);
 
-                metaStorage.putData(key, arr/*b.toString().getBytes()*/);
+                metaStorage.writeRaw(key, arr/*b.toString().getBytes()*/);
             }
         }
         finally {
@@ -150,7 +151,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
                 metaStorage.remove(key);
 
-                metaStorage.putData(key, arr);
+                metaStorage.writeRaw(key, arr);
             }
         }
         finally {
@@ -170,7 +171,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         for (Iterator<IgniteBiTuple<String, byte[]>> it = generateTestData(size, from).iterator(); it.hasNext(); ) {
             IgniteBiTuple<String, byte[]> d = it.next();
 
-            metaStorage.putData(d.getKey(), d.getValue());
+            metaStorage.writeRaw(d.getKey(), d.getValue());
 
             res.put(d.getKey(), d.getValue());
         }
@@ -314,7 +315,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             try {
                 for (Map.Entry<String, byte[]> v : testData.entrySet())
-                    metaStorage.putData(v.getKey(), v.getValue());
+                    metaStorage.writeRaw(v.getKey(), v.getValue());
             }
             finally {
                 db.checkpointReadUnlock();
@@ -481,6 +482,69 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         startGrid(1);
 
         verifyKeys(grid(1), KEYS_CNT, KEY_PREFIX, UPDATED_VAL_PREFIX);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testReadOnlyIterationOrder() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        MetaStorage storage = ignite.context().cache().context().database().metaStorage();
+
+        ignite.context().cache().context().database().checkpointReadLock();
+
+        try {
+            storage.write("a", 0);
+
+            storage.write("z", 0);
+
+            storage.write("pref-1", 1);
+
+            storage.write("pref-3", 3);
+
+            storage.write("pref-5", 5);
+
+            storage.write("pref-7", 7);
+
+            GridTestUtils.setFieldValue(storage, "readOnly", true);
+
+            storage.applyUpdate("pref-0", JdkMarshaller.DEFAULT.marshal(0));
+
+            storage.applyUpdate("pref-1", JdkMarshaller.DEFAULT.marshal(10));
+
+            storage.applyUpdate("pref-4", JdkMarshaller.DEFAULT.marshal(4));
+
+            storage.applyUpdate("pref-5", null);
+
+            storage.applyUpdate("pref-8", JdkMarshaller.DEFAULT.marshal(8));
+
+            List<String> keys = new ArrayList<>();
+
+            List<Integer> values = new ArrayList<>();
+
+            storage.iterate("pref", (key, val) -> {
+                keys.add(key);
+
+                values.add((Integer)val);
+            }, true);
+
+            assertEqualsCollections(
+                Arrays.asList("pref-0", "pref-1", "pref-3", "pref-4", "pref-7", "pref-8"),
+                keys
+            );
+
+            assertEqualsCollections(
+                Arrays.asList(0, 10, 3, 4, 7, 8),
+                values
+            );
+        }
+        finally {
+            ignite.context().cache().context().database().checkpointReadUnlock();
+        }
     }
 
     /** */

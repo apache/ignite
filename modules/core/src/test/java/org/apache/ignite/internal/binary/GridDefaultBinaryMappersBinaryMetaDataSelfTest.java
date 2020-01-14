@@ -38,13 +38,10 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Binary meta data test.
  */
-@RunWith(JUnit4.class)
 public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteConfiguration cfg;

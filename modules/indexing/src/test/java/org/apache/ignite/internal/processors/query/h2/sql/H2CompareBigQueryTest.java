@@ -37,8 +37,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and
@@ -75,7 +73,6 @@ import org.junit.runners.JUnit4;
  *  </pre>
  *
  */
-@RunWith(JUnit4.class)
 public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     /** Root order count. */
     private static final int ROOT_ORDER_CNT = 1000;
@@ -117,13 +114,13 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cacheCustOrd = null;
         cacheReplOrd = null;
         cacheOrdParam = null;
         cacheCancel = null;
         cacheExec = null;
+
+        super.afterTestsStopped();
     }
 
     /**

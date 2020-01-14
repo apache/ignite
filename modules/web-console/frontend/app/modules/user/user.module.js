@@ -88,7 +88,7 @@ function run($root, $transitions, AclService, User, Activities) {
                     throw new Error('Illegal access error');
             })
             .catch(() => {
-                return $state.target(trans.to().failState || '403');
+                return $state.target(trans.to().failState || 'base.403');
             });
     });
 }

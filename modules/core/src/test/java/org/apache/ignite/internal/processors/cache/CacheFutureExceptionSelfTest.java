@@ -33,15 +33,12 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Cache future self test.
  */
-@RunWith(JUnit4.class)
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static volatile boolean fail;
@@ -143,12 +140,12 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * Test class.
      */
     private static class NotSerializableClass implements Serializable {
-        /** {@inheritDoc}*/
+        /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             out.writeObject(this);
         }
 
-        /** {@inheritDoc}*/
+        /** */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             if (fail)
                 throw new RuntimeException("Deserialization failed.");

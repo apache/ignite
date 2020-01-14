@@ -49,17 +49,15 @@ import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Job stealing test.
  */
 @SuppressWarnings("unchecked")
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /** Task execution timeout in milliseconds. */
     private static final int TASK_EXEC_TIMEOUT_MS = 50000;
@@ -349,7 +347,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) {
             //assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
@@ -397,7 +395,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             assert subgrid.size() > 1 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());

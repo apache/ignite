@@ -32,13 +32,10 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
     @Override protected int serverCount() {

@@ -20,6 +20,14 @@
 
 #include "ignite/ignition.h"
 
+#define MUTE_TEST_FOR_TEAMCITY \
+    if (jetbrains::teamcity::underTeamcity()) \
+    { \
+        BOOST_TEST_MESSAGE("Muted on TeamCity because of periodical non-critical failures"); \
+        BOOST_CHECK(jetbrains::teamcity::underTeamcity()); \
+        return; \
+    }
+
 namespace ignite_test
 {
     enum

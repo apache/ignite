@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-5016")
 public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstractTest {
     /** */

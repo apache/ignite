@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains main APIs for kNN algorithms.
  */
+
 package org.apache.ignite.ml.knn;

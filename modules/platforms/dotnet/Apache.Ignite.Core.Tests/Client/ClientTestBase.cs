@@ -18,12 +18,15 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
@@ -55,18 +58,19 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Fixture tear down.
+        /// Fixture set up.
         /// </summary>
         [TestFixtureSetUp]
-        public void FixtureSetUp()
+        public virtual void FixtureSetUp()
         {
             var cfg = GetIgniteConfiguration();
             Ignition.Start(cfg);
 
-            cfg.AutoGenerateIgniteInstanceName = true;
-
             for (var i = 1; i < _gridCount; i++)
             {
+                cfg = GetIgniteConfiguration();
+                cfg.AutoGenerateIgniteInstanceName = true;
+
                 Ignition.Start(cfg);
             }
 
@@ -80,6 +84,7 @@ namespace Apache.Ignite.Core.Tests.Client
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
+            Client.Dispose();
         }
 
         /// <summary>
@@ -140,7 +145,9 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration
             {
-                Endpoints = new[] {IPAddress.Loopback.ToString()}
+                Endpoints = new List<string> {IPAddress.Loopback.ToString()},
+                SocketTimeout = TimeSpan.FromSeconds(15),
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
             };
         }
 
@@ -193,6 +200,17 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Gets the logs.
+        /// </summary>
+        protected List<ListLogger.Entry> GetLogs(IIgniteClient client)
+        {
+            var igniteClient = (IgniteClient) client;
+            var logger = igniteClient.GetConfiguration().Logger;
+            var listLogger = (ListLogger) logger;
+            return listLogger.Entries;
+        }
+        
+        /// <summary>
         /// Asserts the client configs are equal.
         /// </summary>
         public static void AssertClientConfigsAreEqual(CacheClientConfiguration cfg, CacheClientConfiguration cfg2)
@@ -206,7 +224,17 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             }
 
-            AssertExtensions.ReflectionEqual(cfg, cfg2);
+            HashSet<string> ignoredProps = null;
+
+            if (cfg.ExpiryPolicyFactory != null && cfg2.ExpiryPolicyFactory != null)
+            {
+                ignoredProps = new HashSet<string> {"ExpiryPolicyFactory"};
+
+                AssertExtensions.ReflectionEqual(cfg.ExpiryPolicyFactory.CreateInstance(),
+                    cfg2.ExpiryPolicyFactory.CreateInstance());
+            }
+
+            AssertExtensions.ReflectionEqual(cfg, cfg2, ignoredProperties : ignoredProps);
         }
     }
 }

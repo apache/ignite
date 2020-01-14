@@ -33,7 +33,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PE;
@@ -42,8 +44,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 
@@ -51,7 +51,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /** Number of jobs each task spawns. */
     private static final int SPLIT_COUNT = 1;
@@ -68,6 +67,11 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /** */
     public GridTaskTimeoutSelfTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /**

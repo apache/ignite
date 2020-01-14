@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
@@ -29,30 +27,23 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDead
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Deadlock detection related tests.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    DepthFirstSearchTest.class,
+    TxOptimisticDeadlockDetectionTest.class,
+    TxOptimisticDeadlockDetectionCrossCacheTest.class,
+    TxPessimisticDeadlockDetectionTest.class,
+    TxPessimisticDeadlockDetectionCrossCacheTest.class,
+    //TxDeadlockCauseTest.class,
+    TxDeadlockDetectionTest.class,
+    TxDeadlockDetectionNoHangsTest.class,
+    TxDeadlockDetectionUnmasrhalErrorsTest.class,
+    TxDeadlockDetectionMessageMarshallingTest.class
+})
 public class TxDeadlockDetectionTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(DepthFirstSearchTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxOptimisticDeadlockDetectionTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxOptimisticDeadlockDetectionCrossCacheTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxPessimisticDeadlockDetectionTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxPessimisticDeadlockDetectionCrossCacheTest.class));
-        //suite.addTest(new JUnit4TestAdapter(TxDeadlockCauseTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxDeadlockDetectionTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxDeadlockDetectionNoHangsTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxDeadlockDetectionUnmasrhalErrorsTest.class));
-        suite.addTest(new JUnit4TestAdapter(TxDeadlockDetectionMessageMarshallingTest.class));
-
-        return suite;
-    }
 }

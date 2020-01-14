@@ -57,13 +57,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     /** Max size. */
     private static final int MAX_SIZE = 500 * 1024 * 1024;
@@ -237,11 +234,11 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                         pickedPages.sort(new Comparator<FullPageId>() {
                             @Override public int compare(FullPageId o1, FullPageId o2) {
                                 int cmp = Long.compare(o1.groupId(), o2.groupId());
+
                                 if (cmp != 0)
                                     return cmp;
 
-                                return Long.compare(PageIdUtils.effectivePageId(o1.pageId()),
-                                        PageIdUtils.effectivePageId(o2.pageId()));
+                                return Long.compare(o1.effectivePageId(), o2.effectivePageId());
                             }
                         });
 
@@ -367,6 +364,5 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
             };
         }
     }
-
 
 }

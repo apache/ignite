@@ -17,8 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridFactoryVmShutdownTest;
 import org.apache.ignite.internal.managers.GridManagerMxBeanIllegalArgumentHandleTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheMultiNodeDataStructureTest;
@@ -40,49 +38,49 @@ import org.apache.ignite.jvmtest.ServerSocketMultiThreadedTest;
 import org.apache.ignite.lang.GridSystemCurrentTimeMillisTest;
 import org.apache.ignite.lang.GridThreadPriorityTest;
 import org.apache.ignite.startup.servlet.GridServletLoaderTest;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
- * Tests suite for orphaned tests.
+ * Tests suite for orphaned tests (not in any test sute previously).
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    FileIOTest.class,
+    FileLocksTest.class,
+    GridComputeJobExecutionErrorToLogManualTest.class,
+    GridManagerMxBeanIllegalArgumentHandleTest.class,
+    GridRoundTripTest.class,
+    GridServletLoaderTest.class,
+
+    LinkedHashMapTest.class,
+    NetworkFailureTest.class,
+    PagesWriteThrottleSandboxTest.class,
+    QueueSizeCounterMultiThreadedTest.class,
+    ReadWriteLockMultiThreadedTest.class,
+    RegExpTest.class,
+    ServerSocketMultiThreadedTest.class,
+
+    IgniteLostAndFoundTestSuite.TentativeTests.class
+})
 public class IgniteLostAndFoundTestSuite {
     /**
-     * @return Tests suite for orphaned tests (not in any test sute previously).
+     * Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
+     * Main classes.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite List And Found Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(FileIOTest.class));
-        suite.addTest(new JUnit4TestAdapter(FileLocksTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridComputeJobExecutionErrorToLogManualTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridManagerMxBeanIllegalArgumentHandleTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridRoundTripTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridServletLoaderTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(LinkedHashMapTest.class));
-        suite.addTest(new JUnit4TestAdapter(NetworkFailureTest.class));
-        suite.addTest(new JUnit4TestAdapter(PagesWriteThrottleSandboxTest.class));
-        suite.addTest(new JUnit4TestAdapter(QueueSizeCounterMultiThreadedTest.class));
-        suite.addTest(new JUnit4TestAdapter(ReadWriteLockMultiThreadedTest.class));
-        suite.addTest(new JUnit4TestAdapter(RegExpTest.class));
-        suite.addTest(new JUnit4TestAdapter(ServerSocketMultiThreadedTest.class));
-
-
-        // Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
-        // Main classes:
-        Class[] _$ = new Class[] {
-            GridCacheReplicatedPreloadUndeploysTest.class,
-            GridCacheMultiNodeDataStructureTest.class,
-            GridFactoryVmShutdownTest.class,
-            GridFutureQueueTest.class,
-            GridThreadPriorityTest.class,
-            GridSystemCurrentTimeMillisTest.class,
-            BlockingQueueTest.class,
-            MultipleFileIOTest.class
-        };
-
-        return suite;
+    @RunWith(Suite.class)
+    @Suite.SuiteClasses({
+        GridCacheReplicatedPreloadUndeploysTest.class,
+        GridCacheMultiNodeDataStructureTest.class,
+        GridFactoryVmShutdownTest.class,
+        GridFutureQueueTest.class,
+        GridThreadPriorityTest.class,
+        GridSystemCurrentTimeMillisTest.class,
+        BlockingQueueTest.class,
+        MultipleFileIOTest.class
+    })
+    @Ignore
+    public static class TentativeTests {
     }
 }

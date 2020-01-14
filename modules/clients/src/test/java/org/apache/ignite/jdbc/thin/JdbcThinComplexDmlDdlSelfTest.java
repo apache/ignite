@@ -37,13 +37,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode = CacheMode.PARTITIONED;

@@ -30,8 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -40,7 +38,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheIndexStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -78,6 +75,9 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
 
                     while (!stop.get()) {
                         try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                            // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
+                            streamer.allowOverwrite(atomicityMode == TRANSACTIONAL);
+
                             for (int i = 0; i < 1; i++)
                                 streamer.addData(rnd.nextInt(KEYS), String.valueOf(i));
                         }
@@ -133,6 +133,4 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
 
         return ccfg;
     }
-
-
 }

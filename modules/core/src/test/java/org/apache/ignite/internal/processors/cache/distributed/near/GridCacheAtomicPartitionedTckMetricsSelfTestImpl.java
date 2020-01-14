@@ -22,13 +22,10 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Partitioned atomic cache metrics test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheAtomicPartitionedMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

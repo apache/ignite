@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -30,13 +29,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Checks if filter factory correctly deployed on all nodes.
  */
-@RunWith(JUnit4.class)
 public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "test-cache";
@@ -81,6 +77,13 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRemoteFilterFactoryFromClientToServer() throws Exception {
+        check("server1", "client", "server2");
+    }
+
+    /**
      * @param node1Name Node 1 name.
      * @param node2Name Node 2 name.
      * @param node3Name Node 3 name.
@@ -100,9 +103,6 @@ public class ContinuousQueryPeerClassLoadingTest extends GridCommonAbstractTest 
 
         qry1.setRemoteFilterFactory(new DummyEventFilterFactory<>());
         qry2.setRemoteFilterFactory(new DummyEventFilterFactory<>());
-
-        final AtomicInteger client1Evts = new AtomicInteger(0);
-        final AtomicInteger client2Evts = new AtomicInteger(0);
 
         final CountDownLatch latch1 = new CountDownLatch(20);
         final CountDownLatch latch2 = new CountDownLatch(10);

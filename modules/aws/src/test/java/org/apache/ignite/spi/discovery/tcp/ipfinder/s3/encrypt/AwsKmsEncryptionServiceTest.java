@@ -28,14 +28,11 @@ import com.amazonaws.regions.Regions;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 
 /**
  * Class to test {@link AwsKmsEncryptionService}.
  */
-@RunWith(JUnit4.class)
 public class AwsKmsEncryptionServiceTest extends GridCommonAbstractTest {
     /**
      * Test encryption and decryption.

@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridTuple;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.value.CompareMode;
@@ -53,10 +54,12 @@ public class InlineIndexHelper {
     /** Value for comparison meaning 'Not enough information to compare'. */
     public static final int CANT_BE_COMPARE = -2;
 
+    /** Charset. */
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** PageContext for use in IO's */
-    private static final ThreadLocal<List<InlineIndexHelper>> currentIndex = new ThreadLocal<>();
+    private static final ThreadLocal<GridTuple<List<InlineIndexHelper>>> CUR_HELPER =
+        ThreadLocal.withInitial(GridTuple::new);
 
     /** */
     public static final List<Integer> AVAILABLE_TYPES = Arrays.asList(
@@ -207,21 +210,21 @@ public class InlineIndexHelper {
      * @return Page context for current thread.
      */
     public static List<InlineIndexHelper> getCurrentInlineIndexes() {
-        return currentIndex.get();
+        return CUR_HELPER.get().get();
     }
 
     /**
      * Sets page context for current thread.
      */
     public static void setCurrentInlineIndexes(List<InlineIndexHelper> inlineIdxs) {
-        currentIndex.set(inlineIdxs);
+        CUR_HELPER.get().set(inlineIdxs);
     }
 
     /**
      * Clears current context.
      */
     public static void clearCurrentInlineIndexes() {
-        currentIndex.remove();
+        CUR_HELPER.get().set(null);
     }
 
     /**

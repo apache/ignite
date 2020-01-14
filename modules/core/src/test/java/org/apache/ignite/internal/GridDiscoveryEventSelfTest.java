@@ -38,8 +38,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -49,7 +47,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests discovery event topology snapshots.
  */
-@RunWith(JUnit4.class)
 public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
     /** Daemon flag. */
     private boolean daemon;

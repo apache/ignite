@@ -23,13 +23,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
 /**
  * Inner page for H2 row references.
  */
-public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> implements H2RowLinkIO {
+public abstract class AbstractH2InnerIO extends BPlusInnerIO<H2Row> implements H2RowLinkIO {
     /**
      * @param type Page type.
      * @param ver Page format version.
@@ -40,14 +40,14 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
     }
 
     /** {@inheritDoc} */
-    @Override public void storeByOffset(long pageAddr, int off, GridH2SearchRow row) {
-        GridH2Row row0 = (GridH2Row)row;
+    @Override public void storeByOffset(long pageAddr, int off, H2Row row) {
+        H2CacheRow row0 = (H2CacheRow)row;
 
         H2IOUtils.storeRow(row0, pageAddr, off, storeMvccInfo());
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2SearchRow getLookupRow(BPlusTree<GridH2SearchRow, ?> tree, long pageAddr, int idx)
+    @Override public H2Row getLookupRow(BPlusTree<H2Row, ?> tree, long pageAddr, int idx)
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
 
@@ -56,14 +56,14 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
             long mvccCntr = getMvccCounter(pageAddr, idx);
             int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
+            return ((H2Tree)tree).createMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
-        return ((H2Tree)tree).createRowFromLink(link);
+        return ((H2Tree)tree).createRow(link);
     }
 
     /** {@inheritDoc} */
-    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<GridH2SearchRow> srcIo, long srcPageAddr, int srcIdx) {
+    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<H2Row> srcIo, long srcPageAddr, int srcIdx) {
         H2IOUtils.store(dstPageAddr, offset(dstIdx), srcIo, srcPageAddr, srcIdx, storeMvccInfo());
     }
 

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import junit.framework.TestSuite;
+import java.util.List;
+import org.apache.ignite.internal.processors.cache.CacheStoreTxPutAllMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
@@ -26,39 +28,41 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncCheckDataTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.CleanupRestoredCachesSlowTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgniteCacheTestSuite8 {
     /**
      * @return IgniteCache test suite.
      */
-    public static TestSuite suite() {
+    public static List<Class<?>> suite() {
         return suite(null);
     }
 
     /**
-     * @return IgniteCache test suite.
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
      */
-    public static TestSuite suite(Collection<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 8");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
         // Cache metrics.
-        suite.addTest(IgniteCacheMetricsSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheMetricsSelfTestSuite.suite(ignoredTests));
 
         // Topology validator.
-        suite.addTest(IgniteTopologyValidatorTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteTopologyValidatorTestSuite.suite(ignoredTests));
 
         // Eviction.
-        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheEvictionSelfTestSuite.suite(ignoredTests));
 
         // Iterators.
-        suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite(ignoredTests));
+        suite.addAll(IgniteCacheIteratorsSelfTestSuite.suite(ignoredTests));
 
         // Rebalancing.
         GridTestUtils.addTestIfNeeded(suite, GridCacheOrderedPreloadingSelfTest.class, ignoredTests);
@@ -68,6 +72,9 @@ public class IgniteCacheTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingAsyncSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingCancelTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheStoreTxPutAllMultiNodeTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CleanupRestoredCachesSlowTest.class, ignoredTests);
 
         return suite;
     }

@@ -31,28 +31,26 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test was added to check fix for IGNITE-4465.
  */
-@RunWith(JUnit4.class)
 public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final int SYS_THREADS = 16;
 
     /** */
-    private boolean client;
+    private static boolean client;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
+    /** */
+    @Before
+    public void beforeCacheConcurrentReadThroughTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */
@@ -126,14 +124,17 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
             for (IgniteFuture<?> fut : futs)
                 fut.get();
 
-            int loadCnt = TestCacheStore.loadCnt.get();
+            log.info("Iteration [iter=" + iter + ']');
 
-            long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                int loadCnt = TestCacheStore.loadCnt.get();
 
-            log.info("Iteration [iter=" + iter + ", loadCnt=" + loadCnt + ", misses=" + misses + ']');
+                long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
 
-            assertTrue("Unexpected loadCnt: " + loadCnt, loadCnt > 0 && loadCnt <= SYS_THREADS);
-            assertTrue("Unexpected misses: " + misses, misses > 0 && misses <= SYS_THREADS);
+                log.info("Iteration [loadCnt=" + loadCnt + ", misses=" + misses + ']');
+
+                return (loadCnt > 0 && loadCnt <= SYS_THREADS) && (misses > 0 && misses <= SYS_THREADS);
+            }, 5000));
 
             client.destroyCache(cacheName);
         }

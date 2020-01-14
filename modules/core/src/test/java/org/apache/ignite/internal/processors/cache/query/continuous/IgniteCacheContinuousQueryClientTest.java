@@ -35,8 +35,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -46,7 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
@@ -112,6 +109,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined1 = startGrid(4);
 
+            awaitPartitionMapExchange();
+
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
@@ -121,6 +120,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined2 = startGrid(5);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
@@ -165,6 +166,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined1 = startGrid(4);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 

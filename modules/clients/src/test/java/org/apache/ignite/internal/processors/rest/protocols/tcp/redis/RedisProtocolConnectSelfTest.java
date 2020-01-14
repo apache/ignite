@@ -19,14 +19,11 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import redis.clients.jedis.Jedis;
 
 /**
  * Tests for Connection commands of Redis protocol.
  */
-@RunWith(JUnit4.class)
 public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.

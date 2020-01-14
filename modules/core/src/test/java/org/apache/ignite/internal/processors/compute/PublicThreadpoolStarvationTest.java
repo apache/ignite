@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -36,7 +34,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-4239
  * Jobs hang when a lot of jobs calculate cache.
  */
-@RunWith(JUnit4.class)
 public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
     /** Cache size. */
     private static final int CACHE_SIZE = 10;

@@ -20,7 +20,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -32,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
+        private readonly string _tempDir = PathUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Sets up the test.
@@ -63,7 +66,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests that cache data survives node restart.
         /// </summary>
         [Test]
-        public void TestCacheDataSurvivesNodeRestart()
+        public void TestCacheDataSurvivesNodeRestart(
+            [Values(true, false)] bool withCacheStore,
+            [Values(true, false)] bool withCustomAffinity)
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -99,7 +104,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                 ignite.GetCluster().SetActive(true);
 
                 // Create cache with default region (persistence enabled), add data.
-                var cache = ignite.CreateCache<int, int>(cacheName);
+                var cache = ignite.CreateCache<int, int>(new CacheConfiguration
+                {
+                    Name = cacheName,
+                    CacheStoreFactory = withCacheStore ? new CustomStoreFactory() : null,
+                    AffinityFunction = withCustomAffinity ? new CustomAffinityFunction() : null
+                });
                 cache[1] = 1;
 
                 // Check some metrics.
@@ -213,63 +223,70 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests the baseline topology.
         /// </summary>
         [Test]
+        [Ignore("SetBaselineAutoAdjustEnabledFlag is not supported in 8.7, and IGNITE_BASELINE_AUTO_ADJUST_ENABLED " +
+                "can't be set reliably with environment variables.'")]
         public void TestBaselineTopology()
         {
-            var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
+            using (EnvVar.Set("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false"))
             {
-                ConsistentId = "node1"
-            };
-            var cfg2 = new IgniteConfiguration(GetPersistentConfiguration())
-            {
-                ConsistentId = "node2",
-                IgniteInstanceName = "2"
-            };
+                var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
+                {
+                    ConsistentId = "node1"
+                };
+                var cfg2 = new IgniteConfiguration(GetPersistentConfiguration())
+                {
+                    ConsistentId = "node2",
+                    IgniteInstanceName = "2"
+                };
 
-            using (var ignite = Ignition.Start(cfg1))
-            {
-                // Start and stop to bump topology version.
-                Ignition.Start(cfg2);
-                Ignition.Stop(cfg2.IgniteInstanceName, true);
+                using (var ignite = Ignition.Start(cfg1))
+                {
+                    // Start and stop to bump topology version.
+                    Ignition.Start(cfg2);
+                    Ignition.Stop(cfg2.IgniteInstanceName, true);
 
-                var cluster = ignite.GetCluster();
-                Assert.AreEqual(3, cluster.TopologyVersion);
+                    var cluster = ignite.GetCluster();
+                    Assert.AreEqual(3, cluster.TopologyVersion);
 
-                // Can not set baseline while inactive.
-                var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
-                Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
+                    // Can not set baseline while inactive.
+                    var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
+                    Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
 
-                // Set with version.
-                cluster.SetActive(true);
-                cluster.SetBaselineTopology(2);
+                    cluster.SetActive(true);
 
-                var res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] {"node1", "node2"}, res.Select(x => x.ConsistentId));
+                    // Can not set baseline with offline node.
+                    ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
+                    Assert.AreEqual("Check arguments. Node with consistent ID [node2] not found in server nodes.",
+                        ex.Message);
 
-                cluster.SetBaselineTopology(1);
-                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+                    cluster.SetBaselineTopology(1);
+                    Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
 
-                // Set with nodes.
-                cluster.SetBaselineTopology(res);
-                
-                res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+                    // Set with node.
+                    cluster.SetBaselineTopology(cluster.GetBaselineTopology());
 
-                cluster.SetBaselineTopology(cluster.GetTopology(1));
-                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+                    var res = cluster.GetBaselineTopology();
+                    CollectionAssert.AreEquivalent(new[] {"node1"}, res.Select(x => x.ConsistentId));
 
-                // Set to two nodes.
-                cluster.SetBaselineTopology(cluster.GetTopology(2));
-            }
+                    cluster.SetBaselineTopology(cluster.GetTopology(1));
+                    Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
 
-            // Check auto activation on cluster restart.
-            using (var ignite = Ignition.Start(cfg1))
-            using (Ignition.Start(cfg2))
-            {
-                var cluster = ignite.GetCluster();
-                Assert.IsTrue(cluster.IsActive());
-                
-                var res = cluster.GetBaselineTopology();
-                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+                    // Can not set baseline with offline node.
+                    ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(cluster.GetTopology(2)));
+                    Assert.AreEqual("Check arguments. Node with consistent ID [node2] not found in server nodes.",
+                        ex.Message);
+                }
+
+                // Check auto activation on cluster restart.
+                using (var ignite = Ignition.Start(cfg1))
+                using (Ignition.Start(cfg2))
+                {
+                    var cluster = ignite.GetCluster();
+                    Assert.IsTrue(cluster.IsActive());
+
+                    var res = cluster.GetBaselineTopology();
+                    CollectionAssert.AreEquivalent(new[] {"node1"}, res.Select(x => x.ConsistentId));
+                }
             }
         }
 
@@ -311,6 +328,42 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
+        /// Test the configuration of IsBaselineAutoAdjustEnabled flag
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustEnabledDisabled()
+        {
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                bool isEnabled = cluster.IsBaselineAutoAdjustEnabled();
+                cluster.SetBaselineAutoAdjustEnabledFlag(!isEnabled);
+
+                Assert.AreNotEqual(isEnabled, cluster.IsBaselineAutoAdjustEnabled());
+            }
+        }
+
+        /// <summary>
+        /// Test the configuration of BaselineAutoAdjustTimeout property
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustTimeoutWriteRead()
+        {
+            const long newTimeout = 333000;
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                cluster.SetBaselineAutoAdjustTimeout(newTimeout);
+
+                Assert.AreEqual(newTimeout, cluster.GetBaselineAutoAdjustTimeout());
+            }
+        }
+
+        /// <summary>
         /// Checks active state.
         /// </summary>
         private static void CheckIsActive(IIgnite ignite, bool isActive)
@@ -347,6 +400,41 @@ namespace Apache.Ignite.Core.Tests.Cache
                     }
                 }
             };
+        }
+
+        private class CustomStoreFactory : IFactory<ICacheStore>
+        {
+            public ICacheStore CreateInstance()
+            {
+                return new CustomStore();
+            }
+        }
+
+        private class CustomStore : CacheStoreAdapter<object, object>
+        {
+            public override object Load(object key)
+            {
+                return null;
+            }
+
+            public override void Write(object key, object val)
+            {
+                // No-op.
+            }
+
+            public override void Delete(object key)
+            {
+                // No-op.
+            }
+        }
+
+        private class CustomAffinityFunction : RendezvousAffinityFunction
+        {
+            public override int Partitions
+            {
+                get { return 10; }
+                set { throw new NotSupportedException(); }
+            }
         }
     }
 }

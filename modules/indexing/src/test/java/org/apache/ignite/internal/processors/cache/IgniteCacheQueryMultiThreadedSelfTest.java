@@ -41,13 +41,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,8 +54,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Multi-threaded tests for cache queries.
  */
-@RunWith(JUnit4.class)
-public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final boolean TEST_INFO = true;
 
@@ -72,11 +69,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
     /** */
     private static final long DURATION = 30 * 1000;
-
-    /** Don't start grid by default. */
-    public IgniteCacheQueryMultiThreadedSelfTest() {
-        super(false);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -29,20 +29,17 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for schemas.
  */
-@RunWith(JUnit4.class)
-public class SqlSchemaSelfTest extends GridCommonAbstractTest {
+public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
 
@@ -251,7 +248,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(100, 20); i++) {
                     int idx = maxIdx.incrementAndGet();
 
                     String tbl = "Person" + idx;
@@ -328,6 +325,18 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
         SchemaOperationException e = X.cause(th, SchemaOperationException.class);
 
         assertEquals(SchemaOperationException.CODE_TABLE_EXISTS, e.code());
+    }
+
+    /**
+     * Test table creation and data retrieval with implicit schema.
+     */
+    @Test
+    public void testImplicitSchema() {
+        IgniteCache<?, ?> c = node.getOrCreateCache("testCache1");
+
+        c.query(new SqlFieldsQuery("CREATE TABLE TEST1 (ID LONG PRIMARY KEY, VAL LONG)" +
+            " WITH \"template=replicated\";")).getAll();
+        c.query(new SqlFieldsQuery("SELECT * FROM TEST1")).getAll();
     }
 
     /**

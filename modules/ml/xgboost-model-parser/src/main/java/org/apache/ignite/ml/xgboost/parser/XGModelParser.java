@@ -19,11 +19,11 @@ package org.apache.ignite.ml.xgboost.parser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.ignite.ml.inference.parser.ModelParser;
+import org.apache.ignite.ml.math.primitives.vector.NamedVector;
 import org.apache.ignite.ml.xgboost.XGModelComposition;
 import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
 
@@ -63,7 +63,7 @@ import org.apache.ignite.ml.xgboost.parser.visitor.XGModelVisitor;
  * xgModel : xgTree+ ;
  * </pre>
  */
-public class XGModelParser implements ModelParser<HashMap<String, Double>, Double, XGModelComposition> {
+public class XGModelParser implements ModelParser<NamedVector, Double, XGModelComposition> {
     /** */
     private static final long serialVersionUID = -5819843559270294718L;
 

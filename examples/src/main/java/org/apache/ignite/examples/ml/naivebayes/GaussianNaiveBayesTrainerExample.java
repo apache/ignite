@@ -17,18 +17,17 @@
 
 package org.apache.ignite.examples.ml.naivebayes;
 
-import java.io.FileNotFoundException;
-import java.util.Arrays;
-import javax.cache.Cache;
-import org.apache.commons.math3.util.Precision;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -48,66 +47,48 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * You can change the test data used in this example and re-run it to explore this algorithm further.</p>
  */
 public class GaussianNaiveBayesTrainerExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Naive Bayes classification model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            System.out.println(">>> Create new naive Bayes classification trainer object.");
-            GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
+                System.out.println(">>> Create new naive Bayes classification trainer object.");
+                GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
 
-            System.out.println(">>> Perform the training to get the model.");
-            GaussianNaiveBayesModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+                System.out.println(">>> Perform the training to get the model.");
 
-            System.out.println(">>> Naive Bayes model: " + mdl);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+                GaussianNaiveBayesModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                System.out.println(">>> Naive Bayes model: " + mdl);
 
-            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-            int[][] confusionMtx = {{0, 0}, {0, 0}};
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    MetricName.ACCURACY
+                );
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-                    double prediction = mdl.predict(inputs);
-
-                    totalAmount++;
-                    if (!Precision.equals(groundTruth, prediction, Precision.EPSILON))
-                        amountOfErrors++;
-
-                    int idx1 = (int)prediction;
-                    int idx2 = (int)groundTruth;
-
-                    confusionMtx[idx1][idx2]++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                System.out.println(">>> Naive bayes model over partitioned dataset usage example completed.");
             }
-
-            System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-            System.out.println(">>> ---------------------------------");
-
-            System.out.println(">>> Naive bayes model over partitioned dataset usage example completed.");
+            finally {
+                dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 

@@ -24,16 +24,17 @@ import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -45,7 +46,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * Simple cache test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
     private static Ignite ignite1;
@@ -55,6 +55,11 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** Grid 3. */
     private static Ignite ignite3;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -74,10 +79,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
 
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();
@@ -196,7 +200,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             IgniteFuture<String> f2 = cache2.getAsync("async1");
 
             IgniteFuture<String> f3 = cache3.getAsync("async1");
-
 
             String v2 = f2.get();
             String v3 = f3.get();
@@ -321,7 +324,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
      */
     @Test
     public void testPutWithExpiration() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         IgniteCache<String, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<String, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);

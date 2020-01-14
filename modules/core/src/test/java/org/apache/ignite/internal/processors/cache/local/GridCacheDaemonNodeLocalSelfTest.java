@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 public class GridCacheDaemonNodeLocalSelfTest extends GridCacheDaemonNodeAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.beforeTest();
     }

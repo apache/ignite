@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.regressions.logistic;
 
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
@@ -43,9 +43,9 @@ public class LogisticRegressionModelTest {
 
         assertEquals(0.1, new LogisticRegressionModel(weights, 1.0).withThreshold(0.1).threshold(), 0);
 
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString().length() > 0);
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(true).length() > 0);
-        assertTrue(new LogisticRegressionModel(weights, 1.0).toString(false).length() > 0);
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString().isEmpty());
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString(true).isEmpty());
+        assertTrue(!new LogisticRegressionModel(weights, 1.0).toString(false).isEmpty());
 
         verifyPredict(new LogisticRegressionModel(weights, 1.0).withRawLabels(true));
         verifyPredict(new LogisticRegressionModel(null, 1.0).withRawLabels(true).withWeights(weights));

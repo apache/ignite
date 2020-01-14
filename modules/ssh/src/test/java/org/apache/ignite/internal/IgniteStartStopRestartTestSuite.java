@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Start nodes tests.
  */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteNodeStartUtilsSelfTest.class,
+    IgniteProjectionStartStopRestartSelfTest.class
+})
 public class IgniteStartStopRestartTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Start Nodes Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IgniteNodeStartUtilsSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(IgniteProjectionStartStopRestartSelfTest.class));
-
-        return suite;
-    }
 }

@@ -29,6 +29,11 @@ public interface GAGridConstants {
 
     /** Selection Method type **/
     public enum SELECTION_METHOD {
-        SELECTON_METHOD_ELETISM, SELECTION_METHOD_TRUNCATION
+        /** Selection method eletism. */
+        SELECTION_METHOD_ELITISM,
+        /** Selection method truncation. */
+        SELECTION_METHOD_TRUNCATION,
+        /** Selection method roulette wheel. */
+        SELECTION_METHOD_ROULETTE_WHEEL
     }
 }

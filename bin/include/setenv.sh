@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -27,7 +36,7 @@
 #
 # Check IGNITE_HOME.
 #
-if [ "${IGNITE_HOME}" = "" ]; then
+if [ "${IGNITE_HOME:-}" = "" ]; then
     echo $0", ERROR: Ignite installation folder is not found."
     echo "Please create IGNITE_HOME variable pointing to location of"
     echo "Ignite installation folder."
@@ -62,12 +71,12 @@ IFS=$(echo -en "\n\b")
 for file in ${IGNITE_HOME}/libs/*
 do
     if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
-        IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
+        IGNITE_LIBS=${IGNITE_LIBS:-}${SEP}${file}/*
     fi
 done
 
 IFS=$SAVEIFS
 
-if [ "${USER_LIBS}" != "" ]; then
-    IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}
+if [ "${USER_LIBS:-}" != "" ]; then
+    IGNITE_LIBS=${USER_LIBS:-}${SEP}${IGNITE_LIBS}
 fi

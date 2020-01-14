@@ -126,7 +126,6 @@ public class HadoopAttributes implements Externalizable {
         return maxTaskQueueSize;
     }
 
-
     /**
      * @return Native library names.
      */

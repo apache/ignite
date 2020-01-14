@@ -17,25 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.GridTopicExternalizableSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Externalizable self-test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({GridTopicExternalizableSelfTest.class})
 public class IgniteExternalizableSelfTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Externalizable Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridTopicExternalizableSelfTest.class));
-
-        return suite;
-    }
 }

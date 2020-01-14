@@ -21,13 +21,10 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -38,14 +35,6 @@ public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSche
         super.execute(grid(0), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
             "atomicity=transactional\"");
     }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
 
     /**
      * @throws Exception if failed.

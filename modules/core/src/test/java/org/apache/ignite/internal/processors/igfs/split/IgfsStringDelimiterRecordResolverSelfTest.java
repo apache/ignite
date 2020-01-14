@@ -24,13 +24,10 @@ import org.apache.ignite.igfs.mapreduce.records.IgfsByteDelimiterRecordResolver;
 import org.apache.ignite.igfs.mapreduce.records.IgfsStringDelimiterRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * String delimiter split resolver self-test.
  */
-@RunWith(JUnit4.class)
 public class IgfsStringDelimiterRecordResolverSelfTest extends IgfsAbstractRecordResolverSelfTest {
     /** Charset used in tests. */
     private static final Charset UTF8 = Charset.forName("UTF-8");

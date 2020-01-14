@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Text;
     using Apache.Ignite.Core.Impl.Common;
@@ -39,6 +40,12 @@ namespace Apache.Ignite.Core.Impl
 
         /** Java Command line argument: Xmx. Case sensitive. */
         private const string CmdJvmMaxMemJava = "-Xmx";
+
+        /** Java Command line argument: file.encoding. Case sensitive. */
+        private const string CmdJvmFileEncoding = "-Dfile.encoding=";
+
+        /** Java Command line argument: java.util.logging.config.file. Case sensitive. */
+        private const string CmdJvmUtilLoggingConfigFile = "-Djava.util.logging.config.file=";
 
         /** Monitor for DLL load synchronization. */
         private static readonly object SyncRoot = new object();
@@ -93,7 +100,7 @@ namespace Apache.Ignite.Core.Impl
                 return cbs;
             }
         }
-        
+
         /// <summary>
         /// Memory manager attached to currently running JVM.
         /// </summary>
@@ -116,9 +123,10 @@ namespace Apache.Ignite.Core.Impl
                 return jvm;
             }
 
-            var cp = Classpath.CreateClasspath(cfg, log: log);
+            var igniteHome = IgniteHome.Resolve(cfg.IgniteHome, log);
+            var cp = Classpath.CreateClasspath(classPath: cfg.JvmClasspath, igniteHome: igniteHome, log: log);
 
-            var jvmOpts = GetMergedJvmOptions(cfg);
+            var jvmOpts = GetMergedJvmOptions(cfg, igniteHome);
 
             jvmOpts.Add(cp);
 
@@ -128,18 +136,36 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets JvmOptions collection merged with individual properties (Min/Max mem, etc) according to priority.
         /// </summary>
-        private static IList<string> GetMergedJvmOptions(IgniteConfiguration cfg)
+        private static IList<string> GetMergedJvmOptions(IgniteConfiguration cfg, string igniteHome)
         {
             var jvmOpts = cfg.JvmOptions == null ? new List<string>() : cfg.JvmOptions.ToList();
 
             // JvmInitialMemoryMB / JvmMaxMemoryMB have lower priority than CMD_JVM_OPT
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMinMemJava, StringComparison.OrdinalIgnoreCase)) &&
                 cfg.JvmInitialMemoryMb != IgniteConfiguration.DefaultJvmInitMem)
-                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava, cfg.JvmInitialMemoryMb));
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMinMemJava,
+                    cfg.JvmInitialMemoryMb));
+            }
 
             if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmMaxMemJava, StringComparison.OrdinalIgnoreCase)) &&
                 cfg.JvmMaxMemoryMb != IgniteConfiguration.DefaultJvmMaxMem)
-                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+            {
+                jvmOpts.Add(
+                    string.Format(CultureInfo.InvariantCulture, "{0}{1}m", CmdJvmMaxMemJava, cfg.JvmMaxMemoryMb));
+            }
+
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmFileEncoding, StringComparison.Ordinal)))
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}UTF-8", CmdJvmFileEncoding));
+            }
+
+            if (!jvmOpts.Any(opt => opt.StartsWith(CmdJvmUtilLoggingConfigFile, StringComparison.Ordinal)) &&
+                !string.IsNullOrWhiteSpace(igniteHome))
+            {
+                jvmOpts.Add(string.Format(CultureInfo.InvariantCulture, "{0}{1}", CmdJvmUtilLoggingConfigFile,
+                    Path.Combine(igniteHome, "config", "java.util.logging.properties")));
+            }
 
             return jvmOpts;
         }

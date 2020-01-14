@@ -55,8 +55,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,7 +64,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests for {@link IgfsProcessor}.
  */
-@RunWith(JUnit4.class)
 public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** Random numbers generator. */
     protected final SecureRandom rnd = new SecureRandom();
@@ -122,7 +119,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

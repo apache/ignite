@@ -22,13 +22,10 @@ import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for Kerberos name mapper.
  */
-@RunWith(JUnit4.class)
 public class KerberosUserNameMapperSelfTest extends GridCommonAbstractTest {
     /** Test instance. */
     private static final String INSTANCE = "test_instance";

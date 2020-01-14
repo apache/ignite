@@ -32,14 +32,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest {
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
@@ -64,9 +62,14 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         CacheConfiguration ccfg = defaultCacheConfiguration()
             .setBackups(0)
-            .setRebalanceMode(CacheRebalanceMode.NONE) // Disable rebalance to prevent owning MOVING partitions.
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+
+        // Disable rebalance to prevent owning MOVING partitions.
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -140,8 +143,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
      */
     @Test
     public void testPartitionsStateConsistencyAfterRecoveryNoCheckpoints() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10603");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10603", MvccFeatureChecker.forcedMvcc());
 
         IgniteEx ignite = startGrid(0);
 

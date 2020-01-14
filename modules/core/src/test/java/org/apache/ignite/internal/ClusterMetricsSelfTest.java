@@ -29,14 +29,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -45,7 +44,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
  * Tests for projection metrics.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 4;
@@ -65,7 +63,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration();
         cfg.setIncludeProperties();
-        //cfg.setMetricsUpdateFrequency(0);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

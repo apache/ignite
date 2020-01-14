@@ -22,13 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 
 /**
  * Thin client cache.
@@ -338,7 +338,15 @@ public interface ClientCache<K, V> {
     public <K1, V1> ClientCache<K1, V1> withKeepBinary();
 
     /**
-     * Queries cache. Supports {@link ScanQuery}, {@link SqlQuery} and {@link SqlFieldsQuery}.
+     * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
+     * the returned cache.
+     *
+     * @return Cache instance with the specified expiry policy set.
+     */
+    public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc);
+
+    /**
+     * Queries cache. Supports {@link ScanQuery} and {@link SqlFieldsQuery}.
      *
      * @param qry Query.
      * @return Cursor.

@@ -21,10 +21,14 @@ import javax.cache.management.CacheMXBean;
 import javax.cache.management.CacheStatisticsMXBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * This interface defines JMX view on {@link IgniteCache}.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to cache descriptor.")
 public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, CacheMetrics {
     /** {@inheritDoc} */
@@ -148,7 +152,7 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     public long getOffHeapAllocatedSize();
 
     /** {@inheritDoc} */
-    @Override @MXBeanDescription("Number of non-null values in the cache.")
+    @Override @MXBeanDescription("Cache size.")
     public int getSize();
 
     /** {@inheritDoc} */

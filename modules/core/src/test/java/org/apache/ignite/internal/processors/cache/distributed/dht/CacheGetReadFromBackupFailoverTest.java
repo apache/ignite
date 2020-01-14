@@ -46,8 +46,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -57,16 +55,19 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for getting values on unstable topology with read from backup enabled.
  */
-@RunWith(JUnit4.class)
 public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     /** Tx cache name. */
     private static final String TX_CACHE = "txCache";
+
     /** Atomic cache name. */
     private static final String ATOMIC_CACHE = "atomicCache";
+
     /** Keys count. */
     private static final int KEYS_CNT = 50000;
+
     /** Stop load flag. */
     private static final AtomicBoolean stop = new AtomicBoolean();
+
     /** Error. */
     private static final AtomicReference<Throwable> err = new AtomicReference<>();
 

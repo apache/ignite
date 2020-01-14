@@ -726,7 +726,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
@@ -1082,7 +1083,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1101,7 +1102,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (tx == null) {
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
-                            req.topologyVersion(),
+                            topology().readyTopologyVersion(),
                             nearNode.id(),
                             req.version(),
                             req.futureId(),
@@ -1350,7 +1351,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             0,
             null,
             topVer,
-            ctx.deploymentEnabled());
+            ctx.deploymentEnabled(),
+            false);
 
         try {
             ctx.io().send(nearNode, res, ctx.ioPolicy());
@@ -1387,6 +1389,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert tx == null || tx.xidVersion().equals(mappedVer);
 
         try {
+            // All subsequent lock requests must use actual topology version to avoid mapping on invalid primaries.
+            AffinityTopologyVersion clienRemapVer = req.firstClientRequest() &&
+                tx != null &&
+                topology().readyTopologyVersion().after(req.topologyVersion()) ?
+                topology().readyTopologyVersion() : null;
+
             // Send reply back to originating near node.
             GridNearLockResponse res = new GridNearLockResponse(ctx.cacheId(),
                 req.version(),
@@ -1395,8 +1403,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 tx != null && tx.onePhaseCommit(),
                 entries.size(),
                 err,
-                null,
-                ctx.deploymentEnabled());
+                clienRemapVer,
+                ctx.deploymentEnabled(),
+                clienRemapVer != null);
 
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
@@ -1437,15 +1446,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary(),
-                                        null); // TODO IGNITE-7371
+                                        req.keepBinary());
                                 }
 
-                                assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
+                                assert e.lockedBy(mappedVer) ||
+                                    ctx.mvcc().isRemoved(e.context(), mappedVer) ||
+                                    tx != null && tx.isRollbackOnly():
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                        ", tx=" + tx + ", req=" + req + ']';
+                                        ", tx=" + CU.txString(tx) + ", req=" + req + ']';
 
                                 boolean filterPassed = false;
 
@@ -1506,7 +1516,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 entries.size(),
                 e,
                 null,
-                ctx.deploymentEnabled());
+                ctx.deploymentEnabled(),
+                false);
         }
     }
 
@@ -1647,7 +1658,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(added to cancelled locks set): " + req);
                         }
 
-                        entry.touch(ctx.affinity().affinityTopologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -1833,7 +1844,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    entry.touch(topVer);
+                    entry.touch();
 
                     break;
                 }
@@ -1959,7 +1970,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
@@ -2023,7 +2035,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
@@ -2058,7 +2071,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.rows(),
             req.operation(),
             req.filter(),
-            req.needRes());
+            req.needRes(),
+            req.keepBinary());
 
         fut.listen(NearTxResultHandler.instance());
 
@@ -2077,6 +2091,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param timeout Timeout.
      * @param txSubjectId Transaction subject id.
      * @param txTaskNameHash Transaction task name hash.
+     * @param snapshot Mvcc snapsht.
      * @return Transaction.
      */
     public GridDhtTxLocal initTxTopologyVersion(UUID nodeId,
@@ -2089,7 +2104,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long nearThreadId,
         long timeout,
         UUID txSubjectId,
-        int txTaskNameHash) throws IgniteException, IgniteCheckedException {
+        int txTaskNameHash,
+        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 
@@ -2184,6 +2200,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     throw new IgniteCheckedException(msg);
                 }
 
+                tx.mvccSnapshot(snapshot);
                 tx.topologyVersion(topVer);
             }
             finally {

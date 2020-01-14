@@ -26,7 +26,9 @@ import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
@@ -34,8 +36,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -47,7 +47,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 /**
  * Multi-node cache test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractTest {
     /** Grid 1. */
     private static Ignite ignite1;
@@ -71,6 +70,11 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static Collection<CacheEventListener> lsnrs = new ArrayList<>();
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
@@ -83,7 +87,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
     }
 
     /** {@inheritDoc} */
@@ -175,7 +179,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      * @throws Exception If check fails.
      */
     private void checkPuts(int cnt, Ignite... ignites) throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         CountDownLatch latch = new CountDownLatch(ignites.length * cnt);
 
@@ -225,7 +229,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
      */
     @Test
     public void testLockUnlock() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         CacheEventListener lockLsnr1 = new CacheEventListener(ignite1, new CountDownLatch(1), EVT_CACHE_OBJECT_LOCKED);
 

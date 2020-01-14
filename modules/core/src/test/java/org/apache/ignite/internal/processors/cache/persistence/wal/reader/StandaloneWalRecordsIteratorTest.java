@@ -47,15 +47,12 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 
 /**
  * The test check, that StandaloneWalRecordsIterator correctly close file descriptors associated with WAL files.
  */
-@RunWith(JUnit4.class)
 public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -210,7 +207,6 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
         return new IgniteWalIteratorFactory(log).iterator(params.filesOrDirs(walDir));
     }
 
-
     /**
      * @param walDir Wal directory.
      */
@@ -276,6 +272,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     private static class CountedFileIO extends RandomAccessFileIO {
         /** Wal open counter. */
         private static final AtomicInteger WAL_OPEN_COUNTER = new AtomicInteger();
+
         /** Wal close counter. */
         private static final AtomicInteger WAL_CLOSE_COUNTER = new AtomicInteger();
 

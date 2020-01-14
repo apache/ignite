@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains interfaces and classes for assertions.
  */
+
 package org.apache.ignite.testframework.assertions;

@@ -24,8 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.CFG;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.HOST;
@@ -41,7 +39,6 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.par
 /**
  * Tests for {@link org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils}.
  */
-@RunWith(JUnit4.class)
 public class IgniteNodeStartUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

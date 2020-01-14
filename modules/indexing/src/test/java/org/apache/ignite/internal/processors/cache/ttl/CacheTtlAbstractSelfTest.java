@@ -40,8 +40,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -56,7 +54,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * TTL test.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int MAX_CACHE_SIZE = 5;

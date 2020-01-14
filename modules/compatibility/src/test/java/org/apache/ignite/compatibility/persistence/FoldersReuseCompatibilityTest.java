@@ -37,15 +37,12 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
 
 /**
  * Test for new and old style persistent storage folders generation and compatible startup of current ignite version
  */
-@RunWith(JUnit4.class)
 public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** Cache name for test. */
     private static final String CACHE_NAME = "dummy";

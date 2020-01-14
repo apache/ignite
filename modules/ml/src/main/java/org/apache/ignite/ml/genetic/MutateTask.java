@@ -37,6 +37,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Responsible for applying mutation on respective chromosomes.  <br/>
@@ -47,7 +48,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAConfiguration */
     private GAConfiguration cfg;
@@ -65,7 +66,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
-        List<Long> mutatedGenes = new ArrayList<Long>();
+        List<Long> mutatedGenes = new ArrayList<>();
         cfg.getChromosomeLen();
 
         for (int i = 0; i < cfg.getChromosomeLen(); i++)
@@ -74,11 +75,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         return mutatedGenes;
     }
 
-    /**
-     * @param nodes List of ClusterNode
-     * @param chromosomeKeys Primary keys for respective chromosomes
-     */
-    public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
+    /** {@inheritDoc} */
+    @NotNull @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
         Affinity affinity = ignite.affinity(GAGridConstants.POPULATION_CACHE);
@@ -91,22 +89,13 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         return map;
     }
 
-    /**
-     * We return TRUE if success, else Exection is thrown.
-     *
-     * @param list List of ComputeJobResult
-     * @return Boolean value
-     */
-    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
-    /**
-     * @param res ComputeJobResult
-     * @param rcvd List of ComputeJobResult
-     * @return ComputeJobResultPolicy
-     */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+    /** {@inheritDoc} */
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 
         if (err != null)
@@ -138,7 +127,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         if (cfg.getChromosomeCriteria() == null)
             return (selectAnyGene());
         else
-            return (selectGeneByChromsomeCriteria(k));
+            return (selectGeneByChromosomeCriteria(k));
     }
 
     /**
@@ -147,8 +136,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @param k Gene index in Chromosome.
      * @return Primary key of Gene
      */
-    private long selectGeneByChromsomeCriteria(int k) {
-        List<Gene> genes = new ArrayList<Gene>();
+    private long selectGeneByChromosomeCriteria(int k) {
+        List<Gene> genes = new ArrayList<>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");

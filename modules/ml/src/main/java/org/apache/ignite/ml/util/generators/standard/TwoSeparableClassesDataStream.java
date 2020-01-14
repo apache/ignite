@@ -60,7 +60,7 @@ public class TwoSeparableClassesDataStream implements DataStreamGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+    @Override public Stream<LabeledVector<Double>> labeled() {
         seed *= 2;
 
         double minCordVal = -variance - Math.abs(margin);

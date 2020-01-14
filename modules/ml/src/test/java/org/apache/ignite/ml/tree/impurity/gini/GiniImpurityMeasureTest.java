@@ -20,7 +20,7 @@ package org.apache.ignite.ml.tree.impurity.gini;
 import java.util.Random;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link GiniImpurityMeasure}.
@@ -80,7 +80,6 @@ public class GiniImpurityMeasureTest {
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)}
         );
 
-
         GiniImpurityMeasure b = new GiniImpurityMeasure(
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)},
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)}
@@ -106,7 +105,6 @@ public class GiniImpurityMeasureTest {
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)},
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)}
         );
-
 
         GiniImpurityMeasure b = new GiniImpurityMeasure(
             new long[]{randCnt(rnd), randCnt(rnd), randCnt(rnd)},

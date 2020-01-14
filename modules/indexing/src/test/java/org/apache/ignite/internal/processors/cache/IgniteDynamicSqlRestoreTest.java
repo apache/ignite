@@ -48,8 +48,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,10 +56,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
  *
  */
 @SuppressWarnings("Duplicates")
-@RunWith(JUnit4.class)
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";
+
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
     /** {@inheritDoc} */
@@ -201,7 +199,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 " ADDRESS VARCHAR,\n" +
                 " LANG VARCHAR,\n" +
                 " BIRTH_DATE TIMESTAMP,\n" +
-                " CONSTRAINT PK_PESON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
+                " CONSTRAINT PK_PERSON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
                 " ) WITH \"key_type=PersonKeyType, CACHE_NAME=PersonCache, value_type=PersonValueType, AFFINITY_KEY=FIRST_NAME,template=PARTITIONED,backups=1\"");
 
             try (PreparedStatement stmt = conn.prepareStatement(

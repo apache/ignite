@@ -26,6 +26,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -33,21 +34,19 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link TcpDiscoveryZookeeperIpFinder}.
  *
  * @author Raul Kripalani
  */
-@RunWith(JUnit4.class)
+@WithSystemProperty(key = "zookeeper.jmx.log4j.disable", value = "true") // disable JMX for tests
 public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /** Per test timeout */
     @Rule
@@ -83,9 +82,6 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // remove stale system properties
         System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
-
-        // disable JMX for tests
-        System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
         // start the ZK cluster
         zkCluster = new TestingCluster(ZK_CLUSTER_SIZE);

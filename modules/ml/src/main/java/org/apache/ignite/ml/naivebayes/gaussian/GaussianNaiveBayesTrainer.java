@@ -25,8 +25,9 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -41,21 +42,14 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
 
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
-    @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    /** {@inheritDoc} */
+    @Override public <K, V> GaussianNaiveBayesModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+                                                        Preprocessor<K, V> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(GaussianNaiveBayesModel mdl) {
+    @Override public boolean isUpdateable(GaussianNaiveBayesModel mdl) {
         return true;
     }
 
@@ -66,8 +60,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                   DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
         assert datasetBuilder != null;
 
         try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(
@@ -79,8 +72,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
 
-                    Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
-                    Double label = lbExtractor.apply(entity.getKey(), entity.getValue());
+                    LabeledVector lv = extractor.apply(entity.getKey(), entity.getValue());
+                    Vector features = lv.features();
+                    Double label = (Double) lv.label();
 
                     double[] toMeans;
                     double[] sqSum;
@@ -108,11 +102,11 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     }
                 }
                 return res;
-            }
+            }, learningEnvironment()
         )) {
             GaussianNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
+                    return b;
                 if (b == null)
                     return a;
                 return a.merge(b);

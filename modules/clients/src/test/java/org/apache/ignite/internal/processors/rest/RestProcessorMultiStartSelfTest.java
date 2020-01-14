@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Rest processor test.
  */
-@RunWith(JUnit4.class)
 public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
@@ -85,7 +82,7 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < clnIdx; i++) {
                 startGrid(i);
 
-                GridRestProcessor rest = grid(i).context().rest();
+                IgniteRestProcessor rest = grid(i).context().rest();
 
                 assertNotNull(rest);
                 assertFalse(((Map)GridTestUtils.getFieldValue(rest, "handlers")).isEmpty());
@@ -95,7 +92,7 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
 
             startGrid(clnIdx);
 
-            GridRestProcessor rest = grid(GRID_CNT - 1).context().rest();
+            IgniteRestProcessor rest = grid(GRID_CNT - 1).context().rest();
 
             // Check that rest processor doesn't start.
             assertNotNull(rest);

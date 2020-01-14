@@ -21,15 +21,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Tests for fields queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheLocalFieldsQuerySelfTest extends IgniteCacheAbstractFieldsQuerySelfTest {
 //    static {
 //        System.setProperty(IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE, "1");

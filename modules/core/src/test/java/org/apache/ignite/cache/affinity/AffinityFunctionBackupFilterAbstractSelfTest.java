@@ -32,8 +32,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +40,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Base tests of {@link AffinityFunction} implementations with user provided backup filter.
  */
-@RunWith(JUnit4.class)
 public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridCommonAbstractTest {
     /** Split attribute name. */
     private static final String SPLIT_ATTRIBUTE_NAME = "split-attribute";

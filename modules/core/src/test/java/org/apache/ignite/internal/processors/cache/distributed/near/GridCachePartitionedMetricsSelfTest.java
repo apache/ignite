@@ -35,7 +35,7 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
     }
@@ -51,6 +51,8 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(PARTITIONED);

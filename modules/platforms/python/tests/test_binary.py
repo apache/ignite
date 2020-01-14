@@ -120,7 +120,6 @@ def test_sql_write_as_binary(client):
                     {
                         'name': 'TEST_PK',
                         'type_name': 'java.lang.Integer',
-                        'is_key_field': True,
                         'is_notnull_constraint_field': True,
                     },
                     {

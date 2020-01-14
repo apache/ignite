@@ -17,25 +17,14 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.startup.cmdline.GridCommandLineTransformerSelfTest;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Loaders self-test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({GridCommandLineTransformerSelfTest.class})
 public class IgniteStartUpTestSuite {
-    /**
-     * @return  Loaders tests suite.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite StartUp Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(GridCommandLineTransformerSelfTest.class));
-
-        return suite;
-    }
 }

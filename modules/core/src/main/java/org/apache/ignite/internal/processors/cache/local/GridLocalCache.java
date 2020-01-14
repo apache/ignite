@@ -182,7 +182,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (entry != null && ctx.isAll(entry, CU.empty0())) {
                 entry.releaseLocal();
 
-                entry.touch(topVer);
+                entry.touch();
             }
         }
     }

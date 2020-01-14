@@ -53,7 +53,7 @@ const STATE = Object.freeze({
 
 /**
  * Class representing Ignite client.
- * 
+ *
  */
 class IgniteClient {
 

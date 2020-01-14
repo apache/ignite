@@ -45,13 +45,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean isDuplicateObserved = true;
@@ -105,9 +102,14 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cleanUpWorkDir();
-
         stopAllGrids();
+        cleanUpWorkDir();
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
     }
 
     /**

@@ -20,13 +20,10 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test of whole cycle of map-reduce processing via Job tracker.
  */
-@RunWith(JUnit4.class)
 public class HadoopMapReduceTest extends HadoopAbstractMapReduceTest {
     /**
      * Tests whole job execution with all phases in all combination of new and old versions of API.

@@ -37,8 +37,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -46,7 +44,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest {
     /** Count of caches in multi caches test. */
     private static final int CACHES_CNT = 10;
@@ -69,6 +66,8 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
             ccfgs[i + 1] = createCacheConfiguration(CACHE_PREFIX + i);
 
         cfg.setCacheConfiguration(ccfgs);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -144,7 +143,6 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                     return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
-
 
             int smallDuration = 2000;
 

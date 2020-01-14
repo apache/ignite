@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -56,6 +55,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -74,6 +75,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -84,9 +86,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -101,6 +104,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
@@ -108,9 +113,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
@@ -119,7 +123,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final String HAS_CACHE = "HAS_CACHE";
@@ -165,7 +168,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
     /** */
     private long checkpointFrequency = DFLT_CHECKPOINT_FREQ;
-    ;
+
+    /** WAL page snapshots records compression method. */
+    protected DiskPageCompression walPageCompression;
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -215,6 +220,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             dbCfg.setWalSegmentSize(walSegmentSize);
 
         dbCfg.setWalSegments(walSegments);
+
+        dbCfg.setWalPageCompression(walPageCompression);
 
         dbCfg.setCheckpointFrequency(checkpointFrequency);
 
@@ -630,14 +637,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("cache-" + i);
 
                 // We can get 'too many open files' with default number of partitions.
-                ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+                ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
                 IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg);
 
                 cache.put(i, i);
             }
 
-            final long endTime = System.currentTimeMillis() + 30_000;
+            final long endTime = System.currentTimeMillis() + SF.applyLB(30_000, 5_000);
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() {
@@ -660,6 +667,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             fut.get();
+
+            ignite.context().cache().context().database().wakeupForCheckpoint("final-test-checkpoint").get();
         }
         finally {
             customFailureDetectionTimeout = prevFDTimeout;
@@ -672,7 +681,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private void checkWalRolloverMultithreaded() throws Exception {
         walSegmentSize = 2 * 1024 * 1024;
 
-        final long endTime = System.currentTimeMillis() + 60 * 1000;
+        final long endTime = System.currentTimeMillis() + SF.apply(50 * 1000);
 
         IgniteEx ignite = startGrid(1);
 
@@ -684,7 +693,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             @Override public Void call() {
                 Random rnd = ThreadLocalRandom.current();
 
-                while (U.currentTimeMillis() < endTime)
+                while (System.currentTimeMillis() < endTime)
                     cache.put(rnd.nextInt(50_000), rnd.nextInt());
 
                 return null;
@@ -1018,7 +1027,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage0.putData(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
+                storage0.writeRaw(String.valueOf(i), new byte[] {(byte)(i % 256), 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1032,7 +1041,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx1.database().checkpointReadLock();
 
             try {
-                storage1.putData(String.valueOf(i), b1);
+                storage1.writeRaw(String.valueOf(i), b1);
             }
             finally {
                 sharedCtx1.database().checkpointReadUnlock();
@@ -1040,13 +1049,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] d1 = storage0.getData(String.valueOf(i));
+            byte[] d1 = storage0.readRaw(String.valueOf(i));
             assertEquals(3, d1.length);
             assertEquals((byte)(i % 256), d1[0]);
             assertEquals(2, d1[1]);
             assertEquals(3, d1[2]);
 
-            byte[] d2 = storage1.getData(String.valueOf(i));
+            byte[] d2 = storage1.readRaw(String.valueOf(i));
             assertEquals(i + 3, d2.length);
             assertEquals(1, d2[0]);
             assertEquals(2, d2[1]);
@@ -1079,7 +1088,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), b1);
+                storage.writeRaw(String.valueOf(i), b1);
             }
             finally {
                 sharedCtx.database().checkpointReadUnlock();
@@ -1087,7 +1096,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] d2 = storage.getData(String.valueOf(i));
+            byte[] d2 = storage.readRaw(String.valueOf(i));
             assertEquals(arraySize, d2.length);
 
             for (int k = 0; k < arraySize; k++) {
@@ -1117,7 +1126,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1136,7 +1145,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 10; i < cnt; i++) {
-            byte[] d1 = storage.getData(String.valueOf(i));
+            byte[] d1 = storage.readRaw(String.valueOf(i));
             assertEquals(3, d1.length);
             assertEquals(1, d1[0]);
             assertEquals(2, d1[1]);
@@ -1166,7 +1175,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                    storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1177,7 +1186,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 sharedCtx0.database().checkpointReadLock();
 
                 try {
-                    storage.putData(String.valueOf(i), new byte[] {2, 2, 3, 4});
+                    storage.writeRaw(String.valueOf(i), new byte[] {2, 2, 3, 4});
                 }
                 finally {
                     sharedCtx0.database().checkpointReadUnlock();
@@ -1185,7 +1194,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < cnt; i++) {
-                byte[] d1 = storage.getData(String.valueOf(i));
+                byte[] d1 = storage.readRaw(String.valueOf(i));
                 assertEquals(4, d1.length);
                 assertEquals(2, d1[0]);
                 assertEquals(2, d1[1]);
@@ -1218,7 +1227,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             sharedCtx0.database().checkpointReadLock();
 
             try {
-                storage.putData(String.valueOf(i), new byte[] {1, 2, 3});
+                storage.writeRaw(String.valueOf(i), new byte[] {1, 2, 3});
             }
             finally {
                 sharedCtx0.database().checkpointReadUnlock();
@@ -1226,7 +1235,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.getData(String.valueOf(i));
+            byte[] value = storage.readRaw(String.valueOf(i));
             assert value != null;
             assert value.length == 3;
         }
@@ -1244,7 +1253,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         assert storage != null;
 
         for (int i = 0; i < cnt; i++) {
-            byte[] value = storage.getData(String.valueOf(i));
+            byte[] value = storage.readRaw(String.valueOf(i));
             assert value != null;
         }
     }
@@ -1360,6 +1369,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
+        buf.order(ByteOrder.nativeOrder());
+
         // Now check that deltas can be correctly applied.
         try (WALIterator it = sharedCtx.wal().replay(ptr)) {
             while (it.hasNext()) {
@@ -1370,7 +1381,28 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 if (rec instanceof PageSnapshot) {
                     PageSnapshot page = (PageSnapshot)rec;
 
-                    rolledPages.put(page.fullPageId(), page.pageData());
+                    CacheGroupContext gctx = sharedCtx.cache().cacheGroup(page.groupId());
+
+                    int realPageSize = gctx == null ? pageSize
+                        : gctx.dataRegion().pageMemory().realPageSize(page.groupId());
+
+                    byte[] pageData = page.pageData();
+
+                    if (pageData.length < realPageSize) {
+                        buf.clear();
+                        buf.put(pageData);
+                        buf.flip();
+
+                        sharedCtx.kernalContext().compress().decompressPage(buf, realPageSize);
+
+                        pageData = new byte[realPageSize];
+
+                        buf.position(0);
+
+                        buf.get(pageData);
+                    }
+
+                    rolledPages.put(page.fullPageId(), pageData);
                 }
                 else if (rec instanceof PageDeltaRecord) {
                     PageDeltaRecord delta = (PageDeltaRecord)rec;
@@ -1387,16 +1419,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                     assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
 
-                    buf.order(ByteOrder.nativeOrder());
-
-                    buf.position(0);
+                    buf.clear();
                     buf.put(pageData);
-                    buf.position(0);
+                    buf.flip();
 
                     delta.applyDelta(sharedCtx.database().dataRegion(null).pageMemory(),
                         GridUnsafe.bufferAddress(buf));
-
-                    buf.position(0);
 
                     buf.get(pageData);
                 }
@@ -1406,6 +1434,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         info("Done apply...");
 
         PageMemoryEx pageMem = (PageMemoryEx)db.dataRegion(null).pageMemory();
+
+        ByteBuffer bufWal = ByteBuffer.allocateDirect(pageSize);
 
         for (Map.Entry<FullPageId, byte[]> entry : rolledPages.entrySet()) {
             FullPageId fullId = entry.getKey();
@@ -1422,12 +1452,30 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     try {
                         byte[] data = entry.getValue();
 
-                        for (int i = 0; i < data.length; i++) {
-                            if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
-                                continue; // Skip tracking pages.
+                        if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
+                            continue; // Skip tracking pages.
 
-                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
+                        // Compaction/restoring page can left some trash in unused space, so we need to compare
+                        // compacted pages in case of compaction is used.
+                        if (walPageCompression != null && PageIO.getPageIO(bufPtr) instanceof CompactablePageIO) {
+                            CompactablePageIO pageIO = PageIO.getPageIO(bufPtr);
+
+                            buf.clear();
+                            bufWal.clear();
+
+                            int realPageSize = data.length;
+
+                            pageIO.compactPage(GridUnsafe.wrapPointer(bufPtr, realPageSize), buf, realPageSize);
+                            pageIO.compactPage(ByteBuffer.wrap(data), bufWal, realPageSize);
+
+                            bufPtr = GridUnsafe.bufferAddress(buf);
+                            data = new byte[bufWal.limit()];
+                            bufWal.rewind();
+                            bufWal.get(data);
                         }
+
+                        for (int i = 0; i < data.length; i++)
+                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
                     }
                     finally {
                         pageMem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, false, true);
@@ -1523,113 +1571,107 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If any fail.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
     public void testTxRecordsConsistency() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
-
         IgniteEx ignite = (IgniteEx)startGrids(3);
         ignite.cluster().active(true);
 
-        try {
-            final String cacheName = "transactional";
+        final String cacheName = "transactional";
 
-            CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setRebalanceMode(CacheRebalanceMode.SYNC)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setBackups(0);
+        CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setRebalanceMode(CacheRebalanceMode.SYNC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setBackups(0);
 
-            ignite.createCache(cacheConfiguration);
+        ignite.createCache(cacheConfiguration);
 
-            IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
-            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
+        GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
 
-            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
 
-            db.waitForCheckpoint("test");
-            db.enableCheckpoints(false).get();
+        db.waitForCheckpoint("test");
+        db.enableCheckpoints(false).get();
 
-            // Log something to know where to start.
-            WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+        // Log something to know where to start.
+        WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
-            final int transactions = 100;
-            final int operationsPerTransaction = 40;
+        final int transactions = 100;
+        final int operationsPerTransaction = 40;
 
-            Random random = new Random();
+        Random random = new Random();
 
-            for (int t = 1; t <= transactions; t++) {
-                Transaction tx = ignite.transactions().txStart(
-                    TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+        for (int t = 1; t <= transactions; t++) {
+            Transaction tx = ignite.transactions().txStart(
+                TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
 
-                for (int op = 0; op < operationsPerTransaction; op++) {
-                    int key = random.nextInt(1000) + 1;
+            for (int op = 0; op < operationsPerTransaction; op++) {
+                int key = random.nextInt(1000) + 1;
 
-                    Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
+                Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
 
-                    cache.put(key, value);
-                }
-
-                if (random.nextBoolean()) {
-                    tx.commit();
-                }
-                else {
-                    tx.rollback();
-                }
-
-                if (t % 50 == 0)
-                    log.info("Finished transaction " + t);
+                cache.put(key, value);
             }
 
-            Set<GridCacheVersion> activeTransactions = new HashSet<>();
-
-            // Check that all DataRecords are within PREPARED and COMMITTED tx records.
-            try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
-                while (it.hasNext()) {
-                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
-
-                    WALRecord rec = tup.get2();
-
-                    if (rec instanceof TxRecord) {
-                        TxRecord txRecord = (TxRecord)rec;
-                        GridCacheVersion txId = txRecord.nearXidVersion();
-
-                        switch (txRecord.state()) {
-                            case PREPARED:
-                                assert !activeTransactions.contains(txId) : "Transaction is already present " + txRecord;
-
-                                activeTransactions.add(txId);
-
-                                break;
-                            case COMMITTED:
-                                assert activeTransactions.contains(txId) : "No PREPARE marker for transaction " + txRecord;
-
-                                activeTransactions.remove(txId);
-
-                                break;
-                            case ROLLED_BACK:
-                                activeTransactions.remove(txId);
-                                break;
-
-                            default:
-                                throw new IllegalStateException("Unknown Tx state of record " + txRecord);
-                        }
-                    }
-                    else if (rec instanceof DataRecord) {
-                        DataRecord dataRecord = (DataRecord)rec;
-
-                        for (DataEntry entry : dataRecord.writeEntries()) {
-                            GridCacheVersion txId = entry.nearXidVersion();
-
-                            assert activeTransactions.contains(txId) : "No transaction for entry " + entry;
-                        }
-                    }
-                }
+            if (random.nextBoolean()) {
+                tx.commit();
             }
+            else {
+                tx.rollback();
+            }
+
+            if (t % 50 == 0)
+                log.info("Finished transaction " + t);
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+
+        Set<GridCacheVersion> activeTransactions = new HashSet<>();
+
+        // Check that all DataRecords are within PREPARED and COMMITTED tx records.
+        try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                WALRecord rec = tup.get2();
+
+                if (rec instanceof TxRecord) {
+                    TxRecord txRecord = (TxRecord)rec;
+                    GridCacheVersion txId = txRecord.nearXidVersion();
+
+                    switch (txRecord.state()) {
+                        case PREPARED:
+                            assert !activeTransactions.contains(txId) : "Transaction is already present " + txRecord;
+
+                            activeTransactions.add(txId);
+
+                            break;
+                        case COMMITTED:
+                            assert activeTransactions.contains(txId) : "No PREPARE marker for transaction " + txRecord;
+
+                            activeTransactions.remove(txId);
+
+                            break;
+                        case ROLLED_BACK:
+                            activeTransactions.remove(txId);
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Unknown Tx state of record " + txRecord);
+                    }
+                }
+                else if (rec instanceof DataRecord) {
+                    DataRecord dataRecord = (DataRecord)rec;
+
+                    for (DataEntry entry : dataRecord.writeEntries()) {
+                        GridCacheVersion txId = entry.nearXidVersion();
+
+                        assert activeTransactions.contains(txId) : "No transaction for entry " + entry;
+                    }
+                }
+            }
         }
     }
 

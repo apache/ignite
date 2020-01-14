@@ -33,9 +33,8 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.METRICS);
-
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
     }
@@ -51,6 +50,9 @@ public class GridCacheLocalMetricsSelfTest extends GridCacheTransactionalAbstrac
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheMode(LOCAL);

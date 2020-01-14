@@ -30,11 +30,25 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  *
  */
 public class CacheDataRowStore extends RowStore {
-    /** */
-    private final int partId;
+    /** Whether version should be skipped. */
+    private static ThreadLocal<Boolean> SKIP_VER = ThreadLocal.withInitial(() -> false);
+
+    /**
+     * @return Skip version flag.
+     */
+    public static boolean getSkipVersion() {
+        return SKIP_VER.get();
+    }
+
+    /**
+     * @param skipVer Skip version flag.
+     */
+    public static void setSkipVersion(boolean skipVer) {
+        SKIP_VER.set(skipVer);
+    }
 
     /** */
-    private final CacheGroupContext grp;
+    private final int partId;
 
     /**
      * @param grp Cache group.
@@ -45,7 +59,13 @@ public class CacheDataRowStore extends RowStore {
         super(grp, freeList);
 
         this.partId = partId;
-        this.grp = grp;
+    }
+
+    /**
+     * @return Partition Id.
+     */
+    public int getPartitionId() {
+        return partId;
     }
 
     /**
@@ -55,7 +75,16 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
-        return initDataRow(new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY), cacheId);
+        DataRow dataRow = new DataRow(
+            grp,
+            hash,
+            link,
+            partId,
+            CacheDataRowAdapter.RowData.KEY_ONLY,
+            SKIP_VER.get()
+        );
+
+        return initDataRow(dataRow, cacheId);
     }
 
     /**
@@ -69,16 +98,19 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
-        MvccDataRow dataRow = new MvccDataRow(grp,
+        MvccDataRow row = new MvccDataRow(
+            grp,
             hash,
             link,
             partId,
             rowData,
             crdVer,
             mvccCntr,
-            opCntr);
+            opCntr,
+            SKIP_VER.get()
+        );
 
-        return initDataRow(dataRow, cacheId);
+        return initDataRow(row, cacheId);
     }
 
     /**
@@ -89,7 +121,16 @@ public class CacheDataRowStore extends RowStore {
      * @return Data row.
      */
     CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
-        return initDataRow(new DataRow(grp, hash, link, partId, rowData), cacheId);
+        DataRow dataRow = new DataRow(
+            grp,
+            hash,
+            link,
+            partId,
+            rowData,
+            SKIP_VER.get()
+        );
+
+        return initDataRow(dataRow, cacheId);
     }
 
     /**

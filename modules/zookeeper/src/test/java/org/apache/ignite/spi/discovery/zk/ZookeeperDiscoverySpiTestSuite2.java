@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -36,14 +37,15 @@ import org.junit.runners.Suite;
     IgniteClientReconnectCacheTest.class,
     GridCachePartitionedMultiNodeFullApiSelfTest.class,
     GridCacheReplicatedMultiNodeFullApiSelfTest.class,
-    GridCommandHandlerTest.class
+    GridCommandHandlerTest.class,
+    GridCommandHandlerClusterByClassTest.class
 })
-public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
-    /** */
+public class ZookeeperDiscoverySpiTestSuite2  {
+    /**
+     * @throws Exception Thrown in case of the failure.
+     */
     @BeforeClass
     public static void init() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

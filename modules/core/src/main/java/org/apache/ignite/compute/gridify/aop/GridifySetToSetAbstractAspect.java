@@ -163,9 +163,8 @@ public class GridifySetToSetAbstractAspect {
 
         Collection<Object> res = new LinkedList<>();
 
-        for (Object element : taskRes) {
+        for (Object element : taskRes)
             res.addAll(GridifyUtils.parameterToCollection(element));
-        }
 
         return GridifyUtils.collectionToParameter(cls, res);
     }

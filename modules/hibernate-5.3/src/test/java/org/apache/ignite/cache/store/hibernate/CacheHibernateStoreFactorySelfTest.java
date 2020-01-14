@@ -52,13 +52,10 @@ import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
 import org.hibernate.stat.Statistics;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for Cache jdbc blob store factory.
  */
-@RunWith(JUnit4.class)
 public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test";

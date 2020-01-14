@@ -18,33 +18,37 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -54,15 +58,12 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,6 +72,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -82,6 +89,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CACHE_PARTITIONS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
@@ -102,8 +110,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private static final JdbcResponse JDBC_QUERY_CANCELLED_RESPONSE =
         new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
 
-    /** Kernel context. */
-    private final GridKernalContext ctx;
+    /** JDBC connection context. */
+    private final JdbcConnectionContext connCtx;
 
     /** Client context. */
     private final SqlClientContext cliCtx;
@@ -147,12 +155,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Authentication context */
     private AuthorizationContext actx;
 
+    /** Facade that hides transformations internal cache api entities -> jdbc metadata. */
+    private final JdbcMetadataInfo meta;
+
     /** Register that keeps non-cancelled requests. */
     private Map<Long, JdbcQueryDescriptor> reqRegister = new HashMap<>();
 
     /**
      * Constructor.
-     * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param sender Results sender.
      * @param maxCursors Maximum allowed cursors.
@@ -163,16 +173,34 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param dataPageScanEnabled Enable scan data page mode.
+     * @param updateBatchSize Size of internal batch for DML queries.
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
+     * @param connCtx Jdbc connection context.
      */
-    public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock,
-        ClientListenerResponseSender sender, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
-        AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
-        this.ctx = ctx;
+    public JdbcRequestHandler(
+        GridSpinBusyLock busyLock,
+        ClientListenerResponseSender sender,
+        int maxCursors,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean autoCloseCursors,
+        boolean lazy,
+        boolean skipReducerOnUpdate,
+        NestedTxMode nestedTxMode,
+        @Nullable Boolean dataPageScanEnabled,
+        @Nullable Integer updateBatchSize,
+        AuthorizationContext actx,
+        ClientListenerProtocolVersion protocolVer,
+        JdbcConnectionContext connCtx
+    ) {
+        this.connCtx = connCtx;
         this.sender = sender;
+
+        meta = new JdbcMetadataInfo(connCtx.kernalContext());
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -180,15 +208,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         };
 
-        this.cliCtx = new SqlClientContext(
-            ctx,
+        cliCtx = new SqlClientContext(
+            connCtx.kernalContext(),
             orderedFactory,
             distributedJoins,
             enforceJoinOrder,
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            dataPageScanEnabled,
+            updateBatchSize
         );
 
         this.busyLock = busyLock;
@@ -198,10 +228,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.protocolVer = protocolVer;
         this.actx = actx;
 
-        log = ctx.log(getClass());
+        log = connCtx.kernalContext().log(getClass());
 
         // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+        worker = new JdbcRequestHandlerWorker(connCtx.kernalContext().igniteInstanceName(), log, this,
+            connCtx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -212,7 +243,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
-        if (!MvccUtils.mvccEnabled(ctx))
+        if (!MvccUtils.mvccEnabled(connCtx.kernalContext()))
             return doHandle(req);
         else {
             GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
@@ -236,8 +267,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         assert reqId != 0;
 
         synchronized (reqMux) {
-            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC ||
-                cmdType == BATCH_EXEC_ORDERED))
+            if (isCancellationSupported() && (cmdType == QRY_EXEC || cmdType == BATCH_EXEC))
                 reqRegister.put(reqId, new JdbcQueryDescriptor());
         }
     }
@@ -265,7 +295,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Request handling result.
      */
-    ClientListenerResponse doHandle(JdbcRequest req) {
+    JdbcResponse doHandle(JdbcRequest req) {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
@@ -273,53 +303,78 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (actx != null)
             AuthorizationContext.context(actx);
 
+        JdbcResponse resp;
         try {
             switch (req.type()) {
                 case QRY_EXEC:
-                    return executeQuery((JdbcQueryExecuteRequest)req);
+                    resp = executeQuery((JdbcQueryExecuteRequest)req);
+                    break;
 
                 case QRY_FETCH:
-                    return fetchQuery((JdbcQueryFetchRequest)req);
+                    resp =  fetchQuery((JdbcQueryFetchRequest)req);
+                    break;
 
                 case QRY_CLOSE:
-                    return closeQuery((JdbcQueryCloseRequest)req);
+                    resp = closeQuery((JdbcQueryCloseRequest)req);
+                    break;
 
                 case QRY_META:
-                    return getQueryMeta((JdbcQueryMetadataRequest)req);
+                    resp = getQueryMeta((JdbcQueryMetadataRequest)req);
+                    break;
 
                 case BATCH_EXEC:
-                    return executeBatch((JdbcBatchExecuteRequest)req);
+                    resp = executeBatch((JdbcBatchExecuteRequest)req);
+                    break;
 
                 case BATCH_EXEC_ORDERED:
-                    return dispatchBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
+                    resp = dispatchBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
+                    break;
 
                 case META_TABLES:
-                    return getTablesMeta((JdbcMetaTablesRequest)req);
+                    resp = getTablesMeta((JdbcMetaTablesRequest)req);
+                    break;
 
                 case META_COLUMNS:
-                    return getColumnsMeta((JdbcMetaColumnsRequest)req);
+                    resp = getColumnsMeta((JdbcMetaColumnsRequest)req);
+                    break;
 
                 case META_INDEXES:
-                    return getIndexesMeta((JdbcMetaIndexesRequest)req);
+                    resp = getIndexesMeta((JdbcMetaIndexesRequest)req);
+                    break;
 
                 case META_PARAMS:
-                    return getParametersMeta((JdbcMetaParamsRequest)req);
+                    resp = getParametersMeta((JdbcMetaParamsRequest)req);
+                    break;
 
                 case META_PRIMARY_KEYS:
-                    return getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
+                    resp = getPrimaryKeys((JdbcMetaPrimaryKeysRequest)req);
+                    break;
 
                 case META_SCHEMAS:
-                    return getSchemas((JdbcMetaSchemasRequest)req);
+                    resp = getSchemas((JdbcMetaSchemasRequest)req);
+                    break;
 
                 case BULK_LOAD_BATCH:
-                    return processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
+                    resp = processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
+                    break;
 
                 case QRY_CANCEL:
-                    return cancelQuery((JdbcQueryCancelRequest)req);
+                    resp = cancelQuery((JdbcQueryCancelRequest)req);
+                    break;
+
+                case CACHE_PARTITIONS:
+                    resp = getCachePartitions((JdbcCachePartitionsRequest)req);
+                    break;
+
+                default:
+                    resp = new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+                        "Unsupported JDBC request [req=" + req + ']');
             }
 
-            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
-                "Unsupported JDBC request [req=" + req + ']');
+            if (resp != null)
+                resp.activeTransaction(connCtx.kernalContext().cache().context().tm().inUserTx());
+
+            return resp;
         }
         finally {
             AuthorizationContext.clear();
@@ -332,17 +387,18 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Ordered batch request.
      * @return Response.
      */
-    private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.add(req);
-
-            orderedBatchesMux.notify();
-        }
-
+    private JdbcResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
+        else {
+            synchronized (orderedBatchesMux) {
+                orderedBatchesQueue.add(req);
 
-        return null;
+                orderedBatchesMux.notifyAll();
+            }
+        }
+
+       return null;
     }
 
     /**
@@ -354,7 +410,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (req.isLastStreamBatch())
                 cliCtx.waitTotalProcessedOrderedRequests(req.order());
 
-            JdbcResponse resp = (JdbcResponse)executeBatch(req);
+            JdbcResponse resp = executeBatch(req);
 
             if (resp.response() instanceof JdbcBatchExecuteResult) {
                 resp = new JdbcResponse(
@@ -368,10 +424,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
         }
 
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.poll();
-        }
-
         cliCtx.orderedRequestProcessed();
 
         return null;
@@ -383,8 +435,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request object with a batch of a file received from client.
      * @return Response to send to the client.
      */
-    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        if (ctx == null)
+    private JdbcResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
+        if (connCtx.kernalContext() == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
                 + req.cursorId() + ". Bulk load session may have been reclaimed due to timeout.");
 
@@ -415,7 +467,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 default:
                     throw new IllegalArgumentException();
             }
-            return new JdbcResponse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt()));
+
+            return resultToResonse(new JdbcQueryExecuteResult(req.cursorId(), processor.updateCnt(), null));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
@@ -447,6 +500,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         writer.writeString(IgniteVersionUtils.VER.stage());
         writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
         writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
+
+        // Write node id.
+        if (protocolVer.compareTo(VER_2_8_0) >= 0)
+            writer.writeUuid(connCtx.kernalContext().localNodeId());
     }
 
     /**
@@ -538,14 +595,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
-            qry.setArgs(req.arguments());
+            setupQuery(qry, prepareSchemaName(req.schemaName()));
 
-            qry.setDistributedJoins(cliCtx.isDistributedJoins());
-            qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-            qry.setCollocated(cliCtx.isCollocated());
-            qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-            qry.setLazy(cliCtx.isLazy());
-            qry.setNestedTxMode(nestedTxMode);
+            qry.setArgs(req.arguments());
             qry.setAutoCommit(req.autoCommit());
 
             if (req.pageSize() <= 0)
@@ -560,8 +612,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
-                protocolVer.compareTo(VER_2_3_0) < 0, cancel);
+            List<FieldsQueryCursor<List<?>>> results = connCtx.kernalContext().query().querySqlFields(null, qry,
+                cliCtx, true, protocolVer.compareTo(VER_2_3_0) < 0, cancel);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -576,7 +628,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 jdbcCursors.put(processor.cursorId(), processor);
 
                 // responses for the same query on the client side
-                return new JdbcResponse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
+                return resultToResonse(new JdbcBulkLoadAckResult(processor.cursorId(), clientParams));
             }
 
             if (results.size() == 1) {
@@ -589,8 +641,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 JdbcQueryExecuteResult res;
 
+                PartitionResult partRes = ((QueryCursorImpl<List<?>>)fieldsCur).partitionResult();
+
                 if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext());
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), cur.fetchRows(), !cur.hasNext(),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                            partRes :
+                            null);
                 else {
                     List<List<Object>> items = cur.fetchRows();
 
@@ -599,7 +656,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         "Invalid result set for not-SELECT query. [qry=" + sql +
                             ", res=" + S.toString(List.class, items) + ']';
 
-                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0));
+                    res = new JdbcQueryExecuteResult(cur.cursorId(), (Long)items.get(0).get(0),
+                        isClientPartitionAwarenessApplicable(req.partitionResponseRequest(), partRes) ?
+                            partRes :
+                            null);
                 }
 
                 if (res.last() && (!res.isQuery() || autoCloseCursors)) {
@@ -610,7 +670,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     cur.close();
                 }
 
-                return new JdbcResponse(res);
+                return resultToResonse(res);
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
@@ -642,7 +702,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     jdbcResults.add(jdbcRes);
                 }
 
-                return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
+                return resultToResonse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
             }
         }
         catch (Exception e) {
@@ -761,7 +821,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 cur.close();
             }
 
-            return new JdbcResponse(res);
+            return resultToResonse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -796,7 +856,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             JdbcQueryMetadataResult res = new JdbcQueryMetadataResult(req.cursorId(),
                 cur.meta());
 
-            return new JdbcResponse(res);
+            return resultToResonse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to fetch SQL query result [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -814,10 +874,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse executeBatch(JdbcBatchExecuteRequest req) {
+    private JdbcResponse executeBatch(JdbcBatchExecuteRequest req) {
         GridQueryCancel cancel = null;
 
-        if (isCancellationSupported()) {
+        // Skip request register check for ORDERED batches (JDBC streams)
+        // because ordered batch requests are processed asynchronously at the
+        // separate thread.
+        if (isCancellationSupported() && req.type() == BATCH_EXEC) {
             synchronized (reqMux) {
                 JdbcQueryDescriptor desc = reqRegister.get(req.requestId());
 
@@ -832,10 +895,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         try {
-            String schemaName = req.schemaName();
-
-            if (F.isEmpty(schemaName))
-                schemaName = QueryUtils.DFLT_SCHEMA;
+            String schemaName = prepareSchemaName(req.schemaName());
 
             int qryCnt = req.queries().size();
 
@@ -853,15 +913,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     qry = new SqlFieldsQueryEx(q.sql(), false);
 
-                    qry.setDistributedJoins(cliCtx.isDistributedJoins());
-                    qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-                    qry.setCollocated(cliCtx.isCollocated());
-                    qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
-                    qry.setLazy(cliCtx.isLazy());
-                    qry.setNestedTxMode(nestedTxMode);
-                    qry.setAutoCommit(req.autoCommit());
+                    setupQuery(qry, schemaName);
 
-                    qry.setSchema(schemaName);
+                    qry.setAutoCommit(req.autoCommit());
                 }
 
                 assert qry != null;
@@ -877,11 +931,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             int updCnts[] = U.toIntArray(updCntsAcc);
 
-            if (firstErr.isEmpty())
-                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS,
-                    null));
-            else
-                return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
+            return firstErr.isEmpty() ?
+                resultToResonse(
+                    new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null)) :
+                resultToResonse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
         }
         catch (QueryCancelledException e) {
             return exceptionToResult(e);
@@ -889,6 +942,39 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         finally {
             cleanupQueryCancellationMeta(true, req.requestId());
         }
+    }
+
+    /**
+     * Normalize schema name.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    private static String prepareSchemaName(@Nullable String schemaName) {
+        if (F.isEmpty(schemaName))
+            schemaName = QueryUtils.DFLT_SCHEMA;
+
+        return schemaName;
+    }
+
+    /**
+     * Sets up query object with settings from current client context state and handler state.
+     *
+     * @param qry Query to setup.
+     * @param schemaName Schema name.
+     */
+    private void setupQuery(SqlFieldsQueryEx qry, String schemaName) {
+        qry.setDistributedJoins(cliCtx.isDistributedJoins());
+        qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
+        qry.setCollocated(cliCtx.isCollocated());
+        qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
+        qry.setLazy(cliCtx.isLazy());
+        qry.setNestedTxMode(nestedTxMode);
+        qry.setSchema(schemaName);
+        qry.setTimeout(0, TimeUnit.MILLISECONDS);
+
+        if (cliCtx.updateBatchSize() != null)
+            qry.setUpdateBatchSize(cliCtx.updateBatchSize());
     }
 
     /**
@@ -900,13 +986,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param cancel Hook for query cancellation.
      * @throws QueryCancelledException If query was cancelled during execution.
      */
-    @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
+    @SuppressWarnings({"ForLoopReplaceableByForEach"})
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr, GridQueryCancel cancel) throws QueryCancelledException {
         try {
             if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                    qry.batchedArguments());
+                List<Long> cnt = connCtx.kernalContext().query().streamBatchedUpdateQuery(
+                    qry.getSchema(),
+                    cliCtx,
+                    qry.getSql(),
+                    qry.batchedArguments()
+                );
 
                 for (int i = 0; i < cnt.size(); i++)
                     updCntsAcc.add(cnt.get(i).intValue());
@@ -914,7 +1004,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 return;
             }
 
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true, cancel);
+            List<FieldsQueryCursor<List<?>>> qryRes = connCtx.kernalContext().query().querySqlFields(
+                null, qry, cliCtx, true, true, cancel);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
@@ -982,26 +1073,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private JdbcResponse getTablesMeta(JdbcMetaTablesRequest req) {
         try {
-            List<JdbcTableMeta> meta = new ArrayList<>();
+            List<JdbcTableMeta> tabMetas = meta.getTablesMeta(req.schemaName(), req.tableName(), req.tableTypes());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
+            JdbcMetaTablesResult res = new JdbcMetaTablesResult(tabMetas);
 
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    JdbcTableMeta tableMeta = new JdbcTableMeta(table.schemaName(), table.tableName(), "TABLE");
-
-                    if (!meta.contains(tableMeta))
-                        meta.add(tableMeta);
-                }
-            }
-
-            JdbcMetaTablesResult res = new JdbcMetaTablesResult(meta);
-
-            return new JdbcResponse(res);
+            return resultToResonse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to get tables metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1011,72 +1087,26 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
-     *
      * @param req Get columns metadata request.
      * @return Response.
      */
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
-
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                        String colName = field.getKey();
-
-                        if (!matches(colName, req.columnName()))
-                            continue;
-
-                        JdbcColumnMeta columnMeta;
-
-                        if (protocolVer.compareTo(VER_2_7_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue(),
-                                prop.precision(), prop.scale());
-                        }
-                        else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
-                        }
-                        else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull());
-                        }
-                        else
-                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue());
-
-                        if (!meta.contains(columnMeta))
-                            meta.add(columnMeta);
-                    }
-                }
-            }
+            Collection<JdbcColumnMeta> colsMeta =
+                meta.getColumnsMeta(protocolVer, req.schemaName(), req.tableName(), req.columnName());
 
             JdbcMetaColumnsResult res;
 
             if (protocolVer.compareTo(VER_2_7_0) >= 0)
-                res = new JdbcMetaColumnsResultV4(meta);
+                res = new JdbcMetaColumnsResultV4(colsMeta);
             else if (protocolVer.compareTo(VER_2_4_0) >= 0)
-                res = new JdbcMetaColumnsResultV3(meta);
+                res = new JdbcMetaColumnsResultV3(colsMeta);
             else if (protocolVer.compareTo(VER_2_3_0) >= 0)
-                res = new JdbcMetaColumnsResultV2(meta);
+                res = new JdbcMetaColumnsResultV2(colsMeta);
             else
-                res = new JdbcMetaColumnsResult(meta);
+                res = new JdbcMetaColumnsResult(colsMeta);
 
-            return new JdbcResponse(res);
+            return resultToResonse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to get columns metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1089,24 +1119,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
+    private JdbcResponse getIndexesMeta(JdbcMetaIndexesRequest req) {
         try {
-            Collection<JdbcIndexMeta> meta = new HashSet<>();
+            Collection<JdbcIndexMeta> idxInfos = meta.getIndexesMeta(req.schemaName(), req.tableName());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                        meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
-                }
-            }
-
-            return new JdbcResponse(new JdbcMetaIndexesResult(meta));
+            return resultToResonse(new JdbcMetaIndexesResult(idxInfos));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1119,21 +1136,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getParametersMeta(JdbcMetaParamsRequest req) {
+    private JdbcResponse getParametersMeta(JdbcMetaParamsRequest req) {
+        String schemaName = prepareSchemaName(req.schemaName());
+
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(req.sql(), null);
+
+        setupQuery(qry, schemaName);
+
         try {
-            ParameterMetaData paramMeta = ctx.query().prepareNativeStatement(req.schemaName(), req.sql())
-                .getParameterMetaData();
-
-            int size = paramMeta.getParameterCount();
-
-            List<JdbcParameterMeta> meta = new ArrayList<>(size);
-
-            for (int i = 0; i < size; i++)
-                meta.add(new JdbcParameterMeta(paramMeta, i + 1));
+            List<JdbcParameterMeta> meta = connCtx.kernalContext().query().getIndexing().
+                parameterMetaData(schemaName, qry);
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 
-            return new JdbcResponse(res);
+            return resultToResonse(res);
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1146,42 +1162,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
+    private JdbcResponse getPrimaryKeys(JdbcMetaPrimaryKeysRequest req) {
         try {
-            Collection<JdbcPrimaryKeyMeta> meta = new HashSet<>();
+            Collection<JdbcPrimaryKeyMeta> pkMeta = meta.getPrimaryKeys(req.schemaName(), req.tableName());
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (!matches(table.schemaName(), req.schemaName()))
-                        continue;
-
-                    if (!matches(table.tableName(), req.tableName()))
-                        continue;
-
-                    List<String> fields = new ArrayList<>();
-
-                    for (String field : table.fields().keySet()) {
-                        if (table.property(field).key())
-                            fields.add(field);
-                    }
-
-                    final String keyName = table.keyFieldName() == null ?
-                        "PK_" + table.schemaName() + "_" + table.tableName() :
-                        table.keyFieldName();
-
-                    if (fields.isEmpty()) {
-                        String keyColName =
-                            table.keyFieldName() == null ? QueryUtils.KEY_FIELD_NAME : table.keyFieldName();
-
-                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName,
-                            Collections.singletonList(keyColName)));
-                    }
-                    else
-                        meta.add(new JdbcPrimaryKeyMeta(table.schemaName(), table.tableName(), keyName, fields));
-                }
-            }
-
-            return new JdbcResponse(new JdbcMetaPrimaryKeysResult(meta));
+            return resultToResonse(new JdbcMetaPrimaryKeysResult(pkMeta));
         }
         catch (Exception e) {
             U.error(log, "Failed to get parameters metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
@@ -1194,38 +1179,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Request.
      * @return Response.
      */
-    private ClientListenerResponse getSchemas(JdbcMetaSchemasRequest req) {
+    private JdbcResponse getSchemas(JdbcMetaSchemasRequest req) {
         try {
             String schemaPtrn = req.schemaName();
 
-            Set<String> schemas = new HashSet<>();
+            SortedSet<String> schemas = meta.getSchemasMeta(schemaPtrn);
 
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (matches(table.schemaName(), schemaPtrn))
-                        schemas.add(table.schemaName());
-                }
-            }
-
-            return new JdbcResponse(new JdbcMetaSchemasResult(schemas));
+            return resultToResonse(new JdbcMetaSchemasResult(schemas));
         }
         catch (Exception e) {
             U.error(log, "Failed to get schemas metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }
-    }
-
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.matches(ptrn.replace("%", ".*").replace("_", ".")));
     }
 
     /**
@@ -1238,6 +1204,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private JdbcResponse exceptionToResult(Exception e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
+        if (e instanceof TransactionSerializationException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, e.getMessage());
+        if (e instanceof TransactionAlreadyCompletedException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, e.getMessage());
+        if (e instanceof TransactionDuplicateKeyException)
+            return new JdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, e.getMessage());
+        if (e instanceof TransactionMixedModeException)
+            return new JdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, e.getMessage());
+        if (e instanceof TransactionUnsupportedConcurrencyException)
+            return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, e.getMessage());
         if (e instanceof IgniteSQLException)
             return new JdbcResponse(((IgniteSQLException)e).statusCode(), e.getMessage());
         else
@@ -1252,7 +1228,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
          * Constructor.
          */
         OrderedBatchWorker() {
-            super(ctx.igniteInstanceName(), "ordered-batch", JdbcRequestHandler.this.log);
+            super(connCtx.kernalContext().igniteInstanceName(), "ordered-batch", JdbcRequestHandler.this.log);
         }
 
         /** {@inheritDoc} */
@@ -1273,6 +1249,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 executeBatchOrdered(req);
@@ -1328,11 +1306,57 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * Retrieve cache partitions distributions for given cache Ids.
+     *
+     * @param req <code>JdbcCachePartitionsRequest</code> that incapsulates set of cache Ids.
+     * @return Partitions distributions.
+     */
+    private JdbcResponse getCachePartitions(JdbcCachePartitionsRequest req) {
+        List<JdbcThinPartitionAwarenessMappingGroup> mappings = new ArrayList<>();
+
+        AffinityTopologyVersion topVer = connCtx.kernalContext().cache().context().exchange().readyAffinityVersion();
+
+        for (int cacheId : req.cacheIds()) {
+            Map<UUID, Set<Integer>> partitionsMap = getPartitionsMap(
+                connCtx.kernalContext().cache().cacheDescriptor(cacheId),
+                topVer);
+
+            mappings.add(new JdbcThinPartitionAwarenessMappingGroup(cacheId, partitionsMap));
+        }
+
+        return new JdbcResponse(new JdbcCachePartitionsResult(mappings), topVer);
+    }
+
+    /**
+     * Get partition map for a cache.
+     * @param cacheDesc Cache descriptor.
+     * @return Partitions mapping for cache.
+     */
+    private Map<UUID, Set<Integer>> getPartitionsMap(DynamicCacheDescriptor cacheDesc, AffinityTopologyVersion affVer) {
+        GridCacheContext cacheCtx = connCtx.kernalContext().cache().context().cacheContext(cacheDesc.cacheId());
+
+        AffinityAssignment assignment = cacheCtx.affinity().assignment(affVer);
+
+        Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
+
+        HashMap<UUID, Set<Integer>> res = new HashMap<>(nodes.size());
+
+        for (ClusterNode node : nodes) {
+            UUID nodeId = node.id();
+            Set<Integer> parts = assignment.primaryPartitions(nodeId);
+
+            res.put(nodeId, parts);
+        }
+
+        return res;
+    }
+
+    /**
      * Checks whether query cancellation is supported whithin given version of protocal.
      *
      * @return True if supported, false otherwise.
      */
-    private boolean isCancellationSupported() {
+    @Override public boolean isCancellationSupported() {
         return (protocolVer.compareTo(VER_2_8_0) >= 0);
     }
 
@@ -1439,5 +1463,33 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (clearCursors)
                 clearCursors(reqId);
         }
+    }
+
+    /**
+     * Create {@link JdbcResponse} wrapping given result and attaching affinity topology version to it if chaned.
+     *
+     * @param res Jdbc result.
+     * @return esulting {@link JdbcResponse}.
+     */
+    private JdbcResponse resultToResonse(JdbcResult res) {
+        return new JdbcResponse(res, connCtx.getAffinityTopologyVersionIfChanged());
+    }
+
+    /**
+     * @param partResRequested Boolean flag that signals whether client requested partiton result.
+     * @param partRes Direved partition result.
+     * @return True if applicable to jdbc thin client side partition awareness:
+     *   1. Partitoin result was requested;
+     *   2. Partition result either null or
+     *     a. Rendezvous affinity function without map filters was used;
+     *     b. Partition result tree neither PartitoinAllNode nor PartitionNoneNode;
+     */
+    private static boolean isClientPartitionAwarenessApplicable(boolean partResRequested, PartitionResult partRes) {
+        return partResRequested && (partRes == null || partRes.isClientPartitionAwarenessApplicable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return protocolVer;
     }
 }

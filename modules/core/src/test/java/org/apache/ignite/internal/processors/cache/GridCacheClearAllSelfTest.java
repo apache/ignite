@@ -27,9 +27,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,7 +38,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Test {@link IgniteCache#clear()} operation in multinode environment with nodes
  * having caches with different names.
  */
-@RunWith(JUnit4.class)
 public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
@@ -67,8 +65,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-7952");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7952", MvccFeatureChecker.forcedMvcc());
 
         super.beforeTestsStarted();
     }

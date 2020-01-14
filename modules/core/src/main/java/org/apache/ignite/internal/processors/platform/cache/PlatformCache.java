@@ -76,7 +76,7 @@ import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Native cache wrapper implementation.
@@ -335,6 +335,24 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_RESET_QUERY_METRICS = 86;
 
+    /** */
+    public static final int OP_PRELOAD_PARTITION = 87;
+
+    /** */
+    public static final int OP_PRELOAD_PARTITION_ASYNC = 88;
+
+    /** */
+    public static final int OP_LOCAL_PRELOAD_PARTITION = 89;
+
+    /** */
+    public static final int OP_SIZE_LONG = 90;
+
+    /** */
+    public static final int OP_SIZE_LONG_ASYNC = 91;
+
+    /** */
+    public static final int OP_SIZE_LONG_LOC = 92;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -585,6 +603,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                     return TRUE;
                 }
 
+                case OP_SIZE_LONG_ASYNC: {
+                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                    Integer part = reader.readBoolean() ? reader.readInt() : null;
+
+                    readAndListenFuture(reader, part != null ? cache.sizeLongAsync(part, modes) :
+                            cache.sizeLongAsync(modes));
+
+                    return TRUE;
+                }
+
                 case OP_CLEAR_ASYNC: {
                     readAndListenFuture(reader, cache.clearAsync(reader.readObjectDetached()));
 
@@ -691,7 +720,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_INVOKE_ASYNC: {
                     Object key = reader.readObjectDetached();
 
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     readAndListenFuture(reader, cache.invokeAsync(key, proc), WRITER_INVOKE);
 
@@ -701,7 +732,9 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_INVOKE_ALL_ASYNC: {
                     Set<Object> keys = PlatformUtils.readSet(reader);
 
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     readAndListenFuture(reader, cache.invokeAllAsync(keys, proc), WRITER_INVOKE_ALL);
 
@@ -716,16 +749,16 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_INVOKE: {
                     Object key = reader.readObjectDetached();
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     return writeResult(mem, cache.invoke(key, proc));
                 }
 
                 case OP_INVOKE_ALL: {
                     Set<Object> keys = PlatformUtils.readSet(reader);
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                    long ptr = reader.readLong();
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), ptr);
 
                     Map results = cache.invokeAll(keys, proc);
 
@@ -760,6 +793,27 @@ public class PlatformCache extends PlatformAbstractTarget {
                     PlatformCacheExtension ext = extension(reader.readInt());
 
                     return ext.processInOutStreamLong(this, reader.readInt(), reader, mem);
+
+                case OP_PRELOAD_PARTITION_ASYNC:
+                    readAndListenFuture(reader, cache.preloadPartitionAsync(reader.readInt()));
+
+                    return TRUE;
+
+                case OP_LOCAL_PRELOAD_PARTITION:
+                    return cache.localPreloadPartition(reader.readInt()) ? TRUE : FALSE;
+
+                case OP_SIZE_LONG:
+                case OP_SIZE_LONG_LOC: {
+                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                    Integer part = reader.readBoolean() ? reader.readInt() : null;
+
+                    if (type == OP_SIZE_LONG)
+                        return part != null ? cache.sizeLong(part, modes) : cache.sizeLong(modes);
+                    else
+                        return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
+
+                }
             }
         }
         catch (Exception e) {
@@ -982,7 +1036,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
                         getConfiguration(CacheConfiguration.class);
 
-                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, CURRENT_VER);
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, DEFAULT_VER);
 
                 break;
 
@@ -1114,6 +1168,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_RESET_QUERY_METRICS:
                 cache.resetQueryMetrics();
+
+                return TRUE;
+
+            case OP_PRELOAD_PARTITION:
+                cache.preloadPartition((int)val);
 
                 return TRUE;
         }
@@ -1362,6 +1421,11 @@ public class PlatformCache extends PlatformAbstractTarget {
         String txt = reader.readString();
         String typ = reader.readString();
         final int pageSize = reader.readInt();
+
+        //TODO: IGNITE-12266, uncomment when limit parameter is added to Platforms
+        //
+        // final int limit = reader.readInt();
+        // return new TextQuery(typ, txt, limit).setPageSize(pageSize).setLocal(loc);
 
         return new TextQuery(typ, txt).setPageSize(pageSize).setLocal(loc);
     }

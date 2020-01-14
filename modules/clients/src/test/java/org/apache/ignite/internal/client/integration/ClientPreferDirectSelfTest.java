@@ -38,8 +38,6 @@ import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest.HOST;
 import static org.apache.ignite.internal.client.integration.ClientAbstractMultiNodeSelfTest.REST_TCP_PORT_BASE;
@@ -48,7 +46,6 @@ import static org.apache.ignite.internal.client.integration.ClientAbstractMultiN
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 6;

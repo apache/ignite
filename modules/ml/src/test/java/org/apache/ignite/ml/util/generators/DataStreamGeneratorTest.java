@@ -37,6 +37,7 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -54,21 +55,19 @@ public class DataStreamGeneratorTest {
     @Test
     public void testUnlabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
 
-        generator.unlabeled().limit(100).forEach(v -> {
-            assertArrayEquals(new double[] {1., 2.}, v.asArray(), 1e-7);
-        });
+        generator.unlabeled().limit(100).forEach(v -> assertArrayEquals(new double[] {1., 2.}, v.asArray(), 1e-7));
     }
 
     /** */
     @Test
     public void testLabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -83,7 +82,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testMapVectors() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -98,7 +97,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testBlur() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -113,7 +112,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testAsMap() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -130,25 +129,26 @@ public class DataStreamGeneratorTest {
     /** */
     @Test
     public void testAsDatasetBuilder() throws Exception {
-        AtomicInteger counter = new AtomicInteger();
+        AtomicInteger cntr = new AtomicInteger();
+
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> {
-                    int value = counter.getAndIncrement();
-                    return new LabeledVector<>(VectorUtils.of(value), (double)value % 2);
+                    int val = cntr.getAndIncrement();
+                    return new LabeledVector<>(VectorUtils.of(val), (double)val % 2);
                 });
             }
         };
 
         int N = 100;
-        counter.set(0);
+        cntr.set(0);
         DatasetBuilder<Vector, Double> b1 = generator.asDatasetBuilder(N, 2);
-        counter.set(0);
+        cntr.set(0);
         DatasetBuilder<Vector, Double> b2 = generator.asDatasetBuilder(N, (v, l) -> l == 0, 2);
-        counter.set(0);
+        cntr.set(0);
         DatasetBuilder<Vector, Double> b3 = generator.asDatasetBuilder(N, (v, l) -> l == 1, 2,
-            new UpstreamTransformerBuilder<Vector, Double>() {
-                @Override public UpstreamTransformer<Vector, Double> build(LearningEnvironment env) {
+            new UpstreamTransformerBuilder() {
+                @Override public UpstreamTransformer build(LearningEnvironment env) {
                     return new UpstreamTransformerForTest();
                 }
             });
@@ -160,38 +160,35 @@ public class DataStreamGeneratorTest {
 
     /** */
     private void checkDataset(int sampleSize, DatasetBuilder<Vector, Double> datasetBuilder,
-        Predicate<LabeledVector> labelCheck) throws Exception {
+        Predicate<LabeledVector> lbCheck) throws Exception {
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = buildDataset(datasetBuilder)) {
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = buildDataset(datasetBuilder)) {
             List<LabeledVector> res = dataset.compute(this::map, this::reduce);
             assertEquals(sampleSize, res.size());
 
-            res.forEach(v -> assertTrue(labelCheck.test(v)));
+            res.forEach(v -> assertTrue(lbCheck.test(v)));
         }
     }
 
     /** */
-    private Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> buildDataset(
+    private Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> buildDataset(
         DatasetBuilder<Vector, Double> b1) {
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>((v, l) -> v, (v, l) -> l)
+            new LabeledDatasetPartitionDataBuilderOnHeap<>((Preprocessor<Vector, Double>)LabeledVector::new),
+            LearningEnvironmentBuilder.defaultBuilder().buildForTrainer()
         );
     }
 
     /** */
-    private List<LabeledVector> map(LabeledVectorSet<Double, LabeledVector> d) {
+    private List<LabeledVector> map(LabeledVectorSet<LabeledVector> d) {
         return IntStream.range(0, d.rowSize()).mapToObj(d::getRow).collect(Collectors.toList());
     }
 
     /** */
     private List<LabeledVector> reduce(List<LabeledVector> l, List<LabeledVector> r) {
-        if (l == null) {
-            if (r == null)
-                return Collections.emptyList();
-            else
-                return r;
-        }
+        if (l == null)
+            return r == null ? Collections.emptyList() : r;
         else {
             List<LabeledVector> res = new ArrayList<>();
             res.addAll(l);
@@ -201,10 +198,11 @@ public class DataStreamGeneratorTest {
     }
 
     /** */
-    private static class UpstreamTransformerForTest implements UpstreamTransformer<Vector, Double> {
-        @Override public Stream<UpstreamEntry<Vector, Double>> transform(
-            Stream<UpstreamEntry<Vector, Double>> upstream) {
-            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -entry.getValue()));
+    private static class UpstreamTransformerForTest implements UpstreamTransformer {
+        /** {@inheritDoc} */
+        @Override public Stream<UpstreamEntry> transform(
+            Stream<UpstreamEntry> upstream) {
+            return upstream.map(entry -> new UpstreamEntry<>(entry.getKey(), -((double)entry.getValue())));
         }
     }
 }

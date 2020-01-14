@@ -29,7 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
  * Designed to avoid zero dropdowns that can happen if checkpoint buffer is overflowed.
- * Uses average checkpoint write speed and moment speed of marking pages as dirty.
+ * Uses average checkpoint write speed and moment speed of marking pages as dirty.<br>
+ *
+ * See also: <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence/pagemem#speed-based-throttling">Speed-based throttling description</a>.
  */
 public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Maximum dirty pages in region. */
@@ -222,6 +224,8 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
             doPark(throttleParkTimeNs);
         }
+
+        pageMemory.metrics().addThrottlingTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }

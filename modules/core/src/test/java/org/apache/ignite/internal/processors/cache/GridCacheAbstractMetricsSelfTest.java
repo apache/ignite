@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -38,26 +39,42 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Cache metrics test.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 500;
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+        configuration.setMetricsUpdateFrequency(2000);
+        return configuration;
+    }
+
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration configuration = super.cacheConfiguration(igniteInstanceName);
+        configuration.setStatisticsEnabled(true);
+        return configuration;
+    }
 
     /** Entry processor, performing removal. */
     private final CacheEntryProcessor<Integer, Integer, Object> removingProcessor =
@@ -808,35 +825,37 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+        cache.clear();
 
-        for (int i = 0; i < KEY_CNT; i++) {
+        awaitMetricsUpdate(1);
+
+        assertEquals(0, cache.metrics().getCacheSize());
+
+        for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-            CacheMetrics metrics = cache.metrics();
+        awaitMetricsUpdate(1);
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+        assertEquals(KEY_CNT, cache.metrics().getCacheSize());
 
-            CacheMetrics localMetrics = cache.localMetrics();
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
-        }
-
-        for (int i = 0; i < KEY_CNT / 2; i++) {
+        for (int i = 0; i < KEY_CNT / 2; i++)
             cache.remove(i, i);
 
-            CacheMetrics metrics = cache.metrics();
+        awaitMetricsUpdate(1);
 
-            assertEquals(metrics.getSize(), metrics.getCacheSize());
+        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
 
-            CacheMetrics localMetrics = cache.localMetrics();
-
-            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
-        }
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
         cache.removeAll();
 
-        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+        awaitMetricsUpdate(1);
+
+        assertEquals(0, cache.metrics().getCacheSize());
+
+        assertEquals(0, cache.localMetrics().getCacheSize());
     }
 
     /**
@@ -1389,5 +1408,73 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         U.sleep(100);
 
         assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /** */
+    @Test
+    public void testGetTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetric m = metric("GetTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.get(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testPutTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetric m = metric("PutTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testRemoveTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetric m = metric("RemoveTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.remove(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /**
+     * @param name Metric name to find.
+     * @return Metric.
+     */
+    protected  <M extends Metric> M metric(String name) {
+        IgniteEx grid = grid(0);
+
+        boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
+
+        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
+
+        M m = mreg.findMetric(name);
+
+        assertNotNull(m);
+
+        return m;
     }
 }

@@ -16,29 +16,29 @@
  */
 package org.apache.ignite.testsuites;
 
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
+import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
-@RunWith(AllTests.class)
+@RunWith(DynamicSuite.class)
 public class IgnitePdsNativeIoTestSuite {
     /**
      * @return Suite.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with Direct IO)");
+    public static List<Class<?>> suite() {
+        List<Class<?>> suite = new ArrayList<>();
 
         IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
         //long running test by design with light parameters
-        suite.addTest(new JUnit4TestAdapter(IgnitePdsReplacementNativeIoTest.class));
+        suite.add(IgnitePdsReplacementNativeIoTest.class);
 
-        suite.addTest(new JUnit4TestAdapter(IgniteNativeIoWithNoPersistenceTest.class));
+        suite.add(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;
     }

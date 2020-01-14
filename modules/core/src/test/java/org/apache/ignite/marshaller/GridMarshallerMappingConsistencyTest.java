@@ -30,13 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest {
     /** Test cache name. */
     private static final String CACHE_NAME = "cache";
@@ -151,8 +148,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
 
         stopAllGrids();
 
-        Ignite g2 = startGrid(2);
         startGrid(1);
+        Ignite g2 = startGrid(2);
 
         assertTrue("Failed to wait for automatic grid activation",
             GridTestUtils.waitForCondition(() -> g2.cluster().active(), getTestTimeout()));

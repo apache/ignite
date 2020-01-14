@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for decision trees leaf builders.
  */
+
 package org.apache.ignite.ml.tree.leaf;

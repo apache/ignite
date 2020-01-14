@@ -23,7 +23,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,8 +37,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
@@ -48,7 +48,6 @@ import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
 /**
  * Tests transaction state change event.
  */
-@RunWith(JUnit4.class)
 public class TxStateChangeEventTest extends GridCommonAbstractTest {
     /** Label. */
     private final String lb = "testLabel";
@@ -70,6 +69,11 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
     /** Resume. */
     private static AtomicBoolean resume = new AtomicBoolean();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
 
     /**
      *

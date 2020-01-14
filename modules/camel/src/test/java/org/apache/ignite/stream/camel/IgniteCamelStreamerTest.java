@@ -48,7 +48,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -57,15 +59,12 @@ import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Test class for {@link CamelStreamer}.
  */
-@RunWith(JUnit4.class)
 public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /** text/plain media type. */
     private static final MediaType TEXT_PLAIN = MediaType.parse("text/plain;charset=utf-8");
@@ -97,6 +96,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /** Constructor. */
     public IgniteCamelStreamerTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     @SuppressWarnings("unchecked")

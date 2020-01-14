@@ -21,8 +21,6 @@ import java.util.Random;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getDoubleByByteLE;
@@ -34,7 +32,6 @@ import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
 /**
  * Binary input/output streams byte order sanity tests.
  */
-@RunWith(JUnit4.class)
 public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAbstractTest {
     /** Array length. */
     protected static final int ARR_LEN = 16;

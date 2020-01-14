@@ -35,6 +35,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -45,9 +47,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionState;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,7 +62,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests one-phase commit transactions when some of the nodes fail in the middle of the transaction.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @return Grid count.
@@ -142,10 +143,9 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1731")
     @Test
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
-
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 
@@ -195,6 +195,87 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     @Test
     public void testPrimaryNodeFailureBackupRollbackImplicitOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPrimaryNodeCrashesWhenPessimisticTxIsSuspended() throws Exception {
+        try {
+            startGrids(gridCount());
+
+            awaitPartitionMapExchange();
+
+            Integer key = primaryKey(ignite(0).cache(DEFAULT_CACHE_NAME));
+
+            Ignite nearNode = ignite(1);
+
+            Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+            nearNode.cache(DEFAULT_CACHE_NAME).put(key, 1);
+
+            tx.suspend();
+
+            stopGrid(0, true);
+
+            ((IgniteKernal)ignite(1)).context().discovery().topologyFuture(gridCount() + 1).get();
+
+            tx.resume();
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.commit();
+
+                    return null;
+                }
+            }, IgniteTxRollbackCheckedException.class);
+
+            assertEquals(TransactionState.ROLLED_BACK, tx.state());
+
+            for (Ignite ignite : G.allGrids())
+                assertNull(ignite.cache(DEFAULT_CACHE_NAME).localPeek(key));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOriginatingNodeCrashesWhenPessimisticTxIsSuspended() throws Exception {
+        try {
+            startGrids(gridCount());
+
+            awaitPartitionMapExchange();
+
+            Integer key = primaryKey(ignite(0).cache(DEFAULT_CACHE_NAME));
+
+            Ignite nearNode = ignite(1);
+
+            Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+            nearNode.cache(DEFAULT_CACHE_NAME).put(key, 1);
+
+            tx.suspend();
+
+            stopGrid(1, true);
+
+            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+
+            awaitPartitionMapExchange();
+
+            for (Ignite ignite : G.allGrids()) {
+                assertNull(ignite.cache(DEFAULT_CACHE_NAME).localPeek(key));
+
+                assertEquals(0, ((IgniteEx)ignite).context().cache().context().tm().idMapSize());
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -368,7 +449,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
 
-        dhtEntry.touch(null);
+        dhtEntry.touch();
     }
 
     /**

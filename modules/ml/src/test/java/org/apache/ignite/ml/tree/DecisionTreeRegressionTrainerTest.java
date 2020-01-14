@@ -18,18 +18,17 @@
 package org.apache.ignite.ml.tree;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link DecisionTreeRegressionTrainer}.
@@ -40,7 +39,7 @@ public class DecisionTreeRegressionTrainerTest {
     private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
 
     /** Number of partitions. */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter()
     public int parts;
 
     /** Use index [= 1 if true]. */
@@ -75,12 +74,7 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0)
             .withUsingIdx(useIdx == 1);
 
-        DecisionTreeNode tree = trainer.fit(
-            data,
-            parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOf(v, v.length - 1)),
-            (k, v) -> v[v.length - 1]
-        );
+        DecisionTreeNode tree = trainer.fit(data, parts, new DoubleArrayVectorizer<Integer>().labeled(1));
 
         assertTrue(tree instanceof DecisionTreeConditionalNode);
 

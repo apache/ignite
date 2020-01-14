@@ -44,6 +44,8 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,10 +69,10 @@ public class MessageCodeGenerator {
     };
 
     /** */
-    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+    public static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
+    public static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = Message.class;
@@ -79,7 +81,7 @@ public class MessageCodeGenerator {
     private static final String EMPTY = "";
 
     /** */
-    private static final String TAB = "    ";
+    public static final String TAB = "    ";
 
     /** */
     private static final String BUF_VAR = "buf";
@@ -167,6 +169,9 @@ public class MessageCodeGenerator {
             srcDir = args[0];
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
+
+        gen.generateAndWrite(ProbedTx.class);
+        gen.generateAndWrite(DeadlockProbe.class);
 
 //        gen.generateAll(true);
 

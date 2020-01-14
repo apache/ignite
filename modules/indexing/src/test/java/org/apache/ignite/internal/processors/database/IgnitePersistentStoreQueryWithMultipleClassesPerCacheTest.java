@@ -25,20 +25,19 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
+@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test_cache";
@@ -81,8 +80,6 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -93,8 +90,6 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
     }
 
     /**
@@ -152,7 +147,6 @@ public class IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest extends G
             name = "Name-"  + id + " " + depId;
         }
     }
-
 
     /**
      *

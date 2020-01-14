@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test correct clean up cache configuration data after destroying cache.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest {
     /**
      *  Test destroy non grouped caches.
@@ -64,6 +62,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testDestroyCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
@@ -80,6 +79,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testDestroyGroupCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);

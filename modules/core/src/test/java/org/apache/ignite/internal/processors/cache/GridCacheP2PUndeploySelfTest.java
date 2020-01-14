@@ -35,8 +35,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,7 +46,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
     private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";

@@ -27,8 +27,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -38,7 +36,6 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 /**
  * Tests for continuous deployment with cache and changing topology.
  */
-@RunWith(JUnit4.class)
 public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest {
     /** Number of grids cache. */
     private static final int GRID_CNT = 2;

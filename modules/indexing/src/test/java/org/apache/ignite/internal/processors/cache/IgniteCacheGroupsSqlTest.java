@@ -37,8 +37,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -49,7 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
     /** */
     private static final String GROUP1 = "grp1";
@@ -184,7 +181,6 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
 
                 if (i % accsPerPerson == 0)
                     pers.put(pKey, new Person("pers-" + pKey));
-
 
                 acc.put(new AffinityKey(i, pKey), new Account(pKey, "acc-" + i));
             }

@@ -42,8 +42,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
@@ -60,7 +58,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class CompressionProcessorTest extends GridCommonAbstractTest {
     /** */
     private static final int ITEM_SIZE = 6; // To fill the whole page.

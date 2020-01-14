@@ -32,15 +32,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,7 +50,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Continuous queries tests.
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implements Serializable {
     /** */
     protected static final String CLIENT = "_client";
@@ -272,14 +268,10 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
             qry = cache.query(q);
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < GridTestUtils.SF.applyLB(10000, 1000); i++)
                 cache.put(i, i);
 
-            assert !GridTestUtils.waitForCondition(new PA() {
-                @Override public boolean apply() {
-                    return fail.get();
-                }
-            }, 1300L);
+            assertFalse(GridTestUtils.waitForCondition(fail::get, 1300L));
         }
         finally {
             if (qry != null)

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import com.sun.management.ThreadMXBean;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,8 +40,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
@@ -49,7 +49,6 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.ident
  * Tests for {@link GridToStringBuilder}.
  */
 @GridCommonTest(group = "Utils")
-@RunWith(JUnit4.class)
 public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -557,6 +556,37 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test GridToStringBuilder memory consumption.
+     */
+    @Test
+    public void testMemoryConsumption() {
+        int objCnt = 100;
+
+        ThreadMXBean bean = (ThreadMXBean)ManagementFactory.getThreadMXBean();
+
+        TestClass2 obj = new TestClass2(new String(new char[1_000_000]));
+
+        List<TestClass2> arr = new ArrayList<>(objCnt);
+
+        for (int i = 1; i <= objCnt; i++)
+            arr.add(new TestClass2(new String(new char[i])));
+
+        GridToStringBuilder.toString(TestClass2.class, obj);
+
+        long allocated0 = bean.getThreadAllocatedBytes(Thread.currentThread().getId());
+
+        for (TestClass2 item : arr)
+            GridToStringBuilder.toString(TestClass2.class, item);
+
+        long allocated1 = bean.getThreadAllocatedBytes(Thread.currentThread().getId());
+
+        log.info("Memory allocated by GridToStringBuilder for " + objCnt + " objects: " + (allocated1 - allocated0));
+
+        assertTrue("Too much memory allocated by GridToStringBuilder: " + (allocated1 - allocated0),
+            allocated1 - allocated0 < 1_000_000);
+    }
+
+    /**
      * @param exp Expected.
      * @param w Wrapper.
      */
@@ -641,7 +671,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             buf.append("id=").append(id).append(", ");
             buf.append("uuidVar=").append(uuidVar).append(", ");
             buf.append("intVar=").append(intVar).append(", ");
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 buf.append("longVar=").append(longVar).append(", ");
             buf.append("boolVar=").append(boolVar).append(", ");
             buf.append("byteVar=").append(byteVar).append(", ");
@@ -676,7 +706,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             StringBuilder s = new StringBuilder(toStringManual());
             s.setLength(s.length() - 1);
             s.append(", newParam1=").append(1);
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 s.append(", newParam2=").append(2);
             s.append(']');
             return s.toString();

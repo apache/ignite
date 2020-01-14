@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Tests all configuration properties.
+        /// Tests all configuration properties roundtrip to Java and back.
         /// </summary>
         [Test]
         public void TestAllConfigurationProperties()
@@ -261,11 +261,15 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(cfg.MvccVacuumFrequency, resCfg.MvccVacuumFrequency);
                 Assert.AreEqual(cfg.MvccVacuumThreadCount, resCfg.MvccVacuumThreadCount);
+                Assert.AreEqual(cfg.SqlQueryHistorySize, resCfg.SqlQueryHistorySize);
 
                 Assert.IsNotNull(resCfg.SqlSchemas);
                 Assert.AreEqual(2, resCfg.SqlSchemas.Count);
                 Assert.IsTrue(resCfg.SqlSchemas.Contains("SCHEMA_3"));
                 Assert.IsTrue(resCfg.SqlSchemas.Contains("schema_4"));
+
+                Assert.NotNull(cfg.ExecutorConfiguration);
+                AssertExtensions.ReflectionEqual(cfg.ExecutorConfiguration, resCfg.ExecutorConfiguration);
             }
         }
 
@@ -419,7 +423,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                WorkDirectory = TestUtils.GetTempDirectoryName()
+                WorkDirectory = PathUtils.GetTempDirectoryName()
             };
 
             using (Ignition.Start(cfg))
@@ -656,8 +660,9 @@ namespace Apache.Ignite.Core.Tests
             var props = obj.GetType().GetProperties();
 
             foreach (var prop in props.Where(p => p.Name != "SelectorsCount" && p.Name != "ReadStripesNumber" &&
-                                                  !p.Name.Contains("ThreadPoolSize") &&
-                                                  p.Name != "MaxSize"))
+                                                  !p.Name.Contains("ThreadPoolSize") && p.Name != "MaxSize" &&
+                                                  p.Name != "HandshakeTimeout" && p.Name != "ConcurrencyLevel" &&
+                                                  p.Name != "Logger"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -709,7 +714,7 @@ namespace Apache.Ignite.Core.Tests
                     MasterKeyName = KeystoreEncryptionSpi.DefaultMasterKeyName
                 },
                 IgniteInstanceName = "gridName1",
-                IgniteHome = IgniteHome.Resolve(null),
+                IgniteHome = IgniteHome.Resolve(),
                 IncludedEventTypes = EventType.DiscoveryAll,
                 MetricsExpireTime = TimeSpan.FromMinutes(7),
                 MetricsHistorySize = 125,
@@ -851,7 +856,7 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = TestUtils.GetTempDirectoryName(),
+                        SwapPath = PathUtils.GetTempDirectoryName(),
                         CheckpointPageBufferSize = 28 * 1024 * 1024
                     },
                     DataRegionConfigurations = new[]
@@ -868,15 +873,23 @@ namespace Apache.Ignite.Core.Tests
                             PersistenceEnabled = false,
                             MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
                             MetricsSubIntervalCount = 7,
-                            SwapPath = TestUtils.GetTempDirectoryName()
+                            SwapPath = PathUtils.GetTempDirectoryName()
                         }
                     }
                 },
                 AuthenticationEnabled = false,
                 MvccVacuumFrequency = 20000,
                 MvccVacuumThreadCount = 8,
-
-                SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" }
+                SqlQueryHistorySize = 99,
+                SqlSchemas = new List<string> { "SCHEMA_3", "schema_4" },
+                ExecutorConfiguration = new[]
+                {
+                    new ExecutorConfiguration
+                    {
+                        Name = "ex-1",
+                        Size = 11
+                    }
+                }
             };
         }
 

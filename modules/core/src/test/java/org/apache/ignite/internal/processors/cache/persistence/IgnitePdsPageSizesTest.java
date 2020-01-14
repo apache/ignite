@@ -33,15 +33,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /** Cache name. */
     private final String cacheName = "cache";
@@ -137,7 +134,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         try {
             final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
-            final long endTime = System.currentTimeMillis() + 60_000;
+            final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {

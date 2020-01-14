@@ -52,7 +52,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+    @Override public Stream<LabeledVector<Double>> labeled() {
         VectorGeneratorsFamily.Builder builder = new VectorGeneratorsFamily.Builder();
         for (int i = 0; i < componentGenerators.size(); i++) {
             builder = builder.add(componentGenerators.get(i).apply(seed), 1.0);
@@ -70,7 +70,7 @@ public class GaussianMixtureDataStream implements DataStreamGenerator {
         private List<IgniteFunction<Long, VectorGenerator>> componentGenerators = new ArrayList<>();
 
         /**
-         * Adds multidimentional gaussian component.
+         * Adds multidimensional gaussian component.
          *
          * @param mean Mean value.
          * @param variance Variance for each component.

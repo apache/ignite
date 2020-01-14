@@ -67,6 +67,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
      * @param op Operation.
      * @param filter Filter.
      * @param needRes Return previous value flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridDhtTxEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -80,18 +81,19 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
         Collection<Object> rows,
         EnlistOperation op,
         @Nullable CacheEntryPredicate filter,
-        boolean needRes) {
+        boolean needRes,
+        boolean keepBinary) {
         super(nearNodeId,
             nearLockVer,
             mvccSnapshot,
             threadId,
             nearFutId,
             nearMiniId,
-            null,
             tx,
             timeout,
             cctx,
-            filter);
+            filter,
+            keepBinary);
 
         this.op = op;
         this.needRes = needRes;
@@ -125,10 +127,10 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
             CacheInvokeResult invokeRes = txRes.invokeResult();
 
             if (invokeRes.result() != null || invokeRes.error() != null)
-                res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), cctx.keepBinary());
+                res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), keepBinary);
         }
         else if (needRes)
-            res.set(cctx, txRes.prevValue(), txRes.success(), true);
+            res.set(cctx, txRes.prevValue(), txRes.success(), keepBinary);
     }
 
     /** {@inheritDoc} */

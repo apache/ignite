@@ -33,14 +33,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -48,7 +46,6 @@ import org.mockito.stubbing.Answer;
 /**
  * Tests data consistency if transaction is failed due to heuristic exception on originating node.
  */
-@RunWith(JUnit4.class)
 public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest {
     /** */
     public static final int KEY = 0;
@@ -119,7 +116,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /** */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-9806", forceFailure = false)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9806")
     @Test
     public void testCommitErrorOnColocatedNode2PC() throws Exception {
         nodesCnt = 3;
@@ -181,7 +178,8 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
         IgniteTxManager mockTm = Mockito.spy(tm);
 
         MockGridNearTxLocal locTx = new MockGridNearTxLocal(ctx, false, false, false, GridIoPolicy.SYSTEM_POOL,
-            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, null, 1, null, 0, null);
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 0, true, null, 1, null, 0, null,
+            null);
 
         Mockito.doAnswer(new Answer<GridNearTxLocal>() {
             @Override public GridNearTxLocal answer(InvocationOnMock invocation) throws Throwable {
@@ -225,12 +223,14 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
          * @param subjId Subj id.
          * @param taskNameHash Task name hash.
          * @param lb Label.
+         * @param txDumpsThrottling Log throttling information.
          */
         public MockGridNearTxLocal(GridCacheSharedContext ctx, boolean implicit, boolean implicitSingle, boolean sys,
             byte plc, TransactionConcurrency concurrency, TransactionIsolation isolation, long timeout,
-            boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb) {
+            boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
+            IgniteTxManager.TxDumpsThrottling txDumpsThrottling) {
             super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp,
-                txSize, subjId, taskNameHash, lb);
+                txSize, subjId, taskNameHash, lb, txDumpsThrottling);
         }
 
         /** {@inheritDoc} */

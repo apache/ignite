@@ -29,15 +29,12 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int NODE_CNT = 4;

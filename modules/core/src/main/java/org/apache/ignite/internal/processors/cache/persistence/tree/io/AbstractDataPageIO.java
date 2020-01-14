@@ -39,7 +39,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
  * Data pages IO.
  */
 public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
-
     /** */
     private static final int SHOW_ITEM = 0b0001;
 
@@ -254,6 +253,14 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
     /**
      * @param pageAddr Page address.
+     * @return Rows number in the given data page.
+     */
+    public int getRowsCount(long pageAddr) {
+        return getDirectCount(pageAddr);
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param c Closure.
      * @param <T> Closure return type.
      * @return Collection of closure results for all items in page.
@@ -410,7 +417,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
             if (i > directCnt && itemId(getItem(pageAddr, i - 1)) >= itemId)
                 valid = false;
-
 
             b.a(itemId).a('^').a(directIdx);
         }

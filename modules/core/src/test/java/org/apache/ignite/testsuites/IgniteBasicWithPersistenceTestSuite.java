@@ -17,9 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.Set;
-import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestSuite;
 import org.apache.ignite.failure.FailureHandlingConfigurationTest;
 import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersBlockingTest;
@@ -33,56 +30,57 @@ import org.apache.ignite.internal.encryption.EncryptedCacheGroupCreateTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheNodeJoinTest;
 import org.apache.ignite.internal.encryption.EncryptedCachePreconfiguredRestartTest;
 import org.apache.ignite.internal.encryption.EncryptedCacheRestartTest;
+import org.apache.ignite.internal.encryption.EncryptionMXBeanTest;
+import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest;
+import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
+import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
+import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
+import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Basic test suite.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IoomFailureHandlerTest.class,
+    ClusterBaselineNodesMetricsSelfTest.class,
+    GridMarshallerMappingConsistencyTest.class,
+    SystemWorkersTerminationTest.class,
+    FailureHandlingConfigurationTest.class,
+    SystemWorkersBlockingTest.class,
+    CheckpointReadLockFailureTest.class,
+
+    GridCommandHandlerTest.class,
+    GridCommandHandlerWithSSLTest.class,
+    GridCommandHandlerClusterByClassTest.class,
+    GridCommandHandlerClusterByClassWithSSLTest.class,
+    GridCommandHandlerSslTest.class,
+    GridInternalTaskUnusedWalSegmentsTest.class,
+
+    GridNodeMetricsLogPdsSelfTest.class,
+
+    EncryptedCacheBigEntryTest.class,
+    EncryptedCacheCreateTest.class,
+    EncryptedCacheDestroyTest.class,
+    EncryptedCacheGroupCreateTest.class,
+    EncryptedCacheNodeJoinTest.class,
+    EncryptedCacheRestartTest.class,
+    EncryptedCachePreconfiguredRestartTest.class,
+
+    SingleNodePersistenceSslTest.class,
+
+    MasterKeyChangeTest.class,
+    MasterKeyChangeConsistencyCheckTest.class,
+
+    EncryptionMXBeanTest.class
+})
 public class IgniteBasicWithPersistenceTestSuite {
-    /**
-     * @return Test suite.
-     */
-    public static TestSuite suite() {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests Tests don't include in the execution. Providing null means nothing to exclude.
-     * @return Test suite.
-     */
-    public static TestSuite suite(@Nullable final Set<Class> ignoredTests) {
-        TestSuite suite = new TestSuite("Ignite Basic With Persistence Test Suite");
-
-        suite.addTest(new JUnit4TestAdapter(IoomFailureHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(ClusterBaselineNodesMetricsSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridMarshallerMappingConsistencyTest.class));
-        suite.addTest(new JUnit4TestAdapter(SystemWorkersTerminationTest.class));
-        suite.addTest(new JUnit4TestAdapter(FailureHandlingConfigurationTest.class));
-        suite.addTest(new JUnit4TestAdapter(SystemWorkersBlockingTest.class));
-        suite.addTest(new JUnit4TestAdapter(CheckpointReadLockFailureTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridCommandHandlerTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridCommandHandlerSslTest.class));
-        suite.addTest(new JUnit4TestAdapter(GridInternalTaskUnusedWalSegmentsTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(GridNodeMetricsLogPdsSelfTest.class));
-
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheBigEntryTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheCreateTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheDestroyTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheGroupCreateTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheNodeJoinTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCacheRestartTest.class));
-        suite.addTest(new JUnit4TestAdapter(EncryptedCachePreconfiguredRestartTest.class));
-
-        return suite;
-    }
 }

@@ -29,13 +29,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for chained user name mapper.
  */
-@RunWith(JUnit4.class)
 public class ChainedUserNameMapperSelfTest extends GridCommonAbstractTest {
     /** Test instance. */
     private static final String INSTANCE = "test_instance";

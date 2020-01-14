@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
@@ -177,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
         {
             // Copy Apache.Ignite.exe and Apache.Ignite.Core.dll 
             // to a separate folder so that it does not locate our assembly automatically.
-            var folder = IgniteUtils.GetTempDirectoryName();
+            var folder = PathUtils.GetTempDirectoryName();
             foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly})
             {
                 Assert.IsNotNull(asm.Location);
@@ -191,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Deployment
             var config = Path.Combine(Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
                 "Deployment\\peer_assembly_app.config");
 
-            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(null), null,
+            var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(), null,
                 "-ConfigFileName=" + config, "-ConfigSectionName=igniteConfiguration");
 
             Thread.Sleep(300);
@@ -214,6 +215,42 @@ namespace Apache.Ignite.Core.Tests.Deployment
                     test(ignite);
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests that we are not entering endless loop while resolving an assembly from one node to another
+        /// https://issues.apache.org/jira/browse/IGNITE-11690
+        /// </summary>
+        [Test]
+        public void TestMissingAssemblyResolutionWithEnabledPeerLoadingFlag()
+        {
+            // We need to simulate two nodes that will be interacted with each other.
+            Ignition.Start(GetConfig());
+            var ignite = Ignition.Start(GetConfig());
+
+            // Create separate thread in order to avoid program block due to the endless loop.
+            var workerThread = new Thread(() =>
+            {
+                PeerAssemblyResolver.LoadAssemblyAndGetType("Unavailable.Assembly, unavailable, Ver=1",
+                    (IIgniteInternal) ignite, Guid.Empty);
+            });
+            workerThread.Start();
+
+            bool isAssemblyResolved = workerThread.Join(TimeSpan.FromSeconds(10));
+            if (!isAssemblyResolved)
+            {
+                // Ignite instances should be disposed in TearDown method.
+                workerThread.Abort();
+            }
+
+            Assert.IsTrue(isAssemblyResolved, "Execution cancelled by timeout.");
+        }
+
+        private static IgniteConfiguration GetConfig()
+        {
+            var cfg = TestUtils.GetTestConfiguration(null, Guid.NewGuid().ToString());
+            cfg.PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain;
+            return cfg;
         }
 
         /// <summary>

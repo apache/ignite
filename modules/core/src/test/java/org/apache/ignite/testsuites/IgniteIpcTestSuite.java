@@ -16,26 +16,21 @@
 */
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 /**
  * Suite for shared memory mode.
  */
-@RunWith(AllTests.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({IgniteIpcSharedMemorySelfTestSuite.class})
 public class IgniteIpcTestSuite {
-    /**
-     * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite IPC Shared Memory Suite");
-
-        if (U.isLinux() || U.isMacOs())
-            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
-
-        return suite;
+    /** */
+    @BeforeClass
+    public static void init() {
+        Assume.assumeTrue("Test is intended to run only on Linux and macOS.", U.isLinux() || U.isMacOs());
     }
 }

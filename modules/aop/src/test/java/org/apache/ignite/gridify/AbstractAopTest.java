@@ -25,14 +25,13 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
@@ -41,7 +40,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
  * Abstract AOP test.
  */
 @SuppressWarnings( {"OverlyStrongTypeCast", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
-@RunWith(JUnit4.class)
 public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
     private DeploymentMode depMode = DeploymentMode.PRIVATE;
@@ -54,6 +52,8 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
         cfg.setMetricsUpdateFrequency(500);
         cfg.setDeploymentMode(depMode);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

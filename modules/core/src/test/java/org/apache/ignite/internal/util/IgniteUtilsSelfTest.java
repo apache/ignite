@@ -62,8 +62,9 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,8 +79,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
@@ -88,7 +87,6 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
-@RunWith(JUnit4.class)
 public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
@@ -127,6 +125,25 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertFalse(U.isPow2(6));
         assertFalse(U.isPow2(7));
         assertFalse(U.isPow2(9));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testNextPowOf2() {
+        assertEquals(1, U.nextPowerOf2(0));
+        assertEquals(1, U.nextPowerOf2(1));
+        assertEquals(2, U.nextPowerOf2(2));
+        assertEquals(4, U.nextPowerOf2(3));
+        assertEquals(4, U.nextPowerOf2(4));
+
+        assertEquals(8, U.nextPowerOf2(5));
+        assertEquals(8, U.nextPowerOf2(6));
+        assertEquals(8, U.nextPowerOf2(7));
+        assertEquals(8, U.nextPowerOf2(8));
+
+        assertEquals(32768, U.nextPowerOf2(32767));
     }
 
     /**
@@ -718,7 +735,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
 
-
     @Test
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
@@ -1028,8 +1044,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         Collection<Integer> res = U.doInParallel(10,
             executorService,
             data,
-            new IgniteThrowableConsumer<Integer, Integer>() {
-                @Override public Integer accept(Integer cnt) throws IgniteInterruptedCheckedException {
+            new IgniteThrowableFunction<Integer, Integer>() {
+                @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
                     // Release thread in pool in the middle of range.
                     if (taskProcessed.getAndIncrement() == (data.size() / 2) - 1) {
                         poolThreadLatch.countDown();
@@ -1095,14 +1111,31 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> res;
 
+        // Future for avoiding fast execution in only executor threads.
+        // Here we try to pass a number of tasks more that executor size,
+        // but there is a case when all task will be completed after last submit return control and
+        // current thread can not steal task because all task will be already finished.
+        GridFutureAdapter fut = new GridFutureAdapter();
+
         try {
             res = U.doInParallel(10,
                 executorService,
                 data,
-                new IgniteThrowableConsumer<Integer, Integer>() {
-                    @Override public Integer accept(Integer cnt) {
-                        if (Thread.currentThread().getId() == threadId)
+                new IgniteThrowableFunction<Integer, Integer>() {
+                    @Override public Integer apply(Integer cnt) {
+                        if (Thread.currentThread().getId() == threadId) {
+                            fut.onDone();
+
                             curThreadCnt.incrementAndGet();
+                        }
+                        else {
+                            try {
+                                fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw U.convertException(e);
+                            }
+                        }
 
                         return -cnt;
                     }
@@ -1193,12 +1226,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     private @interface Ann2 {}
 
     private static class A1 implements I3, I5 {}
+
     private static class A2 extends A1 {}
+
     private static class A3 implements I5 {}
 
     @Ann1 private interface I1 {}
+
     private interface I2 extends I1 {}
+
     private interface I3 extends I2 {}
+
     @Ann2 private interface I4 {}
+
     private interface I5 extends I4 {}
 }

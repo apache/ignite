@@ -29,8 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,7 +37,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for complex queries (joins, etc.).
  */
-@RunWith(JUnit4.class)
 public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";

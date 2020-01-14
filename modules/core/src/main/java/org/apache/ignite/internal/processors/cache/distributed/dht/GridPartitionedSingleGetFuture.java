@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -227,17 +228,17 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * Initialize future.
      */
     public void init() {
-        AffinityTopologyVersion mappingtopVermappingtopVer;
+        AffinityTopologyVersion mappingTopVer;
 
         if (topVer.topologyVersion() > 0)
-            mappingtopVermappingtopVer = topVer;
+            mappingTopVer = topVer;
         else {
-            mappingtopVermappingtopVer = canRemap ?
+            mappingTopVer = canRemap ?
                 cctx.affinity().affinityTopologyVersion() :
                 cctx.shared().exchange().readyAffinityVersion();
         }
 
-        map(mappingtopVermappingtopVer);
+        map(mappingTopVer);
     }
 
     /**
@@ -316,7 +317,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             boolean needVer = this.needVer;
 
             BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
-                cctx, key, expiryPlc, readThrough, skipVals);
+                cctx, key, expiryPlc, readThrough && cctx.readThroughConfigured(), skipVals);
 
             if (postClos != null) {
                 // Need version to correctly store value.
@@ -365,14 +366,14 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
-        // Failed if none affinity node found by assigment.
+        // Failed if none affinity node found by assignment.
         if (affNodes.isEmpty()) {
             onDone(serverNotFoundError(part, topVer));
 
             return null;
         }
 
-        // Try to read key localy if we can.
+        // Try to read key locally if we can.
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
@@ -440,9 +441,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 boolean skipEntry = readNoEntry;
 
                 if (readNoEntry) {
+                    KeyCacheObject key0 = (KeyCacheObject)cctx.cacheObjects().prepareForCache(key, cctx);
+
                     CacheDataRow row = mvccSnapshot != null ?
-                        cctx.offheap().mvccRead(cctx, key, mvccSnapshot) :
-                        cctx.offheap().read(cctx, key);
+                        cctx.offheap().mvccRead(cctx, key0, mvccSnapshot) :
+                        cctx.offheap().read(cctx, key0);
 
                     if (row != null) {
                         long expireTime = row.expireTime();
@@ -486,7 +489,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -505,11 +507,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 null,
                                 taskName,
                                 expiryPlc,
-                                true,
-                                mvccSnapshot);
+                                true);
                         }
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         // Entry was not in memory or in swap, so we remove it from cache.
                         if (v == null) {
@@ -893,7 +894,8 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
 
-            cctx.dht().sendTtlUpdateRequest(expiryPlc);
+            if (!(err instanceof NodeStoppingException))
+                cctx.dht().sendTtlUpdateRequest(expiryPlc);
 
             return true;
         }

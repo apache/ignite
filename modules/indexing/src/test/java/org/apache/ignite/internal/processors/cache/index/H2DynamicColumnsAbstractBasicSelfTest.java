@@ -34,15 +34,12 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Test to check dynamic columns related features.
  */
-@RunWith(JUnit4.class)
 public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColumnsAbstractTest {
     /**
      * Index of coordinator node.

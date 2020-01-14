@@ -38,13 +38,10 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
     /** */
     private static final Random RANDOM = new Random(System.currentTimeMillis());

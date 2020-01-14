@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -45,15 +45,34 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * @param concurrentLvl Concurrency level.
      * @param igniteInstanceName Node name.
      * @param threadNamePrefix Thread name prefix.
+     * @param allowCoreThreadTimeOut Sets the policy governing whether core threads may time out and
+     * terminate if no tasks arrive within the keep-alive time.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     * that excess idle threads will wait for new tasks before terminating.
      */
-    public IgniteStripedThreadPoolExecutor(int concurrentLvl, String igniteInstanceName, String threadNamePrefix,
-        UncaughtExceptionHandler eHnd) {
+    public IgniteStripedThreadPoolExecutor(
+        int concurrentLvl,
+        String igniteInstanceName,
+        String threadNamePrefix,
+        UncaughtExceptionHandler eHnd,
+        boolean allowCoreThreadTimeOut,
+        long keepAliveTime) {
         execs = new ExecutorService[concurrentLvl];
 
         ThreadFactory factory = new IgniteThreadFactory(igniteInstanceName, threadNamePrefix, eHnd);
 
-        for (int i = 0; i < concurrentLvl; i++)
-            execs[i] = Executors.newSingleThreadExecutor(factory);
+        for (int i = 0; i < concurrentLvl; i++) {
+            IgniteThreadPoolExecutor executor = new IgniteThreadPoolExecutor(
+                1,
+                1,
+                keepAliveTime,
+                new LinkedBlockingQueue<>(),
+                factory);
+
+            executor.allowCoreThreadTimeOut(allowCoreThreadTimeOut);
+
+            execs[i] = executor;
+        }
     }
 
     /**

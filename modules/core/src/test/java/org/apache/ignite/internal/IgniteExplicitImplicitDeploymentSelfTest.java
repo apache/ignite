@@ -46,15 +46,13 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     public IgniteExplicitImplicitDeploymentSelfTest() {
@@ -304,7 +302,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                assert res == 2 : "Invalid response: " + res;
            }
 
-
            if (byTask) {
                ignite1.compute().localDeployTask(taskCls, ldr1);
 
@@ -422,7 +419,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

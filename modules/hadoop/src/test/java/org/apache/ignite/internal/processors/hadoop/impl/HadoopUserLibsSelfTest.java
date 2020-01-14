@@ -26,13 +26,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for user libs parsing.
  */
-@RunWith(JUnit4.class)
 public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
     /** Directory 1. */
     private static final File DIR_1 = HadoopTestUtils.testDir("dir1");
@@ -188,6 +185,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
         assert res.contains(FILE_2_1);
         assert res.contains(FILE_2_2);
     }
+
     /**
      * Ensure provided file exists.
      *

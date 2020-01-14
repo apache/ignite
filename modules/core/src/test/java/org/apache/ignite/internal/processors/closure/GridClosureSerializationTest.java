@@ -32,13 +32,10 @@ import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests handling of job result serialization error.
  */
-@RunWith(JUnit4.class)
 public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -104,7 +101,6 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"Convert2Lambda"})
     @Test
     public void testAttributesSerializationFailure() throws Exception {
         final IgniteEx ignite0 = grid(0);

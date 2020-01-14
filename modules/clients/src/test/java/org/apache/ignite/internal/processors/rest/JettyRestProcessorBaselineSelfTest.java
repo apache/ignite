@@ -31,19 +31,19 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
  * Test REST with enabled authentication.
  */
-@RunWith(JUnit4.class)
 public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommonSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
         super.beforeTestsStarted();
@@ -77,6 +77,13 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
         cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -126,7 +133,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     @Test
     public void testBaseline() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         // Stop one node. It will stay in baseline.
@@ -144,7 +151,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     @Test
     public void testBaselineSet() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);
@@ -183,7 +190,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     @Test
     public void testBaselineAdd() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);
@@ -191,7 +198,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
 
         assertBaseline(content(null, GridRestCommand.BASELINE_ADD, "consistentId1",
             grid(sz).localNode().consistentId().toString()), sz + 1, sz + 1);
-        
+
         stopGrid(sz);
     }
 
@@ -201,7 +208,7 @@ public class JettyRestProcessorBaselineSelfTest extends JettyRestProcessorCommon
     @Test
     public void testBaselineRemove() throws Exception {
         int sz = gridCount();
-        
+
         assertBaseline(content(null, GridRestCommand.BASELINE_CURRENT_STATE), sz, sz);
 
         startGrid(sz);

@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.client.impl;
 
 import java.util.Collection;
-import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 
 /**
  *
@@ -53,23 +50,26 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void active(final boolean active) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn, UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeState(active, nodeId);
-            }
-        }).get();
+        withReconnectHandling((conn, nodeId) -> conn.changeState(active, nodeId)).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(new ClientProjectionClosure<Boolean>() {
-            @Override public GridClientFuture<Boolean> apply(
-                GridClientConnection conn, UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.currentState(nodeId);
-            }
-        }).get();
+        return withReconnectHandling(GridClientConnection::currentState).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterState state() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::state).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState) throws GridClientException {
+        withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String clusterName() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::clusterName).get();
     }
 }

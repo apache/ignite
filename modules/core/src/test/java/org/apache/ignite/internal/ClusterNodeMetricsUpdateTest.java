@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
@@ -33,13 +32,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
@@ -130,7 +126,7 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
                 try {
                     checkMetrics0(expNodes, expJobs);
                 }
-                catch (AssertionFailedError e) {
+                catch (AssertionError e) {
                     return false;
                 }
 

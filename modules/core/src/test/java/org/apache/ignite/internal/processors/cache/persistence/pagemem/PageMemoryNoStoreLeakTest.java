@@ -22,12 +22,10 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.D;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base scenario for memory leak:
@@ -36,7 +34,6 @@ import org.junit.runners.JUnit4;
  * 3. IgniteCacheDatabaseSharedManager started and onActive called here. Memory allocated;
  * 4. Call active(true) again. Activation successfull, non heap memory leak introduced;
  */
-@RunWith(JUnit4.class)
 public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 4 * 1024;
@@ -66,7 +63,7 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
                 null,
                 PAGE_SIZE,
                 plcCfg,
-                new DataRegionMetricsImpl(plcCfg),
+                new LongAdderMetric("NO_OP", null),
                 true);
 
             try {

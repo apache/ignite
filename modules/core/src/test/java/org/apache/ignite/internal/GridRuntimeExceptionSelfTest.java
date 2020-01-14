@@ -31,7 +31,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -40,9 +42,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 
@@ -51,7 +52,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private enum FailType {
@@ -71,6 +71,11 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     public GridRuntimeExceptionSelfTest() {
         super(/*start grid*/false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /** {@inheritDoc} */
@@ -237,7 +242,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         private FailType failType;
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ProhibitedExceptionThrown"})
+        @NotNull @SuppressWarnings({"ProhibitedExceptionThrown"})
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Mapping job [job=" + this + ", grid=" + subgrid + ", arg=" + arg + ']');

@@ -16,19 +16,16 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.util.List;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -38,8 +35,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test different cache modes for query entry
  */
-@RunWith(JUnit4.class)
-public class IgniteSqlEntryCacheModeAgnosticTest extends GridCommonAbstractTest {
+public class IgniteSqlEntryCacheModeAgnosticTest extends AbstractIndexingCommonTest {
     /** Host. */
     public static final String HOST = "127.0.0.1";
 

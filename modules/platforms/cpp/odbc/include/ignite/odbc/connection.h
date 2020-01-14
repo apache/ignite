@@ -22,8 +22,9 @@
 
 #include <vector>
 
+#include <ignite/network/socket_client.h>
+
 #include "ignite/odbc/parser.h"
-#include "ignite/odbc/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
@@ -55,6 +56,12 @@ namespace ignite
                     FAIL,
                     TIMEOUT
                 };
+            };
+
+            /** Default connection timeout in seconds. */
+            enum
+            {
+                DEFAULT_CONNECT_TIMEOUT = 5,
             };
 
             /**
@@ -309,6 +316,13 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
             /**
+             * Init connection socket, using configuration.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type InitSocket();
+
+            /**
              * Synchronously send request message and receive response.
              * Uses provided timeout. Does not try to restore connection on
              * fail.
@@ -469,6 +483,7 @@ namespace ignite
             /**
              * Try to restore connection to the cluster.
              *
+             * @throw IgniteError on failure.
              * @return @c true on success and @c false otherwise.
              */
             bool TryRestoreConnection();
@@ -498,7 +513,7 @@ namespace ignite
             Environment* env;
 
             /** Client Socket. */
-            std::auto_ptr<SocketClient> socket;
+            std::auto_ptr<network::SocketClient> socket;
 
             /** Connection timeout in seconds. */
             int32_t timeout;

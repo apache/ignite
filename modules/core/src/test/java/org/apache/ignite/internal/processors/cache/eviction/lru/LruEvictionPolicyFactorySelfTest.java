@@ -23,13 +23,10 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFactoryAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * LRU Eviction policy tests.
  */
-@RunWith(JUnit4.class)
 public class LruEvictionPolicyFactorySelfTest extends EvictionPolicyFactoryAbstractTest<LruEvictionPolicy<String, String>> {
     /** {@inheritDoc} */
     @Override protected Factory<LruEvictionPolicy<String, String>> createPolicyFactory() {

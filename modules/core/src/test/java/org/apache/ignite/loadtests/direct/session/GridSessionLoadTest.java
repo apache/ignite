@@ -27,14 +27,11 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Session load test.
  */
 @GridCommonTest(group = "Load Test")
-@RunWith(JUnit4.class)
 public class GridSessionLoadTest extends GridCommonAbstractTest {
     /** */
     public GridSessionLoadTest() {

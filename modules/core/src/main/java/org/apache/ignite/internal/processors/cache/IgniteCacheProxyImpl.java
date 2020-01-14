@@ -365,6 +365,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withReadRepair() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -496,7 +501,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -515,13 +520,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param filter Filter.
+     * @param query Query.
      * @param grp Optional cluster group.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
+    private QueryCursor<Cache.Entry<K, V>> query(final Query query, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -533,40 +538,40 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         final CacheQueryFuture fut;
 
-        if (filter instanceof TextQuery) {
-            TextQuery p = (TextQuery)filter;
+        if (query instanceof TextQuery) {
+            TextQuery q = (TextQuery)query;
 
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
+            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, q.getText(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
                 }, false);
         }
-        else if (filter instanceof SpiQuery) {
+        else if (query instanceof SpiQuery) {
             qry = ctx.queries().createSpiQuery(isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, query.getClass().getSimpleName(),
                 ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
-                        return qry.execute(((SpiQuery)filter).getArgs());
+                        return qry.execute(((SpiQuery)query).getArgs());
                     }
                 }, false);
         }
         else {
-            if (filter instanceof SqlFieldsQuery)
+            if (query instanceof SqlFieldsQuery)
                 throw new CacheException("Use methods 'queryFields' and 'localQueryFields' for " +
                     SqlFieldsQuery.class.getSimpleName() + ".");
 
-            throw new CacheException("Unsupported query type: " + filter);
+            throw new CacheException("Unsupported query type: " + query);
         }
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
@@ -659,8 +664,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (qry instanceof ContinuousQuery) {
             ContinuousQuery<K, V> qry0 = (ContinuousQuery<K, V>)qry;
 
-            if (qry0.getLocalListener() == null)
-                throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+            if (qry0.getLocalListener() == null &&
+                qry0.getRemoteFilterFactory() == null &&
+                qry0.getRemoteFilter() == null) {
+                throw new IgniteException("LocalListener, RemoterFilter " +
+                    "or RemoteFilterFactory must be specified for the query: " + qry);
+            }
 
             if (qry0.getRemoteFilter() != null && qry0.getRemoteFilterFactory() != null)
                 throw new IgniteException("Should be used either RemoterFilter or RemoteFilterFactory.");
@@ -672,8 +681,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         else {
             ContinuousQueryWithTransformer<K, V, ?> qry0 = (ContinuousQueryWithTransformer<K, V, ?>)qry;
 
-            if (qry0.getLocalListener() == null)
-                throw new IgniteException("Mandatory local transformed event listener is not set for the query: " + qry);
+            if (qry0.getLocalListener() == null && qry0.getRemoteFilterFactory() == null) {
+                throw new IgniteException("LocalListener " +
+                    "or RemoteFilterFactory must be specified for the query: " + qry);
+            }
 
             if (qry0.getRemoteTransformerFactory() == null)
                 throw new IgniteException("Mandatory RemoteTransformerFactory is not set for the query: " + qry);
@@ -798,6 +809,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
 
             return (QueryCursor<R>)query(qry, projection(qry.isLocal()));
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         catch (Exception e) {
             if (e instanceof CacheException)

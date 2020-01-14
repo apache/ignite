@@ -23,7 +23,8 @@ let activitiesService;
 let mongo;
 let db;
 
-const owner = testAccounts[0]._id;
+const testAccount = testAccounts[0];
+const owner = testAccount._id;
 const group = 'test';
 const action1 = '/test/activity1';
 const action2 = '/test/activity2';
@@ -45,7 +46,7 @@ suite('ActivitiesServiceTestsSuite', () => {
     setup(() => db.init());
 
     test('Activities creation and update', (done) => {
-        activitiesService.merge(owner, { group, action: action1 })
+        activitiesService.merge(testAccount, { group, action: action1 })
             .then((activity) => {
                 assert.isNotNull(activity);
                 assert.equal(activity.amount, 1);
@@ -56,7 +57,7 @@ suite('ActivitiesServiceTestsSuite', () => {
                 assert.isNotNull(activityDoc);
                 assert.equal(activityDoc.amount, 1);
             })
-            .then(() => activitiesService.merge(owner, { group, action: action1 }))
+            .then(() => activitiesService.merge(testAccount, { group, action: action1 }))
             .then((activity) => {
                 assert.isNotNull(activity);
                 assert.equal(activity.amount, 2);
@@ -81,8 +82,8 @@ suite('ActivitiesServiceTestsSuite', () => {
         endDate.setMonth(endDate.getMonth() + 1);
 
         Promise.all([
-            activitiesService.merge(owner, {group, action: action1}),
-            activitiesService.merge(owner, {group, action: action2})
+            activitiesService.merge(testAccount, {group, action: action1}),
+            activitiesService.merge(testAccount, {group, action: action2})
         ])
             .then(() => activitiesService.total(owner, {startDate, endDate}))
             .then((activities) =>
@@ -115,8 +116,8 @@ suite('ActivitiesServiceTestsSuite', () => {
         const borderDate = nextMonth(startDate);
         const endDate = nextMonth(borderDate);
 
-        activitiesService.merge(owner, { group, action: action1 })
-            .then(() => activitiesService.merge(owner, { group, action: action1 }, borderDate))
+        activitiesService.merge(testAccount, { group, action: action1 })
+            .then(() => activitiesService.merge(testAccount, { group, action: action1 }, borderDate))
             .then(() => activitiesService.total({ startDate, endDate: borderDate }))
             .then((activities) =>
                 assert.equal(activities[owner].test, 1)

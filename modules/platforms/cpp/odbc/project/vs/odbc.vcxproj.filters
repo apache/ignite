@@ -29,9 +29,6 @@
     <Filter Include="Code\system\ui">
       <UniqueIdentifier>{ff144e89-0a10-42c3-97dd-d22bfdbc7abb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\ssl">
-      <UniqueIdentifier>{857734a3-6b29-412a-b75e-7fcc9d3fef8c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\sql">
       <UniqueIdentifier>{7f412a6b-279a-4a22-b87f-eafb1545a8d0}</UniqueIdentifier>
     </Filter>
@@ -154,18 +151,6 @@
     <ClCompile Include="..\..\src\message.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp">
-      <Filter>Code\ssl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp">
-      <Filter>Code\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ssl\ssl_mode.cpp">
-      <Filter>Code\ssl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp">
-      <Filter>Code\ssl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\config\connection_string_parser.cpp">
       <Filter>Code\config</Filter>
     </ClCompile>
@@ -196,8 +181,8 @@
     <ClCompile Include="..\..\src\streaming\streaming_context.cpp">
       <Filter>Code\streaming</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ssl\ssl_api.cpp">
-      <Filter>Code\ssl</Filter>
+    <ClCompile Include="..\..\src\ssl_mode.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -332,21 +317,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h">
-      <Filter>Code\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h">
-      <Filter>Code\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h">
-      <Filter>Code\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h">
-      <Filter>Code\ssl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
       <Filter>Code\config</Filter>
     </ClInclude>
@@ -392,8 +362,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h">
       <Filter>Code\streaming</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_api.h">
-      <Filter>Code\ssl</Filter>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl_mode.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

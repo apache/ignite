@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -46,16 +45,14 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 
 /**
  * Binary builder test.
  */
-@RunWith(JUnit4.class)
 public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
     /** */
     private static IgniteConfiguration cfg;
@@ -906,7 +903,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         assertEquals("bbb", builder.getField("str"));
 
         assertNull(builder.getField("i_"));
-        TestCase.assertEquals("bbb", builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        Assert.assertEquals("bbb", builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
@@ -980,7 +977,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         builder.removeField("str");
 
-        TestCase.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        Assert.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
@@ -1018,7 +1015,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         builder.removeField("str");
 
-        TestCase.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        Assert.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**

@@ -26,10 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"

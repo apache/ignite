@@ -30,13 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test added to check for https://issues.apache.org/jira/browse/IGNITE-2542.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheQueryNodeFailTest extends GridCommonAbstractTest {
     /** */
     private boolean client;

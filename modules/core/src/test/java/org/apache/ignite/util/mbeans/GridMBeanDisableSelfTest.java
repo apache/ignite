@@ -28,26 +28,23 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Disabling MBeans test.
  */
-@RunWith(JUnit4.class)
 public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = true;
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
+    @Override protected void afterTest() throws Exception {
         IgniteUtils.IGNITE_MBEANS_DISABLED = false;
 
-        super.tearDown();
+        super.afterTest();
     }
 
     /**

@@ -37,16 +37,14 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
-@RunWith(JUnit4.class)
 public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
     private DeploymentMode depMode;
@@ -263,7 +261,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
             Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {

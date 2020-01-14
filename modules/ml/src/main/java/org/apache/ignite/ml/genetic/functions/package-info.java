@@ -18,4 +18,5 @@
 /**
  * Contains functions used for GA Grid
  */
+
 package org.apache.ignite.ml.genetic.functions;

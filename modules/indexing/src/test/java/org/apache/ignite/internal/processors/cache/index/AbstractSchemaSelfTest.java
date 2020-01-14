@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import javax.cache.CacheException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -29,7 +30,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,14 +59,13 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for dynamic schema changes.
  */
 @SuppressWarnings("unchecked")
-public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
+public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Cache. */
     protected static final String CACHE_NAME = "cache";
 
@@ -135,7 +134,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param r Runnable.
      * @param expCode Error code.
      */
-    static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
+    static void assertSqlException(Runnable r, int expCode) {
         try {
             try {
                 r.run();
@@ -433,7 +432,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Query processor.
      */
-    static GridQueryProcessor queryProcessor(Ignite node) {
+    public static GridQueryProcessor queryProcessor(Ignite node) {
         return queryProcessor((IgniteEx)node);
     }
 
@@ -621,21 +620,21 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     public static class ValueClass {
         /** Field 1. */
         @QuerySqlField
-        private String field1;
+        private Long field1;
 
         /**
          * Constructor.
          *
          * @param field1 Field 1.
          */
-        public ValueClass(String field1) {
+        public ValueClass(Long field1) {
             this.field1 = field1;
         }
 
         /**
          * @return Field 1
          */
-        public String field1() {
+        public Long field1() {
             return field1;
         }
     }
@@ -663,17 +662,5 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
         public String field() {
             return field;
         }
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    protected interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
     }
 }

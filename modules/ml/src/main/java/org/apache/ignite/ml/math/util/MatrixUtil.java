@@ -62,6 +62,17 @@ public class MatrixUtil {
     }
 
     /**
+     * Creates the identity matrix with the given size.
+     * @param n N.
+     */
+    public static Matrix identity(int n) {
+        DenseMatrix res = new DenseMatrix(n, n);
+        for (int i = 0; i < n; i++)
+            res.set(i, i, 1.0);
+        return res;
+    }
+
+    /**
      * Create the like matrix with specified size with read-only matrices support.
      *
      * @param matrix Matrix for like.
@@ -197,10 +208,10 @@ public class MatrixUtil {
     }
 
     /**
-     * Zip two vectors with given tri-function taking as third argument position in vector
-     * (i.e. apply binary function to both vector elementwise and construct vector from results).
-     * Example zipWith({200, 400, 600}, {100, 300, 500}, plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}.
-     * Length of result is length of shortest of vectors.
+     * Zip two vectors with given tri-function taking as third argument position in vector (i.e. apply binary function
+     * to both vector elementwise and construct vector from results). Example zipWith({200, 400, 600}, {100, 300, 500},
+     * plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}. Length of result is length of
+     * shortest of vectors.
      *
      * @param v1 First vector.
      * @param v2 Second vector.

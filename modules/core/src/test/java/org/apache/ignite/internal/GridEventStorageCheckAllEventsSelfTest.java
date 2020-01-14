@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -54,8 +55,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -83,7 +82,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * Test event storage.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
@@ -101,6 +99,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
         cfg.setPublicThreadPoolSize(1);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

@@ -31,15 +31,15 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.util.deque.FastSizeDeque;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Session implementation bound to selector API and socket API.
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
-class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
+public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
     /** Pending write requests. */
     private final FastSizeDeque<SessionWriteRequest> queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
@@ -77,6 +77,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
 
     /** */
     private Object sysMsg;
+
+    /** Close channel on session #close() called. */
+    private volatile boolean closeSocket = true;
 
     /**
      * Creates session instance.
@@ -176,8 +179,22 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
     /**
      * @return Registered selection key for this session.
      */
-    SelectionKey key() {
+    public SelectionKey key() {
         return key;
+    }
+
+    /**
+     * @return {@code True} to close SocketChannel on current session close occured.
+     */
+    public boolean closeSocketOnSessionClose() {
+        return closeSocket;
+    }
+
+    /**
+     * @param closeSocket {@code False} remain SocketChannel open on session close.
+     */
+    public void closeSocketOnSessionClose(boolean closeSocket) {
+        this.closeSocket = closeSocket;
     }
 
     /**

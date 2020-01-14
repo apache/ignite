@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
 
-            var ex = Assert.Throws<TransactionRollbackException>(() => tx.Commit());
+            Assert.Throws<TransactionRollbackException>(() => tx.Commit());
 
             tx.Dispose();
 
@@ -571,8 +571,16 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(2, aex.InnerExceptions.Count);
 
-            var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().First();
-            Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
+            var deadlockEx = aex.InnerExceptions.OfType<TransactionDeadlockException>().FirstOrDefault();
+
+            if (deadlockEx != null)
+            {
+                Assert.IsTrue(deadlockEx.Message.Trim().StartsWith("Deadlock detected:"), deadlockEx.Message);
+            }
+            else
+            {
+                Assert.Fail("Unexpected exception: " + aex);
+            }
         }
 
         /// <summary>

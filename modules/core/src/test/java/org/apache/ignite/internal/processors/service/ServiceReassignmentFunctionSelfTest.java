@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -103,9 +104,11 @@ public class ServiceReassignmentFunctionSelfTest {
 
         GridEventStorageManager mockEvt = mock(GridEventStorageManager.class);
         GridIoManager mockIo = mock(GridIoManager.class);
+        GridSystemViewManager sysViewMgr = mock(GridSystemViewManager.class);
 
         when(spyCtx.event()).thenReturn(mockEvt);
         when(spyCtx.io()).thenReturn(mockIo);
+        when(spyCtx.systemView()).thenReturn(sysViewMgr);
 
         GridDiscoveryManager mockDisco = mock(GridDiscoveryManager.class);
 

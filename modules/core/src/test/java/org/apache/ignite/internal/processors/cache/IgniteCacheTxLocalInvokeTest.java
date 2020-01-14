@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 public class IgniteCacheTxLocalInvokeTest extends IgniteCacheInvokeAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
 
         super.beforeTestsStarted();
     }

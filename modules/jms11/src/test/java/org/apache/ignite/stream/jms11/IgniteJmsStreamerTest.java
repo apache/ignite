@@ -58,8 +58,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -68,7 +66,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  *
  * @author Raul Kripalani
  */
-@RunWith(JUnit4.class)
 public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
     /** */
     private static final int CACHE_ENTRY_COUNT = 100;

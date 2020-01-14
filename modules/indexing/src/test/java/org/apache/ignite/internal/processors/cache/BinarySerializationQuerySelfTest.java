@@ -57,13 +57,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for query with BinaryMarshaller and different serialization modes.
  */
-@RunWith(JUnit4.class)
 public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
     /** Ignite instance. */
     private Ignite ignite;
@@ -409,12 +406,12 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream s) throws IOException{
             s.writeInt(val);
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
             val = s.readInt();
         }

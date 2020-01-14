@@ -32,13 +32,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 100_000;
@@ -77,7 +74,9 @@ public class CacheQueryEvictDataLostTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryDataLost() throws Exception {
-        final long stopTime = U.currentTimeMillis() + 30_000;
+        int testDuration = GridTestUtils.SF.applyLB(30_000, 10_000);
+
+        final long stopTime = U.currentTimeMillis() + testDuration;
 
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
             void putGet(IgniteCache<Object, Object> cache) {

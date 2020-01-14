@@ -47,8 +47,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -64,7 +62,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
@@ -300,7 +297,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                 }
             }, 10, "tx-thread");
 
-            long stopTime = System.currentTimeMillis() + SF.applyLB(3 * 60_000, 20_000);
+            long stopTime = System.currentTimeMillis() + SF.applyLB((int)TEST_TIME, 20_000);
 
             long topVer = ignite0.cluster().topologyVersion();
 

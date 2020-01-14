@@ -240,7 +240,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param typeId Type ID.
-     * @param newMeta New meta data.
+     * @param newMeta New metadata.
      * @param failIfUnregistered Fail if unregistered.
      * @throws IgniteException In case of error.
      */
@@ -253,7 +253,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * of BinaryType.
      *
      * @param typeId Type ID.
-     * @param newMeta New meta data.
+     * @param newMeta New metadata.
      * @throws IgniteException In case of error.
      */
     public void addMetaLocally(int typeId, final BinaryType newMeta) throws IgniteException;
@@ -273,7 +273,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param typeId Type ID.
-     * @return Meta data.
+     * @return Metadata.
      * @throws IgniteException In case of error.
      */
     @Nullable public BinaryType metadata(int typeId) throws IgniteException;
@@ -282,14 +282,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @param typeId Type ID.
      * @param schemaId Schema ID.
-     * @return Meta data.
+     * @return Metadata.
      * @throws IgniteException In case of error.
      */
     @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.
-     * @return Meta data.
+     * @return Metadata.
      * @throws IgniteException In case of error.
      */
     public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;

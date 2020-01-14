@@ -21,13 +21,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Makes a long run to ensure stability and absence of memory leaks.
  */
-@RunWith(JUnit4.class)
 public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     /** Test duration. */
     private static final long TEST_RUN_TIME = 8 * 60 * 60 * 1000;

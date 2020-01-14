@@ -51,8 +51,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -64,7 +62,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
  */
 @SuppressWarnings("ErrorNotRethrown")
-@RunWith(JUnit4.class)
 public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonAbstractTest {
     /** Delay flag. */
     private static volatile boolean delay;
@@ -94,7 +91,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -170,7 +167,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
             final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-            final int range = 100_000;
+            final int range = 10_000;
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
@@ -266,7 +263,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Random rnd = new Random();
 
             // Restart random nodes.
-            for (int r = 0; r < 20; r++) {
+            for (int r = 0; r < 10; r++) {
                 int idx0 = rnd.nextInt(gridCnt - 1) + 1;
 
                 stopGrid(idx0);
