@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -91,6 +92,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Page list cache limit. */
+    private final AtomicLong pageListCacheLimit;
 
     /**
      *
@@ -344,7 +348,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long metaPageId,
         boolean initNew,
         PageLockListener lockLsnr,
-        GridKernalContext ctx
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit
     ) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx);
 
@@ -373,7 +378,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.memMetrics = memMetrics;
 
-        emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
+        this.pageListCacheLimit = pageListCacheLimit;
 
         init(metaPageId, initNew);
     }
@@ -613,7 +618,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override protected PagesCache getBucketCache(int bucket, boolean create) {
         PagesCache pagesCache = bucketCaches.get(bucket);
 
-        if (pagesCache == null && create && !bucketCaches.compareAndSet(bucket, null, pagesCache = new PagesCache()))
+        if (pagesCache == null && create &&
+            !bucketCaches.compareAndSet(bucket, null, pagesCache = new PagesCache(pageListCacheLimit)))
             pagesCache = bucketCaches.get(bucket);
 
         return pagesCache;

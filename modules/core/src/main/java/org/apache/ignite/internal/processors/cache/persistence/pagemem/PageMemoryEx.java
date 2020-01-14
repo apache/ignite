@@ -179,4 +179,9 @@ public interface PageMemoryEx extends PageMemory {
      * Calculates throttling condition.
      */
     public boolean shouldThrottle();
+
+    /**
+     * Total pages can be placed to memory.
+     */
+    public long totalPages();
 }
