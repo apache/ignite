@@ -140,7 +140,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -3291,7 +3290,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long localHistCntr = localReserved.get(p);
 
                 if (localHistCntr != null) {
-                    if (minCntr != 0 && partSizes.get(p) > WAL_REBALANCE_THRESHOLD && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
@@ -3313,7 +3312,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null) {
-                    if (minCntr != 0 && partSizes.get(p) > WAL_REBALANCE_THRESHOLD && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);
