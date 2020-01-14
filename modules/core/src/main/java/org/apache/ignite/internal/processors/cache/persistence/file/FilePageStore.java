@@ -539,8 +539,6 @@ public class FilePageStore implements PageStore {
 
             try {
                 if (!inited) {
-//                    U.dumpStack("Init page store: " + getFileAbsolutePath());
-
                     FileIO fileIO = null;
 
                     StorageException err = null;
@@ -783,10 +781,6 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-//            // todo why checkpointer syncs read-only partition?
-//            if (!inited)
-//                return;
-
             init();
 
             FileIO fileIO = this.fileIO;

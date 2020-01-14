@@ -250,7 +250,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     }
 
                     if (fut0.isCancelled()) {
-                        log.info("File rebalance canceled [topVer=" + topVer + "]");
+                        if (log.isInfoEnabled())
+                            log.info("File rebalance canceled [topVer=" + topVer + "]");
 
                         return;
                     }

@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionAtomicUpdateCounterImpl;
@@ -1012,8 +1013,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
 
-            // todo For file rebalancing we starting searching from reserved pointer.
-            //      For historical rebalancing it may be more effective to search pointer in checkpoint hostory
             FileWALPointer startPtr = database.reservedWALPointer(grp.groupId(), p, initCntr);
 
             if (startPtr == null)
@@ -1100,7 +1099,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            AbstractFreeList freeList = ((GridCacheDataStore)(store)).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1122,7 +1121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            AbstractFreeList freeList = ((GridCacheDataStore)(store)).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1342,7 +1341,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
                 assert part != null && part.state() == OWNING && part.reservations() > 0
-                    : "Partition should in OWNING state and has at least 1 reservation, state=" + part.state();
+                    : "Partition should in OWNING state and has at least 1 reservation [state=" + part.state() + "]";
 
                 part.release();
             }
@@ -1423,7 +1422,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
 
                 assert entryIt != null || doneParts.size() == partMap.size() :
-                    "Reached end of WAL but not all partitions are done ; done=" + doneParts + ", required=" + partMap;
+                    "Reached end of WAL but not all partitions are done [done=" + doneParts + ", all=" + partMap + "]";
             }
         }
     }
@@ -1614,11 +1613,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private final boolean exists;
 
-        /** */
+        /** Lock to protect the initialization phase. */
         private final Lock initLock = new ReentrantLock();
 
         /** Currently used data storage state. */
         private final AtomicBoolean readOnlyMode = new AtomicBoolean();
+
+        /** Update counter for read-only mode. */
+        private volatile PartitionUpdateCounter readModeCntr;
 
         /**
          * @param partId Partition.
@@ -2503,10 +2505,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public int cleanup(GridCacheContext cctx,
             @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
-            // todo can be removed?
-            if (readOnly())
-                return 0;
-
             CacheDataStore delegate = init0(false);
 
             return delegate.cleanup(cctx, cleanupRows);
@@ -2555,10 +2553,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            // todo remove this
-            if (readOnly())
-                return null;
-
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
@@ -2702,9 +2696,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
-            // todo remove this
-            if (readOnlyMode.get())
-                return;
+            assert !readOnlyMode.get() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
             CacheDataStore delegate0 = init0(true);
 
@@ -2926,8 +2918,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             return readOnlyMode.get();
         }
 
-        private volatile PartitionUpdateCounter readModeCntr;
-
+        /**
+         * Initialize partition update counter for read-only mode.
+         */
         private void initReadModeCounter() {
             PartitionUpdateCounter readCntr0;
 

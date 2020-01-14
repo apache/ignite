@@ -787,7 +787,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
             }
             else if (relPtr == OUTDATED_REL_PTR) {
-                assert PageIdUtils.pageIndex(pageId) == 0 : fullId + " p=" + PageIdUtils.partId(pageId);
+                assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
 
                 relPtr = refreshOutdatedPage(seg, grpId, pageId, false);
 

@@ -104,13 +104,8 @@ public class IdleVerifyUtility {
         if (!(db instanceof GridCacheDatabaseSharedManager))
             return false;
 
-        GridCacheDatabaseSharedManager.Checkpointer cp = ((GridCacheDatabaseSharedManager)db).getCheckpointer();
-
-        if (cp == null)
-            return false;
-
         GridCacheDatabaseSharedManager.CheckpointProgress progress =
-            cp.currentProgress();
+            ((GridCacheDatabaseSharedManager)db).getCheckpointer().currentProgress();
 
         if (progress == null)
             return false;

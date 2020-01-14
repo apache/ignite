@@ -4401,8 +4401,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         /** */
                         private final long endTime = U.currentTimeMillis() + connTimeout;
 
+                        /** */
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
+
                         @Override public IgniteUuid id() {
-                            return IgniteUuid.randomUuid();
+                            return id;
                         }
 
                         @Override public long endTime() {

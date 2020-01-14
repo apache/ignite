@@ -429,7 +429,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
-    public void testIndexedCacheStartStopLastNodeWithLoad() throws Exception {
+    public void test3nodesRestartLastNodeWithLoad() throws Exception {
         List<ClusterNode> blt = new ArrayList<>();
 
         boolean checkRemoves = false;
