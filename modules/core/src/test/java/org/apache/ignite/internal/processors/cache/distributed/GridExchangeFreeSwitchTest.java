@@ -22,7 +22,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -140,6 +138,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean checkTopology() {
         return false;
     }
@@ -147,9 +146,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      * @param nodes Nodes.
      * @param cnt Count.
-     * @param pmeExpected Pme expected.
      */
-    private void setSpiBlockMessages(int nodes, AtomicLong cnt, @Nullable AtomicBoolean pmeExpected) {
+    private void initCountPmeMessages(int nodes, AtomicLong cnt) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -160,11 +158,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cnt.incrementAndGet();
 
-                    if (pmeExpected != null && pmeExpected.get())
                         return false;
-
-                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
                 }
             });
         }
@@ -176,7 +170,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster();
+        testNodeLeftOnFullyRebalancedCluster(10);
     }
 
     /**
@@ -188,7 +182,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            testNodeLeftOnFullyRebalancedCluster();
+            testNodeLeftOnFullyRebalancedCluster(10);
         }
         finally {
             persistence = false;
@@ -201,34 +195,51 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes() throws Exception {
-        new Thread(() -> {
-            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+        persistence = true;
 
-            try {
-                startGrid(10);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-            finally {
-                System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-            }
-        }).start();
+        int nodes = 10;
 
-        testBaselineNodeLeftOnFullyRebalancedCluster();
+        try {
+            new Thread(() -> {
+                System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+                try {
+                    startGrid(nodes);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+                finally {
+                    System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+                }
+            }).start();
+
+            testNodeLeftOnFullyRebalancedCluster(nodes, nodes + 1);
+        }
+        finally {
+            persistence = false;
+        }
     }
 
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
+     *
+     * @param startGrids Number of nodes needed to run.
      */
-    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        int nodes = 10;
+    private void testNodeLeftOnFullyRebalancedCluster(int startGrids) throws Exception {
+        testNodeLeftOnFullyRebalancedCluster(startGrids, startGrids);
+    }
 
-        Ignite ignite = startGridsMultiThreaded(nodes, true);
+    /**
+     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
+     *
+     * @param startGrids Number of nodes needed to run.
+     * @param sizeTopology expected topology size.
+     */
+    private void testNodeLeftOnFullyRebalancedCluster(int startGrids, int sizeTopology) throws Exception {
+        Ignite ignite = startGridsMultiThreaded(startGrids, true);
 
-        nodes = Math.max(G.allGrids().size(), nodes); // If more nodes are started.
-
-        checkTopology(nodes);
+        checkTopology(sizeTopology);
 
         AtomicLong cnt = new AtomicLong();
 
@@ -236,9 +247,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicInteger cntNotSupported = new AtomicInteger();
 
-        AtomicBoolean pmeExpected = new AtomicBoolean(!persistence || !allNodesSupports(clusterNodes, PME_FREE_SWITCH));
+        boolean pmeExpected = !persistence || !allNodesSupports(clusterNodes, PME_FREE_SWITCH);
 
-        if (persistence && pmeExpected.get()) {
+        if (persistence && pmeExpected) {
             for (ClusterNode cn : clusterNodes) {
                 if (nodeSupports(cn, PME_FREE_SWITCH))
                     continue;
@@ -247,23 +258,23 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        setSpiBlockMessages(nodes, cnt, pmeExpected);
+        initCountPmeMessages(sizeTopology, cnt);
 
         Random r = new Random();
 
-        while (nodes > 1) {
-            Ignite i = G.allGrids().get(r.nextInt(nodes--));
+        while (sizeTopology > 1) {
+            Ignite i = G.allGrids().get(r.nextInt(sizeTopology--));
 
-            if (persistence && pmeExpected.get() &&
+            if (persistence && pmeExpected &&
                 !nodeSupports(i.cluster().localNode(), PME_FREE_SWITCH) &&
                 (cntNotSupported.decrementAndGet() == 0))
-                pmeExpected.set(false);
+                pmeExpected = false;
 
             i.close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
+            assertEquals(pmeExpected ? (sizeTopology - 1) : 0, cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
@@ -328,7 +339,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             AtomicLong cnt = new AtomicLong();
 
-            setSpiBlockMessages(nodes, cnt, null);
+            initCountPmeMessages(nodes, cnt);
 
             Random r = new Random();
 

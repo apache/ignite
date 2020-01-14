@@ -66,8 +66,10 @@ public class ExchangeContext {
         boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
 
         if (!allNodesSupportsPmeFreeSwitch)
-            fut.logger().warning("Current topology does not support PME-free switch because " +
-                "not all nodes support PME_FREE_SWITCH.");
+            fut.logger().warning("Not all nodes support PME-free switch. " +
+                "Partition Map Exchange may happen more often, " +
+                "please check versions of Apache Ignite and JVM-options. " +
+                "It is recommended to use the same version and JVM-options on all nodes.");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&
