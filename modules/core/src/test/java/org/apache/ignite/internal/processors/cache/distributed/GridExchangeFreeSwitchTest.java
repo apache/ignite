@@ -227,11 +227,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGridsMultiThreaded(nodes, true);
 
-        if (persistence) {
-            int size = ignite.cluster().nodes().size();
-            ignite.cluster().baselineAutoAdjustEnabled(false);
-            ignite.cluster().setBaselineTopology(size);
-        }
+        nodes = Math.max(G.allGrids().size(), nodes); //if more nodes are started
+
+        checkTopology(nodes);
 
         AtomicLong cnt = new AtomicLong();
 
@@ -241,7 +239,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         AtomicBoolean pmeExpected = new AtomicBoolean(!persistence || !allNodesSupports(clusterNodes, PME_FREE_SWITCH));
 
-        if (pmeExpected.get()) {
+        if (persistence && pmeExpected.get()) {
             for (ClusterNode cn : clusterNodes) {
                 if (nodeSupports(cn, PME_FREE_SWITCH))
                     continue;
@@ -250,8 +248,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        nodes = G.allGrids().size();
-
         setSpiBlockMessages(nodes, cnt, pmeExpected);
 
         Random r = new Random();
@@ -259,7 +255,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         while (nodes > 1) {
             Ignite i = G.allGrids().get(r.nextInt(nodes--));
 
-            if (pmeExpected.get() &&
+            if (persistence && pmeExpected.get() &&
                 !nodeSupports(i.cluster().localNode(), PME_FREE_SWITCH) &&
                 (cntNotSupported.decrementAndGet() == 0))
                 pmeExpected.set(false);
