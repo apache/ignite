@@ -264,8 +264,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(G.allGrids().size(), nodes);
-
             assertEquals(pmeExpected.get() ? (nodes - 1) : 0, cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
