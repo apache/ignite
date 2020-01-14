@@ -58,7 +58,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     /** */
     private static final String CALL_INTERNAL_CLASS_METHOD_CLS_NAME = "TestInternalUtilsCallable";
 
-    /** Callable that calls an static class method from internal Ignite package. */
+    /** Callable that calls a static class method from internal Ignite package. */
     private static final String CALL_INTERNAL_CLASS_METHOD_SRC =
         "import org.apache.ignite.internal.IgnitionEx;\n" +
             "import org.apache.ignite.lang.IgniteCallable;\n" +
