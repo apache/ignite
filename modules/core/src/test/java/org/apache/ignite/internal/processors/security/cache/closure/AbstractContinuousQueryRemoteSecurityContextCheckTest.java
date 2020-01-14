@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.cache.closure;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -40,6 +41,9 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** Server node to change cache state. */
     private static final String SRV = "srv";
+
+    /** Cache index. */
+    private static final AtomicInteger CAHCE_INDEX = new AtomicInteger();
 
     /** Open continuous query operation. */
     protected static final String OPERATION_OPEN_CQ = "open_cq";
@@ -104,7 +108,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>()
-                .setName(CACHE_NAME + ignite.name() + q.hashCode())
+                .setName(CACHE_NAME + CAHCE_INDEX.incrementAndGet())
                 .setCacheMode(CacheMode.PARTITIONED)
         );
 
