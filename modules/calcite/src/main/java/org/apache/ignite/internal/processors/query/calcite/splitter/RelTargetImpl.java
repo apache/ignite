@@ -26,18 +26,28 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public class RelTargetImpl implements RelTarget, Serializable {
     /** */
+    private final long fragmentId;
+
+    /** */
     private final NodesMapping mapping;
 
     /** */
     private final IgniteDistribution distribution;
 
     /**
+     * @param fragmentId Target fragment ID.
      * @param mapping Target mapping.
      * @param distribution Target distribution.
      */
-    public RelTargetImpl(NodesMapping mapping, IgniteDistribution distribution) {
+    public RelTargetImpl(long fragmentId, NodesMapping mapping, IgniteDistribution distribution) {
+        this.fragmentId = fragmentId;
         this.mapping = mapping;
         this.distribution = distribution;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
     /** {@inheritDoc} */

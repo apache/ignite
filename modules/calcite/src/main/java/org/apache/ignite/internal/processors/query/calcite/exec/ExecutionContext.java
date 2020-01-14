@@ -24,7 +24,6 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 
 /**
@@ -130,6 +129,13 @@ public class ExecutionContext implements DataContext {
      */
     public ExchangeService exchange() {
         return ctx.exchangeService();
+    }
+
+    /**
+     * @return Mailbox registry.
+     */
+    public MailboxRegistry mailboxRegistry() {
+        return ctx.mailboxRegistry();
     }
 
     /** {@inheritDoc} */

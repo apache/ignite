@@ -33,8 +33,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class QueryBatchMessage implements MarshalableMessage {
+public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
     private UUID queryId;
+
+    private long fragmentId;
 
     private long exchangeId;
 
@@ -50,15 +52,22 @@ public class QueryBatchMessage implements MarshalableMessage {
 
     }
 
-    public QueryBatchMessage(UUID queryId, long exchangeId, int batchId, List<?> rows) {
+    public QueryBatchMessage(UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
         this.queryId = queryId;
+        this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
         this.rows = Commons.cast(rows);
     }
 
-    public UUID queryId() {
+    /** {@inheritDoc} */
+    @Override public UUID queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
     public long exchangeId() {
@@ -73,6 +82,7 @@ public class QueryBatchMessage implements MarshalableMessage {
         return rows;
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
         if (mRows != null || rows == null)
             return;
@@ -89,6 +99,7 @@ public class QueryBatchMessage implements MarshalableMessage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
         if (rows != null || mRows == null)
             return;
@@ -105,6 +116,7 @@ public class QueryBatchMessage implements MarshalableMessage {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -129,12 +141,18 @@ public class QueryBatchMessage implements MarshalableMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                if (!writer.writeLong("fragmentId", fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
+                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -145,6 +163,7 @@ public class QueryBatchMessage implements MarshalableMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -169,7 +188,7 @@ public class QueryBatchMessage implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+                fragmentId = reader.readLong("fragmentId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -177,6 +196,14 @@ public class QueryBatchMessage implements MarshalableMessage {
                 reader.incrementState();
 
             case 3:
+                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -189,14 +216,17 @@ public class QueryBatchMessage implements MarshalableMessage {
         return reader.afterMessageRead(QueryBatchMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return CalciteMessageFactory.QUERY_BATCH_MESSAGE;
+        return MessageType.QUERY_BATCH_MESSAGE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op
     }

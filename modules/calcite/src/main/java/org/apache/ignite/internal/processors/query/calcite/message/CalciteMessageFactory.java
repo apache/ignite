@@ -21,28 +21,19 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.GENERIC_ROW_MESSAGE;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_BATCH_MESSAGE;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_CANCEL_REQUEST;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_INBOX_CANCEL_MESSAGE;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_START_REQUEST;
+import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_START_RESPONSE;
+
 /**
  * Message factory.
  */
 public class CalciteMessageFactory implements MessageFactory {
-    /** */
-    static final short QUERY_START_REQUEST = 300;
-
-    /** */
-    static final short QUERY_START_RESPONSE = 301;
-
-    /** */
-    static final short QUERY_CANCEL_REQUEST = 302;
-
-    /** */
-    static final short QUERY_BATCH_MESSAGE = 303;
-
-    /** */
-    static final short QUERY_ACKNOWLEDGE_MESSAGE = 304;
-
-    /** */
-    static final short QUERY_INBOX_CANCEL_MESSAGE = 305;
-
+    /** {@inheritDoc} */
     @Override public @Nullable Message create(short type) {
         switch (type) {
             case QUERY_START_REQUEST:
@@ -54,19 +45,26 @@ public class CalciteMessageFactory implements MessageFactory {
             case QUERY_BATCH_MESSAGE:
                 return new QueryBatchMessage();
             case QUERY_ACKNOWLEDGE_MESSAGE:
-                return new QueryAcknowledgeMessage();
+                return new QueryBatchAcknowledgeMessage();
             case QUERY_INBOX_CANCEL_MESSAGE:
-                return new QueryInboxCancelMessage();
+                return new InboxCancelMessage();
+            case GENERIC_ROW_MESSAGE:
+                return new GenericRowMessage();
+            default:
+                return null;
         }
-
-        return null;
     }
 
+    /** */
     public static Message asMessage(Object row) {
-        return null;
+        return new GenericRowMessage(row);
     }
 
+    /** */
     public static Object asRow(Message mRow) {
-        return null;
+        if (mRow instanceof GenericRowMessage)
+            return ((GenericRowMessage) mRow).row();
+
+        throw new AssertionError("Unexpected message type. [message=" + mRow + "]");
     }
 }

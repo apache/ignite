@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exchange;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayDeque;
@@ -26,14 +26,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import org.apache.ignite.internal.processors.query.calcite.exec.AbstractNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
-import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
-import org.apache.ignite.internal.processors.query.calcite.exec.Sink;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
@@ -88,7 +80,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         ExecutionContext ectx = new ExecutionContext(ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
 
         input = new TestNode(ectx);
-        outbox = new Outbox<>(ectx, ectx.fragmentId(), input, func);
+        outbox = new Outbox<>(ectx, 0, ectx.fragmentId(), input, func);
     }
 
     /**
@@ -159,19 +151,31 @@ public class OutboxTest extends GridCommonAbstractTest {
         private List<?> lastBatch;
 
         /** {@inheritDoc} */
-        @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
+        @Override public void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
             ids.add(batchId);
 
             lastBatch = rows;
         }
 
         /** {@inheritDoc} */
-        @Override public void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+        @Override public void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCancel(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+        @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+            throw new AssertionError();
+        }
+
+        @Override public void onCancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+            throw new AssertionError();
+        }
+
+        @Override public void onAcknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+            throw new AssertionError();
+        }
+
+        @Override public void onBatchReceived(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
             throw new AssertionError();
         }
     }
@@ -248,6 +252,14 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         @Override public void unregister(Outbox<?> outbox) {
             // No-op.
+        }
+
+        @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
+            throw new AssertionError();
+        }
+
+        @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
+            throw new AssertionError();
         }
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  *
@@ -41,14 +40,13 @@ public interface RelSource {
 
     /**
      * Binds a source to target and starts source data location calculation.
-     * After this method call the source know where to send data and the target knows where to expect data from.
+     * After this method call the source knows where to send data and the target knows where to expect data from.
      *
-     * @param mapping Target mapping.
-     * @param distribution Target distribution.
+     * @param target Target.
      * @param ctx Context.
      * @param mq Metadata query instance.
      */
-    default void init(NodesMapping mapping, IgniteDistribution distribution, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    default void bindToTarget(RelTarget target, IgniteCalciteContext ctx, RelMetadataQuery mq) {
         // No-op
     }
 }

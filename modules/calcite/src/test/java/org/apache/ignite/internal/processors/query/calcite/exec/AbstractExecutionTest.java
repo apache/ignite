@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -39,34 +38,30 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected BypassExchangeService exch;
 
     /** */
-    protected List<ExecutorService> executors;
+    protected Map<UUID, ExecutorService> executors;
 
     /** */
     protected volatile Throwable lastException;
 
     @Before
     public void setup() {
-        exch = new BypassExchangeService(log());
-        executors = new ArrayList<>();
+        executors = new ConcurrentHashMap<>();
+
+        exch = new BypassExchangeService(executors, log());
     }
 
     @After
-    public void tearDown() {
-        for (ExecutorService executor : executors) {
-            List<Runnable> runnables = executor.shutdownNow();
+    public void tearDown() throws Throwable {
+        for (ExecutorService executor : executors.values())
+            U.shutdownNow(getClass(), executor, log());
 
-            for (Runnable runnable : runnables) {
-                if (runnable instanceof Future)
-                    ((Future<?>) runnable).cancel(true);
-            }
-        }
+        if (lastException != null)
+            throw lastException;
     }
 
     /** */
     protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-
-        executors.add(exec);
+        ExecutorService exec = executors.computeIfAbsent(nodeId, id -> Executors.newSingleThreadExecutor());
 
         return new ExecutionContext(IgniteCalciteContext.builder()
             .localNodeId(nodeId)

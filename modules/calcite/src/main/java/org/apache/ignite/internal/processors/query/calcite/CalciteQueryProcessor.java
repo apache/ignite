@@ -54,10 +54,9 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
@@ -70,6 +69,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
@@ -150,10 +150,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final MappingService mappingService;
 
     /** */
-    private final Map<FragmentKey, Outbox<?>> locals;
+    private final Map<QueryKey, Outbox<?>> locals;
 
     /** */
-    private final Map<FragmentKey, Inbox<?>> remotes;
+    private final Map<QueryKey, Inbox<?>> remotes;
 
     /** */
     private final Map<UUID, QueryInfo> running;
@@ -322,32 +322,44 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** {@inheritDoc} */
     @Override public Inbox<?> register(Inbox<?> inbox) {
-        Inbox<?> old = remotes.putIfAbsent(new FragmentKey(inbox.queryId(), inbox.exchangeId()), inbox);
+        Inbox<?> old = remotes.putIfAbsent(new QueryKey(inbox.queryId(), inbox.exchangeId()), inbox);
 
         return old != null ? old : inbox;
     }
 
     /** {@inheritDoc} */
     @Override public void unregister(Inbox<?> inbox) {
-        remotes.remove(new FragmentKey(inbox.queryId(), inbox.exchangeId()));
+        remotes.remove(new QueryKey(inbox.queryId(), inbox.exchangeId()));
     }
 
     /** {@inheritDoc} */
     @Override public void register(Outbox<?> outbox) {
-        Outbox<?> res = locals.put(new FragmentKey(outbox.queryId(), outbox.exchangeId()), outbox);
+        Outbox<?> res = locals.put(new QueryKey(outbox.queryId(), outbox.exchangeId()), outbox);
 
         assert res == null : res;
     }
 
     /** {@inheritDoc} */
     @Override public void unregister(Outbox<?> outbox) {
-        locals.remove(new FragmentKey(outbox.queryId(), outbox.exchangeId()));
+        locals.remove(new QueryKey(outbox.queryId(), outbox.exchangeId()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
+        return locals.get(new QueryKey(queryId, exchangeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
+        return remotes.get(new QueryKey(queryId, exchangeId));
     }
 
     public void executeFragment(UUID nodeId, UUID queryId, long fragmentId, String schemaName, AffinityTopologyVersion topVer,
         RelGraph plan, int[] parts, Object[] params) {
 
         IgniteCalciteContext ctx = createContext(schemaName, nodeId, topVer);
+
+        Throwable err = null;
 
         try (IgnitePlanner planner = ctx.planner()) {
             RelNode root = planner.convert(plan);
@@ -370,6 +382,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             assert node instanceof Outbox : node;
 
             node.request();
+        }
+        catch (Throwable ex) {
+            err = ex;
+
+            throw ex;
+        }
+        finally {
+            messageService().send(nodeId, new QueryStartResponse(queryId, fragmentId, err));
         }
     }
 
@@ -460,14 +480,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      * @param topVer Topology version.
      * @return Query execution context.
      */
-    private IgniteCalciteContext createContext(@Nullable String schemaName, UUID originatingNodeId, AffinityTopologyVersion topVer) {
+    private IgniteCalciteContext createContext(String schemaName, UUID originatingNodeId, AffinityTopologyVersion topVer) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE
             //, RelCollationTraitDef.INSTANCE TODO
         };
-
-        if (schemaName == null)
-            schemaName = QueryUtils.DFLT_SCHEMA;
 
         return IgniteCalciteContext.builder()
             .localNodeId(ctx.localNodeId())
@@ -504,15 +521,12 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             //, RelCollationTraitDef.INSTANCE TODO
         };
 
-        if (schemaName == null)
-            schemaName = QueryUtils.DFLT_SCHEMA;
-
         return IgniteCalciteContext.builder()
             .localNodeId(ctx.localNodeId())
             .kernalContext(ctx)
             .parentContext(Contexts.chain(Commons.convert(qryCtx), config.getContext()))
             .frameworkConfig(Frameworks.newConfigBuilder(config)
-                .defaultSchema(schemaHolder.schema().getSubSchema(schemaName))
+                .defaultSchema(schemaName != null ? schemaHolder.schema().getSubSchema(schemaName) : schemaHolder.schema())
                 .traitDefs(traitDefs)
                 .build())
             .queryProcessor(this)
@@ -554,21 +568,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private static class FragmentKey {
+    private static class QueryKey {
         private final UUID id;
         private final long cntr;
 
-        private FragmentKey(UUID id, long cntr) {
+        private QueryKey(UUID id, long cntr) {
             this.id = id;
             this.cntr = cntr;
-        }
-
-        public UUID id() {
-            return id;
-        }
-
-        public long counter() {
-            return cntr;
         }
 
         @Override public boolean equals(Object o) {
@@ -577,7 +583,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            FragmentKey that = (FragmentKey) o;
+            QueryKey that = (QueryKey) o;
 
             if (cntr != that.cntr)
                 return false;
@@ -606,7 +612,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         private final Set<UUID> remotes;
 
         /** node to fragment */
-        private final Set<FragmentKey> waiting;
+        private final Set<QueryKey> waiting;
 
         /** */
         private QueryState state;
@@ -649,7 +655,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         /** */
         private void addFragment(UUID nodeId, long fragmentId) {
             remotes.add(nodeId);
-            waiting.add(new FragmentKey(nodeId, fragmentId));
+            waiting.add(new QueryKey(nodeId, fragmentId));
         }
 
         /** */
@@ -705,10 +711,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         /** */
         private void onNodeLeft(UUID nodeId) {
-            List<FragmentKey> fragments = null;
+            List<QueryKey> fragments = null;
 
             synchronized (this) {
-                for (FragmentKey fragment : waiting) {
+                for (QueryKey fragment : waiting) {
                     if (!fragment.id.equals(nodeId))
                         continue;
 
@@ -722,18 +728,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             if (!F.isEmpty(fragments)) {
                 ClusterTopologyCheckedException ex = new ClusterTopologyCheckedException("Failed to start query, node left. nodeId=" + nodeId);
 
-                for (FragmentKey fragment : fragments)
+                for (QueryKey fragment : fragments)
                     onResponse(fragment, ex);
             }
         }
 
         /** */
         private void onResponse(UUID nodeId, long fragmentId, Throwable error) {
-            onResponse(new FragmentKey(nodeId, fragmentId), error);
+            onResponse(new QueryKey(nodeId, fragmentId), error);
         }
 
         /** */
-        private void onResponse(FragmentKey fragment, Throwable error) {
+        private void onResponse(QueryKey fragment, Throwable error) {
             boolean cancel;
 
             synchronized (this) {

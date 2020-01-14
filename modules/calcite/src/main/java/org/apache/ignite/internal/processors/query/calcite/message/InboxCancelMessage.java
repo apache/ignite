@@ -18,31 +18,35 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class QueryAcknowledgeMessage implements Message {
-
+public class InboxCancelMessage implements ExecutionContextAware {
     private UUID queryId;
+    private long fragmentId;
     private long exchangeId;
     private int batchId;
 
-    public QueryAcknowledgeMessage() {
+    public InboxCancelMessage(){}
 
-    }
-
-    public QueryAcknowledgeMessage(UUID queryId, long exchangeId, int batchId) {
+    public InboxCancelMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
         this.queryId = queryId;
+        this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
     }
 
-    public UUID queryId() {
+    /** {@inheritDoc} */
+    @Override public UUID queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
     public long exchangeId() {
@@ -53,6 +57,7 @@ public class QueryAcknowledgeMessage implements Message {
         return batchId;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -77,6 +82,12 @@ public class QueryAcknowledgeMessage implements Message {
                 writer.incrementState();
 
             case 2:
+                if (!writer.writeLong("fragmentId", fragmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -87,6 +98,7 @@ public class QueryAcknowledgeMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -111,6 +123,14 @@ public class QueryAcknowledgeMessage implements Message {
                 reader.incrementState();
 
             case 2:
+                fragmentId = reader.readLong("fragmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -120,17 +140,20 @@ public class QueryAcknowledgeMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(QueryAcknowledgeMessage.class);
+        return reader.afterMessageRead(InboxCancelMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return CalciteMessageFactory.QUERY_ACKNOWLEDGE_MESSAGE;
+        return MessageType.QUERY_INBOX_CANCEL_MESSAGE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

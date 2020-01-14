@@ -17,29 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A part of exchange.
  */
 public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoCloseable {
     /** */
-    private final Map<UUID, Buffer> perNodeBuffers = new ConcurrentHashMap<>();
+    private final long exchangeId;
 
     /** */
-    private final long exchangeId;
+    private final long sourceFragmentId;
+
+    /** */
+    private final Map<UUID, Buffer> perNodeBuffers;
 
     /** */
     private Collection<UUID> sources;
@@ -53,14 +55,20 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     /** */
     private boolean end;
 
+    /** */
+    private volatile boolean initDone;
+
     /**
      * @param ctx Execution context.
      * @param exchangeId Exchange ID.
      */
-    public Inbox(ExecutionContext ctx, long exchangeId) {
+    public Inbox(ExecutionContext ctx, long sourceFragmentId, long exchangeId) {
         super(ctx);
 
+        this.sourceFragmentId = sourceFragmentId;
         this.exchangeId = exchangeId;
+
+        perNodeBuffers = new HashMap<>();
     }
 
     /**
@@ -89,22 +97,26 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         this.sources = sources;
 
         context(ctx);
+
+        initDone = true;
     }
 
     /** {@inheritDoc} */
     @Override public void request() {
+        checkThread();
         pushInternal();
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        checkThread();
         context().setCancelled();
         close();
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        context().parent().mailboxRegistry().unregister(this);
+        context().mailboxRegistry().unregister(this);
     }
 
     /**
@@ -114,10 +126,11 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
      * @param batchId Batch ID.
      * @param rows Rows.
      */
-    public void push(UUID source, int batchId, List<?> rows) {
-        perNodeBuffers.computeIfAbsent(source, this::createBuffer).pushBatch(batchId, rows);
+    public void onBatchReceived(UUID source, int batchId, List<?> rows) {
+        checkThread();
 
-        context().execute(this::pushInternal);
+        if (perNodeBuffers.computeIfAbsent(source, this::createBuffer).add(batchId, rows))
+            pushInternal();
     }
 
     /** {@inheritDoc} */
@@ -127,38 +140,39 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void pushInternal() {
+        checkThread();
+
         if (context().cancelled())
             close();
-        else if (!end) {
-            Sink<T> target = target();
-
-            if (prepareBuffers()) {
-                if (comparator != null)
-                    pushOrdered(target);
-                else
-                    pushUnordered(target);
-            }
+        else if (!end && prepareBuffers()) {
+            if (comparator != null)
+                pushOrdered();
+            else
+                pushUnordered();
         }
     }
 
     /** */
     private boolean prepareBuffers() {
-        if (sources == null)
-            return false; // synchronized by context() call
+        if (!initDone)
+            return false;
 
-        if (buffers == null) {
-            // awaits till all sources sent a first bunch of batches
-            if (perNodeBuffers.size() != sources.size())
-                return false;
+        assert sources != null;
 
-            buffers = new ArrayList<>(perNodeBuffers.values());
-        }
+        if (buffers != null)
+            return true;
+
+        // awaits till all sources sent a first bunch of batches
+        if (perNodeBuffers.size() != sources.size())
+            return false;
+
+        buffers = new ArrayList<>(perNodeBuffers.values());
 
         return true;
     }
 
     /** */
-    private void pushOrdered(Sink<T> target) {
+    private void pushOrdered() {
         PriorityQueue<Pair<T, Buffer>> heap = new PriorityQueue<>(buffers.size(), Map.Entry.comparingByKey(comparator));
 
         ListIterator<Buffer> it = buffers.listIterator();
@@ -181,12 +195,14 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             }
         }
 
+        Sink<T> target = target();
+
         while (!heap.isEmpty()) {
             Pair<T, Buffer> pair = heap.poll();
 
             T row = pair.left; Buffer buffer = pair.right;
 
-            if (!target().push(row))
+            if (!target.push(row))
                 return;
 
             buffer.remove();
@@ -212,7 +228,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** */
-    private void pushUnordered(Sink<T> target) {
+    private void pushUnordered() {
         int size = buffers.size();
 
         if (size <= 0 && !end)
@@ -220,6 +236,8 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
         int idx = ThreadLocalRandom.current().nextInt(size);
         int noProgress = 0;
+
+        Sink<T> target = target();
 
         while (size > 0) {
             Buffer buffer = buffers.get(idx);
@@ -233,7 +251,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
                     continue;
                 case READY:
-                    if (!target().push((T)buffer.peek()))
+                    if (!target.push((T)buffer.peek()))
                         return;
 
                     buffer.remove();
@@ -258,12 +276,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) {
-        exchange().sendAcknowledgment(this, nodeId, queryId(), exchangeId, batchId);
-    }
-
-    /** */
-    private ExchangeService exchange() {
-        return context().exchange();
+        context().exchange().acknowledge(this, nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
     }
 
     /** */
@@ -272,7 +285,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** */
-    private static final class Batch {
+    private static final class Batch implements Comparable<Batch> {
         /** */
         private final int batchId;
 
@@ -286,6 +299,28 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private Batch(int batchId, List<?> rows) {
             this.batchId = batchId;
             this.rows = rows;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Batch batch = (Batch) o;
+
+            return batchId == batch.batchId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return batchId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull Inbox.Batch o) {
+            return Integer.compare(batchId, o.batchId);
         }
     }
 
@@ -309,7 +344,10 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         private final UUID nodeId;
 
         /** */
-        private final ArrayDeque<Batch> batches = new ArrayDeque<>(ExchangeService.BATCH_SIZE);
+        private int lastEnqueued = -1;
+
+        /** */
+        private final PriorityQueue<Batch> batches = new PriorityQueue<>(ExchangeService.PER_NODE_BATCH_COUNT);
 
         /** */
         private Batch curr = WAITING;
@@ -321,16 +359,24 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         }
 
         /** */
-        private synchronized void pushBatch(int id, List<?> rows) {
+        private boolean add(int id, List<?> rows) {
             batches.offer(new Batch(id, rows));
+
+            return curr == WAITING && batches.peek().batchId == lastEnqueued + 1;
         }
 
         /** */
-        private synchronized Batch pollBatch() {
-            if (batches.isEmpty())
+        private Batch pollBatch() {
+            if (batches.isEmpty() || batches.peek().batchId != lastEnqueued + 1)
                 return WAITING;
 
-            return batches.poll();
+            Batch batch = batches.poll();
+
+            assert batch != null && batch.batchId == lastEnqueued + 1;
+
+            lastEnqueued = batch.batchId;
+
+            return batch;
         }
 
         /** */

@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -38,7 +40,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.exchange.BypassExchangeService;
+import org.apache.ignite.internal.processors.query.calcite.exec.BypassExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
@@ -63,8 +65,10 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -96,6 +100,12 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private TestIgniteTable developer;
+
+    /** */
+    private Map<UUID, ExecutorService> executors;
+
+    /** */
+    private volatile Throwable lastException;
 
     /** */
     @Before
@@ -160,6 +170,17 @@ public class PlannerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++) {
             nodes.add(UUID.randomUUID());
         }
+
+        executors = new ConcurrentHashMap<>();
+    }
+
+    @After
+    public void tearDown() throws Throwable {
+        for (ExecutorService executor : executors.values())
+            U.shutdownNow(getClass(), executor, log());
+
+        if (lastException != null)
+            throw lastException;
     }
 
     /**
@@ -630,7 +651,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 Node<Object[]> exec = implementor.go(igniteRel(fragment.root()));
 
                 if (!fragment.local())
-                    exec.request();
+                    exec.context().execute(exec::request);
                 else
                     consumer = new ConsumerNode(exeCtx, exec);
             }
@@ -1237,7 +1258,8 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCalciteContext context(String query, Object[] params, RelTraitDef<?>[] traitDefs, MappingService ms) {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
+        ExecutorService exec = executors.computeIfAbsent(nodes.get(0), id -> Executors.newSingleThreadExecutor());
+
         return IgniteCalciteContext.builder()
             .localNodeId(nodes.get(0))
             .parentContext(FRAMEWORK_CONFIG.getContext())
@@ -1246,7 +1268,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .exchangeService(new BypassExchangeService(log()))
+            .exchangeService(new BypassExchangeService(executors, log()))
             .query(new Query(query, params))
             .topologyVersion(AffinityTopologyVersion.NONE)
             .mappingService(ms)
@@ -1257,6 +1279,8 @@ public class PlannerTest extends GridCommonAbstractTest {
     /** */
     private Void handle(Throwable ex) {
         log().error(ex.getMessage(), ex);
+
+        lastException = ex;
 
         return null;
     }
@@ -1271,7 +1295,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** */
         private TestIgniteTable(String tableName, String cacheName, RowType rowType, List<Object[]> data) {
-            super(tableName, cacheName, rowType, null);
+            super("PUBLIC", tableName, cacheName, rowType, null);
             this.data = data;
         }
 

@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPl
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
@@ -84,7 +83,7 @@ public class Fragment implements RelSource {
                 IgniteReceiver receiver = input.left;
                 RelSource source = input.right;
 
-                source.init(fragmentMapping(ctx, info, mq), receiver.distribution(), ctx, mq);
+                source.bindToTarget(new RelTargetImpl(id, fragmentMapping(ctx, info, mq), receiver.distribution()), ctx, mq);
             }
         }
     }
@@ -107,10 +106,10 @@ public class Fragment implements RelSource {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    @Override public void bindToTarget(RelTarget target, IgniteCalciteContext ctx, RelMetadataQuery mq) {
         assert !local();
 
-        ((IgniteSender) root).target(new RelTargetImpl(mapping, distribution));
+        ((IgniteSender) root).target(target);
 
         init(ctx, mq);
     }

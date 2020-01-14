@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Scan node.
  */
-public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]> {
+public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, AutoCloseable {
     /** */
     private final Iterable<Object[]> source;
 
@@ -44,34 +45,65 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** {@inheritDoc} */
     @Override public void request() {
+        try {
+            requestInternal();
+        }
+        catch (Throwable e) {
+            Commons.close(it);
+
+            throw e;
+        }
+    }
+
+    /** */
+    private void requestInternal() {
+        checkThread();
+
         if (context().cancelled()
             || row == EndMarker.INSTANCE
             || row != null && !target().push((Object[]) row))
             return;
 
-        row = null;
-
         if (it == null)
             it = source.iterator();
 
+        Thread thread = Thread.currentThread();
+
         while (it.hasNext()) {
-            if (context().cancelled()) {
-                it = null;
+            if (context().cancelled() || thread.isInterrupted()) {
                 row = null;
+
+                close();
 
                 return;
             }
 
             row = it.next();
 
+            // TODO load balancing - resubmit this::request() in case of long execution
+
             if (!target().push((Object[]) row))
                 return;
-
-            row = null;
         }
 
-        row = EndMarker.INSTANCE;
-        target().end();
+        try {
+            row = EndMarker.INSTANCE;
+
+            target().end();
+        }
+        finally {
+            close();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        Commons.close(it);
+
+        it = null;
+
+        if (row != EndMarker.INSTANCE)
+            row = null;
     }
 
     /** {@inheritDoc} */

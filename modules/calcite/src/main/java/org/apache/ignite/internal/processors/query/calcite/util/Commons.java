@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -185,12 +186,17 @@ public final class Commons {
     }
 
     public static <T extends GridComponent> T lookupComponent(GridKernalContext ctx, Class<T> componentType) {
-        for (GridComponent cmp : ctx) {
-            if (componentType.isInstance(cmp)) {
-                return componentType.cast(cmp);
-            }
-        }
+        return ctx.components().stream()
+            .filter(componentType::isInstance)
+            .map(componentType::cast)
+            .findFirst().orElse(null);
+    }
 
-        return null;
+    /**
+     * @param o Object to close.
+     */
+    public static void close(Object o) {
+        if (o instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable) o);
     }
 }

@@ -18,25 +18,45 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class QueryCancelRequest implements Message {
-    /** */
+public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     private UUID queryId;
+    private long fragmentId;
+    private long exchangeId;
+    private int batchId;
 
-    QueryCancelRequest(){}
+    public QueryBatchAcknowledgeMessage() {
 
-    public QueryCancelRequest(UUID queryId) {
-        this.queryId = queryId;
     }
 
-    public UUID queryId() {
+    public QueryBatchAcknowledgeMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
+        this.queryId = queryId;
+        this.fragmentId = fragmentId;
+        this.exchangeId = exchangeId;
+        this.batchId = batchId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
+    }
+
+    public long exchangeId() {
+        return exchangeId;
+    }
+
+    public int batchId() {
+        return batchId;
     }
 
     /** {@inheritDoc} */
@@ -52,6 +72,24 @@ public class QueryCancelRequest implements Message {
 
         switch (writer.state()) {
             case 0:
+                if (!writer.writeInt("batchId", batchId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("exchangeId", exchangeId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeLong("fragmentId", fragmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
                 if (!writer.writeUuid("queryId", queryId))
                     return false;
 
@@ -71,6 +109,30 @@ public class QueryCancelRequest implements Message {
 
         switch (reader.state()) {
             case 0:
+                batchId = reader.readInt("batchId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                exchangeId = reader.readLong("exchangeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                fragmentId = reader.readLong("fragmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
                 queryId = reader.readUuid("queryId");
 
                 if (!reader.isLastRead())
@@ -80,17 +142,17 @@ public class QueryCancelRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(QueryCancelRequest.class);
+        return reader.afterMessageRead(QueryBatchAcknowledgeMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return MessageType.QUERY_CANCEL_REQUEST;
+        return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */

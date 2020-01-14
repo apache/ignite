@@ -21,7 +21,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -56,17 +55,18 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     public Implementor(ExecutionContext ctx) {
         this.ctx = ctx;
 
-        factory = new ScalarFactory(new RexBuilder(ctx.getTypeFactory()));
+        factory = new ScalarFactory(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
+        long targetFragmentId = target.fragmentId();
         IgniteDistribution distribution = target.distribution();
         DestinationFunction function = distribution.function().toDestination(ctx.parent(), target.mapping(), distribution.getKeys());
-        MailboxRegistry registry = ctx.parent().mailboxRegistry();
+        MailboxRegistry registry = ctx.mailboxRegistry();
 
-        Outbox<Object[]> outbox = new Outbox<>(ctx, ctx.fragmentId(), visit(rel.getInput()), function);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), function);
 
         registry.register(outbox);
 
@@ -100,8 +100,8 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         RelSource source = rel.source();
-        MailboxRegistry registry = ctx.parent().mailboxRegistry();
-        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId()));
+        MailboxRegistry registry = ctx.mailboxRegistry();
+        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId(), source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.

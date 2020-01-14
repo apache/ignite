@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exchange;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
-import org.apache.ignite.internal.processors.query.calcite.exec.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
 
 /** */
 public class BypassExchangeService implements ExchangeService, MailboxRegistry {
@@ -38,12 +36,16 @@ public class BypassExchangeService implements ExchangeService, MailboxRegistry {
     private final ConcurrentHashMap<Key, Inbox<?>> inboxes = new ConcurrentHashMap<>();
 
     /** */
+    private final Map<UUID, ExecutorService> executors;
+
+    /** */
     private final IgniteLogger log;
 
     /**
      * @param log Logger.
      */
-    public BypassExchangeService(IgniteLogger log) {
+    public BypassExchangeService(Map<UUID, ExecutorService> executors, IgniteLogger log) {
+        this.executors = executors;
         this.log = log;
     }
 
@@ -84,40 +86,86 @@ public class BypassExchangeService implements ExchangeService, MailboxRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendBatch(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId, List<?> rows) {
-        Inbox<?> inbox = inboxes.computeIfAbsent(new Key(nodeId, queryId, exchangeId), this::newInbox);
-
-        UUID senderNode = sender.context().parent().localNodeId();
-
-        inbox.push(senderNode, batchId, rows);
+    @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
+        throw new AssertionError();
     }
 
     /** {@inheritDoc} */
-    @Override public void sendAcknowledgment(Inbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
-        Outbox<?> outbox = outboxes.get(new Key(nodeId, queryId, exchangeId));
+    @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
+        throw new AssertionError();
+    }
 
-        if (outbox != null) {
-            UUID senderNode = sender.context().parent().localNodeId();
+    /** {@inheritDoc} */
+    @Override public void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
+        Inbox<?> inbox = inboxes.computeIfAbsent(new Key(nodeId, queryId, exchangeId), k -> newInbox(nodeId, queryId, fragmentId, exchangeId, batchId));
 
-            outbox.onAcknowledge(senderNode, batchId);
+        if (inbox != null) {
+            UUID senderNodeId = ((Node<?>) caller).context().parent().localNodeId();
+
+            inbox.context().execute(() -> inbox.onBatchReceived(senderNodeId, batchId, rows));
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCancel(Outbox<?> sender, UUID nodeId, UUID queryId, long exchangeId, int batchId) {
+    @Override public void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+        Outbox<?> outbox = outboxes.get(new Key(nodeId, queryId, exchangeId));
+
+        if (outbox != null) {
+            UUID senderNodeId = ((Node<?>)caller).context().parent().localNodeId();
+
+            outbox.context().execute(() -> outbox.onAcknowledge(senderNodeId, batchId));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
         inboxes.remove(new Key(nodeId, queryId, exchangeId));
     }
 
+    /** {@inheritDoc} */
+    @Override public void onCancel(Object caller, UUID nodeId, UUID queryId, long exchangeId, long fragmentId, int batchId) {
+        throw new AssertionError();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAcknowledge(Object caller, UUID nodeId, UUID queryId, long exchangeId, long fragmentId, int batchId) {
+        throw new AssertionError();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onBatchReceived(Object caller, UUID nodeId, UUID queryId, long exchangeId, long fragmentId, int batchId, List<?> rows) {
+        throw new AssertionError();
+    }
+
     /** */
-    private Inbox<?> newInbox(Key k) {
+    private Inbox<?> newInbox(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+        if (batchId != 0)
+            return null; // stale message
+
+        ExecutorService exec = executors.computeIfAbsent(nodeId, id -> Executors.newSingleThreadExecutor());
+
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
-            .localNodeId(k.nodeId)
+            .localNodeId(nodeId)
             .exchangeService(this)
-            .taskExecutor((qid, fid, t) -> CompletableFuture.completedFuture(null))
+            .taskExecutor((qid, fid, t) -> CompletableFuture.runAsync(t, exec).exceptionally(this::handle))
             .logger(log)
             .build();
 
-        return new Inbox<>(new ExecutionContext(ctx, k.queryId, Fragment.UNDEFINED_ID, null, ImmutableMap.of()), k.exchangeId);
+        ExecutionContext exeCtx = new ExecutionContext(
+            ctx,
+            queryId,
+            fragmentId,
+            null,
+            ImmutableMap.of());
+
+        // exchange ID is the same as source fragment ID
+        return new Inbox<>(exeCtx, exchangeId, exchangeId);
+    }
+
+    /** */
+    private Void handle(Throwable ex) {
+        log.error(ex.getMessage(), ex);
+        return null;
     }
 
     /** */

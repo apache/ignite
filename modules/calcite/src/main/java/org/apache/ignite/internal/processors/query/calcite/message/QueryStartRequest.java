@@ -101,6 +101,7 @@ public class QueryStartRequest implements MarshalableMessage {
         return params;
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
         if (planBytes == null && plan != null)
             planBytes = marshaller.marshal(plan);
@@ -109,6 +110,7 @@ public class QueryStartRequest implements MarshalableMessage {
             paramsBytes = marshaller.marshal(params);
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
         if (plan == null && planBytes != null)
             plan = marshaller.unmarshal(planBytes, loader);
@@ -117,6 +119,7 @@ public class QueryStartRequest implements MarshalableMessage {
             params = marshaller.unmarshal(paramsBytes, loader);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -175,6 +178,7 @@ public class QueryStartRequest implements MarshalableMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -243,14 +247,17 @@ public class QueryStartRequest implements MarshalableMessage {
         return reader.afterMessageRead(QueryStartRequest.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return CalciteMessageFactory.QUERY_START_REQUEST;
+        return MessageType.QUERY_START_REQUEST;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 7;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

@@ -71,15 +71,17 @@ public class JoinNode extends AbstractNode<Object[]> {
 
     /** {@inheritDoc} */
     @Override public void request() {
+        checkThread();
+
         if (context().cancelled() || end)
             return;
 
-        if (left.end && right.end)
-            tryFlush();
         if (!left.end)
             input(0).request();
         if (!right.end)
             input(1).request();
+        if (left.end && right.end)
+            tryFlush();
     }
 
     /** */

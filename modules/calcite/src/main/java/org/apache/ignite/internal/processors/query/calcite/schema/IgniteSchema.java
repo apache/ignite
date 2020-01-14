@@ -68,7 +68,7 @@ public class IgniteSchema extends AbstractSchema {
         Object identityKey = cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
 
-        addTable(new IgniteTable(typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc), identityKey));
+        addTable(new IgniteTable(schemaName, typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc), identityKey));
     }
 
     /**

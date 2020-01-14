@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public interface MailboxRegistry {
-    Inbox<?> register(Inbox<?> inbox);
-    void unregister(Inbox<?> inbox);
-    void register(Outbox<?> outbox);
-    void unregister(Outbox<?> outbox);
-    Outbox<?> outbox(UUID queryId, long exchangeId);
-    Inbox<?> inbox(UUID queryId, long exchangeId);
+public interface ExecutionContextAware extends Message {
+    UUID queryId();
+    long fragmentId();
+    default byte ioPolicy() {
+        return GridIoPolicy.CALLER_THREAD;
+    }
 }

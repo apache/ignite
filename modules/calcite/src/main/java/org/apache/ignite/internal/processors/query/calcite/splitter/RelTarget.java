@@ -28,6 +28,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface RelTarget {
     /**
+     * @return Target fragment ID.
+     */
+    long fragmentId();
+
+    /**
      * Returns target mapping. It's used in calculation a nodes list, where to send a particular row to.
      * See {@link DistributionFunction#toDestination(IgniteCalciteContext, NodesMapping, ImmutableIntList)}
      *

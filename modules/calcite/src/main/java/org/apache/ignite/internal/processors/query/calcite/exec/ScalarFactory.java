@@ -34,6 +34,11 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -41,18 +46,23 @@ import org.apache.calcite.rex.RexNode;
  */
 public class ScalarFactory {
     /** */
+    private final ExecutionContext ctx;
+
+    /** */
     private final JaninoRexCompiler rexCompiler;
 
     /** */
     private final RexBuilder builder;
 
-    /**
-     * @param builder RexBuilder.
-     */
-    public ScalarFactory(RexBuilder builder) {
-        this.builder = builder;
+    /** */
+    private final ExceptionHandler handler;
 
+    public ScalarFactory(ExecutionContext ctx) {
+        this.ctx = ctx;
+
+        builder = new RexBuilder(ctx.getTypeFactory());
         rexCompiler = new JaninoRexCompiler(builder);
+        handler = new ExceptionHandler(ctx.parent().kernal().failure(), ctx.parent().logger());
     }
 
     /**
@@ -80,7 +90,7 @@ public class ScalarFactory {
         Scalar scalar = rexCompiler.compile(ImmutableList.of(filter), rowType);
         Context ctx = InterpreterUtils.createContext(root);
 
-        return new FilterPredicate<>(ctx, scalar);
+        return new FilterPredicate<>(ctx, scalar, handler);
     }
 
     /**
@@ -97,7 +107,7 @@ public class ScalarFactory {
         Context ctx = InterpreterUtils.createContext(root);
         int count = projects.size();
 
-        return new ProjectExpression<>(ctx, scalar, count);
+        return new ProjectExpression<>(ctx, scalar, count, handler);
     }
 
     /**
@@ -116,7 +126,7 @@ public class ScalarFactory {
         Context ctx = InterpreterUtils.createContext(root);
         ctx.values = new Object[rowType.getFieldCount()];
 
-        return new JoinExpression<>(ctx, scalar);
+        return new JoinExpression<>(ctx, scalar, handler);
     }
 
     /** */
@@ -143,24 +153,35 @@ public class ScalarFactory {
         private final Scalar scalar;
 
         /** */
+        private final ExceptionHandler handler;
+
+        /** */
         private final Object[] vals;
 
         /**
          * @param ctx Interpreter context.
          * @param scalar Scalar.
          */
-        private FilterPredicate(Context ctx, Scalar scalar) {
+        private FilterPredicate(Context ctx, Scalar scalar, ExceptionHandler handler) {
             this.ctx = ctx;
             this.scalar = scalar;
+            this.handler = handler;
 
             vals = new Object[1];
         }
 
         /** {@inheritDoc} */
         @Override public boolean test(T r) {
-            ctx.values = (Object[]) r;
-            scalar.execute(ctx, vals);
-            return (Boolean) vals[0];
+            try {
+                ctx.values = (Object[]) r;
+                scalar.execute(ctx, vals);
+                return (Boolean) vals[0];
+            }
+            catch (Throwable e) {
+                handler.onException(e);
+
+                throw e;
+            }
         }
     }
 
@@ -176,35 +197,46 @@ public class ScalarFactory {
         private final Scalar scalar;
 
         /** */
+        private final ExceptionHandler handler;
+
+        /** */
         private Object[] left0;
 
         /**
          * @param ctx Interpreter context.
          * @param scalar Scalar.
          */
-        private JoinExpression(Context ctx, Scalar scalar) {
+        private JoinExpression(Context ctx, Scalar scalar, ExceptionHandler handler) {
             this.ctx = ctx;
             this.scalar = scalar;
+            this.handler = handler;
 
             vals = new Object[1];
         }
 
         /** {@inheritDoc} */
         @Override public T apply(T left, T right) {
-            if (left0 != left) {
-                left0 = (Object[]) left;
-                System.arraycopy(left0, 0, ctx.values, 0, left0.length);
+            try {
+                if (left0 != left) {
+                    left0 = (Object[]) left;
+                    System.arraycopy(left0, 0, ctx.values, 0, left0.length);
+                }
+
+                Object[] right0 = (Object[]) right;
+                System.arraycopy(right0, 0, ctx.values, left0.length, right0.length);
+
+                scalar.execute(ctx, vals);
+
+                if ((Boolean) vals[0])
+                    return (T) Arrays.copyOf(ctx.values, ctx.values.length);
+
+                return null;
             }
+            catch (Throwable e) {
+                handler.onException(e);
 
-            Object[] right0 = (Object[]) right;
-            System.arraycopy(right0, 0, ctx.values, left0.length, right0.length);
-
-            scalar.execute(ctx, vals);
-
-            if ((Boolean) vals[0])
-                return (T) Arrays.copyOf(ctx.values, ctx.values.length);
-
-            return null;
+                throw e;
+            }
         }
     }
 
@@ -219,24 +251,56 @@ public class ScalarFactory {
         /** */
         private final int count;
 
+        /** */
+        private final ExceptionHandler handler;
+
         /**
          * @param ctx Interpreter context.
          * @param scalar Scalar.
          * @param count Resulting columns count.
          */
-        private ProjectExpression(Context ctx, Scalar scalar, int count) {
+        private ProjectExpression(Context ctx, Scalar scalar, int count, ExceptionHandler handler) {
             this.ctx = ctx;
             this.scalar = scalar;
             this.count = count;
+            this.handler = handler;
         }
 
         /** {@inheritDoc} */
         @Override public T apply(T r) {
-            ctx.values = (Object[]) r;
-            Object[] res = new Object[count];
-            scalar.execute(ctx, res);
+            try {
+                ctx.values = (Object[]) r;
+                Object[] res = new Object[count];
+                scalar.execute(ctx, res);
 
-            return (T) res;
+                return (T) res;
+            }
+            catch (Throwable e) {
+                handler.onException(e);
+
+                throw e;
+            }
+        }
+    }
+
+    /** */
+    private static class ExceptionHandler {
+        /** */
+        private final FailureProcessor failure;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private ExceptionHandler(FailureProcessor failure, IgniteLogger log) {
+            this.failure = failure;
+            this.log = log;
+        }
+
+        /** */
+        void onException(Throwable ex) {
+            failure.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+            U.error(log, ex);
         }
     }
 }

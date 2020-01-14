@@ -14,18 +14,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
-
-import java.util.UUID;
+package org.apache.ignite.internal.processors.query.calcite.message;
 
 /**
  *
  */
-public interface MailboxRegistry {
-    Inbox<?> register(Inbox<?> inbox);
-    void unregister(Inbox<?> inbox);
-    void register(Outbox<?> outbox);
-    void unregister(Outbox<?> outbox);
-    Outbox<?> outbox(UUID queryId, long exchangeId);
-    Inbox<?> inbox(UUID queryId, long exchangeId);
+public final class MessageType {
+    /** */
+    public static final short QUERY_START_REQUEST = 300;
+
+    /** */
+    public static final short QUERY_START_RESPONSE = 301;
+
+    /** */
+    public static final short QUERY_CANCEL_REQUEST = 302;
+
+    /** */
+    public static final short QUERY_BATCH_MESSAGE = 303;
+
+    /** */
+    public static final short QUERY_ACKNOWLEDGE_MESSAGE = 304;
+
+    /** */
+    public static final short QUERY_INBOX_CANCEL_MESSAGE = 305;
+
+    /** */
+    public static final short GENERIC_ROW_MESSAGE = 306;
+
+    private MessageType() {}
 }

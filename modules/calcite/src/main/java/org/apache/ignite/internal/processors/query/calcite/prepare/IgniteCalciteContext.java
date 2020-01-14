@@ -39,7 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;

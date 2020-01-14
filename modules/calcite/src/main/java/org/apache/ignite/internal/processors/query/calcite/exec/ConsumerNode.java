@@ -114,7 +114,15 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
 
     /** {@inheritDoc} */
     @Override public void request() {
-        context().execute(input()::request);
+        context().execute(this::requestInternal);
+    }
+
+    /** */
+    private void requestInternal() {
+        checkThread();
+
+        if (state == State.RUNNING)
+            input().request();
     }
 
     /** {@inheritDoc} */

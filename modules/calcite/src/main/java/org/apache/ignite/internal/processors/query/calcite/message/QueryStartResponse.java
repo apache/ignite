@@ -47,6 +47,8 @@ public class QueryStartResponse implements MarshalableMessage {
     }
 
     public QueryStartResponse(UUID queryId, long fragmentId, Throwable error) {
+        this.queryId = queryId;
+        this.fragmentId = fragmentId;
         this.error = error;
     }
 
@@ -62,16 +64,19 @@ public class QueryStartResponse implements MarshalableMessage {
         return error;
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
         if (error != null)
             errBytes = marshaller.marshal(error);
     }
 
+    /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
         if (errBytes != null)
             error = marshaller.unmarshal(errBytes, loader);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -106,6 +111,7 @@ public class QueryStartResponse implements MarshalableMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -142,14 +148,17 @@ public class QueryStartResponse implements MarshalableMessage {
         return reader.afterMessageRead(QueryStartResponse.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return CalciteMessageFactory.QUERY_START_RESPONSE;
+        return MessageType.QUERY_START_RESPONSE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

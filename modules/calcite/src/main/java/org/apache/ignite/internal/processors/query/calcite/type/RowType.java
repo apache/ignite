@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 
 /**
  * Describes table columns.
@@ -33,7 +34,7 @@ public class RowType {
     private final String[] fields;
 
     /** */
-    private final Class[] types;
+    private final Class<?>[] types;
 
     /** */
     private final BitSet keyFields;
@@ -47,13 +48,21 @@ public class RowType {
      * @param keyFields Key fields.
      * @param affinityKey Affinity key field index.
      */
-    public RowType(String[] fields, Class[] types, BitSet keyFields, int affinityKey) {
+    public RowType(String[] fields, Class<?>[] types, BitSet keyFields, int affinityKey) {
         assert fields != null && types != null && fields.length == types.length;
 
         this.fields = fields;
         this.types = types;
         this.keyFields = keyFields;
         this.affinityKey = affinityKey;
+    }
+
+    public String[] fields() {
+        return fields;
+    }
+
+    public Class<?>[] types() {
+        return types;
     }
 
     /**
@@ -107,7 +116,7 @@ public class RowType {
         private final BitSet keyFields;
 
         /** */
-        private final ArrayList<Class> types;
+        private final ArrayList<Class<?>> types;
 
         /** */
         private Builder() {
@@ -115,8 +124,8 @@ public class RowType {
             types = new ArrayList<>();
             keyFields = new BitSet();
 
-            fields.add("_key"); types.add(Object.class);
-            fields.add("_val"); types.add(Object.class);
+            fields.add(QueryUtils.KEY_FIELD_NAME); types.add(Object.class);
+            fields.add(QueryUtils.VAL_FIELD_NAME); types.add(Object.class);
         }
 
         /**
@@ -125,7 +134,7 @@ public class RowType {
          * @param type '_key' field type.
          * @return {@code this} for chaining.
          */
-        public Builder key(Class type) {
+        public Builder key(Class<?> type) {
             if (types.get(0) != Object.class && types.get(0) != type)
                 throw new IllegalStateException("Key type is already set.");
 
@@ -140,7 +149,7 @@ public class RowType {
          * @param type '_val' field type.
          * @return {@code this} for chaining.
          */
-        public Builder val(Class type) {
+        public Builder val(Class<?> type) {
             if (types.get(1) != Object.class && types.get(1) != type)
                 throw new IllegalStateException("Value type is already set.");
 
@@ -156,7 +165,7 @@ public class RowType {
          * @param type Field type.
          * @return {@code this} for chaining.
          */
-        public Builder field(String name, Class type) {
+        public Builder field(String name, Class<?> type) {
             if (!fields.add(name))
                 throw new IllegalStateException("Field name must be unique.");
 
@@ -172,7 +181,7 @@ public class RowType {
          * @param type Field type.
          * @return {@code this} for chaining.
          */
-        public Builder keyField(String name, Class type) {
+        public Builder keyField(String name, Class<?> type) {
             return keyField(name, type, false);
         }
 
@@ -184,7 +193,7 @@ public class RowType {
          * @param affinityKey {@code True} if the field is an affinity key field.
          * @return {@code this} for chaining.
          */
-        public Builder keyField(String name, Class type, boolean affinityKey) {
+        public Builder keyField(String name, Class<?> type, boolean affinityKey) {
             if (affinityKey && this.affinityKey > 0)
                 throw new IllegalStateException("Affinity key field must be unique.");
 

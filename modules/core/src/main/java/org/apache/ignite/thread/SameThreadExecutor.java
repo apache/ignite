@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.thread;
 
-import java.util.UUID;
+import java.util.concurrent.Executor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public interface MailboxRegistry {
-    Inbox<?> register(Inbox<?> inbox);
-    void unregister(Inbox<?> inbox);
-    void register(Outbox<?> outbox);
-    void unregister(Outbox<?> outbox);
-    Outbox<?> outbox(UUID queryId, long exchangeId);
-    Inbox<?> inbox(UUID queryId, long exchangeId);
+public class SameThreadExecutor implements Executor {
+    /** */
+    public static final Executor INSTANCE = new SameThreadExecutor();
+
+    /** */
+    private SameThreadExecutor() {}
+
+    /** {@inheritDoc} */
+    @Override public void execute(@NotNull Runnable command) {
+        command.run();
+    }
 }

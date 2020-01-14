@@ -21,17 +21,21 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<T> implements Node<T> {
+    /** for debug purpose */
+    private volatile Thread thread;
+
     /** */
     private final ImmutableList<Node<T>> inputs;
 
     /** */
-    private final SinkImpl<T> target;
+    private final SinkProxy target;
 
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
@@ -61,7 +65,7 @@ public abstract class AbstractNode<T> implements Node<T> {
         this.ctx = ctx;
         this.inputs = ImmutableList.copyOf(inputs);
 
-        target = new SinkImpl<>();
+        target = new SinkProxy();
     }
 
     /** {@inheritDoc} */
@@ -89,6 +93,26 @@ public abstract class AbstractNode<T> implements Node<T> {
         return ctx;
     }
 
+    /** {@inheritDoc} */
+    @Override public void request() {
+        checkThread();
+
+        inputs().forEach(Node::request);
+    }
+
+    @Override public void cancel() {
+        checkThread();
+
+        context().setCancelled();
+        inputs().forEach(Node::cancel);
+    }
+
+    @Override public void reset() {
+        checkThread();
+
+        inputs().forEach(Node::reset);
+    }
+
     /**
      * Links the node inputs to the node sinks.
      */
@@ -97,10 +121,21 @@ public abstract class AbstractNode<T> implements Node<T> {
             inputs.get(i).target(sink(i));
     }
 
+    /** */
+    protected void checkThread() {
+        if (!U.assertionsEnabled())
+            return;
+
+        if (thread == null)
+            thread = Thread.currentThread();
+        else
+            assert thread == Thread.currentThread();
+    }
+
     /**
      * Fixes a race when a first message from remote node received at the time an execution tree is being built.
      */
-    private static class SinkImpl<T> implements Sink<T> {
+    private class SinkProxy implements Sink<T> {
         /** */
         private boolean isEnd;
 
@@ -109,6 +144,8 @@ public abstract class AbstractNode<T> implements Node<T> {
 
         /** {@inheritDoc} */
         @Override public boolean push(T row) {
+            checkThread();
+
             Sink<T> target;
             boolean isEnd;
 
@@ -122,6 +159,8 @@ public abstract class AbstractNode<T> implements Node<T> {
 
         /** {@inheritDoc} */
         @Override public void end() {
+            checkThread();
+
             Sink<T> target;
 
             synchronized (this) {
@@ -148,7 +187,7 @@ public abstract class AbstractNode<T> implements Node<T> {
             }
 
             if (isEnd)
-                delegate.end();
+                context().execute(delegate::end);
         }
     }
 }

@@ -17,39 +17,47 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class QueryInboxCancelMessage implements Message {
-    private UUID queryId;
-    private long exchangeId;
-    private int batchId;
+public class GenericRowMessage implements MarshalableMessage {
+    @GridDirectTransient
+    private Object row;
 
-    public QueryInboxCancelMessage(){}
+    /** */
+    private byte[] serRow;
 
-    public QueryInboxCancelMessage(UUID queryId, long exchangeId, int batchId) {
-        this.queryId = queryId;
-        this.exchangeId = exchangeId;
-        this.batchId = batchId;
+    public GenericRowMessage() {
+
     }
 
-    public UUID queryId() {
-        return queryId;
+    public GenericRowMessage(Object row) {
+        this.row = row;
     }
 
-    public long exchangeId() {
-        return exchangeId;
+    public Object row() {
+        return row;
     }
 
-    public int batchId() {
-        return batchId;
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
+        if (row != null && serRow == null)
+            serRow = marshaller.marshal(row);
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
+        if (serRow != null && row == null)
+            row = marshaller.unmarshal(serRow, loader);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -62,19 +70,7 @@ public class QueryInboxCancelMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchId", batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("exchangeId", exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeByteArray("serRow", serRow))
                     return false;
 
                 writer.incrementState();
@@ -84,6 +80,7 @@ public class QueryInboxCancelMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -92,23 +89,7 @@ public class QueryInboxCancelMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                batchId = reader.readInt("batchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                exchangeId = reader.readLong("exchangeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                queryId = reader.readUuid("queryId");
+                serRow = reader.readByteArray("serRow");
 
                 if (!reader.isLastRead())
                     return false;
@@ -117,17 +98,20 @@ public class QueryInboxCancelMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(QueryInboxCancelMessage.class);
+        return reader.afterMessageRead(GenericRowMessage.class);
     }
 
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return 0;
+        return MessageType.GENERIC_ROW_MESSAGE;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 1;
     }
 
+    /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
     }

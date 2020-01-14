@@ -21,6 +21,9 @@ import java.util.List;
 
 /**
  * Represents a node of execution tree.
+ *
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request()}, {@link Node#cancel()},
+ * {@link Node#reset()}, {@link Sink#push(Object)} and {@link Sink#end()} methods should be used from one single thread.
  */
 public interface Node<T> {
     /**
@@ -65,24 +68,17 @@ public interface Node<T> {
     }
 
     /**
-     * Signals that consumer is ready to consume data. Called by consumer node.
+     * Signals that consumer is ready to consume data.
      */
-    default void request(){
-        inputs().forEach(Node::request);
-    }
+    void request();
 
     /**
      * Cancels execution.
      */
-    default void cancel() {
-        context().setCancelled();
-        inputs().forEach(Node::cancel);
-    }
+    void cancel();
 
     /**
      * Resets execution sub-tree to initial state.
      */
-    default void reset() {
-        inputs().forEach(Node::reset);
-    }
+    void reset();
 }

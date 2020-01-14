@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.exchange.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -31,10 +30,13 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>, AutoCloseable {
     /** */
-    private final Map<UUID, Buffer> perNodeBuffers = new HashMap<>();
+    private final long exchangeId;
 
     /** */
-    private final long exchangeId;
+    private final long targetFragmentId;
+
+    /** */
+    private final Map<UUID, Buffer> perNodeBuffers = new HashMap<>();
 
     /** */
     private final DestinationFunction function;
@@ -48,8 +50,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
      * @param input      Input node.
      * @param function   Destination function.
      */
-    public Outbox(ExecutionContext ctx, long exchangeId, Node<T> input, DestinationFunction function) {
+    public Outbox(ExecutionContext ctx, long targetFragmentId, long exchangeId, Node<T> input, DestinationFunction function) {
         super(ctx, input);
+        this.targetFragmentId = targetFragmentId;
         this.exchangeId = exchangeId;
         this.function = function;
 
@@ -76,21 +79,20 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void request() {
-        context().execute(this::requestInternal);
-    }
+        checkThread();
 
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        context().setCancelled();
-        context().execute(this::cancelInternal);
-    }
-
-    /** */
-    private void requestInternal() {
         if (context().cancelled())
             cancelInternal();
         else
             input().request();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        checkThread();
+
+        context().setCancelled();
+        cancelInternal();
     }
 
     /** */
@@ -155,22 +157,17 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        context().parent().mailboxRegistry().unregister(this);
+        context().mailboxRegistry().unregister(this);
     }
 
     /** */
     private void sendBatch(UUID nodeId, int batchId, List<?> rows) {
-        exchange().sendBatch(this, nodeId, queryId(), exchangeId, batchId, rows);
+        context().exchange().sendBatch(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
     }
 
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
-        exchange().sendCancel(this, nodeId, queryId(), exchangeId, batchId);
-    }
-
-    /** */
-    private ExchangeService exchange() {
-        return context().exchange();
+        context().exchange().cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
     }
 
     /** */
@@ -212,14 +209,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
             assert ready();
 
             if (curr.size() == ExchangeService.BATCH_SIZE) {
-                int batchId;
-
-                synchronized (this) {
-                    batchId = ++hwm;
-                }
-
-                owner.sendBatch(nodeId, batchId, curr);
-
+                owner.sendBatch(nodeId, ++hwm, curr);
                 curr = new ArrayList<>(ExchangeService.BATCH_SIZE + 1); // extra space for end marker;
             }
 
@@ -230,12 +220,8 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
          * Signals data is over.
          */
         public void end() {
-            int batchId;
-
-            synchronized (this) {
-                batchId = hwm + 1;
-                hwm = Integer.MAX_VALUE;
-            }
+            int batchId = hwm + 1;
+            hwm = Integer.MAX_VALUE;
 
             List<Object> tmp = curr;
             curr = null;
@@ -245,12 +231,8 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         }
 
         public void cancel() {
-            int batchId;
-
-            synchronized (this) {
-                batchId = hwm + 1;
-                hwm = Integer.MAX_VALUE;
-            }
+            int batchId = hwm + 1;
+            hwm = Integer.MAX_VALUE;
 
             curr = null;
             owner.sendCancel(nodeId, batchId);
@@ -264,13 +246,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         private boolean ready() {
             assert curr != null;
 
-            boolean canSend;
-
-            synchronized (this) {
-                canSend = hwm != Integer.MAX_VALUE && hwm - lwm < ExchangeService.PER_NODE_BATCH_COUNT;
-            }
-
-            return canSend || curr.size() < ExchangeService.BATCH_SIZE;
+            return hwm != Integer.MAX_VALUE
+                && hwm - lwm < ExchangeService.PER_NODE_BATCH_COUNT
+                || curr.size() < ExchangeService.BATCH_SIZE;
         }
 
         /**
@@ -279,15 +257,12 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
          * @param id batch ID.
          */
         private void onAcknowledge(int id) {
-            boolean request = false;
+            if (lwm > id)
+                return;
 
-            synchronized (this) {
-                if (lwm < id) {
-                    request = hwm - lwm == ExchangeService.PER_NODE_BATCH_COUNT;
+            boolean request = hwm - lwm == ExchangeService.PER_NODE_BATCH_COUNT;
 
-                    lwm = id;
-                }
-            }
+            lwm = id;
 
             if (request)
                 owner.request();

@@ -43,17 +43,17 @@ public class CacheKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        CacheKey that = (CacheKey) o;
+        CacheKey cacheKey = (CacheKey) o;
 
-        if (!schemaName.equals(that.schemaName))
+        if (!Objects.equals(schemaName, cacheKey.schemaName))
             return false;
-        if (!query.equals(that.query))
+        if (!query.equals(cacheKey.query))
             return false;
-        return Objects.equals(contextKey, that.contextKey);
+        return Objects.equals(contextKey, cacheKey.contextKey);
     }
 
     @Override public int hashCode() {
-        int result = schemaName.hashCode();
+        int result = schemaName != null ? schemaName.hashCode() : 0;
         result = 31 * result + query.hashCode();
         result = 31 * result + (contextKey != null ? contextKey.hashCode() : 0);
         return result;
