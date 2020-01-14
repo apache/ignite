@@ -39,8 +39,6 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
      */
     @Test
     public void testInitialQuery() {
-        putInitialValue();
-
         Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> consumer =
             new Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>>() {
                 @Override public void accept(ContinuousQueryWithTransformer<Integer, Integer, Integer> q) {
@@ -50,8 +48,8 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 }
             };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer, false));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, false));
+        runAndCheck(grid(SRV_INITIATOR), operation(consumer, true));
+        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, true));
     }
 
     /**
@@ -115,6 +113,6 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQueryWithTransformer<Integer, Integer, Integer>> c) {
-        return operation(c, true);
+        return operation(c, false);
     }
 }

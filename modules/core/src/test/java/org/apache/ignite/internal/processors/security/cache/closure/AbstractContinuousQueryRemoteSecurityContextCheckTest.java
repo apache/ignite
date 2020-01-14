@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.junit.After;
 
 import static org.apache.ignite.Ignition.localIgnite;
 
@@ -64,14 +63,7 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration[] getCacheConfigurations() {
-        return new CacheConfiguration[] {
-            new CacheConfiguration<>()
-                .setName(CACHE_NAME + '_' + SRV_RUN)
-                .setCacheMode(CacheMode.PARTITIONED),
-            new CacheConfiguration<>()
-                .setName(CACHE_NAME + '_' + CLNT_RUN)
-                .setCacheMode(CacheMode.PARTITIONED)
-        };
+        return new CacheConfiguration[] {};
     }
 
     /** {@inheritDoc} */
@@ -93,14 +85,6 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
         awaitPartitionMapExchange();
     }
 
-    /** */
-    @After
-    public void tearDown() {
-        Ignite ignite = grid(SRV_CHECK);
-
-        ignite.cacheNames().forEach(s -> ignite.cache(s).removeAll());
-    }
-
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
@@ -110,30 +94,26 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /**
-     * Puts inintial value to caches.
-     */
-    protected void putInitialValue() {
-        IgniteEx ignite = grid(SRV_CHECK);
-
-        ignite.cacheNames().forEach(s -> ignite.cache(s).put(primaryKey(ignite, s), 1));
-    }
-
-    /**
      * Opens query cursor.
      *
      * @param q {@link Query}.
-     * @param putVal True if needing put data to a cache.
+     * @param init True if needing put data to a cache before openning a cursor.
      */
-    protected void executeQuery(Query<Cache.Entry<Integer, Integer>> q, boolean putVal) {
+    protected void executeQuery(Query<Cache.Entry<Integer, Integer>> q, boolean init) {
         Ignite ignite = localIgnite();
 
-        String cacheName = CACHE_NAME + '_' + ignite.name();
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>()
+                .setName(CACHE_NAME + ignite.name() + q.hashCode())
+                .setCacheMode(CacheMode.PARTITIONED)
+        );
 
-        IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
+        if (init)
+            cache.put(primaryKey(grid(SRV_CHECK), cache.getName()), 100);
 
         try (QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(q)) {
-            if (putVal)
-                cache.put(primaryKey(grid(SRV_CHECK), cacheName), 100);
+            if (!init)
+                cache.put(primaryKey(grid(SRV_CHECK), cache.getName()), 100);
 
             cur.getAll();
         }

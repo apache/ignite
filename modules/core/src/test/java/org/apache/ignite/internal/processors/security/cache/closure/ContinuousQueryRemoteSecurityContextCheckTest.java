@@ -38,8 +38,6 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
      */
     @Test
     public void testInitialQuery() {
-        putInitialValue();
-
         Consumer<ContinuousQuery<Integer, Integer>> consumer = new Consumer<ContinuousQuery<Integer, Integer>>() {
             @Override public void accept(ContinuousQuery<Integer, Integer> q) {
                 q.setInitialQuery(new ScanQuery<>(INITIAL_QUERY_FILTER));
@@ -47,8 +45,8 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
             }
         };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer, false));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, false));
+        runAndCheck(grid(SRV_INITIATOR), operation(consumer, true));
+        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, true));
     }
 
     /**
@@ -103,6 +101,6 @@ public class ContinuousQueryRemoteSecurityContextCheckTest extends
      * @return Test operation.
      */
     private IgniteRunnable operation(Consumer<ContinuousQuery<Integer, Integer>> c) {
-       return operation(c, true);
+       return operation(c, false);
     }
 }
