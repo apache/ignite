@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
