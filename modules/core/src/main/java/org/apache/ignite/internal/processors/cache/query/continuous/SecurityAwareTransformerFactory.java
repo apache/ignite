@@ -28,8 +28,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
  *  Security aware transformer factory.
  */
 public class SecurityAwareTransformerFactory<E, R> extends
-    AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements
-    Factory<IgniteClosure<E, R>> {
+    AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements Factory<IgniteClosure<E, R>> {
     /** */
     private static final long serialVersionUID = 0L;
 
