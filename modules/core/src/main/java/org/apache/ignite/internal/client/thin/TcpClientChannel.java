@@ -103,6 +103,8 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -922,7 +924,7 @@ class TcpClientChannel implements ClientChannel {
 
             String keyStoreType = or.apply(
                 cfg.getSslClientCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), "JKS")
+                or.apply(System.getProperty("javax.net.ssl.keyStoreType"), DFLT_STORE_TYPE)
             );
 
             String keyStorePwd = or.apply(
@@ -937,7 +939,7 @@ class TcpClientChannel implements ClientChannel {
 
             String trustStoreType = or.apply(
                 cfg.getSslTrustCertificateKeyStoreType(),
-                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), "JKS")
+                or.apply(System.getProperty("javax.net.ssl.trustStoreType"), DFLT_STORE_TYPE)
             );
 
             String trustStorePwd = or.apply(
@@ -945,7 +947,7 @@ class TcpClientChannel implements ClientChannel {
                 System.getProperty("javax.net.ssl.trustStorePassword")
             );
 
-            String algorithm = or.apply(cfg.getSslKeyAlgorithm(), "SunX509");
+            String algorithm = or.apply(cfg.getSslKeyAlgorithm(), DFLT_KEY_ALGORITHM);
 
             String proto = toString(cfg.getSslProtocol());
 

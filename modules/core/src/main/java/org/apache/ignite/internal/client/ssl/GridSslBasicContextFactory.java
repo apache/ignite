@@ -38,6 +38,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ssl.SSLContextWrapper;
 
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+
 /**
  * Basic ssl context factory that provides ssl context configuration with specified key
  * and trust stores.
@@ -54,15 +58,6 @@ import org.apache.ignite.ssl.SSLContextWrapper;
  */
 @Deprecated
 public class GridSslBasicContextFactory implements GridSslContextFactory {
-    /** Default key store type. */
-    public static final String DFLT_STORE_TYPE = "JKS";
-
-    /** Default SSL protocol. */
-    public static final String DFLT_SSL_PROTOCOL = "TLS";
-
-    /** Default key manager algorithm. */
-    public static final String DFLT_KEY_ALGORITHM = "SunX509";
-
     /** SSL protocol. */
     private String proto = DFLT_SSL_PROTOCOL;
 
