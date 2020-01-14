@@ -26,7 +26,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -826,11 +825,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
         for (SnapshotTask sctx : locSnpTasks.values()) {
-            List<Integer> snpGrps = sctx.partitions().stream()
+            Set<Integer> snpGrps = sctx.partitions().stream()
                 .map(GroupPartitionId::getGroupId)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
 
-            List<Integer> retain = new ArrayList<>(grps);
+            Set<Integer> retain = new HashSet<>(grps);
             retain.retainAll(snpGrps);
 
             if (!retain.isEmpty()) {

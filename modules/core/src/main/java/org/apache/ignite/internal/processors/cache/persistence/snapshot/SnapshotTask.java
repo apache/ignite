@@ -440,7 +440,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             .map(GroupPartitionId::getGroupId)
             .collect(Collectors.toSet())
             .forEach(grpId ->
-                futs.add(CompletableFuture.runAsync(() -> {
+                futs.add(CompletableFuture.runAsync(() ->
                         wrapExceptionally(() -> {
                             CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
@@ -456,8 +456,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
                             for (File ccfg0 : ccfgs)
                                 snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
-                        });
-                    },
+                        }),
                     exec)
                 )
             );
