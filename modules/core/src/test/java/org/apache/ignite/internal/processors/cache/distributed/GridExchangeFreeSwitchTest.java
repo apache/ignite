@@ -196,9 +196,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline,
-     * when some nodes starts with option IGNITE_PME_FREE_SWITCH_DISABLED is true,
-     * and Partition Exchange is absent when this nodes is stoped.
+     * Checks Partition Exchange is regular in case of fixed baseline, when some nodes starts with option
+     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this nodes is stoped.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes() throws Exception {
@@ -227,7 +226,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGridsMultiThreaded(nodes, true);
 
-        nodes = Math.max(G.allGrids().size(), nodes); //if more nodes are started
+        nodes = Math.max(G.allGrids().size(), nodes); // If more nodes are started.
 
         checkTopology(nodes);
 
@@ -260,7 +259,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 (cntNotSupported.decrementAndGet() == 0))
                 pmeExpected.set(false);
 
-            i.close();
+            i.close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
@@ -325,7 +324,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             int nodes = 4;
 
-            startGridsMultiThreaded(nodes, true).cluster().active(true);
+            startGridsMultiThreaded(nodes, true);
 
             AtomicLong cnt = new AtomicLong();
 
