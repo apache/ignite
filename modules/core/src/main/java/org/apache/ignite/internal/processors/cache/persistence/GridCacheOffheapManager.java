@@ -127,9 +127,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * If a checkpoint is triggered by "too many dirty pages" reason and pages list cache is rather big, we can get
      * {@code IgniteOutOfMemoryException}. To prevent this, we can limit the total amount of cached page list buckets,
      * assuming that checkpoint will be triggered if no more then 3/4 of pages will be marked as dirty (there will be
-     * at least 1/4 of clean pages) and each cached page list bucket can be stored to up to 2 pages.
+     * at least 1/4 of clean pages) and each cached page list bucket can be stored to up to 2 pages (this value is not
+     * static, but depends on PagesCache.MAX_SIZE, so if PagesCache.MAX_SIZE > PagesListNodeIO#getCapacity it can take
+     * more than 2 pages). Also some amount of page memory needed to store page list metadata.
      */
-    private static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 1.0 / 4.0 / 2.0;
+    public static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 0.1;
 
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
@@ -176,7 +178,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
             diagnosticMgr.pageLockTracker().createPageLockTracker(reuseListName),
-            ctx.kernalContext()
+            ctx.kernalContext(),
+            pageListCacheLimit()
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -651,6 +654,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     private GridDhtLocalPartition getPartition(CacheDataStore store) {
         return grp.topology().localPartition(store.partId(),
             AffinityTopologyVersion.NONE, false, true);
+    }
+
+    /**
+     * @return Holder for page list cache limit.
+     */
+    private AtomicLong pageListCacheLimit() {
+        return pageListCacheLimits.computeIfAbsent(
+            grp.dataRegion().config().getName(), name -> new AtomicLong((long)(((PageMemoryEx)grp.dataRegion()
+                .pageMemory()).totalPages() * PAGE_LIST_CACHE_LIMIT_THRESHOLD)));
     }
 
     /**
@@ -1701,14 +1713,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    AtomicLong pageListCacheLimit = pageListCacheLimits.computeIfAbsent(
-                        grp.dataRegion().config().getName(), name -> {
-                            long totalDataRegionPages = grp.dataRegion().config().getMaxSize() /
-                                grp.dataRegion().pageMemory().systemPageSize();
-
-                            return new AtomicLong((long)(totalDataRegionPages * PAGE_LIST_CACHE_LIMIT_THRESHOLD));
-                        });
-
                     freeList = new CacheFreeList(
                         grp.groupId(),
                         freeListName,
@@ -1719,7 +1723,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName),
                         ctx.kernalContext(),
-                        pageListCacheLimit
+                        pageListCacheLimit()
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
@@ -1743,7 +1747,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         partMetastoreReuseListRoot.pageId().pageId(),
                         partMetastoreReuseListRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(partitionMetaStoreName),
-                        ctx.kernalContext()
+                        ctx.kernalContext(),
+                        pageListCacheLimit()
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
