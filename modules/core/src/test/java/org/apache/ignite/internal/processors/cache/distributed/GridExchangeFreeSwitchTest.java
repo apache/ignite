@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -145,9 +146,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param cnt Count.
+     * @param cntSengle Count.
+     * @param cntFull Count.
      */
-    private void initCountPmeMessages(int nodes, AtomicLong cnt) {
+    private void initCountPmeMessages(int nodes, AtomicLong cntSengle, AtomicLong cntFull) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -156,7 +158,11 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cnt.incrementAndGet();
+                        cntSengle.incrementAndGet();
+
+                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class)&&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        cntFull.incrementAndGet();
 
                     return false;
                 }
@@ -241,7 +247,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         checkTopology(topSize);
 
-        AtomicLong cnt = new AtomicLong();
+        AtomicLong cntSingle = new AtomicLong();
+        AtomicLong cntFull = new AtomicLong();
 
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
@@ -258,7 +265,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        initCountPmeMessages(topSize, cnt);
+        initCountPmeMessages(topSize, cntSingle, cntFull);
 
         Random r = new Random();
 
@@ -274,13 +281,15 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected ? (topSize - 1) : 0, cnt.get());
+            assertEquals(pmeExpected ? (topSize - 1) : 0, cntSingle.get());
+            assertEquals(cntSingle.get(), cntFull.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
             assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
 
-            cnt.set(0);
+            cntSingle.set(0);
+            cntFull.set(0);
         }
     }
 
@@ -337,9 +346,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(nodes, true);
 
-            AtomicLong cnt = new AtomicLong();
+            AtomicLong cntSingle = new AtomicLong();
+            AtomicLong cntFull = new AtomicLong();
 
-            initCountPmeMessages(nodes, cnt);
+            initCountPmeMessages(nodes, cntSingle, cntFull);
 
             Random r = new Random();
 
@@ -520,7 +530,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             assertEquals(nodes - 1, pmeFreeCnt);
 
-            assertEquals(0, cnt.get());
+            assertEquals(0, cntSingle.get());
+            assertEquals(0, cntFull.get());
         }
         finally {
             persistence = false;
