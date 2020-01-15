@@ -331,7 +331,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @return {@code True} if file rebalancing required for the specified group.
      */
     public boolean required(CacheGroupContext grp) {
-        if (grp == null)
+        if (!supports(grp))
             return false;
 
         // File rebalancing should started if at least one partition is at read-only mode.
