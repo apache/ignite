@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -150,9 +148,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private final Map<T2<String, String>, T2<Integer, Integer>> expInvokes = new HashMap<>();
 
         /**
-         * List of registered security subjects.
+         * Checked error.
          */
-        private final List<T2<UUID, String>> registeredSubjects = new ArrayList<>();
+        private AssertionError error;
 
         /**
          * Expected security subject id.
@@ -160,9 +158,10 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        public Verifier clear() {
-            registeredSubjects.clear();
+        public synchronized Verifier clear() {
             expInvokes.clear();
+
+            error = null;
 
             expSecSubjId = null;
 
@@ -228,25 +227,38 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param opName Operation name.
          */
         public synchronized void register(IgniteEx ignite, String opName) {
-            registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
+            if (error != null)
+                throw error;
 
-            expInvokes.computeIfPresent(new T2<>(ignite.name(), opName), (name, t2) -> {
-                Integer val = t2.getValue();
+            if (expSecSubjId == null)
+                error("SubjectId cannot be null.");
 
-                t2.setValue(++val);
+            UUID actualSubjId = secSubjectId(ignite);
 
-                return t2;
-            });
+            if (!expSecSubjId.equals(actualSubjId))
+                error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
+                    ", actual=" + actualSubjId + "].");
+
+            T2<String, String> key = new T2<>(ignite.name(), opName);
+
+            T2<Integer, Integer> t2 = expInvokes.get(key);
+
+            if(t2 == null)
+                error("Unexpected registration parameters [node=" + ignite.name() + ", opName=" + opName + "].");
+
+            Integer val = t2.getValue();
+
+            t2.setValue(++val);
+
+            expInvokes.put(key, t2);
         }
 
         /**
          * Checks result of test and clears expected behavior.
          */
-        public void checkResult() {
-            registeredSubjects.forEach(t ->
-                assertEquals("Invalide security context on node " + t.get2(),
-                    expSecSubjId, t.get1())
-            );
+        public synchronized void checkResult() {
+            if (error != null)
+                throw error;
 
             expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
                 (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
@@ -256,7 +268,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /** */
-        public Verifier initiator(IgniteEx initiator) {
+        public synchronized Verifier initiator(IgniteEx initiator) {
             expSecSubjId = secSubjectId(initiator);
 
             return this;
@@ -265,6 +277,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /** */
         private UUID secSubjectId(IgniteEx node) {
             return node.context().security().securityContext().subject().id();
+        }
+
+        /**
+         * @param msg Error message.
+         */
+        private void error(String msg){
+            error = new AssertionError(msg);
+
+            throw error;
         }
     }
 
