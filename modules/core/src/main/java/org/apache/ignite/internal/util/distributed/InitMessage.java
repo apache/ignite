@@ -23,7 +23,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -46,20 +45,15 @@ public class InitMessage<I extends Serializable>  implements DiscoveryCustomMess
     /** Process id. */
     private final UUID processId;
 
-    /** Process type. */
-    private final int type;
-
     /** Request. */
     private final I req;
 
     /**
      * @param processId Process id.
-     * @param type Process type.
      * @param req Request.
      */
-    public InitMessage(UUID processId, DistributedProcessType type, I req) {
+    public InitMessage(UUID processId, I req) {
         this.processId = processId;
-        this.type = type.ordinal();
         this.req = req;
     }
 
@@ -92,11 +86,6 @@ public class InitMessage<I extends Serializable>  implements DiscoveryCustomMess
     /** @return Process id. */
     public UUID processId() {
         return processId;
-    }
-
-    /** @return Process type. */
-    public int type() {
-        return type;
     }
 
     /** @return Request. */

@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadO
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -87,8 +88,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.GridTopic.TOPIC_GEN_ENC_KEY;
 import static org.apache.ignite.internal.IgniteFeatures.MASTER_KEY_CHANGE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_FINISH;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
 
 /**
  * Manages cache keys and {@code EncryptionSpi} instances.
@@ -283,10 +282,10 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             }
         });
 
-        prepareMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_PREPARE, this::prepareMasterKeyChange,
+        prepareMKChangeProc = new DistributedProcess<>(ctx, MasterKeyChangePrepare.class, this::prepareMasterKeyChange,
             this::finishPrepareMasterKeyChange);
 
-        performMKChangeProc = new DistributedProcess<>(ctx, MASTER_KEY_CHANGE_FINISH, this::performMasterKeyChange,
+        performMKChangeProc = new DistributedProcess<>(ctx, MasterKeyChangeFinish.class, this::performMasterKeyChange,
             this::finishPerformMasterKeyChange);
     }
 
@@ -618,7 +617,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             masterKeyChangeFut = new MasterKeyChangeFuture(request.requestId());
 
-            prepareMKChangeProc.start(request.requestId(), request);
+            prepareMKChangeProc.start(new MasterKeyChangePrepare(request.requestId(), request));
 
             return new IgniteFutureImpl<>(masterKeyChangeFut);
         }
@@ -1067,7 +1066,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             completeMasterKeyChangeFuture(id, err);
         }
         else if (isCoordinator())
-            performMKChangeProc.start(id, masterKeyChangeRequest);
+            performMKChangeProc.start(new MasterKeyChangeFinish(id, masterKeyChangeRequest));
     }
 
     /**
@@ -1446,6 +1445,32 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MasterKeyChangeFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MasterKeyChangePrepare extends InitMessage<MasterKeyChangeRequest> {
+        /**
+         * @param processId Process id.
+         * @param req Request.
+         */
+        public MasterKeyChangePrepare(UUID processId, MasterKeyChangeRequest req) {
+            super(processId, req);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MasterKeyChangeFinish extends InitMessage<MasterKeyChangeRequest> {
+        /**
+         * @param processId Process id.
+         * @param req Request.
+         */
+        public MasterKeyChangeFinish(UUID processId, MasterKeyChangeRequest req) {
+            super(processId, req);
         }
     }
 }

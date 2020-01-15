@@ -31,7 +31,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -65,9 +64,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * @see FullMessage
  */
 public class DistributedProcess<I extends Serializable, R extends Serializable> {
-    /** Process type. */
-    private final DistributedProcessType type;
-
     /** Active processes. */
     private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
 
@@ -82,22 +78,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /**
      * @param ctx Kernal context.
-     * @param type Process type.
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
-    public DistributedProcess(GridKernalContext ctx, DistributedProcessType type,
+    public DistributedProcess(
+        GridKernalContext ctx,
+        Class<? extends InitMessage<I>> clazz,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+    ) {
         this.ctx = ctx;
-        this.type = type;
 
         log = ctx.log(getClass());
 
-        ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
-            if (msg.type() != type.ordinal())
-                return;
-
+        ctx.discovery().setCustomEventListener(clazz, (topVer, snd, msg) -> {
             Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
             // May be completed in case of double delivering.
@@ -138,9 +132,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         });
 
         ctx.discovery().setCustomEventListener(FullMessage.class, (topVer, snd, msg0) -> {
-            if (msg0.type() != type.ordinal())
-                return;
-
             FullMessage<R> msg = (FullMessage<R>)msg0;
 
             Process p = processes.get(msg.processId());
@@ -153,17 +144,18 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error());
+            finish.apply(p.id, msg.result(), msg.error());
 
             processes.remove(msg.processId());
         });
 
         ctx.io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg0, plc) -> {
-            if (msg0 instanceof SingleNodeMessage && ((SingleNodeMessage)msg0).type() == type.ordinal()) {
+            if (msg0 instanceof SingleNodeMessage) {
                 SingleNodeMessage<R> msg = (SingleNodeMessage<R>)msg0;
 
-                if (msg.type() == type.ordinal())
-                    onSingleNodeMessageReceived(msg, nodeId);
+                Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
+
+                onSingleNodeMessageReceived(msg, nodeId, p);
             }
         });
 
@@ -213,13 +205,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     /**
      * Starts distributed process.
      *
-     * @param id Process id.
-     * @param req Initial request.
+     * @param msg Initial message to send.
      */
-    public void start(UUID id, I req) {
+    public <T extends InitMessage> void start(T msg) {
         try {
-            InitMessage<I> msg = new InitMessage<>(id, type, req);
-
             ctx.discovery().sendCustomEvent(msg);
         }
         catch (IgniteCheckedException e) {
@@ -254,11 +243,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
 
-        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
+        SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, p.resFut.result(),
             (Exception)p.resFut.error());
 
         if (F.eq(ctx.localNodeId(), p.crdId))
-            onSingleNodeMessageReceived(singleMsg, p.crdId);
+            onSingleNodeMessageReceived(singleMsg, p.crdId, p);
         else {
             try {
                 ctx.io().sendToGridTopic(p.crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
@@ -278,9 +267,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param msg Message.
      * @param nodeId Node id.
      */
-    private void onSingleNodeMessageReceived(SingleNodeMessage<R> msg, UUID nodeId) {
-        Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
-
+    private void onSingleNodeMessageReceived(SingleNodeMessage<R> msg, UUID nodeId, Process p) {
         p.initCrdFut.listen(f -> {
             boolean rmvd, isEmpty;
 
@@ -316,7 +303,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 res.put(uuid, msg.response());
         });
 
-        FullMessage<R> msg = new FullMessage<>(p.id, type, res, err);
+        FullMessage<R> msg = new FullMessage<>(p.id, res, err);
 
         try {
             ctx.discovery().sendCustomEvent(msg);
@@ -363,22 +350,5 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         private Process(UUID id) {
             this.id = id;
         }
-    }
-
-    /** Defines distributed processes. */
-    public enum DistributedProcessType {
-        /**
-         * Master key change prepare process.
-         *
-         * @see GridEncryptionManager
-         */
-        MASTER_KEY_CHANGE_PREPARE,
-
-        /**
-         * Master key change finish process.
-         *
-         * @see GridEncryptionManager
-         */
-        MASTER_KEY_CHANGE_FINISH
     }
 }
