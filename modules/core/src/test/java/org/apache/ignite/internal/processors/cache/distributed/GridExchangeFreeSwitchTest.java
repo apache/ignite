@@ -146,8 +146,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param cntSingle Count for GridDhtPartitionsSingleMessage.
-     * @param cntFull Count for GridDhtPartitionsFullMessage.
+     * @param cntSingle Count GridDhtPartitionsSingleMessage.
+     * @param cntFull Count GridDhtPartitionsFullMessage.
      */
     private void initCountPmeMessages(int nodes, AtomicLong cntSingle, AtomicLong cntFull) {
         for (int i = 0; i < nodes; i++) {
