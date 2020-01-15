@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -3370,7 +3369,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             orderMap.get(order).add(grpId);
                         }
 
-                        Runnable r = null;
+                        Runnable r = loadFilesStarter;
 
                         List<String> rebList = new LinkedList<>();
 
@@ -3412,7 +3411,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
                         }
-                        else if (r != null || loadFilesStarter != null) {
+                        else if (r != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList +
@@ -3421,9 +3420,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 ", node=" + exchId.nodeId() + ']');
 
                             rebTopVer = resVer;
-
-                            if (loadFilesStarter != null)
-                                loadFilesStarter.run();
 
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:

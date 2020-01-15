@@ -35,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -42,10 +43,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRequestMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
@@ -58,12 +65,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
 
 /**
  * File rebalancing tests.
- *
- * todo [+] mixed rebalancing (file + historical) - not supported
- * todo mixed cache configuration (atomic+tx)
- * todo [+] mixed data region configuration (pds+in-mem)
- * todo partition size change (start file rebalancing partition, cancel and then partition met)
- * todo [+] crd joins blt
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
 @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
@@ -90,6 +91,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     /** */
     private final Function<Integer, TestValue> testValProducer = n -> new TestValue(n, n, n);
 
+    /** */
+    private volatile boolean snapshotRequested;
+
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
         return 5_000;
@@ -101,8 +105,26 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        assertTrue(snapshotRequested);
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi() {
+            @Override public void sendMessage(ClusterNode node, Message msg,
+                IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+
+                if (((GridIoMessage)msg).message() instanceof SnapshotRequestMessage)
+                    snapshotRequested = true;
+
+                super.sendMessage(node, msg, ackC);
+            }
+        });
 
         // Add 2 more cache (shared cache group).
         CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();

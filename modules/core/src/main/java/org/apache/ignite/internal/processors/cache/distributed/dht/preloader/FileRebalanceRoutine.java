@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -146,6 +147,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      */
     public void requestPartitionsSnapshot() {
         initialize();
+
+        if (log.isInfoEnabled()) {
+            log.info("Starting file rebalancing routine [grps=" +
+                F.viewReadOnly(remaining.keySet(), grpId -> cctx.cache().cacheGroup(grpId).cacheOrGroupName()) + "]");
+        }
 
         // todo should send start event only when we starting to preload specified group?
         for (Integer grpId : remaining.keySet()) {

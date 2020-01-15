@@ -235,12 +235,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
                 exchFut.exchangeId(), rebalanceId, cpLsnr::cancelAll);
 
-            if (log.isInfoEnabled())
-                log.info("Prepare to start file rebalancing.");
-
-            if (log.isTraceEnabled())
-                log.trace(formatAssignments(orderedAssigns));
-
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
                     if (fut0.error() != null) {
