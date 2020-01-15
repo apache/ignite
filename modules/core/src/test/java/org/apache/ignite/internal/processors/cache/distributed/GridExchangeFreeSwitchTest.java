@@ -224,22 +224,22 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      *
-     * @param startGrids Number of nodes needed to run.
+     * @param nodesCnt Number of nodes needed to run.
      */
-    private void testNodeLeftOnFullyRebalancedCluster(int startGrids) throws Exception {
-        testNodeLeftOnFullyRebalancedCluster(startGrids, startGrids);
+    private void testNodeLeftOnFullyRebalancedCluster(int nodesCnt) throws Exception {
+        testNodeLeftOnFullyRebalancedCluster(nodesCnt, nodesCnt);
     }
 
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      *
-     * @param startGrids Number of nodes needed to run.
-     * @param sizeTopology expected topology size.
+     * @param nodesCnt Number of nodes needed to run.
+     * @param topologySize expected topology size.
      */
-    private void testNodeLeftOnFullyRebalancedCluster(int startGrids, int sizeTopology) throws Exception {
-        Ignite ignite = startGridsMultiThreaded(startGrids, true);
+    private void testNodeLeftOnFullyRebalancedCluster(int nodesCnt, int topologySize) throws Exception {
+        Ignite ignite = startGridsMultiThreaded(nodesCnt, true);
 
-        checkTopology(sizeTopology);
+        checkTopology(topologySize);
 
         AtomicLong cnt = new AtomicLong();
 
@@ -258,23 +258,23 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        initCountPmeMessages(sizeTopology, cnt);
+        initCountPmeMessages(topologySize, cnt);
 
         Random r = new Random();
 
-        while (sizeTopology > 1) {
-            Ignite i = G.allGrids().get(r.nextInt(sizeTopology--));
+        while (topologySize > 1) {
+            Ignite failed = G.allGrids().get(r.nextInt(topologySize--));
 
             if (persistence && pmeExpected &&
-                !nodeSupports(i.cluster().localNode(), PME_FREE_SWITCH) &&
+                !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
                 (cntNotSupported.decrementAndGet() == 0))
                 pmeExpected = false;
 
-            i.close(); // Stopping random node.
+            failed.close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected ? (sizeTopology - 1) : 0, cnt.get());
+            assertEquals(pmeExpected ? (topologySize - 1) : 0, cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
