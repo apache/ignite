@@ -170,7 +170,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /**
-         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with passed name.
+         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
+         * name.
          *
          * @param nodeName Node name.
          * @param num Expected number of invokes.
@@ -180,8 +181,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /**
-         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with passed name
-         * and the passed operation name.
+         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
+         * name and the passed operation name.
          *
          * @param nodeName Node name.
          * @param opName Operation name.
