@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -67,6 +68,8 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.cleanIdleVerifyLogFiles;
 import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
@@ -113,6 +116,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** Enable automatic confirmation to avoid user interaction. */
     protected boolean autoConfirmation = true;
 
+    /** {@code True} if encription is enabled. */
+    protected boolean encriptionEnabled;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -142,6 +148,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         log.info(testOut.toString());
 
         testOut.reset();
+
+        encriptionEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -201,6 +209,15 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
+
+        if (encriptionEnabled) {
+            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+            encSpi.setKeyStorePath(KEYSTORE_PATH);
+            encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+
+            cfg.setEncryptionSpi(encSpi);
+        }
 
         return cfg;
     }
@@ -370,7 +387,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1));
+            .setBackups(1)
+            .setEncryptionEnabled(encriptionEnabled));
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
         for (int i = 0; i < countEntries; i++)
