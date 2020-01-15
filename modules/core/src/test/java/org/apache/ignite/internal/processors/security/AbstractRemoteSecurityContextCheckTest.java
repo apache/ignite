@@ -243,7 +243,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
             T2<Integer, Integer> t2 = expInvokes.get(key);
 
-            if(t2 == null)
+            if (t2 == null)
                 error("Unexpected registration parameters [node=" + ignite.name() + ", opName=" + opName + "].");
 
             Integer val = t2.getValue();
