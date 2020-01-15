@@ -158,7 +158,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cnt.incrementAndGet();
 
-                        return false;
+                    return false;
                 }
             });
         }
