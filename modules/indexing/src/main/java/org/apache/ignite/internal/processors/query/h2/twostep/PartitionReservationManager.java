@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -59,8 +60,9 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Group reservations cache. When affinity version is not changed and all primary partitions must be reserved
-     * we get group reservation from this map instead of create new reservation group.
+    /**
+     * Group reservations cache. When affinity version is not changed and all primary partitions must be reserved we get
+     * group reservation from this map instead of create new reservation group.
      */
     private final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
 
@@ -78,6 +80,34 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
         log = ctx.log(PartitionReservationManager.class);
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(this);
+    }
+
+    /**
+     * Decide whether to ignore or proceed with lost partition.
+     *
+     * @param cctx Cache context.
+     * @param part Partition.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static void ignoreLostPartitionIfPossible(GridCacheContext cctx, GridDhtLocalPartition part)
+        throws IgniteCheckedException {
+        PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
+
+        if (plc != null) {
+            if (plc == READ_ONLY_SAFE || plc == READ_WRITE_SAFE) {
+                throw new CacheInvalidStateException("Failed to execute query because cache partition has been " +
+                    "lost [cacheName=" + cctx.name() + ", part=" + part + ']');
+            }
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param p Partition ID.
+     * @return Partition.
+     */
+    private static GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
+        return cctx.topology().localPartition(p, NONE, false);
     }
 
     /**
@@ -125,8 +155,8 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
             if (cctx == null) {
                 return new PartitionReservation(reserved,
                     String.format("Failed to reserve partitions for query (cache is not " +
-                    "found on local node) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s]",
-                    ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i)));
+                            "found on local node) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s]",
+                        ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i)));
             }
 
             if (cctx.isLocal() || !cctx.rebalanceEnabled())
@@ -142,8 +172,8 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                     if (!r.reserve())
                         return new PartitionReservation(reserved,
                             String.format("Failed to reserve partitions for query (group " +
-                            "reservation failed) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
-                            "cacheName=%s]",ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i), cctx.name()));
+                                "reservation failed) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                "cacheName=%s]", ctx.localNodeId(), nodeId, reqId, topVer, cacheIds.get(i), cctx.name()));
 
                     reserved.add(r);
                 }
@@ -161,20 +191,20 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
 
                             if (partState != OWNING)
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions for " +
-                                        "query (partition of REPLICATED cache is not in OWNING state) [" +
-                                        "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
-                                        "cacheName=%s, part=%s, partFound=%s, partState=%s]",
-                                    ctx.localNodeId(),
-                                    nodeId,
-                                    reqId,
-                                    topVer,
-                                    cacheIds.get(i),
-                                    cctx.name(),
-                                    p,
-                                    (part != null),
-                                    partState
-                                ));
+                                    String.format("Failed to reserve partitions for " +
+                                            "query (partition of REPLICATED cache is not in OWNING state) [" +
+                                            "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                            "cacheName=%s, part=%s, partFound=%s, partState=%s]",
+                                        ctx.localNodeId(),
+                                        nodeId,
+                                        reqId,
+                                        topVer,
+                                        cacheIds.get(i),
+                                        cctx.name(),
+                                        p,
+                                        (part != null),
+                                        partState
+                                    ));
                         }
 
                         // Mark that we checked this replicated cache.
@@ -197,9 +227,28 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions " +
-                                        "for query (partition of PARTITIONED cache is not found or not in OWNING " +
-                                        "state) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                    String.format("Failed to reserve partitions " +
+                                            "for query (partition of PARTITIONED cache is not found or not in OWNING " +
+                                            "state) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
+                                            "cacheName=%s, part=%s, partFound=%s, partState=%s]",
+                                        ctx.localNodeId(),
+                                        nodeId,
+                                        reqId,
+                                        topVer,
+                                        cacheIds.get(i),
+                                        cctx.name(),
+                                        partId,
+                                        (part != null),
+                                        partState
+                                    ));
+                            }
+                        }
+
+                        if (!part.reserve()) {
+                            return new PartitionReservation(reserved,
+                                String.format("Failed to reserve partitions for query " +
+                                        "(partition of PARTITIONED cache cannot be reserved) [" +
+                                        "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
                                         "cacheName=%s, part=%s, partFound=%s, partState=%s]",
                                     ctx.localNodeId(),
                                     nodeId,
@@ -208,28 +257,9 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                                     cacheIds.get(i),
                                     cctx.name(),
                                     partId,
-                                    (part != null),
+                                    true,
                                     partState
                                 ));
-                            }
-                        }
-
-                        if (!part.reserve()) {
-                            return new PartitionReservation(reserved,
-                                    String.format("Failed to reserve partitions for query " +
-                                    "(partition of PARTITIONED cache cannot be reserved) [" +
-                                    "localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, cacheId=%s, " +
-                                    "cacheName=%s, part=%s, partFound=%s, partState=%s]",
-                                ctx.localNodeId(),
-                                nodeId,
-                                reqId,
-                                topVer,
-                                cacheIds.get(i),
-                                cctx.name(),
-                                partId,
-                                true,
-                                partState
-                            ));
                         }
 
                         reserved.add(part);
@@ -244,19 +274,19 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                                 ignoreLostPartitionIfPossible(cctx, part);
                             else {
                                 return new PartitionReservation(reserved,
-                                        String.format("Failed to reserve partitions for " +
-                                        "query (partition of PARTITIONED cache is not in OWNING state after " +
-                                        "reservation) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, " +
-                                        "cacheId=%s, cacheName=%s, part=%s, partState=%s]",
-                                    ctx.localNodeId(),
-                                    nodeId,
-                                    reqId,
-                                    topVer,
-                                    cacheIds.get(i),
-                                    cctx.name(),
-                                    partId,
-                                    partState
-                                ));
+                                    String.format("Failed to reserve partitions for " +
+                                            "query (partition of PARTITIONED cache is not in OWNING state after " +
+                                            "reservation) [localNodeId=%s, rmtNodeId=%s, reqId=%s, affTopVer=%s, " +
+                                            "cacheId=%s, cacheName=%s, part=%s, partState=%s]",
+                                        ctx.localNodeId(),
+                                        nodeId,
+                                        reqId,
+                                        topVer,
+                                        cacheIds.get(i),
+                                        cctx.name(),
+                                        partId,
+                                        partState
+                                    ));
                             }
                         }
                     }
@@ -295,50 +325,25 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     }
 
     /**
-     * Decide whether to ignore or proceed with lost partition.
-     *
-     * @param cctx Cache context.
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static void ignoreLostPartitionIfPossible(GridCacheContext cctx, GridDhtLocalPartition part)
-        throws IgniteCheckedException {
-        PartitionLossPolicy plc = cctx.config().getPartitionLossPolicy();
-
-        if (plc != null) {
-            if (plc == READ_ONLY_SAFE || plc == READ_WRITE_SAFE) {
-                throw new CacheInvalidStateException("Failed to execute query because cache partition has been " +
-                    "lost [cacheName=" + cctx.name() + ", part=" + part + ']');
-            }
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param p Partition ID.
-     * @return Partition.
-     */
-    private static GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
-        return cctx.topology().localPartition(p, NONE, false);
-    }
-
-    /**
      * Cleanup group reservations cache on change affinity version.
      */
     @Override public void onDoneAfterTopologyUnlock(final GridDhtPartitionsExchangeFuture fut) {
         try {
             // Must not do anything at the exchange thread. Dispatch to the management thread pool.
-            ctx.closure().runLocal(() -> {
-                    AffinityTopologyVersion topVer = ctx.cache().context().exchange()
-                        .lastAffinityChangedTopologyVersion(fut.topologyVersion());
+            ctx.closure().runLocal(
+                new GridPlainRunnable() {
+                    @Override public void run() {
+                        AffinityTopologyVersion topVer = ctx.cache().context().exchange()
+                            .lastAffinityChangedTopologyVersion(fut.topologyVersion());
 
-                    reservations.forEach((key, r) -> {
-                        if (r != REPLICATED_RESERVABLE && !F.eq(key.topologyVersion(), topVer)) {
-                            assert r instanceof GridDhtPartitionsReservation;
+                        reservations.forEach((key, r) -> {
+                            if (r != REPLICATED_RESERVABLE && !F.eq(key.topologyVersion(), topVer)) {
+                                assert r instanceof GridDhtPartitionsReservation;
 
-                            ((GridDhtPartitionsReservation)r).invalidate();
-                        }
-                    });
+                                ((GridDhtPartitionsReservation)r).invalidate();
+                            }
+                        });
+                    }
                 },
                 GridIoPolicy.MANAGEMENT_POOL);
         }
