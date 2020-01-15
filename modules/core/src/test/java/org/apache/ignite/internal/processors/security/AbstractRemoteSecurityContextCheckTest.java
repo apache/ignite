@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -145,12 +146,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final Map<T2<String, String>, T2<Integer, Integer>> expInvokes = new HashMap<>();
+        private final Map<T2<String, String>, T2<Integer, AtomicInteger>> expInvokes = new ConcurrentHashMap<>();
 
         /**
          * Checked error.
          */
-        private AssertionError error;
+        private volatile AssertionError error;
 
         /**
          * Expected security subject id.
@@ -158,7 +159,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        public synchronized Verifier clear() {
+        public Verifier clear() {
             expInvokes.clear();
 
             error = null;
@@ -188,7 +189,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param num Expected number of invokes.
          */
         public Verifier expect(String nodeName, String opName, int num) {
-            expInvokes.put(new T2<>(nodeName, opName), new T2<>(num, 0));
+            expInvokes.put(new T2<>(nodeName, opName), new T2<>(num, new AtomicInteger()));
 
             return this;
         }
@@ -226,7 +227,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param ignite Instance of ignite.
          * @param opName Operation name.
          */
-        public synchronized void register(IgniteEx ignite, String opName) {
+        public void register(IgniteEx ignite, String opName) {
             if (error != null)
                 throw error;
 
@@ -239,36 +240,32 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
                 error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
                     ", actual=" + actualSubjId + "].");
 
-            T2<String, String> key = new T2<>(ignite.name(), opName);
+            Object res = expInvokes.computeIfPresent(new T2<>(ignite.name(), opName), (k, v) -> {
+                v.get2().incrementAndGet();
 
-            T2<Integer, Integer> t2 = expInvokes.get(key);
+                return v;
+            });
 
-            if (t2 == null)
+            if (res == null)
                 error("Unexpected registration parameters [node=" + ignite.name() + ", opName=" + opName + "].");
-
-            Integer val = t2.getValue();
-
-            t2.setValue(++val);
-
-            expInvokes.put(key, t2);
         }
 
         /**
          * Checks result of test and clears expected behavior.
          */
-        public synchronized void checkResult() {
+        public void checkResult() {
             if (error != null)
                 throw error;
 
             expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
                 (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
-                ". Execution of register: ", v.get1(), v.get2()));
+                ". Execution of register: ", v.get1(), Integer.valueOf(v.get2().get())));
 
             clear();
         }
 
         /** */
-        public synchronized Verifier initiator(IgniteEx initiator) {
+        public Verifier initiator(IgniteEx initiator) {
             expSecSubjId = secSubjectId(initiator);
 
             return this;
@@ -282,7 +279,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * @param msg Error message.
          */
-        private void error(String msg){
+        private void error(String msg) {
             error = new AssertionError(msg);
 
             throw error;
@@ -390,7 +387,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             run();
 
             if (k instanceof Cache.Entry)
-                return (V) ((Cache.Entry)k).getValue();
+                return (V)((Cache.Entry)k).getValue();
 
             return null;
         }
