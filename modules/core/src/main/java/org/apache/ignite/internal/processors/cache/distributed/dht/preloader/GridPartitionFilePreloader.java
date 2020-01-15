@@ -269,7 +269,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Check whether file rebalancing is supported by the cache group.
+     * Check whether file rebalancing is supported for the cache group.
      *
      * @param grp Cache group.
      * @param nodes List of Nodes.
@@ -278,31 +278,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     public boolean supports(CacheGroupContext grp, Collection<ClusterNode> nodes) {
         assert nodes != null && !nodes.isEmpty();
 
-        return supports(grp) &&
-            IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE);
-    }
-
-    /**
-     * Check whether file rebalancing is supported by the cache group.
-     *
-     * @param grp Cache group.
-     * @return {@code True} if file rebalancing is applicable for specified cache group.
-     */
-    public boolean supports(CacheGroupContext grp) {
-        if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled() || grp.isLocal())
+        if (!supports(grp))
             return false;
 
-        if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
-            return false;
-
-        // Do not rebalance system cache with files as they are not exists.
-        if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
-            return false;
-
-        if (grp.mvccEnabled())
-            return false;
-
-        if (grp.hasAtomicCaches())
+        if (!IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_PARTITION_FILE_REBALANCE))
             return false;
 
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
@@ -324,6 +303,26 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
 
         return false;
+    }
+
+    /**
+     * Check whether file rebalancing is supported for the cache group.
+     *
+     * @param grp Cache group.
+     * @return {@code True} if file rebalancing is applicable for specified cache group.
+     */
+    public boolean supports(CacheGroupContext grp) {
+        if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled() || grp.isLocal())
+            return false;
+
+        if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
+            return false;
+
+        // Do not rebalance system cache with files as they are not exists.
+        if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
+            return false;
+
+        return !grp.mvccEnabled() && !grp.hasAtomicCaches();
     }
 
     /**
