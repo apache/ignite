@@ -68,7 +68,7 @@ public class ExchangeContext {
         if (!allNodesSupportsPmeFreeSwitch)
             fut.logger().warning("Current topology does not support the PME-free switch, " +
                 "may be you use different versions Apache Ignite or the feature is explicitly disabled " +
-                "by JVM option IGNITE_PME_FREE_SWITCH_DISABLED on some one nodes.");
+                "by JVM option IGNITE_PME_FREE_SWITCH_DISABLED on some nodes.");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&
