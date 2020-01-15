@@ -245,7 +245,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
-        AtomicInteger cntNotSupported = new AtomicInteger();
+        AtomicInteger cntNodesNotSupportingPmeFreeSwitch = new AtomicInteger();
 
         boolean pmeExpected = !persistence || !allNodesSupports(nodes, PME_FREE_SWITCH);
 
@@ -254,7 +254,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 if (nodeSupports(cn, PME_FREE_SWITCH))
                     continue;
 
-                cntNotSupported.incrementAndGet();
+                cntNodesNotSupportingPmeFreeSwitch.incrementAndGet();
             }
         }
 
@@ -267,7 +267,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             if (persistence && pmeExpected &&
                 !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
-                (cntNotSupported.decrementAndGet() == 0))
+                (cntNodesNotSupportingPmeFreeSwitch.decrementAndGet() == 0))
                 pmeExpected = false;
 
             failed.close(); // Stopping random node.
