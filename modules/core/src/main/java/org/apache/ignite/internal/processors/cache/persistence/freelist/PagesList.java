@@ -1914,7 +1914,6 @@ public abstract class PagesList extends DataStructure {
     }
 
     /** Class to store page-list cache onheap. */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static class PagesCache {
         /** Pages cache max size. */
         private static final int MAX_SIZE =
@@ -1957,7 +1956,7 @@ public abstract class PagesList extends DataStructure {
         /**
          * Default constructor.
          */
-        public PagesCache(AtomicLong pagesCacheLimit) {
+        public PagesCache(@Nullable AtomicLong pagesCacheLimit) {
             assert U.isPow2(STRIPES_COUNT) : STRIPES_COUNT;
 
             for (int i = 0; i < STRIPES_COUNT; i++)
@@ -2019,7 +2018,6 @@ public abstract class PagesList extends DataStructure {
         /**
          * Flush all stripes to one list and clear stripes.
          */
-        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         public GridLongList flush() {
             GridLongList res = null;
 
