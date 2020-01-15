@@ -106,7 +106,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue(snapshotRequested);
+        assertTrue("File rebalance hasn't been triggered.", snapshotRequested);
 
         super.afterTest();
     }
@@ -118,7 +118,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
                 IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-
                 if (((GridIoMessage)msg).message() instanceof SnapshotRequestMessage)
                     snapshotRequested = true;
 
@@ -130,11 +129,12 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
 
         int len = ccfgs.length;
+        int rebalanceOrder = 10;
 
         CacheConfiguration[] ccfgs0 = Arrays.copyOf(ccfgs, ccfgs.length + 2);
 
-        ccfgs0[len] = cacheConfiguration(SHARED1).setGroupName(SHARED_GROUP);
-        ccfgs0[len + 1] = cacheConfiguration(SHARED2).setGroupName(SHARED_GROUP);
+        ccfgs0[len] = cacheConfiguration(SHARED1).setGroupName(SHARED_GROUP).setRebalanceOrder(rebalanceOrder);
+        ccfgs0[len + 1] = cacheConfiguration(SHARED2).setGroupName(SHARED_GROUP).setRebalanceOrder(rebalanceOrder);
 
         cfg.setCacheConfiguration(ccfgs0);
 
@@ -186,7 +186,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
-    public void testSimpleRebalancingSharedGroup() throws Exception {
+    public void testSimpleRebalancingSharedGroupOrdered() throws Exception {
         boolean checkRemoves = true;
 
         IgniteEx ignite0 = startGrid(0);

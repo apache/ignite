@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -46,12 +47,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,15 +98,18 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<Long, UUID> partsToNodes = new ConcurrentHashMap<>();
 
     /** The remaining groups with the number of partitions. */
+    @GridToStringInclude
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
     /** Count of partition snapshots received. */
     private final AtomicInteger receivedCnt = new AtomicInteger();
 
     /** Cache group with restored partition snapshots and HWM value of update counter. */
+    @GridToStringInclude
     private final Map<Integer, Map<Integer, Long>> restored = new ConcurrentHashMap<>();
 
     /** Off-heap region clear tasks. */
+    @GridToStringInclude
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
     /** Snapshot future. */
@@ -148,20 +154,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     public void requestPartitionsSnapshot() {
         initialize();
 
-        if (log.isInfoEnabled()) {
-            log.info("Starting file rebalancing routine [grps=" +
-                F.viewReadOnly(remaining.keySet(), grpId -> cctx.cache().cacheGroup(grpId).cacheOrGroupName()) + "]");
-        }
-
-        // todo should send start event only when we starting to preload specified group?
-        for (Integer grpId : remaining.keySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            assert !grp.localWalEnabled() :
-                "WAL shoud be disabled for file rebalancing [grp=" + grp.cacheOrGroupName() + "]";
-
-            grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-        }
+        Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
 
         cctx.kernalContext().getSystemExecutorService().submit(() -> {
             for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
@@ -177,15 +170,26 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                                 return;
 
                             if (snapFut != null && (snapFut.isCancelled() || !snapFut.get()))
-                                break;
+                                return;
 
-                            snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
+                            Set<String> grps = new HashSet<>();
+
+                            for (Integer grpId : assigns.keySet()) {
+                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                                grps.add(grp.cacheOrGroupName());
+
+                                if (!requestedGroups.contains(grpId)) {
+                                    requestedGroups.add(grpId);
+
+                                    grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+                                }
+                            }
 
                             if (log.isInfoEnabled())
-                                log.info("Start partitions preloading [from=" + nodeId + "]");
+                                log.info("Preloading partition files [supplier=" + nodeId + ", grps=" + grps + "]");
 
-                            if (log.isDebugEnabled())
-                                log.debug("Current state: " + this);
+                            snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
                         }
                         finally {
                             lock.unlock();
@@ -258,7 +262,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 ClearRegionTask offheapClearTask = new ClearRegionTask(parts, region, cctx, log);
 
-                offheapClearTasks.put(regionName, offheapClearTask.doClear());
+                offheapClearTasks.put(regionName, offheapClearTask.clearAsync());
             }
         }
         catch (IgniteCheckedException e) {
@@ -543,7 +547,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             if (!clearTask.isDone() && log.isDebugEnabled())
-                log.debug("Wait for region cleanup [grp=" + grp + "]");
+                log.debug("Wait for region cleanup [grp=" + grp.cacheOrGroupName() + "]");
             else if (clearTask.error() != null) {
                 log.warning("Off heap region was not cleared properly [region=" + region + "]", clearTask.error());
 
@@ -558,26 +562,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
-    // todo
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder buf = new StringBuilder();
-
-        buf.append("\n\treceived " + receivedCnt.get() + " out of " + partsToNodes.size());
-        buf.append("\n\tRemainng: " + remaining);
-
-        if (!snapFut.isDone())
-            buf.append("\n\tSnapshot: " + snapFut.toString());
-
-        buf.append("\n\tMemory regions:\n");
-
-        for (Map.Entry<String, IgniteInternalFuture> entry : offheapClearTasks.entrySet())
-            buf.append("\t\t" + entry.getKey() + " finished=" + entry.getValue().isDone() + ", failed=" + ((GridFutureAdapter)entry.getValue()).isFailed() + "\n");
-
-        if (!isDone())
-            buf.append("\n\tIndex future fnished=").append(idxRebuildFut.isDone()).append(" failed=").append(idxRebuildFut.isFailed()).append(" futs=").append(idxRebuildFut.futures()).append('\n');
-
-        return buf.toString();
+        return S.toString(FileRebalanceRoutine.class, this);
     }
 
     /** */
@@ -610,11 +597,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         /**
          * Clears off-heap memory region.
          */
-        public IgniteInternalFuture doClear() {
+        public IgniteInternalFuture clearAsync() {
             PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();
 
             if (log.isDebugEnabled())
-                log.debug("Cleaning up region " + region.config().getName());
+                log.debug("Off-heap clear task started [region=" + region.config().getName() + "]");
 
             memEx.clearAsync(
                 (grp, pageId) -> parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
@@ -665,8 +652,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId).truncate(tag);
 
-                if (log.isInfoEnabled())
-                    log.info("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
+                if (log.isDebugEnabled())
+                    log.debug("Parition truncated [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
             }
         }
     }

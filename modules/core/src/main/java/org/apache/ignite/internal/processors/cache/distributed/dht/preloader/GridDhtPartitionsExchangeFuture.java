@@ -2364,9 +2364,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
 
-                if (cctx.filePreloader() != null)
-                    cctx.filePreloader().onExchangeDone(this);
-
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
                         grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
@@ -2374,6 +2371,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (changedAffinity())
                     cctx.walState().changeLocalStatesOnExchangeDone(res, changedBaseline());
+
+                if (cctx.filePreloader() != null)
+                    cctx.filePreloader().onExchangeDone(this);
             }
         }
         catch (Throwable t) {

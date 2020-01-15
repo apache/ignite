@@ -112,7 +112,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Callback on exchange done.
+     * Callback on exchange done. Should be called after changing the local WAL state.
      *
      * @param exchFut Exchange future.
      */
@@ -171,7 +171,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         // At this point, cache updates are queued, and we can safely
         // switch partitions to read-only mode and vice versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (!supports(grp))
+            if (!supports(grp) || grp.localWalEnabled())
                 continue;
 
             if (!locJoinBaselineChange && !required(grp)) {
@@ -205,7 +205,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         AffinityTopologyVersion topVer,
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
-        Map<Integer, GridDhtPreloaderAssignments> assignments
+        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
     ) {
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = sortAssignments(assignments);
 
@@ -468,13 +468,13 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
     private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap) {
+        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap) {
         Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new TreeMap<>();
 
-        for (Map.Entry<Integer, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
-            int grpId = grpEntry.getKey();
+        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
+            CacheGroupContext grp = grpEntry.getKey();
 
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+            int grpId = grpEntry.getKey().groupId();
 
             GridDhtPreloaderAssignments assigns = grpEntry.getValue();
 
@@ -501,31 +501,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return ordered.values();
     }
 
-    private String formatAssignments(Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> list) {
-        StringBuilder buf = new StringBuilder("\nFile rebalancing mappings [node=" + cctx.localNodeId() + "]\n");
-
-        for (Map<ClusterNode, Map<Integer, Set<Integer>>> entry : list) {
-            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> mapEntry : entry.entrySet()) {
-                buf.append("\t\tnode=").append(mapEntry.getKey().id()).append('\n');
-
-                for (Map.Entry<Integer, Set<Integer>> setEntry : mapEntry.getValue().entrySet()) {
-                    buf.append("\t\t\tgrp=").append(cctx.cache().cacheGroup(setEntry.getKey()).cacheOrGroupName()).append('\n');
-
-                    for (int p : setEntry.getValue())
-                        buf.append("\t\t\t\tp=").append(p).append('\n');
-                }
-
-                buf.append('\n');
-            }
-
-            buf.append('\n');
-        }
-
-        return buf.toString();
-    }
-
-    /**todo should be elimiaated (see comment about restorepartition) */
-    public static class CheckpointListener implements DbCheckpointListener {
+    /** */
+    private static class CheckpointListener implements DbCheckpointListener {
         /** Queue. */
         private final ConcurrentLinkedQueue<CheckpointTask> queue = new ConcurrentLinkedQueue<>();
 

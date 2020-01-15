@@ -22,10 +22,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -3135,7 +3136,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    Map<Integer, GridDhtPreloaderAssignments> fileAssignsMap = null;
+                    Map<CacheGroupContext, GridDhtPreloaderAssignments> fileAssignsMap = null;
 
                     GridPartitionFilePreloader filePreloader = cctx.filePreloader();
 
@@ -3329,7 +3330,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                                 if (!forcePreload && filePreloader != null && filePreloader.required(grp))
-                                    fileAssignsMap.put(grp.groupId(), assigns);
+                                    fileAssignsMap.put(grp, assigns);
                                 else
                                     assignsMap.put(grp.groupId(), assigns);
 
@@ -3371,7 +3372,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         Runnable r = loadFilesStarter;
 
-                        List<String> rebList = new LinkedList<>();
+                        List<String> rebList = fileAssignsMap.keySet().stream().sorted(
+                            Comparator.comparingInt((CacheGroupContext g) -> g.config().getRebalanceOrder()).reversed()
+                        ).map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList());
 
                         boolean assignsCancelled = false;
 
