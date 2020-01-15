@@ -160,7 +160,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cntSengle.incrementAndGet();
 
-                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class)&&
+                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
                         cntFull.incrementAndGet();
 
