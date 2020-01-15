@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -1739,8 +1740,12 @@ public class IgniteTxHandler {
                         try {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
 
+                            // Entry will be invalidated if a partition was already moved to RENTING.
+                            if (locPart.state() == RENTING)
+                                continue;
+
                             if (txCounters != null) {
-                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition());
+                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
 
                                 if (cntr != null) // Counter is null if entry is no-op.
                                     entry.updateCounter(cntr);
@@ -2134,7 +2139,7 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING) { // Check is actual only for backup node.
+                            if (part.state() != RENTING) { // Check is actual only for backup node.
                                 long start = counter.initialCounter(i);
                                 long delta = counter.updatesCount(i);
 

@@ -367,6 +367,8 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void reset() {
+        initCntr = 0;
+
         cntr.set(0);
 
         reserveCntr.set(0);
