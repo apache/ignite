@@ -256,13 +256,6 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         }
 
         /** */
-        private Verifier expectSubjId(UUID expSecSubjId) {
-            this.expSecSubjId = expSecSubjId;
-
-            return this;
-        }
-
-        /** */
         public Verifier initiator(IgniteEx initiator) {
             expSecSubjId = secSubjectId(initiator);
 
