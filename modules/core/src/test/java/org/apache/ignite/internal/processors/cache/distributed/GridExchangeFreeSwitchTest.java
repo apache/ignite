@@ -234,12 +234,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      *
      * @param nodesCnt Number of nodes needed to run.
-     * @param topologySize expected topology size.
+     * @param topSize expected topology size.
      */
-    private void testNodeLeftOnFullyRebalancedCluster(int nodesCnt, int topologySize) throws Exception {
+    private void testNodeLeftOnFullyRebalancedCluster(int nodesCnt, int topSize) throws Exception {
         Ignite ignite = startGridsMultiThreaded(nodesCnt, true);
 
-        checkTopology(topologySize);
+        checkTopology(topSize);
 
         AtomicLong cnt = new AtomicLong();
 
@@ -258,12 +258,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        initCountPmeMessages(topologySize, cnt);
+        initCountPmeMessages(topSize, cnt);
 
         Random r = new Random();
 
-        while (topologySize > 1) {
-            Ignite failed = G.allGrids().get(r.nextInt(topologySize--));
+        while (topSize > 1) {
+            Ignite failed = G.allGrids().get(r.nextInt(topSize--));
 
             if (persistence && pmeExpected &&
                 !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
@@ -274,7 +274,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected ? (topologySize - 1) : 0, cnt.get());
+            assertEquals(pmeExpected ? (topSize - 1) : 0, cnt.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
