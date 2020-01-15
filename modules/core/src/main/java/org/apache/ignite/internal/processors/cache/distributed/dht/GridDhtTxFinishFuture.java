@@ -435,7 +435,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (tx.onePhaseCommit())
             return false;
 
-        boolean sync = !dhtMap.isEmpty() || tx.syncMode() == FULL_SYNC;
+        boolean sync = tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
             sync = true;
@@ -486,7 +486,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.system(),
                 tx.ioPolicy(),
                 tx.isSystemInvalidate(),
-                sync ? FULL_SYNC : tx.syncMode(),
+                sync || !commit ? FULL_SYNC : tx.syncMode(),
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
@@ -518,8 +518,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                             ", node=" + n.id() + ']');
                     }
 
-                    if (sync)
-                        res = true;
+                    if (sync || !commit)
+                        res = true; // Force sync mode for rollback to prevent an issue with concurrent recovery.
                     else
                         fut.onDone();
                 }
