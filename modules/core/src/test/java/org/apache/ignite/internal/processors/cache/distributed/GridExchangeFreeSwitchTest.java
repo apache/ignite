@@ -146,10 +146,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param cntSengle Count.
-     * @param cntFull Count.
+     * @param cntSingle Count for GridDhtPartitionsSingleMessage.
+     * @param cntFull Count for GridDhtPartitionsFullMessage.
      */
-    private void initCountPmeMessages(int nodes, AtomicLong cntSengle, AtomicLong cntFull) {
+    private void initCountPmeMessages(int nodes, AtomicLong cntSingle, AtomicLong cntFull) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -158,7 +158,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 @Override public boolean apply(ClusterNode node, Message msg) {
                     if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cntSengle.incrementAndGet();
+                        cntSingle.incrementAndGet();
 
                     if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
