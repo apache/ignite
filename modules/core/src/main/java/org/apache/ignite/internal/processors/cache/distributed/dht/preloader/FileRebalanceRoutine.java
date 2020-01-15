@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,9 +65,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
  * File rebalance routine.
  */
 public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
-    /** */
-    private static final long MAX_MEM_CLEANUP_TIMEOUT = 60_000;
-
     /** Cancel callback invoked when routine is aborted. */
     private final IgniteRunnable abortCb;
 
@@ -149,7 +147,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Request snapshot.
+     * Initialize and start partition preloading.
      */
     public void requestPartitionsSnapshot() {
         initialize();
@@ -186,8 +184,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                                 }
                             }
 
-                            if (log.isInfoEnabled())
-                                log.info("Preloading partition files [supplier=" + nodeId + ", grps=" + grps + "]");
+                            U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + grps + "]");
 
                             snapFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
                         }
@@ -280,11 +277,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
-        if (log.isTraceEnabled()) {
-            log.trace("Processing partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
-                ", p=" + partId + ", path=" + file + "]");
-        }
-
         if (isDone())
             return;
 
@@ -300,8 +292,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 try {
                     onPartitionSnapshotRestored(grpId, partId, f.get());
                 } catch (IgniteCheckedException e) {
-                    log.error("Unable to restore partition snapshot [grp=" + cctx.cache().cacheGroup(grpId) +
-                        ", p=" + partId + "]");
+                    log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
 
                     onDone(e);
                 }
@@ -345,7 +336,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-        assert !grp.localWalEnabled() : "grp=" + grp.cacheOrGroupName();
+        String grpName = grp.cacheOrGroupName();
+
+        assert !grp.localWalEnabled() : "grp=" + grpName;
 
         Map<UUID, Map<Integer, T2<Long, Long>>> histAssignments = new HashMap<>();
 
@@ -368,14 +361,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             if (log.isDebugEnabled())
-                log.debug("No need for WAL rebalance [grp=" + grp.cacheOrGroupName() + ", p=" + partId + "]");
+                log.debug("No need for WAL rebalance [grp=" + grpName + ", p=" + partId + "]");
         }
 
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (qryProc.moduleEnabled()) {
-            if (log.isInfoEnabled())
-                log.info("Starting index rebuild [grp=" + grp.cacheOrGroupName() + "]");
+            U.log(log,"Starting index rebuild [grp=" + grpName + "]");
 
             for (GridCacheContext ctx : grp.caches()) {
                 IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
@@ -385,15 +377,14 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
         }
         else
-        if (log.isInfoEnabled())
-            log.info("Skipping index rebuild for cache group: " + grp.cacheOrGroupName());
+            U.log(log, "Skipping index rebuild [grp=" + grpName + "]");
 
         // Cache group file rebalancing is finished, historical rebalancing will send separate events
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         int remain = remaining.size();
 
-        log.info("Partition files preload complete [grp=" + grp.cacheOrGroupName() + ", remain=" + remain + "]");
+        U.log(log, "Cache group files preload complete [grp=" + grpName + ", remainParts=" + remain + "]");
 
         if (histAssignments.isEmpty())
             cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
@@ -424,8 +415,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     if (isDone())
                         return true;
 
-                    if (log.isInfoEnabled())
-                        log.info("Cancelling file rebalancing [topVer=" + topVer + "]");
+                    U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
 
                     if (snapFut != null && !snapFut.isDone()) {
                         if (log.isDebugEnabled())
@@ -437,9 +427,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     abortCb.run();
 
                     if (err == null) {
+                        // Should await until off-heap cleanup is finished.
                         for (IgniteInternalFuture fut : offheapClearTasks.values()) {
                             if (!fut.isDone())
-                                fut.get(MAX_MEM_CLEANUP_TIMEOUT);
+                                fut.get();
                         }
                     }
 
@@ -595,7 +586,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
 
         /**
-         * Clears off-heap memory region.
+         * Asynchronously clears off-heap memory region.
          */
         public IgniteInternalFuture clearAsync() {
             PageMemoryEx memEx = (PageMemoryEx)region.pageMemory();

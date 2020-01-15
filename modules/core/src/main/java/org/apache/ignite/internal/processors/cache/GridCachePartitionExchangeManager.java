@@ -3350,7 +3350,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
                         Runnable loadFilesStarter = null;
 
-                        if (filePreloader != null && !forcePreload)
+                        if (filePreloader != null)
                             loadFilesStarter = filePreloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
 
                         int size = assignsMap.size();
@@ -3427,8 +3427,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // Start rebalancing cache groups chain. Each group will be rebalanced
                             // sequentially one by one e.g.:
                             // ignite-sys-cache -> cacheGroupR1 -> cacheGroupP2 -> cacheGroupR3
-                            if (r != null)
-                                r.run();
+                            r.run();
                         }
                         else
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +

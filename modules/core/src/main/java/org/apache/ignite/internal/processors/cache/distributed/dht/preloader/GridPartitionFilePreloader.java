@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
@@ -137,7 +138,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
 
         boolean forced = rebTopVer == NONE || exchFut.localJoinExchange() ||
-            (rebRoutine.isDone() && (rebRoutine.result() == null || !rebRoutine.result()));
+            (rebRoutine.isCancelled() || rebRoutine.isFailed() || (rebRoutine.isDone() && !rebRoutine.result()));
 
         Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
 
@@ -244,14 +245,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     }
 
                     if (fut0.isCancelled()) {
-                        if (log.isInfoEnabled())
-                            log.info("File rebalance canceled [topVer=" + topVer + "]");
+                        U.log(log, "File rebalance canceled [topVer=" + topVer + "]");
 
                         return;
                     }
 
-                    if (log.isInfoEnabled())
-                        log.info("The final persistence rebalance is done [result=" + fut0.get() + ']');
+                    U.log(log, "The final persistence rebalance is done [result=" + fut0.get() + ']');
                 }
             });
 
@@ -359,7 +358,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-            assert part.dataStore().readOnly() : "cache=" + grpId + " p=" + partId;
+            assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
 
             // Save current counter.
             PartitionUpdateCounter readCntr = ((GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
@@ -421,6 +420,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param exchFut Exchange future.
      */
     private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
+        if (grp.localWalEnabled())
+            return false;
+
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
 
         assert aff != null;
