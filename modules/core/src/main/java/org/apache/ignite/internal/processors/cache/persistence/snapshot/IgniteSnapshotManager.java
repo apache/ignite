@@ -370,10 +370,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 SnapshotRequestFuture snpTrFut = rmtSnpReq.get();
 
-                if (snpTrFut == null)
-                    return;
-
-                if (snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
+                if (snpTrFut != null && snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
                     snpTrFut.onDone(new ClusterTopologyCheckedException("The node from which a snapshot has been " +
                         "requested left the grid"));
                 }
