@@ -1347,8 +1347,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All Async");
-
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();

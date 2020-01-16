@@ -5234,6 +5234,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet)
             return;
 
+        // To avoid false positives, once removeAll() is called, cache will never issue Remove All warnings.
+        if (ctx.lastRemoveAllJobFut().get() != null && op.startsWith("Remove All"))
+            return;
+
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
         if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
             return;

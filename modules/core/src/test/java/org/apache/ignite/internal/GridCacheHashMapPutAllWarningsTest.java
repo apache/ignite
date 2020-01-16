@@ -134,17 +134,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(2, c.size());
 
-        int found = 0;
-
         for (String message : messages) {
-            if (message.contains("Unordered map"))
-                found++;
-
-            if (message.contains("operation on cache"))
-                found++;
+            assertFalse(message.contains("Unordered map"));
+            assertFalse(message.contains("operation on cache"));
         }
-
-        assertEquals(0, found);
     }
 
     /**
@@ -230,5 +223,81 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         }
 
         assertEquals(0, found);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTreeMapRemoveAllEntries() throws Exception {
+        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+
+        testLog = new ListeningTestLogger(false, log());
+
+        testLog.registerListener((s) -> {
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
+
+        Ignite ignite = startGrid(0);
+        startGrid(1);
+
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("entries")
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setBackups(1));
+
+        for (int i = 0; i < 1000; i++) {
+            c.put(i, "foo");
+            c.put(i * 2, "bar");
+        }
+
+        c.removeAll();
+
+        assertEquals(0, c.size());
+
+        for (String message : messages) {
+            assertFalse(message.contains("Unordered collection "));
+
+            assertFalse(message.contains("operation on cache"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTreeMapClearEntries() throws Exception {
+        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+
+        testLog = new ListeningTestLogger(false, log());
+
+        testLog.registerListener((s) -> {
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
+
+        Ignite ignite = startGrid(0);
+        startGrid(1);
+
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("entries")
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setBackups(1));
+
+        for (int i = 0; i < 1000; i++) {
+            c.put(i, "foo");
+            c.put(i * 2, "bar");
+        }
+
+        c.clear();
+
+        assertEquals(0, c.size());
+
+        for (String message : messages) {
+            assertFalse(message.contains("Unordered "));
+
+            assertFalse(message.contains("operation on cache"));
+        }
     }
 }
