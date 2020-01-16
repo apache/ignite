@@ -56,7 +56,7 @@
         <camel.version>2.22.0</camel.version>
         <aws.encryption.sdk.version>1.3.2</aws.encryption.sdk.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.9.3</commons.beanutils.version>
+        <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
