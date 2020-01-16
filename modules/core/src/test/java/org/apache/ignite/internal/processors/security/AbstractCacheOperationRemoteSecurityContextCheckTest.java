@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.junits.common.TypePartitionForKey;
 
 /**
  *
@@ -54,7 +55,7 @@ public abstract class AbstractCacheOperationRemoteSecurityContextCheckTest exten
      * @return Key.
      */
     protected Integer prmKey(IgniteEx ignite) {
-        return findKeys(ignite.localNode(), ignite.cache(CACHE_NAME), 1, 0, 0)
+        return findKeys(ignite.localNode(), ignite.cache(CACHE_NAME), 1, 0, TypePartitionForKey.PRIMARY)
             .stream()
             .findFirst()
             .orElseThrow(() -> new IllegalStateException(ignite.name() + " isn't primary node for any key."));
