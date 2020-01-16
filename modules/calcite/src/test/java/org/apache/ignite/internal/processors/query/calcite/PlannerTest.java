@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,7 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.type.TestTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -112,48 +113,54 @@ public class PlannerTest extends GridCommonAbstractTest {
     public void setup() {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        developer = new TestIgniteTable("Developer", "Developer",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
+        developer = new TestIgniteTable(
+            ImmutableList.of("PUBLIC", "Developer"),
+            new TestTypeDescriptor()
+                .cacheName("Developer")
+                .identityKey("hash")
+                .field("id", Integer.class, true)
                 .field("name", String.class)
                 .field("projectId", Integer.class)
-                .field("cityId", Integer.class)
-                .build(), Arrays.asList(
-            new Object[]{0, null, 0, "Igor", 0, 1},
-            new Object[]{1, null, 1, "Roman", 0, 0}
+                .field("cityId", Integer.class),
+            Arrays.asList(
+                new Object[]{0, null, 0, "Igor", 0, 1},
+                new Object[]{1, null, 1, "Roman", 0, 0}
         ));
 
-        developer.identityKey("hash");
-
-        project = new TestIgniteTable("Project", "Project",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
+        project = new TestIgniteTable(
+            ImmutableList.of("PUBLIC", "Project"),
+            new TestTypeDescriptor()
+                .cacheName("Project")
+                .identityKey("hash")
+                .field("id", Integer.class, true)
                 .field("name", String.class)
-                .field("ver", Integer.class)
-                .build(), Arrays.asList(
-            new Object[]{0, null, 0, "Calcite", 1},
-            new Object[]{1, null, 1, "Ignite", 1}
+                .field("ver", Integer.class),
+            Arrays.asList(
+                new Object[]{0, null, 0, "Calcite", 1},
+                new Object[]{1, null, 1, "Ignite", 1}
         ));
 
-        project.identityKey("hash");
-
-        country = new TestIgniteTable("Country", "Country",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
+        country = new TestIgniteTable(
+            ImmutableList.of("PUBLIC", "Country"),
+            new TestTypeDescriptor()
+                .cacheName("Country")
+                .field("id", Integer.class, true)
                 .field("name", String.class)
-                .field("countryCode", Integer.class)
-                .build(), Arrays.<Object[]>asList(
-            new Object[]{0, null, 0, "Russia", 7}
+                .field("countryCode", Integer.class),
+            Arrays.<Object[]>asList(
+                new Object[]{0, null, 0, "Russia", 7}
         ));
 
-        city = new TestIgniteTable("City", "City",
-            RowType.builder()
-                .keyField("id", Integer.class, true)
+        city = new TestIgniteTable(
+            ImmutableList.of("PUBLIC", "City"),
+            new TestTypeDescriptor()
+                .cacheName("City")
+                .field("id", Integer.class, true)
                 .field("name", String.class)
-                .field("countryId", Integer.class)
-                .build(), Arrays.asList(
-            new Object[]{0, null, 0, "Moscow", 0},
-            new Object[]{1, null, 1, "Saint Petersburg", 0}
+                .field("countryId", Integer.class),
+            Arrays.asList(
+                new Object[]{0, null, 0, "Moscow", 0},
+                new Object[]{1, null, 1, "Saint Petersburg", 0}
         ));
 
         publicSchema.addTable(developer);
@@ -641,19 +648,19 @@ public class PlannerTest extends GridCommonAbstractTest {
             UUID queryId = UUID.randomUUID();
 
             for (Fragment fragment : fragments) {
-                ExecutionContext exeCtx = new ExecutionContext(
+                ExecutionContext ectx = new ExecutionContext(
                     ctx,
                     queryId,
                     fragment.fragmentId(),
                     null,
                     Commons.parametersMap(ctx.query().parameters()));
-                Implementor implementor = new Implementor(exeCtx);
+                Implementor implementor = new Implementor(ectx);
                 Node<Object[]> exec = implementor.go(igniteRel(fragment.root()));
 
                 if (!fragment.local())
                     exec.context().execute(exec::request);
                 else
-                    consumer = new ConsumerNode(exeCtx, exec);
+                    consumer = new ConsumerNode(ectx, exec);
             }
 
             assertNotNull(consumer);
@@ -1287,26 +1294,20 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestIgniteTable extends IgniteTable {
+        private final TestTypeDescriptor desc;
         /** */
         private final List<Object[]> data;
 
         /** */
-        private Object identityKey;
-
-        /** */
-        private TestIgniteTable(String tableName, String cacheName, RowType rowType, List<Object[]> data) {
-            super("PUBLIC", tableName, cacheName, rowType, null);
+        private TestIgniteTable(List<String> fullName, TestTypeDescriptor desc, List<Object[]> data) {
+            super(fullName, desc);
+            this.desc = desc;
             this.data = data;
         }
 
         /** */
         private void identityKey(Object identityKey) {
-            this.identityKey = identityKey;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object identityKey() {
-            return identityKey;
+            desc.identityKey(identityKey);
         }
 
         /** {@inheritDoc} */

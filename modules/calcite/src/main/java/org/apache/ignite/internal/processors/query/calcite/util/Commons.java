@@ -32,14 +32,11 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -63,28 +60,6 @@ public final class Commons {
      */
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
-    }
-
-    /**
-     * Creates a row type for a given type descriptor.
-     */
-    public static RowType rowType(GridQueryTypeDescriptor desc) {
-        RowType.Builder b = RowType.builder();
-
-        Map<String, Class<?>> fields = desc.fields();
-
-        b.key(desc.keyClass()).val(desc.valueClass());
-
-        for (Map.Entry<String, Class<?>> entry : fields.entrySet()) {
-            GridQueryProperty prop = desc.property(entry.getKey());
-
-            if (prop.key())
-                b.keyField(prop.name(), prop.type(), Objects.equals(desc.affinityKey(), prop.name()));
-            else
-                b.field(prop.name(), prop.type());
-        }
-
-        return b.build();
     }
 
     /**

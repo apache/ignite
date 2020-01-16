@@ -34,11 +34,9 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -62,7 +60,7 @@ public class ScalarFactory {
 
         builder = new RexBuilder(ctx.getTypeFactory());
         rexCompiler = new JaninoRexCompiler(builder);
-        handler = new ExceptionHandler(ctx.parent().kernal().failure(), ctx.parent().logger());
+        handler = new ExceptionHandler(ctx.parent().kernal().failure());
     }
 
     /**
@@ -289,18 +287,13 @@ public class ScalarFactory {
         private final FailureProcessor failure;
 
         /** */
-        private final IgniteLogger log;
-
-        /** */
-        private ExceptionHandler(FailureProcessor failure, IgniteLogger log) {
+        private ExceptionHandler(FailureProcessor failure) {
             this.failure = failure;
-            this.log = log;
         }
 
         /** */
         void onException(Throwable ex) {
             failure.process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
-            U.error(log, ex);
         }
     }
 }

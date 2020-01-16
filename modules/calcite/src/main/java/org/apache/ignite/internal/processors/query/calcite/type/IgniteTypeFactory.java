@@ -26,7 +26,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** */
     public IgniteTypeFactory() {
-        super(IgniteTypeSystem.DEFAULT);
+        super(IgniteTypeSystem.INSTANCE);
     }
 
     /**

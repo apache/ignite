@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
+import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Describes {@link IgniteTableScan}.
@@ -29,13 +39,17 @@ public class TableScanNode extends RelGraphNode {
     /** */
     private final List<String> tableName;
 
+    /** */
+    private final List<Pair<String, DataType>> extend;
+
     /**
      * @param traits   Traits of this relational expression
      * @param tableName Qualified table name
      */
-    private TableScanNode(RelTraitSet traits, List<String> tableName) {
+    private TableScanNode(RelTraitSet traits, List<String> tableName, List<RelDataTypeField> extend) {
         super(traits);
         this.tableName = tableName;
+        this.extend = Commons.transform(extend, e -> Pair.of(e.getName(), DataType.fromType(e.getType())));
     }
 
     /**
@@ -45,13 +59,25 @@ public class TableScanNode extends RelGraphNode {
      * @return TableScanNode.
      */
     public static TableScanNode create(IgniteTableScan rel) {
-        return new TableScanNode(rel.getTraitSet(), rel.getTable().getQualifiedName());
+        IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
+        return new TableScanNode(rel.getTraitSet(), table.fullName(), table.extendedColumns());
     }
 
     /** {@inheritDoc} */
     @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
-        return new IgniteTableScan(ctx.getCluster(),
-            traitSet(ctx.getCluster()),
-            ctx.getSchema().getTableForMember(tableName));
+        RelOptCluster cluster = ctx.getCluster();
+        RelOptTable table = ctx.getSchema().getTableForMember(tableName);
+        RelTraitSet traits = traitSet(cluster);
+
+        if (!F.isEmpty(extend)) {
+            List<RelDataTypeField> extend0 = new ArrayList<>(extend.size());
+
+            for (Pair<String, DataType> pair : extend)
+                extend0.add(new RelDataTypeFieldImpl(pair.left, extend0.size(), pair.right.toRelDataType(ctx.getTypeFactory())));
+
+            table = table.extend(extend0);
+        }
+
+        return new IgniteTableScan(cluster, traits, table);
     }
 }

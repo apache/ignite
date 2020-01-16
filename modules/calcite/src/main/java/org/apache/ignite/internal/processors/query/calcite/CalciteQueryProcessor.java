@@ -125,7 +125,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .context(Contexts.empty())
             // Custom cost factory to use during optimization
             .costFactory(null)
-            .typeSystem(IgniteTypeSystem.DEFAULT)
+            .typeSystem(IgniteTypeSystem.INSTANCE)
             .build();
 
     /** */
@@ -260,18 +260,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(cctx.localNodeId());
         }
 
-        ExecutionContext exeCtx = new ExecutionContext(
+        ExecutionContext ectx = new ExecutionContext(
             cctx,
             queryId,
             local.fragmentId(),
             local.mapping().partitions(cctx.localNodeId()),
             Commons.parametersMap(params));
 
-        Node<Object[]> node = new Implementor(exeCtx).go(igniteRel(local.root()));
+        Node<Object[]> node = new Implementor(ectx).go(igniteRel(local.root()));
 
         assert !(node instanceof SenderNode);
 
-        QueryInfo info = new QueryInfo(exeCtx, local.root().getRowType(), new ConsumerNode(exeCtx, node, this::onClose));
+        QueryInfo info = new QueryInfo(ectx, local.root().getRowType(), new ConsumerNode(ectx, node, this::onClose));
 
         if (plan.fragments().size() == 1)
             running.put(queryId, info);

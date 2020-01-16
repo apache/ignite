@@ -76,7 +76,7 @@ public class RexToExpTranslator implements RexVisitor<Expression> {
 
     /** {@inheritDoc} */
     @Override public Expression visitCall(RexCall call) {
-        return new CallExpression(call.getOperator(), translate(call.getOperands()));
+        return new CallExpression(call.getOperator(), call.getType(), translate(call.getOperands()));
     }
 
     /** {@inheritDoc} */

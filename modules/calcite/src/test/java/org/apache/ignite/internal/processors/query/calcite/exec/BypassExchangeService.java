@@ -151,7 +151,7 @@ public class BypassExchangeService implements ExchangeService, MailboxRegistry {
             .logger(log)
             .build();
 
-        ExecutionContext exeCtx = new ExecutionContext(
+        ExecutionContext ectx = new ExecutionContext(
             ctx,
             queryId,
             fragmentId,
@@ -159,7 +159,7 @@ public class BypassExchangeService implements ExchangeService, MailboxRegistry {
             ImmutableMap.of());
 
         // exchange ID is the same as source fragment ID
-        return new Inbox<>(exeCtx, exchangeId, exchangeId);
+        return new Inbox<>(ectx, exchangeId, exchangeId);
     }
 
     /** */

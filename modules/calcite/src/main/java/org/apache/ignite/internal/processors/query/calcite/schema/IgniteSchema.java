@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.type.TableTypeDescriptorImpl;
 
 /**
  * Ignite schema.
@@ -68,7 +69,9 @@ public class IgniteSchema extends AbstractSchema {
         Object identityKey = cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
 
-        addTable(new IgniteTable(schemaName, typeDesc.tableName(), cacheInfo.name(), Commons.rowType(typeDesc), identityKey));
+        TableTypeDescriptorImpl desc = new TableTypeDescriptorImpl(cacheInfo.name(), typeDesc, identityKey);
+
+        addTable(new IgniteTable(ImmutableList.of(schemaName, typeDesc.tableName()), desc));
     }
 
     /**
@@ -85,7 +88,7 @@ public class IgniteSchema extends AbstractSchema {
      * @param table Table.
      */
     public void addTable(IgniteTable table) {
-        tableMap.put(table.tableName(), table);
+        tableMap.put(table.name(), table);
     }
 
     /**

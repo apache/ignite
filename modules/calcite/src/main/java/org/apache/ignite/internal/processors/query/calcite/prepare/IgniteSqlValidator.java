@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
+import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
@@ -55,5 +58,27 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final RelDataType superType =
             super.getLogicalTargetRowType(targetRowType, insert);
         return ((JavaTypeFactory) typeFactory).toSql(superType);
+    }
+
+    @Override public SqlValidatorNamespace getNamespace(SqlNode node) {
+        switch (node.getKind()) {
+            case AS:
+
+                // AS has a namespace if it has a column list 'AS t (c1, c2, ...)'
+                final SqlValidatorNamespace ns = namespaces.get(node);
+                if (ns != null) {
+                    return ns;
+                }
+                // fall through
+            case SNAPSHOT:
+            case OVER:
+            case COLLECTION_TABLE:
+            case ORDER_BY:
+            case TABLESAMPLE:
+            case EXTEND:
+                return getNamespace(((SqlCall) node).operand(0));
+            default:
+                return namespaces.get(node);
+        }
     }
 }

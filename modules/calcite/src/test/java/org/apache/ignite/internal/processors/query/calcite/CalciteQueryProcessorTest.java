@@ -1,12 +1,14 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -48,6 +50,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .setBackups(2)
         );
 
+        waitForReadyTopology(internalCache(project).context().topology(), new AffinityTopologyVersion(5, 3));
+
         project.putAll(ImmutableMap.of(
             0, new Project("Ignite"),
             1, new Project("Calcite")
@@ -58,13 +62,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             1, new Developer("Roman", 0)
         ));
 
-        doSleep(1000);
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        QueryEngine engine = Commons.lookupComponent(ignite.context(), QueryEngine.class);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select d.NAME, p.NAME PROJECT_NAME from DEVELOPER(_key INTEGER) d, PROJECT(_key INTEGER) p where d.projectId = p._key and d._key = ?", 1);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 1);
+        List<List<?>> all = F.first(query).getAll();
 
-        F.first(query).getAll();
+        assertTrue(!F.isEmpty(all));
+        assertEquals(1, all.size());
+        assertEqualsCollections(Arrays.asList("Roman", "Ignite"), F.first(all));
     }
 
     public static class Developer {

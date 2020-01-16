@@ -125,6 +125,13 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return ctx.keepBinary();
+    }
+
+    /**
      * @return Exchange processor.
      */
     public ExchangeService exchange() {

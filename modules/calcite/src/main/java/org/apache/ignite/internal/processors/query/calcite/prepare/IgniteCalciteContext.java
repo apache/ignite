@@ -336,6 +336,13 @@ public final class IgniteCalciteContext implements Context {
         return planner().createCluster();
     }
 
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return false; // TODO
+    }
+
     /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aClass) {
         if (aClass == getClass())
