@@ -119,7 +119,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private final SnapshotTaskFuture snpFut = new SnapshotTaskFuture(() -> {
         cancelled = true;
 
-        close();
+        closeAsync().get();
     });
 
     /** Snapshot data sender. */
@@ -555,8 +555,18 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /**
      * @return Future which will be completed when operations truhly stopped.
      */
-    public CompletableFuture<Void> closeAsync() {
-        return CompletableFuture.runAsync(this::close, exec);
+    public IgniteInternalFuture<Void> closeAsync() {
+        GridFutureAdapter<Void> cFut = new GridFutureAdapter<>();
+
+        CompletableFuture.runAsync(this::close, exec)
+            .whenComplete((v, t) -> {
+                if (t == null)
+                    cFut.onDone();
+                else
+                    cFut.onDone(t);
+            });
+
+        return cFut;
     }
 
     /** {@inheritDoc} */
@@ -621,12 +631,12 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      */
     private static class SnapshotTaskFuture extends GridFutureAdapter<Boolean> {
         /** Set cancelling state to snapshot. */
-        private final Runnable doCancel;
+        private final IgniteThrowableRunner doCancel;
 
         /**
          * @param doCancel Set cancelling state to snapshot.
          */
-        public SnapshotTaskFuture(Runnable doCancel) {
+        public SnapshotTaskFuture(IgniteThrowableRunner doCancel) {
             this.doCancel = doCancel;
         }
 
