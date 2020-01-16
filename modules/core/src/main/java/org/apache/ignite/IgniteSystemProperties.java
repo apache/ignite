@@ -733,12 +733,17 @@ public final class IgniteSystemProperties {
         "IGNITE_PDS_PARTITION_DESTROY_CHECKPOINT_DELAY";
 
     /**
-     * WAL rebalance threshold (cache entries).
+     * WAL rebalance threshold.
      */
     public static final String IGNITE_PDS_WAL_REBALANCE_THRESHOLD = "IGNITE_PDS_WAL_REBALANCE_THRESHOLD";
 
     /**
-     * File rebalance threshold (cache entries).
+     * Flag to enable file rebalancing.
+     */
+    public static final String IGNITE_FILE_REBALANCE_ENABLED = "IGNITE_FILE_REBALANCE_ENABLED";
+
+    /**
+     * File rebalancing is applicable only if the number of entries in the partition is greater than this threshold.
      */
     public static final String IGNITE_PDS_FILE_REBALANCE_THRESHOLD = "IGNITE_PDS_FILE_REBALANCE_THRESHOLD";
 
@@ -1169,11 +1174,6 @@ public final class IgniteSystemProperties {
      * Flag to enable baseline auto-adjust by default.
      */
     public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
-
-    /**
-     * Flag to enable persistence rebalance.
-     */
-    public static final String IGNITE_FILE_REBALANCE_ENABLED = "IGNITE_FILE_REBALANCE_ENABLED";
 
     /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.

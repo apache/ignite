@@ -84,7 +84,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Exchange ID. */
     private final GridDhtPartitionExchangeId exchId;
 
-    /** Assignments ordered by cache rebalance pririty and node. */
+    /** Assignments ordered by cache rebalance priority and node. */
     private final Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** Unique partition identifier with node identifier. */
@@ -397,7 +397,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         else
             U.log(log, "Skipping index rebuild [grp=" + grpName + "]");
 
-        // Cache group file rebalancing is finished, historical rebalancing will send separate events
+        // Cache group file rebalancing is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         int remain = remaining.size();
