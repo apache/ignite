@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -189,7 +190,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, client, primaryKeys, cache, stop).get(stop + 30_000);
+        doRandomUpdates(r, client, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
@@ -253,7 +254,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(stop + 30_000);
+        doRandomUpdates(r, prim, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
@@ -329,7 +330,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         }, 1, "node-restarter");
 
         // Wait with timeout to avoid hanging suite.
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get(stop + 30_000);
+        doRandomUpdates(r, prim, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
@@ -973,18 +974,23 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * @param near Near node.
      * @param primaryKeys Primary keys.
      * @param cache Cache.
-     * @param stop Time to stop.
+     * @param stopClo A closure providing stop condition.
      * @return Finish future.
      */
-    private IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
-        IgniteCache<Object, Object> cache, long stop) throws Exception {
+    protected IgniteInternalFuture<?> doRandomUpdates(
+        Random r,
+        Ignite near,
+        List<Integer> primaryKeys,
+        IgniteCache<Object, Object> cache,
+        BooleanSupplier stopClo
+    ) throws Exception {
         LongAdder puts = new LongAdder();
         LongAdder removes = new LongAdder();
 
         final int max = 100;
 
         return multithreadedAsync(() -> {
-            while (U.currentTimeMillis() < stop) {
+            while (!stopClo.getAsBoolean()) {
                 int rangeStart = r.nextInt(primaryKeys.size() - max);
                 int range = 5 + r.nextInt(max - 5);
 

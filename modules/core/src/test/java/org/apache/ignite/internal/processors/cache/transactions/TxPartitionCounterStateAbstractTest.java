@@ -149,9 +149,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
+
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
     }
 
     /** {@inheritDoc} */
