@@ -64,7 +64,7 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
 
         prim.cluster().active(true);
 
-        for (int p = 0; p < PARTS_CNT; p++) {
+        for (int p = 0; p < partitions(); p++) {
             prim.cache(DEFAULT_CACHE_NAME).put(p, p);
             prim.cache(DEFAULT_CACHE_NAME).put(p + PARTS_CNT, p * 2);
         }
@@ -90,7 +90,7 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
         awaitPartitionMapExchange(true, true, null);
 
         // Create counter difference with evicted partition so it's applicable for historical rebalancing.
-        for (int p = 0; p < PARTS_CNT; p++)
+        for (int p = 0; p < partitions(); p++)
             prim.cache(DEFAULT_CACHE_NAME).put(p + PARTS_CNT, p * 2 + 1);
 
         stopGrid(1); // topVer=7,0

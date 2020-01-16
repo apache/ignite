@@ -703,7 +703,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         // Put one key per partition.
         try(IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int k = 0; k < PARTS_CNT; k++)
+            for (int k = 0; k < partitions(); k++)
                 streamer.addData(k, 0);
         }
 
@@ -840,7 +840,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteCache<Object, Object> cache2 = client.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));
 
         // Put one key per partition.
-        for (int k = 0; k < PARTS_CNT; k++) {
+        for (int k = 0; k < partitions(); k++) {
             cache.put(k, 0);
             cache2.put(k, 0);
         }
