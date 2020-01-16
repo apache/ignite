@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -434,17 +435,19 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         // Process binary meta.
         futs.add(CompletableFuture.runAsync(
             wrapExceptionally(() ->
-                snpSndr.sendBinaryMeta(cctx.kernalContext()
-                    .cacheObjects()
-                    .metadataTypes())),
+                    snpSndr.sendBinaryMeta(cctx.kernalContext()
+                        .cacheObjects()
+                        .metadataTypes()),
+                s -> s == SnapshotState.STARTED),
             exec));
 
         // Process marshaller meta.
         futs.add(CompletableFuture.runAsync(
             wrapExceptionally(() ->
-                snpSndr.sendMarshallerMeta(cctx.kernalContext()
-                    .marshallerContext()
-                    .getCachedMappings())),
+                    snpSndr.sendMarshallerMeta(cctx.kernalContext()
+                        .marshallerContext()
+                        .getCachedMappings()),
+                s -> s == SnapshotState.STARTED),
             exec));
 
         // Process cache group configuration files.
@@ -454,21 +457,22 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             .forEach(grpId ->
                 futs.add(CompletableFuture.runAsync(() ->
                         wrapExceptionally(() -> {
-                            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+                                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
-                            if (gctx == null) {
-                                throw new IgniteCheckedException("Cache group configuration has not found " +
-                                    "due to the cache group is stopped: " + grpId);
-                            }
+                                if (gctx == null) {
+                                    throw new IgniteCheckedException("Cache group configuration has not found " +
+                                        "due to the cache group is stopped: " + grpId);
+                                }
 
-                            List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
+                                List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
 
-                            if (ccfgs == null)
-                                return;
+                                if (ccfgs == null)
+                                    return;
 
-                            for (File ccfg0 : ccfgs)
-                                snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
-                        }),
+                                for (File ccfg0 : ccfgs)
+                                    snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
+                            },
+                            s -> s == SnapshotState.STARTED),
                     exec)
                 )
             );
@@ -491,28 +495,30 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
             CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                 wrapExceptionally(() -> {
-                    snpSndr.sendPart(
-                        getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
-                        cacheDirName,
-                        pair,
-                        partLen);
+                        snpSndr.sendPart(
+                            getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
+                            cacheDirName,
+                            pair,
+                            partLen);
 
-                    // Stop partition writer.
-                    partDeltaWriters.get(pair).markPartitionProcessed();
-                }),
+                        // Stop partition writer.
+                        partDeltaWriters.get(pair).markPartitionProcessed();
+                    },
+                    s -> s == SnapshotState.STARTED),
                 exec)
                 // Wait for the completion of both futures - checkpoint end, copy partition.
                 .runAfterBothAsync(cpEndFut,
                     wrapExceptionally(() -> {
-                        File delta = IgniteSnapshotManager.getPartionDeltaFile(cacheWorkDir(nodeSnpDir, cacheDirName),
-                            pair.getPartitionId());
+                            File delta = IgniteSnapshotManager.getPartionDeltaFile(cacheWorkDir(nodeSnpDir, cacheDirName),
+                                pair.getPartitionId());
 
-                        snpSndr.sendDelta(delta, cacheDirName, pair);
+                            snpSndr.sendDelta(delta, cacheDirName, pair);
 
-                        boolean deleted = delta.delete();
+                            boolean deleted = delta.delete();
 
-                        assert deleted;
-                    }),
+                            assert deleted;
+                        },
+                        s -> s == SnapshotState.STARTED),
                     exec);
 
             futs.add(fut0);
@@ -531,12 +537,13 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /**
      * @param exec Runnable task to execute.
+     * @param cond Condition when task must be executed.
      * @return Wrapped task.
      */
-    private Runnable wrapExceptionally(IgniteThrowableRunner exec) {
+    private Runnable wrapExceptionally(IgniteThrowableRunner exec, Predicate<SnapshotState> cond) {
         return () -> {
             try {
-                if (state == SnapshotState.STARTED)
+                if (cond.test(state))
                     exec.run();
             }
             catch (Throwable t) {
