@@ -25,13 +25,13 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
@@ -42,10 +42,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
  */
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
-    private ReadOnlyMetricRegistry mreg;
+    private ReadOnlyMetricManager mreg;
 
     /** Metric filter. */
-    private @Nullable Predicate<MetricRegistry> filter;
+    private @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -63,7 +63,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      *
      * @param mreg Metric registry.
      */
-    private void register(MetricRegistry mreg) {
+    private void register(ReadOnlyMetricRegistry mreg) {
         if (filter != null && !filter.test(mreg)) {
             if (log.isDebugEnabled())
                 U.debug(log, "Metric registry filtered and will not be registered.[registry=" + mreg.name() + ']');
@@ -101,7 +101,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
      *
      * @param mreg Metric registry.
      */
-    private void unregister(MetricRegistry mreg) {
+    private void unregister(ReadOnlyMetricRegistry mreg) {
         MetricUtils.MetricName n = parse(mreg.name());
 
         try {
@@ -144,12 +144,12 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(ReadOnlyMetricRegistry reg) {
+    @Override public void setMetricRegistry(ReadOnlyMetricManager reg) {
         this.mreg = reg;
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter) {
         this.filter = filter;
     }
 }

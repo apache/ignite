@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,12 +70,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricManager} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
- * @see MetricRegistry
+ * @see org.apache.ignite.internal.processors.metric.MetricRegistry
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -197,13 +198,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
     /** Registered metrics registries. */
-    private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReadOnlyMetricRegistry> registries = new ConcurrentHashMap<>();
 
     /** Metric registry creation listeners. */
-    private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<ReadOnlyMetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metric registry remove listeners. */
-    private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<ReadOnlyMetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** Read-only metastorage. */
     private volatile ReadableDistributedMetaStorage roMetastorage;
@@ -240,7 +241,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistry sysreg = registry(SYS_METRICS);
+        org.apache.ignite.internal.processors.metric.MetricRegistry sysreg = registry(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
@@ -254,7 +255,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
-        MetricRegistry pmeReg = registry(PME_METRICS);
+        org.apache.ignite.internal.processors.metric.MetricRegistry pmeReg = registry(PME_METRICS);
 
         long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
 
@@ -324,9 +325,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Group name.
      * @return Group of metrics.
      */
-    public MetricRegistry registry(String name) {
-        return registries.computeIfAbsent(name, n -> {
-            MetricRegistry mreg = new MetricRegistry(name,
+    public org.apache.ignite.internal.processors.metric.MetricRegistry registry(String name) {
+        return (org.apache.ignite.internal.processors.metric.MetricRegistry)registries.computeIfAbsent(name, n -> {
+            org.apache.ignite.internal.processors.metric.MetricRegistry mreg = new org.apache.ignite.internal.processors.metric.MetricRegistry(name,
                 mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
                 mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
                 log);
@@ -357,17 +358,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<MetricRegistry> iterator() {
+    @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
         return registries.values().iterator();
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
         metricRegCreationLsnrs.add(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+    @Override public void addMetricRegistryRemoveListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
         metricRegRemoveLsnrs.add(lsnr);
     }
 
@@ -377,7 +378,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        MetricRegistry mreg = registries.remove(regName);
+        ReadOnlyMetricRegistry mreg = registries.remove(regName);
 
         if (mreg == null)
             return;
@@ -488,7 +489,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         T2<String, String> splitted = fromFullName(name);
 
-        MetricRegistry mreg = registries.get(splitted.get1());
+        org.apache.ignite.internal.processors.metric.MetricRegistry mreg = (org.apache.ignite.internal.processors.metric.MetricRegistry)registries.get(splitted.get1());
 
         if (mreg == null) {
             if (log.isInfoEnabled())
@@ -598,7 +599,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
+        org.apache.ignite.internal.processors.metric.MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
@@ -651,7 +652,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param svc Executor.
      */
     private void monitorStripedPool(String name, StripedExecutor svc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
+        org.apache.ignite.internal.processors.metric.MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         mreg.register("DetectStarvation",
             svc::detectStarvation,
@@ -846,7 +847,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = registry(group);
+            org.apache.ignite.internal.processors.metric.MetricRegistry mreg = registry(group);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);

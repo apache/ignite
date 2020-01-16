@@ -53,7 +53,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.jetbrains.annotations.Nullable;
 
 import static io.opencensus.tags.TagMetadata.TagTtl.UNLIMITED_PROPAGATION;
@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.hist
  *
  * @see MetricRegistry
  * @see GridMetricManager
- * @see ReadOnlyMetricRegistry
+ * @see ReadOnlyMetricManager
  */
 public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** Flag to enable or disable tag with Ignite instance name. */

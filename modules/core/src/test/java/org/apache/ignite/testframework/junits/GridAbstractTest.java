@@ -2680,9 +2680,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     }
 
-
     /**
-     * Returns metric set.
+     * Returns metric registry.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param grp Name of the group.

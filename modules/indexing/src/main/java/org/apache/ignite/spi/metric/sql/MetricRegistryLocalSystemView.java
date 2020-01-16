@@ -24,7 +24,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
     /** Metric registry. */
-    private ReadOnlyMetricRegistry mreg;
+    private ReadOnlyMetricManager mreg;
 
     /** Metric filter. */
     private @Nullable Predicate<MetricRegistry> filter;
@@ -46,7 +46,7 @@ public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
      * @param mreg Metric registry.
      * @param filter Metric registry filter.
      */
-    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
+    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricManager mreg,
         @Nullable Predicate<MetricRegistry> filter) {
         super(SqlViewMetricExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
