@@ -167,7 +167,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private final GridBusyLock busyLock = new GridBusyLock();
 
     /** Requested snapshot from remote node. */
-    private final AtomicReference<SnapshotRequestFuture> rmtSnpReq = new AtomicReference<>();
+    private final AtomicReference<RemoteSnapshotFuture> rmtSnpReq = new AtomicReference<>();
 
     /** Map of requests from remote node on snapshot creation. */
     private final ConcurrentMap<UUID, IgniteInternalFuture<Boolean>> rmtSnps = new ConcurrentHashMap<>();
@@ -331,7 +331,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
 
-                        SnapshotRequestFuture fut0 = rmtSnpReq.get();
+                        RemoteSnapshotFuture fut0 = rmtSnpReq.get();
 
                         if (fut0 == null || !fut0.snpName.equals(respMsg0.snapshotName())) {
                             if (log.isInfoEnabled()) {
@@ -368,7 +368,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     }
                 }
 
-                SnapshotRequestFuture snpTrFut = rmtSnpReq.get();
+                RemoteSnapshotFuture snpTrFut = rmtSnpReq.get();
 
                 if (snpTrFut != null && snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
                     snpTrFut.onDone(new ClusterTopologyCheckedException("The node from which a snapshot has been " +
@@ -384,7 +384,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
             /** {@inheritDoc} */
             @Override public void onException(UUID nodeId, Throwable err) {
-                SnapshotRequestFuture fut = rmtSnpReq.get();
+                RemoteSnapshotFuture fut = rmtSnpReq.get();
 
                 if (fut == null)
                     return;
@@ -404,7 +404,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 String rmtDbNodePath = (String)fileMeta.params().get(SNP_DB_NODE_PATH_PARAM);
                 String cacheDirName = (String)fileMeta.params().get(SNP_CACHE_DIR_NAME_PARAM);
 
-                SnapshotRequestFuture transFut = rmtSnpReq.get();
+                RemoteSnapshotFuture transFut = rmtSnpReq.get();
 
                 if (transFut == null || !transFut.snpName.equals(snpName)) {
                     throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
@@ -432,7 +432,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              * @param grpPartId Pair of group id and its partition id.
              */
             private void finishRecover(
-                SnapshotRequestFuture snpTrans,
+                RemoteSnapshotFuture snpTrans,
                 UUID rmtNodeId,
                 GroupPartitionId grpPartId
             ) {
@@ -481,7 +481,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 String snpName = (String)initMeta.params().get(SNP_NAME_PARAM);
 
                 GroupPartitionId grpPartId = new GroupPartitionId(grpId, partId);
-                SnapshotRequestFuture snpTrFut = rmtSnpReq.get();
+                RemoteSnapshotFuture snpTrFut = rmtSnpReq.get();
 
                 if (snpTrFut == null || !snpTrFut.snpName.equals(snpName)) {
                     throw new TransmissionCancelledException("Stale snapshot transmission will be ignored " +
@@ -514,7 +514,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         try {
                             assert initMeta.count() != 0 : initMeta;
 
-                            SnapshotRequestFuture fut0 = rmtSnpReq.get();
+                            RemoteSnapshotFuture fut0 = rmtSnpReq.get();
 
                             if (fut0 == null || !fut0.equals(snpTrFut) || fut0.isCancelled()) {
                                 throw new TransmissionCancelledException("Snapshot request is cancelled " +
@@ -549,7 +549,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 assert snpName != null;
                 assert storeFactory != null;
 
-                SnapshotRequestFuture transFut = rmtSnpReq.get();
+                RemoteSnapshotFuture transFut = rmtSnpReq.get();
 
                 if (transFut == null) {
                     throw new IgniteException("Snapshot transmission with given name doesn't exists " +
@@ -558,7 +558,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                 return new Consumer<File>() {
                     @Override public void accept(File file) {
-                        SnapshotRequestFuture fut0 = rmtSnpReq.get();
+                        RemoteSnapshotFuture fut0 = rmtSnpReq.get();
 
                         if (fut0 == null || !fut0.equals(transFut) || fut0.isCancelled()) {
                             throw new TransmissionCancelledException("Snapshot request is cancelled [snpName=" + snpName +
@@ -603,7 +603,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
             locSnpTasks.clear();
 
-            SnapshotRequestFuture snpTrFut = rmtSnpReq.get();
+            RemoteSnapshotFuture snpTrFut = rmtSnpReq.get();
 
             if (snpTrFut != null)
                 snpTrFut.cancel();
@@ -757,7 +757,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
 
-        SnapshotRequestFuture snpTransFut = new SnapshotRequestFuture(rmtNodeId, snpName,
+        RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum());
 
         busyLock.enterBusy();
@@ -770,7 +770,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> GridIntList.valueOf(e.getValue()))));
 
-            SnapshotRequestFuture fut = rmtSnpReq.get();
+            RemoteSnapshotFuture fut = rmtSnpReq.get();
 
             try {
                 if (fut != null)
@@ -996,7 +996,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private class SnapshotRequestFuture extends GridFutureAdapter<Boolean> {
+    private class RemoteSnapshotFuture extends GridFutureAdapter<Boolean> {
         /** Remote node id to request snapshot from. */
         private final UUID rmtNodeId;
 
@@ -1012,7 +1012,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param cnt Partitions to receive.
          */
-        public SnapshotRequestFuture(UUID rmtNodeId, String snpName, int cnt) {
+        public RemoteSnapshotFuture(UUID rmtNodeId, String snpName, int cnt) {
             this.rmtNodeId = rmtNodeId;
             this.snpName = snpName;
             partsLeft = new AtomicInteger(cnt);
@@ -1054,7 +1054,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            SnapshotRequestFuture future = (SnapshotRequestFuture)o;
+            RemoteSnapshotFuture future = (RemoteSnapshotFuture)o;
 
             return rmtNodeId.equals(future.rmtNodeId) &&
                 snpName.equals(future.snpName);
@@ -1067,7 +1067,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SnapshotRequestFuture.class, this);
+            return S.toString(RemoteSnapshotFuture.class, this);
         }
     }
 
