@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.TombstoneCacheObject;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -196,6 +195,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -1167,8 +1167,8 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 176:
-                msg = TombstoneCacheObject.INSTANCE;
+            case SingleNodeMessage.TYPE_CODE:
+                msg = new SingleNodeMessage<>();
 
                 break;
 

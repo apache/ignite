@@ -58,10 +58,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.ClusterActivationEvent;
+import org.apache.ignite.events.ClusterStateChangeEvent;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
@@ -76,6 +76,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -126,6 +127,7 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -146,6 +148,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -160,11 +165,11 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 
 /**
  * Partition exchange manager.
@@ -183,9 +188,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
-
-    /** Stripe id for cluster activation event. */
-    private static final int CLUSTER_ACTIVATION_EVT_STRIPE_ID = Integer.MAX_VALUE;
 
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -577,12 +579,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     exchFut = exchangeFuture(exchId, evt, cache, exchActions, null);
 
-                    exchFut.listen(f -> {
-                        if (exchActions.activate())
-                            recordEvent("Cluster activated.", EventType.EVT_CLUSTER_ACTIVATED);
-                        else if (exchActions.deactivate())
-                            recordEvent("Cluster deactivated.", EventType.EVT_CLUSTER_DEACTIVATED);
-                    });
+                    exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions));
                 }
             }
             else if (customMsg instanceof DynamicCacheChangeBatch) {
@@ -664,26 +661,54 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
-    /**
-     * @param msg Event message.
-     * @param evtType Event type.
-     */
-    private void recordEvent(String msg, int evtType) {
-        GridKernalContext ctx = cctx.kernalContext();
+    /** */
+    private void onClusterStateChangeFinish(IgniteInternalFuture<AffinityTopologyVersion> fut, ExchangeActions exchActions) {
+        A.notNull(exchActions, "exchActions");
 
-        Collection<ClusterNode> srvNodes = ctx.cluster().get().forServers().nodes();
+        GridEventStorageManager evtMngr = cctx.kernalContext().event();
 
-        Collection<BaselineNode> baselineNodes = new ArrayList<>(srvNodes);
+        if (exchActions.activate() && evtMngr.isRecordable(EVT_CLUSTER_ACTIVATED) ||
+            exchActions.deactivate() && evtMngr.isRecordable(EVT_CLUSTER_DEACTIVATED) ||
+            exchActions.changedClusterState() && evtMngr.isRecordable(EVT_CLUSTER_STATE_CHANGED)
+        ) {
+            List<Event> evts = new ArrayList<>(2);
 
-        ctx.getStripedExecutorService().execute(CLUSTER_ACTIVATION_EVT_STRIPE_ID, new Runnable() {
-            @Override public void run() {
-                if (ctx.event().isRecordable(evtType)) {
-                    ClusterActivationEvent evt = new ClusterActivationEvent(ctx.discovery().localNode(), msg, evtType, baselineNodes);
+            ClusterNode locNode = cctx.kernalContext().discovery().localNode();
 
-                    ctx.event().record(evt);
-                }
+            Collection<BaselineNode> bltNodes = cctx.kernalContext().cluster().get().currentBaselineTopology();
+
+            boolean collectionUsed = false;
+
+            if (exchActions.activate() && evtMngr.isRecordable(EVT_CLUSTER_ACTIVATED)) {
+                assert !exchActions.deactivate() : exchActions;
+
+                collectionUsed = true;
+
+                evts.add(new ClusterActivationEvent(locNode, "Cluster activated.", EVT_CLUSTER_ACTIVATED, bltNodes));
             }
-        });
+
+            if (exchActions.deactivate() && evtMngr.isRecordable(EVT_CLUSTER_DEACTIVATED)) {
+                assert !exchActions.activate() : exchActions;
+
+                collectionUsed = true;
+
+                evts.add(new ClusterActivationEvent(locNode, "Cluster deactivated.", EVT_CLUSTER_DEACTIVATED, bltNodes));
+            }
+
+            if (exchActions.changedClusterState() && evtMngr.isRecordable(EVT_CLUSTER_STATE_CHANGED)) {
+                StateChangeRequest req = exchActions.stateChangeRequest();
+
+                if (collectionUsed && bltNodes != null)
+                    bltNodes = new ArrayList<>(bltNodes);
+
+                evts.add(new ClusterStateChangeEvent(req.prevState(), req.state(), bltNodes, locNode, "Cluster state changed."));
+            }
+
+            A.notEmpty(evts, "events " + exchActions);
+
+            cctx.kernalContext().getSystemExecutorService()
+                .submit(() -> evts.forEach(e -> cctx.kernalContext().event().record(e)));
+        }
     }
 
     /**

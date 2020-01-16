@@ -324,8 +324,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "CACHE_GROUPS",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
-            "LOCAL_SQL_QUERY_HISTORY",
-            "LOCAL_SQL_RUNNING_QUERIES",
+            "SQL_QUERIES_HISTORY",
+            "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODES",
             "NODE_ATTRIBUTES",
@@ -339,7 +339,10 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
-            "QUERY_CONTINUOUS"
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "CACHE_GROUP_PAGE_LISTS"
         ));
 
         Set<String> actViews = new HashSet<>();

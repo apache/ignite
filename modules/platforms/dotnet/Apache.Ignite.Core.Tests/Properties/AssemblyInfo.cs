@@ -23,7 +23,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright 2019")]
+[assembly: AssemblyCopyright("Copyright 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,6 +31,6 @@ using System.Runtime.InteropServices;
 
 [assembly: Guid("de8dd5cc-7c7f-4a09-80d5-7086d9416a7b")]
 
-[assembly: AssemblyVersion("2.8.0.34042")]
-[assembly: AssemblyFileVersion("2.8.0.34042")]
-[assembly: AssemblyInformationalVersion("2.8.0")]
+[assembly: AssemblyVersion("2.9.0.42453")]
+[assembly: AssemblyFileVersion("2.9.0.42453")]
+[assembly: AssemblyInformationalVersion("2.9.0")]

@@ -193,7 +193,7 @@ public class GDBTrainerTest extends TrainerTest {
 
         LocalDatasetBuilder<Integer, double[]> epmtyDataset = new LocalDatasetBuilder<>(new HashMap<>(), 1);
         FeatureLabelExtractor<Integer, double[], Double> extractor = (k, v) -> new LabeledVector<>(fExtr.apply(k, v), lExtr.apply(k, v));
-        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, epmtyDataset, new FeatureLabelExtractorWrapper<>(extractor));
+        ModelsComposition updatedOnEmptyDataset = trainer.updateModel(originalMdl, emptyDataset, new FeatureLabelExtractorWrapper<>(extractor));
 
         dataset.forEach((k,v) -> {
             Vector features = fExtr.apply(k, v);

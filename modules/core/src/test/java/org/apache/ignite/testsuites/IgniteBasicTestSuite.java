@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExc
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.DropCacheContextDuringEvictionTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictionTaskFailureHandlerTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagePoolTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.DiscoveryDataDeserializationFailureHanderTest;
 import org.apache.ignite.internal.processors.cache.transactions.AtomicOperationsInTxTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithSystemWorkerDeathTest;
@@ -88,6 +90,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryCacheTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorkerTest;
@@ -138,8 +141,6 @@ import org.junit.runners.Suite;
     IgniteStreamSelfTestSuite.class,
 
     IgnitePlatformsTestSuite.class,
-
-    SecurityTestSuite.class,
 
     GridSelfTest.class,
     ClusterGroupHostsSelfTest.class,
@@ -207,6 +208,7 @@ import org.junit.runners.Suite;
     GridPeerDeploymentRetryModifiedTest.class,
 
     // Basic DB data structures.
+    PagePoolTest.class,
     BPlusTreeSelfTest.class,
     BPlusTreeFakeReuseSelfTest.class,
     BPlusTreeReuseSelfTest.class,
@@ -238,6 +240,8 @@ import org.junit.runners.Suite;
     StopNodeOrHaltFailureHandlerTest.class,
     OomFailureHandlerTest.class,
     TransactionIntegrityWithSystemWorkerDeathTest.class,
+    FailureProcessorLoggingTest.class,
+    FailureProcessorThreadDumpThrottlingTest.class,
 
     AtomicOperationsInTxTest.class,
 

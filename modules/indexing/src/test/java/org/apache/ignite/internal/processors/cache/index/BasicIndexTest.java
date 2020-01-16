@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -39,21 +37,19 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
+import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -186,7 +182,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testNoIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -204,6 +200,17 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
+    private int[] inlineSizeVariations() {
+        int[] baseVariations = {0, 10, 20, 50, 100};
+
+        // Determine if scaling is needed, we are not accurate here
+        if (GridTestUtils.SF.apply(baseVariations.length) < baseVariations.length)
+            return new int[] {0, 20, 100};
+
+        return baseVariations;
+    }
+
+    /** */
     @Test
     public void testAllIndexesNoPersistence() throws Exception {
         indexes = Arrays.asList(
@@ -215,7 +222,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             new QueryIndex("valPojo")
         );
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -235,7 +242,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     /** */
     @Test
     public void testDynamicIndexesNoPersistence() throws Exception {
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -787,7 +794,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -826,7 +833,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -931,7 +938,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -970,7 +977,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesDropWithPersistence() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1015,7 +1022,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testNoIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1028,7 +1035,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -1064,7 +1071,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1077,7 +1084,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -1104,7 +1111,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testDynamicIndexesWithPersistenceIndexRebuild() throws Exception {
         isPersistenceEnabled = true;
 
-        int[] inlineSizes = {0, 10, 20, 50, 100};
+        int[] inlineSizes = inlineSizeVariations();
 
         for (int i : inlineSizes) {
             log().info("Checking inlineSize=" + i);
@@ -1126,7 +1133,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             checkAll();
 
-            List<Path> idxPaths = getIndexBinPaths();
+            List<Path> idxPaths = getIndexBinPaths(DEFAULT_CACHE_NAME);
 
             // Shutdown gracefully to ensure there is a checkpoint with index.bin.
             // Otherwise index.bin rebuilding may not work.
@@ -1303,28 +1310,6 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
             assertTrue(i >= RANGE_START && i < RANGE_END);
         }
-    }
-
-    /**
-     * Must be called when the grid is up.
-     */
-    private List<Path> getIndexBinPaths() {
-        return G.allGrids().stream()
-            .map(grid -> (IgniteEx) grid)
-            .map(grid -> {
-                IgniteInternalCache<Object, Object> cachex = grid.cachex(DEFAULT_CACHE_NAME);
-
-                assertNotNull(cachex);
-
-                FilePageStoreManager pageStoreMgr = (FilePageStoreManager) cachex.context().shared().pageStore();
-
-                assertNotNull(pageStoreMgr);
-
-                File cacheWorkDir = pageStoreMgr.cacheWorkDir(cachex.configuration());
-
-                return cacheWorkDir.toPath().resolve("index.bin");
-            })
-            .collect(Collectors.toList());
     }
 
     /** */

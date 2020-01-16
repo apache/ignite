@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -48,8 +49,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
@@ -88,7 +92,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration().setName("in-memory").setMaxSize(100L * 1024 * 1024))
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
@@ -397,14 +405,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "CACHE_GROUPS",
             "CACHES",
             "TASKS",
-            "LOCAL_SQL_QUERY_HISTORY",
+            "SQL_QUERIES_HISTORY",
             "NODES",
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
-            "LOCAL_SQL_RUNNING_QUERIES",
+            "SQL_QUERIES",
             "SCAN_QUERIES",
             "NODE_ATTRIBUTES",
             "TABLES",
@@ -413,7 +421,11 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
             "TRANSACTIONS",
-            "QUERY_CONTINUOUS"
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "DATA_REGION_PAGE_LISTS",
+            "CACHE_GROUP_PAGE_LISTS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -528,8 +540,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testContinuousQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite0.createCache("cache-1");
 
-        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
 
         try (QueryCursor qry = cache.query(new ContinuousQuery<>()
             .setInitialQuery(new ScanQuery<>())
@@ -547,8 +559,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             checkContinuouQueryView(ignite1, false);
         }
 
-        assertTrue(execute(ignite0, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.QUERY_CONTINUOUS").isEmpty());
+        assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
     }
 
     /** */
@@ -563,7 +575,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "  REMOTE_FILTER, " +
             "  LOCAL_TRANSFORMED_LISTENER, " +
             "  REMOTE_TRANSFORMER " +
-            "FROM SYS.QUERY_CONTINUOUS");
+            "FROM SYS.CONTINUOUS_QUERIES");
 
         assertEquals(1, qrys.size());
 
@@ -772,6 +784,139 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(found1 && found2);
+    }
+
+    /** */
+    @Test
+    public void testStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite0.context().getStripedExecutorService(),
+            "STRIPED_THREADPOOL_QUEUE",
+            "sys");
+    }
+
+    /** */
+    @Test
+    public void testStreamerExecutor() throws Exception {
+        checkStripeExecutorView(ignite0.context().getDataStreamerExecutorService(),
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "data-streamer");
+    }
+
+    /**
+     * Checks striped executor system view.
+     *
+     * @param execSvc Striped executor.
+     * @param view System view name.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> execute(ignite0, "SELECT * FROM SYS." + view).size() == 2, 5_000);
+
+            assertTrue(res);
+
+            List<List<?>> stripedQueue = execute(ignite0, "SELECT * FROM SYS." + view);
+
+            List<?> row0 = stripedQueue.get(0);
+
+            assertEquals(0, row0.get(0));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get(1));
+            assertEquals(poolName + "-stripe-0", row0.get(2));
+            assertEquals(TestRunnable.class.getName(), row0.get(3));
+
+            List<?> row1 = stripedQueue.get(1);
+
+            assertEquals(1, row1.get(0));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get(1));
+            assertEquals(poolName + "-stripe-1", row1.get(2));
+            assertEquals(TestRunnable.class.getName(), row1.get(3));
+        }
+        finally {
+            latch.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        String cacheName = "cacheFL";
+
+        IgniteCache<Integer, byte[]> cache = ignite0.getOrCreateCache(new CacheConfiguration<Integer, byte[]>()
+            .setName(cacheName).setAffinity(new RendezvousAffinityFunction().setPartitions(1)));
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite0.context().cache().context()
+            .database();
+
+        int pageSize = dbMgr.pageSize();
+
+        try {
+            dbMgr.enableCheckpoints(false).get();
+
+            int key = 0;
+
+            // Fill up different free-list buckets.
+            for (int j = 0; j < pageSize / 2; j++)
+                cache.put(key++, new byte[j + 1]);
+
+            // Put some pages to one bucket to overflow pages cache.
+            for (int j = 0; j < 1000; j++)
+                cache.put(key++, new byte[pageSize / 2]);
+
+            // Test filtering by 3 columns.
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_NUMBER = 0 " +
+                "AND PARTITION_ID = 0 AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            // Test filtering with invalid cache group id.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHE_GROUP_ID = ?", -1)
+                .isEmpty());
+
+            // Test filtering with invalid partition id.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE PARTITION_ID = ?", -1)
+                .isEmpty());
+
+            // Test filtering with invalid bucket number.
+            assertTrue(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_NUMBER = -1")
+                .isEmpty());
+
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE BUCKET_SIZE > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE STRIPES_COUNT > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.CACHE_GROUP_PAGE_LISTS WHERE CACHED_PAGES_COUNT > 0 " +
+                "AND CACHE_GROUP_ID = ?", cacheId(cacheName)).isEmpty());
+
+            assertFalse(execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%'")
+                .isEmpty());
+
+            assertEquals(0L, execute(ignite0, "SELECT COUNT(*) FROM SYS.DATA_REGION_PAGE_LISTS " +
+                "WHERE NAME LIKE 'in-memory%' AND BUCKET_SIZE > 0").get(0).get(0));
+        }
+        finally {
+            dbMgr.enableCheckpoints(true).get();
+        }
+
+        ignite0.cluster().active(false);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cacheInMemory = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cacheFLInMemory").setDataRegionName("in-memory"));
+
+        cacheInMemory.put(0, 0);
+
+        // After activation/deactivation new view for data region pages lists should be created, check that new view
+        // correctly reflects changes in free-lists.
+        assertFalse(execute(ignite0, "SELECT * FROM SYS.DATA_REGION_PAGE_LISTS WHERE NAME LIKE 'in-memory%' AND " +
+            "BUCKET_SIZE > 0").isEmpty());
     }
 
     /**

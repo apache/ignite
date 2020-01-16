@@ -24,7 +24,7 @@
 
 #include "impl/affinity/affinity_assignment.h"
 #include "impl/affinity/affinity_topology_version.h"
-#include "impl/affinity/affinity_awareness_group.h"
+#include "impl/affinity/partition_awareness_group.h"
 
 namespace ignite
 {
@@ -55,10 +55,10 @@ namespace ignite
                     /**
                      * Update affinity.
                      *
-                     * @param groups Affinity awareness groups.
+                     * @param groups Partition awareness groups.
                      * @param ver Affinity topology version.
                      */
-                    void UpdateAffinity(const std::vector<AffinityAwarenessGroup>& groups, const AffinityTopologyVersion& ver);
+                    void UpdateAffinity(const std::vector<PartitionAwarenessGroup>& groups, const AffinityTopologyVersion& ver);
 
                     /**
                      * Get affinity mapping for the cache.

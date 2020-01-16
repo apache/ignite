@@ -38,7 +38,7 @@ public class RegressionMetricsTest {
      */
     @Test
     public void testCalculation() {
-        Map<Vector, Double> linearset = new HashMap<Vector, Double>() {{
+        Map<Vector, Double> linearSet = new HashMap<Vector, Double>() {{
             put(VectorUtils.of(0.), 0.);
             put(VectorUtils.of(1.), 1.);
             put(VectorUtils.of(2.), 2.);
@@ -48,14 +48,14 @@ public class RegressionMetricsTest {
         IgniteModel<Vector, Double> linearModel = v -> v.get(0);
         IgniteModel<Vector, Double> squareModel = v -> Math.pow(v.get(0), 2);
 
-        EvaluationResult linearRes = Evaluator.evaluateRegression(linearset, linearModel, Vector::labeled);
+        EvaluationResult linearRes = Evaluator.evaluateRegression(linearSet, linearModel, Vector::labeled);
         assertEquals(0., linearRes.get(MetricName.MAE), 0.01);
         assertEquals(0., linearRes.get(MetricName.MSE), 0.01);
         assertEquals(0., linearRes.get(MetricName.R2), 0.01);
         assertEquals(0., linearRes.get(MetricName.RSS), 0.01);
         assertEquals(0., linearRes.get(MetricName.RMSE), 0.01);
 
-        EvaluationResult squareRes = Evaluator.evaluateRegression(linearset, squareModel, Vector::labeled);
+        EvaluationResult squareRes = Evaluator.evaluateRegression(linearSet, squareModel, Vector::labeled);
         assertEquals(2., squareRes.get(MetricName.MAE), 0.01);
         assertEquals(10., squareRes.get(MetricName.MSE), 0.01);
         assertEquals(8., squareRes.get(MetricName.R2), 0.01);
