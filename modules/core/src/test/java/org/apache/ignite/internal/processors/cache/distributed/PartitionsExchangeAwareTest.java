@@ -64,21 +64,25 @@ public class PartitionsExchangeAwareTest extends GridCommonAbstractTest {
 
     /** Initialize before lock reached latch. */
     private CountDownLatch initBeforeLockReachedLatch;
+
     /** Initialize before lock wait latch. */
     private CountDownLatch initBeforeLockWaitLatch;
 
     /** Initialize after lock reached latch. */
     private CountDownLatch initAfterLockReachedLatch;
+
     /** Initialize after lock wait latch. */
     private CountDownLatch initAfterLockWaitLatch;
 
     /** On done before lock reached latch. */
     private CountDownLatch onDoneBeforeUnlockReachedLatch;
+
     /** On done before lock wait latch. */
     private CountDownLatch onDoneBeforeUnlockWaitLatch;
 
     /** On done after lock reached latch. */
     private CountDownLatch onDoneAfterUnlockReachedLatch;
+
     /** On done after lock wait latch. */
     private CountDownLatch onDoneAfterUnlockWaitLatch;
 
